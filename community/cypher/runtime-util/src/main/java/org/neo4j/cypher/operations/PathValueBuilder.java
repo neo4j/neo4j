@@ -60,9 +60,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      * @return a PathValue or NO_VALUE if any NO_VALUES has been encountered
      */
     public AnyValue build() {
-        return seenNoValue
-                ? NO_VALUE
-                : pathReference(nodes.toArray(VirtualNodeValue[]::new), rels.toArray(VirtualRelationshipValue[]::new));
+        return seenNoValue ? NO_VALUE : pathReference(nodes, rels);
     }
 
     /**

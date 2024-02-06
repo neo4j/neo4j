@@ -22,6 +22,7 @@ package org.neo4j.values;
 import static java.lang.String.format;
 
 import java.util.Arrays;
+import java.util.List;
 import org.neo4j.values.storable.BufferValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -155,6 +156,14 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
                 Arrays.stream(relationships)
                         .mapToLong(VirtualRelationshipValue::id)
                         .toArray());
+    }
+
+    @Override
+    public void writePathReference(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships)
+            throws RuntimeException {
+        writePathReference(
+                nodes.stream().mapToLong(VirtualNodeValue::id).toArray(),
+                relationships.stream().mapToLong(VirtualRelationshipValue::id).toArray());
     }
 
     public static class Specials {

@@ -20,6 +20,7 @@
 package org.neo4j.packstream.io.value;
 
 import io.netty.buffer.Unpooled;
+import java.util.List;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -139,6 +140,12 @@ public abstract class PackstreamValueWriter implements AnyValueWriter<RuntimeExc
 
     @Override
     public void writePathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships)
+            throws RuntimeException {
+        throw new UnsupportedOperationException("Cannot write raw path reference");
+    }
+
+    @Override
+    public void writePathReference(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships)
             throws RuntimeException {
         throw new UnsupportedOperationException("Cannot write raw path reference");
     }

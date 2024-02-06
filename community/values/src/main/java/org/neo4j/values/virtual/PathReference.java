@@ -21,6 +21,7 @@ package org.neo4j.values.virtual;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
+import java.util.List;
 import org.neo4j.values.AnyValueWriter;
 
 public abstract class PathReference extends VirtualPathValue {
@@ -29,7 +30,7 @@ public abstract class PathReference extends VirtualPathValue {
         return new PathReferencePrimitive(nodes, relationships);
     }
 
-    public static PathReference path(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) {
+    public static PathReference path(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships) {
         return new PathReferenceReferences(nodes, relationships);
     }
 
@@ -127,10 +128,10 @@ public abstract class PathReference extends VirtualPathValue {
     private static class PathReferenceReferences extends PathReference {
         private static final long SHALLOW_SIZE = shallowSizeOfInstance(PathReferencePrimitive.class);
 
-        private final VirtualNodeValue[] nodes;
-        private final VirtualRelationshipValue[] relationships;
+        private final List<VirtualNodeValue> nodes;
+        private final List<VirtualRelationshipValue> relationships;
 
-        PathReferenceReferences(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) {
+        PathReferenceReferences(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships) {
             this.nodes = nodes;
             this.relationships = relationships;
         }
@@ -142,28 +143,28 @@ public abstract class PathReference extends VirtualPathValue {
 
         @Override
         public long startNodeId() {
-            return nodes[0].id();
+            return nodes.get(0).id();
         }
 
         @Override
         public long endNodeId() {
-            return nodes[nodes.length - 1].id();
+            return nodes.get(nodes.size() - 1).id();
         }
 
         @Override
         public long[] nodeIds() {
-            long[] res = new long[nodes.length];
-            for (int i = 0; i < nodes.length; i++) {
-                res[i] = nodes[i].id();
+            long[] res = new long[nodes.size()];
+            for (int i = 0; i < nodes.size(); i++) {
+                res[i] = nodes.get(i).id();
             }
             return res;
         }
 
         @Override
         public long[] relationshipIds() {
-            long[] res = new long[relationships.length];
-            for (int i = 0; i < relationships.length; i++) {
-                res[i] = relationships[i].id();
+            long[] res = new long[relationships.size()];
+            for (int i = 0; i < relationships.size(); i++) {
+                res[i] = relationships.get(i).id();
             }
             return res;
         }
@@ -175,7 +176,7 @@ public abstract class PathReference extends VirtualPathValue {
 
         @Override
         public int size() {
-            return relationships.length;
+            return relationships.size();
         }
 
         @Override
@@ -186,13 +187,13 @@ public abstract class PathReference extends VirtualPathValue {
         @Override
         public ListValue asList() {
 
-            int size = nodes.length + relationships.length;
+            int size = nodes.size() + relationships.size();
             ListValueBuilder builder = ListValueBuilder.newListBuilder(size);
             for (int i = 0; i < size; i++) {
                 if (i % 2 == 0) {
-                    builder.add(nodes[i / 2]);
+                    builder.add(nodes.get(i / 2));
                 } else {
-                    builder.add(relationships[i / 2]);
+                    builder.add(relationships.get(i / 2));
                 }
             }
             return builder.build();
@@ -202,12 +203,12 @@ public abstract class PathReference extends VirtualPathValue {
         public String toString() {
             StringBuilder sb = new StringBuilder(getTypeName() + "{");
             int i = 0;
-            sb.append("(").append(nodes[0].id()).append(")");
-            for (; i < relationships.length; i++) {
+            sb.append("(").append(nodes.get(0).id()).append(")");
+            for (; i < relationships.size(); i++) {
                 sb.append("-");
-                sb.append("[").append(relationships[i].id()).append("]");
+                sb.append("[").append(relationships.get(i).id()).append("]");
                 sb.append("-");
-                sb.append("(").append(nodes[i + 1].id()).append(")");
+                sb.append("(").append(nodes.get(i + 1).id()).append(")");
             }
             sb.append('}');
             return sb.toString();

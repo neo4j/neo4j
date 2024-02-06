@@ -29,6 +29,7 @@ import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
 import org.neo4j.storageengine.api.enrichment.WriteEnrichmentChannel;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -306,6 +307,20 @@ public record ValuesWriter(WriteEnrichmentChannel channel) implements AnyValueWr
     public void writePathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) {
         writeBoolean(false);
         channel.putInt(nodes.length);
+        for (var node : nodes) {
+            channel.putLong(node.id());
+        }
+
+        for (var relationship : relationships) {
+            channel.putLong(relationship.id());
+        }
+    }
+
+    @Override
+    public void writePathReference(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships)
+            throws RuntimeException {
+        writeBoolean(false);
+        channel.putInt(nodes.size());
         for (var node : nodes) {
             channel.putLong(node.id());
         }

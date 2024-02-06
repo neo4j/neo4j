@@ -28,26 +28,29 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util
 import java.util.function.Consumer
 
-import scala.collection.mutable
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVisitor] {
-  private val nodes = mutable.ArrayBuffer.empty[VirtualNodeValue]
-  private val rels = mutable.ArrayBuffer.empty[VirtualRelationshipValue]
+  private var nodes = new util.ArrayList[VirtualNodeValue]()
+  private var rels = new util.ArrayList[VirtualRelationshipValue]()
   private var nulled = false
 
-  def result(): AnyValue = if (nulled) Values.NO_VALUE else VirtualValues.pathReference(nodes.toArray, rels.toArray)
+  def result(): AnyValue = {
+    if (nulled) Values.NO_VALUE
+    else VirtualValues.pathReference(nodes, rels)
+  }
 
   def clear(): PathValueBuilder = {
-    nodes.clear()
-    rels.clear()
+    nodes = new util.ArrayList[VirtualNodeValue](nodes.size())
+    rels = new util.ArrayList[VirtualRelationshipValue](rels.size())
     nulled = false
     this
   }
 
-  def previousNode: VirtualNodeValue = nodes.last
+  def previousNode: VirtualNodeValue = nodes.get(nodes.size() - 1)
 
   def addNoValue(): PathValueBuilder = {
     nulled = true
@@ -56,7 +59,7 @@ final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVis
 
   def addNode(nodeOrNull: AnyValue): PathValueBuilder = nullCheck(nodeOrNull) {
     val node = nodeOrNull.asInstanceOf[VirtualNodeValue]
-    nodes.append(node)
+    nodes.add(node)
     this
   }
 
@@ -65,21 +68,21 @@ final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVis
   }
 
   def addRelationship(rel: VirtualRelationshipValue): PathValueBuilder = {
-    rels.append(rel)
+    rels.add(rel)
     this
   }
 
   def addIncomingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
     val rel = relOrNull.asInstanceOf[VirtualRelationshipValue]
-    rels.append(rel)
-    nodes.append(VirtualValues.node(rel.startNodeId(this)))
+    rels.add(rel)
+    nodes.add(VirtualValues.node(rel.startNodeId(this)))
     this
   }
 
   def addOutgoingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
     val rel = relOrNull.asInstanceOf[VirtualRelationshipValue]
-    rels.append(rel)
-    nodes.append(VirtualValues.node(rel.endNodeId(this)))
+    rels.add(rel)
+    nodes.add(VirtualValues.node(rel.endNodeId(this)))
     this
   }
 

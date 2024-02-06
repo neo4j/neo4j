@@ -29,6 +29,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -203,7 +204,7 @@ class PathValueBuilderTest {
                 rels[i / 2] = (VirtualRelationshipValue) nodeAndRel[i];
             }
         }
-        return VirtualValues.pathReference(nodes, rels);
+        return VirtualValues.pathReference(Arrays.asList(nodes), Arrays.asList(rels));
     }
 
     private PathValueBuilder builder(AnyValue... values) {

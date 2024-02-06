@@ -114,10 +114,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public static final class RelationshipListValue extends ListValue {
         private static final long REL_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance(RelationshipListValue.class);
 
-        private final VirtualRelationshipValue[] array;
+        private final List<VirtualRelationshipValue> list;
 
-        RelationshipListValue(VirtualRelationshipValue[] array) {
-            this.array = array;
+        RelationshipListValue(List<VirtualRelationshipValue> list) {
+            this.list = list;
         }
 
         @Override
@@ -133,7 +133,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public int size() {
-            return array.length;
+            return list.size();
         }
 
         @Override
@@ -143,17 +143,17 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public AnyValue value(int offset) {
-            return array[offset];
+            return list.get(offset);
         }
 
         @Override
         public long estimatedHeapUsage() {
-            int length = array.length;
+            int length = list.size();
             if (length == 0) {
                 return REL_LIST_VALUE_SHALLOW_SIZE;
             } else {
                 return REL_LIST_VALUE_SHALLOW_SIZE
-                        + sizeOfObjectArray(sizeOf(array[0]), length); // Use first element as probe
+                        + sizeOfObjectArray(sizeOf(list.get(0)), length); // Use first element as probe
             }
         }
     }

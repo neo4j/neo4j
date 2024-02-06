@@ -139,6 +139,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.net.URL
+import java.util
 import java.util.Locale
 
 import scala.collection.mutable.ArrayBuffer
@@ -1807,8 +1808,9 @@ private[internal] class TransactionBoundReadQueryContext(
         rebindRelationship(r.getEntity)
 
       case p: PathWrappingPathValue =>
-        val nodeValues = p.path().nodes().asScala.map(rebindNode).toArray
-        val relValues = p.path().relationships().asScala.map(rebindRelationship).toArray
+        val nodeValues: util.List[VirtualNodeValue] =
+          util.Arrays.asList(p.path().nodes().asScala.map(rebindNode).toArray: _*)
+        val relValues = util.Arrays.asList(p.path().relationships().asScala.map(rebindRelationship).toArray: _*)
         VirtualValues.pathReference(nodeValues, relValues)
 
       case m: MapValue if !m.isEmpty =>

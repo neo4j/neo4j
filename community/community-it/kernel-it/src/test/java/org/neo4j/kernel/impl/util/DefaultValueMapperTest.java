@@ -28,6 +28,7 @@ import static org.neo4j.values.virtual.VirtualValues.pathReference;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -168,13 +169,13 @@ class DefaultValueMapperTest {
         }
     }
 
-    private static VirtualNodeValue[] asNodeValues(Node... nodes) {
-        return Arrays.stream(nodes).map(ValueUtils::fromNodeEntity).toArray(VirtualNodeValue[]::new);
+    private static List<VirtualNodeValue> asNodeValues(Node... nodes) {
+        return Arrays.stream(nodes).map(ValueUtils::fromNodeEntity).toList();
     }
 
-    private static VirtualRelationshipValue[] asRelationshipsValues(Relationship... relationships) {
+    private static List<VirtualRelationshipValue> asRelationshipsValues(Relationship... relationships) {
         return Arrays.stream(relationships)
                 .map(ValueUtils::fromRelationshipEntity)
-                .toArray(VirtualRelationshipValue[]::new);
+                .toList();
     }
 }

@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -166,7 +167,7 @@ class ValuesReadWriteTest {
                     relationships[i] = VirtualValues.relationship(random.nextLong(0, Long.MAX_VALUE));
                 }
 
-                return VirtualValues.pathReference(nodes, relationships);
+                return VirtualValues.pathReference(Arrays.asList(nodes), Arrays.asList(relationships));
             }
         },
         LIST {

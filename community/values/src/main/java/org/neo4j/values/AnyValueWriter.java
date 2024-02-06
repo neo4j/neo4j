@@ -19,6 +19,7 @@
  */
 package org.neo4j.values;
 
+import java.util.List;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueWriter;
@@ -81,6 +82,8 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E> {
     void writePathReference(long[] nodes, long[] relationships) throws E;
 
     void writePathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) throws E;
+
+    void writePathReference(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships) throws E;
 
     void writePath(NodeValue[] nodes, RelationshipValue[] relationships) throws E;
 

@@ -22,6 +22,7 @@ package org.neo4j.values.virtual;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,8 +76,8 @@ public final class VirtualValues {
         return new ListValue.ArrayValueListValue(arrayValue);
     }
 
-    public static ListValue.RelationshipListValue fromRelationships(VirtualRelationshipValue[] array) {
-        return new ListValue.RelationshipListValue(array);
+    public static ListValue.RelationshipListValue fromRelationships(List<VirtualRelationshipValue> list) {
+        return new ListValue.RelationshipListValue(list);
     }
 
     /*
@@ -157,13 +158,18 @@ public final class VirtualValues {
     }
 
     public static PathReference pathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) {
+        return pathReference(Arrays.asList(nodes), Arrays.asList(relationships));
+    }
+
+    public static PathReference pathReference(
+            List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships) {
         assert nodes != null;
         assert relationships != null;
-        if ((nodes.length + relationships.length) % 2 == 0) {
+        if ((nodes.size() + relationships.size()) % 2 == 0) {
             throw new IllegalArgumentException(
                     "Tried to construct a path that is not built like a path: even number of elements");
         }
-        assert nodes.length == relationships.length + 1;
+        assert nodes.size() == relationships.size() + 1;
 
         return PathReference.path(nodes, relationships);
     }

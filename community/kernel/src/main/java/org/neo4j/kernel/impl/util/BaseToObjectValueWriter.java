@@ -199,6 +199,25 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
+    public void writePathReference(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships)
+            throws E {
+        assert nodes != null;
+        assert nodes.size() > 0;
+        assert relationships != null;
+        assert nodes.size() == relationships.size() + 1;
+
+        Node[] nodeProxies = new Node[nodes.size()];
+        for (int i = 0; i < nodes.size(); i++) {
+            nodeProxies[i] = newNodeEntityById(nodes.get(i).id());
+        }
+        Relationship[] relProxies = new Relationship[relationships.size()];
+        for (int i = 0; i < relationships.size(); i++) {
+            relProxies[i] = newRelationshipEntityById(relationships.get(i).id());
+        }
+        writeValue(new PathProxy(nodeProxies, relProxies));
+    }
+
+    @Override
     public void writePath(NodeValue[] nodes, RelationshipValue[] relationships) {
         assert nodes != null;
         assert nodes.length > 0;

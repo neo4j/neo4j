@@ -346,10 +346,10 @@ public final class ValueUtils {
         return VirtualValues.pathReference(
                 StreamSupport.stream(path.nodes().spliterator(), false)
                         .map(ValueUtils::fromNodeEntity)
-                        .toArray(VirtualNodeValue[]::new),
+                        .toList(),
                 StreamSupport.stream(path.relationships().spliterator(), false)
                         .map(ValueUtils::fromRelationshipEntity)
-                        .toArray(VirtualRelationshipValue[]::new));
+                        .toList());
     }
 
     // sigh: For procedures we must support "fake" entities from and to procedures.

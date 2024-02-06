@@ -27,6 +27,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.List;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
@@ -208,6 +209,21 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
             writeRelationshipReference(relationships[i].id());
             append(">");
             writeNodeReference(nodes[i + 1].id());
+        }
+    }
+
+    @Override
+    public void writePathReference(List<VirtualNodeValue> nodes, List<VirtualRelationshipValue> relationships)
+            throws RuntimeException {
+        if (nodes.size() == 0) {
+            return;
+        }
+        // Path guarantees that nodes.length = edges.length = 1
+        writeNodeReference(nodes.get(0).id());
+        for (int i = 0; i < relationships.size(); i++) {
+            writeRelationshipReference(relationships.size());
+            append(">");
+            writeNodeReference(nodes.get(i + 1).id());
         }
     }
 
