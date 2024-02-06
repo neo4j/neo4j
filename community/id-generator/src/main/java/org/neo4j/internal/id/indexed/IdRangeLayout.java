@@ -41,7 +41,7 @@ public class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange> {
 
     @Override
     public IdRangeKey newKey() {
-        return new IdRangeKey(0);
+        return new IdRangeKey(-1);
     }
 
     @Override
