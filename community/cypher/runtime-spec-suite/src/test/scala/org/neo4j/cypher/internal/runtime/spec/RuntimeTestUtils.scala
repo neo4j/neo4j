@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.scalatest.Assertion
+import org.scalatest.exceptions.TestFailedException
 
 import java.io.PrintStream
 
@@ -66,6 +67,7 @@ case class ScalaTestDeflaker(
   acceptInstantSuccess: Boolean = true,
   retries: Int = 2,
   toleratedFailures: Int = 1,
+  toleratedExceptionTypes: Seq[Class[_ <: Throwable]] = Seq(classOf[TestFailedException]),
   sleepMs: Int = 100,
   printToleratedFailuresTo: Option[PrintStream] = None
 ) {
@@ -79,7 +81,7 @@ case class ScalaTestDeflaker(
   ): Unit = {
 
     var failures = 0
-    val exceptions = new ArrayBuffer[Exception]()
+    val exceptions = new ArrayBuffer[Throwable]()
     var attempt = 0
     while (attempt <= retries) {
       try {
@@ -91,18 +93,18 @@ case class ScalaTestDeflaker(
           return
         }
       } catch {
-        case e: Exception =>
+        case e: Throwable if isTolerable(e) =>
           failures += 1
           try {
             afterEachFailedAttempt(failures)
           } catch {
-            case ee: Exception =>
+            case ee: Throwable if isTolerable(ee) =>
               e.addSuppressed(ee)
           }
           try {
             afterEachAttempt()
           } catch {
-            case ee: Exception =>
+            case ee: Throwable if isTolerable(ee) =>
               e.addSuppressed(ee)
           }
           if (failures > toleratedFailures) {
@@ -117,7 +119,11 @@ case class ScalaTestDeflaker(
     printToleratedFailures(failures, attempt, exceptions)
   }
 
-  private def printToleratedFailures(failures: Int, attempts: Int, exceptions: ArrayBuffer[Exception]): Unit = {
+  private def isTolerable(e: Throwable): Boolean = {
+    toleratedExceptionTypes.exists(_.isAssignableFrom(e.getClass))
+  }
+
+  private def printToleratedFailures(failures: Int, attempts: Int, exceptions: ArrayBuffer[Throwable]): Unit = {
     printToleratedFailuresTo match {
       case Some(printStream) =>
         val nl = System.lineSeparator()
