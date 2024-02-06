@@ -17,8 +17,11 @@
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
 import org.antlr.v4.runtime.misc.Interval
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astPairs
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.child
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
@@ -278,9 +281,9 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.CollectExpressionContext
   ): Unit = {}
 
-  final override def exitPropertyKeyName(
-    ctx: CypherParser.PropertyKeyNameContext
-  ): Unit = {}
+  final override def exitPropertyKeyName(ctx: CypherParser.PropertyKeyNameContext): Unit = {
+    ctx.ast = PropertyKeyName(child[AstRuleCtx](ctx, 0).ast())(pos(ctx))
+  }
 
   final override def exitParameter(
     ctx: CypherParser.ParameterContext
@@ -408,9 +411,8 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.MapOrParameterContext
   ): Unit = {}
 
-  final override def exitMap(
-    ctx: CypherParser.MapContext
-  ): Unit = {}
+  final override def exitMap(ctx: CypherParser.MapContext): Unit =
+    ctx.ast = MapExpression(astPairs(ctx.propertyKeyName(), ctx.expression()))(pos(ctx))
 
   final override def exitSymbolicNamePositions(
     ctx: CypherParser.SymbolicNamePositionsContext

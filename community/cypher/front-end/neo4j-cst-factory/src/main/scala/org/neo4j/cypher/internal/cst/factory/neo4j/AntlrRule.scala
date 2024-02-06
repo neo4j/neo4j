@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NumberLiteral
@@ -88,7 +89,7 @@ object AntlrRule {
   def Expression: AntlrRule[Cst.Expression] = fromParser(_.expression())
   def FunctionInvocation: AntlrRule[Cst.FunctionInvocation] = fromParser(_.functionInvocation())
   def ListComprehension: AntlrRule[Cst.ListComprehension] = fromParser(_.listComprehension())
-  def MapLiteral: AntlrRule[Cst.MapLiteral] = fromParser(_.mapLiteral())
+  def Map: AntlrRule[Cst.Map] = fromParser(_.map())
   def MapProjection: AntlrRule[Cst.MapProjection] = fromParser(_.mapProjection())
   def NodePattern: AntlrRule[Cst.NodePattern] = fromParser(_.nodePattern())
   def NumberLiteral: AntlrRule[Cst.NumberLiteral] = fromParser(_.numberLiteral())
@@ -134,6 +135,7 @@ object AntlrRule {
     case AstTypes.SubqueryClauseCls       => SubqueryClause
     case AstTypes.QuantifiedPathCls       => ParenthesizedPath
     case AstTypes.LiteralCls              => Literal
+    case AstTypes.MapExpressionCls        => Map
     case other                            => throw new IllegalArgumentException(s"Unsupported type $other")
   }
 }
@@ -163,4 +165,5 @@ object AstTypes {
   val SubqueryClauseCls: Class[SubqueryCall] = classOf[SubqueryCall]
   val QuantifiedPathCls: Class[QuantifiedPath] = classOf[QuantifiedPath]
   val LiteralCls: Class[Literal] = classOf[Literal]
+  val MapExpressionCls: Class[MapExpression] = classOf[MapExpression]
 }

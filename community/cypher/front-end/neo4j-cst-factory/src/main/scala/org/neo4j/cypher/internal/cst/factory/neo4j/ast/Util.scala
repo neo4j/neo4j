@@ -22,7 +22,10 @@ import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.cst.factory.neo4j.CypherToken
 import org.neo4j.cypher.internal.parser.AstRuleCtx
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+
+import scala.collection.immutable.ArraySeq
 
 object Util {
   @inline def cast[T](o: Any): T = o.asInstanceOf[T]
@@ -32,6 +35,19 @@ object Util {
 
   @inline def lastChild[T <: ParseTree](ctx: AstRuleCtx): T =
     ctx.children.get(ctx.children.size() - 1).asInstanceOf[T]
+
+  def astPairs[A <: ASTNode, B <: ASTNode](
+    as: java.util.List[_ <: AstRuleCtx],
+    bs: java.util.List[_ <: AstRuleCtx]
+  ): ArraySeq[(A, B)] = {
+    val result = new Array[(A, B)](as.size())
+    var i = 0; val length = as.size()
+    while (i < length) {
+      result(i) = (as.get(i).ast[A](), bs.get(i).ast[B]())
+      i += 1
+    }
+    ArraySeq.unsafeWrapArray(result)
+  }
 
   @inline def pos(token: Token): InputPosition = token.asInstanceOf[CypherToken].position()
   @inline def pos(ctx: ParserRuleContext): InputPosition = pos(ctx.start)

@@ -58,10 +58,6 @@ trait LiteralBuilder extends CypherParserListener {
     ctx: CypherParser.ListLiteralContext
   ): Unit = {}
 
-  final override def exitMapLiteral(
-    ctx: CypherParser.MapLiteralContext
-  ): Unit = {}
-
   override def exitNummericLiteral(
     ctx: CypherParser.NummericLiteralContext
   ): Unit = {}

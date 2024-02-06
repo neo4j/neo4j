@@ -219,7 +219,7 @@ labelOrRelTypes:
    COLON symbolicNameString (BAR symbolicNameString)*;
 
 properties:
-   (mapLiteral | parameter);
+   (map | parameter);
 
 relationshipPattern:
    leftArrow? arrowLine (
@@ -341,7 +341,7 @@ expression1:
 literal:
    numberLiteral      #NummericLiteral
    | stringLiteral    #StringsLiteral
-   | mapLiteral       #OtherLiteral
+   | map              #OtherLiteral
    | listLiteral      #OtherLiteral
    | TRUE             #BooleanLiteral
    | FALSE            #BooleanLiteral
@@ -412,9 +412,6 @@ signedIntegerLiteral:
 
 listLiteral:
    LBRACKET expression? (COMMA expression)* RBRACKET;
-
-mapLiteral:
-   LCURLY (propertyKeyName COLON expression)? (COMMA propertyKeyName COLON expression)* RCURLY;
 
 propertyKeyName:
    symbolicNameString;
@@ -769,7 +766,7 @@ propertyResource:
    LCURLY (TIMES | symbolicNameList1) RCURLY;
 
 graphQualifier:
-   ((RELATIONSHIP | RELATIONSHIPS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (NODE | NODES) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (ELEMENT | ELEMENTS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | mapLiteral RPAREN))?;
+   ((RELATIONSHIP | RELATIONSHIPS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (NODE | NODES) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (ELEMENT | ELEMENTS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | map RPAREN))?;
 
 createDatabase:
    DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? (TOPOLOGY (UNSIGNED_DECIMAL_INTEGER ((PRIMARY | PRIMARIES) | (SECONDARY | SECONDARIES)))+)? options_? waitClause?;
@@ -852,8 +849,7 @@ stringOrParameter:
 mapOrParameter:
    (map | parameter);
 
-map:
-   LCURLY (symbolicNameString COLON expression (COMMA symbolicNameString COLON expression)*)? RCURLY;
+map: LCURLY (propertyKeyName COLON expression)? (COMMA propertyKeyName COLON expression)* RCURLY;
 
 symbolicNamePositions:
    symbolicNameString (COMMA symbolicNameString)*;

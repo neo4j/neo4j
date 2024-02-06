@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NumberLiteral
@@ -76,7 +77,7 @@ object JavaccRule {
   def Expression: JavaccRule[Expression] = fromParser(_.Expression())
   def FunctionInvocation: JavaccRule[Expression] = fromParser(_.FunctionInvocation(false))
   def ListComprehension: JavaccRule[Expression] = fromParser(_.ListComprehension())
-  def MapLiteral: JavaccRule[Expression] = fromParser(_.MapLiteral())
+  def Map: JavaccRule[Expression] = fromParser(_.MapLiteral())
   def MapProjection: JavaccRule[Expression] = fromParser(_.MapProjection())
   def NodePattern: JavaccRule[NodePattern] = fromParser(_.NodePattern())
   def NumberLiteral: JavaccRule[Expression] = fromParser(_.NumberLiteral())
@@ -124,6 +125,7 @@ object JavaccRule {
     case AstTypes.SubqueryClauseCls       => SubqueryClause.asInstanceOf[JavaccRule[T]]
     case AstTypes.QuantifiedPathCls       => ParenthesizedPath.asInstanceOf[JavaccRule[T]]
     case AstTypes.LiteralCls              => Expression.asInstanceOf[JavaccRule[T]] // JavaCC have no literal parser
+    case AstTypes.MapExpressionCls        => Map.asInstanceOf[JavaccRule[T]]
     case other                            => throw new IllegalArgumentException(s"Unsupported type $other")
   }
 
@@ -173,4 +175,5 @@ object AstTypes {
   val SubqueryClauseCls: Class[SubqueryCall] = classOf[SubqueryCall]
   val QuantifiedPathCls: Class[QuantifiedPath] = classOf[QuantifiedPath]
   val LiteralCls: Class[Literal] = classOf[Literal]
+  val MapExpressionCls: Class[MapExpression] = classOf[MapExpression]
 }

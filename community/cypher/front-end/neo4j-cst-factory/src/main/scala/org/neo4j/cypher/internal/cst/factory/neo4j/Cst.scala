@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.parser.CypherParser.ExpressionContext
 import org.neo4j.cypher.internal.parser.CypherParser.FunctionInvocationContext
 import org.neo4j.cypher.internal.parser.CypherParser.ListComprehensionContext
 import org.neo4j.cypher.internal.parser.CypherParser.LiteralContext
-import org.neo4j.cypher.internal.parser.CypherParser.MapLiteralContext
+import org.neo4j.cypher.internal.parser.CypherParser.MapContext
 import org.neo4j.cypher.internal.parser.CypherParser.MapProjectionContext
 import org.neo4j.cypher.internal.parser.CypherParser.MatchClauseContext
 import org.neo4j.cypher.internal.parser.CypherParser.NodePatternContext
@@ -56,7 +56,7 @@ object Cst {
   type Expression = ExpressionContext
   type FunctionInvocation = FunctionInvocationContext
   type ListComprehension = ListComprehensionContext
-  type MapLiteral = MapLiteralContext
+  type Map = MapContext
   type MapProjection = MapProjectionContext
   type NodePattern = NodePatternContext
   type NumberLiteral = NumberLiteralContext

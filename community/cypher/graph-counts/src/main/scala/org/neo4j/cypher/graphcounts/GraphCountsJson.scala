@@ -95,7 +95,7 @@ object GraphCountsJson {
   }
 
   def parseAsGraphCountDataFromCypherMapString(mapString: String): GraphCountData = {
-    val mapExpression = JavaccRule.MapLiteral.apply(mapString)
+    val mapExpression = JavaccRule.Map.apply(mapString)
     val json = mapLiteralToJson(mapExpression)
     GraphCountsJson.parseAsGraphCountDataFromString(json)
   }
