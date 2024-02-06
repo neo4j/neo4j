@@ -71,7 +71,7 @@ trait LiteralBuilder extends CypherParserListener {
 
   override def exitStringLiteral(ctx: CypherParser.StringLiteralContext): Unit = {
     val text = ctx.start.getInputStream.getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1))
-    ctx.ast = StringLiteral(cypherStringToString(text))(pos(ctx))
+    ctx.ast = StringLiteral(cypherStringToString(text))(pos(ctx), pos(ctx.stop))
   }
 
   override def exitOtherLiteral(

@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
-import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
@@ -149,17 +148,17 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
 
   test("string literal escape sequences") {
     escapeSequences.foreach { case (cypher, result) =>
-      s"'$cypher'" should parseTo[Literal](StringLiteral(result)(pos))
-      s"\"$cypher\"" should parseTo[Literal](StringLiteral(result)(pos))
+      s"'$cypher'" should parseTo[Literal](literalString(result))
+      s"\"$cypher\"" should parseTo[Literal](literalString(result))
       if (result != "'" && result != "\\") {
-        s"'\\$cypher'" should parseTo[Literal](StringLiteral("\\" + cypher.drop(1))(pos))
+        s"'\\$cypher'" should parseTo[Literal](literalString("\\" + cypher.drop(1)))
       }
     }
 
     // Non escape sequences, for example '\x', '\y' ...
     forAll(genCodepoint().map(c => s"\\$c"), minSuccessful(20)) { backslashX =>
       whenever(!escapeSequences.contains(backslashX)) {
-        s"'$backslashX'" should parseTo[Literal](StringLiteral(backslashX)(pos))
+        s"'$backslashX'" should parseTo[Literal](literalString(backslashX))
       }
     }
 
@@ -169,26 +168,26 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
   }
 
   test("string literal unicode escape") {
-    s"'${toCypherHex("꠲".codePointAt(0))}'" should parseTo[Literal](StringLiteral("꠲")(pos))
+    s"'${toCypherHex("꠲".codePointAt(0))}'" should parseTo[Literal](literalString("꠲"))
 
     // Arbitrary unicode escape codes
     forAll(genCodepoint(includeSupplementary = false), minSuccessful(100)) { codepoint =>
       whenever(codepoint != 0 && codepoint != '\'') {
-        s"'${toCypherHex(codepoint)}'" should parseTo[Literal](StringLiteral(Character.toString(codepoint))(pos))
+        s"'${toCypherHex(codepoint)}'" should parseTo[Literal](literalString(Character.toString(codepoint)))
       }
     }
 
     s"'${toCypherHex('\\')}'" should parseAs[Literal]
       .parseIn(JavaCc)(_.withAnyFailure)
-      .parseIn(Antlr)(_.toAst(StringLiteral("\\")(pos)))
+      .parseIn(Antlr)(_.toAst(literalString("\\")))
 
     s"'${toCypherHex('\'')}'" should parseAs[Literal]
       .parseIn(JavaCc)(_.withAnyFailure)
-      .parseIn(Antlr)(_.toAst(StringLiteral("\'")(pos)))
+      .parseIn(Antlr)(_.toAst(literalString("\'")))
 
-    "'\\U1'" should parseTo[Literal](StringLiteral("\\U1")(pos))
-    "'\\U12'" should parseTo[Literal](StringLiteral("\\U12")(pos))
-    "'\\U123'" should parseTo[Literal](StringLiteral("\\U123")(pos))
+    "'\\U1'" should parseTo[Literal](literalString("\\U1"))
+    "'\\U12'" should parseTo[Literal](literalString("\\U12"))
+    "'\\U123'" should parseTo[Literal](literalString("\\U123"))
 
     // TODO Messages
     "'\\u1'" should notParse[Literal]
@@ -198,7 +197,7 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
   }
 
   test("arbitrary string literals") {
-    "'\\f\\'6\\u0046\\u8da4\\''" should parseTo[Literal](StringLiteral("\f\'6\u0046\u8da4\'")(pos))
+    "'\\f\\'6\\u0046\\u8da4\\''" should parseTo[Literal](literalString("\f\'6\u0046\u8da4\'"))
 
     forAll(
       Gen.listOf[(String, String)](Gen.oneOf(
@@ -211,7 +210,7 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
       val (cypherParts, expectedParts) = stringParts.unzip
       val cypher = cypherParts.mkString("\"", "", "\"")
       val expected = expectedParts.mkString("")
-      cypher should parseTo[Literal](StringLiteral(expected)(pos))
+      cypher should parseTo[Literal](literalString(expected))
     }
   }
 }
