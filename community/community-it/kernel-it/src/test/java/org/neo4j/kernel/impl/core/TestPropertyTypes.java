@@ -38,6 +38,7 @@ import java.time.temporal.TemporalAmount;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.spatial.Point;
@@ -448,7 +449,7 @@ class TestPropertyTypes extends AbstractNeo4jTestCase {
     @Test
     void test4DPointType() {
         try (Transaction transaction = getGraphDb().beginTx()) {
-            assertThrows(IllegalArgumentException.class, () -> transaction
+            assertThrows(InvalidArgumentException.class, () -> transaction
                     .getNodeById(node1.getId())
                     .setProperty("location", pointValue(CARTESIAN, 1, 1, 1, 1)));
         }

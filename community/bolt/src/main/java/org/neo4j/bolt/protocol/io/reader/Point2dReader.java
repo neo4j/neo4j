@@ -22,7 +22,7 @@ package org.neo4j.bolt.protocol.io.reader;
 import static java.lang.String.format;
 
 import org.neo4j.bolt.protocol.io.StructType;
-import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.InvalidSpatialArgumentException;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
@@ -65,14 +65,14 @@ public final class Point2dReader<CTX> implements StructReader<CTX, PointValue> {
         CoordinateReferenceSystem crs;
         try {
             crs = CoordinateReferenceSystem.get((int) crsCode);
-        } catch (InvalidArgumentException ex) {
+        } catch (InvalidSpatialArgumentException ex) {
             throw new IllegalStructArgumentException(
                     "crs", format("Illegal coordinate reference system: \"%s\"", crsCode), ex);
         }
 
         try {
             return Values.pointValue(crs, x, y);
-        } catch (IllegalArgumentException ex) {
+        } catch (InvalidSpatialArgumentException ex) {
             throw new IllegalStructArgumentException(
                     "coords", format("Illegal CRS/coords combination (crs=%s, x=%s, y=%s)", crs, x, y), ex);
         }

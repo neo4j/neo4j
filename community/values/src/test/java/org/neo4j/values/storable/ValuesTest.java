@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.string.UTF8;
 
 class ValuesTest {
@@ -101,13 +102,13 @@ class ValuesTest {
     @Test
     void pointValueShouldRequireConsistentInput() {
         assertThrows(
-                IllegalArgumentException.class, () -> Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 2, 3));
+                InvalidArgumentException.class, () -> Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 2, 3));
         assertThrows(
-                IllegalArgumentException.class, () -> Values.pointValue(CoordinateReferenceSystem.CARTESIAN_3D, 1, 2));
+                InvalidArgumentException.class, () -> Values.pointValue(CoordinateReferenceSystem.CARTESIAN_3D, 1, 2));
         assertThrows(
-                IllegalArgumentException.class, () -> Values.pointValue(CoordinateReferenceSystem.WGS_84, 1, 2, 3));
+                InvalidArgumentException.class, () -> Values.pointValue(CoordinateReferenceSystem.WGS_84, 1, 2, 3));
         assertThrows(
-                IllegalArgumentException.class, () -> Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 1, 2));
+                InvalidArgumentException.class, () -> Values.pointValue(CoordinateReferenceSystem.WGS_84_3D, 1, 2));
     }
 
     @Test

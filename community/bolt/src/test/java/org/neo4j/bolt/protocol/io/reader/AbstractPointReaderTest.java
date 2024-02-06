@@ -29,6 +29,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.InvalidSpatialArgumentException;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
@@ -192,7 +193,7 @@ public abstract class AbstractPointReaderTest {
                 .isInstanceOf(IllegalStructArgumentException.class)
                 .hasMessage("Illegal value for field \"coords\": Illegal CRS/coords combination (crs=" + crs.getName()
                         + ", " + coordMsg + ")")
-                .hasCauseInstanceOf(IllegalArgumentException.class)
+                .hasCauseInstanceOf(InvalidSpatialArgumentException.class)
                 .satisfies(ex -> assertThat(((IllegalStructArgumentException) ex).getFieldName())
                         .isEqualTo("coords"));
     }

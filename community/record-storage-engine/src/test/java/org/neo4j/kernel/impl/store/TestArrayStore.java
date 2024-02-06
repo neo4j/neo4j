@@ -39,6 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -237,7 +238,7 @@ public class TestArrayStore {
     @MethodSource("recordFormats")
     void pointArraysOfMixedDimension(RecordFormats recordFormats) {
         setup(recordFormats);
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(InvalidArgumentException.class, () -> {
             PointValue[] array = new PointValue[] {
                 Values.pointValue(CoordinateReferenceSystem.CARTESIAN, longBitsToDouble(0x1L), longBitsToDouble(0x7L)),
                 Values.pointValue(
