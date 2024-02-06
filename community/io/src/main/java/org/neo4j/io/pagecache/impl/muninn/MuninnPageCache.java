@@ -601,6 +601,7 @@ public class MuninnPageCache implements PageCache {
         boolean useDirectIO = false;
         boolean littleEndian = true;
         boolean multiVersioned = false;
+        boolean preallocation = preallocateStoreFiles;
         for (OpenOption option : openOptions) {
             if (option.equals(StandardOpenOption.CREATE)) {
                 createIfNotExists = true;
@@ -616,6 +617,8 @@ public class MuninnPageCache implements PageCache {
                 littleEndian = false;
             } else if (option.equals(PageCacheOpenOptions.MULTI_VERSIONED)) {
                 multiVersioned = true;
+            } else if (option.equals(PageCacheOpenOptions.NOPREALLOCATION)) {
+                preallocation = false;
             } else if (!ignoredOpenOptions.contains(option)) {
                 throw new UnsupportedOperationException("Unsupported OpenOption: " + option);
             }
@@ -667,7 +670,7 @@ public class MuninnPageCache implements PageCache {
                 createIfNotExists,
                 truncateExisting,
                 useDirectIO,
-                preallocateStoreFiles,
+                preallocation,
                 databaseName,
                 faultLockStriping,
                 ioController,

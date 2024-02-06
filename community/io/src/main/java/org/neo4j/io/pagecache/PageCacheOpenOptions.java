@@ -52,5 +52,10 @@ public enum PageCacheOpenOptions implements OpenOption {
     /**
      * Map with mvcc support. Each page has some bytes reserved for version data.
      */
-    MULTI_VERSIONED
+    MULTI_VERSIONED,
+
+    /**
+     * Do not try to preallocate specific mapped file
+     */
+    NOPREALLOCATION
 }

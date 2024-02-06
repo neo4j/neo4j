@@ -95,7 +95,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     private final IOController ioController;
     // If store files should be automatically pre-allocated,
     // this flag does not influence explicit preAllocate() operation.
-    private final boolean automaticallyPreallocateStoreFiles;
+    private final boolean preallocateFile;
 
     private volatile boolean deleteOnClose;
 
@@ -147,7 +147,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
      * @param createIfNotExists should create file if it does not exists
      * @param truncateExisting should truncate file if it exists
      * @param useDirectIo use direct io for page file operations
-     * @param preallocateStoreFiles try to preallocate store files when they grow on supported platforms
+     * @param preallocateFile try to preallocate store files when they grow on supported platforms
      * @param databaseName an optional name of the database this file belongs to. This option associates the mapped file with a database.
      * This information is currently used only for monitoring purposes.
      * @param ioController io controller to report page file io operations
@@ -165,7 +165,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             boolean createIfNotExists,
             boolean truncateExisting,
             boolean useDirectIo,
-            boolean preallocateStoreFiles,
+            boolean preallocateFile,
             String databaseName,
             int faultLockStriping,
             IOController ioController,
@@ -188,7 +188,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         this.bufferFactory = pageCache.getBufferFactory();
         this.databaseName = requireNonNull(databaseName);
         this.ioController = requireNonNull(ioController);
-        this.automaticallyPreallocateStoreFiles = preallocateStoreFiles;
+        this.preallocateFile = preallocateFile;
 
         // The translation table is an array of arrays of integers that are either UNMAPPED_TTE, or the id of a page in
         // the page list. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
@@ -911,7 +911,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 ntt[i] = newChunk();
             }
             tt = ntt;
-            if (automaticallyPreallocateStoreFiles && swapper.canAllocate()) {
+            if (preallocateFile && swapper.canAllocate()) {
                 // Hint to the file system that we've grown our file.
                 // This should reduce our tendency to fragment files.
                 long newFileSize = tt.length; // New number of chunks.
@@ -969,6 +969,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     @Override
     public boolean isMultiVersioned() {
         return multiVersioned;
+    }
+
+    public boolean isPreallocateFile() {
+        return preallocateFile;
     }
 
     /**
@@ -1057,7 +1061,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         // Let's use this mechanism as it will be used anyway when the data is actually
         // written to the pre-allocated pages and there is no point pre-allocating x pages
         // if this mechanism will pre-allocate y later.
-        if (automaticallyPreallocateStoreFiles && chunkId != 0) {
+        if (preallocateFile && chunkId != 0) {
             if (translationTable.length <= chunkId) {
                 expandCapacity(chunkId);
             }
