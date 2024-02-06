@@ -41,8 +41,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
-import org.neo4j.kernel.api.impl.schema.vector.VectorUtils;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -52,6 +51,7 @@ import org.neo4j.test.extension.Inject;
 
 @ImpermanentDbmsExtension
 public class VectorIndexCreationTest {
+    private static final VectorIndexVersion VERSION = VectorIndexVersion.V1_0;
     private static final Label LABEL = Tokens.Suppliers.UUID.LABEL.get();
     private static final RelationshipType REL_TYPE = Tokens.Suppliers.UUID.RELATIONSHIP_TYPE.get();
     private static final List<String> PROP_KEYS = Tokens.Suppliers.UUID.PROPERTY_KEY.get(2);
@@ -90,7 +90,7 @@ public class VectorIndexCreationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 738, 1024, 1408, 1536, 2048, VectorUtils.MAX_DIMENSIONS})
+    @ValueSource(ints = {1, 738, 1024, 1408, 1536, 2048})
     void shouldAcceptValidDimensions(int dimensions) {
         assertThatCode(() -> createVectorIndex(
                         SchemaDescriptors.forLabel(labelId, propKeyIds[0]),
@@ -115,7 +115,7 @@ public class VectorIndexCreationTest {
 
     @Test
     void shouldRejectUnsupportedDimensions() {
-        final var dimensions = VectorUtils.MAX_DIMENSIONS + 1;
+        final var dimensions = VERSION.maxDimensions() + 1;
 
         assertUnsupportedDimensions(() -> createVectorIndex(
                 SchemaDescriptors.forLabel(labelId, propKeyIds[0]),
@@ -142,7 +142,7 @@ public class VectorIndexCreationTest {
     }
 
     private static Iterable<VectorSimilarityFunction> shouldAcceptValidSimilarityFunction() {
-        return VectorSimilarityFunctions.SUPPORTED;
+        return VERSION.supportedSimilarityFunctions();
     }
 
     @Test
@@ -265,7 +265,10 @@ public class VectorIndexCreationTest {
                 .hasMessageContainingAll(
                         "is an unsupported vector similarity function",
                         "Supported",
-                        VectorSimilarityFunctions.SUPPORTED.toString());
+                        VERSION.supportedSimilarityFunctions()
+                                .asLazy()
+                                .collect(VectorSimilarityFunction::name)
+                                .toString());
     }
 
     private static void assertUnsupportedComposite(ThrowingCallable callable) {

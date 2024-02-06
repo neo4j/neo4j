@@ -60,7 +60,7 @@ import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords
 import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.UrlOrEmail
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
-import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.kernel.api.impl.schema.vector.VectorUtils
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory
@@ -109,7 +109,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val textProvider = TrigramIndexProvider.DESCRIPTOR.name()
   private val oldTextProvider = TextIndexProvider.DESCRIPTOR.name()
   private val fulltextProvider = FulltextIndexProviderFactory.DESCRIPTOR.name()
-  private val vectorProvider = VectorIndexProvider.DESCRIPTOR.name()
+  private val vectorV1Provider = VectorIndexVersion.V1_0.descriptor().name()
 
   private val cartesianMin = SPATIAL_CARTESIAN_MIN.getSettingName
   private val cartesianMax = SPATIAL_CARTESIAN_MAX.getSettingName
@@ -191,21 +191,23 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   private val relFulltextConfigMapString =
     s"{`$fulltextAnalyzer`: '$fulltextAnalyzerName2',`$fulltextEventuallyConsistent`: true}"
 
-  private val nodeVectorConfig = IndexSettingUtil.defaultConfigForTest(IndexType.VECTOR.toPublicApi)
+  private val vectorConfig = IndexSettingUtil.defaultConfigForTest(IndexType.VECTOR.toPublicApi)
 
-  private val nodeVectorConfigMap = {
-    val entries = nodeVectorConfig.entries
+  private val vectorConfigMap = {
+    val entries = vectorConfig.entries
     val builder = new MapValueBuilder(entries.size)
     entries.each(kv => builder.add(kv.getOne, kv.getTwo))
     builder.build
   }
   private val vectorDimensions = VECTOR_DIMENSIONS.getSettingName
   private val vectorSimilarityFunction = VECTOR_SIMILARITY_FUNCTION.getSettingName
-  private val vectorDimensionsValue = VectorUtils.vectorDimensionsFrom(nodeVectorConfig)
-  private val vectorSimilarityFunctionValue = VectorUtils.vectorSimilarityFunctionFrom(nodeVectorConfig).name
+  private val vectorDimensionsValue = VectorUtils.vectorDimensionsFrom(vectorConfig)
 
-  private val nodeVectorConfigMapString =
-    s"{`$vectorDimensions`: $vectorDimensionsValue,`$vectorSimilarityFunction`: '$vectorSimilarityFunctionValue'}"
+  private val vectorSimilarityFunctionValue = (version: VectorIndexVersion) =>
+    VectorUtils.vectorSimilarityFunctionFrom(version, vectorConfig).name
+
+  private val vectorConfigMapString = (version: VectorIndexVersion) =>
+    s"{`$vectorDimensions`: $vectorDimensionsValue,`$vectorSimilarityFunction`: '${vectorSimilarityFunctionValue(version)}'}"
 
   private val rangeNodeIndexDescriptor =
     IndexPrototype.forSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index00").materialise(0)
@@ -299,10 +301,10 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       .materialise(9)
 
   private val vectorNodeIndexDescriptor =
-    IndexPrototype.forSchema(labelDescriptor, VectorIndexProvider.DESCRIPTOR)
+    IndexPrototype.forSchema(labelDescriptor, VectorIndexVersion.V1_0.descriptor())
       .withIndexType(IndexType.VECTOR)
       .withName("index10")
-      .withIndexConfig(nodeVectorConfig)
+      .withIndexConfig(vectorConfig)
       .materialise(10)
 
   private val config = Config.defaults()
@@ -872,10 +874,10 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
-      provider = vectorProvider,
-      options = Map("indexProvider" -> Values.stringValue(vectorProvider), "indexConfig" -> nodeVectorConfigMap),
+      provider = vectorV1Provider,
+      options = Map("indexProvider" -> Values.stringValue(vectorV1Provider), "indexConfig" -> vectorConfigMap),
       createStatement = s"CREATE VECTOR INDEX `index10` FOR (n:`$label`) ON (n.`$prop`) " +
-        s"OPTIONS {indexConfig: $nodeVectorConfigMapString, indexProvider: '$vectorProvider'}"
+        s"OPTIONS {indexConfig: ${vectorConfigMapString(VectorIndexVersion.V1_0)}, indexProvider: '$vectorV1Provider'}"
     )
   }
 
@@ -1144,10 +1146,10 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       entityType = "NODE",
       labelsOrTypes = List(label),
       properties = List(prop),
-      provider = vectorProvider,
-      options = Map("indexProvider" -> Values.stringValue(vectorProvider), "indexConfig" -> nodeVectorConfigMap),
+      provider = vectorV1Provider,
+      options = Map("indexProvider" -> Values.stringValue(vectorV1Provider), "indexConfig" -> vectorConfigMap),
       createStatement = s"CREATE VECTOR INDEX `index10` FOR (n:`$label`) ON (n.`$prop`) " +
-        s"OPTIONS {indexConfig: $nodeVectorConfigMapString, indexProvider: '$vectorProvider'}"
+        s"OPTIONS {indexConfig: ${vectorConfigMapString(VectorIndexVersion.V1_0)}, indexProvider: '$vectorV1Provider'}"
     )
   }
 
