@@ -33,6 +33,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -474,6 +478,79 @@ class FileUtilsTest
                 of( "sub2/file2" ),
                 of( "sub2/sub1" ),
                 of( "sub2/sub2" ) );
+    }
+
+    @ParameterizedTest( name = "target exists: {0}" )
+    @ValueSource( booleans = {false, true} )
+    void getCanonicalFileResolvesMultipleSymlinks( boolean targetExists ) throws IOException
+    {
+        // Assume the following folder structure
+        //        /neo4j -> /data/root (s)
+        //
+        //        /data  (d)
+        //        /data/root (d)
+        //        /data/root/db   -> /data/repo/my_root_db (s)
+        //        /data/repo -> /clusterfs/main (s)
+        //        /clusterfs/main/my_root_db (d)
+        //        /clusterfs/main/my_root_db/myrealfile (f)
+        //
+        // When we resolve the path
+        //
+        //        /neo4j/db/myrealfile
+        //
+        // we expect
+        //
+        //       /clusterfs/main/my_root_db/myrealfile
+        //
+        // regardless if the file exists or not.
+
+        // Assume that /path/to/testdir is root (/).
+        Path root = testDirectory.homePath();
+
+        // Create the folder structure
+        Files.createDirectories( root.resolve( "data/root" ) );
+        Files.createDirectories( root.resolve( "clusterfs/main/my_root_db" ) );
+
+        // Create the symbolic links
+        Files.createSymbolicLink( root.resolve( "neo4j" ), root.resolve( "data/root" ) );
+        Files.createSymbolicLink( root.resolve( "data/root/db" ), root.resolve( "data/repo/my_root_db" ) );
+        Files.createSymbolicLink( root.resolve( "data/repo" ), root.resolve( "clusterfs/main" ) );
+
+        if ( targetExists )
+        {
+            Files.createFile( root.resolve( "clusterfs/main/my_root_db/myrealfile" ) );
+        }
+
+        var expected = Path.of( "clusterfs/main/my_root_db/myrealfile" );
+        var actual = FileUtils.getCanonicalFile( root.resolve( "neo4j/db/myrealfile" ) );
+
+        assertThat( root.relativize( actual ) ).isEqualTo( expected );
+    }
+
+    @ParameterizedTest
+    @MethodSource( value = "examplePaths" )
+    void getCanonicalFileResolvedExpected( Path input, Path expected )
+    {
+        assertThat( FileUtils.getCanonicalFile( input ) ).isEqualTo( expected );
+    }
+
+    static Stream<Arguments> examplePaths()
+    {
+        var cwd = Path.of( "" ).toAbsolutePath();
+
+        return Stream.of(
+                Arguments.of(
+                        // Absolute path
+                        Path.of( "/does/not/exist" ), Path.of( "/does/not/exist" ) ),
+                Arguments.of(
+                        // Non-normalized absolute path
+                        Path.of( "/does/not/../maybe/exist" ), Path.of( "/does/maybe/exist" ) ),
+                Arguments.of(
+                        // Relative path
+                        Path.of( "does/not/exist" ), cwd.resolve( "does/not/exist" ) ),
+                Arguments.of(
+                        // Non-normalized relative path
+                        Path.of( "does/not/../maybe/exist" ), cwd.resolve( "does/maybe/exist" ) ) );
     }
 
     private Path directory( String name ) throws IOException

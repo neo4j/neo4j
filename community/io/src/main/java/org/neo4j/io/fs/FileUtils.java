@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -47,6 +46,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -69,6 +70,7 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.util.Preconditions.checkArgument;
+
 
 /**
  * Set of utility methods to work with {@link Path} using the {@link DefaultFileSystemAbstraction default file system}.
@@ -504,23 +506,55 @@ public final class FileUtils
 
     /**
      * Canonical file resolution on windows does not resolve links.
-     * Real paths on windows can be resolved only using {@link Path#toRealPath(LinkOption...)}, but file should exist in that case.
-     * We will try to do as much as possible and will try to use {@link Path#toRealPath(LinkOption...)} when file exist and will fallback to only
-     * use {@link Path#normalize()} if file does not exist.
-     * see JDK-8003887 for details
+     * Real paths on both windows, and linux to can be resolved using
+     * {@link Path#toRealPath(LinkOption...)}, but file should exist in that case.
+     * See JDK-8003887 for details.
+     *
      * @param file - file to resolve canonical representation
      * @return canonical file representation.
      */
     public static Path getCanonicalFile( Path file )
     {
+        // We need an absolute path and otherwise toRealPath performs the call anyway.
+        Path absolute = file.toAbsolutePath();
         try
         {
-            return exists( file ) ? file.toRealPath().normalize() : file.normalize();
+            return absolute.toRealPath();
         }
         catch ( IOException e )
         {
-            throw new UncheckedIOException( e );
+            // continue on the slow path...
         }
+
+        // If the file does not exist, we walk the parent tree until we
+        // find a file that exists. This file gets resolved, and we
+        // recreate the path from this resolved base.
+
+        Deque<Path> children = new ArrayDeque<>();
+        while ( true )
+        {
+            try
+            {
+                absolute = absolute.toRealPath();
+                // Note: toRealPath follows all symlinks in the path, so once
+                // we hit a resolvable path we can stop. The loop terminates at
+                // the root, since it must always be resolvable.
+                break;
+            }
+            catch ( IOException e )
+            {
+                children.addFirst( absolute.getFileName() );
+                absolute = absolute.getParent();
+            }
+        }
+
+        // Rebuild the "virtual" part of the path,
+        // and normalize to remove any ".", ".." components.
+        for ( var child : children )
+        {
+            absolute = absolute.resolve( child );
+        }
+        return absolute.normalize();
     }
 
     public static void writeAll( FileChannel channel, ByteBuffer src, long position ) throws IOException
