@@ -2830,7 +2830,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     )
   }
 
-  test("Should not try to leverage order for a collect following an ORDER bY, with a MATCH inbetween") {
+  test("Should not try to leverage order for a collect following an ORDER BY, with a MATCH inbetween") {
     val query =
       """MATCH (a:A)
         |WITH a, a.prop AS prop
