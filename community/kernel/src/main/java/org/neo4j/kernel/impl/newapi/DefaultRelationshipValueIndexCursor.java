@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
-import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -162,9 +161,9 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
     }
 
     @Override
-    protected ImmutableLongSet removed(TransactionState txState, LongSet removedFromIndex) {
+    protected LongSet removed(TransactionState txState, LongSet removedFromIndex) {
         return mergeToSet(txState.addedAndRemovedRelationships().getRemoved(), removedFromIndex)
-                .toImmutable();
+                .asUnmodifiable();
     }
 
     @Override

@@ -52,8 +52,9 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
     @Override
     protected LongSet createDeletedInTxState(TransactionState txState, int token) {
         return mergeToSet(
-                txState.addedAndRemovedNodes().getRemoved(),
-                txState.nodesWithLabelChanged(token).getRemoved());
+                        txState.addedAndRemovedNodes().getRemoved(),
+                        txState.nodesWithLabelChanged(token).getRemoved())
+                .asUnmodifiable();
     }
 
     @Override

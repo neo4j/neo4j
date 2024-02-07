@@ -40,7 +40,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
@@ -70,7 +69,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
     private Iterator<EntityWithPropertyValues> addedWithValues = Collections.emptyIterator();
-    private ImmutableLongSet removed = LongSets.immutable.empty();
+    private LongSet removed = LongSets.immutable.empty();
     private boolean needsValues;
     private IndexOrder indexOrder;
     private final SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
@@ -473,7 +472,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     /**
      * Gets entities removed in the current transaction that are relevant for the index.
      */
-    abstract ImmutableLongSet removed(TransactionState txState, LongSet removedFromIndex);
+    abstract LongSet removed(TransactionState txState, LongSet removedFromIndex);
 
     /**
      * Checks if the user is allowed to see the entity and properties the cursor is currently pointing at.

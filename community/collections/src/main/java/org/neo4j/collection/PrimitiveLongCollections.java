@@ -28,6 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.LongPredicate;
 import org.eclipse.collections.api.LongIterable;
+import org.eclipse.collections.api.factory.primitive.LongSets;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -382,10 +383,10 @@ public final class PrimitiveLongCollections {
     }
 
     public static MutableLongSet mergeToSet(LongIterable a, LongIterable b) {
-        final MutableLongSet set = new LongHashSet(a.size() + b.size());
-        set.addAll(a);
-        set.addAll(b);
-        return set;
+        return LongSets.mutable
+                .withInitialCapacity(a.size() + b.size())
+                .withAll(a)
+                .withAll(b);
     }
 
     public interface RangedLongIterator extends LongIterator {
