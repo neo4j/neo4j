@@ -34,20 +34,13 @@ import java.util.function.Consumer
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVisitor] {
-  private var nodes = new util.ArrayList[VirtualNodeValue]()
-  private var rels = new util.ArrayList[VirtualRelationshipValue]()
+  private val nodes = new util.ArrayList[VirtualNodeValue]()
+  private val rels = new util.ArrayList[VirtualRelationshipValue]()
   private var nulled = false
 
   def result(): AnyValue = {
     if (nulled) Values.NO_VALUE
     else VirtualValues.pathReference(nodes, rels)
-  }
-
-  def clear(): PathValueBuilder = {
-    nodes = new util.ArrayList[VirtualNodeValue](nodes.size())
-    rels = new util.ArrayList[VirtualRelationshipValue](rels.size())
-    nulled = false
-    this
   }
 
   def previousNode: VirtualNodeValue = nodes.get(nodes.size() - 1)

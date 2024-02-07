@@ -210,7 +210,7 @@ object ProjectedPath {
 case class ProjectedPath(projector: Projector) extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
-    projector(row, state.clearPathValueBuilder).result()
+    projector(row, new PathValueBuilder(state)).result()
   }
 
   override def arguments: Seq[Expression] = Seq.empty

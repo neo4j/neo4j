@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerStorage
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
 import org.neo4j.cypher.internal.runtime.memory.MemoryTrackerForOperatorProvider
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
@@ -66,7 +65,6 @@ class QueryState(
   val input: InputDataStream = NoInput
 ) extends AutoCloseable {
 
-  private var _pathValueBuilder: PathValueBuilder = _
   private var _rowFactory: CypherRowFactory = _
   private var _closed = false
 
@@ -85,13 +83,6 @@ class QueryState(
       case Some(init) => rowFactory.copyArgumentOf(init)
       case None       => rowFactory.newRow()
     }
-  }
-
-  def clearPathValueBuilder: PathValueBuilder = {
-    if (_pathValueBuilder == null) {
-      _pathValueBuilder = new PathValueBuilder(this)
-    }
-    _pathValueBuilder.clear()
   }
 
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
