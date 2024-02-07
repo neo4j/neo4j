@@ -22,11 +22,9 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.operations.CypherFunctions
-import org.neo4j.cypher.operations.CypherFunctions.endNode
 import org.neo4j.cypher.operations.CypherFunctions.startNode
+import org.neo4j.cypher.operations.PathValueBuilder
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -55,7 +53,8 @@ object SlottedProjectedPath {
 
     override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder = {
       val nodeValue = node.apply(ctx, state)
-      tailProjector(ctx, state, builder.addNode(nodeValue))
+      builder.addNode(nodeValue)
+      tailProjector(ctx, state, builder)
     }
 
     override def arguments: Seq[Expression] = Seq(node) ++ tailProjector.arguments
@@ -67,7 +66,9 @@ object SlottedProjectedPath {
     override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder = {
       val relValue = rel.apply(ctx, state)
       val nodeValue = target.apply(ctx, state)
-      tailProjector(ctx, state, builder.addRelationship(relValue).addNode(nodeValue))
+      builder.addRelationship(relValue)
+      builder.addNode(nodeValue)
+      tailProjector(ctx, state, builder)
     }
 
     override def arguments: Seq[Expression] = Seq(rel, target) ++ tailProjector.arguments
@@ -75,8 +76,10 @@ object SlottedProjectedPath {
 
   case class singleIncomingRelationshipProjector(rel: Expression, tailProjector: Projector) extends Projector {
 
-    override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder =
+    override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder = {
+
       tailProjector(ctx, state, addIncoming(rel.apply(ctx, state), state, builder))
+    }
 
     override def arguments: Seq[Expression] = Seq(rel) ++ tailProjector.arguments
   }
@@ -106,12 +109,23 @@ object SlottedProjectedPath {
     override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder =
       rel.apply(ctx, state) match {
         case list: ListValue if list.nonEmpty() =>
-          val aggregated = addAllExceptLast(builder, list, (b, v) => b.addIncomingRelationship(v))
-          tailProjector(ctx, state, aggregated.addRelationship(list.last()).addNode(node.apply(ctx, state)))
+          val aggregated = addAllExceptLast(
+            builder,
+            list,
+            (b, v) => {
+              b.addIncoming(v)
+              b
+            }
+          )
+          aggregated.addRelationship(list.last())
+          aggregated.addNode(node.apply(ctx, state))
+          tailProjector(ctx, state, builder)
 
-        case _: ListValue       => tailProjector(ctx, state, builder)
-        case x if x eq NO_VALUE => tailProjector(ctx, state, builder.addNoValue())
-        case value              => throw new CypherTypeException(s"Expected ListValue but got ${value.getTypeName}")
+        case _: ListValue => tailProjector(ctx, state, builder)
+        case x if x eq NO_VALUE =>
+          builder.addNoValue()
+          tailProjector(ctx, state, builder)
+        case value => throw new CypherTypeException(s"Expected ListValue but got ${value.getTypeName}")
       }
 
     override def arguments: Seq[Expression] = Seq(rel, node) ++ tailProjector.arguments
@@ -126,12 +140,23 @@ object SlottedProjectedPath {
     override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder =
       rel.apply(ctx, state) match {
         case list: ListValue if list.nonEmpty() =>
-          val aggregated = addAllExceptLast(builder, list, (b, v) => b.addOutgoingRelationship(v))
-          tailProjector(ctx, state, aggregated.addRelationship(list.last()).addNode(node.apply(ctx, state)))
+          val aggregated = addAllExceptLast(
+            builder,
+            list,
+            (b, v) => {
+              b.addOutgoing(v)
+              b
+            }
+          )
+          aggregated.addRelationship(list.last())
+          aggregated.addNode(node.apply(ctx, state))
+          tailProjector(ctx, state, aggregated)
 
-        case _: ListValue       => tailProjector(ctx, state, builder)
-        case x if x eq NO_VALUE => tailProjector(ctx, state, builder.addNoValue())
-        case value              => throw new CypherTypeException(s"Expected ListValue but got ${value.getTypeName}")
+        case _: ListValue => tailProjector(ctx, state, builder)
+        case x if x eq NO_VALUE =>
+          builder.addNoValue()
+          tailProjector(ctx, state, builder)
+        case value => throw new CypherTypeException(s"Expected ListValue but got ${value.getTypeName}")
       }
 
     override def arguments: Seq[Expression] = Seq(rel, node) ++ tailProjector.arguments
@@ -146,12 +171,23 @@ object SlottedProjectedPath {
     override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder =
       rel.apply(ctx, state) match {
         case list: ListValue if list.nonEmpty() =>
-          val aggregated = addAllExceptLast(builder, list, (b, v) => b.addUndirectedRelationship(v))
-          tailProjector(ctx, state, aggregated.addRelationship(list.last()).addNode(node.apply(ctx, state)))
+          val aggregated = addAllExceptLast(
+            builder,
+            list,
+            (b, v) => {
+              b.addUndirected(v)
+              b
+            }
+          )
+          aggregated.addRelationship(list.last())
+          aggregated.addNode(node.apply(ctx, state))
+          tailProjector(ctx, state, aggregated)
 
-        case _: ListValue       => tailProjector(ctx, state, builder)
-        case x if x eq NO_VALUE => tailProjector(ctx, state, builder.addNoValue())
-        case value              => throw new CypherTypeException(s"Expected ListValue but got ${value.getTypeName}")
+        case _: ListValue => tailProjector(ctx, state, builder)
+        case x if x eq NO_VALUE =>
+          builder.addNoValue()
+          tailProjector(ctx, state, builder)
+        case value => throw new CypherTypeException(s"Expected ListValue but got ${value.getTypeName}")
       }
 
     override def arguments: Seq[Expression] = Seq(rel, node) ++ tailProjector.arguments
@@ -161,9 +197,8 @@ object SlottedProjectedPath {
 
     override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder = {
       val relListValue = rel.apply(ctx, state)
-      // we know these relationships have already loaded start and end relationship
-      // so we should not use CypherFunctions::[start,end]Node to look them up
-      tailProjector(ctx, state, builder.addIncomingRelationships(relListValue))
+      builder.addMultipleIncoming(relListValue)
+      tailProjector(ctx, state, builder)
     }
 
     override def arguments: Seq[Expression] = Seq(rel) ++ tailProjector.arguments
@@ -173,9 +208,8 @@ object SlottedProjectedPath {
 
     override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder = {
       val relListValue = rel.apply(ctx, state)
-      // we know these relationships have already loaded start and end relationship
-      // so we should not use CypherFunctions::[start,end]Node to look them up
-      tailProjector(ctx, state, builder.addOutgoingRelationships(relListValue))
+      builder.addMultipleOutgoing(relListValue)
+      tailProjector(ctx, state, builder)
     }
 
     override def arguments: Seq[Expression] = Seq(rel) ++ tailProjector.arguments
@@ -185,9 +219,8 @@ object SlottedProjectedPath {
 
     override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder = {
       val relListValue = rel.apply(ctx, state)
-      // we know these relationships have already loaded start and end relationship
-      // so we should not use CypherFunctions::[start,end]Node to look them up
-      tailProjector(ctx, state, builder.addUndirectedRelationships(relListValue))
+      builder.addMultipleUndirected(relListValue)
+      tailProjector(ctx, state, builder)
     }
 
     override def arguments: Seq[Expression] = Seq(rel) ++ tailProjector.arguments
@@ -244,31 +277,34 @@ object SlottedProjectedPath {
 
   private def addIncoming(relValue: AnyValue, state: QueryState, builder: PathValueBuilder) = relValue match {
     case r: VirtualRelationshipValue =>
-      builder.addRelationship(r).addNode(startNode(r, state.query, state.cursors.relationshipScanCursor))
+      builder.addRelationship(r)
+      builder.addNode(startNode(r, state.query, state.cursors.relationshipScanCursor))
+      builder
 
-    case x if x eq NO_VALUE => builder.addNoValue()
+    case x if x eq NO_VALUE =>
+      builder.addNoValue()
+      builder
     case _ => throw new CypherTypeException(s"Expected RelationshipValue but got ${relValue.getTypeName}")
   }
 
   private def addOutgoing(relValue: AnyValue, state: QueryState, builder: PathValueBuilder) = relValue match {
     case r: VirtualRelationshipValue =>
-      builder.addRelationship(r).addNode(endNode(r, state.query, state.cursors.relationshipScanCursor))
-
-    case x if x eq NO_VALUE => builder.addNoValue()
+      builder.addOutgoing(r)
+      builder
+    case x if x eq NO_VALUE =>
+      builder.addNoValue()
+      builder
     case _ => throw new CypherTypeException(s"Expected RelationshipValue but got ${relValue.getTypeName}")
   }
 
   private def addUndirected(relValue: AnyValue, state: QueryState, builder: PathValueBuilder) = relValue match {
     case r: VirtualRelationshipValue =>
-      val previous = builder.previousNode
-      builder.addRelationship(r).addNode(CypherFunctions.otherNode(
-        r,
-        state.query,
-        previous,
-        state.cursors.relationshipScanCursor
-      ))
+      builder.addUndirected(r)
+      builder
 
-    case x if x eq NO_VALUE => builder.addNoValue()
+    case x if x eq NO_VALUE =>
+      builder.addNoValue()
+      builder
     case _ => throw new CypherTypeException(s"Expected RelationshipValue but got ${relValue.getTypeName}")
   }
 
@@ -298,7 +334,7 @@ object SlottedProjectedPath {
 case class SlottedProjectedPath(projector: SlottedProjectedPath.Projector) extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue =
-    projector(row, state, state.clearPathValueBuilder).result()
+    projector(row, state, new PathValueBuilder(state.query, state.cursors.relationshipScanCursor)).build()
 
   override def arguments: Seq[Expression] = Seq.empty
 

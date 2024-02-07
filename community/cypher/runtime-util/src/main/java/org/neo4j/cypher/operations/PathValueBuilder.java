@@ -423,6 +423,10 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
         }
     }
 
+    public void addNoValue() {
+        this.seenNoValue = true;
+    }
+
     @Override
     public void accept(RelationshipVisitor relationshipVisitor) {
         dbAccess.singleRelationship(relationshipVisitor.id(), cursor);

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.Projector
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.PathValueBuilder
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -42,52 +43,67 @@ object ProjectedPath {
   case class singleNodeProjector(node: String, tailProjector: Projector) extends Projector {
 
     def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
-
-      tailProjector(ctx, builder.addNode(ctx.getByName(node)))
+      builder.addNode(ctx.getByName(node))
+      tailProjector(ctx, builder)
     }
   }
 
   case class singleIncomingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
 
-    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder =
-      tailProjector(ctx, builder.addIncomingRelationship(ctx.getByName(rel)))
+    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
+      builder.addIncoming(ctx.getByName(rel))
+      tailProjector(ctx, builder)
+    }
   }
 
   case class singleRelationshipWithKnownTargetProjector(rel: String, target: String, tailProjector: Projector)
       extends Projector {
 
-    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder =
-      tailProjector(ctx, builder.addRelationship(ctx.getByName(rel)).addNode(ctx.getByName(target)))
+    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
+      builder.addRelationship(ctx.getByName(rel))
+      builder.addNode(ctx.getByName(target))
+      tailProjector(ctx, builder)
+    }
   }
 
   case class singleOutgoingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
 
-    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder =
-      tailProjector(ctx, builder.addOutgoingRelationship(ctx.getByName(rel)))
+    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
+      builder.addOutgoing(ctx.getByName(rel))
+      tailProjector(ctx, builder)
+    }
   }
 
   case class singleUndirectedRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
 
-    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder =
-      tailProjector(ctx, builder.addUndirectedRelationship(ctx.getByName(rel)))
+    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
+      builder.addUndirected(ctx.getByName(rel))
+      tailProjector(ctx, builder)
+    }
   }
 
   case class multiIncomingRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
 
-    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder =
-      tailProjector(ctx, builder.addIncomingRelationships(ctx.getByName(rels)))
+    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
+      builder.addMultipleIncoming(ctx.getByName(rels))
+      tailProjector(ctx, builder)
+    }
   }
 
   case class multiOutgoingRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
 
-    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder =
-      tailProjector(ctx, builder.addOutgoingRelationships(ctx.getByName(rels)))
+    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
+      builder.addMultipleOutgoing(ctx.getByName(rels))
+      tailProjector(ctx, builder)
+    }
   }
 
   case class multiUndirectedRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
 
-    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder =
-      tailProjector(ctx, builder.addUndirectedRelationships(ctx.getByName(rels)))
+    def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
+      builder.addMultipleUndirected(ctx.getByName(rels))
+      tailProjector(ctx, builder)
+    }
   }
 
   case class multiIncomingRelationshipWithKnownTargetProjector(
@@ -99,16 +115,23 @@ object ProjectedPath {
     def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
       ctx.getByName(rels) match {
         case list: ListValue if list.nonEmpty() =>
-          val aggregated = addAllExceptLast(builder, list, (b, v) => b.addIncomingRelationship(v)).addRelationship(
-            list.last()
-          ).addNode(
-            ctx.getByName(node)
+          val aggregated = addAllExceptLast(
+            builder,
+            list,
+            (b, v) => {
+              b.addIncoming(v)
+              b
+            }
           )
+          aggregated.addRelationship(list.last())
+          aggregated.addNode(ctx.getByName(node))
           tailProjector(ctx, aggregated)
 
-        case _: ListValue       => tailProjector(ctx, builder)
-        case x if x eq NO_VALUE => builder.addNoValue()
-        case value              => throw new CypherTypeException(s"Expected ListValue but got ${value}")
+        case _: ListValue => tailProjector(ctx, builder)
+        case x if x eq NO_VALUE =>
+          builder.addNoValue()
+          builder
+        case value => throw new CypherTypeException(s"Expected ListValue but got ${value}")
       }
     }
   }
@@ -122,16 +145,27 @@ object ProjectedPath {
     def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
       ctx.getByName(rels) match {
         case list: ListValue if list.nonEmpty() =>
-          val aggregated = addAllExceptLast(builder, list, (b, v) => b.addOutgoingRelationship(v)).addRelationship(
+          val aggregated = addAllExceptLast(
+            builder,
+            list,
+            (b, v) => {
+              b.addOutgoing(v)
+              b
+            }
+          )
+          aggregated.addRelationship(
             list.last()
-          ).addNode(
+          )
+          aggregated.addNode(
             ctx.getByName(node)
           )
           tailProjector(ctx, aggregated)
 
-        case _: ListValue       => tailProjector(ctx, builder)
-        case x if x eq NO_VALUE => builder.addNoValue()
-        case value              => throw new CypherTypeException(s"Expected ListValue but got ${value}")
+        case _: ListValue => tailProjector(ctx, builder)
+        case x if x eq NO_VALUE =>
+          builder.addNoValue()
+          builder
+        case value => throw new CypherTypeException(s"Expected ListValue but got $value")
       }
     }
   }
@@ -145,14 +179,23 @@ object ProjectedPath {
     def apply(ctx: ReadableRow, builder: PathValueBuilder): PathValueBuilder = {
       ctx.getByName(rels) match {
         case list: ListValue if list.nonEmpty() =>
-          val aggregated = addAllExceptLast(builder, list, (b, v) => b.addUndirectedRelationship(v)).addRelationship(
-            list.last()
-          ).addNode(ctx.getByName(node))
+          val aggregated = addAllExceptLast(
+            builder,
+            list,
+            (b, v) => {
+              b.addUndirected(v)
+              b
+            }
+          )
+          aggregated.addRelationship(list.last())
+          aggregated.addNode(ctx.getByName(node))
           tailProjector(ctx, aggregated)
 
-        case _: ListValue       => tailProjector(ctx, builder)
-        case x if x eq NO_VALUE => builder.addNoValue()
-        case value              => throw new CypherTypeException(s"Expected ListValue but got ${value}")
+        case _: ListValue => tailProjector(ctx, builder)
+        case x if x eq NO_VALUE =>
+          builder.addNoValue()
+          builder
+        case value => throw new CypherTypeException(s"Expected ListValue but got ${value}")
       }
     }
   }
@@ -210,7 +253,7 @@ object ProjectedPath {
 case class ProjectedPath(projector: Projector) extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
-    projector(row, new PathValueBuilder(state)).result()
+    projector(row, new PathValueBuilder(state.query, state.cursors.relationshipScanCursor)).build()
   }
 
   override def arguments: Seq[Expression] = Seq.empty
