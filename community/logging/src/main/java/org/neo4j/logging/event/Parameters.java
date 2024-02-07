@@ -21,6 +21,7 @@ package org.neo4j.logging.event;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * This class is used by the {@link LoggingDebugEventPublisher} for parameter logging. Because some maps in
@@ -96,6 +97,11 @@ public class Parameters {
 
     private Parameters(Object[] params) {
         this.parameters = params;
+    }
+
+    public static Parameters concat(Parameters param1, Parameters param2) {
+        return new Parameters(Stream.concat(Arrays.stream(param1.parameters), Arrays.stream(param2.parameters))
+                .toArray(Object[]::new));
     }
 
     @Override
