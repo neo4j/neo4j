@@ -504,7 +504,8 @@ public final class Recovery {
         var namedDatabaseId = createRecoveryDatabaseId(fs, pageCache, databaseLayout, storageEngineFactory);
         Monitors monitors = new Monitors(globalMonitors, logProvider);
         VersionStorage recoveryVersionStorage = VersionStorage.EMPTY_STORAGE;
-        DatabasePageCache databasePageCache = new DatabasePageCache(pageCache, ioController, recoveryVersionStorage);
+        DatabasePageCache databasePageCache =
+                new DatabasePageCache(pageCache, ioController, recoveryVersionStorage, config);
         SimpleLogService logService = new SimpleLogService(logProvider);
         DatabaseReadOnlyChecker readOnlyChecker = writable();
 

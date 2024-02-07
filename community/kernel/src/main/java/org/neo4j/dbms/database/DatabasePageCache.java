@@ -20,7 +20,9 @@
 package org.neo4j.dbms.database;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
 import static org.neo4j.dbms.database.TicketMachine.Barrier.NO_BARRIER;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.CONTEXT_VERSION_UPDATES;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -34,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.TicketMachine.Barrier;
 import org.neo4j.dbms.database.TicketMachine.Ticket;
 import org.neo4j.io.pagecache.IOController;
@@ -62,14 +65,17 @@ public class DatabasePageCache implements PageCache {
     private final Map<Path, DatabasePagedFile> uniqueDatabasePagedFiles = new ConcurrentHashMap<>();
     private final IOController ioController;
     private final List<FileMappedListener> mappedListeners = new CopyOnWriteArrayList<>();
+    private final boolean useSnapshotEngine;
     private boolean closed;
     private final TicketMachine ticketMachine = new TicketMachine();
     private final VersionStorage versionStorage;
 
-    public DatabasePageCache(PageCache globalPageCache, IOController ioController, VersionStorage versionStorage) {
+    public DatabasePageCache(
+            PageCache globalPageCache, IOController ioController, VersionStorage versionStorage, Config config) {
         this.globalPageCache = requireNonNull(globalPageCache);
         this.ioController = requireNonNull(ioController);
         this.versionStorage = requireNonNull(versionStorage);
+        this.useSnapshotEngine = config.get(snapshot_query);
     }
 
     @Override
@@ -84,6 +90,9 @@ public class DatabasePageCache implements PageCache {
             throws IOException {
         // no one should call this version of map method with emptyDatabaseName != null,
         // since it is this class that is decorating map calls with the name of the database
+        if (useSnapshotEngine) {
+            openOptions = openOptions.newWith(CONTEXT_VERSION_UPDATES);
+        }
         PagedFile pagedFile = globalPageCache.map(
                 path, pageSize, databaseName, openOptions, ioController, evictionBouncer, versionStorage);
         // Our default page cache handles mapping a file multiple times, where additional mappings for the

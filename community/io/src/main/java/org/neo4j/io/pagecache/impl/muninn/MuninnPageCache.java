@@ -602,6 +602,7 @@ public class MuninnPageCache implements PageCache {
         boolean littleEndian = true;
         boolean multiVersioned = false;
         boolean preallocation = preallocateStoreFiles;
+        boolean contextVersionUpdates = false;
         for (OpenOption option : openOptions) {
             if (option.equals(StandardOpenOption.CREATE)) {
                 createIfNotExists = true;
@@ -619,6 +620,8 @@ public class MuninnPageCache implements PageCache {
                 multiVersioned = true;
             } else if (option.equals(PageCacheOpenOptions.NOPREALLOCATION)) {
                 preallocation = false;
+            } else if (option.equals(PageCacheOpenOptions.CONTEXT_VERSION_UPDATES)) {
+                contextVersionUpdates = true;
             } else if (!ignoredOpenOptions.contains(option)) {
                 throw new UnsupportedOperationException("Unsupported OpenOption: " + option);
             }
@@ -676,6 +679,7 @@ public class MuninnPageCache implements PageCache {
                 ioController,
                 evictionBouncer,
                 multiVersioned,
+                contextVersionUpdates,
                 multiVersioned ? pageReservedBytes : 0,
                 versionStorage,
                 littleEndian);

@@ -203,7 +203,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
                 putLongAt(pagePointer + NEXT_REFERENCE_OFFSET, copyPageReference, littleEndian);
                 putLongAt(pagePointer, versionContext.committingTransactionId(), littleEndian);
             }
-        } else {
+        } else if (contextVersionUpdates) {
             PageList.setLastModifiedTxId(pageRef, versionContext.committingTransactionId());
         }
     }

@@ -57,5 +57,10 @@ public enum PageCacheOpenOptions implements OpenOption {
     /**
      * Do not try to preallocate specific mapped file
      */
-    NOPREALLOCATION
+    NOPREALLOCATION,
+
+    /**
+     * Update context with version information in non multi_versioned mapped file
+     */
+    CONTEXT_VERSION_UPDATES
 }

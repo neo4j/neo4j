@@ -78,6 +78,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     final int fileReservedPageBytes;
     final VersionStorage versionStorage;
     final boolean multiVersioned;
+    final boolean contextVersionUpdates;
     final boolean littleEndian;
     private final PageCacheTracer pageCacheTracer;
     private final IOBufferFactory bufferFactory;
@@ -171,6 +172,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             IOController ioController,
             EvictionBouncer evictionBouncer,
             boolean multiVersioned,
+            boolean contextVersionUpdates,
             int reservedBytes,
             VersionStorage versionStorage,
             boolean littleEndian)
@@ -181,6 +183,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         this.fileReservedPageBytes = reservedBytes;
         this.versionStorage = versionStorage;
         this.multiVersioned = multiVersioned;
+        this.contextVersionUpdates = contextVersionUpdates;
         this.littleEndian = littleEndian;
         this.cursorFactory = new CursorFactory(this);
         this.pageCacheTracer = pageCacheTracer;
@@ -875,7 +878,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
         int mappedPageId = translationTableGetVolatile(chunk, chunkIndex);
         long pageRef = deref(mappedPageId);
-        if (!multiVersioned) {
+        if (!multiVersioned && contextVersionUpdates) {
             setHighestEvictedTransactionId(getAndResetLastModifiedTransactionId(pageRef));
         }
         translationTableSetVolatile(chunk, chunkIndex, UNMAPPED_TTE);

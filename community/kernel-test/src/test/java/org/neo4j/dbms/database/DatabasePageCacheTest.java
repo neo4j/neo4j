@@ -51,6 +51,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -410,7 +411,7 @@ class DatabasePageCacheTest {
     }
 
     private DatabasePageCache createPageCache() {
-        return new DatabasePageCache(globalPageCache, DISABLED, EMPTY_STORAGE);
+        return new DatabasePageCache(globalPageCache, DISABLED, EMPTY_STORAGE, Config.defaults());
     }
 
     private static PagedFile findPagedFile(List<PagedFile> pagedFiles, Path mapFile) {

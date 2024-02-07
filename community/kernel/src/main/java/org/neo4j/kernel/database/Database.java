@@ -334,7 +334,7 @@ public class Database extends AbstractDatabase {
                 tracers,
                 databaseLayout,
                 databaseConfig);
-        databasePageCache = new DatabasePageCache(globalPageCache, ioController, versionStorage);
+        databasePageCache = new DatabasePageCache(globalPageCache, ioController, versionStorage, databaseConfig);
 
         life.add(versionStorage);
         life.add(onShutdown(() -> databaseLockManager.close()));

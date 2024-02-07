@@ -88,6 +88,7 @@ public abstract class MuninnPageCursor extends PageCursor {
     protected final boolean noGrow;
     private final boolean updateUsage;
     protected final boolean multiVersioned;
+    protected final boolean contextVersionUpdates;
     protected final boolean littleEndian;
 
     @SuppressWarnings("unused") // accessed via VarHandle.
@@ -134,6 +135,7 @@ public abstract class MuninnPageCursor extends PageCursor {
         this.pageReservedBytes = pagedFile.pageReservedBytes();
         this.versionStorage = pagedFile.versionStorage;
         this.multiVersioned = pagedFile.multiVersioned;
+        this.contextVersionUpdates = pagedFile.contextVersionUpdates;
         this.littleEndian = pagedFile.littleEndian;
         this.filePayloadSize = filePageSize - pageReservedBytes;
         this.pf_flags = pf_flags;
@@ -199,7 +201,7 @@ public abstract class MuninnPageCursor extends PageCursor {
     }
 
     void verifyContext() {
-        if (multiVersioned) {
+        if (multiVersioned || !contextVersionUpdates) {
             return;
         }
         long lastClosedTransactionId = versionContext.lastClosedTransactionId();
