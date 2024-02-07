@@ -47,15 +47,15 @@ trait PipelineBreakingPolicy {
   /**
    * True if the an operator should be the start of a new pipeline.
    */
-  def breakOn(lp: LogicalPlan, outerApplyPlanId: Id): Boolean
+  def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean
 
   def invoke(
     lp: LogicalPlan,
     slots: SlotConfiguration,
     argumentSlots: SlotConfiguration,
-    outerApplyPlanId: Id
+    applyPlans: PhysicalPlanningAttributes.ApplyPlans
   ): SlotConfiguration =
-    if (breakOn(lp, outerApplyPlanId)) {
+    if (breakOn(lp, applyPlans)) {
       lp match {
         case _: AggregatingPlan => argumentSlots.copy()
         case _                  => slots.copy()
@@ -65,8 +65,8 @@ trait PipelineBreakingPolicy {
   def nestedPlanBreakingPolicy: PipelineBreakingPolicy = this
 
   /** Used to determine if an operator supports discarding */
-  def discardPolicy(lp: LogicalPlan, outerApplyPlanId: Id): DiscardPolicy = {
-    if (breakOn(lp, outerApplyPlanId)) {
+  def discardPolicy(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): DiscardPolicy = {
+    if (breakOn(lp, applyPlans)) {
       // Only plans that break can allow discarding, discarding needs to be the last thing that happens to the data
       // before creating a new row.
       discardPolicyWhenBreaking(lp)
@@ -92,7 +92,9 @@ trait PipelineBreakingPolicy {
 }
 
 object BREAK_FOR_LEAFS extends PipelineBreakingPolicy {
-  override def breakOn(lp: LogicalPlan, outerApplyPlanId: Id): Boolean = lp.isInstanceOf[LogicalLeafPlan]
+
+  override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean =
+    lp.isInstanceOf[LogicalLeafPlan]
 }
 
 object PipelineBreakingPolicy {
@@ -108,11 +110,15 @@ object PipelineBreakingPolicy {
 
   def breakFor(logicalPlans: LogicalPlan*): PipelineBreakingPolicy =
     new PipelineBreakingPolicy {
-      override def breakOn(lp: LogicalPlan, outerApplyPlanId: Id): Boolean = logicalPlans.contains(lp)
+
+      override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean =
+        logicalPlans.contains(lp)
     }
 
   def breakForIds(ids: Id*): PipelineBreakingPolicy =
     new PipelineBreakingPolicy {
-      override def breakOn(lp: LogicalPlan, outerApplyPlanId: Id): Boolean = ids.contains(lp.id)
+
+      override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean =
+        ids.contains(lp.id)
     }
 }

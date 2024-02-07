@@ -36,14 +36,14 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes
 import org.neo4j.cypher.internal.physicalplanning.PipelineBreakingPolicy
-import org.neo4j.cypher.internal.util.attribution.Id
 
 object SlottedPipelineBreakingPolicy extends PipelineBreakingPolicy {
 
   // When making changes here, please keep in mind that slot discarding (SlottedRow.compact)
   // relies on breaks to function correctly.
-  override def breakOn(lp: LogicalPlan, outerApplyPlanId: Id): Boolean = {
+  override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean = {
 
     lp match {
       // leaf operators

@@ -1034,6 +1034,32 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     execute(query, runtime) should beColumns("x", "y", "y2").withSingleRow(null, 1, null)
   }
 
+  test("unwind on top with conditionalApply on the RHS of apply") {
+    // given
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+      nodeGraph(sizeHint, "RHS")
+    }
+    val lhsRows = inputValues(Array("42"), Array(null), Array("43"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "x", "y")
+      .unwind("[1,2] as a")
+      .apply()
+      .|.conditionalApply("x")
+      .|.|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .|.filter("x = '42' OR x IS NULL")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expected = Seq(1, 2).flatMap(a => nodes.map(n => Array[Any](a, "42", n)) :+ Array[Any](a, null, null))
+    runtimeResult should beColumns("a", "x", "y").withRows(expected)
+  }
 }
 
 trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
@@ -1726,5 +1752,37 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("unwind on top with conditionalApply on the RHS of apply - with leveraged order") {
+    // given
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+      nodeGraph(sizeHint, "RHS")
+    }
+    val lhsRows = inputValues(Array("42"), Array(null), Array("43"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "x", "y")
+      .unwind("[1,2] as a")
+      .apply()
+      .|.conditionalApply("x").withLeveragedOrder()
+      .|.|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .|.filter("x = '42' OR x IS NULL")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expected =
+      (for {
+        y <- nodes
+        a <- 1 to 2
+        x = "42"
+      } yield Array[Any](a, x, y)) :+ Array[Any](1, null, null) :+ Array[Any](2, null, null)
+    runtimeResult should beColumns("a", "x", "y").withRows(inOrder(expected))
   }
 }

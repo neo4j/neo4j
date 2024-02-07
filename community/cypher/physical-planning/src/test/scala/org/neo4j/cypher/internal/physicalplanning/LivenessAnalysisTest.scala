@@ -421,11 +421,11 @@ object LivenessAnalysisTest {
   case class IncorrectLivenessException(msg: String) extends IllegalStateException(msg)
 
   object TestBreakingPolicy extends PipelineBreakingPolicy {
-    override def breakOn(lp: LogicalPlan, outerApplyPlanId: Id): Boolean = ???
+    override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean = ???
   }
 
   object DiscardInAllPlansPolicy extends PipelineBreakingPolicy {
-    override def breakOn(lp: LogicalPlan, outerApplyPlanId: Id): Boolean = ???
+    override def breakOn(lp: LogicalPlan, applyPlans: PhysicalPlanningAttributes.ApplyPlans): Boolean = ???
     override def canBeDiscardingPlan(lp: LogicalPlan): Boolean = true
   }
 

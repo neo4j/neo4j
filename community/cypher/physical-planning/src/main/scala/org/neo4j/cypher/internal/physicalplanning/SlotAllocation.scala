@@ -351,12 +351,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           val argument = getArgument()
           recordArgument(current, argument)
 
-          val slots = breakingPolicy.invoke(
-            current,
-            argument.slotConfiguration,
-            argument.slotConfiguration,
-            applyPlans(current.id)
-          )
+          val slots = breakingPolicy.invoke(current, argument.slotConfiguration, argument.slotConfiguration, applyPlans)
 
           allocateExpressionsOneChild(current, nullable, slots, semanticTable)
           allocateLeaf(current, nullable, slots)
@@ -368,7 +363,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           val argument = getArgument()
           allocateExpressionsOneChildOnInput(current, nullable, sourceSlots, semanticTable)
 
-          val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, applyPlans(current.id))
+          val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, applyPlans)
           allocateOneChild(
             argument,
             current,
@@ -1001,7 +996,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: AbstractSelectOrSemiApply =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans(lp.id))
+        val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans)
         rhs.foreachSlotAndAliases {
           case SlotWithKeyAndAliases(VariableSlotKey(key), slot, _) if slot.offset >= lhs.numberOfLongs =>
             result.add(key, slot.asNullable)
@@ -1028,7 +1023,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case _: CartesianProduct =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
         // Note, we can potentially carry discarded slots from rhs here to save memory
@@ -1039,7 +1034,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case RightOuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans(lp.id))
+        val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans)
 
         // Note, we can potentially carry discaded slots from lhs here to save memory
         lhs.foreachSlotAndAliasesOrdered {
@@ -1067,7 +1062,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case LeftOuterHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
 
         // Note, we can potentially carry discaded slots from rhs here to save memory
         rhs.foreachSlotAndAliasesOrdered {
@@ -1095,7 +1090,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case NodeHashJoin(nodes, _, _) =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
 
         // Note, we can potentially carry discaded slots from rhs here to save memory
         rhs.foreachSlotAndAliasesOrdered {
@@ -1124,7 +1119,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
         rhs.addArgumentAliasesTo(lhs, argument.argumentSize)
-        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
+        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
         // Note, we can potentially carry discaded slots from rhs here to save memory
@@ -1225,14 +1220,14 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         lhs
 
       case _: SubqueryForeach =>
-        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
+        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
 
       case t: TransactionForeach =>
         t.maybeReportAs.foreach { statusVar =>
           lhs.newReference(statusVar, nullable, CTMap)
         }
 
-        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
+        breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
 
       case t: TransactionApply =>
         // We need to declare the slot for the status variable
@@ -1252,11 +1247,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           }
         }
 
-        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans(lp.id))
+        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans)
 
       case _: Trail =>
         recordArgument(lp)
-        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans(lp.id))
+        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans)
 
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
@@ -1347,7 +1342,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       }
     }
 
-    breakingPolicy.discardPolicy(lp, applyPlans(lp.id)) match {
+    breakingPolicy.discardPolicy(lp, applyPlans) match {
       case DoNotDiscard   => // Do nothing
       case DiscardFromLhs => doDiscard(lhs)
       case DiscardFromRhs => doDiscard(rhs.getOrElse(throw new IllegalStateException(s"Expected plan to ha $lp")))

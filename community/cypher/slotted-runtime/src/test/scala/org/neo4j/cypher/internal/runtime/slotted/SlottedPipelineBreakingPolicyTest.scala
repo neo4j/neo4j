@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
-import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -43,7 +43,7 @@ class SlottedPipelineBreakingPolicyTest extends CypherFunSuite {
     plansUsingCompact.foreach { plan =>
       withClue(s"${plan.getClass.getSimpleName} plans needs to be breaking because they use SlottedRow.compact(): ") {
         Range.inclusive(-1, 2).foreach { i =>
-          SlottedPipelineBreakingPolicy.breakOn(plan, Id(i)) shouldBe true
+          SlottedPipelineBreakingPolicy.breakOn(plan, new PhysicalPlanningAttributes.ApplyPlans) shouldBe true
         }
       }
     }

@@ -39,6 +39,13 @@ object PhysicalPlanningAttributes {
       else
         false
     }
+
+    def getOuterApplyPlanId(plan: LogicalPlan): Id = {
+      val id = apply(plan.id)
+      if (id == plan.id)
+        apply(plan.leftmostLeaf.id)
+      else id
+    }
   }
 
   class TrailPlans extends Attribute[LogicalPlan, Id]
