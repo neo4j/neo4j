@@ -100,7 +100,7 @@ object aggregation {
       val OrderToLeverageWithAliases(orderToLeverageForGrouping, newGroupingExpressionsMap, newAggregationExpressions) =
         leverageOrder(inputProvidedOrder, groupingExpressionsMap, aggregations, plan.availableSymbols)
 
-      // Pipelined runtime does currently not support OrderedAggregation
+      // Parallel runtime does currently not support OrderedAggregation
       if (orderToLeverageForGrouping.isEmpty || !context.settings.executionModel.providedOrderPreserving) {
         context.staticComponents.logicalPlanProducer.planAggregation(
           rewrittenPlan,

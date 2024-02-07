@@ -244,7 +244,7 @@ object SortPlanner {
     def okToSortNow = !isPushDownSort || deterministicSortExpressionsOnly
 
     if (sortSymbolsAvailable && okToSortNow) {
-      // Pipelined runtime does currently not support PartialSort
+      // Parallel runtime does currently not support PartialSort
       if (satisfiedPrefix.isEmpty || !context.settings.executionModel.providedOrderPreserving) {
         // Full sort required
         Some(context.staticComponents.logicalPlanProducer.planSort(
