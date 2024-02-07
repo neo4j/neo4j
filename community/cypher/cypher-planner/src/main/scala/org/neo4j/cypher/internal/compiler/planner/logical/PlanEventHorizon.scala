@@ -179,13 +179,13 @@ case object PlanEventHorizon extends EventHorizonPlanner {
             )
           }
 
-        val sortFirst = Function.chain(Seq(
+        def sortFirst = Function.chain(Seq(
           planSort,
           planSkipAndLimit,
           planProjection,
           planWhere(regularProjection.selections)
         ))
-        val projectFirst = Function.chain(Seq(
+        def projectFirst = Function.chain(Seq(
           planProjection,
           planSort,
           planSkipAndLimit,
