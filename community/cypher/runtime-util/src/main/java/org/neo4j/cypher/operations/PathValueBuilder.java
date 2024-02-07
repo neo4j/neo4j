@@ -39,10 +39,12 @@ import org.neo4j.values.virtual.VirtualValues;
  * Builder for building paths from generated code, used when the length of the path is not known at compile time.
  * <p>
  * NOTE: this class is designed to be easy-to-use from generated code rather than from code typed by more or less
- * anthropic beings, so refactor with some care.
+ * anthropic beings, so refactor with some care. The PathValueBuilder is not allowed to be reused, once the path is
+ * built the instance should be discarded with.
  */
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class PathValueBuilder implements Consumer<RelationshipVisitor> {
+    private boolean hasBeenBuilt = false;
     private final ArrayList<VirtualNodeValue> nodes = new ArrayList<>();
     private final ArrayList<VirtualRelationshipValue> rels = new ArrayList<>();
     private final DbAccess dbAccess;
@@ -60,6 +62,10 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      * @return a PathValue or NO_VALUE if any NO_VALUES has been encountered
      */
     public AnyValue build() {
+        if (hasBeenBuilt) {
+            throw new IllegalStateException("This PathValueBuilder has already been used and reuse is not allowed.");
+        }
+        hasBeenBuilt = true;
         return seenNoValue ? NO_VALUE : pathReference(nodes, rels);
     }
 
