@@ -294,7 +294,7 @@ public class DiscoveryServiceTest {
                         .get(0));
         Response response = testDiscoveryService().get(request, uriInfo(this.baseUri));
         String json = getJsonString(response);
-        assertThat(json).contains("\"bolt_direct\" : \"" + expectedBoltUri);
+        assertThat(json).contains("\"bolt_direct\":\"" + expectedBoltUri);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -315,7 +315,7 @@ public class DiscoveryServiceTest {
                         .get(0));
         Response response = testDiscoveryService().get(request, uriInfo(this.baseUri));
         String json = getJsonString(response);
-        assertThat(json).contains("\"transaction\" : \"" + expectedDatabaseUri + "/");
+        assertThat(json).contains("\"transaction\":\"" + expectedDatabaseUri + "/");
     }
 
     @ParameterizedTest(name = "{0}")

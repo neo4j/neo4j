@@ -91,8 +91,7 @@ public final class JsonHelper {
     public static String createJsonFrom(Object data) throws JsonBuildRuntimeException {
         try {
             StringWriter writer = new StringWriter();
-            JsonGenerator generator =
-                    OBJECT_MAPPER.getFactory().createGenerator(writer).useDefaultPrettyPrinter();
+            JsonGenerator generator = OBJECT_MAPPER.getFactory().createGenerator(writer);
             writeValue(generator, data);
 
             return writer.getBuffer().toString();
