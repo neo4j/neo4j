@@ -229,7 +229,7 @@ class ProfilingParallelTrackingQueryMemoryTracker(memoryTracker: MemoryTracker) 
   override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = memoryPerOperator.computeIfAbsent(
     operatorId,
     i =>
-      new ProfilingParallelHighWaterMarkTrackingWorkerMemoryTracker(delegate, i)
+      new ProfilingParallelHighWaterMarkTrackingWorkerMemoryTracker(delegate)
   )
 
   override def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit =
@@ -316,8 +316,7 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
 }
 
 private class ProfilingParallelHighWaterMarkTrackingWorkerMemoryTracker(
-  delegate: WorkerThreadDelegatingMemoryTracker,
-  val id: Long
+  delegate: WorkerThreadDelegatingMemoryTracker
 ) extends MemoryTracker {
 
   private val heapUsage = new LongAdder()
@@ -343,7 +342,7 @@ private class ProfilingParallelHighWaterMarkTrackingWorkerMemoryTracker(
       if (current >= newValue) {
         return
       }
-    } while (!highWaterMark.compareAndSet(current, newValue))
+    } while (!highWaterMark.weakCompareAndSetVolatile(current, newValue))
   }
 
   override def heapHighWaterMark(): Long = {
