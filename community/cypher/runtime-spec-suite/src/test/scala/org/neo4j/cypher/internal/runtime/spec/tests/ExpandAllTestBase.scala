@@ -395,9 +395,12 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
     val (a1, a2, b1, b2, b3, c) = givenGraph { smallTestGraph(tx) }
 
+    // NOTE: Parallel runtime does not guarantee order is preserved across an apply scope
+
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
+      .planIf(isParallel)(_.sort("a ASC")) // Insert a top-level sort in parallel runtime
       .apply()
       .|.sort("a ASC", "b ASC")
       .|.expandAll("(b)-[:R]->(c)")
@@ -418,7 +421,8 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
      There is no defined order coming from the Label Scan, so the test can not assert on a total ordering,
      however there is a defined grouping by argument 'a', and a per-argument ordering on 'b'.
      */
-    runtimeResult should beColumns("a", "b", "c").withRows(groupedBy("a").asc("b"))
+    val rowOrderMatcher = if (isParallel) sortedAsc("a") else groupedBy("a").asc("b")
+    runtimeResult should beColumns("a", "b", "c").withRows(rowOrderMatcher)
     runtimeResult should beColumns("a", "b", "c").withRows(expected)
   }
 

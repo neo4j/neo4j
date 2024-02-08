@@ -169,9 +169,12 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
   test("should apply apply sort") {
     givenGraph { circleGraph(1000) }
 
+    // NOTE: Parallel runtime does not guarantee order is preserved across an apply scope.
+
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z")
+      .planIf(isParallel)(_.sort("z ASC")) // Insert a top-level sort in parallel runtime
       .apply()
       .|.apply()
       .|.|.sort("z ASC")
@@ -186,7 +189,8 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y", "z").withRows(groupedBy("x", "y").asc("z"))
+    val rowOrderMatcher = if (isParallel) sortedAsc("z") else groupedBy("x", "y").asc("z")
+    runtimeResult should beColumns("x", "y", "z").withRows(rowOrderMatcher)
   }
 
   test("should handle sort after distinct removed rows (FilteringExecutionContext and cancelled rows) I") {

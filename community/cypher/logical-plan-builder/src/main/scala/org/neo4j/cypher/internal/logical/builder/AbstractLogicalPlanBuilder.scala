@@ -407,6 +407,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def planIf(condition: Boolean)(builder: IMPL => IMPL): IMPL = {
+    if (condition) {
+      builder(self)
+    } else {
+      self
+    }
+  }
+
   // OPERATORS
 
   def produceResults(vars: String*): IMPL = {

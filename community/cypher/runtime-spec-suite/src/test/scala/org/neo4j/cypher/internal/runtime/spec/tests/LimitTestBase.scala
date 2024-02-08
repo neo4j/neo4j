@@ -328,9 +328,12 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
     val LIMIT = 10
     givenGraph { bipartiteGraph(NODES_PER_LABEL, "A", "B", "R") }
 
+    // NOTE: Parallel runtime does not guarantee order is preserved across an apply scope
+
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
+      .planIf(isParallel)(_.sort("y ASC")) // Insert a top-level sort in parallel runtime
       .apply()
       .|.sort("y ASC")
       .|.limit(LIMIT)
@@ -341,7 +344,8 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("x", "y").withRows(groupedBy(NODES_PER_LABEL, LIMIT, "x").asc("y"))
+    val rowOrderMatcher = if (isParallel) sortedAsc("y") else groupedBy(NODES_PER_LABEL, LIMIT, "x").asc("y")
+    runtimeResult should beColumns("x", "y").withRows(rowOrderMatcher)
   }
 
   test("should support chained limits") {
