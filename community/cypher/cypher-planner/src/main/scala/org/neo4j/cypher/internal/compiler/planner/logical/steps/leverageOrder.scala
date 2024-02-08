@@ -82,7 +82,11 @@ object leverageOrder {
         case c @ Desc(expression, _) => c.copy(aliasesForProvidedOrder.getOrElse(expression, expression))
       }
 
-      providedOrderPrefix(aliasedInputProvidedOrderColumns, newGroupingExpressionsMap.values.toSet, aggregationExpressionsMap)
+      providedOrderPrefix(
+        aliasedInputProvidedOrderColumns,
+        newGroupingExpressionsMap.values.toSet,
+        aggregationExpressionsMap
+      )
     }
 
     OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap, newAggregationExpressionsMap)
