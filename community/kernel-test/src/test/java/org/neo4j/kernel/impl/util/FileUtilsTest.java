@@ -447,9 +447,9 @@ class FileUtilsTest {
         Files.createDirectories(root.resolve("clusterfs/main/my_root_db"));
 
         // Create the symbolic links
-        Files.createSymbolicLink(root.resolve("neo4j"), root.resolve("data/root"));
-        Files.createSymbolicLink(root.resolve("data/root/db"), root.resolve("data/repo/my_root_db"));
         Files.createSymbolicLink(root.resolve("data/repo"), root.resolve("clusterfs/main"));
+        Files.createSymbolicLink(root.resolve("data/root/db"), root.resolve("data/repo/my_root_db"));
+        Files.createSymbolicLink(root.resolve("neo4j"), root.resolve("data/root"));
 
         if (targetExists) {
             Files.createFile(root.resolve("clusterfs/main/my_root_db/myrealfile"));
@@ -473,10 +473,11 @@ class FileUtilsTest {
         return Stream.of(
                 Arguments.of(
                         // Absolute path
-                        Path.of("/does/not/exist"), Path.of("/does/not/exist")),
+                        Path.of("/does/not/exist"), Path.of("/does/not/exist").toAbsolutePath()),
                 Arguments.of(
                         // Non-normalized absolute path
-                        Path.of("/does/not/../maybe/exist"), Path.of("/does/maybe/exist")),
+                        Path.of("/does/not/../maybe/exist"),
+                        Path.of("/does/maybe/exist").toAbsolutePath()),
                 Arguments.of(
                         // Relative path
                         Path.of("does/not/exist"), cwd.resolve("does/not/exist")),
