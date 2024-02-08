@@ -23,12 +23,15 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.SyntaxException
@@ -86,10 +89,10 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       .produceResults()
       .emptyResult()
       .create(createNodeWithProperties("n", Seq(), "{count: anon_0}"))
-      .eager(ListSet(EagernessReason.Unknown))
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .apply()
       .|.nodeCountFromCountStore("anon_0", Seq(None))
-      .eager(ListSet(EagernessReason.Unknown))
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(7), Id(5)))))
       .create(createNode("m"))
       .argument()
       .build()
@@ -131,10 +134,13 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       .produceResults()
       .emptyResult()
       .create(createNodeWithProperties("o", Seq(), "{p: anon_0}"))
-      .eager(ListSet(EagernessReason.Unknown))
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .letSemiApply("anon_0")
       .|.allRelationshipsScan("(anon_1)-[anon_2]-(anon_3)")
-      .eager(ListSet(EagernessReason.Unknown))
+      .eager(ListSet(
+        ReadCreateConflict.withConflict(Conflict(Id(7), Id(5))),
+        TypeReadSetConflict(relTypeName("REL")).withConflict(Conflict(Id(7), Id(5)))
+      ))
       .create(createNode("n"), createNode("m"), createRelationship("r", "n", "REL", "m"))
       .argument()
       .build()
@@ -279,10 +285,10 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(createNode("d"))
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .apply()
       .|.allNodeScan("c", "a", "b")
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(7), Id(5)))))
       .create(createNode("b"))
       .allNodeScan("a")
       .build()

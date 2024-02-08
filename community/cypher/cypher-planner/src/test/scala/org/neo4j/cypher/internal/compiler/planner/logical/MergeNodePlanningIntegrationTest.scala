@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
@@ -34,6 +36,8 @@ import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.neo4j.graphdb.schema.IndexType
@@ -84,7 +88,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .apply()
       .|.merge(nodes = Seq(createNode("b")))
       .|.allNodeScan("b")
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(6), Id(4)))))
       .create(createNode("a"))
       .argument()
       .build()
@@ -96,7 +100,6 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(createNode("b"))
-      .eager()
       .merge(nodes = Seq(createNode("a")))
       .allNodeScan("a")
       .build()
@@ -344,7 +347,12 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         )
         .|.expandAll("(a)-[r:R]->(b)")
         .|.argument("a", "five")
-        .eager()
+        .eager(
+          ListSet(
+            ReadCreateConflict.withConflict(Conflict(Id(3), Id(9))),
+            ReadCreateConflict.withConflict(Conflict(Id(8), Id(4)))
+          )
+        )
         .apply()
         .|.merge(Seq(createNode("a")))
         .|.allNodeScan("a")

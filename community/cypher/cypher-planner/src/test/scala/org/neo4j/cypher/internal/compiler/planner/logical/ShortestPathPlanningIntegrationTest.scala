@@ -42,7 +42,9 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.functions.EndNode
 import org.neo4j.cypher.internal.expressions.functions.StartNode
-import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
@@ -58,6 +60,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -999,7 +1002,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     plan should equal(
       planner.subPlanBuilder()
         .create(createNode("x"), createRelationship("t", "v", "R", "x", OUTGOING))
-        .eager(ListSet(EagernessReason.Unknown))
+        .eager(ListSet(
+          ReadCreateConflict.withConflict(Conflict(Id(1), Id(3))),
+          TypeReadSetConflict(relTypeName("R")).withConflict(Conflict(Id(1), Id(3)))
+        ))
         .statefulShortestPath(
           sourceNode = "u",
           targetNode = "w",

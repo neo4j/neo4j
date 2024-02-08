@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
@@ -61,6 +63,8 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Assertion
@@ -1592,7 +1596,6 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .sort("`a.prop` ASC")
       .projection("cacheN[a.prop] AS `a.prop`")
       .distinct("a AS a")
-      .eager()
       .create(createNode("newNode"))
       .filter("cacheNFromStore[a.prop] IS NOT NULL")
       .nodeIndexOperator("a:A(foo)", indexType = IndexType.RANGE)
@@ -2157,7 +2160,6 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val expectedPlan = wideningExpandConfig.subPlanBuilder()
       .expandAll("(b)-[r2:R]->(c)")
       .sort("a ASC")
-      .eager()
       .foreach("x", "[1, 2, 3]", Seq(setNodeProperty("a", "prop", "x")))
       .expandAll("(a)-[r1:NARROW]->(b)")
       .allNodeScan("a")
@@ -2347,7 +2349,10 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .sort("`a.prop` ASC")
       .projection("a.prop AS `a.prop`")
       .create(createNode("newNode"))
-      .eager()
+      .eager(ListSet(
+        ReadCreateConflict.withConflict(Conflict(Id(3), Id(5))),
+        ReadCreateConflict.withConflict(Conflict(Id(3), Id(7)))
+      ))
       .expandAll("(b)-[r2:R]->(c)")
       .distinct("a AS a", "b AS b")
       .expandAll("(a)-[r1:NARROW]->(b)")

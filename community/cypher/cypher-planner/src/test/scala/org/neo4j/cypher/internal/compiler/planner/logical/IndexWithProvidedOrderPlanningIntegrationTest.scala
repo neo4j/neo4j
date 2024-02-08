@@ -1856,7 +1856,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .produceResults("a")
           .sortColumns(Seq(sortOrder("a.prop")))
           .projection("cacheN[a.prop] AS `a.prop`")
-          .eager()
           .setNodeProperty("a", "foo", "cacheNFromStore[a.prop] / 2")
           .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => DoNotGetValue)
           .build()

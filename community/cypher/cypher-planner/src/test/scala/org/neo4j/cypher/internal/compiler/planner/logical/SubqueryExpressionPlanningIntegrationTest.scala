@@ -49,7 +49,9 @@ import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.expressions.functions.IsEmpty
-import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
@@ -71,6 +73,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -162,7 +165,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan shouldEqual planner.subPlanBuilder()
       .projection(Map("result" -> resultExpr))
-      .eager(ListSet(EagernessReason.Unknown))
       .create(createNode("a"))
       .argument()
       .build()
@@ -1773,7 +1775,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .create(createNodeWithProperties("n", Seq(), "{foo: anon_0}"))
-      .eager(ListSet(EagernessReason.Unknown))
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(1), Id(6)))))
       .projection("reduce(sum = 0, x IN anon_3 | sum + x) AS anon_0")
       .rollUpApply("anon_3", "anon_1")
       .|.projection("b.age AS anon_1")
@@ -1912,11 +1914,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .deleteNode("anon_0")
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("a"), EagernessReason.ReadDeleteConflict("b")))
+      .eager(ListSet(
+        ReadDeleteConflict("anon_0").withConflict(Conflict(Id(2), Id(4))),
+        ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(7)))
+      ))
       .projection(Map("anon_0" -> expr))
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
       .projection("[n] AS nodes")
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
       .allNodeScan("n")
       .build())
   }
@@ -1957,13 +1960,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .deleteRelationship("anon_0")
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("a"), EagernessReason.ReadDeleteConflict("b")))
+      .eager(ListSet(
+        ReadDeleteConflict("anon_0").withConflict(Conflict(Id(2), Id(4))),
+        ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(7)))
+      ))
       .projection(Map("anon_0" -> expr))
       .projection("[r] AS rels")
-      .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_2"),
-        EagernessReason.ReadDeleteConflict("anon_3")
-      ))
       .allRelationshipsScan("(anon_2)-[r]->(anon_3)")
       .build())
   }
@@ -2005,13 +2007,16 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .deleteExpression("anon_0")
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("a"), EagernessReason.ReadDeleteConflict("b")))
+      .eager(ListSet(
+        ReadDeleteConflict("anon_4").withConflict(Conflict(Id(2), Id(4))),
+        ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(4))),
+        ReadDeleteConflict("x").withConflict(Conflict(Id(2), Id(4))),
+        ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(7))),
+        ReadDeleteConflict("anon_0").withConflict(Conflict(Id(2), Id(4))),
+        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(4)))
+      ))
       .projection(Map("anon_0" -> expr))
       .projection("{rel: r} AS rels")
-      .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_2"),
-        EagernessReason.ReadDeleteConflict("anon_3")
-      ))
       .allRelationshipsScan("(anon_2)-[r]->(anon_3)")
       .build())
   }
@@ -2049,7 +2054,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     )
 
     plan should equal(planner.subPlanBuilder()
-      .eager(ListSet(EagernessReason.Unknown))
       .setNodeProperty("n", "foo", reduceExpression)
       .allNodeScan("n")
       .build())
@@ -2089,7 +2093,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val mapExpression = mapOf("foo" -> reduceExpression)
 
     plan should equal(planner.subPlanBuilder()
-      .eager(ListSet(EagernessReason.Unknown))
       .setNodePropertiesFromMap("n", mapExpression, removeOtherProps = true)
       .allNodeScan("n")
       .build())
@@ -2128,7 +2131,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     )
 
     plan should equal(planner.subPlanBuilder()
-      .eager(ListSet(EagernessReason.Unknown))
       .setRelationshipProperty("r", "foo", reduceExpression)
       .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
       .build())
@@ -2168,7 +2170,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val mapExpression = mapOf("foo" -> reduceExpression)
 
     plan should equal(planner.subPlanBuilder()
-      .eager(ListSet(EagernessReason.Unknown))
       .setRelationshipPropertiesFromMap("r", mapExpression, removeOtherProps = true)
       .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
       .build())
@@ -2228,6 +2229,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .|.merge(Seq(createNodeWithProperties("anon_2", Seq(), "{foo: num}")))
       .|.filter("anon_2.foo = num")
       .|.allNodeScan("anon_2", "num")
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(3), Id(9))))) // Unnecessary eager
       .rollUpApply("anon_3", "anon_0")
       .|.projection("b.age AS anon_0")
       .|.allRelationshipsScan("(a)-[anon_1]->(b)")
@@ -2251,6 +2253,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         "[reduce(sum = 0, x IN anon_3 | sum + x)]",
         Seq(createPattern(Seq(createNodeWithProperties("anon_2", Seq(), "{foo: num}")), Seq()))
       )
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(6))))) // Unnecessary eager
       .rollUpApply("anon_3", "anon_0")
       .|.projection("b.age AS anon_0")
       .|.allRelationshipsScan("(a)-[anon_1]->(b)")
@@ -3780,7 +3783,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .produceResults()
         .emptyResult()
         .setProperty("anon_0", "prop", "NULL")
-        .eager(ListSet(EagernessReason.Unknown))
         .projection(Map("anon_0" -> indexExpression))
         .sort("`n.p` ASC")
         .projection("n.p AS `n.p`")

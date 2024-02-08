@@ -66,14 +66,14 @@ class CacheKeyTest extends CypherFunSuite {
       connectComponentsPlanner = CypherConnectComponentsPlannerOption.idp,
       debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring)),
       parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.disabled,
-      eagerAnalyzer = CypherEagerAnalyzerOption.lp,
+      eagerAnalyzer = CypherEagerAnalyzerOption.ir,
       labelInference = LabelInferenceOption.enabled,
       statefulShortestPlanningModeOption = CypherStatefulShortestPlanningModeOption.allIfPossible
     )
 
     options.cacheKey
       .shouldEqual(
-        """PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=lp labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
+        """PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=ir labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
       )
   }
 
@@ -90,14 +90,14 @@ class CacheKeyTest extends CypherFunSuite {
       connectComponentsPlanner = CypherConnectComponentsPlannerOption.idp,
       debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring)),
       parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.disabled,
-      eagerAnalyzer = CypherEagerAnalyzerOption.lp,
+      eagerAnalyzer = CypherEagerAnalyzerOption.ir,
       labelInference = LabelInferenceOption.enabled,
       statefulShortestPlanningModeOption = CypherStatefulShortestPlanningModeOption.allIfPossible
     )
 
     options.logicalPlanCacheKey
       .shouldEqual(
-        """updateStrategy=eager connectComponentsPlanner=idp eagerAnalyzer=lp labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
+        """updateStrategy=eager connectComponentsPlanner=idp eagerAnalyzer=ir labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
       )
   }
 }

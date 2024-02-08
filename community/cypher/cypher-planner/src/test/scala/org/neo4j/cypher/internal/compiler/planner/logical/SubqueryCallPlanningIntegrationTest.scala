@@ -28,11 +28,16 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestS
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -860,7 +865,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach()
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -884,7 +889,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach(42)
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -909,7 +914,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach()
       .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
       .|.argument("a")
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -934,7 +939,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionApply()
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -959,7 +964,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionApply(400)
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -983,7 +988,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionApply()
       .|.create(createNodeWithProperties("b", Seq.empty, "{prop: a.prop + 1}"))
       .|.argument("a")
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1008,7 +1013,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionApply(400, onErrorBehaviour = OnErrorContinue, maybeReportAs = Some("s"))
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1032,7 +1037,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionApply(400, onErrorBehaviour = OnErrorFail)
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1057,7 +1062,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionApply(onErrorBehaviour = OnErrorBreak, maybeReportAs = Some("s"))
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1081,7 +1086,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionApply(onErrorBehaviour = OnErrorBreak)
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1107,7 +1112,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach(400, onErrorBehaviour = OnErrorBreak, maybeReportAs = Some("s"))
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1130,7 +1135,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach(400, onErrorBehaviour = OnErrorContinue)
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1154,7 +1159,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach(onErrorBehaviour = OnErrorContinue, maybeReportAs = Some("s"))
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1177,7 +1182,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach(onErrorBehaviour = OnErrorFail)
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1199,7 +1204,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach(onErrorBehaviour = OnErrorContinue)
       .|.create(createNode("b"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(5)))))
       .allNodeScan("a")
       .build()
   }
@@ -1221,9 +1226,9 @@ class SubqueryCallPlanningIntegrationTest
     plan shouldEqual cfg.subPlanBuilder()
       .transactionForeach()
       .|.create(createNode("c"))
-      .|.eager()
+      .|.eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(4)))))
       .|.allNodeScan("b")
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(6)))))
       .allNodeScan("a")
       .build()
   }
@@ -1246,12 +1251,12 @@ class SubqueryCallPlanningIntegrationTest
     plan shouldEqual cfg.subPlanBuilder()
       .apply()
       .|.allNodeScan("d", "a")
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(5), Id(2)))))
       .transactionForeach()
       .|.create(createNode("c"))
-      .|.eager()
+      .|.eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(5), Id(7)))))
       .|.allNodeScan("b")
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(5), Id(9)))))
       .allNodeScan("a")
       .build()
   }
@@ -1272,7 +1277,7 @@ class SubqueryCallPlanningIntegrationTest
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("a.prop AS `a.prop`")
-      .eager()
+      .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(4), Id(1)))))
       .transactionForeach()
       .|.setNodeProperty("a", "prop", "1")
       .|.argument("a")
@@ -1302,7 +1307,7 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach()
       .|.setNodeProperty("n", "prop", "1")
       .|.allNodeScan("n")
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(7), Id(4)))))
       .transactionForeach()
       .|.create(createNode("n"))
       .|.argument()
@@ -1333,11 +1338,11 @@ class SubqueryCallPlanningIntegrationTest
       .transactionForeach()
       .|.setNodeProperty("n", "prop", "1")
       .|.allNodeScan("n")
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(7), Id(4)))))
       .transactionForeach()
       .|.create(createNode("n"))
       .|.argument()
-      .eager()
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(7), Id(10)))))
       .allNodeScan("a")
       .build()
   }

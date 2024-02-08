@@ -29,7 +29,8 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities.text_2_0
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
@@ -868,12 +870,10 @@ class IndexPlanningIntegrationTest
     plan shouldEqual planner.subPlanBuilder()
       .emptyResult()
       .setNodeProperty("n", "prop", "123")
-      .eager()
       .filter("n.prop IS NULL")
       .apply()
       .|.nodeByLabelScan("n", "Label", "c")
       .aggregation(Seq(), Seq("count(*) AS c"))
-      .eager()
       .create(createNode("a", "Label"))
       .argument()
       .build()
@@ -904,17 +904,16 @@ class IndexPlanningIntegrationTest
 
     val plan = planner.plan(query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .eager(ListSet(EagernessReason.Unknown))
+      .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(0)))))
       .apply()
       .|.setNodeProperty("n", "prop", "c")
-      .|.eager()
+      .|.eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(5)))))
       .|.filter("n.prop IS NULL")
       .|.apply()
       .|.|.nodeByLabelScan("n", "Label", "c")
       .|.limit(1)
       .|.argument("c")
       .aggregation(Seq(), Seq("count(*) AS c"))
-      .eager()
       .create(createNode("a", "Label"))
       .argument()
       .build()
@@ -938,7 +937,6 @@ class IndexPlanningIntegrationTest
     plan shouldEqual planner.subPlanBuilder()
       .emptyResult()
       .setNodeProperty("n", "prop", "123")
-      .eager()
       .filter("n.prop IS NULL")
       .nodeByLabelScan("n", "Label")
       .build()
@@ -1003,12 +1001,10 @@ class IndexPlanningIntegrationTest
     plan shouldEqual planner.subPlanBuilder()
       .emptyResult()
       .setRelationshipProperty("r", "prop", "123")
-      .eager()
       .filter("r.prop IS NULL")
       .apply()
       .|.relationshipTypeScan("(a)-[r:REL]->(b)", "c")
       .aggregation(Seq(), Seq("count(*) AS c"))
-      .eager()
       .create(
         createNode("a"),
         createNode("b"),
@@ -1042,14 +1038,13 @@ class IndexPlanningIntegrationTest
 
     val plan = planner.plan(query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .eager(ListSet(EagernessReason.Unknown))
+      .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(0)))))
       .apply()
       .|.setRelationshipProperty("r", "prop", "c")
-      .|.eager()
+      .|.eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(5)))))
       .|.filter("r.prop IS NULL")
       .|.relationshipTypeScan("(a)-[r:REL]->(b)", "c")
       .aggregation(Seq(), Seq("count(*) AS c"))
-      .eager()
       .create(
         createNode("a"),
         createNode("b"),
@@ -1077,7 +1072,6 @@ class IndexPlanningIntegrationTest
     plan shouldEqual planner.subPlanBuilder()
       .emptyResult()
       .setRelationshipProperty("r", "prop", "123")
-      .eager()
       .filter("r.prop IS NULL")
       .relationshipTypeScan("(a)-[r:REL]->(b)")
       .build()
@@ -1110,7 +1104,6 @@ class IndexPlanningIntegrationTest
           Some("{prop: cacheR[r1.prop] * 2}")
         )
       )
-      .eager()
       .relationshipIndexOperator(
         "(a)-[r1:REL(prop)]->(b)",
         getValue = Map("prop" -> GetValue),

@@ -30,7 +30,12 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
@@ -40,6 +45,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.SyntaxException
@@ -1471,7 +1477,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     plan shouldEqual planner.subPlanBuilder()
       .create(createRelationship("r2", "a", "T", "b", SemanticDirection.OUTGOING))
-      .eager(ListSet(EagernessReason.Unknown))
+      .eager(ListSet(TypeReadSetConflict(relTypeName("T")).withConflict(Conflict(Id(1), Id(3)))))
       .expandAll("(a)-[r*1..5]->(b)")
       .allNodeScan("a")
       .build()
@@ -1489,6 +1495,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.merge(List(createNodeWithProperties("c", List("N"), "{prop: 123}")), Nil, Nil, Nil, Set.empty)
       .|.filter("c.prop = 123")
       .|.nodeByLabelScan("c", "N")
+      .eager(ListSet(
+        LabelReadSetConflict(labelName("N")).withConflict(Conflict(Id(3), Id(8))),
+        PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(8)))
+      )) // Unnecessary but difficult to fix eager
       .filter("b.prop = 42")
       .expandAll("(a)-[r*0..]->(b)")
       .nodeByLabelScan("a", "N")
@@ -1532,6 +1542,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     plan shouldEqual planner.subPlanBuilder()
       .emptyResult()
       .create(createNode("x"))
+      .eager(ListSet(ReadCreateConflict.withConflict(Conflict(Id(2), Id(4))))) // Unnecessary eager
       .trail(`(start)((a)-[r]->(b))*(end)`)
       .|.filterExpressionOrString("b:B", isRepeatTrailUnique("r"))
       .|.expandAll("(a)-[r]->(b)")
@@ -1627,10 +1638,18 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .emptyResult()
       .deleteNode("x")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("start"),
-        EagernessReason.ReadDeleteConflict("end"),
-        EagernessReason.ReadDeleteConflict("a"),
-        EagernessReason.ReadDeleteConflict("b")
+        ReadDeleteConflict("x").withConflict(Conflict(Id(2), Id(5))),
+        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(7))),
+        ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(10))),
+        ReadDeleteConflict("x").withConflict(Conflict(Id(2), Id(12))),
+        ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(7))),
+        ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(6))),
+        ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(12))),
+        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(9))),
+        ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(8))),
+        ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(9))),
+        ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(7))),
+        ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(7)))
       ))
       .apply()
       .|.optional("x")
