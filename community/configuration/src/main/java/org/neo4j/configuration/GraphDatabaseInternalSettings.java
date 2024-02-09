@@ -1222,7 +1222,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("A feature toggle behind which CALL IN TRANSACTIONS for composite databases is developed")
     public static final Setting<Boolean> composite_call_in_transactions = newBuilder(
-                    "internal.dbms.composite.call_in_transactions", BOOL, false)
+                    "internal.dbms.composite.call_in_transactions", BOOL, true)
             .build();
 
     @Internal
