@@ -74,7 +74,7 @@ public class VectorSimilarityFunctions {
         public float[] toValidVector(VectorCandidate candidate) {
             final var vector = maybeToValidVector(candidate);
             if (vector == null) {
-                throw new IllegalArgumentException("Vector must contain finite values. Provided: " + candidate);
+                throw new IllegalArgumentException("Vector must only contain finite values. Provided: " + candidate);
             }
             return vector;
         }
@@ -127,7 +127,7 @@ public class VectorSimilarityFunctions {
             final var vector = maybeToValidVector(candidate);
             if (vector == null) {
                 throw new IllegalArgumentException(
-                        "Vector must contain finite values, and have positive and finite l2-norm. Provided: "
+                        "Vector must only contain finite values, and have positive and finite l2-norm. Provided: "
                                 + candidate);
             }
             return vector;
