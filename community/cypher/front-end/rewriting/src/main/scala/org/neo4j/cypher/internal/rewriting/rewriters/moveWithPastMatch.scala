@@ -123,7 +123,7 @@ case object moveWithPastMatch extends StepSequencer.Step with DefaultPostConditi
         // Move WITHs around
         val newSections = sections.foldLeft(Seq.empty[QuerySection]) {
           case (previousSections :+ (mw @ MovableWith(w, _)), mg: MatchGroup)
-            if !(insideSubquery && q.importWith.contains(w)) &&
+            if !(insideSubquery && q.partitionedClauses.importingWith.contains(w)) &&
               !mg.usesVariableFromWith(mw) =>
             // The WITH can be moved past the MatchGroup
             val newWith = w.copy(returnItems =

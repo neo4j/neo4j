@@ -95,6 +95,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     with SemanticAnalysisTooling {
   assert(clauses.nonEmpty)
 
+  lazy val partitionedClauses: SingleQuery.PartitionedClauses = SingleQuery.partitionClauses(clauses)
+
   override def mapEachSingleQuery(f: SingleQuery => SingleQuery): Query = f(this)
 
   override def containsUpdates: Boolean =
@@ -107,54 +109,26 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def returnVariables: ReturnVariables = clauses.last.returnVariables
 
-  override def isCorrelated: Boolean = importWith.isDefined
+  override def isCorrelated: Boolean = partitionedClauses.importingWith.isDefined
 
   override def isReturning: Boolean = clauses.last match {
     case _: Return => true
     case _         => false
   }
 
-  def importColumns: Seq[String] = importWith match {
+  def importColumns: Seq[String] = partitionedClauses.importingWith match {
     case Some(w) => w.returnItems.items.map(_.name)
     case _       => Seq.empty
   }
 
-  def importWith: Option[With] = {
-    def hasImportFormat(w: With) = w match {
-      case With(false, ri, None, None, None, None, _) =>
-        ri.items.forall(_.isPassThrough)
-      case _ =>
-        false
-    }
-
-    clausesExceptLeadingFrom
-      .headOption.collect { case w: With if hasImportFormat(w) => w }
-  }
-
-  private def leadingNonImportWith: Option[With] = {
-    if (importWith.isDefined)
+  private def leadingNonImportingWith: Option[With] =
+    if (partitionedClauses.importingWith.isDefined)
       None
     else
-      clausesExceptLeadingFrom.headOption.collect { case wth: With => wth }
-  }
-
-  private def leadingGraphSelection: Option[GraphSelection] =
-    clauses.headOption.collect { case s: GraphSelection => s }
-
-  def clausesExceptLeadingImportWith: Seq[Clause] = {
-    // Find the first occurrence of the importWith clause and split the sequence by it
-    val (beforeImportWith, afterIncludingImportWith) = clauses.span(clause => !importWith.contains(clause))
-
-    // Remove the importWith clause and re-assemble the sequence
-    beforeImportWith ++ afterIncludingImportWith.drop(1)
-  }
-
-  private def clausesExceptLeadingFrom: Seq[Clause] =
-    clauses.filterNot(leadingGraphSelection.contains)
-
-  private def clausesExceptLeadingFromAndImportWith: Seq[Clause] = {
-    clausesExceptLeadingImportWith.filterNot(leadingGraphSelection.contains)
-  }
+      partitionedClauses.clausesExceptImportingWithAndLeadingGraphSelection.headOption match {
+        case Some(nonImportingWith: With) => Some(nonImportingWith)
+        case _                            => None
+      }
 
   private def semanticCheckAbstract(
     clauses: Seq[Clause],
@@ -180,31 +154,30 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   override def semanticCheckInSubqueryExpressionContext(canOmitReturn: Boolean): SemanticCheck =
     semanticCheckAbstract(clauses, checkClauses(_, None), canOmitReturnClause = canOmitReturn)
 
-  override def checkImportingWith: SemanticCheck = importWith.foldSemanticCheck(_.semanticCheck)
+  override def checkImportingWith: SemanticCheck = partitionedClauses.importingWith.foldSemanticCheck(_.semanticCheck)
 
   override def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck = {
     def importVariables: SemanticCheck =
-      importWith.foldSemanticCheck(wth =>
+      partitionedClauses.importingWith.foldSemanticCheck(wth =>
         wth.semanticCheckContinuation(outer.currentScope.scope) chain
           recordCurrentScope(wth)
       )
 
     checkIllegalImportWith chain
-      checkLeadingFrom(outer) chain
+      checkInitialGraphSelection(outer) chain
       semanticCheckAbstract(
-        clausesExceptLeadingFromAndImportWith,
+        partitionedClauses.clausesExceptImportingWithAndInitialGraphSelection,
         importVariables chain checkClauses(_, Some(outer.currentScope.scope))
       ) chain
       checkShadowedVariables(outer)
   }
 
-  private def checkLeadingFrom(outer: SemanticState): SemanticCheck =
-    leadingGraphSelection match {
-      case Some(from) => withState(outer)(from.semanticCheck)
-      case None       => success
+  private def checkInitialGraphSelection(outer: SemanticState): SemanticCheck =
+    partitionedClauses.initialGraphSelection.foldSemanticCheck { graphSelection =>
+      withState(outer)(graphSelection.semanticCheck)
     }
 
-  private def checkIllegalImportWith: SemanticCheck = leadingNonImportWith.foldSemanticCheck { wth =>
+  private def checkIllegalImportWith: SemanticCheck = leadingNonImportingWith.foldSemanticCheck { wth =>
     def err(msg: String): SemanticCheck =
       error(s"Importing WITH should consist only of simple references to outside variables. $msg.", wth.position)
 
@@ -463,7 +436,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       return success
     }
 
-    clausesExceptLeadingImportWith.headOption match {
+    partitionedClauses.clausesExceptImportingWith.headOption match {
       case None => success
       case Some(clause) => clause match {
           case _: UseGraph => success
@@ -497,6 +470,70 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def finalScope(scope: Scope): Scope =
     scope.children.last
+}
+
+object SingleQuery {
+
+  /**
+   * The clauses making up a single query.
+   *
+   * @param initialGraphSelection A `USE` clause in first position.
+   * @param importingWith An importing `WITH` clause in first position, or in second position immediately after [[initialGraphSelection]] when defined.
+   * @param subsequentGraphSelection A `USE` clause in second position immediately after [[importingWith]]. If this field is defined then [[initialGraphSelection]] cannot be.
+   * @param clausesExceptImportingWithAndLeadingGraphSelection All the other clauses afterwards.
+   */
+  case class PartitionedClauses(
+    initialGraphSelection: Option[GraphSelection],
+    importingWith: Option[With],
+    subsequentGraphSelection: Option[GraphSelection],
+    clausesExceptImportingWithAndLeadingGraphSelection: Seq[Clause]
+  ) {
+
+    lazy val leadingGraphSelection: Option[GraphSelection] =
+      initialGraphSelection.orElse(subsequentGraphSelection)
+
+    lazy val clausesExceptImportingWithAndInitialGraphSelection: Seq[Clause] =
+      subsequentGraphSelection.toSeq ++ clausesExceptImportingWithAndLeadingGraphSelection
+
+    lazy val clausesExceptImportingWith: Seq[Clause] =
+      initialGraphSelection.toSeq ++
+        subsequentGraphSelection.toSeq ++
+        clausesExceptImportingWithAndLeadingGraphSelection
+  }
+
+  private def partitionClauses(clauses: Seq[Clause]): PartitionedClauses =
+    startingWithImportingWith(clauses)
+      .orElse(startingWithGraphSelection(clauses))
+      .getOrElse(PartitionedClauses(None, None, None, clauses))
+
+  private def startingWithImportingWith(clauses: Seq[Clause]): Option[PartitionedClauses] =
+    extractImportingWith(clauses).map { case (importingWith, subsequentClauses) =>
+      extractGraphSelection(subsequentClauses).map { case (subsequentGraphSelection, otherClauses) =>
+        PartitionedClauses(None, Some(importingWith), Some(subsequentGraphSelection), otherClauses)
+      }.getOrElse {
+        PartitionedClauses(None, Some(importingWith), None, subsequentClauses)
+      }
+    }
+
+  private def startingWithGraphSelection(clauses: Seq[Clause]): Option[PartitionedClauses] =
+    extractGraphSelection(clauses).map { case (initialGraphSelection, subsequentClauses) =>
+      extractImportingWith(subsequentClauses).map { case (importingWith, otherClauses) =>
+        PartitionedClauses(Some(initialGraphSelection), Some(importingWith), None, otherClauses)
+      }.getOrElse {
+        PartitionedClauses(Some(initialGraphSelection), None, None, subsequentClauses)
+      }
+    }
+
+  private def extractImportingWith(clauses: Seq[Clause]): Option[(With, Seq[Clause])] =
+    clauses.headOption.collect {
+      case withClause @ With(false, ri, None, None, None, None, _) if ri.items.forall(_.isPassThrough) =>
+        (withClause, clauses.tail)
+    }
+
+  private def extractGraphSelection(clauses: Seq[Clause]): Option[(UseGraph, Seq[Clause])] =
+    clauses.headOption.collect {
+      case useGraph: UseGraph => (useGraph, clauses.tail)
+    }
 }
 
 object Union {

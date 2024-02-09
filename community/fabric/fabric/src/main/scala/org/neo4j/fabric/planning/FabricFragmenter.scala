@@ -108,13 +108,7 @@ class FabricFragmenter(
     }
 
   private def leadingUse(sq: ast.SingleQuery): Option[ast.GraphSelection] = {
-    val clauses = sq.clausesExceptLeadingImportWith
-    val (use, rest) = clauses.headOption match {
-      case Some(u: ast.UseGraph) => (Some(u), clauses.tail)
-      case _                     => (None, clauses)
-    }
-
-    rest
+    sq.partitionedClauses.clausesExceptImportingWithAndLeadingGraphSelection
       .filter(_.isInstanceOf[ast.UseGraph])
       .map(clause =>
         Errors.syntax(
@@ -124,7 +118,7 @@ class FabricFragmenter(
         )
       )
 
-    use
+    sq.partitionedClauses.leadingGraphSelection
   }
 
   private def makeDefaultUse(graphName: String, pos: InputPosition) =

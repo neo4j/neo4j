@@ -88,12 +88,12 @@ object CompositeQueryFragmenter {
     extractForeignClauses(singleQuery) match {
       case Some(foreignClauses) =>
         // If the clauses start with an import WITH clause, replace its import items with parameters.
-        val rewrittenImportWith = foreignClauses.importWith.map { importWith =>
+        val rewrittenImportWith = foreignClauses.importingWith.map { importWith =>
           parameteriseImportItems(nameGenerator, existingParameterNames, importWith)
         }
 
         CompositeQuery.Single.Foreign(
-          graphReference = foreignClauses.useGraph.graphReference,
+          graphReference = foreignClauses.graphSelection.graphReference,
           clauses = List(
             rewrittenImportWith.map(_.withClause),
             foreignClauses.intermediateClauses,
@@ -123,51 +123,29 @@ object CompositeQueryFragmenter {
   /**
    * The clauses making up a composite (sub-)query.
    *
-   * @param useGraph the USE clause defining the graph on which the query is to be run
-   * @param importWith the import WITH clause, optional
+   * @param importingWith the importing WITH clause, optional
+   * @param graphSelection the USE clause defining the graph on which the query is to be run
    * @param intermediateClauses all the clauses after the USE / import WITH clauses and before the RETURN clause
    * @param returnClause the RETURN clause, optional
    */
   private case class ForeignClauses(
-    useGraph: ast.UseGraph,
-    importWith: Option[ast.With],
+    importingWith: Option[ast.With],
+    graphSelection: ast.GraphSelection,
     intermediateClauses: Seq[ast.Clause],
     returnClause: Option[ast.Return]
   )
 
   /**
-   * Extracts a composite query fragment if the given single query qualifies.
+   * Extracts the clauses making the the query if it has a leading USE clause.
    */
-  private def extractForeignClauses(query: ast.SingleQuery): Option[ForeignClauses] = {
-    // A composite query may start with an import WITH clause.
-    val (headImportWith, clauses) = extractImportWith(query.clauses)
-    clauses.headOption.collect {
-      // The first clause after the optional import WITH must be the USE clause.
-      case useGraph: ast.UseGraph =>
-        val (importWith, otherClauses) = headImportWith match {
-          // In a composite query, if there was no import WITH clause before the USE clause, it may be found directly after it.
-          case None => extractImportWith(clauses.tail)
-          // If there already was an import WITH clause at the start, then any subsequent WITH clause would be a standard clause.
-          case Some(w) => (Some(w), clauses.tail)
-        }
-        val (intermediateClauses, returnClause) = otherClauses.initAndLastOption match {
-          case Some((intermediate, r: ast.Return)) => (intermediate, Some(r))
-          case _                                   => (otherClauses, None)
-        }
-        ForeignClauses(useGraph, importWith, intermediateClauses, returnClause)
-    }
-  }
-
-  /**
-   * Extracts the first clause if it is an importing WITH clause, returning the remaining clauses alongside it.
-   */
-  private def extractImportWith(clauses: Seq[ast.Clause]): (Option[ast.With], Seq[ast.Clause]) =
-    clauses.headOption match {
-      // A WITH clause is an import if it is the first clause, and if it only contains pass-through items.
-      case Some(withClause @ ast.With(false, ri, None, None, None, None, _)) if ri.items.forall(_.isPassThrough) =>
-        (Some(withClause), clauses.tail)
-      case _ =>
-        (None, clauses)
+  private def extractForeignClauses(query: ast.SingleQuery): Option[ForeignClauses] =
+    query.partitionedClauses.leadingGraphSelection.map { graphSelection =>
+      val otherClauses = query.partitionedClauses.clausesExceptImportingWithAndLeadingGraphSelection
+      val (intermediateClauses, returnClause) = otherClauses.initAndLastOption match {
+        case Some((intermediate, r: ast.Return)) => (intermediate, Some(r))
+        case _                                   => (otherClauses, None)
+      }
+      ForeignClauses(query.partitionedClauses.importingWith, graphSelection, intermediateClauses, returnClause)
     }
 
   /**
@@ -216,7 +194,8 @@ object CompositeQueryFragmenter {
    */
   private def extractArguments(query: ast.SingleQuery): Set[LogicalVariable] =
     query
-      .importWith
+      .partitionedClauses
+      .importingWith
       .map(_.returnItems.items.map {
         case _: ast.UnaliasedReturnItem => throw new IllegalStateException("All return items should have been aliased.")
         case ast.AliasedReturnItem(_, variable) => variable

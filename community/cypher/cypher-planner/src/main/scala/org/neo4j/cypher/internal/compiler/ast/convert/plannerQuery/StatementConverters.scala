@@ -70,7 +70,7 @@ object StatementConverters {
     importedVariables: Set[LogicalVariable],
     position: QueryProjection.Position
   ): SinglePlannerQuery = {
-    val allImportedVars = importedVariables ++ q.importWith.map((wth: With) =>
+    val allImportedVars = importedVariables ++ q.partitionedClauses.importingWith.map((wth: With) =>
       wth.returnItems.items.map(_.asInstanceOf[AliasedReturnItem].variable).toSet
     ).getOrElse(Set.empty)
 

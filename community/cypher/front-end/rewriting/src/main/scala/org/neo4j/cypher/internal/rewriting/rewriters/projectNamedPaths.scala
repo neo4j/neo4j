@@ -161,7 +161,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
         // Importing with clauses cannot contain PathExpressions, so we need to add an extra WITH clause before those with all the variables from the path.
         val newAcc = subquery.innerQuery.folder.treeFold(acc) {
           case query: SingleQuery => innerAcc =>
-              val allReturnItems: Seq[ReturnItem] = query.importWith.collect {
+              val allReturnItems: Seq[ReturnItem] = query.partitionedClauses.importingWith.collect {
                 case With(_, ReturnItems(_, items, _), _, _, _, _, _) => items
               }.getOrElse(Seq[ReturnItem]())
 
