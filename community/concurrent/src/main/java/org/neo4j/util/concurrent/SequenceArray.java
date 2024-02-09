@@ -20,8 +20,7 @@
 package org.neo4j.util.concurrent;
 
 import static java.lang.Math.max;
-
-import java.util.Arrays;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
 public class SequenceArray {
     private static final long UNSET = -1L;
@@ -31,16 +30,19 @@ public class SequenceArray {
     private int itemsAhead;
     private final int longsPerItem;
     private int capacity;
+    private int missingCount;
 
     SequenceArray(int longsPerItem, int initialCapacity) {
         this.longsPerItem = longsPerItem;
         this.capacity = initialCapacity;
         this.array = new long[capacity * longsPerItem];
+        this.missingCount = 0;
     }
 
     public void clear() {
         cursor = 0;
         itemsAhead = 0;
+        missingCount = 0;
     }
 
     void offer(long baseNumber, long number, long[] meta) {
@@ -53,6 +55,12 @@ public class SequenceArray {
             array[index(i)] = UNSET;
         }
 
+        // we either close one hole, or add few new holes
+        if (diff < itemsAhead) {
+            missingCount--;
+        } else {
+            missingCount += diff - 1 - itemsAhead;
+        }
         int absIndex = index(index);
         array[absIndex] = number;
         System.arraycopy(meta, 0, array, absIndex + 1, longsPerItem - 1);
@@ -64,9 +72,15 @@ public class SequenceArray {
     }
 
     long pollHighestGapFree(long given, long[] meta) {
-        // assume that "given" would be placed at cursor
+        // when nothing is ahead given is gap free
+        if (itemsAhead == 0) {
+            return given;
+        }
+        // "given" would be placed at cursor
         long number = given;
         int length = itemsAhead - 1;
+        missingCount--;
+        boolean seenHole = false;
         int absIndex = 0;
         for (int i = 0; i < length; i++) {
             // Advance the cursor first because this method is only assumed to be called when offering the number
@@ -75,6 +89,7 @@ public class SequenceArray {
             advanceCursor();
             int tentativeAbsIndex = index(cursor);
             if (array[tentativeAbsIndex] == UNSET) { // we found a gap, return the number before the gap
+                seenHole = true;
                 break;
             }
 
@@ -84,7 +99,11 @@ public class SequenceArray {
                     : "Expected index " + cursor + " to be " + number + ", but was " + array[absIndex]
                             + ". This is for i=" + i;
         }
-
+        if (!seenHole) {
+            // we reached the end of the above loop, this means no holes left, last item is gapFree,
+            // advance cursor once more so it points to "empty" space with zero items ahead
+            advanceCursor();
+        }
         // copy the meta values into the supplied meta
         System.arraycopy(array, absIndex + 1, meta, 0, longsPerItem - 1);
         return number;
@@ -120,59 +139,44 @@ public class SequenceArray {
         for (int i = 0; i < itemsAhead; i++) {
             long value = array[index(cursor + i)];
             if (value != UNSET) {
-                builder.append(builder.length() > 0 ? "," : "").append(value);
+                builder.append(builder.isEmpty() ? "" : ",").append(value);
             }
         }
         return builder.toString();
     }
 
     long[] missingItems(long gapFree) {
-        long[] missingItems = new long[8];
-
-        int remaining = itemsAhead - 1;
-        int queueCursor = cursor + 1;
-        long expected = gapFree + 1;
-        int resultCursor = 0;
-        while (remaining-- > 0) {
-            int absIndex = index(queueCursor);
-            long number = array[absIndex];
-            if (number != UNSET) {
-                if (number != expected) {
-                    for (long missing = expected; missing < number; missing++) {
-                        if (missingItems.length == resultCursor) {
-                            missingItems = Arrays.copyOf(missingItems, missingItems.length << 1);
-                        }
-                        missingItems[resultCursor++] = missing;
-                    }
-                }
-                expected = number + 1;
-            }
-            queueCursor = advanceCursor(queueCursor);
+        int count = missingCount;
+        if (count == 0) {
+            return EMPTY_LONG_ARRAY;
         }
-
-        if (resultCursor < missingItems.length) {
-            missingItems = Arrays.copyOf(missingItems, resultCursor);
+        long[] missingItems = new long[count];
+        int resultCursor = 0;
+        for (int i = 0; i < itemsAhead; i++) {
+            long value = array[index(cursor + i)];
+            if (value == UNSET) {
+                missingItems[resultCursor++] = gapFree + i + 1;
+                if (resultCursor == missingItems.length) {
+                    return missingItems;
+                }
+            }
         }
         return missingItems;
     }
 
-    long[][] snapshot() {
-        long[][] temp = new long[itemsAhead][]; // worst-case size
-        int remaining = itemsAhead - 1;
-        int queueCursor = cursor + 1;
+    long[] snapshot() {
+        int snapshotSize = itemsAhead - missingCount;
+        if (snapshotSize == 0) {
+            return EMPTY_LONG_ARRAY;
+        }
+        long[] snapshot = new long[snapshotSize];
         int resultCursor = 0;
-        while (remaining-- > 0) {
-            int absIndex = index(queueCursor);
-            long number = array[absIndex];
-            if (number != UNSET) {
-                temp[resultCursor++] = Arrays.copyOfRange(array, absIndex, absIndex + longsPerItem);
+        for (int i = 0; i < itemsAhead; i++) {
+            long value = array[index(cursor + i)];
+            if (value != UNSET) {
+                snapshot[resultCursor++] = value;
             }
-            queueCursor = advanceCursor(queueCursor);
         }
-        if (resultCursor < temp.length) {
-            // shrink to actual size
-            temp = Arrays.copyOf(temp, resultCursor);
-        }
-        return temp;
+        return snapshot;
     }
 }

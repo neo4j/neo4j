@@ -449,15 +449,14 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
 
         // And write all stray txIds into the tree
         value.initialize(0);
-        long[][] strayTxIds = txIdSnapshot.idsOutOfOrder();
-        for (long[] strayTxId : strayTxIds) {
-            long txId = strayTxId[0];
-            writer.put(strayTxId(txId), value);
+        long[] strayTxIds = txIdSnapshot.idsOutOfOrder();
+        for (long strayTxId : strayTxIds) {
+            writer.put(strayTxId(strayTxId), value);
         }
 
         // Keep the information about the highest gap free tx id belonging to these written stray ids to be
         // able to write it to the tree header on a checkpoint
-        this.lastWrittenHighestGapFreeId = txIdSnapshot.highestGapFree()[0];
+        this.lastWrittenHighestGapFreeId = txIdSnapshot.highestGapFree();
     }
 
     private long getLastWrittenHighestGapFreeId() {

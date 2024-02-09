@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongFunction;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.Test;
 
 class ArrayQueueOutOfOrderSequenceTest {
@@ -93,7 +94,7 @@ class ArrayQueueOutOfOrderSequenceTest {
     }
 
     @Test
-    void shouldDealWithThisScenario() {
+    void closingLastGapAfterArrayExtension() {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence(0, 5, new long[1]);
         assertTrue(sequence.offer(1, new long[] {0}));
@@ -247,6 +248,23 @@ class ArrayQueueOutOfOrderSequenceTest {
     }
 
     @Test
+    void emptyReverseSnapshotAfterClosingLastGapWithFewCompletedTransactionAhead() {
+        // GIVEN
+        OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence(1L, 5, ArrayUtils.EMPTY_LONG_ARRAY);
+        sequence.offer(3, ArrayUtils.EMPTY_LONG_ARRAY);
+        sequence.offer(2, ArrayUtils.EMPTY_LONG_ARRAY);
+        sequence.offer(8, ArrayUtils.EMPTY_LONG_ARRAY);
+        sequence.offer(7, ArrayUtils.EMPTY_LONG_ARRAY);
+        sequence.offer(6, ArrayUtils.EMPTY_LONG_ARRAY);
+        sequence.offer(5, ArrayUtils.EMPTY_LONG_ARRAY);
+        sequence.offer(4, ArrayUtils.EMPTY_LONG_ARRAY);
+        var reverseSnapshot = sequence.reverseSnapshot();
+        assertThat(reverseSnapshot.highestGapFree()).isEqualTo(8);
+        assertThat(reverseSnapshot.highestEverSeen()).isEqualTo(8);
+        assertThat(reverseSnapshot.missingIds()).isEmpty();
+    }
+
+    @Test
     void shouldSnapshotState() {
         // given
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence(2, 8, new long[] {1, 2});
@@ -262,11 +280,8 @@ class ArrayQueueOutOfOrderSequenceTest {
         sequence.offer(4, new long[] {4, 5});
 
         // then the snapshot should contain data from when it was taken
-        assertArrayEquals(new long[] {3, 3, 4}, snapshot.highestGapFree());
-        assertEquals(3, snapshot.idsOutOfOrder().length);
-        assertArrayEquals(new long[] {6, 6, 7}, snapshot.idsOutOfOrder()[0]);
-        assertArrayEquals(new long[] {10, 10, 11}, snapshot.idsOutOfOrder()[1]);
-        assertArrayEquals(new long[] {12, 12, 13}, snapshot.idsOutOfOrder()[2]);
+        assertThat(snapshot.highestGapFree()).isEqualTo(3);
+        assertThat(snapshot.idsOutOfOrder()).containsExactly(6, 10, 12);
     }
 
     @Test
@@ -289,11 +304,7 @@ class ArrayQueueOutOfOrderSequenceTest {
             @Override
             public Void call() throws InterruptedException {
                 while (snapshots.get() > 0) {
-                    OutOfOrderSequence.Snapshot snapshot = sequence.snapshot();
-                    verifyInternallyConsistent(snapshot.highestGapFree());
-                    for (long[] data : snapshot.idsOutOfOrder()) {
-                        verifyInternallyConsistent(data);
-                    }
+                    verifyInternallyConsistent(sequence.get());
                     sleep(1);
                     snapshots.decrementAndGet();
                 }

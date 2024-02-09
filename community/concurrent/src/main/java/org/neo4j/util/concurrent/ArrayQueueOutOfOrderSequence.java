@@ -35,12 +35,15 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
     private long[] metaArray;
     private volatile long highestEverSeen;
 
+    private volatile ReverseSnapshot reverseSnapshot;
+
     public ArrayQueueOutOfOrderSequence(long startingNumber, int initialArraySize, long[] initialMeta) {
         this.highestGapFreeNumber = startingNumber;
         this.highestEverSeen = startingNumber;
         this.highestGapFreeMeta = Arrays.copyOf(initialMeta, initialMeta.length);
         this.metaArray = Arrays.copyOf(initialMeta, initialMeta.length);
         this.outOfOrderQueue = new SequenceArray(initialMeta.length + 1, initialArraySize);
+        this.reverseSnapshot = new ReverseSnapshot(startingNumber, startingNumber, EMPTY_LONG_ARRAY);
     }
 
     @Override
@@ -50,6 +53,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
             version++;
             highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree(number, metaArray);
             highestGapFreeMeta = highestGapFreeNumber == number ? meta : Arrays.copyOf(metaArray, metaArray.length);
+            reverseSnapshot = null;
             version++;
             return true;
         }
@@ -59,6 +63,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
                     + highestGapFreeNumber + " and was only expecting values higher than that");
         }
         outOfOrderQueue.offer(highestGapFreeNumber, number, pack(meta));
+        reverseSnapshot = null;
         return false;
     }
 
@@ -114,23 +119,27 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
 
     @Override
     public synchronized Snapshot snapshot() {
-        long[] highestGapFree = get();
-        long[][] idsOutOfOrder = outOfOrderQueue.snapshot();
-        return new Snapshot() {
-            @Override
-            public long[] highestGapFree() {
-                return highestGapFree;
-            }
-
-            @Override
-            public long[][] idsOutOfOrder() {
-                return idsOutOfOrder;
-            }
-        };
+        return new Snapshot(highestGapFreeNumber, outOfOrderQueue.snapshot());
     }
 
     @Override
-    public synchronized ReverseSnapshot reverseSnapshot() {
+    public ReverseSnapshot reverseSnapshot() {
+        var rs = reverseSnapshot;
+        if (rs != null) {
+            return rs;
+        }
+        synchronized (this) {
+            rs = reverseSnapshot;
+            if (rs != null) {
+                return rs;
+            }
+            rs = createReverseSnapshot();
+            reverseSnapshot = rs;
+            return rs;
+        }
+    }
+
+    private ReverseSnapshot createReverseSnapshot() {
         long gapFree = highestGapFreeNumber;
         long everSeen = highestEverSeen;
         if (everSeen == gapFree) {
