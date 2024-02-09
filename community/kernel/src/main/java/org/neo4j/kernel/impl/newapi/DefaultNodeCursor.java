@@ -49,13 +49,14 @@ import org.neo4j.storageengine.util.EagerDegrees;
 import org.neo4j.storageengine.util.SingleDegree;
 
 class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implements NodeCursor {
+    final StorageNodeCursor storeCursor;
+    private final InternalCursorFactory internalCursors;
+    private final boolean applyAccessModeToTxState;
     Read read;
     boolean checkHasChanges;
     boolean hasChanges;
     private LongIterator addedNodes;
     private boolean singleIsAddedInTx;
-    final StorageNodeCursor storeCursor;
-    private final InternalCursorFactory internalCursors;
     private StorageNodeCursor securityStoreNodeCursor;
     private StorageRelationshipTraversalCursor securityStoreRelationshipCursor;
     private StoragePropertyCursor securityPropertyCursor;
@@ -64,10 +65,14 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     private boolean isSingle;
 
     DefaultNodeCursor(
-            CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, InternalCursorFactory internalCursors) {
+            CursorPool<DefaultNodeCursor> pool,
+            StorageNodeCursor storeCursor,
+            InternalCursorFactory internalCursors,
+            boolean applyAccessModeToTxState) {
         super(pool);
         this.storeCursor = storeCursor;
         this.internalCursors = internalCursors;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     void scan(Read read) {

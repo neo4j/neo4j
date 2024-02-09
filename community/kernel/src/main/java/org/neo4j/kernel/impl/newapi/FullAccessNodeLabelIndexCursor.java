@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor {
     FullAccessNodeLabelIndexCursor(CursorPool<DefaultNodeLabelIndexCursor> pool) {
-        super(pool, null);
+        super(pool, null, false);
     }
 
     @Override

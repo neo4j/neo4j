@@ -41,16 +41,19 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     private final StorageReader storageReader;
     private final Function<CursorContext, StoreCursors> storeCursorsFactory;
     private final StorageEngineIndexingBehaviour indexingBehaviour;
+    private boolean applyAccessModeToTxState;
 
     public DefaultThreadSafeCursors(
             StorageReader storageReader,
             Config config,
             Function<CursorContext, StoreCursors> storeCursorsFactory,
-            StorageEngineIndexingBehaviour indexingBehaviour) {
+            StorageEngineIndexingBehaviour indexingBehaviour,
+            boolean applyAccessModeToTxState) {
         super(new ConcurrentLinkedQueue<>(), config);
         this.storageReader = storageReader;
         this.storeCursorsFactory = storeCursorsFactory;
         this.indexingBehaviour = indexingBehaviour;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     @Override
@@ -62,7 +65,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     storeCursors.close();
                 },
                 storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker),
+                applyAccessModeToTxState));
     }
 
     @Override
@@ -86,7 +90,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     storeCursors.close();
                 },
                 storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
-                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker),
+                applyAccessModeToTxState));
     }
 
     @Override
@@ -110,7 +115,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     storeCursors.close();
                 },
                 storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
-                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker),
+                applyAccessModeToTxState));
     }
 
     @Override
@@ -134,7 +140,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     storeCursors.close();
                 },
                 storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
-                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker),
+                applyAccessModeToTxState));
     }
 
     @Override
@@ -156,7 +163,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     cursor.release();
                     storeCursors.close();
                 },
-                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker),
+                applyAccessModeToTxState));
     }
 
     @Override
@@ -173,7 +181,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     cursor.release();
                     storeCursors.close();
                 },
-                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker),
+                applyAccessModeToTxState));
     }
 
     @Override
@@ -191,7 +200,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
                     storeCursors.close();
                 },
                 allocateRelationshipScanCursor(cursorContext, memoryTracker),
-                newInternalCursors(storeCursors, cursorContext, memoryTracker)));
+                newInternalCursors(storeCursors, cursorContext, memoryTracker),
+                applyAccessModeToTxState));
     }
 
     @Override
@@ -211,7 +221,8 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
         } else {
             return trace(new DefaultRelationshipBasedRelationshipTypeIndexCursor(
                     DefaultRelationshipBasedRelationshipTypeIndexCursor::release,
-                    allocateRelationshipScanCursor(cursorContext, memoryTracker)));
+                    allocateRelationshipScanCursor(cursorContext, memoryTracker),
+                    applyAccessModeToTxState));
         }
     }
 
@@ -236,6 +247,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
 
     private InternalCursorFactory newInternalCursors(
             StoreCursors storeCursors, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        return new InternalCursorFactory(storageReader, storeCursors, cursorContext, memoryTracker);
+        return new InternalCursorFactory(
+                storageReader, storeCursors, cursorContext, memoryTracker, applyAccessModeToTxState);
     }
 }

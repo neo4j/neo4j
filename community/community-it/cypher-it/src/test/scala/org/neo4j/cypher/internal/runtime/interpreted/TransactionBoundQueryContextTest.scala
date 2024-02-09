@@ -136,7 +136,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFil
       null,
       StoreCursors.NULL,
       Config.defaults(),
-      indexingBehaviour
+      indexingBehaviour,
+      false
     ))
     val tc = new Neo4jTransactionalContext(
       graph,
@@ -173,7 +174,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFil
       null,
       StoreCursors.NULL,
       Config.defaults(),
-      indexingBehaviour
+      indexingBehaviour,
+      false
     ))
     val tc = new Neo4jTransactionalContext(
       graph,
@@ -438,7 +440,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFil
       null,
       StoreCursors.NULL,
       Config.defaults(),
-      indexingBehaviour
+      indexingBehaviour,
+      false
     ))
     val tc = new Neo4jTransactionalContext(
       graph,

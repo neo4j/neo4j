@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 class FullAccessRelationshipValueIndexCursor extends DefaultRelationshipValueIndexCursor {
     FullAccessRelationshipValueIndexCursor(CursorPool<DefaultRelationshipValueIndexCursor> pool) {
-        super(pool, null, null);
+        super(pool, null, null, false);
     }
 
     @Override

@@ -36,6 +36,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         implements RelationshipTraversalCursor {
     private final StorageRelationshipTraversalCursor storeCursor;
     private final InternalCursorFactory internalCursors;
+    private final boolean applyAccessModeToTxState;
     private DefaultNodeCursor securityNodeCursor;
     private LongIterator addedRelationships;
     private long originNodeReference;
@@ -46,10 +47,12 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
     DefaultRelationshipTraversalCursor(
             CursorPool<DefaultRelationshipTraversalCursor> pool,
             StorageRelationshipTraversalCursor storeCursor,
-            InternalCursorFactory internalCursors) {
+            InternalCursorFactory internalCursors,
+            boolean applyAccessModeToTxState) {
         super(storeCursor, pool);
         this.storeCursor = storeCursor;
         this.internalCursors = internalCursors;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     /**

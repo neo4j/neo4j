@@ -37,16 +37,19 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
         implements RelationshipValueIndexCursor {
     private final InternalCursorFactory internalCursors;
     private final DefaultRelationshipScanCursor relationshipScanCursor;
+    private final boolean applyAccessModeToTxState;
     private DefaultPropertyCursor securityPropertyCursor;
     private int[] propertyIds;
 
     DefaultRelationshipValueIndexCursor(
             CursorPool<DefaultRelationshipValueIndexCursor> pool,
             DefaultRelationshipScanCursor relationshipScanCursor,
-            InternalCursorFactory internalCursors) {
+            InternalCursorFactory internalCursors,
+            boolean applyAccessModeToTxState) {
         super(pool);
         this.relationshipScanCursor = relationshipScanCursor;
         this.internalCursors = internalCursors;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     @Override

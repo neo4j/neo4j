@@ -94,7 +94,7 @@ class DefaultRelationshipTraversalCursorTest {
         // given
         StorageRelationshipTraversalCursor storeCursor = storeCursor(100, 102, 104);
         DefaultRelationshipTraversalCursor cursor =
-                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors);
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
         Read read = emptyTxState();
 
         // when
@@ -109,7 +109,7 @@ class DefaultRelationshipTraversalCursorTest {
         // given
         StorageRelationshipTraversalCursor storeCursor = storeCursor(100, 102, 104);
         DefaultRelationshipTraversalCursor cursor =
-                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors);
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
         Read read = txState(3, 4);
 
         // when
@@ -130,7 +130,7 @@ class DefaultRelationshipTraversalCursorTest {
                 rel(104, node, 52, type));
 
         DefaultRelationshipTraversalCursor cursor =
-                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors);
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
         Read read = txState(
                 rel(3, node, 50, type),
                 rel(4, 50, node, type),
@@ -158,7 +158,7 @@ class DefaultRelationshipTraversalCursorTest {
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
 
         DefaultRelationshipTraversalCursor cursor =
-                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors);
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
         Read read = txState(
                 rel(3, node, 50, type),
                 rel(4, 50, node, type),
@@ -179,7 +179,7 @@ class DefaultRelationshipTraversalCursorTest {
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
 
         DefaultRelationshipTraversalCursor cursor =
-                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors);
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
         Read read = txState(
                 rel(3, node, 50, type),
                 rel(4, 50, node, type),
@@ -201,7 +201,7 @@ class DefaultRelationshipTraversalCursorTest {
         StorageRelationshipTraversalCursor storeCursor = emptyStoreCursor();
 
         DefaultRelationshipTraversalCursor cursor =
-                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors);
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
         Read read = txState(
                 rel(3, node, 50, type),
                 rel(2, node, node, type),
@@ -225,7 +225,7 @@ class DefaultRelationshipTraversalCursorTest {
         final var endId = 42;
 
         final var storeCursor = emptyStoreCursor();
-        final var cursor = new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors);
+        final var cursor = new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, internalCursors, false);
         final var read = txState(
                 rel(3, node, 50, type),
                 rel(2, node, node, type),

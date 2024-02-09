@@ -24,7 +24,7 @@ public class FullAccessRelationshipBasedRelationshipTypeIndexCursor
     FullAccessRelationshipBasedRelationshipTypeIndexCursor(
             CursorPool<DefaultRelationshipBasedRelationshipTypeIndexCursor> pool,
             DefaultRelationshipScanCursor relationshipScanCursor) {
-        super(pool, relationshipScanCursor);
+        super(pool, relationshipScanCursor, false);
     }
 
     @Override

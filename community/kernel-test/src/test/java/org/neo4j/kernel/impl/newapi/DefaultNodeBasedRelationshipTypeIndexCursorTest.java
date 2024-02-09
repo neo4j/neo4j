@@ -48,11 +48,14 @@ class DefaultNodeBasedRelationshipTypeIndexCursorTest {
         // given
         var storageCursors = new StubStorageCursors();
         var internalCursors =
-                new InternalCursorFactory(storageCursors, NULL, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
-        var nodeCursor =
-                new DefaultNodeCursor(c -> {}, storageCursors.allocateNodeCursor(NULL_CONTEXT, NULL), internalCursors);
+                new InternalCursorFactory(storageCursors, NULL, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, false);
+        var nodeCursor = new DefaultNodeCursor(
+                c -> {}, storageCursors.allocateNodeCursor(NULL_CONTEXT, NULL), internalCursors, false);
         var relationshipCursor = new DefaultRelationshipTraversalCursor(
-                c -> {}, storageCursors.allocateRelationshipTraversalCursor(NULL_CONTEXT, NULL), internalCursors);
+                c -> {},
+                storageCursors.allocateRelationshipTraversalCursor(NULL_CONTEXT, NULL),
+                internalCursors,
+                false);
         var cursor = new DefaultNodeBasedRelationshipTypeIndexCursor(c -> {}, nodeCursor, relationshipCursor);
         var read = mock(Read.class);
         when(read.getAccessMode()).thenReturn(AccessMode.Static.FULL);

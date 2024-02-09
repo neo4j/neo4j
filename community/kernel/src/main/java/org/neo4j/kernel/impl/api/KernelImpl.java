@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionTimeout;
@@ -85,7 +86,8 @@ public class KernelImpl extends LifecycleAdapter implements Kernel {
                 storageEngine.newReader(),
                 config,
                 storageEngine::createStorageCursors,
-                storageEngine.indexingBehaviour());
+                storageEngine.indexingBehaviour(),
+                storageEngine.getOpenOptions().contains(PageCacheOpenOptions.MULTI_VERSIONED));
         this.transactionExecutionMonitor = transactionExecutionMonitor;
     }
 

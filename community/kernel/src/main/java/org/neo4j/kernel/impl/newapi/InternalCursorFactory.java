@@ -39,16 +39,19 @@ class InternalCursorFactory {
     private final StoreCursors storeCursors;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
+    private boolean applyAccessModeToTxState;
 
     InternalCursorFactory(
             StorageReader storageReader,
             StoreCursors storeCursors,
             CursorContext cursorContext,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean applyAccessModeToTxState) {
         this.storageReader = storageReader;
         this.storeCursors = storeCursors;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     StorageNodeCursor allocateStorageNodeCursor() {
@@ -64,7 +67,7 @@ class InternalCursorFactory {
     }
 
     DefaultNodeCursor allocateNodeCursor() {
-        return new DefaultNodeCursor(c -> {}, allocateStorageNodeCursor(), this);
+        return new DefaultNodeCursor(c -> {}, allocateStorageNodeCursor(), this, applyAccessModeToTxState);
     }
 
     FullAccessNodeCursor allocateFullAccessNodeCursor() {
@@ -78,6 +81,9 @@ class InternalCursorFactory {
 
     DefaultPropertyCursor allocatePropertyCursor() {
         return new DefaultPropertyCursor(
-                c -> {}, storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker), this);
+                c -> {},
+                storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
+                this,
+                applyAccessModeToTxState);
     }
 }

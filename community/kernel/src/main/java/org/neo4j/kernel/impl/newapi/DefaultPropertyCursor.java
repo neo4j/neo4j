@@ -45,9 +45,10 @@ import org.neo4j.values.storable.ValueGroup;
 public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCursor>
         implements PropertyCursor, Supplier<TokenSet>, RelTypeSupplier {
     private static final int NODE = -2;
-    private Read read;
     final StoragePropertyCursor storeCursor;
     private final InternalCursorFactory internalCursors;
+    private final boolean applyAccessModeToTxState;
+    private Read read;
     private StoragePropertyCursor securityPropertyCursor;
     private FullAccessNodeCursor securityNodeCursor;
     private FullAccessRelationshipScanCursor securityRelCursor;
@@ -65,10 +66,12 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     DefaultPropertyCursor(
             CursorPool<DefaultPropertyCursor> pool,
             StoragePropertyCursor storeCursor,
-            InternalCursorFactory internalCursors) {
+            InternalCursorFactory internalCursors,
+            boolean applyAccessModeToTxState) {
         super(pool);
         this.storeCursor = storeCursor;
         this.internalCursors = internalCursors;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     void initNode(long nodeReference, Reference reference, PropertySelection selection, Read read) {

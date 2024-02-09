@@ -34,13 +34,18 @@ import org.neo4j.storageengine.api.PropertySelection;
 class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultNodeValueIndexCursor>
         implements NodeValueIndexCursor {
     private final InternalCursorFactory internalCursors;
+    private final boolean applyAccessModeToTxState;
     private DefaultNodeCursor securityNodeCursor;
     private DefaultPropertyCursor securityPropertyCursor;
     private int[] propertyIds;
 
-    DefaultNodeValueIndexCursor(CursorPool<DefaultNodeValueIndexCursor> pool, InternalCursorFactory internalCursors) {
+    DefaultNodeValueIndexCursor(
+            CursorPool<DefaultNodeValueIndexCursor> pool,
+            InternalCursorFactory internalCursors,
+            boolean applyAccessModeToTxState) {
         super(pool);
         this.internalCursors = internalCursors;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     /**

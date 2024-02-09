@@ -31,12 +31,17 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 
 class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultNodeLabelIndexCursor>
         implements NodeLabelIndexCursor {
-    private DefaultNodeCursor securityNodeCursor;
     private final InternalCursorFactory internalCursors;
+    private final boolean applyAccessModeToTxState;
+    private DefaultNodeCursor securityNodeCursor;
 
-    DefaultNodeLabelIndexCursor(CursorPool<DefaultNodeLabelIndexCursor> pool, InternalCursorFactory internalCursors) {
+    DefaultNodeLabelIndexCursor(
+            CursorPool<DefaultNodeLabelIndexCursor> pool,
+            InternalCursorFactory internalCursors,
+            boolean applyAccessModeToTxState) {
         super(pool);
         this.internalCursors = internalCursors;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     @Override

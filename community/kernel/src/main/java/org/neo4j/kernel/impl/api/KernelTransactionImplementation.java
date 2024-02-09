@@ -368,7 +368,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.lockClient = ParallelAccessCheck.maybeWrapLockClient(lockManager.newClient());
         StorageLocks storageLocks = storageEngine.createStorageLocks(lockClient);
         DefaultPooledCursors cursors = new DefaultPooledCursors(
-                storageReader, transactionalCursors, config, storageEngine.indexingBehaviour());
+                storageReader, transactionalCursors, config, storageEngine.indexingBehaviour(), multiVersioned);
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler(securityLog);
         var kernelToken = new KernelToken(storageReader, commandCreationContext, this, tokenHolders);
         this.allStoreHolder = new AllStoreHolder.ForTransactionScope(
@@ -518,7 +518,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     executionContextStorageReader,
                     executionContextStoreCursors,
                     config,
-                    storageEngine.indexingBehaviour());
+                    storageEngine.indexingBehaviour(),
+                    multiVersioned);
             LockManager.Client executionContextLockClient = lockManager.newClient();
             executionContextLockClient.initialize(
                     leaseService.newClient(), transactionId, executionContextMemoryTracker, config);

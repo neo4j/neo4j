@@ -116,6 +116,7 @@ public abstract class AllStoreHolder extends Read {
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
 
     private final EntityCounter entityCounter;
+    private final boolean applyAccessModeToTxState;
 
     private AllStoreHolder(
             StorageReader storageReader,
@@ -139,6 +140,7 @@ public abstract class AllStoreHolder extends Read {
         this.indexStatisticsStore = indexStatisticsStore;
         this.memoryTracker = memoryTracker;
         this.entityCounter = new EntityCounter(multiVersioned);
+        this.applyAccessModeToTxState = multiVersioned;
     }
 
     @Override

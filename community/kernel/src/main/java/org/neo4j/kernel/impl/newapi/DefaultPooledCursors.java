@@ -38,6 +38,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private final StorageReader storageReader;
     private final StoreCursors storeCursors;
     private final StorageEngineIndexingBehaviour indexingBehaviour;
+    private final boolean applyAccessModeToTxState;
     private DefaultNodeCursor nodeCursor;
     private FullAccessNodeCursor fullAccessNodeCursor;
     private DefaultRelationshipScanCursor relationshipScanCursor;
@@ -59,11 +60,13 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             StorageReader storageReader,
             StoreCursors storeCursors,
             Config config,
-            StorageEngineIndexingBehaviour indexingBehaviour) {
+            StorageEngineIndexingBehaviour indexingBehaviour,
+            boolean applyAccessModeToTxState) {
         super(new ArrayList<>(), config);
         this.storageReader = storageReader;
         this.storeCursors = storeCursors;
         this.indexingBehaviour = indexingBehaviour;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     @Override
@@ -72,7 +75,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             return trace(new DefaultNodeCursor(
                     this::accept,
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
-                    newInternalCursors(cursorContext, memoryTracker)));
+                    newInternalCursors(cursorContext, memoryTracker),
+                    applyAccessModeToTxState));
         }
 
         try {
@@ -119,7 +123,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             return trace(new DefaultRelationshipScanCursor(
                     this::accept,
                     storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
-                    newInternalCursors(cursorContext, memoryTracker)));
+                    newInternalCursors(cursorContext, memoryTracker),
+                    applyAccessModeToTxState));
         }
 
         try {
@@ -171,7 +176,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             return trace(new DefaultRelationshipTraversalCursor(
                     this::accept,
                     storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
-                    newInternalCursors(cursorContext, memoryTracker)));
+                    newInternalCursors(cursorContext, memoryTracker),
+                    applyAccessModeToTxState));
         }
 
         try {
@@ -218,7 +224,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             return trace(new DefaultPropertyCursor(
                     this::accept,
                     storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
-                    newInternalCursors(cursorContext, memoryTracker)));
+                    newInternalCursors(cursorContext, memoryTracker),
+                    applyAccessModeToTxState));
         }
 
         try {
@@ -264,8 +271,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     public DefaultNodeValueIndexCursor allocateNodeValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (nodeValueIndexCursor == null) {
-            return trace(
-                    new DefaultNodeValueIndexCursor(this::accept, newInternalCursors(cursorContext, memoryTracker)));
+            return trace(new DefaultNodeValueIndexCursor(
+                    this::accept, newInternalCursors(cursorContext, memoryTracker), applyAccessModeToTxState));
         }
 
         try {
@@ -331,8 +338,8 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     public DefaultNodeLabelIndexCursor allocateNodeLabelIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (nodeLabelIndexCursor == null) {
-            return trace(
-                    new DefaultNodeLabelIndexCursor(this::accept, newInternalCursors(cursorContext, memoryTracker)));
+            return trace(new DefaultNodeLabelIndexCursor(
+                    this::accept, newInternalCursors(cursorContext, memoryTracker), applyAccessModeToTxState));
         }
 
         try {
@@ -378,9 +385,10 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             DefaultRelationshipScanCursor relationshipScanCursor = new DefaultRelationshipScanCursor(
                     c -> {},
                     storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
-                    internalCursors);
-            return trace(
-                    new DefaultRelationshipValueIndexCursor(this::accept, relationshipScanCursor, internalCursors));
+                    internalCursors,
+                    applyAccessModeToTxState);
+            return trace(new DefaultRelationshipValueIndexCursor(
+                    this::accept, relationshipScanCursor, internalCursors, applyAccessModeToTxState));
         }
 
         try {
@@ -407,16 +415,18 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                 var relationshipTraversalCursor = new DefaultRelationshipTraversalCursor(
                         c -> {},
                         storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
-                        internalCursors);
+                        internalCursors,
+                        applyAccessModeToTxState);
                 return trace(new DefaultNodeBasedRelationshipTypeIndexCursor(
                         this::accept, internalCursors.allocateNodeCursor(), relationshipTraversalCursor));
             } else {
                 var relationshipScanCursor = new DefaultRelationshipScanCursor(
                         c -> {},
                         storageReader.allocateRelationshipScanCursor(cursorContext, storeCursors),
-                        internalCursors);
-                return trace(
-                        new DefaultRelationshipBasedRelationshipTypeIndexCursor(this::accept, relationshipScanCursor));
+                        internalCursors,
+                        applyAccessModeToTxState);
+                return trace(new DefaultRelationshipBasedRelationshipTypeIndexCursor(
+                        this::accept, relationshipScanCursor, applyAccessModeToTxState));
             }
         }
 
@@ -535,6 +545,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     private InternalCursorFactory newInternalCursors(CursorContext cursorContext, MemoryTracker memoryTracker) {
-        return new InternalCursorFactory(storageReader, storeCursors, cursorContext, memoryTracker);
+        return new InternalCursorFactory(
+                storageReader, storeCursors, cursorContext, memoryTracker, applyAccessModeToTxState);
     }
 }

@@ -30,20 +30,23 @@ import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements RelationshipScanCursor {
+    private final StorageRelationshipScanCursor storeCursor;
+    private final InternalCursorFactory internalCursors;
+    private final boolean applyAccessModeToTxState;
     private long single;
     private boolean isSingle;
     private LongIterator addedRelationships;
-    private final StorageRelationshipScanCursor storeCursor;
-    private final InternalCursorFactory internalCursors;
     private DefaultNodeCursor securityNodeCursor;
 
     DefaultRelationshipScanCursor(
             CursorPool<DefaultRelationshipScanCursor> pool,
             StorageRelationshipScanCursor storeCursor,
-            InternalCursorFactory internalCursors) {
+            InternalCursorFactory internalCursors,
+            boolean applyAccessModeToTxState) {
         super(storeCursor, pool);
         this.storeCursor = storeCursor;
         this.internalCursors = internalCursors;
+        this.applyAccessModeToTxState = applyAccessModeToTxState;
     }
 
     void scan(Read read) {

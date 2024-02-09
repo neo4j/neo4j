@@ -51,7 +51,7 @@ class DefaultNodeCursorTest {
         var read = buildReadState(txState -> txState.nodeDoCreate(NODEID));
 
         var storageCursor = mock(StorageNodeCursor.class);
-        try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, internalCursors)) {
+        try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, internalCursors, false)) {
             defaultCursor.single(NODEID, read);
             assertTrue(defaultCursor.next());
             assertFalse(defaultCursor.hasLabel());
@@ -66,7 +66,7 @@ class DefaultNodeCursorTest {
         var read = buildReadState(txState -> txState.nodeDoCreate(NODEID));
 
         var storageCursor = mock(StorageNodeCursor.class);
-        try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, internalCursors)) {
+        try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, internalCursors, false)) {
             defaultCursor.single(NODEID, read);
             assertTrue(defaultCursor.next());
             assertFalse(defaultCursor.hasLabel(7));

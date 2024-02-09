@@ -24,7 +24,7 @@ import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 public class FullAccessRelationshipTraversalCursor extends DefaultRelationshipTraversalCursor {
     FullAccessRelationshipTraversalCursor(
             CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor) {
-        super(pool, storeCursor, null);
+        super(pool, storeCursor, null, false);
     }
 
     @Override
