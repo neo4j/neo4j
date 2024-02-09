@@ -506,16 +506,21 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
 sealed trait GraphReference extends ASTNode with SemanticCheckable {
   override def semanticCheck: SemanticCheck = success
   def print: String
+  def dependencies: Set[LogicalVariable]
 }
 
 final case class GraphDirectReference(catalogName: CatalogName)(val position: InputPosition) extends GraphReference {
   override def print: String = catalogName.qualifiedNameString
+
+  override def dependencies: Set[LogicalVariable] = Set.empty
 }
 
 final case class GraphFunctionReference(functionInvocation: FunctionInvocation)(
   val position: InputPosition
 ) extends GraphReference with SemanticAnalysisTooling {
   override def print: String = ExpressionStringifier(_.asCanonicalStringVal).apply(functionInvocation)
+
+  override def dependencies: Set[LogicalVariable] = functionInvocation.dependencies
 
   def checkFunctionCall: SemanticCheck = {
     functionInvocation.function match {

@@ -348,4 +348,34 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .argument()
       .build()
   }
+
+  test("should plan a composite query with a graph reference dependency with no importing WITH") {
+    val query =
+      """UNWIND ['db.customerAME', 'db.customerEU'] as component
+        |CALL {
+        |  USE graph.byName(component) // depends on `component` without importing it
+        |  MATCH (n)
+        |  RETURN n.prop as prop
+        |}
+        |RETURN prop
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("prop")
+      .apply()
+      .|.runQueryAt(
+        query =
+          """MATCH (`n`)
+            |RETURN (`n`).`prop` AS `prop`""".stripMargin,
+        graphReference = "graph.byName(component)",
+        columns = Set("prop")
+      )
+      .|.argument("component")
+      .unwind("['db.customerAME', 'db.customerEU'] AS component")
+      .argument()
+      .build()
+  }
 }

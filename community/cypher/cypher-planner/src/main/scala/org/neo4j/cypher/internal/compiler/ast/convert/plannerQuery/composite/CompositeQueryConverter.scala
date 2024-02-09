@@ -54,7 +54,8 @@ object CompositeQueryConverter {
     semanticTable: SemanticTable,
     foreign: CompositeQuery.Single.Foreign
   ): ir.SinglePlannerQuery = {
-    val builder = PlannerQueryBuilder(semanticTable, foreign.parameters.view.values.toSet)
+    val argumentIds = foreign.parameters.view.values.toSet.union(foreign.graphReference.dependencies)
+    val builder = PlannerQueryBuilder(semanticTable, argumentIds)
     builder
       .withHorizon(ir.RunQueryAtProjection(
         graphReference = foreign.graphReference,
