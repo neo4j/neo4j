@@ -76,6 +76,8 @@ class ParallelTransactionalContextWrapper(
     override def getPageCacheMisses: Long = tracer.faults();
   }
 
+  override def transactionHeapHighWaterMark: Long = _kernelExecutionContext.memoryTracker().heapHighWaterMark()
+
   override def kernelExecutionContext: ExecutionContext = _kernelExecutionContext
 
   override def commitTransaction(): Unit = unsupported()
@@ -86,7 +88,7 @@ class ParallelTransactionalContextWrapper(
 
   override def cursorContext: CursorContext = _kernelExecutionContext.cursorContext
 
-  override def memoryTracker: MemoryTracker = kernelExecutionContext.memoryTracker()
+  override def memoryTracker: MemoryTracker = _kernelExecutionContext.memoryTracker()
 
   override def locks: Locks = _kernelExecutionContext.locks()
 

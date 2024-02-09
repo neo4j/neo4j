@@ -23,6 +23,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -31,6 +32,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.DelegatingMemoryPool;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.ExecutionContextMemoryTracker;
+import org.neo4j.memory.HighWaterMarkMemoryPool;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryLimitExceededException;
@@ -45,6 +47,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
     private final BooleanSupplier openCheck;
     private final LogProvider logProvider;
     private final LocalMemoryTracker transactionTracker;
+    private final AtomicReference<HighWaterMarkMemoryPool> heapHighWaterMarkPool = new AtomicReference<>();
     private volatile boolean hasExecutionContextMemoryTrackers = false;
 
     public TransactionMemoryPool(
@@ -54,7 +57,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
         this.config = config;
         this.openCheck = openCheck;
         this.logProvider = logProvider;
-        this.transactionTracker = createMemoryTracer();
+        this.transactionTracker = createMemoryTracker();
     }
 
     @Override
@@ -119,7 +122,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
         delegate.releaseNative(bytes);
     }
 
-    private LocalMemoryTracker createMemoryTracer() {
+    private LocalMemoryTracker createMemoryTracker() {
         return new LocalMemoryTracker(
                 this,
                 LocalMemoryTracker.NO_LIMIT,
@@ -129,9 +132,18 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
                 memoryLeakLogger(logProvider.getLog(getClass())));
     }
 
+    private HighWaterMarkMemoryPool highWaterMarkMemoryPool() {
+        var pool = heapHighWaterMarkPool.get();
+        if (pool == null) {
+            pool = new HighWaterMarkMemoryPool(this);
+            heapHighWaterMarkPool.compareAndSet(null, pool);
+        }
+        return pool;
+    }
+
     private ExecutionContextMemoryTracker createExecutionContextMemoryTracker(long grabSize, long maxGrabSize) {
         return new ExecutionContextMemoryTracker(
-                this,
+                highWaterMarkMemoryPool(),
                 LocalMemoryTracker.NO_LIMIT,
                 grabSize,
                 maxGrabSize,
@@ -154,6 +166,10 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
         if (hasExecutionContextMemoryTrackers) {
             releaseHeap(usedHeap());
             hasExecutionContextMemoryTrackers = false;
+        }
+        var highWaterMarkMemoryPool = heapHighWaterMarkPool.get();
+        if (highWaterMarkMemoryPool != null) {
+            highWaterMarkMemoryPool.reset();
         }
 
         assert usedNative() == 0

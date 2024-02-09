@@ -80,6 +80,8 @@ abstract class TransactionalContextWrapper extends QueryTransactionalContext {
 class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
     extends TransactionalContextWrapper {
 
+  override def transactionHeapHighWaterMark: Long = tc.kernelTransaction().memoryTracker().heapHighWaterMark()
+
   override def kernelTransaction: KernelTransaction = tc.kernelTransaction()
 
   override def kernelTransactionalContext: TransactionalContext = tc

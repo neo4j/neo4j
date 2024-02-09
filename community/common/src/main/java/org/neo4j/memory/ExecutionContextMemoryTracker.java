@@ -23,7 +23,7 @@ import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.internal.helpers.Numbers.ceilingPowerOfTwo;
 import static org.neo4j.kernel.api.exceptions.Status.General.TransactionOutOfMemoryError;
-import static org.neo4j.memory.MemoryPools.NO_TRACKING;
+import static org.neo4j.memory.HighWaterMarkMemoryPool.NO_TRACKING;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 import static org.neo4j.util.Preconditions.requirePositive;
 
@@ -62,7 +62,7 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
     /**
      * Imposes limits on a {@link MemoryGroup} level, e.g. global maximum transactions size
      */
-    private final MemoryPool memoryPool;
+    private final HighWaterMarkMemoryPool memoryPool;
 
     /**
      * The chunk size to reserve from the memory pool
@@ -109,32 +109,32 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
      */
     private long allocatedBytesNative;
 
-    /**
-     * The heap high water mark, i.e. the maximum observed allocated heap bytes
-     */
-    private long heapHighWaterMark;
-
     public ExecutionContextMemoryTracker() {
         this(NO_TRACKING);
     }
 
-    public ExecutionContextMemoryTracker(MemoryPool memoryPool) {
+    public ExecutionContextMemoryTracker(HighWaterMarkMemoryPool memoryPool) {
         this(memoryPool, INFINITY, DEFAULT_GRAB_SIZE, DEFAULT_GRAB_SIZE, null);
     }
 
     public ExecutionContextMemoryTracker(
-            MemoryPool memoryPool, long localBytesLimit, long grabSize, long maxGrabSize, String limitSettingName) {
+            HighWaterMarkMemoryPool memoryPool,
+            long localBytesLimit,
+            long grabSize,
+            long maxGrabSize,
+            String limitSettingName) {
         this(memoryPool, localBytesLimit, grabSize, maxGrabSize, limitSettingName, () -> true);
     }
 
     public ExecutionContextMemoryTracker(
-            MemoryPool memoryPool,
+            HighWaterMarkMemoryPool memoryPool,
             long localBytesLimit,
             long grabSize,
             long maxGrabSize,
             String limitSettingName,
             BooleanSupplier openCheck) {
         this.memoryPool = requireNonNull(memoryPool);
+
         this.localBytesLimit = validateLimit(localBytesLimit);
         this.grabSize = requireNonNegative(grabSize);
         this.maxGrabSize = requireNonNegative(maxGrabSize);
@@ -204,10 +204,6 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
                     limitSettingName);
         }
 
-        if (allocatedBytesHeap > heapHighWaterMark) {
-            heapHighWaterMark = allocatedBytesHeap;
-        }
-
         localHeapPool -= bytes;
         if (localHeapPool < 0) {
             long grab = max(bytes, grabSize);
@@ -240,7 +236,7 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
 
     @Override
     public long heapHighWaterMark() {
-        return heapHighWaterMark;
+        return memoryPool.heapHighWaterMark();
     }
 
     /**
@@ -268,7 +264,6 @@ public class ExecutionContextMemoryTracker implements LimitedMemoryTracker {
         localHeapPool = 0;
         allocatedBytesHeap = 0;
         allocatedBytesNative = 0;
-        heapHighWaterMark = 0;
     }
 
     @Override

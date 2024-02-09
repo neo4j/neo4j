@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.kernel.api.exceptions.Status
@@ -481,7 +482,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
           )
         } else {
 
-          val runtimeResult =
+          val runtimeResult: RuntimeResult =
             executionPlan.run(queryContext, innerExecutionMode, params, prePopulateResults, input, subscriber)
 
           val filteredRuntimeNotifications = runtimeResult.notifications().asScala

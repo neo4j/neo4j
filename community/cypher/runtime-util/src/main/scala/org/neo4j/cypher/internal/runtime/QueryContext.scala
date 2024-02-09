@@ -750,6 +750,7 @@ trait RelationshipOperations extends Operations[VirtualRelationshipValue, Relati
 
 trait QueryTransactionalContext extends CloseableResource {
 
+  def transactionHeapHighWaterMark: Long
   def commitTransaction(): Unit
 
   def kernelExecutionContext: ExecutionContext

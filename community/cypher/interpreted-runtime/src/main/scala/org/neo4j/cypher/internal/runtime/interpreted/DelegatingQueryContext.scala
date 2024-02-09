@@ -770,6 +770,8 @@ class DelegatingOperations[T, CURSOR](override protected val inner: Operations[T
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
 
+  override def transactionHeapHighWaterMark: Long = inner.transactionHeapHighWaterMark
+
   override def isTransactionOpen: Boolean = inner.isTransactionOpen
 
   override def assertTransactionOpen(): Unit = inner.assertTransactionOpen()

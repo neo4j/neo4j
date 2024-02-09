@@ -22,6 +22,7 @@ package org.neo4j.memory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -29,8 +30,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.memory.ExecutionContextMemoryTracker.NO_LIMIT;
-import static org.neo4j.memory.MemoryPools.NO_TRACKING;
+import static org.neo4j.memory.HighWaterMarkMemoryPool.NO_TRACKING;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 class ExecutionContextMemoryTrackerTest {
@@ -98,7 +102,7 @@ class ExecutionContextMemoryTrackerTest {
 
     @Test
     void throwsOnPoolLimitHeap() {
-        var pool = new MemoryPoolImpl(5, true, "poolSetting");
+        var pool = new HighWaterMarkMemoryPool(new MemoryPoolImpl(5, true, "poolSetting"));
         var tracker = new ExecutionContextMemoryTracker(pool, 10, 0, 0, "localSetting");
 
         assertThatThrownBy(() -> tracker.allocateHeap(10))
@@ -110,7 +114,7 @@ class ExecutionContextMemoryTrackerTest {
 
     @Test
     void throwsOnPoolLimitNative() {
-        var pool = new MemoryPoolImpl(5, true, "poolSetting");
+        var pool = new HighWaterMarkMemoryPool(new MemoryPoolImpl(5, true, "poolSetting"));
         var tracker = new ExecutionContextMemoryTracker(pool, 10, 0, 0, "localSetting");
 
         assertThatThrownBy(() -> tracker.allocateNative(10))
@@ -125,7 +129,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -158,7 +162,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -191,7 +195,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 16;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -226,7 +230,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -255,7 +259,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -291,7 +295,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -325,7 +329,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 16;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -360,7 +364,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -392,7 +396,7 @@ class ExecutionContextMemoryTrackerTest {
         long grabSize = 20;
         long maxGrabSize = 100;
         long initialCredit = 20;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -422,7 +426,7 @@ class ExecutionContextMemoryTrackerTest {
         long grabSize = 20;
         long maxGrabSize = 100;
         long initialCredit = 20;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -449,7 +453,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -478,7 +482,7 @@ class ExecutionContextMemoryTrackerTest {
         // Given
         long grabSize = 20;
         long maxGrabSize = 100;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -510,7 +514,7 @@ class ExecutionContextMemoryTrackerTest {
         long grabSize = 20;
         long maxGrabSize = 100;
         long initialCredit = 20;
-        MemoryPool pool = mock(MemoryPool.class);
+        HighWaterMarkMemoryPool pool = mock(HighWaterMarkMemoryPool.class);
         ExecutionContextMemoryTracker memoryTracker =
                 new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, maxGrabSize, "settingName");
 
@@ -523,5 +527,42 @@ class ExecutionContextMemoryTrackerTest {
         verifyNoMoreInteractions(pool);
 
         memoryTracker.reset();
+    }
+
+    @Test
+    void trackHeapHighWaterMark() {
+        var pool = new HighWaterMarkMemoryPool(new MemoryPoolImpl(1000, true, "poolSetting"));
+        var grabSize = 100;
+        ExecutionContextMemoryTracker memoryTracker =
+                new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, grabSize, "poolSetting");
+        memoryTracker.allocateHeap(10);
+        assertEquals(grabSize, memoryTracker.heapHighWaterMark());
+        memoryTracker.allocateHeap(89);
+        assertEquals(grabSize, memoryTracker.heapHighWaterMark());
+        memoryTracker.allocateHeap(10);
+        assertEquals(2 * grabSize, memoryTracker.heapHighWaterMark());
+    }
+
+    @Test
+    void trackHeapHighWaterMarkConcurrent() throws InterruptedException {
+        MemoryPoolImpl poolSetting = new MemoryPoolImpl(1000, true, "poolSetting");
+        var pool = new HighWaterMarkMemoryPool(poolSetting);
+        var grabSize = 100;
+
+        int nThreads = 10;
+        ExecutorService service = Executors.newFixedThreadPool(10);
+
+        for (int i = 0; i < nThreads; i++) {
+            service.submit(() -> {
+                try (var memoryTracker =
+                        new ExecutionContextMemoryTracker(pool, NO_LIMIT, grabSize, grabSize, "poolSetting")) {
+                    memoryTracker.allocateHeap(11);
+                }
+            });
+        }
+        service.shutdown();
+        assertTrue(service.awaitTermination(1L, TimeUnit.MINUTES));
+
+        assertThat(pool.heapHighWaterMark()).isLessThanOrEqualTo(nThreads * grabSize);
     }
 }
