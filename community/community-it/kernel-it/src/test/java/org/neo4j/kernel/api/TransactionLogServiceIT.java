@@ -366,6 +366,9 @@ class TransactionLogServiceIT {
                 canCloseTx.await();
             });
 
+            var initialLastCommittedTx = metadataProvider.getLastCommittedTransactionId();
+            var initialLastClosedTx = metadataProvider.getLastClosedTransactionId();
+
             var hasAppliedTx = e1.executeDontWait(() -> {
                 try (var tx = databaseAPI.beginTx()) {
                     tx.createNode();
@@ -373,9 +376,6 @@ class TransactionLogServiceIT {
                 }
                 return null;
             });
-
-            var initialLastCommittedTx = metadataProvider.getLastCommittedTransactionId();
-            var initialLastClosedTx = metadataProvider.getLastClosedTransactionId();
 
             try {
                 txIsCommitted.await();
