@@ -70,6 +70,8 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.collector.DataCollector;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.database.DatabaseSizeServiceImpl;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
@@ -363,6 +365,12 @@ public class DatabaseManagementServiceFactory {
                 registry.registerComponent(
                         DataCollector.class,
                         ctx -> ctx.dependencyResolver().resolveDependency(DataCollector.class),
+                        false);
+                registry.registerComponent(
+                        KernelVersion.class,
+                        ctx -> ctx.dependencyResolver()
+                                .resolveDependency(KernelVersionProvider.class)
+                                .kernelVersion(),
                         false);
 
                 // Register injected public API components
