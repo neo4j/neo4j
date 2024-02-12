@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Ref
@@ -50,10 +49,7 @@ import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
-import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
-import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 /**
  * Checks for semantic errors when semantic table has been initialized.
@@ -69,8 +65,8 @@ case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState]
 
   val checks: Seq[SemanticErrorCheck] = Seq(
     patternExpressionInNonExistenceCheck,
-    CreatePatternSelfReferenceCheck.check,
-    UpdatePatternPropertyUsageOfNewVariable.check,
+    SelfReferenceCheckWithinPatternPart.check,
+    SelfReferenceCheckAcrossPatternParts.check,
     listCoercedToBooleanCheck
   )
 
@@ -137,44 +133,42 @@ object PatternExpressionInNonExistenceCheck extends ExpectedBooleanTypeCheck {
 
 trait VariableReferenceCheck {
 
-  def findSelfReferenceVariablesInPattern(
-    pattern: Pattern,
+  /**
+   * Check for self references either within a pattern part (disallowed for CREATE and INSERT) or across multiple
+   * pattern parts (disallowed for INSERT, deprecated for CREATE).
+   * @param ast The pattern part or (in case of checking across pattern parts) the full pattern to be checked
+   * @param pattern The full pattern, needed to to fetch all symbol definitions in scope from the semantic table
+   * @param semanticTable Semantic table, containing symbol definitions
+   * @return
+   */
+  def findSelfReferenceVariables(
     ast: ASTNode,
-    semanticTable: SemanticTable,
-    checkOnlyDefinitions: Boolean
+    pattern: Pattern,
+    semanticTable: SemanticTable
   ): Set[LogicalVariable] = {
 
     val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
 
-    def findAllVariables(e: Option[Expression]): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet
+    def isDefinition(variable: LogicalVariable): Boolean = {
+      allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
+    }
 
     def findRefVariables(e: Option[Expression]): Set[LogicalVariable] =
       e.fold(Set.empty[LogicalVariable])(_.dependencies)
 
-    def findVariables(e: Option[Expression]): Set[LogicalVariable] = {
-      if (checkOnlyDefinitions) {
-        findAllVariables(e).filter(v => !isDefinition(v))
-      } else {
-        findRefVariables(e)
-      }
-    }
-
-    def isDefinition(variable: LogicalVariable): Boolean =
-      allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
-
     val (declaredVariables, referencedVariables) =
       ast.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
         case NodePattern(maybeVariable, _, maybeProperties, _) => acc =>
-            SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findVariables(maybeProperties)))
+            SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findRefVariables(maybeProperties)))
         case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc =>
-            SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findVariables(maybeProperties)))
+            SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findRefVariables(maybeProperties)))
         case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
       }
     referencedVariables.intersect(declaredVariables)
   }
 }
 
-object CreatePatternSelfReferenceCheck extends VariableReferenceCheck {
+object SelfReferenceCheckWithinPatternPart extends VariableReferenceCheck {
 
   def check: SemanticErrorCheck = (baseState, baseContext) => {
     val semanticTable = baseState.semanticTable()
@@ -193,7 +187,7 @@ object CreatePatternSelfReferenceCheck extends VariableReferenceCheck {
     semanticTable: SemanticTable
   ): Set[LogicalVariable] = {
     pattern.patternParts.flatMap { patternPart =>
-      findSelfReferenceVariablesInPattern(pattern, patternPart, semanticTable, checkOnlyDefinitions = true)
+      findSelfReferenceVariables(patternPart, pattern, semanticTable)
     }.toSet
   }
 
@@ -211,17 +205,17 @@ object CreatePatternSelfReferenceCheck extends VariableReferenceCheck {
   }
 }
 
-object UpdatePatternPropertyUsageOfNewVariable extends VariableReferenceCheck {
+object SelfReferenceCheckAcrossPatternParts extends VariableReferenceCheck {
 
   def check: SemanticErrorCheck = (baseState, _) => {
     val semanticTable = baseState.semanticTable()
     baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
       case i: Insert =>
         accErrors =>
-          // Returns the set of variables that are defined in an update clause and then used in the same update clause for property read
-          // E.g. `CREATE (a {prop: 5}), (b {prop: a.prop})
+          // Returns the set of variables that are defined in a pattern and used in the same pattern for property read
+          // E.g. `INSERT (a {prop: 5}), (b {prop: a.prop})
           val errors =
-            findSelfReferenceVariablesInPattern(i.pattern, i.pattern, semanticTable, checkOnlyDefinitions = false)
+            findSelfReferenceVariables(i.pattern, i.pattern, semanticTable)
               .map(e =>
                 SemanticError(
                   s"Creating an entity (${e.name}) and referencing that entity in a property definition in the same ${i.name} is not allowed. Only reference variables created in earlier clauses.",

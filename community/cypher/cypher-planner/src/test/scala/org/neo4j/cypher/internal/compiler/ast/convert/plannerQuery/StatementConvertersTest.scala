@@ -2190,161 +2190,110 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ex should have message cancellationChecker.message
   }
 
+  val createKeywords = Seq("CREATE", "INSERT")
+
   test("Should combine two simple create statement into one create pattern") {
-    val query = buildSinglePlannerQuery(
-      """CREATE (a)
-        |CREATE (b)""".stripMargin
-    )
-    query.queryGraph shouldBe QueryGraph(
-      mutatingPatterns = IndexedSeq(CreatePattern(Seq(createNodeIr("a"), createNodeIr("b"))))
-    )
+    for {
+      firstClause <- createKeywords
+      secondClause <- createKeywords
+    } {
+      withClue(s"$firstClause-$secondClause") {
+        val query = buildSinglePlannerQuery(
+          s"""$firstClause (a)
+             |$secondClause (b)""".stripMargin
+        )
+        query.queryGraph shouldBe QueryGraph(
+          mutatingPatterns = IndexedSeq(CreatePattern(Seq(createNodeIr("a"), createNodeIr("b"))))
+        )
 
-    query.tail shouldBe empty
-  }
-
-  test("Should combine two simple insert statement into one insert pattern") {
-    val query = buildSinglePlannerQuery(
-      """INSERT (a)
-        |INSERT (b)""".stripMargin
-    )
-    query.queryGraph shouldBe QueryGraph(
-      mutatingPatterns = IndexedSeq(CreatePattern(Seq(createNodeIr("a"), createNodeIr("b"))))
-    )
-
-    query.tail shouldBe empty
+        query.tail shouldBe empty
+      }
+    }
   }
 
   test("Should combine two CREATE patterns into one") {
-    val query = buildSinglePlannerQuery(
-      """CREATE (a)-[r1:R {p: 1}]->(b)
-        |CREATE (c)-[r2: R {p: 1}]->(d)""".stripMargin
-    )
-    query.queryGraph shouldBe QueryGraph(
-      mutatingPatterns = IndexedSeq(CreatePattern(Seq(
-        createNodeIr("a"),
-        createNodeIr("b"),
-        createRelationshipIr("r1", "a", "R", "b", properties = Some("{p: 1}")),
-        createNodeIr("c"),
-        createNodeIr("d"),
-        createRelationshipIr("r2", "c", "R", "d", properties = Some("{p: 1}"))
-      )))
-    )
+    for {
+      firstClause <- createKeywords
+      secondClause <- createKeywords
+    } {
+      withClue(s"$firstClause-$secondClause") {
+        val query = buildSinglePlannerQuery(
+          s"""$firstClause (a)-[r1:R {p: 1}]->(b)
+             |$secondClause (c)-[r2: R {p: 1}]->(d)""".stripMargin
+        )
+        query.queryGraph shouldBe QueryGraph(
+          mutatingPatterns = IndexedSeq(CreatePattern(Seq(
+            createNodeIr("a"),
+            createNodeIr("b"),
+            createRelationshipIr("r1", "a", "R", "b", properties = Some("{p: 1}")),
+            createNodeIr("c"),
+            createNodeIr("d"),
+            createRelationshipIr("r2", "c", "R", "d", properties = Some("{p: 1}"))
+          )))
+        )
 
-    query.tail shouldBe empty
+        query.tail shouldBe empty
+      }
+    }
   }
 
-  test("Should combine two INSERT patterns into one") {
-    val query = buildSinglePlannerQuery(
-      """INSERT (a)-[r1:R {p: 1}]->(b)
-        |INSERT (c)-[r2: R {p: 1}]->(d)""".stripMargin
-    )
-    query.queryGraph shouldBe QueryGraph(
-      mutatingPatterns = IndexedSeq(CreatePattern(Seq(
-        createNodeIr("a"),
-        createNodeIr("b"),
-        createRelationshipIr("r1", "a", "R", "b", properties = Some("{p: 1}")),
-        createNodeIr("c"),
-        createNodeIr("d"),
-        createRelationshipIr("r2", "c", "R", "d", properties = Some("{p: 1}"))
-      )))
-    )
+  test("should flatten creates which have a dependency through reusing the variable") {
+    for {
+      firstClause <- createKeywords
+      secondClause <- createKeywords
+    } {
+      withClue(s"$firstClause-$secondClause") {
+        val query = buildSinglePlannerQuery(
+          s"""$firstClause (m {p: 42} )
+             |$secondClause (n {p: m.p})""".stripMargin
+        )
 
-    query.tail shouldBe empty
-  }
+        query.queryGraph shouldBe QueryGraph(
+          mutatingPatterns = IndexedSeq(CreatePattern(Seq(
+            createNodeIr("m", properties = Some("{p: 42}")),
+            createNodeIr("n", properties = Some("{p: m.p}"))
+          )))
+        )
 
-  test("should not flatten creates which have a dependency through reusing the variable") {
-    val query = buildSinglePlannerQuery(
-      """CREATE (m {p: 42} )
-        |CREATE (n {p: m.p})""".stripMargin
-    )
-
-    query.queryGraph shouldBe QueryGraph(
-      mutatingPatterns = IndexedSeq(CreatePattern(Seq(
-        createNodeIr("m", properties = Some("{p: 42}")),
-        createNodeIr("n", properties = Some("{p: m.p}"))
-      )))
-    )
-
-    query.tail shouldBe empty
-  }
-
-  test("should not flatten inserts which have a dependency through reusing the variable") {
-    val query = buildSinglePlannerQuery(
-      """INSERT (m {p: 42} )
-        |INSERT (n {p: m.p})""".stripMargin
-    )
-
-    query.queryGraph shouldBe QueryGraph(
-      mutatingPatterns = IndexedSeq(CreatePattern(Seq(
-        createNodeIr("m", properties = Some("{p: 42}")),
-        createNodeIr("n", properties = Some("{p: m.p}"))
-      )))
-    )
-
-    query.tail shouldBe empty
+        query.tail shouldBe empty
+      }
+    }
   }
 
   test("should not flatten creates which have a dependency through an IR expression") {
-    val query = buildSinglePlannerQuery(
-      """CREATE (m)
-        |CREATE (n {count: COUNT { MATCH () } })""".stripMargin
-    )
+    for {
+      firstClause <- createKeywords
+      secondClause <- createKeywords
+    } {
+      withClue(s"$firstClause-$secondClause") {
+        val query = buildSinglePlannerQuery(
+          s"""$firstClause (m)
+             |$secondClause (n {count: COUNT { MATCH () } })""".stripMargin
+        )
 
-    query.queryGraph.mutatingPatterns should have size 2
+        query.queryGraph.mutatingPatterns should have size 2
 
-    query.tail shouldBe empty
-  }
-
-  test("should not flatten inserts which have a dependency through an IR expression") {
-    val query = buildSinglePlannerQuery(
-      """INSERT (m)
-        |INSERT (n {count: COUNT { MATCH () } })""".stripMargin
-    )
-
-    query.queryGraph.mutatingPatterns should have size 2
-
-    query.tail shouldBe empty
+        query.tail shouldBe empty
+      }
+    }
   }
 
   test("should not flatten creates which could overlap through an IR expression if merged") {
-    val query = buildSinglePlannerQuery(
-      """CREATE (n {count: COUNT { MATCH () } })
-        |CREATE (m)""".stripMargin
-    )
+    for {
+      firstClause <- createKeywords
+      secondClause <- createKeywords
+    } {
+      withClue(s"$firstClause-$secondClause") {
+        val query = buildSinglePlannerQuery(
+          s"""$firstClause (n {count: COUNT { MATCH () } })
+             |$secondClause (m)""".stripMargin
+        )
 
-    query.queryGraph.mutatingPatterns should have size 2
+        query.queryGraph.mutatingPatterns should have size 2
 
-    query.tail shouldBe empty
-  }
-
-  test("should not flatten inserts which could overlap through an IR expression if merged") {
-    val query = buildSinglePlannerQuery(
-      """INSERT (n {count: COUNT { MATCH () } })
-        |INSERT (m)""".stripMargin
-    )
-
-    query.queryGraph.mutatingPatterns should have size 2
-
-    query.tail shouldBe empty
-  }
-
-  test("should flatten mix of insert and create") {
-    val query = buildSinglePlannerQuery(
-      """CREATE (m {p: 42} )
-        |INSERT (n {p: 42})
-        |CREATE (o {p: 42})
-        |""".stripMargin
-    )
-
-    query.queryGraph shouldBe QueryGraph(
-      mutatingPatterns = IndexedSeq(CreatePattern(Seq(
-        createNodeIr("m", properties = Some("{p: 42}")),
-        createNodeIr("n", properties = Some("{p: 42}")),
-        createNodeIr("o", properties = Some("{p: 42}"))
-      )))
-    )
-
-    query.tail shouldBe empty
+        query.tail shouldBe empty
+      }
+    }
   }
 
   test("should convert query with path selector") {

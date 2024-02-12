@@ -788,21 +788,21 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   test("INSERT (:A:B)") {
     assertFailsWithMessage[Statement](
       testName,
-      "Colon conjunction is not allowed in INSERT. Use `CREATE` or conjunction with `&` instead. (line 1, column 11 (offset: 10))"
+      "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead. (line 1, column 11 (offset: 10))"
     )
   }
 
   test("INSERT (n:A&B:C)") {
     assertFailsWithMessage[Statement](
       testName,
-      "Colon conjunction is not allowed in INSERT. Use `CREATE` or conjunction with `&` instead. (line 1, column 14 (offset: 13))"
+      "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead. (line 1, column 14 (offset: 13))"
     )
   }
 
   test("INSERT (n:A)-[:R]->(:B:C)") {
     assertFailsWithMessage[Statement](
       testName,
-      "Colon conjunction is not allowed in INSERT. Use `CREATE` or conjunction with `&` instead. (line 1, column 23 (offset: 22))"
+      "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead. (line 1, column 23 (offset: 22))"
     )
   }
 
