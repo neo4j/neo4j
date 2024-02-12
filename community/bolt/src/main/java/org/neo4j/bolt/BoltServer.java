@@ -32,6 +32,8 @@ import io.netty.handler.ssl.SslProvider;
 import io.netty.util.internal.PlatformDependent;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -44,6 +46,12 @@ import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connection.hint.KeepAliveConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connection.hint.TelemetryConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.Connector;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.CircuitBreakerErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.NoopErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.traffic.AtomicTrafficAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.traffic.NoopTrafficAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.AtomicSchedulingConnection;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.executor.ExecutorServiceFactory;
@@ -491,10 +499,12 @@ public class BoltServer extends LifecycleAdapter {
                 defaultDatabaseResolver,
                 connectionHintRegistry,
                 transactionManager,
+                routingService,
+                createErrorAccountant(),
+                createTrafficAccountant(),
+                driverMetricsMonitor,
                 streamingBufferSize,
                 streamingFlushThreshold,
-                routingService,
-                driverMetricsMonitor,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }
@@ -528,10 +538,11 @@ public class BoltServer extends LifecycleAdapter {
                 defaultDatabaseResolver,
                 connectionHintRegistry,
                 transactionManager,
+                routingService,
+                createErrorAccountant(),
+                driverMetricsMonitor,
                 streamingBufferSize,
                 streamingFlushThreshold,
-                routingService,
-                driverMetricsMonitor,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }
@@ -556,16 +567,48 @@ public class BoltServer extends LifecycleAdapter {
                 defaultDatabaseResolver,
                 connectionHintRegistry,
                 transactionManager,
+                routingService,
+                createErrorAccountant(),
+                driverMetricsMonitor,
                 streamingBufferSize,
                 streamingFlushThreshold,
-                routingService,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider(),
                 transport,
                 eventLoopGroup,
                 config,
-                allocator,
-                driverMetricsMonitor);
+                allocator);
+    }
+
+    private ErrorAccountant createErrorAccountant() {
+        if (!config.get(BoltConnector.enable_error_accounting)) {
+            return new NoopErrorAccountant(logService);
+        }
+
+        return new CircuitBreakerErrorAccountant(
+                config.get(BoltConnector.network_abort_warn_threshold),
+                config.get(BoltConnector.network_abort_warn_window_duration).toMillis(),
+                config.get(BoltConnector.network_abort_clear_window_duration).toMillis(),
+                config.get(BoltConnector.thread_starvation_warn_threshold),
+                config.get(BoltConnector.thread_starvation_warn_window_duration).toMillis(),
+                config.get(BoltConnector.thread_starvation_clear_window_duration)
+                        .toMillis(),
+                Clock.systemUTC(),
+                logService);
+    }
+
+    private TrafficAccountant createTrafficAccountant() {
+        var checkPeriod = config.get(BoltConnector.traffic_accounting_check_period);
+        if (Duration.ZERO.equals(checkPeriod)) {
+            return NoopTrafficAccountant.getInstance();
+        }
+
+        return new AtomicTrafficAccountant(
+                config.get(BoltConnector.traffic_accounting_check_period).toMillis(),
+                config.get(BoltConnector.traffic_accounting_incoming_threshold_mbps),
+                config.get(BoltConnector.traffic_accounting_outgoing_threshold_mbps),
+                config.get(BoltConnector.traffic_accounting_clear_duration).toMillis(),
+                logService);
     }
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter {

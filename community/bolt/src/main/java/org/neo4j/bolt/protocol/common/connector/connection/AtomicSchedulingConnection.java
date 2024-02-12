@@ -172,14 +172,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                         Status.Request.NoThreadsAvailable,
                         Status.Request.NoThreadsAvailable.code().description());
 
-                var message = String.format(
-                        "[%s] Unable to schedule for execution since there are no available threads to serve it at the "
-                                + "moment. You can retry at a later time or consider increasing max thread pool size for "
-                                + "bolt connector(s).",
-                        this.id);
-
-                userLog.error(message);
-
+                this.connector().errorAccountant().notifyThreadStarvation(this, ex);
                 this.notifyListenersSafely("requestResultFailure", listener -> listener.onResponseFailed(error));
 
                 this.channel.writeAndFlush(new FailureMessage(error.status(), error.message(), false));
@@ -348,9 +341,9 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
             log.warn("[" + this.id + "] Terminating connection due to state machine error", ex);
         } catch (Throwable ex) {
-
             if (ex instanceof BoltNetworkException) {
-                userLog.warn("[" + this.id + "] Terminating connection due to network error", ex);
+                log.debug("[" + this.id + "] Terminating connection due to network error", ex);
+                this.connector().errorAccountant().notifyNetworkAbort(this, ex);
             } else {
                 userLog.error("[" + this.id + "] Terminating connection due to unexpected error", ex);
             }

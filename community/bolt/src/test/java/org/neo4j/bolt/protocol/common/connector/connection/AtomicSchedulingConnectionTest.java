@@ -30,6 +30,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,7 @@ import org.neo4j.bolt.fsm.error.StateMachineException;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
@@ -78,6 +80,8 @@ class AtomicSchedulingConnectionTest {
     private static final String IMPERSONATED_USER = "alice";
     public static final String IMPERSONATED_DB = "foo";
 
+    private ErrorAccountant errorAccountant;
+
     private Connector connector;
     private Channel channel;
     private MemoryTracker memoryTracker;
@@ -103,6 +107,8 @@ class AtomicSchedulingConnectionTest {
 
     @BeforeEach
     void prepareConnection() {
+        this.errorAccountant = Mockito.mock(ErrorAccountant.class);
+
         this.connector = Mockito.mock(Connector.class, Mockito.RETURNS_MOCKS);
         this.channel = Mockito.mock(Channel.class, Mockito.RETURNS_MOCKS);
         this.memoryTracker = Mockito.mock(MemoryTracker.class, Mockito.RETURNS_MOCKS);
@@ -113,6 +119,7 @@ class AtomicSchedulingConnectionTest {
         this.clock = new FakeClock();
 
         Mockito.doReturn(CONNECTOR_ID).when(this.connector).id();
+        Mockito.doReturn(this.errorAccountant).when(this.connector).errorAccountant();
 
         this.clientAddress = Mockito.mock(SocketAddress.class);
         this.serverAddress = Mockito.mock(SocketAddress.class);
@@ -991,12 +998,13 @@ class AtomicSchedulingConnectionTest {
     }
 
     @Test
-    void shouldLogNetworkErrorsAsWarnings() throws AuthenticationException {
+    void shouldReportNetworkErrors() throws AuthenticationException {
         this.selectProtocol();
         this.authenticate();
 
+        var ex = new BoltStreamingWriteException("Test");
         this.connection.submit((fsm, responseHandler) -> {
-            throw new BoltStreamingWriteException("Test");
+            throw ex;
         });
 
         var captor = ArgumentCaptor.forClass(Runnable.class);
@@ -1004,10 +1012,20 @@ class AtomicSchedulingConnectionTest {
 
         captor.getValue().run();
 
-        LogAssertions.assertThat(this.userLogProvider)
-                .forLevel(Level.WARN)
-                .forClass(AtomicSchedulingConnection.class)
-                .containsMessages("Terminating connection due to network error");
+        Mockito.verify(this.errorAccountant).notifyNetworkAbort(this.connection, ex);
+    }
+
+    @Test
+    void shouldReportSchedulingErrors() throws AuthenticationException {
+        this.selectProtocol();
+        this.authenticate();
+
+        var ex = new RejectedExecutionException();
+        Mockito.doThrow(ex).when(this.executorService).submit(Mockito.any(Runnable.class));
+
+        this.connection.submit((fsm, responseHandler) -> {});
+
+        Mockito.verify(this.errorAccountant).notifyThreadStarvation(this.connection, ex);
     }
 
     @Test

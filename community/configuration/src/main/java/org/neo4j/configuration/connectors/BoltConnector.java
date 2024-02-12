@@ -25,11 +25,13 @@ import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingConstraints.NO_ALL_INTERFACES_ADDRESS;
+import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
+import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
@@ -38,6 +40,7 @@ import java.time.Duration;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.SettingConstraints;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
@@ -115,6 +118,79 @@ public final class BoltConnector implements SettingsDeclaration {
     @Description("The maximum time an idle thread in the thread pool bound to this connector will wait for new tasks.")
     public static final Setting<Duration> thread_pool_keep_alive = newBuilder(
                     "server.bolt.thread_pool_keep_alive", DURATION, ofMinutes(5))
+            .build();
+
+    @Description(
+            "Enables accounting based reporting of benign errors within the Bolt stack (when enabled, benign errors are reported only when such events occur with unusual frequency. Otherwise, all benign network errors will be reported)")
+    public static final Setting<Boolean> enable_error_accounting = newBuilder(
+                    "server.bolt.enable_network_error_accounting", BOOL, true)
+            .build();
+
+    @Description(
+            "The maximum amount of network related connection aborts permitted within a given window before emitting log messages (a value of zero reverts to legacy warning behavior)")
+    public static final Setting<Long> network_abort_warn_threshold = newBuilder(
+                    "server.bolt.network_abort_warn_threshold", LONG, 2L)
+            .addConstraint(min(1L))
+            .build();
+
+    @Description("The duration of the window in which network related connection aborts are sampled")
+    public static final Setting<Duration> network_abort_warn_window_duration = newBuilder(
+                    "server.bolt.network_abort_warn_window_duration", DURATION, ofMinutes(10))
+            .addConstraint(min(ofSeconds(1)))
+            .build();
+
+    @Description(
+            "The duration for which network related connection aborts need to remain at a reasonable level before the error is cleared")
+    public static final Setting<Duration> network_abort_clear_window_duration = newBuilder(
+                    "server.bolt.network_abort_clear_window_duration", DURATION, ofMinutes(10))
+            .addConstraint(min(ofSeconds(1)))
+            .build();
+
+    @Description(
+            "The maximum amount of unscheduled requests permitted during thread starvation events within a given window before emitting log messages")
+    public static final Setting<Long> thread_starvation_warn_threshold = newBuilder(
+                    "server.bolt.thread_starvation_warn_threshold", LONG, 2L)
+            .addConstraint(min(1L))
+            .build();
+
+    @Description("The duration of the window in which unscheduled requests are sampled")
+    public static final Setting<Duration> thread_starvation_warn_window_duration = newBuilder(
+                    "server.bolt.thread_starvation_warn_window_duration", DURATION, ofMinutes(10))
+            .addConstraint(min(ofSeconds(1)))
+            .build();
+
+    @Description(
+            "The duration for which unscheduled requests need to remain at a reasonable level before the error is cleared")
+    public static final Setting<Duration> thread_starvation_clear_window_duration = newBuilder(
+                    "server.bolt.thread_starvation_clear_window_duration", DURATION, ofMinutes(10))
+            .addConstraint(min(ofSeconds(1)))
+            .build();
+
+    @Description(
+            "Amount of time spent between samples of current traffic usage (lower values result in more accurate reporting while incurring a higher performance penalty; a value of zero disables traffic accounting)")
+    public static final Setting<Duration> traffic_accounting_check_period = newBuilder(
+                    "server.bolt.traffic_accounting_check_period", DURATION, ofMinutes(5))
+            .addConstraint(any(SettingConstraints.is(Duration.ZERO), min(ofMinutes(1))))
+            .build();
+
+    @Description("Time required to be spent below the configured traffic threshold in order to clear traffic warnings")
+    public static final Setting<Duration> traffic_accounting_clear_duration = newBuilder(
+                    "server.bolt.traffic_accounting_clear_duration", DURATION, ofMinutes(10))
+            .addConstraint(min(ofMinutes(1)))
+            .build();
+
+    @Description(
+            "Maximum permitted incoming traffic within a configured accounting check window before emitting a warning (in Mbps)")
+    public static final Setting<Long> traffic_accounting_incoming_threshold_mbps = newBuilder(
+                    "server.bolt.traffic_accounting_incoming_threshold_mbps", LONG, 950L)
+            .addConstraint(min(1L))
+            .build();
+
+    @Description(
+            "Maximum permitted outgoing traffic within a configured accounting check window before emitting a warning (in Mbps)")
+    public static final Setting<Long> traffic_accounting_outgoing_threshold_mbps = newBuilder(
+                    "server.bolt.traffic_accounting_outgoing_threshold_mbps", LONG, 950L)
+            .addConstraint(min(1L))
             .build();
 
     public enum EncryptionLevel {

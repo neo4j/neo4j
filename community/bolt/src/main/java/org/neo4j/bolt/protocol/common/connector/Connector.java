@@ -26,6 +26,8 @@ import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
 import org.neo4j.bolt.security.Authentication;
@@ -145,6 +147,22 @@ public interface Connector extends Lifecycle {
      * @return a routing service
      */
     RoutingService routingService();
+
+    /**
+     * Retrieves the error accountant responsible for accumulating connection and scheduling related
+     * issues within this connector.
+     *
+     * @return a connector scoped error accountant.
+     */
+    ErrorAccountant errorAccountant();
+
+    /**
+     * Retrieves the traffic accountant responsible for accumulating inbound and outgoing traffic
+     * statistics.
+     *
+     * @return a connector scoped traffic accountant.
+     */
+    TrafficAccountant trafficAccountant();
 
     /**
      * Identifies the total number of bytes to be requested from the pool when streaming records.

@@ -27,6 +27,8 @@ import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
 import org.neo4j.bolt.security.Authentication;
@@ -55,6 +57,8 @@ public abstract class AbstractConnector implements Connector {
     private final TransactionManager transactionManager;
 
     private final RoutingService routingService;
+    private final ErrorAccountant errorAccountant;
+    private final TrafficAccountant trafficAccountant;
 
     private final ConnectionRegistry connectionRegistry;
 
@@ -78,10 +82,12 @@ public abstract class AbstractConnector implements Connector {
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintRegistry connectionHintRegistry,
             TransactionManager transactionManager,
+            RoutingService routingService,
+            ErrorAccountant errorAccountant,
+            TrafficAccountant trafficAccountant,
+            BoltDriverMetricsMonitor driverMetricsMonitor,
             int streamingBufferSize,
             int streamingFlushThreshold,
-            RoutingService routingService,
-            BoltDriverMetricsMonitor driverMetricsMonitor,
             InternalLogProvider logging) {
         this.id = id;
         this.clock = clock;
@@ -94,13 +100,13 @@ public abstract class AbstractConnector implements Connector {
         this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.connectionHintRegistry = connectionHintRegistry;
         this.transactionManager = transactionManager;
-
         this.routingService = routingService;
+        this.errorAccountant = errorAccountant;
+        this.trafficAccountant = trafficAccountant;
+        this.driverMetricsMonitor = driverMetricsMonitor;
 
         this.streamingBufferSize = streamingBufferSize;
         this.streamingFlushThreshold = streamingFlushThreshold;
-
-        this.driverMetricsMonitor = driverMetricsMonitor;
 
         this.connectionRegistry = new ConnectionRegistry(id, connectionTracker, logging);
     }
@@ -163,6 +169,16 @@ public abstract class AbstractConnector implements Connector {
     @Override
     public RoutingService routingService() {
         return this.routingService;
+    }
+
+    @Override
+    public ErrorAccountant errorAccountant() {
+        return errorAccountant;
+    }
+
+    @Override
+    public TrafficAccountant trafficAccountant() {
+        return trafficAccountant;
     }
 
     @Override

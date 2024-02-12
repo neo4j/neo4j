@@ -29,6 +29,8 @@ import java.time.Clock;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.traffic.NoopTrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.handler.BoltChannelInitializer;
@@ -68,16 +70,17 @@ public class LocalNettyConnector extends AbstractNettyConnector {
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintRegistry connectionHintRegistry,
             TransactionManager transactionManager,
+            RoutingService routingService,
+            ErrorAccountant errorAccountant,
+            BoltDriverMetricsMonitor driverMetricsMonitor,
             int streamingBufferSize,
             int streamingFlushThreshold,
-            RoutingService routingService,
             InternalLogProvider userLogProvider,
             InternalLogProvider internalLogProvider,
             ConnectorTransport connectorTransport,
             EventLoopGroup workerGroup,
             Config config,
-            ByteBufAllocator byteBufAllocator,
-            BoltDriverMetricsMonitor driverMetricsMonitor) {
+            ByteBufAllocator byteBufAllocator) {
         super(
                 id,
                 bindAddress,
@@ -92,10 +95,12 @@ public class LocalNettyConnector extends AbstractNettyConnector {
                 defaultDatabaseResolver,
                 connectionHintRegistry,
                 transactionManager,
+                routingService,
+                errorAccountant,
+                NoopTrafficAccountant.getInstance(),
+                driverMetricsMonitor,
                 streamingBufferSize,
                 streamingFlushThreshold,
-                routingService,
-                driverMetricsMonitor,
                 userLogProvider,
                 internalLogProvider);
         this.transport = connectorTransport;

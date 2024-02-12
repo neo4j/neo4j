@@ -106,8 +106,11 @@ class BoltChannelInitializerTest {
         var inOrder = Mockito.inOrder(memoryTracker, pipeline);
 
         inOrder.verify(memoryTracker)
-                .allocateHeap(HeapEstimator.sizeOf(channel) + TransportSelectionHandler.SHALLOW_SIZE);
+                .allocateHeap(HeapEstimator.sizeOf(channel)
+                        + TransportSelectionHandler.SHALLOW_SIZE
+                        + TrafficAccountantHandler.SHALLOW_SIZE);
 
+        inOrder.verify(pipeline).addLast(ArgumentMatchers.any(TrafficAccountantHandler.class));
         inOrder.verify(pipeline).addLast(ArgumentMatchers.any(TransportSelectionHandler.class));
         inOrder.verifyNoMoreInteractions();
     }

@@ -37,6 +37,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
+import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.NioConnectorTransport;
 import org.neo4j.bolt.tx.TransactionManager;
@@ -99,10 +101,12 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 defaultDatabaseResolver,
                 connectionHintRegistry,
                 Mockito.mock(TransactionManager.class),
+                Mockito.mock(RoutingService.class),
+                Mockito.mock(ErrorAccountant.class),
+                Mockito.mock(TrafficAccountant.class),
+                BoltDriverMetricsMonitor.noop(),
                 512,
                 0,
-                Mockito.mock(RoutingService.class),
-                BoltDriverMetricsMonitor.noop(),
                 logging,
                 logging);
     }

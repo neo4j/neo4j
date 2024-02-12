@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.EpollConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.KqueueConnectorTransport;
@@ -112,10 +113,11 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                 defaultDatabaseResolver,
                 this.connectionHintRegistry,
                 Mockito.mock(TransactionManager.class),
+                Mockito.mock(RoutingService.class),
+                Mockito.mock(ErrorAccountant.class),
+                BoltDriverMetricsMonitor.noop(),
                 512,
                 0,
-                Mockito.mock(RoutingService.class),
-                BoltDriverMetricsMonitor.noop(),
                 logging,
                 logging);
     }
@@ -176,10 +178,11 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                         defaultDatabaseResolver,
                         connectionHintRegistry,
                         Mockito.mock(TransactionManager.class),
+                        Mockito.mock(RoutingService.class),
+                        Mockito.mock(ErrorAccountant.class),
+                        BoltDriverMetricsMonitor.noop(),
                         512,
                         0,
-                        Mockito.mock(RoutingService.class),
-                        BoltDriverMetricsMonitor.noop(),
                         logging,
                         logging))
                 .withMessageContaining("Unsupported transport: NIO does not support domain sockets")

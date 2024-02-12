@@ -188,13 +188,24 @@ org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive org.neo4
 org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive_probes org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive_streaming_scheduling_interval org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.connectors.BoltConnector::connection_keep_alive_type org.neo4j.graphdb.config.Setting<org.neo4j.configuration.connectors.BoltConnector.KeepAliveRequestType> public static final
+org.neo4j.configuration.connectors.BoltConnector::enable_error_accounting org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.connectors.BoltConnector::enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.connectors.BoltConnector::encryption_level org.neo4j.graphdb.config.Setting<org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel> public static final
 org.neo4j.configuration.connectors.BoltConnector::listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
+org.neo4j.configuration.connectors.BoltConnector::network_abort_clear_window_duration org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.connectors.BoltConnector::network_abort_warn_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
+org.neo4j.configuration.connectors.BoltConnector::network_abort_warn_window_duration org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.connectors.BoltConnector::server_bolt_telemetry_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.connectors.BoltConnector::thread_pool_keep_alive org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.connectors.BoltConnector::thread_pool_max_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.connectors.BoltConnector::thread_pool_min_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.connectors.BoltConnector::thread_starvation_clear_window_duration org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.connectors.BoltConnector::thread_starvation_warn_threshold org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
+org.neo4j.configuration.connectors.BoltConnector::thread_starvation_warn_window_duration org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.connectors.BoltConnector::traffic_accounting_check_period org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.connectors.BoltConnector::traffic_accounting_clear_duration org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
+org.neo4j.configuration.connectors.BoltConnector::traffic_accounting_incoming_threshold_mbps org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
+org.neo4j.configuration.connectors.BoltConnector::traffic_accounting_outgoing_threshold_mbps org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.connectors.CommonConnectorConfig public class extends java.lang.Object implements org.neo4j.configuration.SettingsDeclaration
 org.neo4j.configuration.connectors.CommonConnectorConfig::CommonConnectorConfig() void public
 org.neo4j.configuration.connectors.CommonConnectorConfig::ocsp_stapling_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final

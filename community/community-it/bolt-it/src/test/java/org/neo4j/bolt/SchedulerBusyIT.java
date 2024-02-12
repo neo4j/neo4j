@@ -19,21 +19,27 @@
  */
 package org.neo4j.bolt;
 
+import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.connection.initializer.VersionSelected;
+import org.neo4j.bolt.test.annotation.connection.transport.ExcludeTransport;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.TransportTest;
+import org.neo4j.bolt.test.provider.ConnectionProvider;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.testing.client.TransportType;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
@@ -115,35 +121,66 @@ public class SchedulerBusyIT {
     }
 
     @TransportTest
+    @ExcludeTransport({TransportType.WEBSOCKET, TransportType.WEBSOCKET_TLS})
     void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy(
             BoltWire wire,
             @Authenticated TransportConnection connection1,
             @Authenticated TransportConnection connection2,
-            @VersionSelected TransportConnection connection3)
-            throws IOException {
+            @VersionSelected ConnectionProvider connectionProvider)
+            throws Exception {
         // saturate the thread pool using autocommit transactions (this works since open transactions currently force
         // Bolt to stick to the worker thread until closed or timed out)
         enterStreaming(wire, connection1);
         enterStreaming(wire, connection2);
 
         // send another request on a third connection in order to generate a new job submission
-        connection3.send(wire.hello());
+        Awaitility.await()
+                .atMost(2, TimeUnit.MINUTES)
+                .pollInSameThread()
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> {
+                    try (var connection3 = connectionProvider.create()) {
+                        connection3.send(wire.hello());
 
-        BoltConnectionAssertions.assertThat(connection3)
-                .receivesFailureFuzzy(
-                        Status.Request.NoThreadsAvailable,
-                        "There are no available threads to serve this request at the moment");
+                        BoltConnectionAssertions.assertThat(connection3)
+                                .receivesFailureFuzzy(
+                                        Status.Request.NoThreadsAvailable,
+                                        "There are no available threads to serve this request at the moment");
+
+                        BoltConnectionAssertions.assertThat(connection3).isEventuallyTerminated();
+                    }
+                });
+
+        LogAssertions.assertThat(userLogProvider)
+                .forLevel(DEBUG)
+                .containsMessages("since there are no available threads to serve it at the moment.");
+        LogAssertions.assertThat(internalLogProvider)
+                .forLevel(DEBUG)
+                .containsMessages("since there are no available threads to serve it at the moment.");
+
+        for (var i = 0; i < 16; ++i) {
+            Awaitility.await()
+                    .pollInterval(100, TimeUnit.MILLISECONDS)
+                    .atMost(2, TimeUnit.MINUTES)
+                    .pollInSameThread()
+                    .untilAsserted(() -> {
+                        try (var connection3 = connectionProvider.create()) {
+                            connection3.send(wire.hello());
+
+                            BoltConnectionAssertions.assertThat(connection3)
+                                    .receivesFailureFuzzy(
+                                            Status.Request.NoThreadsAvailable,
+                                            "There are no available threads to serve this request at the moment");
+                        }
+                    });
+        }
 
         LogAssertions.assertThat(userLogProvider)
                 .forLevel(ERROR)
-                .containsMessages(
-                        "since there are no available threads to serve it at the moment. You can retry at a later time");
+                .containsMessages("Increase in thread starvation events detected");
         LogAssertions.assertThat(internalLogProvider)
                 .forLevel(ERROR)
-                .containsMessages(
-                        "since there are no available threads to serve it at the moment. You can retry at a later time");
-
-        BoltConnectionAssertions.assertThat(connection3).isEventuallyTerminated();
+                .containsMessages("Increase in thread starvation events detected");
     }
 
     @TransportTest

@@ -22,6 +22,8 @@ package org.neo4j.bolt.protocol.common.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
+import org.neo4j.bolt.protocol.common.connector.Connector;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -33,10 +35,19 @@ public class HouseKeeperHandler extends ChannelInboundHandlerAdapter {
 
     private final InternalLog log;
 
+    private Connection connection;
+    private Connector connector;
+
     private boolean failed;
 
     public HouseKeeperHandler(InternalLogProvider logging) {
         this.log = logging.getLog(HouseKeeperHandler.class);
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        this.connection = Connection.getConnection(ctx.channel());
+        this.connector = this.connection.connector();
     }
 
     @Override
@@ -52,10 +63,7 @@ public class HouseKeeperHandler extends ChannelInboundHandlerAdapter {
             // test on the message we know we'll get.
             if (Exceptions.contains(
                     cause, e -> e.getMessage() != null && e.getMessage().contains("Connection reset by peer"))) {
-                log.warn(
-                        "Fatal error occurred when handling a client connection, "
-                                + "remote peer unexpectedly closed connection: %s",
-                        ctx.channel());
+                this.connector.errorAccountant().notifyNetworkAbort(this.connection, cause);
             } else {
                 log.error("Fatal error occurred when handling a client connection: " + ctx.channel(), cause);
             }

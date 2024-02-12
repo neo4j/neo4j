@@ -80,7 +80,13 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
 
         // continue by initializing a network pipeline for the purposes of encapsulation and protocol
         // negotiation - once complete the channel is ready to negotiate a protocol revision
-        connection.memoryTracker().allocateHeap(HeapEstimator.sizeOf(ch) + TransportSelectionHandler.SHALLOW_SIZE);
+        connection
+                .memoryTracker()
+                .allocateHeap(HeapEstimator.sizeOf(ch)
+                        + TransportSelectionHandler.SHALLOW_SIZE
+                        + TrafficAccountantHandler.SHALLOW_SIZE);
+
+        ch.pipeline().addLast(new TrafficAccountantHandler(this.connector.trafficAccountant()));
 
         // when enabled, also register a protocol capture handler which writes all network
         // communication for this channel into a dedicated file

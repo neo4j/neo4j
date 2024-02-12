@@ -21,6 +21,7 @@ package org.neo4j.bolt.protocol.common.handler;
 
 import static io.netty.buffer.ByteBufUtil.writeUtf8;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -39,21 +40,64 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.ReadTimeoutException;
+import io.netty.util.Attribute;
 import io.netty.util.concurrent.EventExecutor;
 import java.io.IOException;
 import java.net.ServerSocket;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.neo4j.bolt.protocol.common.connector.Connector;
+import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 public class HouseKeeperHandlerTest {
 
+    private AssertableLogProvider logProvider;
+
+    private ChannelHandlerContext ctx;
+    private Channel channel;
+
+    private Connector connector;
+    private Connection connection;
+
+    private HouseKeeperHandler handler;
+
+    @BeforeEach
+    private void prepare() throws Exception {
+        this.logProvider = new AssertableLogProvider();
+
+        this.connector = Mockito.mock(Connector.class, RETURNS_MOCKS);
+        this.connection = Mockito.mock(Connection.class, RETURNS_MOCKS);
+
+        this.ctx = Mockito.mock(ChannelHandlerContext.class);
+        this.channel = Mockito.mock(Channel.class);
+
+        this.handler = new HouseKeeperHandler(this.logProvider);
+
+        Mockito.doReturn(this.connector).when(this.connection).connector();
+
+        @SuppressWarnings("unchecked")
+        Attribute<Connection> attr = (Attribute<Connection>) Mockito.mock(Attribute.class);
+
+        Mockito.doReturn(this.connection).when(attr).get();
+        Mockito.doThrow(new UnsupportedOperationException("Not supported in test"))
+                .when(attr)
+                .set(Mockito.any());
+
+        Mockito.when(this.channel.toString()).thenReturn("[some channel info]");
+        Mockito.when(this.channel.attr(Connection.CONNECTION_ATTR)).thenReturn(attr);
+
+        Mockito.doReturn(this.channel).when(this.ctx).channel();
+
+        this.handler.handlerAdded(this.ctx);
+    }
+
     @Test
     void shouldCloseChannelOnExceptionCaught() {
-        var channel =
-                ConnectionMockFactory.newFactory().createChannel(new HouseKeeperHandler(NullLogProvider.getInstance()));
+        var channel = ConnectionMockFactory.newFactory().createChannel(this.handler);
 
         channel.pipeline().fireExceptionCaught(new RuntimeException("some exception"));
 
@@ -62,14 +106,12 @@ public class HouseKeeperHandlerTest {
 
     @Test
     void shouldLogExceptionOnExceptionCaught() {
-        var logProvider = new AssertableLogProvider();
-
-        var channel = ConnectionMockFactory.newFactory().createChannel(new HouseKeeperHandler(logProvider));
+        var channel = ConnectionMockFactory.newFactory().createChannel(this.handler);
 
         var ex = new RuntimeException("some exception");
         channel.pipeline().fireExceptionCaught(ex);
 
-        assertThat(logProvider)
+        assertThat(this.logProvider)
                 .forClass(HouseKeeperHandler.class)
                 .forLevel(ERROR)
                 .containsMessageWithException("Fatal error occurred when handling a client connection", ex);
@@ -79,8 +121,7 @@ public class HouseKeeperHandlerTest {
     void shouldNotPropagateExceptionCaught() throws Exception {
         var next = mock(ChannelInboundHandler.class);
 
-        var channel = ConnectionMockFactory.newFactory()
-                .createChannel(new HouseKeeperHandler(NullLogProvider.getInstance()), next);
+        var channel = ConnectionMockFactory.newFactory().createChannel(this.handler, next);
 
         channel.pipeline().fireExceptionCaught(new RuntimeException("some exception"));
 
@@ -89,11 +130,7 @@ public class HouseKeeperHandlerTest {
 
     @Test
     void shouldNotLogExceptionsWhenEvenLoopIsShuttingDown() throws Exception {
-        var logProvider = new AssertableLogProvider();
-        var connection = mock(Connection.class);
-        var houseKeeperHandler = new HouseKeeperHandler(logProvider);
-
-        var bootstrap = newBootstrap(connection, houseKeeperHandler);
+        var bootstrap = newBootstrap(this.connection, this.handler);
 
         try (ServerSocket serverSocket = new ServerSocket(0)) {
             var future =
@@ -115,16 +152,12 @@ public class HouseKeeperHandlerTest {
             bootstrap.config().group().shutdownGracefully().sync();
         }
 
-        assertThat(logProvider).doesNotHaveAnyLogs();
+        assertThat(this.logProvider).doesNotHaveAnyLogs();
     }
 
     @Test
     void shouldLogOnlyTheFirstCaughtException() throws Exception {
-        var logProvider = new AssertableLogProvider();
-        var connection = mock(Connection.class);
-        var houseKeeperHandler = new HouseKeeperHandler(logProvider);
-
-        var bootstrap = newBootstrap(connection, houseKeeperHandler);
+        var bootstrap = newBootstrap(this.connection, this.handler);
 
         var error1 = new RuntimeException("error #1");
         var error2 = new RuntimeException("error #2");
@@ -147,7 +180,7 @@ public class HouseKeeperHandlerTest {
             bootstrap.config().group().shutdownGracefully().sync();
         }
 
-        assertThat(logProvider)
+        assertThat(this.logProvider)
                 .forClass(HouseKeeperHandler.class)
                 .forLevel(ERROR)
                 .containsMessageWithException("Fatal error occurred when handling a client connection", error1);
@@ -155,54 +188,51 @@ public class HouseKeeperHandlerTest {
 
     @Test
     void shouldNotLogConnectionResetErrors() {
-        // Given
-        var logProvider = new AssertableLogProvider();
-        var keeper = new HouseKeeperHandler(logProvider);
-
-        var channel = mock(Channel.class);
-        when(channel.toString()).thenReturn("[some channel info]");
-
-        var ctx = mock(ChannelHandlerContext.class);
-        when(ctx.channel()).thenReturn(channel);
-        when(ctx.executor()).thenReturn(mock(EventExecutor.class));
+        Mockito.when(this.ctx.executor()).thenReturn(mock(EventExecutor.class));
 
         var connResetError = new IOException("Connection reset by peer");
 
         // When
-        keeper.exceptionCaught(ctx, connResetError);
+        this.handler.exceptionCaught(this.ctx, connResetError);
 
         // Then
-        assertThat(logProvider)
+        assertThat(this.logProvider)
                 .forClass(HouseKeeperHandler.class)
                 .forLevel(WARN)
-                .containsMessageWithArguments(
+                .doesNotContainMessageWithArguments(
                         "Fatal error occurred when handling a client connection, "
                                 + "remote peer unexpectedly closed connection: %s",
                         channel);
     }
 
     @Test
-    void shouldHandleExceptionsWithNullMessages() {
-        // Given
-        var logProvider = new AssertableLogProvider();
-        var keeper = new HouseKeeperHandler(logProvider);
+    void shouldReportConnectionResetErrors() {
+        var accountant = Mockito.mock(ErrorAccountant.class);
 
-        var channel = mock(Channel.class);
-        when(channel.toString()).thenReturn("[some channel info]");
+        Mockito.doReturn(accountant).when(this.connector).errorAccountant();
+        Mockito.when(this.ctx.executor()).thenReturn(mock(EventExecutor.class));
 
-        var ctx = mock(ChannelHandlerContext.class);
-        when(ctx.channel()).thenReturn(channel);
-        when(ctx.executor()).thenReturn(mock(EventExecutor.class));
+        var ex = new IOException("Connection reset by peer");
 
         // When
-        keeper.exceptionCaught(ctx, ReadTimeoutException.INSTANCE);
+        this.handler.exceptionCaught(this.ctx, ex);
+
+        Mockito.verify(accountant).notifyNetworkAbort(this.connection, ex);
+    }
+
+    @Test
+    void shouldHandleExceptionsWithNullMessages() {
+        when(this.ctx.executor()).thenReturn(mock(EventExecutor.class));
+
+        // When
+        this.handler.exceptionCaught(this.ctx, ReadTimeoutException.INSTANCE);
 
         // Then
-        assertThat(logProvider)
+        assertThat(this.logProvider)
                 .forClass(HouseKeeperHandler.class)
                 .forLevel(ERROR)
                 .containsMessageWithException(
-                        "Fatal error occurred when handling a client connection: " + ctx.channel(),
+                        "Fatal error occurred when handling a client connection: " + this.ctx.channel(),
                         ReadTimeoutException.INSTANCE);
     }
 
