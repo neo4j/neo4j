@@ -59,7 +59,8 @@ class IndexFileFilterTest {
             TextIndexProvider.DESCRIPTOR,
             TrigramIndexProvider.DESCRIPTOR,
             FulltextIndexProviderFactory.DESCRIPTOR,
-            VectorIndexVersion.V1_0.descriptor());
+            VectorIndexVersion.V1_0.descriptor(),
+            VectorIndexVersion.V2_0.descriptor());
 
     @TestDirectoryExtension
     @ExtendWith(RandomExtension.class)

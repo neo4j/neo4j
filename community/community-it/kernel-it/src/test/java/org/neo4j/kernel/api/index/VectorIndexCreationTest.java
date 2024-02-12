@@ -41,6 +41,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -60,13 +62,15 @@ import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.Tokens;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 public class VectorIndexCreationTest {
 
-    @ImpermanentDbmsExtension
+    @ImpermanentDbmsExtension(configurationCallback = "configure")
     @TestInstance(Lifecycle.PER_CLASS)
     abstract static class VectorIndexCreationTestBase {
         protected static final List<String> PROP_KEYS =
@@ -85,6 +89,17 @@ public class VectorIndexCreationTest {
                     indexVersion -> indexVersion.minimumRequiredKernelVersion().isAtLeast(introducedKernelVersion));
             this.validVersions = partitioned.getSelected();
             this.invalidVersions = partitioned.getRejected();
+        }
+
+        @ExtensionCallback
+        void configure(TestDatabaseManagementServiceBuilder builder) {
+            builder.setConfig(GraphDatabaseInternalSettings.enable_vector_2, true)
+                    .setConfig(
+                            GraphDatabaseInternalSettings.latest_runtime_version,
+                            DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion())
+                    .setConfig(
+                            GraphDatabaseInternalSettings.latest_kernel_version,
+                            KernelVersion.GLORIOUS_FUTURE.version());
         }
 
         @BeforeAll

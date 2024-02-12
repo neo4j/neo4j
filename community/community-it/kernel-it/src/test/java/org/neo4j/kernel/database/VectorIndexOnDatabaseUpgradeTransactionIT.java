@@ -22,7 +22,6 @@ package org.neo4j.kernel.database;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.test.UpgradeTestUtil.assertKernelVersion;
 import static org.neo4j.test.UpgradeTestUtil.upgradeDbms;
 
@@ -33,8 +32,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -60,6 +61,8 @@ import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class VectorIndexOnDatabaseUpgradeTransactionIT {
+    private static final DbmsRuntimeVersion LATEST_RUNTIME_VERSION = DbmsRuntimeVersion.GLORIOUS_FUTURE;
+    private static final KernelVersion LATEST_KERNEL_VERSION = LATEST_RUNTIME_VERSION.kernelVersion();
     private static final Label LABEL = Tokens.Suppliers.UUID.LABEL.get();
     private static final RelationshipType REL_TYPE = Tokens.Suppliers.UUID.RELATIONSHIP_TYPE.get();
     private static final String PROP_KEY = Tokens.Suppliers.UUID.PROPERTY_KEY.get();
@@ -105,7 +108,7 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     void shouldBePossibleToCreateVectorIndexAfterUpgrade(EntityType entityType, VectorIndexVersion indexVersion) {
         final var previousVersion = previousFrom(indexVersion.minimumRequiredKernelVersion());
         setup(previousVersion);
-        UpgradeTestUtil.upgradeDatabase(dbms, database, previousVersion, LatestVersions.LATEST_KERNEL_VERSION);
+        UpgradeTestUtil.upgradeDatabase(dbms, database, previousVersion, LATEST_KERNEL_VERSION);
 
         try (final var tx = database.beginTx()) {
             createIndex(tx, entityType, indexVersion);
@@ -131,14 +134,16 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
             tx.commit();
         }
 
-        assertKernelVersion(database, LatestVersions.LATEST_KERNEL_VERSION);
+        assertKernelVersion(database, LATEST_KERNEL_VERSION);
         try (final var tx = database.beginTx()) {
             assertThat(tx.schema().getIndexes()).hasSize(1);
         }
     }
 
     private static Stream<Arguments> indexes() {
-        return Stream.of(Arguments.of(EntityType.NODE, VectorIndexVersion.V1_0));
+        return Stream.of(
+                Arguments.of(EntityType.NODE, VectorIndexVersion.V1_0),
+                Arguments.of(EntityType.NODE, VectorIndexVersion.V2_0));
     }
 
     private void createIndex(Transaction tx, EntityType entityType, VectorIndexVersion indexVersion) {
@@ -174,6 +179,7 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
         final var store =
                 switch (kernelVersion) {
                     case V5_10 -> ZippedStoreCommunity.REC_AF11_V510_EMPTY;
+                    case V5_15 -> ZippedStoreCommunity.REC_AF11_V515_EMPTY;
                     default -> throw new InvalidArgumentException("Test not setup to find a %s for %s."
                             .formatted(ZippedStore.class.getSimpleName(), kernelVersion));
                 };
@@ -187,7 +193,10 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
             fail("Could not setup %s:%s".formatted(snapshot.name(), exc));
         }
         dbms = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
-                .setConfig(automatic_upgrade_enabled, false)
+                .setConfig(GraphDatabaseInternalSettings.automatic_upgrade_enabled, false)
+                .setConfig(GraphDatabaseInternalSettings.enable_vector_2, true)
+                .setConfig(GraphDatabaseInternalSettings.latest_runtime_version, LATEST_RUNTIME_VERSION.getVersion())
+                .setConfig(GraphDatabaseInternalSettings.latest_kernel_version, LATEST_KERNEL_VERSION.version())
                 .build();
         database = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         assertKernelVersion(database, snapshot.statistics().kernelVersion());

@@ -49,12 +49,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -73,6 +75,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
@@ -114,7 +117,7 @@ class SpecialisedIndexFullCheckTest {
 
         protected final List<Long> indexedNodes = new ArrayList<>();
         private final List<Long> indexedRelationships = new ArrayList<>();
-        private final Map<Setting<?>, Object> settings = new HashMap<>();
+        protected final Map<Setting<?>, Object> settings = new HashMap<>();
 
         abstract IndexType type();
 
@@ -579,6 +582,19 @@ class SpecialisedIndexFullCheckTest {
     class VectorV1Index extends VectorIndexBase {
         VectorV1Index() {
             super(VectorIndexVersion.V1_0);
+        }
+    }
+
+    @Nested
+    class VectorV2Index extends VectorIndexBase {
+        private static final DbmsRuntimeVersion LATEST_RUNTIME_VERSION = DbmsRuntimeVersion.GLORIOUS_FUTURE;
+        private static final KernelVersion LATEST_KERNEL_VERSION = LATEST_RUNTIME_VERSION.kernelVersion();
+
+        VectorV2Index() {
+            super(VectorIndexVersion.V2_0);
+            settings.put(GraphDatabaseInternalSettings.enable_vector_2, true);
+            settings.put(GraphDatabaseInternalSettings.latest_runtime_version, LATEST_RUNTIME_VERSION.getVersion());
+            settings.put(GraphDatabaseInternalSettings.latest_kernel_version, LATEST_KERNEL_VERSION.version());
         }
     }
 

@@ -183,4 +183,11 @@ class VectorIndexProviderTest {
             super(VectorIndexVersion.V1_0);
         }
     }
+
+    @Nested
+    class V2 extends WithSimilarityFunction {
+        V2() {
+            super(VectorIndexVersion.V2_0);
+        }
+    }
 }
