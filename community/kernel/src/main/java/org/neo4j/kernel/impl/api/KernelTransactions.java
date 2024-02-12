@@ -51,6 +51,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransactionDecorator;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -156,6 +157,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final ApplyEnrichmentStrategy enrichmentStrategy;
     private final AbstractSecurityLog securityLog;
     private final boolean multiVersioned;
+    private final KernelTransactionDecorator kernelTransactionDecorator;
     private ScopedMemoryPool transactionMemoryPool;
 
     /**
@@ -251,6 +253,12 @@ public class KernelTransactions extends LifecycleAdapter
                 config);
         this.enrichmentStrategy = this.databaseDependencies.resolveDependency(ApplyEnrichmentStrategy.class);
         this.securityLog = this.databaseDependencies.resolveDependency(AbstractSecurityLog.class);
+        if (this.databaseDependencies.containsDependency(KernelTransactionDecorator.class)) {
+            this.kernelTransactionDecorator =
+                    this.databaseDependencies.resolveDependency(KernelTransactionDecorator.class);
+        } else {
+            this.kernelTransactionDecorator = null;
+        }
         doBlockNewTransactions();
     }
 
@@ -281,7 +289,7 @@ public class KernelTransactions extends LifecycleAdapter
                         transactionIdSequence.next(),
                         clientInfo,
                         procedureView);
-                return tx;
+                return kernelTransactionDecorator != null ? kernelTransactionDecorator.decorate(tx) : tx;
             } finally {
                 newTransactionsLock.readLock().unlock();
             }
