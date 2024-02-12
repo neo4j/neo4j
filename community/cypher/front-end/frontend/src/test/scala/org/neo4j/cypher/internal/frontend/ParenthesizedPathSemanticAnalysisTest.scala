@@ -18,8 +18,9 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
+import org.scalatest.LoneElement
 
-class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite {
+class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite with LoneElement {
 
   implicit private val windowsStringSafe: WindowsStringSafe.type = WindowsStringSafe
 
@@ -42,7 +43,7 @@ class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |RETURN b
         |""".stripMargin
 
-    runSemanticAnalysisWithSemanticFeatures(gpmShortestPath, q).errorMessages.single shouldEqual
+    runSemanticAnalysisWithSemanticFeatures(gpmShortestPath, q).errorMessages.loneElement shouldEqual
       """From within a parenthesized path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
         |In this case, p is defined in the same `MATCH` clause as ((a) (()-[r]->())+ (b) WHERE length(p) % 2 = 0).""".stripMargin
   }
@@ -65,17 +66,9 @@ class ParenthesizedPathSemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |RETURN b
         |""".stripMargin
 
-    runSemanticAnalysisWithSemanticFeatures(gpmShortestPath, q).errorMessages.single shouldEqual
+    runSemanticAnalysisWithSemanticFeatures(gpmShortestPath, q).errorMessages.loneElement shouldEqual
       """From within a parenthesized path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
         |In this case, p is defined in the same `MATCH` clause as ((a) (()-[r]->())+ (b) WHERE 0 = COUNT { MATCH (x)-->(y)
         |  WHERE length(p) % 2 = 0 }).""".stripMargin
-  }
-
-  implicit private class SingleSyntax(errorMessages: Seq[String]) {
-
-    def single: String = {
-      errorMessages.size shouldBe 1
-      errorMessages.head
-    }
   }
 }
