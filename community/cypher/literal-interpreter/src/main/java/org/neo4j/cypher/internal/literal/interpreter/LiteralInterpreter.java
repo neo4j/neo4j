@@ -1465,7 +1465,8 @@ public class LiteralInterpreter
             List<String> namespace,
             String name,
             boolean distinct,
-            List<Object> arguments) {
+            List<Object> arguments,
+            boolean calledFromUseClause) {
         if (namespace.isEmpty()) {
             switch (name.toLowerCase(Locale.ROOT)) {
                 case "date":

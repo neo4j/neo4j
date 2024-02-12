@@ -1336,13 +1336,15 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     namespace: util.List[String],
     name: String,
     distinct: Boolean,
-    arguments: util.List[Expression]
+    arguments: util.List[Expression],
+    calledFromUseClause: Boolean
   ): FunctionInvocation = {
     FunctionInvocation(
       Namespace(namespace.asScala.toList)(p),
       FunctionName(name)(functionNamePosition),
       distinct,
-      arguments.asScala.toIndexedSeq
+      arguments.asScala.toIndexedSeq,
+      calledFromUseClause = calledFromUseClause
     )(p)
   }
 

@@ -194,7 +194,7 @@ private class DefaultExpressionStringifier(
       case ListLiteral(expressions) =>
         expressions.map(apply).mkString("[", ", ", "]")
 
-      case FunctionInvocation(namespace, functionName, distinct, args, order) =>
+      case FunctionInvocation(namespace, functionName, distinct, args, order, _) =>
         val ns = apply(namespace)
         val np = if (namespace.parts.isEmpty) "" else "."
         val ds = if (distinct) "DISTINCT " else ""

@@ -43,24 +43,27 @@ class MultipleGraphClausesParsingTest extends AstParsingTestBase with LegacyAstP
     "((foo.bar))" ->
       GraphDirectReference(CatalogName(List.apply("foo", "bar")))(pos),
     "foo()" ->
-      GraphFunctionReference(function("foo"))(pos),
+      GraphFunctionReference(function(true, "foo")())(pos),
     "foo   (    )" ->
-      GraphFunctionReference(function("foo"))(pos),
+      GraphFunctionReference(function(true, "foo")())(pos),
     "graph.foo" ->
       GraphDirectReference(CatalogName(List("graph", "foo")))(pos),
     "graph.foo()" ->
-      GraphFunctionReference(function("graph", "foo")())(pos),
+      GraphFunctionReference(function(true, "graph", "foo")())(pos),
     "foo.bar(baz(grok))" ->
-      GraphFunctionReference(function("foo", "bar")(function("baz")(varFor("grok"))))(pos),
+      GraphFunctionReference(function(true, "foo", "bar")(function(false, "baz")(varFor("grok"))))(pos),
     "foo. bar   (baz  (grok   )  )" ->
-      GraphFunctionReference(function("foo", "bar")(function("baz")(varFor("grok"))))(pos),
+      GraphFunctionReference(function(true, "foo", "bar")(function(false, "baz")(varFor("grok"))))(pos),
     "foo.bar(baz(grok), another.name)" ->
-      GraphFunctionReference(function("foo", "bar")(function("baz")(varFor("grok")), prop(varFor("another"), "name")))(
+      GraphFunctionReference(function(true, "foo", "bar")(
+        function(false, "baz")(varFor("grok")),
+        prop(varFor("another"), "name")
+      ))(
         pos
       ),
     "foo.bar(1, $par)" ->
       GraphFunctionReference(
-        function("foo", "bar")(
+        function(true, "foo", "bar")(
           literalInt(1),
           parameter("par", symbols.CTAny)
         )
@@ -80,7 +83,7 @@ class MultipleGraphClausesParsingTest extends AstParsingTestBase with LegacyAstP
   )
 
   val fullGraphSelections: Seq[(String, ast.GraphSelection)] = Seq(
-    "USE GRAPH graph()" -> use(function("graph")()),
+    "USE GRAPH graph()" -> use(function(true, "graph")()),
     // Interpreted as GRAPH keyword, followed by parenthesized expression
     "USE graph(x)" -> use(List.apply("x"))
   )
@@ -98,12 +101,13 @@ class MultipleGraphClausesParsingTest extends AstParsingTestBase with LegacyAstP
     }
   }
 
-  private def function(nameParts: String*)(args: expressions.Expression*) =
+  private def function(calledFromUseClause: Boolean, nameParts: String*)(args: expressions.Expression*) =
     expressions.FunctionInvocation(
       expressions.Namespace(nameParts.init.toList)(pos),
       expressions.FunctionName(nameParts.last)(pos),
       distinct = false,
-      args.toIndexedSeq
+      args.toIndexedSeq,
+      calledFromUseClause = calledFromUseClause
     )(pos)
 
 }

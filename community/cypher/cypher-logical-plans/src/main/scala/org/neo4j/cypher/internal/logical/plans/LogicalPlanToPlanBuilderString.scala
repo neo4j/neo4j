@@ -1984,7 +1984,7 @@ object LogicalPlanToPlanBuilderString {
 object PointFunction {
 
   def unapply(point: Expression): Option[Expression] = point match {
-    case FunctionInvocation(_, FunctionName("point"), _, args, _) => Some(args.head)
-    case _                                                        => None
+    case FunctionInvocation(_, FunctionName("point"), _, args, _, _) => Some(args.head)
+    case _                                                           => None
   }
 }

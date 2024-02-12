@@ -411,7 +411,8 @@ public class NullAstFactory
             List<String> namespace,
             String name,
             boolean distinct,
-            List<NULL> arguments) {
+            List<NULL> arguments,
+            boolean calledFromUseClause) {
         return null;
     }
 

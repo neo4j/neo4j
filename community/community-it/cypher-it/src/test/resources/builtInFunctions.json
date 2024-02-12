@@ -1205,6 +1205,62 @@
     "isDeprecated": false
   },
   {
+    "name": "graph.byElementId",
+    "category": "Graph",
+    "description": "Returns the graph reference with the given element id. It is only supported in the `USE` clause, on composite databases.",
+    "signature": "graph.byElementId(elementId :: STRING) :: GRAPH",
+    "isBuiltIn": true,
+    "enterpriseOnly": false,
+    "argumentDescription": [
+      {
+        "name": "elementId",
+        "description": "elementId :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "GRAPH",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
+    "name": "graph.byName",
+    "category": "Graph",
+    "description": "Returns the graph reference of the given name. It is only supported in the `USE` clause, on composite databases.",
+    "signature": "graph.byName(name :: STRING) :: GRAPH",
+    "isBuiltIn": true,
+    "enterpriseOnly": false,
+    "argumentDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "GRAPH",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
     "name": "graph.names",
     "category": "Graph",
     "description": "Lists the names of graphs in the current database.",

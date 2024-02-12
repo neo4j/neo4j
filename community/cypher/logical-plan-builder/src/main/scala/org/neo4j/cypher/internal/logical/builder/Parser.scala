@@ -84,7 +84,7 @@ object Parser {
   })
 
   val replaceWrongFunctionInvocation: Rewriter = topDown(Rewriter.lift {
-    case FunctionInvocation(Namespace(List()), FunctionName("CoerceToPredicate"), _, Seq(expression), _) =>
+    case FunctionInvocation(Namespace(List()), FunctionName("CoerceToPredicate"), _, Seq(expression), _, _) =>
       CoerceToPredicate(expression)
   })
 

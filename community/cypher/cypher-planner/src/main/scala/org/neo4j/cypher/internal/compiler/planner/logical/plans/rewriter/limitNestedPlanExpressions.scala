@@ -65,6 +65,7 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
         FunctionName(Head.name),
         _,
         IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _)),
+        _,
         _
       ) if shouldInsertLimitOnTopOf(plan) =>
       val newPlan =
@@ -93,6 +94,7 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
         FunctionName(IsEmpty.name),
         _,
         IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _)),
+        _,
         _
       ) if shouldInsertLimitOnTopOf(plan) =>
       val newPlan =

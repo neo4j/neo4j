@@ -20,11 +20,11 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 case class GraphRefType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
   val parentType: CypherType = CTAny
-  override val toString = "GraphRef"
-  override val toCypherTypeString = "GRAPHREF"
+  override val toString = "Graph"
+  override val toCypherTypeString = "GRAPH"
 
   override def sortOrder: Int =
-    throw new UnsupportedOperationException("GraphRef is not a supported CypherType and therefore, cannot be ordered")
+    throw new UnsupportedOperationException("Graph is not a supported CypherType and therefore, cannot be ordered")
 
   override def hasCypherParserSupport: Boolean = false
 

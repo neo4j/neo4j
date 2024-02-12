@@ -171,7 +171,8 @@ public interface ASTExpressionFactory<
             List<String> namespace,
             String name,
             boolean distinct,
-            List<EXPRESSION> arguments);
+            List<EXPRESSION> arguments,
+            boolean calledFromUseClause);
 
     EXPRESSION listComprehension(POS p, VARIABLE v, EXPRESSION list, EXPRESSION where, EXPRESSION projection);
 

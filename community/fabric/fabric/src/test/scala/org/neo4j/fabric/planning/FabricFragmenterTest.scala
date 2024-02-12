@@ -284,7 +284,7 @@ class FabricFragmenterTest
 
       inside(frag) {
         case Leaf(Apply(_, inner: Leaf, _), _, _) =>
-          inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
+          inner.use.shouldEqual(Declared(use(function("g", calledFromUseClause = true, varFor("x")))))
       }
     }
 
@@ -302,7 +302,7 @@ class FabricFragmenterTest
 
       inside(frag) {
         case Leaf(Apply(_, inner: Leaf, _), _, _) =>
-          inner.use.shouldEqual(Declared(use(function("g", varFor("x")))))
+          inner.use.shouldEqual(Declared(use(function("g", calledFromUseClause = true, varFor("x")))))
       }
     }
 

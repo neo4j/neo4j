@@ -74,7 +74,7 @@ object JavaccRule {
   def CaseExpression: JavaccRule[Expression] = fromParser(_.CaseExpression())
   def Clause: JavaccRule[Clause] = fromParser(_.Clause())
   def Expression: JavaccRule[Expression] = fromParser(_.Expression())
-  def FunctionInvocation: JavaccRule[Expression] = fromParser(_.FunctionInvocation())
+  def FunctionInvocation: JavaccRule[Expression] = fromParser(_.FunctionInvocation(false))
   def ListComprehension: JavaccRule[Expression] = fromParser(_.ListComprehension())
   def MapLiteral: JavaccRule[Expression] = fromParser(_.MapLiteral())
   def MapProjection: JavaccRule[Expression] = fromParser(_.MapProjection())

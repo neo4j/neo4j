@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Distance
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Function
+import org.neo4j.cypher.internal.expressions.functions.GraphByElementId
+import org.neo4j.cypher.internal.expressions.functions.GraphByName
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.expressions.functions.IsEmpty
 import org.neo4j.cypher.internal.expressions.functions.Last
@@ -125,6 +127,30 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         checkArgs(invocation, 1) ifOkChain {
           expectType(CTList(CTAny).covariant, invocation.arguments.head) chain
             specifyType(possibleTypes(invocation.arguments.head), invocation)
+        }
+
+      case GraphByName =>
+        checkTypeSignatures(ctx, GraphByName, invocation) ifOkChain {
+          if (invocation.calledFromUseClause) {
+            SemanticCheck.success
+          } else {
+            error(
+              "`graph.byName` is only allowed at the first position of a USE clause.",
+              invocation.position
+            )
+          }
+        }
+
+      case GraphByElementId =>
+        checkTypeSignatures(ctx, GraphByElementId, invocation) ifOkChain {
+          if (invocation.calledFromUseClause) {
+            SemanticCheck.success
+          } else {
+            error(
+              "`graph.byElementId` is only allowed at the first position of a USE clause.",
+              invocation.position
+            )
+          }
         }
 
       case Last =>

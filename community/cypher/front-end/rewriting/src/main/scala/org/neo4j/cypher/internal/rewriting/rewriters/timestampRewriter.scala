@@ -41,7 +41,7 @@ case object timestampRewriter extends Step with DefaultPostCondition with Prepar
 
   private val rewriter = Rewriter.lift {
 
-    case f @ FunctionInvocation(namespace, FunctionName(name), _, _, _)
+    case f @ FunctionInvocation(namespace, FunctionName(name), _, _, _, _)
       if namespace.parts.isEmpty && name.equalsIgnoreCase(Timestamp.name) =>
       val datetimeFunction = f.copy(functionName = FunctionName("datetime")(f.functionName.position))(f.position)
       Property(datetimeFunction, PropertyKeyName("epochMillis")(datetimeFunction.position))(datetimeFunction.position)

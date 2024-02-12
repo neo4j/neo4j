@@ -88,7 +88,7 @@ object WithSeekableArgs {
 object AsIdSeekable {
 
   def unapply(v: Any): Option[IdSeekable] = v match {
-    case WithSeekableArgs(func @ FunctionInvocation(_, _, _, IndexedSeq(ident: LogicalVariable), _), rhs)
+    case WithSeekableArgs(func @ FunctionInvocation(_, _, _, IndexedSeq(ident: LogicalVariable), _, _), rhs)
       if func.function == functions.Id && !rhs.dependencies(ident) =>
       Some(IdSeekable(func, ident, rhs))
     case _ =>
@@ -99,7 +99,7 @@ object AsIdSeekable {
 object AsElementIdSeekable {
 
   def unapply(v: Any): Option[IdSeekable] = v match {
-    case WithSeekableArgs(func @ FunctionInvocation(_, _, _, IndexedSeq(ident: LogicalVariable), _), rhs)
+    case WithSeekableArgs(func @ FunctionInvocation(_, _, _, IndexedSeq(ident: LogicalVariable), _, _), rhs)
       if func.function == functions.ElementId && !rhs.dependencies(ident) =>
       Some(IdSeekable(func, ident, rhs))
     case _ =>
@@ -277,7 +277,7 @@ object AsDistanceSeekable {
 object DistanceFunction {
 
   def unapply(v: Expression): Option[(Expression, Expression)] = v match {
-    case FunctionInvocation(Namespace(List(namespace)), FunctionName(functionName), _, args, _)
+    case FunctionInvocation(Namespace(List(namespace)), FunctionName(functionName), _, args, _, _)
       if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("distance") => Some((args.head, args(1)))
     case _ => None
   }
@@ -291,6 +291,7 @@ object AsBoundingBoxSeekable {
         FunctionName(functionName),
         _,
         Seq(prop @ Property(ident: LogicalVariable, PropertyKeyName(_)), lowerLeft, upperRight),
+        _,
         _
       ) if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("withinbbox") =>
       Some(PointBoundingBoxSeekable(ident, prop, f, PointBoundingBoxRange(lowerLeft, upperRight)))

@@ -32,16 +32,31 @@ object FunctionInvocation {
   case object ArgumentDesc extends ArgumentOrder
 
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
-    FunctionInvocation(Namespace()(position), name, distinct = false, IndexedSeq(argument))(position)
+    FunctionInvocation(
+      Namespace()(position),
+      name,
+      distinct = false,
+      IndexedSeq(argument)
+    )(position)
 
   def apply(ns: Namespace, name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
     FunctionInvocation(ns, name, distinct = false, IndexedSeq(argument))(position)
 
   def apply(left: Expression, name: FunctionName, right: Expression): FunctionInvocation =
-    FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(left, right))(name.position)
+    FunctionInvocation(
+      Namespace()(name.position),
+      name,
+      distinct = false,
+      IndexedSeq(left, right)
+    )(name.position)
 
   def apply(expression: Expression, name: FunctionName): FunctionInvocation =
-    FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(expression))(name.position)
+    FunctionInvocation(
+      Namespace()(name.position),
+      name,
+      distinct = false,
+      IndexedSeq(expression)
+    )(name.position)
 
   def apply(
     functionName: FunctionName,
@@ -56,7 +71,29 @@ object FunctionInvocation {
     args: IndexedSeq[Expression],
     order: ArgumentOrder
   ): FunctionInvocation =
-    FunctionInvocation(Namespace()(functionName.position), functionName, distinct, args, order)(functionName.position)
+    FunctionInvocation(
+      Namespace()(functionName.position),
+      functionName,
+      distinct,
+      args,
+      order
+    )(functionName.position)
+
+  def apply(
+    functionName: FunctionName,
+    distinct: Boolean,
+    args: IndexedSeq[Expression],
+    order: ArgumentOrder,
+    calledFromUseClause: Boolean
+  ): FunctionInvocation =
+    FunctionInvocation(
+      Namespace()(functionName.position),
+      functionName,
+      distinct,
+      args,
+      order,
+      calledFromUseClause
+    )(functionName.position)
 }
 
 /**
@@ -77,7 +114,8 @@ case class FunctionInvocation(
   functionName: FunctionName,
   distinct: Boolean,
   args: IndexedSeq[Expression],
-  order: ArgumentOrder = ArgumentUnordered
+  order: ArgumentOrder = ArgumentUnordered,
+  calledFromUseClause: Boolean = false
 )(val position: InputPosition) extends Expression {
   val name: String = (namespace.parts :+ functionName.name).mkString(".")
 

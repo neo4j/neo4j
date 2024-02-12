@@ -374,11 +374,28 @@ trait AstConstructionTestSupport {
   def function(name: String, args: Expression*): FunctionInvocation =
     function(name, ArgumentUnordered, args: _*)
 
+  def function(name: String, calledFromUseClause: Boolean, args: Expression*): FunctionInvocation =
+    function(name, ArgumentUnordered, calledFromUseClause, args: _*)
+
   def function(name: String, order: ArgumentOrder, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq, order)
 
   def function(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(Namespace(ns.toList)(pos), FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
+
+  def function(
+    name: String,
+    order: ArgumentOrder,
+    calledFromUseClause: Boolean,
+    args: Expression*
+  ): FunctionInvocation =
+    FunctionInvocation(
+      FunctionName(name)(pos),
+      distinct = false,
+      args.toIndexedSeq,
+      order,
+      calledFromUseClause = calledFromUseClause
+    )
 
   def distinctFunction(name: String, args: Expression*): FunctionInvocation =
     distinctFunction(name, ArgumentUnordered, args: _*)

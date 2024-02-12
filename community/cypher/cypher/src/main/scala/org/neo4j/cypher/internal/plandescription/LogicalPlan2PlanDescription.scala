@@ -3130,7 +3130,7 @@ case class LogicalPlan2PlanDescription(
   private def prettyPoint(point: Expression) = {
     val funcName = Point.name
     point match {
-      case FunctionInvocation(Namespace(List()), FunctionName(`funcName`), _, Seq(MapExpression(args)), _) =>
+      case FunctionInvocation(Namespace(List()), FunctionName(`funcName`), _, Seq(MapExpression(args)), _, _) =>
         pretty"point(${args.map(_._2).map(asPrettyString(_)).mkPrettyString(", ")})"
       case _ => asPrettyString(point)
     }

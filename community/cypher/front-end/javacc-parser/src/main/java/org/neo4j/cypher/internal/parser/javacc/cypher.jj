@@ -1755,7 +1755,7 @@ USE_CLAUSE graphReference(Token t) throws Exception:
 }
 {
     <LPAREN> useClause=graphReference(t) <RPAREN> { return useClause; }
-    | LOOKAHEAD(FunctionInvocation()) functionInvocation = FunctionInvocation()  { return astFactory.functionUseClause(pos(t), functionInvocation); }
+    | LOOKAHEAD(FunctionInvocation()) functionInvocation = FunctionInvocation(true)  { return astFactory.functionUseClause(pos(t), functionInvocation); }
     | aliasName = SymbolicAliasName()  { return astFactory.directUseClause(pos(t), aliasName.getLocalAliasName(astFactory));}
 }
 
@@ -3500,7 +3500,7 @@ EXPRESSION Expression1() throws Exception:
           e=Expression()
           { labelExpressionStack.pop(); }
           <RPAREN>
-        | LOOKAHEAD( (SymbolicNameString() <DOT> )* SymbolicNameString() <LPAREN> ) e=FunctionInvocation()
+        | LOOKAHEAD( (SymbolicNameString() <DOT> )* SymbolicNameString() <LPAREN> ) e=FunctionInvocation(false)
         | e=Variable()
     )
     {
@@ -3875,7 +3875,7 @@ PARAMETER Parameter( ParameterType type ) :
     )
 }
 
-FUNCTION_INVOCATION FunctionInvocation()  throws Exception:
+FUNCTION_INVOCATION FunctionInvocation(boolean calledFromUseClause)  throws Exception:
 {
     Token before = token;
     Token nameSpaceToken;
@@ -3892,7 +3892,7 @@ FUNCTION_INVOCATION FunctionInvocation()  throws Exception:
         ( e=Expression() { arguments.add( e ); } )? ( <COMMA> e=Expression() { arguments.add( e ); } )*
     <RPAREN>
     {
-        return astFactory.functionInvocation( pos( before.next ), pos( nameToken ), namespace, nameToken.image, distinct, arguments );
+        return astFactory.functionInvocation( pos( before.next ), pos( nameToken ), namespace, nameToken.image, distinct, arguments, calledFromUseClause );
     }
 }
 

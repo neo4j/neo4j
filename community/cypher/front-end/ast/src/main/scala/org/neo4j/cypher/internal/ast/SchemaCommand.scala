@@ -225,7 +225,7 @@ case class CreateLookupIndex(
     if (isNodeIndex) name.equalsIgnoreCase(Labels.name) else name.equalsIgnoreCase(Type.name)
 
   override def semanticCheck: SemanticCheck = function match {
-    case FunctionInvocation(_, FunctionName(name), _, _, _) if !allowedFunction(name) =>
+    case FunctionInvocation(_, FunctionName(name), _, _, _, _) if !allowedFunction(name) =>
       if (isNodeIndex) error(
         s"Failed to create node lookup index: Function '$name' is not allowed, valid function is '${Labels.name}'.",
         position

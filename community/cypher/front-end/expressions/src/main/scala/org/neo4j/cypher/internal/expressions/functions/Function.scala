@@ -38,6 +38,7 @@ object Category extends Enumeration {
   val LIST = "List"
   val STRING = "String"
   val SPATIAL = "Spatial"
+  val GRAPH = "Graph"
 }
 
 object Function {
@@ -67,6 +68,8 @@ object Function {
     Exp,
     File,
     Floor,
+    GraphByName,
+    GraphByElementId,
     Haversin,
     Head,
     Id,
@@ -195,8 +198,8 @@ abstract class Function extends FunctionWithName with TypeSignatures {
   def unapply(arg: Expression): Option[Expression] = {
     val (namespace, functionName) = asFunctionName(InputPosition.NONE)
     arg match {
-      case FunctionInvocation(ns, `functionName`, _, args, _) if ns == namespace => Some(args.head)
-      case _                                                                     => None
+      case FunctionInvocation(ns, `functionName`, _, args, _, _) if ns == namespace => Some(args.head)
+      case _                                                                        => None
     }
   }
 }
