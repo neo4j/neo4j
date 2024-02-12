@@ -455,6 +455,34 @@ class DiagnosticsReportCommandIT {
                 .hasSize(1);
     }
 
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void shouldSelectButNotRunNmtProfile() throws IOException {
+        Config config = Config.defaults(GraphDatabaseSettings.neo4j_home, homeDir);
+        Path pidFile = config.get(BootloaderSettings.pid_file);
+        fs.mkdirs(pidFile.getParent());
+        FileSystemUtils.writeString(fs, pidFile, format("%s%n", getPID()), EmptyMemoryTracker.INSTANCE);
+
+        JMXDumper jmxDumper =
+                new JMXDumper(config, fs, NullPrintStream.NULL_PRINT_STREAM, NullPrintStream.NULL_PRINT_STREAM, true);
+        Optional<JmxDump> maybeDump = jmxDumper.getJMXDump();
+        assumeThat(maybeDump).isPresent(); // IF not, then no point in running tests
+        maybeDump.get().close();
+
+        Path output = homeDir.resolve("profile");
+        String[] args = {"profile", output.toString(), "3s", "--skip-compression", "NMT"};
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            CommandLine commandLine =
+                    new CommandLine(new DiagnosticsReportCommand(ctx), new ContextInjectingFactory(ctx));
+            commandLine.execute(args);
+            // NMT is not enabled on "this" process normally, so assert that we find that out
+            assertThat(ctx.outAsString())
+                    .contains("Profilers [NMT] selected")
+                    .contains("Java NMT not enabled")
+                    .contains("No profilers to run");
+        });
+    }
+
     private DiagnosticsReportCommand populateCommand(CommandTestUtils.CapturingExecutionContext ctx, String... args) {
         DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
         CommandLine commandLine = new CommandLine(diagnosticsReportCommand, new ContextInjectingFactory(ctx));

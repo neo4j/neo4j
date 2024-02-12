@@ -51,6 +51,10 @@ class ProfileTool implements AutoCloseable {
         stop();
     }
 
+    boolean hasProfilers() {
+        return !profilers.isEmpty();
+    }
+
     boolean hasRunningProfilers() {
         return running && profilers.stream().anyMatch(profiler -> profiler.failure() == null);
     }

@@ -32,6 +32,7 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
+import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -59,19 +60,22 @@ import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 public class JmxDump implements AutoCloseable {
     private final JMXConnector connector;
     private final MBeanServerConnection mBeanServer;
+    private final long pid;
     private Properties systemProperties;
     public static final String THREAD_DUMP_FAILURE = "ERROR: Unable to produce any thread dump";
+    public static final String VM_ARGS_FAILURE = "ERROR: Unable to produce any thread dump";
 
-    private JmxDump(JMXConnector connector, MBeanServerConnection mBeanServer) {
+    private JmxDump(JMXConnector connector, MBeanServerConnection mBeanServer, long pid) {
         this.connector = connector;
         this.mBeanServer = mBeanServer;
+        this.pid = pid;
     }
 
-    public static JmxDump connectTo(String jmxAddress) throws IOException {
+    public static JmxDump connectTo(String jmxAddress, long pid) throws IOException {
         JMXServiceURL url = new JMXServiceURL(jmxAddress);
         JMXConnector connect = JMXConnectorFactory.connect(url);
 
-        return new JmxDump(connect, connect.getMBeanServerConnection());
+        return new JmxDump(connect, connect.getMBeanServerConnection(), pid);
     }
 
     public void attachSystemProperties(Properties systemProperties) {
@@ -123,6 +127,16 @@ public class JmxDump implements AutoCloseable {
         }
 
         return DumpUtils.threadDump(threadMxBean, systemProperties);
+    }
+
+    public String vmArguments() {
+        RuntimeMXBean runtimeMxBean;
+        try {
+            runtimeMxBean = ManagementFactory.getPlatformMXBean(mBeanServer, RuntimeMXBean.class);
+        } catch (IOException e) {
+            return VM_ARGS_FAILURE;
+        }
+        return String.join(" ", runtimeMxBean.getInputArguments());
     }
 
     public DiagnosticsReportSource heapDump() {
@@ -205,6 +219,10 @@ public class JmxDump implements AutoCloseable {
             connector.close();
         } catch (IOException ignored) {
         }
+    }
+
+    public long getPid() {
+        return pid;
     }
 
     public static class JfrProfileConnection {

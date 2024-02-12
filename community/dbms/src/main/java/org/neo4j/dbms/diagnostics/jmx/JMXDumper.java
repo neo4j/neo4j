@@ -67,7 +67,7 @@ public class JMXDumper {
             LocalVirtualMachine vm = LocalVirtualMachine.from(pid);
             out.println("Attached to running process with process id " + pid);
             try {
-                JmxDump jmxDump = JmxDump.connectTo(vm.getJmxAddress());
+                JmxDump jmxDump = JmxDump.connectTo(vm.getJmxAddress(), pid);
                 jmxDump.attachSystemProperties(vm.getSystemProperties());
                 out.println("Connected to JMX endpoint");
                 return Optional.of(jmxDump);

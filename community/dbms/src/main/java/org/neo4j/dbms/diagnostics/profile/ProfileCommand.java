@@ -72,6 +72,7 @@ public class ProfileCommand extends AbstractAdminCommand {
     public enum ProfilerSource {
         JFR,
         THREADS,
+        NMT
     }
 
     public ProfileCommand(ExecutionContext ctx) {
@@ -113,6 +114,14 @@ public class ProfileCommand extends AbstractAdminCommand {
                     addProfiler(
                             tool,
                             new JstackProfiler(jmxDump, fs, output.resolve("threads"), Duration.ofSeconds(1), clock));
+                }
+                if (profilers.contains(ProfilerSource.NMT)) {
+                    addProfiler(
+                            tool, new NmtProfiler(jmxDump, fs, output.resolve("nmt"), Duration.ofSeconds(10), clock));
+                }
+                if (!tool.hasProfilers()) {
+                    ctx.out().println("No profilers to run");
+                    return;
                 }
                 installShutdownHook(tool);
                 tool.start();
@@ -188,6 +197,10 @@ public class ProfileCommand extends AbstractAdminCommand {
     private void addProfiler(ProfileTool tool, Profiler profiler) {
         if (!tool.add(profiler)) {
             ctx.out().println(profiler.getClass().getSimpleName() + " is not available and will not be used");
+            RuntimeException failure = profiler.failure();
+            if (failure != null) {
+                ctx.out().println(failure.getMessage());
+            }
         }
     }
 
