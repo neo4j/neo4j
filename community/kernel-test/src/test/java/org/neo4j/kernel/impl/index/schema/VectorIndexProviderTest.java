@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
@@ -33,43 +32,29 @@ import org.junit.jupiter.api.Nested;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.graphdb.schema.IndexSettingUtil;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
-import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 class VectorIndexProviderTest {
     abstract static class VectorIndexProviderTestBase extends IndexProviderTests {
-        private static final ProviderFactory FACTORY =
-                (pageCache,
-                        fs,
-                        dir,
-                        monitors,
-                        collector,
-                        readOnlyChecker,
-                        databaseLayout,
-                        contextFactory,
-                        pageCacheTracer) -> new VectorIndexProvider(
-                        VectorIndexVersion.V1_0,
-                        fs,
-                        directoryFactory(fs),
-                        dir,
-                        monitors,
-                        Config.defaults(),
-                        readOnlyChecker,
-                        new ThreadPoolJobScheduler(VectorIndexProviderTest.class.getSimpleName()));
-
+        private final int dimension;
+        private final String similarityFunction;
         private final IndexConfig validIndexConfig;
 
-        VectorIndexProviderTestBase(Map<IndexSetting, Object> validIndexSettings) {
-            super(FACTORY);
-            this.validIndexConfig = indexConfigOf(validIndexSettings);
+        VectorIndexProviderTestBase(VectorIndexVersion version, String similarityFunction) {
+            super(factory(version, similarityFunction));
+            this.dimension = version.maxDimensions() / 2;
+            this.similarityFunction = similarityFunction;
+            this.validIndexConfig = indexConfigOf(dimension, similarityFunction);
         }
 
         @Override
@@ -103,28 +88,16 @@ class VectorIndexProviderTest {
             return List.of(
                     // Bad configurations
                     // no config
-                    forSchema(forLabel(labelId, propId))
-                            .withIndexType(IndexType.VECTOR)
-                            .withName("unsupported"),
+                    vectorPrototype().withName("unsupported"),
 
                     // invalid dimension
-                    forSchema(forLabel(labelId, propId))
-                            .withIndexType(IndexType.VECTOR)
-                            .withIndexConfig(indexConfigOf(Map.of(
-                                    IndexSetting.vector_Dimensions(),
-                                    -1,
-                                    IndexSetting.vector_Similarity_Function(),
-                                    VectorSimilarityFunctions.EUCLIDEAN.name())))
+                    vectorPrototype()
+                            .withIndexConfig(indexConfigOf(-1, similarityFunction))
                             .withName("unsupported"),
 
                     // unsupported similarity function
-                    forSchema(forLabel(labelId, propId))
-                            .withIndexType(IndexType.VECTOR)
-                            .withIndexConfig(indexConfigOf(Map.of(
-                                    IndexSetting.vector_Dimensions(),
-                                    123,
-                                    IndexSetting.vector_Similarity_Function(),
-                                    "malmo")))
+                    vectorPrototype()
+                            .withIndexConfig(indexConfigOf(dimension, "malmo"))
                             .withName("unsupported"),
 
                     // Unsupported index types
@@ -132,13 +105,9 @@ class VectorIndexProviderTest {
                             .withName("unsupported"),
                     forSchema(fulltext(EntityType.NODE, new int[] {labelId}, new int[] {propId}))
                             .withName("unsupported"),
-                    forSchema(forLabel(labelId, propId))
-                            .withIndexType(IndexType.POINT)
-                            .withName("unsupported"),
-                    forSchema(forLabel(labelId, propId))
-                            .withIndexType(IndexType.TEXT)
-                            .withName("unsupported"),
-                    forSchema(forLabel(labelId, propId), PROVIDER_DESCRIPTOR)
+                    forSchema(schemaDescriptor()).withIndexType(IndexType.POINT).withName("unsupported"),
+                    forSchema(schemaDescriptor()).withIndexType(IndexType.TEXT).withName("unsupported"),
+                    forSchema(schemaDescriptor(), PROVIDER_DESCRIPTOR)
                             .withIndexType(IndexType.LOOKUP)
                             .withName("unsupported"));
         }
@@ -148,30 +117,70 @@ class VectorIndexProviderTest {
             fs.mkdirs(newProvider().directoryStructure().rootDirectory());
         }
 
-        private static IndexConfig indexConfigOf(Map<IndexSetting, Object> indexSettings) {
-            return toIndexConfigFromIndexSettingObjectMap(indexSettings);
+        private SchemaDescriptor schemaDescriptor() {
+            return forLabel(labelId, propId);
+        }
+
+        private IndexPrototype vectorPrototype() {
+            return forSchema(schemaDescriptor()).withIndexType(IndexType.VECTOR);
+        }
+
+        private static IndexConfig indexConfigOf(int dimension, String similarityFunction) {
+            return IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap(Map.of(
+                    IndexSetting.vector_Dimensions(),
+                    dimension,
+                    IndexSetting.vector_Similarity_Function(),
+                    similarityFunction));
+        }
+
+        private static ProviderFactory factory(VectorIndexVersion version, String similarityFunction) {
+            return (pageCache,
+                    fs,
+                    dir,
+                    monitors,
+                    collector,
+                    readOnlyChecker,
+                    databaseLayout,
+                    contextFactory,
+                    pageCacheTracer) -> new VectorIndexProvider(
+                    version,
+                    fs,
+                    directoryFactory(fs),
+                    dir,
+                    monitors,
+                    Config.defaults(),
+                    readOnlyChecker,
+                    new ThreadPoolJobScheduler("%s-%s-%s"
+                            .formatted(VectorIndexProviderTest.class.getSimpleName(), version, similarityFunction)));
+        }
+    }
+
+    abstract static class WithSimilarityFunction {
+        private final VectorIndexVersion version;
+
+        WithSimilarityFunction(VectorIndexVersion version) {
+            this.version = version;
+        }
+
+        @Nested
+        class Euclidean extends VectorIndexProviderTestBase {
+            Euclidean() {
+                super(version, "EUCLIDEAN");
+            }
+        }
+
+        @Nested
+        class Cosine extends VectorIndexProviderTestBase {
+            Cosine() {
+                super(version, "COSINE");
+            }
         }
     }
 
     @Nested
-    class Euclidean extends VectorIndexProviderTestBase {
-        Euclidean() {
-            super(Map.of(
-                    IndexSetting.vector_Dimensions(),
-                    123,
-                    IndexSetting.vector_Similarity_Function(),
-                    VectorSimilarityFunctions.EUCLIDEAN.name()));
-        }
-    }
-
-    @Nested
-    class Cosine extends VectorIndexProviderTestBase {
-        Cosine() {
-            super(Map.of(
-                    IndexSetting.vector_Dimensions(),
-                    123,
-                    IndexSetting.vector_Similarity_Function(),
-                    VectorSimilarityFunctions.SIMPLE_COSINE.name()));
+    class V1 extends WithSimilarityFunction {
+        V1() {
+            super(VectorIndexVersion.V1_0);
         }
     }
 }

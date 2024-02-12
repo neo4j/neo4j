@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.lucene.index.VectorSimilarityFunction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -77,6 +76,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -423,7 +423,7 @@ class SpecialisedIndexFullCheckTest {
         }
     }
 
-    static class TextIndexBase extends TestBase {
+    abstract static class TextIndexBase extends TestBase {
 
         private final IndexProviderDescriptor descriptor;
 
@@ -509,15 +509,14 @@ class SpecialisedIndexFullCheckTest {
         }
     }
 
-    @Nested
-    class VectorIndex extends TestBase {
+    abstract static class VectorIndexBase extends TestBase {
         private static final int DIMENSIONS = 100;
-        private static final VectorSimilarityFunction SIMILARITY_FUNCTION = VectorSimilarityFunction.EUCLIDEAN;
+        private static final String SIMILARITY_FUNCTION = "COSINE";
         private static final IndexConfig CONFIG = IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap(Map.of(
                 IndexSetting.vector_Dimensions(),
                 DIMENSIONS,
                 IndexSetting.vector_Similarity_Function(),
-                SIMILARITY_FUNCTION.name()));
+                SIMILARITY_FUNCTION));
         private static final float[] valid1 = new float[DIMENSIONS];
         private static final Double[] valid2 = new Double[DIMENSIONS];
         private static final double[] invalid = new double[DIMENSIONS / 2];
@@ -530,6 +529,12 @@ class SpecialisedIndexFullCheckTest {
                     invalid[i] = i / 2.;
                 }
             }
+        }
+
+        private final IndexProviderDescriptor descriptor;
+
+        VectorIndexBase(VectorIndexVersion vectorIndexVersion) {
+            this.descriptor = vectorIndexVersion.descriptor();
         }
 
         @Override
@@ -554,7 +559,7 @@ class SpecialisedIndexFullCheckTest {
 
         @Override
         IndexPrototype nodeIndex(KernelTransaction ktx, String propKey) throws KernelException {
-            return super.nodeIndex(ktx, propKey).withIndexConfig(CONFIG);
+            return super.nodeIndex(ktx, propKey).withIndexProvider(descriptor).withIndexConfig(CONFIG);
         }
 
         @Override
@@ -568,6 +573,13 @@ class SpecialisedIndexFullCheckTest {
         @ParameterizedTest
         @EnumSource(IndexSize.class)
         void shouldReportRelationshipsThatAreNotIndexed(IndexSize indexSize) {}
+    }
+
+    @Nested
+    class VectorV1Index extends VectorIndexBase {
+        VectorV1Index() {
+            super(VectorIndexVersion.V1_0);
+        }
     }
 
     /**
