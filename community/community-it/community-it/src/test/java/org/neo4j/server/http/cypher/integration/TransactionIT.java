@@ -485,7 +485,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
                         "{ 'statements': [ { 'statement': 'UNWIND range(0, 9999) AS i CREATE (n {i: i}) RETURN n' } ] "
                                 + "}")
                 .get();
-        out.print(format("POST /%s/commit HTTP/1.1\r\n", TX_ENDPOINT));
+        out.printf("POST /%s/commit HTTP/1.1\r\n", TX_ENDPOINT);
         out.print("Host: localhost:7474\r\n");
         out.print("Content-type: application/json; charset=utf-8\r\n");
         out.print("Content-length: " + output.getBytes().length + "\r\n");
@@ -496,6 +496,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
         InputStream inputStream = socket.getInputStream();
         Reader reader = new InputStreamReader(inputStream);
 
+        // Read the first 300 bytes and then close the socket which should trigger a rollback
         int numRead = 0;
         while (numRead < 300) {
             numRead += reader.read(new char[300]);
@@ -504,21 +505,12 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
 
         assertEquals(initialNodes, countNodes());
 
-        // then soon the transaction should have been terminated
-        long endTime = System.currentTimeMillis() + 5000;
-        long additionalRollBacks;
-
-        while (true) {
-            additionalRollBacks = txMonitor.getNumberOfRolledBackTransactions() - initialRollBacks;
-
-            if (additionalRollBacks > 0 || System.currentTimeMillis() > endTime) {
-                break;
-            }
-
+        // Wait for the transaction to finish. If this gets stuck, the test will timeout in 30s
+        while (txMonitor.getNumberOfActiveTransactions() > 0) {
             Thread.sleep(100);
         }
 
-        assertEquals(1, additionalRollBacks);
+        assertEquals(1, txMonitor.getNumberOfRolledBackTransactions() - initialRollBacks);
     }
 
     @Test
