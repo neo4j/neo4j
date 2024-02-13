@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -65,9 +66,8 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     if (from.logicalPlan.readOnly) return from
 
     val attributes: Attributes[LogicalPlan] = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
-    val lPStateWithEagerProcedureCall = eagerizeProcedureCalls(from, attributes)
-
-    val cardinalities = lPStateWithEagerProcedureCall.planningAttributes.cardinalities
+    val cardinalities = from.planningAttributes.cardinalities
+    val lPStateWithEagerProcedureCall = eagerizeProcedureCalls(from, cardinalities, attributes.without(cardinalities))
 
     val newPlan = context.updateStrategy match {
       case `eagerUpdateStrategy` => EagerEverywhereRewriter(attributes).eagerize(
@@ -87,9 +87,13 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     lPStateWithEagerProcedureCall.withMaybeLogicalPlan(Some(newPlan))
   }
 
-  private def eagerizeProcedureCalls(from: LogicalPlanState, attributes: Attributes[LogicalPlan]): LogicalPlanState =
+  private def eagerizeProcedureCalls(
+    from: LogicalPlanState,
+    cardinalities: Cardinalities,
+    attributesWithoutCardinalities: Attributes[LogicalPlan]
+  ): LogicalPlanState =
     from.withMaybeLogicalPlan(Some(
-      EagerProcedureCallRewriter(attributes).eagerize(
+      EagerProcedureCallRewriter(cardinalities, attributesWithoutCardinalities).eagerize(
         from.logicalPlan,
         from.semanticTable(),
         from.anonymousVariableNameGenerator
