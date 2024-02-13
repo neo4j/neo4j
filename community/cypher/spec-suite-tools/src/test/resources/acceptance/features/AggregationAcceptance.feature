@@ -133,3 +133,28 @@ Feature: AggregationAcceptance
       | c  |
       | [] |
     And no side effects
+
+  Scenario: Count nodes and average properties at the same time
+    Given an empty graph
+    And having executed:
+      """
+      UNWIND range(1, 10) AS i
+      CREATE (:N)
+      CREATE (:N {prop: i})
+      """
+    And having executed:
+      """
+      CREATE INDEX FOR (n:N) ON (n.prop)
+      """
+    And having executed:
+      """
+      CALL db.awaitIndexes()
+      """
+    When executing query:
+    """
+    MATCH (n:N) RETURN count(n) AS count, avg(n.prop) AS avg
+    """
+    Then the result should be, in any order:
+      | count | avg |
+      | 20    | 5.5 |
+    And no side effects

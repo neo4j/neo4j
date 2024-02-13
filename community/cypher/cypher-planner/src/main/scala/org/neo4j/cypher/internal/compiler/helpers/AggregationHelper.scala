@@ -55,13 +55,21 @@ object AggregationHelper {
     }
   }
 
-  def extractProperties(aggregationExpressions: Map[String, Expression], renamings: Map[String, Expression]): Set[PropertyAccess] = {
-    aggregationExpressions.values.flatMap {
-      extractPropertyForValue(_, renamings).map {
-        case Property(Variable(varName), PropertyKeyName(propName)) => PropertyAccess(varName, propName)
-        case _ => throw new IllegalStateException("expression must be a property value")
-      }
-    }.toSet
+  def extractProperties(
+    aggregationExpressions: Map[String, Expression],
+    renamings: Map[String, Expression]
+  ): Set[PropertyAccess] = {
+    aggregationExpressions.values.foldLeft((Option(Set.empty[PropertyAccess]))) {
+      case (None, _) => None
+      case (Some(acc), expression) =>
+        extractPropertyForValue(expression, renamings).map {
+          case Property(Variable(varName), PropertyKeyName(propName)) => PropertyAccess(varName, propName)
+          case _ => throw new IllegalStateException("expression must be a property value")
+        } match {
+          case Some(value) => Some(acc + value)
+          case None        => None
+        }
+    }.getOrElse(Set.empty)
   }
 
   def extractPropertyForValue(expression: Expression,
