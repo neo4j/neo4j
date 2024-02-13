@@ -991,4 +991,27 @@ class WithPlanningIntegrationTest extends CypherFunSuite
         .build()
     )
   }
+
+  test("Cannot use IndexScan if not all aggregations use property") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 100)
+      .addNodeIndex("N", Seq("prop"), 0.5, 0.1)
+      .build()
+
+    val plan = planner.plan(
+      """MATCH (n:N)
+        |RETURN count(n)    AS count,
+        |       avg(n.prop) AS avg
+        |""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("count", "avg")
+        .aggregation(Seq(), Seq("count(n) AS count", "avg(n.prop) AS avg"))
+        .nodeByLabelScan("n", "N")
+        .build()
+    )
+  }
 }

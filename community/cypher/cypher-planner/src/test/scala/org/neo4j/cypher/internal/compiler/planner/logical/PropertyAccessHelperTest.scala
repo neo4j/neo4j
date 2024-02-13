@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val context: LogicalPlanningContext = newMockedLogicalPlanningContext(newMockedPlanContext())
 
-  test("should return input context if no aggregation in horizion") {
+  test("should return input context if no aggregation in horizon") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN n.prop")
     val result =
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
@@ -42,7 +42,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     assertContextNotUpdated(result)
   }
 
-  test("should return input context if aggregation with grouping in horizion") {
+  test("should return input context if aggregation with grouping in horizon") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN min(n.prop), n.prop")
     val result =
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
@@ -89,6 +89,22 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
 
     assertContextUpdated(result, Set(PropertyAccess(v"n", "prop")))
+  }
+
+  test("should return updated context for two aggregation functions") {
+    val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN min(n.prop), max(n.foo)")
+    val result =
+      context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
+
+    assertContextUpdated(result, Set(PropertyAccess(v"n", "prop"), PropertyAccess(v"n", "foo")))
+  }
+
+  test("should return input context for two aggregation functions, but one without property access") {
+    val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN min(n.prop), count(n)")
+    val result =
+      context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
+
+    assertContextNotUpdated(result)
   }
 
   test("addAggregatedPropertiesToContext should be usable for different queries") {

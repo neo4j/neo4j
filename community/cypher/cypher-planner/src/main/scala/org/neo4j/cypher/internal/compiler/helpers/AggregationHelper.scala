@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.compiler.helpers.IterableHelper.RichIterableOnce
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -33,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.functions.PercentileCont
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 
 import java.util.Locale
-
 import scala.annotation.tailrec
 
 object AggregationHelper {
@@ -100,12 +100,12 @@ object AggregationHelper {
     aggregationExpressions: Map[LogicalVariable, Expression],
     renamings: Map[LogicalVariable, Expression]
   ): Set[PropertyAccess] = {
-    aggregationExpressions.values.flatMap {
+    aggregationExpressions.values.traverseInto[Set, PropertyAccess] {
       extractPropertyForValue(_, renamings).map {
         case Property(v: Variable, PropertyKeyName(propName)) => PropertyAccess(v, propName)
         case _ => throw new IllegalStateException("expression must be a property value")
       }
-    }.toSet
+    }.getOrElse(Set.empty)
   }
 
   def extractPropertyForValue(expression: Expression, renamings: Map[LogicalVariable, Expression]): Option[Property] = {
