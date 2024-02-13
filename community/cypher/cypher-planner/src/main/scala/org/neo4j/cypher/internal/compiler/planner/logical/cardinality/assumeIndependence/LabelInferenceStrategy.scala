@@ -75,25 +75,28 @@ object LabelInferenceStrategy {
         inferredLabel <- simpleRelationship.inferLabels(planContext)
       } yield inferredLabel
 
-      val inferredLabels = allInferredLabels
+      val inferredLabels: Seq[SimpleRelationship.InferredLabel] = allInferredLabels
         .sequentiallyGroupBy(_.node)
-        .map { case (nodeName, inferredLabels) =>
-          nodeName -> inferredLabels.minBy(x => context.graphStatistics.nodesWithLabelCardinality(Some(x.labelId)))
-        }.toMap
+        .map { case (_, inferredLabels) =>
+          inferredLabels.minBy(x => context.graphStatistics.nodesWithLabelCardinality(Some(x.labelId)))
+        }
 
       // Update the semantic table with newly resolved label names.
       val newContext = context.copy(
         semanticTable = context.semanticTable.addResolvedLabelNames(
-          inferredLabels.values.map(il => il.labelName -> il.labelId)
+          inferredLabels.map(il => il.labelName -> il.labelId)
         )
       )
 
       def addInferredLabelOnlyIfNoOtherLabel(labelInfo: LabelInfo): LabelInfo = {
-        labelInfo.map {
-          case (node, labelNames) if labelNames.isEmpty => // only infer if node has no labels
-            node -> Set(inferredLabels.get(node).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
-          case (nodeName, labelNames) =>
-            nodeName -> labelNames
+        inferredLabels.foldLeft(labelInfo) {
+          case (labelInfo, inferredLabel) =>
+            labelInfo.updatedWith(inferredLabel.node) {
+              case x @ Some(labels) if labels.nonEmpty => x
+              case _ =>
+                val label = LabelName(inferredLabel.labelName)(InputPosition.NONE)
+                Some(Set(label))
+            }
         }
       }
 
