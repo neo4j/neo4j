@@ -60,6 +60,9 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
      */
     private final int idsPerEntry;
 
+    private final int idsPerEntryShift;
+    private final int idOffsetMask;
+
     /**
      * {@link GBPTree} writer of id state updates.
      */
@@ -157,6 +160,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
         this.bridgeIdGaps = bridgeIdGaps;
         this.deleteAlsoFrees = deleteAlsoFrees;
         this.monitor = monitor;
+        this.idsPerEntryShift = Long.numberOfTrailingZeros(idsPerEntry);
+        this.idOffsetMask = (1 << idsPerEntryShift) - 1;
     }
 
     @Override
@@ -316,11 +321,11 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     }
 
     private long idRangeIndex(long id) {
-        return id / idsPerEntry;
+        return id >> idsPerEntryShift;
     }
 
     private int idOffset(long id) {
-        return (int) (id % idsPerEntry);
+        return (int) (id & idOffsetMask);
     }
 
     /**
