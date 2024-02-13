@@ -906,7 +906,9 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
       "MATCH (a)-[:KNOWS]->(b)-[:KNOWS]->(c)-[:KNOWS]->(d)",
       "MATCH (a:Person)-[:KNOWS]->(b:Person)-[:KNOWS]->(c:Person)-[:KNOWS]->(d:Person)",
       "MATCH (a)-[:KNOWS*3..3]->(d)",
-      "MATCH (a:Person)-[:KNOWS*3..3]->(d:Person)"
+      "MATCH (a:Person)-[:KNOWS*3..3]->(d:Person)",
+      "MATCH (a)-[:KNOWS]->{3,3}(b)",
+      "MATCH (a:Person) ((:Person)-[:KNOWS]->(:Person)){3,3} (b:Person)"
     )
 
     val expectedCardinality = {
@@ -953,7 +955,9 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
         |}
         |""".stripMargin,
       "MATCH (a)-[:KNOWS*2..3]->(d)",
-      "MATCH (a:Person)-[:KNOWS*2..3]->(d:Person)"
+      "MATCH (a:Person)-[:KNOWS*2..3]->(d:Person)",
+      "MATCH (a)-[:KNOWS]->{2,3}(b)",
+      "MATCH (a:Person) ((:Person)-[:KNOWS]->(:Person)){2,3} (b:Person)"
     )
 
     val expected = {
@@ -1011,7 +1015,9 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
         |}
         |""".stripMargin,
       "MATCH (a)-[:KNOWS*2..3]->(d:Last)",
-      "MATCH (a:Person)-[:KNOWS*2..3]->(d:Last)"
+      "MATCH (a:Person)-[:KNOWS*2..3]->(d:Last)",
+      "MATCH (a)-[:KNOWS]->{2,3}(d:Last)",
+      "MATCH (a:Person) ((:Person)-[:KNOWS]->()){2,3} (d:Last)"
     )
 
     val expected = {
@@ -1033,6 +1039,60 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
 
     for (query <- queries) withClue(query) {
       queryShouldHaveCardinality(config, query, expected)
+    }
+  }
+
+  test("should infer label of intermediate nodes in a QPP containing multiple relationships, 2..2") {
+    val allNodes: Double = 3000
+    val personNodes: Double = 500
+    val entityNodes: Double = 1000
+    val allRels = 50000
+    val knowsRelationships: Double = 300
+    val allPersonToPersonRelationships: Double = knowsRelationships * 2
+
+    val config = plannerBuilder()
+      .enableLabelInference()
+      .defaultRelationshipCardinalityTo0(enable = false)
+      .setAllNodesCardinality(allNodes)
+      .setAllRelationshipsCardinality(allRels)
+      .setLabelCardinality("Person", personNodes)
+      .setLabelCardinality("Entity", entityNodes)
+      .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("(:Entity)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Entity)", knowsRelationships)
+      .setRelationshipCardinality("(:Person)-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("(:Person)-[]->(:Person)", allPersonToPersonRelationships)
+      .setRelationshipCardinality("(:Person)-[]->()", allPersonToPersonRelationships)
+      .setRelationshipCardinality("()-[]->(:Person)", allPersonToPersonRelationships)
+      .build()
+
+    val queries = Seq(
+      """MATCH
+        |  (a:Person)-[:KNOWS]->(:Person)-[]->(b:Person),
+        |  (b:Person)-[:KNOWS]->(:Person)-[]->(c:Person)
+        |""".stripMargin,
+      """MATCH
+        |  (a)-[:KNOWS]->()-[]->(b),
+        |  (b)-[:KNOWS]->()-[]->(c)
+        |""".stripMargin,
+      "MATCH (a) (()-[:KNOWS]->()-[]->()){2,2} (c)",
+      "MATCH (a) ((:Person)-[:KNOWS]->(:Person)-[]->(:Person)){2,2} (c)"
+    )
+
+    val expectedCardinality = {
+      val personKnowsPersonSel = knowsRelationships / (personNodes * personNodes)
+      val personToPersonSel = allPersonToPersonRelationships / (personNodes * personNodes)
+
+      math.pow(personNodes, 5) *
+        math.pow(personKnowsPersonSel, 2) *
+        math.pow(personToPersonSel, 2) *
+        uniquenessSelectivityForNRels(4)
+    }
+
+    for (query <- queries) withClue(query) {
+      queryShouldHaveCardinality(config, query, expectedCardinality)
     }
   }
 

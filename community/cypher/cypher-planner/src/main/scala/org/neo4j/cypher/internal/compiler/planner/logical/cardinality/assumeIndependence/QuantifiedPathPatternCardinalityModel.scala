@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
+import scala.util.chaining.scalaUtilChainingOps
 
 trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with PatternRelationshipCardinalityModel {
 
@@ -85,6 +86,72 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
         predicates = otherPredicates
       )
 
+    object inferLabels {
+
+      private lazy val nodeConnections: Seq[PatternRelationship] =
+        quantifiedPathPattern.patternRelationships.iterator.toSeq
+
+      def apply(context: QueryGraphCardinalityContext)(labelInfo: LabelInfo)
+        : (LabelInfo, QueryGraphCardinalityContext) = {
+        context.labelInferenceStrategy.inferLabels(context, labelInfo, nodeConnections)
+      }
+
+      lazy val forJunctionNode: (Set[LabelName], QueryGraphCardinalityContext) = {
+
+        val leftInner = quantifiedPathPattern.leftBinding.inner
+        val rightInner = quantifiedPathPattern.rightBinding.inner
+
+        // Junction node is both the `rightInner` node of the current iteration, and the `leftInner` node of the next iteration.
+        // We add node connections from the next iteration (renaming variable to match the current iteration) to the list
+        // to potentially enable better label inference.
+        val nodeConnectionsWithJunction: Seq[PatternRelationship] = {
+          val junctionNodeConnections = nodeConnections.collect {
+            case r if r.left == leftInner  => r.withLeft(rightInner)
+            case r if r.right == leftInner => r.withRight(rightInner)
+          }
+          nodeConnections ++ junctionNodeConnections
+        }
+
+        val labelInfoWithJunction = predicates.allLabelInfo
+          .updated(rightInner, predicates.labelsOnNodes(leftInner, rightInner))
+
+        context.labelInferenceStrategy.inferLabels(context, labelInfoWithJunction, nodeConnectionsWithJunction) pipe {
+          case (labelInfo, context) => (labelInfo.getOrElse(rightInner, Set.empty), context)
+        }
+      }
+    }
+
+    def iterationCardinality(
+      context: QueryGraphCardinalityContext,
+      leftBindingInnerLabels: Set[LabelName],
+      rightBindingInnerLabels: Set[LabelName]
+    ): Cardinality = {
+      inferLabels(context) {
+        predicates.allLabelInfo
+          .updated(quantifiedPathPattern.leftBinding.inner, leftBindingInnerLabels)
+          .updated(quantifiedPathPattern.rightBinding.inner, rightBindingInnerLabels)
+      } pipe {
+        case (iterationLabels, context) =>
+          getPatternRelationshipsCardinality(context, iterationLabels, quantifiedPathPattern.patternRelationships)
+      }
+    }
+
+    def iterationMultiplier(
+      context: QueryGraphCardinalityContext,
+      leftBindingInnerLabels: Set[LabelName],
+      rightBindingInnerLabels: Set[LabelName],
+      junctionNodeCardinality: Cardinality
+    ): Multiplier = {
+
+      val cardinality = iterationCardinality(
+        context,
+        leftBindingInnerLabels,
+        rightBindingInnerLabels
+      )
+      Multiplier.ofDivision(cardinality, junctionNodeCardinality)
+        .getOrElse(Multiplier.ZERO)
+    }
+
     val patternCardinality =
       RepetitionCardinalityModel
         .quantifiedPathPatternRepetitionAsRange(quantifiedPathPattern.repetition)
@@ -113,70 +180,49 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
             patternCardinality * uniquenessSelectivity * otherPredicatesSelectivity
 
           case i =>
-            val labelsOnJunctionNode = predicates.labelsOnNodes(
-              quantifiedPathPattern.leftBinding.inner,
-              quantifiedPathPattern.rightBinding.inner
-            )
+            inferLabels.forJunctionNode pipe {
+              case (labelsOnJunctionNode, context) =>
+                val junctionNodeCardinality =
+                  resolveNodeLabels(context, labelsOnJunctionNode)
+                    .map(getLabelsCardinality(context, _))
+                    .getOrElse(Cardinality.EMPTY)
 
-            val junctionNodeCardinality =
-              resolveNodeLabels(context, labelsOnJunctionNode)
-                .map(getLabelsCardinality(context, _))
-                .getOrElse(Cardinality.EMPTY)
+                val firstIterationCardinality = iterationCardinality(
+                  context,
+                  leftBindingInnerLabels = labelsOnFirstNode,
+                  rightBindingInnerLabels = labelsOnJunctionNode
+                )
 
-            val firstIterationLabels =
-              predicates.allLabelInfo
-                .updated(quantifiedPathPattern.leftBinding.inner, labelsOnFirstNode)
-                .updated(quantifiedPathPattern.rightBinding.inner, labelsOnJunctionNode)
-            val firstIterationCardinality =
-              getPatternRelationshipsCardinality(
-                context,
-                firstIterationLabels,
-                quantifiedPathPattern.patternRelationships
-              )
+                val intermediateIterationMultiplier = iterationMultiplier(
+                  context,
+                  leftBindingInnerLabels = labelsOnJunctionNode,
+                  rightBindingInnerLabels = labelsOnJunctionNode,
+                  junctionNodeCardinality = junctionNodeCardinality
+                )
 
-            val intermediateIterationLabels =
-              predicates.allLabelInfo
-                .updated(quantifiedPathPattern.leftBinding.inner, labelsOnJunctionNode)
-                .updated(quantifiedPathPattern.rightBinding.inner, labelsOnJunctionNode)
-            val intermediateIterationCardinality =
-              getPatternRelationshipsCardinality(
-                context,
-                intermediateIterationLabels,
-                quantifiedPathPattern.patternRelationships
-              )
-            val intermediateIterationMultiplier =
-              Multiplier.ofDivision(intermediateIterationCardinality, junctionNodeCardinality)
-                .getOrElse(Multiplier.ZERO)
+                val lastIterationMultiplier = iterationMultiplier(
+                  context,
+                  leftBindingInnerLabels = labelsOnJunctionNode,
+                  rightBindingInnerLabels = labelsOnLastNode,
+                  junctionNodeCardinality = junctionNodeCardinality
+                )
 
-            val lastIterationLabels =
-              predicates.allLabelInfo
-                .updated(quantifiedPathPattern.leftBinding.inner, labelsOnJunctionNode)
-                .updated(quantifiedPathPattern.rightBinding.inner, labelsOnLastNode)
-            val lastIterationCardinality =
-              getPatternRelationshipsCardinality(
-                context,
-                lastIterationLabels,
-                quantifiedPathPattern.patternRelationships
-              )
-            val lastIterationMultiplier =
-              Multiplier.ofDivision(lastIterationCardinality, junctionNodeCardinality)
-                .getOrElse(Multiplier.ZERO)
+                val uniqueRelationshipsInPattern =
+                  uniqueRelationships.intersect(quantifiedPathPattern.relationshipVariableGroupings.map(_.group))
+                val uniquenessSelectivity =
+                  RepetitionCardinalityModel.relationshipUniquenessSelectivity(
+                    differentRelationships = predicates.differentRelationships.size,
+                    uniqueRelationships = uniqueRelationshipsInPattern.size,
+                    repetitions = i
+                  )
 
-            val uniqueRelationshipsInPattern =
-              uniqueRelationships.intersect(quantifiedPathPattern.relationshipVariableGroupings.map(_.group))
-            val uniquenessSelectivity =
-              RepetitionCardinalityModel.relationshipUniquenessSelectivity(
-                differentRelationships = predicates.differentRelationships.size,
-                uniqueRelationships = uniqueRelationshipsInPattern.size,
-                repetitions = i
-              )
-
-            firstIterationCardinality *
-              (intermediateIterationMultiplier ^ (i - 2)) *
-              lastIterationMultiplier *
-              uniquenessSelectivity *
-              (otherPredicatesSelectivity ^ i) *
-              (boundaryNodePredicatesSelectivity ^ (i - 1))
+                firstIterationCardinality *
+                  (intermediateIterationMultiplier ^ (i - 2)) *
+                  lastIterationMultiplier *
+                  uniquenessSelectivity *
+                  (otherPredicatesSelectivity ^ i) *
+                  (boundaryNodePredicatesSelectivity ^ (i - 1))
+            }
         }.sum(NumericCardinality)
 
     patternCardinality
