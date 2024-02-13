@@ -22,14 +22,9 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
-import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.IntegralValue;
-import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 public class VectorUtils {
 
@@ -64,37 +59,6 @@ public class VectorUtils {
                 () -> new IllegalArgumentException(
                         "Invalid %s provided.".formatted(IndexConfig.class.getSimpleName()),
                         new AssertionError("'%s' is expected to have been set".formatted(name))));
-    }
-
-    public static FloatingPointArray maybeToFloatingPointArray(AnyValue candidate) {
-        if (candidate == null) {
-            return null;
-        }
-
-        if (candidate instanceof final FloatingPointArray floatingPointArray) {
-            return floatingPointArray;
-        }
-
-        if (candidate instanceof final SequenceValue list) {
-            return maybeToFloatingPointArray(list);
-        }
-
-        return null;
-    }
-
-    public static FloatingPointArray maybeToFloatingPointArray(SequenceValue candidate) {
-        if (candidate == null) {
-            return null;
-        }
-
-        final var array = new double[candidate.length()];
-        for (int i = 0; i < array.length; i++) {
-            if (!(candidate.value(i) instanceof final NumberValue number)) {
-                return null;
-            }
-            array[i] = number.doubleValue();
-        }
-        return Values.doubleArray(array);
     }
 
     private VectorUtils() {}
