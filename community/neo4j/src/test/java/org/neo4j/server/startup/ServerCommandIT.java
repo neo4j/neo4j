@@ -84,6 +84,7 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     void startShouldFailWithNiceOutputOnPortConflict() throws IOException {
         try (ServerSocket socket = new ServerSocket(0)) {
             addConf(HttpConnector.listen_address, "localhost:" + socket.getLocalPort());
