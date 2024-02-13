@@ -230,32 +230,43 @@ public class DataFactories {
         }
 
         private void validateHeader(Entry[] entries, CharSeeker dataSeeker) {
+            // This specific map exists to give a more specific exception for some cases
+            Map<String, Entry> idProperties = new HashMap<>();
             Map<String, Entry> properties = new HashMap<>();
             EnumMap<Type, Entry> singletonEntries = new EnumMap<>(Type.class);
             for (Entry entry : entries) {
                 switch (entry.type()) {
-                    case PROPERTY:
-                        Entry existingPropertyEntry = properties.get(entry.name());
-                        if (existingPropertyEntry != null) {
-                            throw new DuplicateHeaderException(
-                                    existingPropertyEntry, entry, dataSeeker.sourceDescription());
-                        }
-                        properties.put(entry.name(), entry);
-                        break;
+                    case ID, PROPERTY -> {
+                        String propertyName = entry.name();
+                        if (propertyName != null) {
+                            if (entry.type() == Type.ID) {
+                                Entry existingIdPropertyEntry = idProperties.put(propertyName, entry);
+                                if (existingIdPropertyEntry != null) {
+                                    throw new DuplicateHeaderException(
+                                            existingIdPropertyEntry,
+                                            entry,
+                                            dataSeeker.sourceDescription(),
+                                            "Cannot store composite IDs as properties, only individual part");
+                                }
+                            }
 
-                    case START_ID:
-                    case END_ID:
-                    case TYPE:
+                            Entry existingPropertyEntry = properties.put(propertyName, entry);
+                            if (existingPropertyEntry != null) {
+                                throw new DuplicateHeaderException(
+                                        existingPropertyEntry, entry, dataSeeker.sourceDescription());
+                            }
+                        }
+                    }
+                    case START_ID, END_ID, TYPE -> {
                         Entry existingSingletonEntry = singletonEntries.get(entry.type());
                         if (existingSingletonEntry != null) {
                             throw new DuplicateHeaderException(
                                     existingSingletonEntry, entry, dataSeeker.sourceDescription());
                         }
                         singletonEntries.put(entry.type(), entry);
-                        break;
-                    default:
+                    }
+                    default -> {}
                         // No need to validate other headers
-                        break;
                 }
             }
 

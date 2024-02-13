@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.ToIntFunction;
 import org.neo4j.collection.RawIterator;
@@ -182,20 +181,7 @@ public class CsvInput implements Input {
                             .count();
                     Preconditions.checkState(
                             numIdColumnsGroups <= 1,
-                            "There are multiple :ID columns, but they are referring different groups");
-                    var numNamedIdColumns = Arrays.stream(header.entries())
-                            .filter(e -> e.type() == Type.ID)
-                            .filter(e -> e.name() != null)
-                            .count();
-                    var numDistinctlyNamedIdColumns = Arrays.stream(header.entries())
-                            .filter(e -> e.type() == Type.ID)
-                            .map(Header.Entry::name)
-                            .filter(Objects::nonNull)
-                            .distinct()
-                            .count();
-                    Preconditions.checkState(
-                            numNamedIdColumns == numDistinctlyNamedIdColumns,
-                            "Cannot store composite IDs as properties, only individual parts");
+                            "There are multiple :ID columns, but they are referring to different groups");
                 }
             }
 

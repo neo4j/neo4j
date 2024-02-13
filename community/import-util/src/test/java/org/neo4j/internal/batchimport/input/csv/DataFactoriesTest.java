@@ -224,6 +224,20 @@ public class DataFactoriesTest {
     }
 
     @Test
+    public void shouldFailForDuplicatePropertyAndNamedIdHeaderEntries() throws Exception {
+        // GIVEN
+        CharSeeker seeker = seeker("one:id\tone");
+        IdType idType = IdType.STRING;
+        Extractors extractors = new Extractors('\t');
+
+        var e = assertThrows(DuplicateHeaderException.class, () -> defaultFormatNodeFileHeader()
+                .create(seeker, TABS, idType, groups));
+        assertEquals(entry("one", Type.ID, globalGroup, extractors.string()), e.getFirst());
+        assertEquals(entry("one", Type.PROPERTY, extractors.string()), e.getOther());
+        seeker.close();
+    }
+
+    @Test
     public void shouldHandleDuplicateIdHeaderEntries() {
         // GIVEN
         CharSeeker seeker = seeker("one:id\ttwo:id");

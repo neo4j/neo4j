@@ -1932,7 +1932,7 @@ class CsvInputTest {
                         false,
                         NO_MONITOR,
                         INSTANCE))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(InputException.class)
                 .hasMessageContaining("Cannot store composite IDs");
     }
 
@@ -1954,7 +1954,7 @@ class CsvInputTest {
                         NO_MONITOR,
                         INSTANCE))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("referring different groups");
+                .hasMessageContaining("referring to different groups");
     }
 
     private Path writeFile(String name, String... lines) throws FileNotFoundException {

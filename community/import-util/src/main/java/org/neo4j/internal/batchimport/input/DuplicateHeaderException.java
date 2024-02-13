@@ -27,8 +27,14 @@ public class DuplicateHeaderException extends HeaderException {
     private final Entry other;
 
     public DuplicateHeaderException(Header.Entry first, Header.Entry other, String sourceDescription) {
+        this(first, other, sourceDescription, null);
+    }
+
+    public DuplicateHeaderException(
+            Header.Entry first, Header.Entry other, String sourceDescription, String additionalInformation) {
         super("Duplicate header entries found in " + sourceDescription + ", first " + first
-                + ", other (and conflicting) " + other);
+                + ", other (and conflicting) " + other
+                + (additionalInformation != null ? " " + additionalInformation : ""));
         this.first = first;
         this.other = other;
     }
