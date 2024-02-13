@@ -112,9 +112,11 @@ public enum Group {
     LEADER_TRANSFER_SERVICE("LeaderTransferService"),
     CORE_STATE_APPLIER("CoreStateApplier"),
     AKKA_HELPER("AkkaActorSystemRestarter"),
-    LIGHTHOUSE("Lighthouse"),
+    PARALLEL_TOPOLOGY("PARALLEL_TOPOLOGY"),
+    LIGHTHOUSE_GOSSIP("LighthouseGossip"),
     LIGHTHOUSE_RECEIVER("LighthouseReceiver", ExecutorServiceFactory.singleThread()),
-    LIGHTHOUSE_JOIN_LEAVE("LighthouseJoinLeave", ExecutorServiceFactory.singleThread()),
+    LIGHTHOUSE_JOIN_LEAVE_JOB("LighthouseJoinLeaveManager", ExecutorServiceFactory.singleThread()),
+    LIGHTHOUSE_JOIN_LEAVE_MANAGER("LighthouseJoinLeaveManager", ExecutorServiceFactory.singleThread()),
     LIGHTHOUSE_MEMBER_STATE_TRANSITION_SCHEDULER(
             "LighthouseMemberStateScheduler", ExecutorServiceFactory.singleThread()),
     DOWNLOAD_SNAPSHOT("DownloadSnapshot"),
