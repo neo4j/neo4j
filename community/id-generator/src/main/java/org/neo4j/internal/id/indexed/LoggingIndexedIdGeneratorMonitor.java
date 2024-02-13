@@ -164,8 +164,8 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     }
 
     @Override
-    public synchronized void bridged(long bridgedId) {
-        putTypeAndId(Type.BRIDGED, bridgedId);
+    public synchronized void bridged(long bridgedId, long numberOfIds) {
+        putTypeAndId(Type.BRIDGED, bridgedId, numberOfIds);
     }
 
     @Override
@@ -249,12 +249,12 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         }
     }
 
-    private void putTypeAndId(Type type, long id, int numberOfIds) {
+    private void putTypeAndId(Type type, long id, long numberOfIds) {
         try {
             putEntryHeader(type);
             channel.putLong(id);
-            channel.putInt(numberOfIds);
-            position.addAndGet(HEADER_SIZE + Long.BYTES + Integer.BYTES);
+            channel.putLong(numberOfIds);
+            position.addAndGet(HEADER_SIZE + Long.BYTES + Long.BYTES);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -370,8 +370,9 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
                             MARK_DELETED,
                             MARK_FREE,
                             MARK_RESERVED,
-                            MARK_UNRESERVED -> dumper.typeAndId(type, time, channel.getLong(), channel.getInt());
-                    case NORMALIZED, BRIDGED -> dumper.typeAndId(type, time, channel.getLong());
+                            MARK_UNRESERVED,
+                            BRIDGED -> dumper.typeAndId(type, time, channel.getLong(), channel.getLong());
+                    case NORMALIZED -> dumper.typeAndId(type, time, channel.getLong());
                     case OPENED, CHECKPOINT -> dumper.typeAndTwoIds(type, time, channel.getLong(), channel.getLong());
                     default -> System.out.println("Unknown type " + type);
                 }
@@ -398,7 +399,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         }
 
         @Override
-        public boolean test(long id, int numberOfIds) {
+        public boolean test(long id, long numberOfIds) {
             for (long testId : ids) {
                 if (testId >= id && testId < id + numberOfIds) {
                     return true;
@@ -415,13 +416,13 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
 
         void typeAndId(Type type, long time, long id);
 
-        void typeAndId(Type type, long time, long id, int numberOfIds);
+        void typeAndId(Type type, long time, long id, long numberOfIds);
 
         void typeAndTwoIds(Type type, long time, long id1, long id2);
     }
 
     interface IdFilter {
-        boolean test(long id, int numberOfIds);
+        boolean test(long id, long numberOfIds);
     }
 
     public static class Printer implements Dumper {
@@ -451,7 +452,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         }
 
         @Override
-        public void typeAndId(Type type, long time, long id, int numberOfIds) {
+        public void typeAndId(Type type, long time, long id, long numberOfIds) {
             if (filter.test(id, numberOfIds)) {
                 if (numberOfIds == 1) {
                     out.printf("%s %s [%d]%n", date(time), type.shortName, id);

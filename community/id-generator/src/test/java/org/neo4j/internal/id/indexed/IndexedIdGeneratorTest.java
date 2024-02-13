@@ -809,8 +809,7 @@ class IndexedIdGeneratorTest {
 
         try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markUsed(allocatedHighId + 3);
-            verify(monitor).bridged(allocatedHighId + 1);
-            verify(monitor).bridged(allocatedHighId + 2);
+            verify(monitor).bridged(allocatedHighId + 1, 2);
         }
 
         stop();
@@ -1745,6 +1744,34 @@ class IndexedIdGeneratorTest {
         // although the real point of this test is that it doesn't hang in nextId
     }
 
+    @Test
+    void shouldNotAllocateReservedId() throws IOException {
+        open();
+        // Set highest written slightly below reserved ID
+        idGenerator.setHighId(IdValidator.INTEGER_MINUS_ONE - 10);
+        idGenerator.markHighestWrittenAtHighId();
+        // Mark some ID as used above high ID
+        long[] ids = new long[20];
+        for (int i = 0; i < ids.length; i++) {
+            ids[i] = idGenerator.nextId(NULL_CONTEXT);
+        }
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
+            for (long id : ids) {
+                marker.markUsed(id);
+            }
+            for (long id : ids) {
+                marker.markDeleted(id);
+            }
+        }
+        restart();
+
+        // See which IDs comes out of the ID generator
+        for (int i = 0; i < 100; i++) {
+            long id = idGenerator.nextId(NULL_CONTEXT);
+            assertThat(IdValidator.isReservedId(id)).isFalse();
+        }
+    }
+
     private void assertOperationThrowInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
             throws IOException {
         Path file = directory.file("existing");
@@ -1880,7 +1907,7 @@ class IndexedIdGeneratorTest {
             numberOfIdsOutThere -= 1;
             reallocationIds.set(allocation.id, 1, true);
         }
-        assertThat(idGenerator.getHighId() - highIdBeforeReallocation).isEqualTo(0L);
+        assertThat(idGenerator.getHighId()).isEqualTo(highIdBeforeReallocation);
     }
 
     private void restart() throws IOException {
