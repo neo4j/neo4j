@@ -56,4 +56,39 @@ object IterableHelper {
     }
     allGroups.result()
   }
+
+  implicit class RichIterableOnce[T, C[_] <: IterableOnce[_]](inner: C[T]) {
+
+    /**
+     * Traverses the IterableOnce and collects the results of applying `f` to every element,
+     * returning a collection identical to `this.flatMap(f)`
+     * but only if `f` returns `Some` for every element. Returns `None` collection otherwise.
+     *
+     * @param f the function
+     * @tparam CC the type of the collection ebeing returned.
+     * @tparam B the type of elements returned by `f`
+     */
+    def traverseInto[CC[_], B](f: T => Option[B])(implicit factory: Factory[B, CC[B]]): Option[CC[B]] = {
+      val builder = factory.newBuilder
+      val iterator = inner.iterator.asInstanceOf[Iterator[T]]
+      var isDefined = true
+      while (isDefined && iterator.hasNext) {
+        f(iterator.next()) match {
+          case Some(value) => builder.addOne(value)
+          case None => isDefined = false
+        }
+      }
+      Option.when(isDefined)(builder.result())
+    }
+
+    /**
+     * Traverses the IterableOnce and collects the results of applying `f` to every element,
+     * returning a collection identical to `this.flatMap(f)`
+     * but only if `f` returns `Some` for every element. Returns `None` otherwise.
+     *
+     * @param f the function
+     * @tparam B the type of elements returned by `f`
+     */
+    def traverse[B](f: T => Option[B])(implicit factory: Factory[B, C[B]]): Option[C[B]] = traverseInto[C, B](f)
+  }
 }

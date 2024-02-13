@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.compiler.helpers.IterableHelper.RichIterableOnce
 import org.neo4j.cypher.internal.compiler.helpers.IterableHelper.sequentiallyGroupBy
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Arbitrary
@@ -61,6 +62,49 @@ class IterableHelperTest extends AnyFunSuite with Matchers with CypherScalaCheck
       withClue(groups) {
         groups.map(_._1) shouldBe sorted
       }
+    }
+  }
+
+  test("traverse on an empty input") {
+    Seq.empty[String].traverse(_.headOption) shouldEqual Some(Seq.empty)
+  }
+
+  test("traverse on a single item list that returns Some") {
+    Seq("foo").traverse(_.headOption) shouldEqual Some(Seq('f'))
+  }
+
+  test("traverse on a single item list that returns None") {
+    Seq("").traverse(_.headOption) shouldEqual None
+  }
+
+  test("traverse on a multi item list that return all Some") {
+    Seq("foo", "bar", "zak").traverse(_.headOption) shouldEqual Some(Seq('f', 'b', 'z'))
+  }
+
+  test("traverse on a multi item list that return all None") {
+    Seq("", "", "").traverse(_.headOption) shouldEqual None
+  }
+
+  test("traverse on a multi item list that return Some and None") {
+    Seq("foo", "", "bar").traverse(_.headOption) shouldEqual None
+  }
+
+  test("traverse - no None - random test") {
+    forAll(Gen.listOf(Gen.nonEmptyListOf(Arbitrary.arbitrary[Char]))) { (values: List[List[Char]]) =>
+      values.traverse(_.headOption) shouldEqual Some(values.map(_.head))
+    }
+  }
+
+  val twoNonEmptyLists: Gen[(List[List[Char]], List[List[Char]])] = for {
+    a <- Gen.listOf(Gen.nonEmptyListOf(Arbitrary.arbitrary[Char]))
+    b <- Gen.listOf(Gen.nonEmptyListOf(Arbitrary.arbitrary[Char]))
+  } yield (a, b)
+
+  test("traverse - with None - random test") {
+    forAll(twoNonEmptyLists) {
+      case (valuesA, valuesB) =>
+      val valuesWithNoneMixedIn = (valuesA :+ List.empty[Char]) ++ valuesB
+        valuesWithNoneMixedIn.traverse(_.headOption) shouldEqual None
     }
   }
 }
