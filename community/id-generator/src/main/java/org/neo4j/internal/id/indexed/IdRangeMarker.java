@@ -20,8 +20,9 @@
 package org.neo4j.internal.id.indexed;
 
 import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
-import static org.neo4j.internal.id.IdValidator.isReservedId;
+import static org.neo4j.internal.id.indexed.IdRange.ADDITION_ALL;
 import static org.neo4j.internal.id.indexed.IdRange.ADDITION_REUSE;
+import static org.neo4j.internal.id.indexed.IdRange.BITSET_ALL;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_RESERVED;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_REUSE;
@@ -36,12 +37,24 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdValidator;
 
 /**
  * Contains logic for merging ID state changes into the tree backing an {@link IndexedIdGenerator}.
  * Basically manipulates {@link IdRangeKey} and {@link IdRange} instances and sends to {@link Writer#merge(Object, Object, ValueMerger)}.
  */
 class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.ContextualMarker {
+    private static final int TYPE_NONE = 0;
+    private static final int TYPE_USED = 1;
+    private static final int TYPE_DELETED = 2;
+    private static final int TYPE_RESERVED = 3;
+    private static final int TYPE_UNRESERVED = 4;
+    private static final int TYPE_UNCACHED = 5;
+    private static final int TYPE_FREE = 6;
+    private static final int TYPE_DELETED_AND_FREE = 7;
+    private static final int TYPE_UNALLOCATED = 8;
+    private static final int TYPE_BRIDGED = 9;
+
     /**
      * Number of ids that is contained in one {@link IdRange}
      */
@@ -111,6 +124,13 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
      */
     private final IndexedIdGenerator.Monitor monitor;
 
+    /**
+     * Current type of operations. As various "mark" operations comes in they modify the {@link #key} and {@link #value}
+     * states, such that if multiple operations of the same type and in the same range comes in sequence they are all written in one
+     * call back to the tree before moving over to the other range/operation.
+     */
+    private int type = TYPE_NONE;
+
     IdRangeMarker(
             int idsPerEntry,
             Layout<IdRangeKey, IdRange> layout,
@@ -142,7 +162,11 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     @Override
     public void close() {
         try {
-            writer.close();
+            try {
+                flushRange();
+            } finally {
+                writer.close();
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {
@@ -157,9 +181,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     public void markUsed(long id, int numberOfIds) {
         bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, false);
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(id, false);
-            value.setBitsForAllTypes(idOffset(id), numberOfIds);
-            writer.mergeIfExists(key, value, merger);
+            prepareRange(TYPE_USED, id, false);
+            value.setBits(BITSET_ALL, idOffset(id), numberOfIds);
             monitor.markedAsUsed(id, numberOfIds);
         }
     }
@@ -168,9 +191,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     public void markDeleted(long id, int numberOfIds) {
         if (!deleteAlsoFrees) {
             if (!hasReservedIdInRange(id, id + numberOfIds)) {
-                prepareRange(id, true);
+                prepareRange(TYPE_DELETED, id, true);
                 value.setBits(BITSET_COMMIT, idOffset(id), numberOfIds);
-                writer.merge(key, value, merger);
                 monitor.markedAsDeleted(id, numberOfIds);
             }
         } else {
@@ -181,9 +203,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     @Override
     public void markReserved(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(id, true);
+            prepareRange(TYPE_RESERVED, id, true);
             value.setBits(BITSET_RESERVED, idOffset(id), numberOfIds);
-            writer.merge(key, value, merger);
             monitor.markedAsReserved(id, numberOfIds);
         }
     }
@@ -191,9 +212,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     @Override
     public void markUnreserved(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(id, false);
+            prepareRange(TYPE_UNRESERVED, id, false);
             value.setBits(BITSET_RESERVED, idOffset(id), numberOfIds);
-            writer.merge(key, value, merger);
             monitor.markedAsUnreserved(id, numberOfIds);
         }
     }
@@ -202,11 +222,10 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     public void markUncached(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
             // Mark free:1, reserved:0
-            prepareRange(id, ADDITION_REUSE);
+            prepareRange(TYPE_UNCACHED, id, ADDITION_REUSE);
             var idOffset = idOffset(id);
             value.setBits(BITSET_REUSE, idOffset, numberOfIds);
             value.setBits(BITSET_RESERVED, idOffset, numberOfIds);
-            writer.merge(key, value, merger);
             monitor.markedAsFree(id, numberOfIds);
             monitor.markedAsUnreserved(id, numberOfIds);
         }
@@ -215,62 +234,79 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     @Override
     public void markFree(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(id, true);
+            prepareRange(TYPE_FREE, id, true);
             value.setBits(BITSET_REUSE, idOffset(id), numberOfIds);
-            writer.merge(key, value, merger);
             monitor.markedAsFree(id, numberOfIds);
         }
-
-        freeIdsNotifier.set(true);
     }
 
     @Override
     public void markDeletedAndFree(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            prepareRange(id, true);
-            value.setBits(BITSET_COMMIT, idOffset(id), numberOfIds);
-            value.setBits(BITSET_REUSE, idOffset(id), numberOfIds);
-            writer.merge(key, value, merger);
+            prepareRange(TYPE_DELETED_AND_FREE, id, true);
+            var idOffset = idOffset(id);
+            value.setBits(BITSET_COMMIT, idOffset, numberOfIds);
+            value.setBits(BITSET_REUSE, idOffset, numberOfIds);
             monitor.markedAsDeleted(id, numberOfIds);
             monitor.markedAsFree(id, numberOfIds);
         }
-
-        freeIdsNotifier.set(true);
     }
 
     @Override
     public void markUnallocated(long id, int numberOfIds) {
         bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, true);
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            long initialRange = idRangeIndex(id);
-            int numbersLeft = numberOfIds;
-            int rangeStep = 0;
-            while (numbersLeft > 0) {
-                var startIndex = rangeStep == 0 ? idOffset(id) : 0;
-                int bitsToMark = (startIndex + numbersLeft) > idsPerEntry ? idsPerEntry - startIndex : numbersLeft;
+            markWithSupportForLargerThanRange(
+                    TYPE_UNALLOCATED, id, numberOfIds, ADDITION_REUSE, BITSET_REUSE, BITSET_RESERVED);
+            monitor.markedAsFree(id, numberOfIds);
+            monitor.markedAsUnreserved(id, numberOfIds);
+        }
+    }
 
-                key.setIdRangeIdx(initialRange + rangeStep++);
-                value.clear(generation, ADDITION_REUSE);
-                value.setBits(BITSET_REUSE, startIndex, bitsToMark);
-                value.setBits(BITSET_RESERVED, startIndex, bitsToMark);
+    private void markWithSupportForLargerThanRange(
+            int type, long id, long numberOfIds, byte addition, int firstBitSet, int secondBitSet) {
+        var idOffset = idOffset(id);
+        while (numberOfIds > 0) {
+            prepareRange(type, id, addition);
+            int numberOfIdsInThisRange = (int) Math.min(numberOfIds, idsPerEntry - idOffset);
+            value.setBits(firstBitSet, idOffset, numberOfIdsInThisRange);
+            if (secondBitSet != -1) {
+                value.setBits(secondBitSet, idOffset, numberOfIdsInThisRange);
+            }
+            idOffset = 0;
+            id += numberOfIdsInThisRange;
+            numberOfIds -= numberOfIdsInThisRange;
+        }
+    }
 
-                writer.merge(key, value, merger);
-                numbersLeft -= bitsToMark;
+    private void prepareRange(int newType, long id, boolean addition) {
+        prepareRange(newType, id, addition ? ADDITION_ALL : 0);
+    }
+
+    private void prepareRange(int newType, long id, byte addition) {
+        long idRangeIdx = idRangeIndex(id);
+        if (newType != type || idRangeIdx != key.getIdRangeIdx()) {
+            flushRange();
+            type = newType;
+            key.setIdRangeIdx(idRangeIdx);
+            value.clear(generation, addition);
+        }
+    }
+
+    /**
+     * Flushes changes in the current range, i.e. writes them to the tree based on the currently set type of marks.
+     * After write the current type is set to {@link #TYPE_NONE}.
+     */
+    private void flushRange() {
+        if (type == TYPE_USED) {
+            writer.mergeIfExists(key, value, merger);
+        } else if (type != TYPE_NONE) {
+            writer.merge(key, value, merger);
+            if (type == TYPE_FREE || type == TYPE_DELETED_AND_FREE || type == TYPE_UNALLOCATED) {
+                freeIdsNotifier.set(true);
             }
         }
-        monitor.markedAsFree(id, numberOfIds);
-
-        freeIdsNotifier.set(true);
-    }
-
-    private void prepareRange(long id, boolean addition) {
-        key.setIdRangeIdx(idRangeIndex(id));
-        value.clear(generation, addition);
-    }
-
-    private void prepareRange(long id, byte addition) {
-        key.setIdRangeIdx(idRangeIndex(id));
-        value.clear(generation, addition);
+        type = TYPE_NONE;
     }
 
     private long idRangeIndex(long id) {
@@ -292,38 +328,35 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
         long highestWrittenId = this.highestWrittenId.get();
         long to = includeThis ? id + numberOfIds : id;
         if (bridgeIdGaps && highestWrittenId < to) {
-            key.setIdRangeIdx(-1);
-            boolean dirty = false;
-            while (highestWrittenId < to - 1) {
-                long bridgeId = ++highestWrittenId;
-                if (!isReservedId(bridgeId)) {
-                    // Since we're potentially setting multiple bits in this loop we have to monitor when we cross the
-                    // range boundary
-                    // to the next range. This check checks this and if so writes that range before moving over to the
-                    // next range.
-                    if (idRangeIndex(bridgeId) != key.getIdRangeIdx()) {
-                        if (key.getIdRangeIdx() != -1) {
-                            writer.merge(key, value, merger);
-                        }
-                        prepareRange(bridgeId, true);
+            if (highestWrittenId < to - 1) {
+                long bridgeId = highestWrittenId + 1;
+                long bridgeNumberOfIds = to - bridgeId;
+                if (IdValidator.hasReservedIdInRange(bridgeId, bridgeId + bridgeNumberOfIds)) {
+                    // If we happen to bridge across the reserved ID then divide it up in two
+                    // chunks: one before the reserved ID and the rest after.
+                    long idsBefore = bridgeId - IdValidator.INTEGER_MINUS_ONE;
+                    if (idsBefore > 0) {
+                        markWithSupportForLargerThanRange(
+                                TYPE_BRIDGED,
+                                bridgeId,
+                                idsBefore,
+                                ADDITION_ALL,
+                                BITSET_COMMIT,
+                                started ? -1 : BITSET_REUSE);
+                        monitor.bridged(bridgeId, idsBefore);
                     }
-
-                    // Mark this id as deleted
-                    value.setBits(BITSET_COMMIT, idOffset(bridgeId), 1);
-                    if (!started) // i.e. in recovery mode
-                    {
-                        // We're doing this bridging in recovery and we can therefore mark this id as free right away
-                        value.setBits(BITSET_REUSE, idOffset(bridgeId), 1);
-                    }
-
-                    // Set this flag so that the last range (if updated) will be written below, when exiting this loop
-                    dirty = true;
-                    monitor.bridged(bridgeId);
+                    bridgeId += (idsBefore + 1);
+                    bridgeNumberOfIds -= (idsBefore + 1);
                 }
-            }
 
-            if (dirty) {
-                writer.merge(key, value, merger);
+                markWithSupportForLargerThanRange(
+                        TYPE_BRIDGED,
+                        bridgeId,
+                        bridgeNumberOfIds,
+                        ADDITION_ALL,
+                        BITSET_COMMIT,
+                        started ? -1 : BITSET_REUSE);
+                monitor.bridged(bridgeId, bridgeNumberOfIds);
             }
 
             // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.internal.id.indexed.IdRange.BITSET_ALL;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_RESERVED;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_REUSE;
@@ -82,7 +83,7 @@ class IdRangeTest {
         assertEquals(FREE, idRange.getState(0));
 
         merger.clear(1, false);
-        merger.setBitsForAllTypes(0, 1);
+        merger.setBits(BITSET_ALL, 0, 1);
         idRange.mergeFrom(null, merger, false);
         assertEquals(USED, idRange.getState(0));
     }
@@ -433,7 +434,7 @@ class IdRangeTest {
         switch (state) {
             case USED:
                 idRange.clear(1, false);
-                idRange.setBitsForAllTypes(0, 1);
+                idRange.setBits(BITSET_ALL, 0, 1);
                 break;
             case DELETED:
                 if (intoState == FREE) {
