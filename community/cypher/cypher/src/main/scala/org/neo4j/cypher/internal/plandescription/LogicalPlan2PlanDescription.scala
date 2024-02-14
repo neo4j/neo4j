@@ -2574,6 +2574,17 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
+      case plans.NonFuseable(_) =>
+        PlanDescriptionImpl(
+          id,
+          "NonFuseable",
+          children,
+          arguments = Seq.empty,
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 

@@ -287,6 +287,7 @@ import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
 import org.neo4j.cypher.internal.logical.plans.NodePropertyType
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
+import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -7849,6 +7850,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         SingleChild(lhsPD),
         Seq(),
         Set("a", "col")
+      )
+    )
+  }
+
+  test("NonFuseable") {
+    assertGood(
+      attach(NonFuseable(lhsLP), 2345.0),
+      planDescription(
+        id,
+        "NonFuseable",
+        SingleChild(lhsPD),
+        Seq.empty,
+        Set("a")
       )
     )
   }
