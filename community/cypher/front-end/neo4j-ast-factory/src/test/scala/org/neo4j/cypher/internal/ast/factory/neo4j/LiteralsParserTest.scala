@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -48,25 +47,6 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
     with CypherScalaCheckDrivenPropertyChecks {
   private val t = DummyPosition(0)
   implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny // 🤯
-
-  test("test variable can contain ascii") {
-    parsing[Variable]("abc") shouldGive expressions.Variable("abc")(t)
-    parsing[Variable]("a123") shouldGive expressions.Variable("a123")(t)
-    parsing[Variable]("ABC") shouldGive expressions.Variable("ABC")(t)
-    parsing[Variable]("_abc") shouldGive expressions.Variable("_abc")(t)
-    parsing[Variable]("abc_de") shouldGive expressions.Variable("abc_de")(t)
-  }
-
-  test("test variable can contain utf8") {
-    parsing[Variable]("aé") shouldGive expressions.Variable("aé")(t)
-    parsing[Variable]("⁔") shouldGive expressions.Variable("⁔")(t)
-    parsing[Variable]("＿test") shouldGive expressions.Variable("＿test")(t)
-    parsing[Variable]("a＿test") shouldGive expressions.Variable("a＿test")(t)
-  }
-
-  test("test variable name can not start with number") {
-    assertFails[Variable]("1bcd")
-  }
 
   test("can parse numbers") {
     val validInts = Seq("123", "0", "-23", "-0")
@@ -128,12 +108,6 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
 
     assertFails[Parameter]("$0_2")
     assertFails[Parameter]("$1.0f")
-  }
-
-  test("variables are not allowed to start with currency symbols") {
-    Seq("$", "¢", "£", "₲", "₶", "\u20BD", "＄", "﹩").foreach { curr =>
-      assertFails[Variable](s"${curr}var")
-    }
   }
 
   test("keyword literals") {

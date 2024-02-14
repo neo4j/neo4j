@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Variable
 
 class FloatLiteralParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -43,15 +42,5 @@ class FloatLiteralParserTest extends AstParsingTestBase with LegacyAstParsingTes
     )
     parsing[Expression]("{inf: infinity, nan: NaN}") shouldGive mapOf(("inf", InfinityLiteral), ("nan", NaNLiteral))
     parsing[Expression]("[inf, Infinity, NaN]") shouldGive listOf(InfinityLiteral, InfinityLiteral, NaNLiteral)
-  }
-
-  test("float literals parse as a variable name") {
-    parsing[Variable]("NaN") shouldGive varFor("NaN")
-    parsing[Variable]("nan") shouldGive varFor("nan")
-    parsing[Variable]("nAn") shouldGive varFor("nAn")
-    parsing[Variable]("Inf") shouldGive varFor("Inf")
-    parsing[Variable]("inf") shouldGive varFor("inf")
-    parsing[Variable]("Infinity") shouldGive varFor("Infinity")
-    parsing[Variable]("infinity") shouldGive varFor("infinity")
   }
 }

@@ -16,6 +16,11 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
+import org.antlr.v4.runtime.misc.Interval
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.child
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
 
@@ -295,7 +300,9 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitVariable(
     ctx: CypherParser.VariableContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = Variable(name = ctx.symbolicNameString().ast())(pos(ctx))
+  }
 
   final override def exitSymbolicNameList1(
     ctx: CypherParser.SymbolicNameList1Context
@@ -411,15 +418,23 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitSymbolicNameString(
     ctx: CypherParser.SymbolicNameStringContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = child[AstRuleCtx](ctx, 0).ast
+  }
 
   final override def exitEscapedSymbolicNameString(
     ctx: CypherParser.EscapedSymbolicNameStringContext
-  ): Unit = {}
+  ): Unit = {
+    val textWithoutEscapes =
+      ctx.start.getInputStream.getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1))
+    ctx.ast = textWithoutEscapes.replace("``", "`")
+  }
 
   final override def exitUnescapedSymbolicNameString(
     ctx: CypherParser.UnescapedSymbolicNameStringContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ctx.getText
+  }
 
   final override def exitSymbolicLabelNameString(
     ctx: CypherParser.SymbolicLabelNameStringContext

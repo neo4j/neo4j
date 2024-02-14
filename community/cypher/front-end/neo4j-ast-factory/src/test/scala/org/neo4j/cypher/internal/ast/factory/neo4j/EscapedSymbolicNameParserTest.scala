@@ -19,14 +19,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Variable
 
 class EscapedSymbolicNameParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
-
-  test("escaped variable name") {
-    parsing[Variable]("`This isn\\'t a common variable`") shouldGive varFor("This isn\\'t a common variable")
-    parsing[Variable]("`a``b`") shouldGive varFor("a`b")
-  }
 
   test("escaped label name") {
     parsing[NodePattern]("(n:`Label`)") shouldGive nodePat(Some("n"), Some(labelLeaf("Label")))
