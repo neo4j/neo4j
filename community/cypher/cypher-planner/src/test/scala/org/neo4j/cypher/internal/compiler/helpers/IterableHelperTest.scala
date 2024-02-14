@@ -103,7 +103,7 @@ class IterableHelperTest extends AnyFunSuite with Matchers with CypherScalaCheck
   test("traverse - with None - random test") {
     forAll(twoNonEmptyLists) {
       case (valuesA, valuesB) =>
-      val valuesWithNoneMixedIn = (valuesA :+ List.empty[Char]) ++ valuesB
+        val valuesWithNoneMixedIn = (valuesA :+ List.empty[Char]) ++ valuesB
         valuesWithNoneMixedIn.traverse(_.headOption) shouldEqual None
     }
   }

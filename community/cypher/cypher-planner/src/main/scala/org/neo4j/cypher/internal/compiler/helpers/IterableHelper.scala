@@ -75,7 +75,7 @@ object IterableHelper {
       while (isDefined && iterator.hasNext) {
         f(iterator.next()) match {
           case Some(value) => builder.addOne(value)
-          case None => isDefined = false
+          case None        => isDefined = false
         }
       }
       Option.when(isDefined)(builder.result())

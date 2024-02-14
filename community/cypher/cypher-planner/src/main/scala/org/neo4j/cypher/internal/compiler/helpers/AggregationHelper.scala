@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.functions.PercentileCont
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 
 import java.util.Locale
+
 import scala.annotation.tailrec
 
 object AggregationHelper {
