@@ -126,7 +126,8 @@ case class unnestApply(
     // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
     case apply @ Apply(projection @ Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan)
       if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
-      val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet)
+      val dependencies = projections.values.flatMap(_.dependencies).toSet
+      val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet).addArgumentIds(dependencies)
       val res = projection.copy(rhsCopy, projections)(attributes.copy(projection.id))
       solveds.copy(projection.id, res.id)
       cardinalities.copy(apply.id, res.id)

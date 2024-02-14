@@ -252,6 +252,24 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .allNodeScan("m").withCardinality(100))
   }
 
+  test("π (Arg) Ax R => π (R): passes dependencies of projection") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(50)
+      .semiApply().withCardinality(50)
+      .|.apply().withCardinality(100)
+      .|.|.allNodeScan("n", "x").withCardinality(100).withProvidedOrder(po_n)
+      .|.projection("m AS x").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .allNodeScan("m").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithAttributes (new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(50)
+      .semiApply().withCardinality(50)
+      .|.projection("m as x").withCardinality(100).withProvidedOrder(po_n)
+      .|.allNodeScan("n", "m").withCardinality(100).withProvidedOrder(po_n)
+      .allNodeScan("m").withCardinality(100))
+  }
+
   test("π (Arg) Ax R => π (R): if R uses projected value") {
     val input = new LogicalPlanBuilder()
       .produceResults("x", "n")
