@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
@@ -66,12 +67,15 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
   override def phase: CompilationPhaseTracer.CompilationPhase = CompilationPhase.LOGICAL_PLANNING
 
   override def visit(value: BaseState, context: PlannerContext): Unit = {
-    verifyGraphTarget(
-      context.databaseReferenceRepository,
-      value.statement(),
-      context.databaseId,
-      context.config.queryRouterForCompositeQueriesEnabled
-    )
+    // We skip this check when the new stack is enabled and we are targeting a composite DB
+    if (!value.semantics().features.contains(UseAsMultipleGraphsSelector)) {
+      verifyGraphTarget(
+        context.databaseReferenceRepository,
+        value.statement(),
+        context.databaseId,
+        context.config.queryRouterForCompositeQueriesEnabled
+      )
+    }
   }
 
   override def preConditions: Set[StepSequencer.Condition] =
@@ -105,8 +109,7 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
             throw new DatabaseNotFoundException(
               s"Database ${graphNameWithContext.graphName.qualifiedNameString} not found"
             )
-          case Some(databaseReference)
-            if !allowCompositeQueries && !databaseReference.databaseId().equals(databaseId) =>
+          case Some(databaseReference) if !databaseReference.databaseId().equals(databaseId) =>
             graphNameWithContext match {
               // If an explicit graph selection is combined with ambient one and both target different graphs,
               // it makes the query effectively a composite one.

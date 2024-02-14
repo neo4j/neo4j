@@ -24,6 +24,9 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsMultipleGraphsSelector
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseAsSingleGraphSelector
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -182,7 +185,7 @@ class VerifyGraphTargetTest extends CypherFunSuite {
     verifyGraphTarget(query, true)
   }
 
-  test("should only accept existent constituent if allowCompsiteQueries set to true") {
+  test("should only accept existent constituent if allowCompositeQueries set to true") {
     val query =
       """
         |USE composite.other
@@ -194,6 +197,16 @@ class VerifyGraphTargetTest extends CypherFunSuite {
       query,
       true
     ) should have message "Database composite.other not found"
+  }
+
+  test("should accept query if the target is a composite db and allowCompositeQueries set to true") {
+    val query =
+      """
+        |RETURN 1
+        |""".stripMargin
+
+    mockReferenceRepository(compositeGraphReference(sessionDb, Seq(databaseReference("composite"))))
+    verifyGraphTarget(query, allowCompositeQueries = true, targetsComposite = true)
   }
 
   private def mockReferenceRepository(reference: DatabaseReferenceImpl.Internal) = {
@@ -224,10 +237,21 @@ class VerifyGraphTargetTest extends CypherFunSuite {
     graphReference
   }
 
-  private def verifyGraphTarget(query: String, allowCompositeQueries: Boolean = false): Unit = {
+  private def verifyGraphTarget(
+    query: String,
+    allowCompositeQueries: Boolean = false,
+    targetsComposite: Boolean = false
+  ): Unit = {
     val parsedQuery = parse(query)
     val state = mock[BaseState]
     when(state.statement()).thenReturn(parsedQuery)
+    val semantics = mock[SemanticState]
+    if (allowCompositeQueries && targetsComposite) {
+      when(semantics.features).thenReturn(Set(UseAsMultipleGraphsSelector))
+    } else {
+      when(semantics.features).thenReturn(Set(UseAsSingleGraphSelector))
+    }
+    when(state.semantics()).thenReturn(semantics)
 
     val plannerContext = mock[PlannerContext]
     when(plannerContext.databaseReferenceRepository).thenReturn(databaseReferenceRepository)
