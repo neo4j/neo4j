@@ -16,8 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.factory.neo4j.TypePredicateExpressionParserTest.allCombinations
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
@@ -42,10 +45,170 @@ import org.neo4j.cypher.internal.util.symbols.RelationshipType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
 import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
+import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.prop.TableFor2
+import org.scalatest.prop.Tables
 
-class TypePredicateExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class TypePredicateExpressionParserTest extends AstParsingTestBase
+    with TableDrivenPropertyChecks {
 
-  private val allNonListTypes = Seq(
+  test("x :: BOOLEAN NOT NULL NOT NULL") {
+    failsParsing[Expression]
+  }
+
+  test("x :: BOOLEAN! NOT NULL") {
+    failsParsing[Expression]
+  }
+
+  test("x :: BOOLEAN NOT NULL!") {
+    failsParsing[Expression]
+  }
+
+  test("x :: BOOLEAN!!") {
+    failsParsing[Expression]
+  }
+
+  test("x :: LIST<BOOLEAN> NOT NULL NOT NULL") {
+    failsParsing[Expression]
+  }
+
+  test("x :: LIST<BOOLEAN>! NOT NULL") {
+    failsParsing[Expression]
+  }
+
+  test("x :: LIST<BOOLEAN> NOT NULL!") {
+    failsParsing[Expression]
+  }
+
+  test("x :: LIST<BOOLEAN>!!") {
+    failsParsing[Expression]
+  }
+
+  test("x :: BOOLEAN LIST NOT NULL NOT NULL") {
+    failsParsing[Expression]
+  }
+
+  test("x :: BOOLEAN LIST! NOT NULL") {
+    failsParsing[Expression]
+  }
+
+  test("x :: BOOLEAN LIST NOT NULL !") {
+    failsParsing[Expression]
+  }
+
+  test("x :: BOOLEAN LIST!!") {
+    failsParsing[Expression]
+  }
+
+  // The code that throws these next 2 errors is not inside of Cypher.jj, so the ANTLR parser doesn't know about it
+  test("x :: ANY<BOOLEAN> NOT NULL") {
+    whenParsing[Expression]
+      .parseIn(JavaCc)(_.withAnyFailure.withMessage(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))"
+      ))
+      .parseIn(Antlr)(_.withoutErrors) // TODO ANTLR
+  }
+
+  test("x :: ANY<BOOLEAN>!") {
+    whenParsing[Expression]
+      .parseIn(JavaCc)(_.withAnyFailure.withMessage(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))"
+      ))
+      .parseIn(Antlr)(_.withoutErrors) // TODO ANTLR
+  }
+
+  test("x :: ANY VALUE<BOOLEAN> NOT NULL") {
+    whenParsing[Expression]
+      .parseIn(JavaCc)(_.withAnyFailure.withMessage(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))"
+      ))
+      .parseIn(Antlr)(_.withoutErrors) // TODO ANTLR
+  }
+
+  test("x :: ANY VALUE<BOOLEAN>!") {
+    whenParsing[Expression]
+      .parseIn(JavaCc)(_.withAnyFailure.withMessage(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))"
+      ))
+      .parseIn(Antlr)(_.withoutErrors) // TODO ANTLR
+  }
+
+  test("x :: ANY VALUE<>") {
+    failsParsing[Expression]
+  }
+
+  test("x :: ANY <>") {
+    failsParsing[Expression]
+  }
+
+  test("x :: ") {
+    failsParsing[Expression]
+  }
+
+  test("x :: ANY VALUE<> NOT NULL") {
+    failsParsing[Expression]
+  }
+
+  test("x :: ANY <> NOT NULL") {
+    failsParsing[Expression]
+  }
+
+  test("x :: NOT NULL") {
+    failsParsing[Expression]
+  }
+
+  test("x :: LIST<>") {
+    failsParsing[Expression]
+  }
+
+  test("x :: LIST") {
+    failsParsing[Expression]
+  }
+
+  test("x :: ARRAY") {
+    failsParsing[Expression]
+  }
+
+  test("x :: ARRAY<>") {
+    failsParsing[Expression]
+  }
+
+  test("all combinations of types should behave") {
+    forAll(allCombinations) { case (typeString, typeExpr) =>
+      s"x IS :: $typeString" should parseAs[Expression].toAsts {
+        case JavaCc => isTyped(varFor("x"), typeExpr)
+        case Antlr  => isTyped(varFor("x"), null)
+      }
+
+      s"n.prop IS TYPED $typeString" should parseAs[Expression].toAsts {
+        case JavaCc => isTyped(prop(varFor("n"), "prop"), typeExpr)
+        case Antlr  => isTyped(null, null)
+      }
+
+      s"5 :: $typeString" should parseAs[Expression].toAsts {
+        case JavaCc => isTyped(literalInt(5L), typeExpr)
+        case Antlr  => isTyped(literalInt(5L), null)
+      }
+
+      s"x + y IS NOT :: $typeString" should parseAs[Expression].toAsts {
+        case JavaCc => isNotTyped(add(varFor("x"), varFor("y")), typeExpr)
+        case Antlr  => isNotTyped(add(varFor("x"), varFor("y")), null)
+      }
+
+      s"['a', 'b', 'c'] IS NOT TYPED $typeString" should parseAs[Expression].toAsts {
+        case JavaCc => isNotTyped(listOfString("a", "b", "c"), typeExpr)
+        case Antlr  => isNotTyped(null, null)
+      }
+
+      // This should not be supported according to CIP-87
+      s"x NOT :: $typeString" should notParse[Expression]
+    }
+  }
+}
+
+object TypePredicateExpressionParserTest extends AstConstructionTestSupport {
+
+  private def allNonListTypes = Seq(
     ("NOTHING", NothingType()(pos)),
     ("NOTHING NOT NULL", NothingType()(pos)),
     ("NOTHING!", NothingType()(pos)),
@@ -150,14 +313,14 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase with LegacyAs
     ("PROPERTY VALUE!", PropertyValueType(isNullable = false)(pos))
   )
 
-  private val superTypes = Seq(
+  private def superTypes = Seq(
     ("ANY VALUE", AnyType(isNullable = true)(pos)),
     ("ANY VALUE NOT NULL", AnyType(isNullable = false)(pos)),
     ("ANY", AnyType(isNullable = true)(pos)),
     ("ANY NOT NULL", AnyType(isNullable = false)(pos))
   )
 
-  private val listTypes =
+  private def listTypes =
     (allNonListTypes ++ superTypes).flatMap { case (innerTypeString, innerTypeExpr: CypherType) =>
       Seq(
         // LIST<type>
@@ -437,7 +600,7 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase with LegacyAs
       )
     }
 
-  private val closedUnionOfAllNonListTypes = {
+  private def closedUnionOfAllNonListTypes = {
     val innerDescription = allNonListTypes.map(_._1).mkString(" | ")
     Seq(
       (s"ANY<$innerDescription>", ClosedDynamicUnionType(allNonListTypes.map(_._2).toSet)(pos)),
@@ -446,7 +609,7 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase with LegacyAs
     )
   }
 
-  private val otherClosedUnionTypes = Seq(
+  private def otherClosedUnionTypes = Seq(
     ("ANY<BOOLEAN | BOOL | BOOLEAN>", BooleanType(isNullable = true)(pos)),
     (
       "ANY<BOOLEAN | INTEGER>",
@@ -504,162 +667,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase with LegacyAs
     )
   )
 
-  (allNonListTypes ++ superTypes ++ listTypes ++ closedUnionOfAllNonListTypes ++ otherClosedUnionTypes).foreach {
-    case (typeString, typeExpr: CypherType) =>
-      test(s"x IS :: $typeString") {
-        gives[Expression] {
-          isTyped(varFor("x"), typeExpr)
-        }
-      }
-
-      test(s"n.prop IS TYPED $typeString") {
-        gives[Expression] {
-          isTyped(prop("n", "prop"), typeExpr)
-        }
-      }
-
-      test(s"5 :: $typeString") {
-        gives[Expression] {
-          isTyped(literalInt(5L), typeExpr)
-        }
-      }
-
-      test(s"x + y IS NOT :: $typeString") {
-        gives[Expression] {
-          isNotTyped(add(varFor("x"), varFor("y")), typeExpr)
-        }
-      }
-
-      test(s"['a', 'b', 'c'] IS NOT TYPED $typeString") {
-        gives[Expression] {
-          isNotTyped(listOfString("a", "b", "c"), typeExpr)
-        }
-      }
-
-      // This should not be supported according to CIP-87
-      test(s"x NOT :: $typeString") {
-        failsToParse[Expression]()
-      }
-  }
-
-  test("x :: BOOLEAN NOT NULL NOT NULL") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: BOOLEAN! NOT NULL") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: BOOLEAN NOT NULL!") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: BOOLEAN!!") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: LIST<BOOLEAN> NOT NULL NOT NULL") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: LIST<BOOLEAN>! NOT NULL") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: LIST<BOOLEAN> NOT NULL!") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: LIST<BOOLEAN>!!") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: BOOLEAN LIST NOT NULL NOT NULL") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: BOOLEAN LIST! NOT NULL") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: BOOLEAN LIST NOT NULL !") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: BOOLEAN LIST!!") {
-    failsToParse[Expression]()
-  }
-
-  // The code that throws these next 2 errors is not inside of Cypher.jj, so the ANTLR parser doesn't know about it
-  test("x :: ANY<BOOLEAN> NOT NULL") {
-    assertFailsWithMessage[Expression](
-      testName,
-      "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
-      failsOnlyJavaCC = true
-    )
-  }
-
-  test("x :: ANY<BOOLEAN>!") {
-    assertFailsWithMessage[Expression](
-      testName,
-      "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
-      failsOnlyJavaCC = true
-    )
-  }
-
-  test("x :: ANY VALUE<BOOLEAN> NOT NULL") {
-    assertFailsWithMessage[Expression](
-      testName,
-      "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
-      failsOnlyJavaCC = true
-    )
-  }
-
-  test("x :: ANY VALUE<BOOLEAN>!") {
-    assertFailsWithMessage[Expression](
-      testName,
-      "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
-      failsOnlyJavaCC = true
-    )
-  }
-
-  test("x :: ANY VALUE<>") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: ANY <>") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: ") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: ANY VALUE<> NOT NULL") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: ANY <> NOT NULL") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: NOT NULL") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: LIST<>") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: LIST") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: ARRAY") {
-    failsToParse[Expression]()
-  }
-
-  test("x :: ARRAY<>") {
-    failsToParse[Expression]()
-  }
+  def allCombinations: TableFor2[String, CypherType] = Tables.Table(
+    ("typeString", "typeExpr"),
+    (allNonListTypes ++ superTypes ++ listTypes ++ closedUnionOfAllNonListTypes ++ otherClosedUnionTypes): _*
+  )
 }

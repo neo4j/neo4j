@@ -285,9 +285,6 @@ insertLabelConjunction:
    symbolicNameString ((AMPERSAND|COLON) symbolicNameString)*;
 
 expression:
-   expression12;
-
-expression12:
    expression11 (OR expression11)*;
 
 expression11:
@@ -297,31 +294,35 @@ expression10:
    expression9 (AND expression9)*;
 
 expression9:
-   (NOT expression9 | expression8);
+    NOT* expression8;
 
 expression8:
-   expression7 (EQ expression7 | NEQ expression7 | NEQ2 expression7 | LE expression7 | GE expression7 | LT expression7 | GT expression7)*;
+   expression7 ((EQ | INVALID_NEQ | NEQ | LE | GE | LT | GT) expression7)*;
 
 expression7:
    expression6 comparisonExpression6?;
 
-comparisonExpression6:
-   (REGEQ expression6 | STARTS WITH expression6 | ENDS WITH expression6 | CONTAINS expression6 | IN expression6 | IS (NULL | NOT (NULL | (TYPED | COLONCOLON) cypherTypeName | normalForm NORMALIZED) | (TYPED | COLONCOLON) cypherTypeName | normalForm NORMALIZED) | COLONCOLON cypherTypeName);
+comparisonExpression6
+   : (REGEQ | STARTS WITH | ENDS WITH | CONTAINS | IN) expression6      #StringAndListComparison
+   | IS NOT? NULL                                                       #NullComparison
+   | (IS NOT? (TYPED | COLONCOLON) | COLONCOLON) cypherTypeNameList     #TypeComparison
+   | IS NOT? normalForm? NORMALIZED                                     #NormalFormComparison
+   ;
 
 normalForm:
-   (NFC | NFD | NFKC | NFKD)?;
+   (NFC | NFD | NFKC | NFKD);
 
 expression6:
-   expression5 (PLUS expression5 | MINUS expression5)*;
+   expression5 ((PLUS | MINUS) expression5)*;
 
 expression5:
-   expression4 (TIMES expression4 | DIVIDE expression4 | PERCENT expression4)*;
+   expression4 ((TIMES | DIVIDE | PERCENT) expression4)*;
 
 expression4:
    expression3 (POW expression3)*;
 
 expression3:
-   (expression2 | PLUS expression2 | MINUS expression2);
+    expression2 | (PLUS | MINUS) expression2;
 
 expression2:
    expression1 postFix1*;
@@ -336,7 +337,7 @@ propertyExpression:
    expression1 property+;
 
 expression1:
-   (literal | parameter | caseExpression | COUNT LPAREN TIMES RPAREN | existsExpression | countExpression | collectExpression | mapProjection | listComprehension | patternComprehension | reduceExpression | allExpression | anyExpression | noneExpression | singleExpression | normalizeExpression | patternExpression | shortestPathExpression | LPAREN expression RPAREN | functionInvocation | variable);
+   (literal | parameter | caseExpression | COUNT LPAREN TIMES RPAREN | existsExpression | countExpression | collectExpression | mapProjection | listComprehension | patternComprehension | reduceExpression | allExpression | anyExpression | noneExpression | singleExpression | normalizeExpression | patternExpression | shortestPathExpression | parenthesizedExpression | functionInvocation | variable);
 
 literal:
    numberLiteral      #NummericLiteral
@@ -381,13 +382,16 @@ singleExpression:
    SINGLE LPAREN variable IN expression (WHERE expression)? RPAREN;
 
 normalizeExpression:
-   NORMALIZE LPAREN expression (COMMA (NFC | NFD | NFKC | NFKD))? RPAREN;
+   NORMALIZE LPAREN expression (COMMA normalForm)? RPAREN;
 
 patternExpression:
    pathPatternNonEmpty;
 
 shortestPathExpression:
    shortestPathPattern;
+
+parenthesizedExpression:
+    LPAREN expression RPAREN;
 
 mapProjection:
    variable LCURLY mapProjectionItem? (COMMA mapProjectionItem)* RCURLY;
@@ -524,16 +528,13 @@ stringsOrExpression:
 createConstraint:
    CONSTRAINT (ON LPAREN | FOR LPAREN | IF NOT EXISTS (ON | FOR) LPAREN | symbolicNameOrStringParameter? (IF NOT EXISTS)? (ON | FOR) LPAREN) (
        constraintNodePattern | constraintRelPattern
-   ) (ASSERT EXISTS propertyList | (REQUIRE | ASSERT) propertyList (COLONCOLON cypherTypeName | IS (UNIQUE | KEY | createConstraintNodeCheck | createConstraintRelCheck | NOT NULL | (TYPED | COLONCOLON) cypherTypeName))) (OPTIONS mapOrParameter)?;
-
-cypherTypeName:
-   cypherTypeNameList;
+   ) (ASSERT EXISTS propertyList | (REQUIRE | ASSERT) propertyList (COLONCOLON cypherTypeNameList | IS (UNIQUE | KEY | createConstraintNodeCheck | createConstraintRelCheck | NOT NULL | (TYPED | COLONCOLON) cypherTypeNameList))) (OPTIONS mapOrParameter)?;
 
 cypherTypeNameList:
    cypherTypeNamePart (BAR cypherTypeNamePart)*;
 
 cypherTypeNamePart:
-   (NOTHING | NULL | (BOOLEAN | BOOL) | (STRING | VARCHAR) | (INT | SIGNED? INTEGER) | FLOAT | DATE | LOCAL (TIME | DATETIME) | ZONED (TIME | DATETIME) | TIME (WITHOUT TIMEZONE | WITH TIMEZONE) | TIMESTAMP (WITHOUT TIMEZONE | WITH TIMEZONE) | DURATION | POINT | (NODE | VERTEX) | (RELATIONSHIP | EDGE) | MAP | (LIST | ARRAY) LT cypherTypeName GT | PATH | PROPERTY VALUE | ANY ((NODE | VERTEX) | (RELATIONSHIP | EDGE) | MAP | PROPERTY VALUE | VALUE? LT cypherTypeNameList GT | VALUE?)) (NOT NULL | EXCLAMATION_MARK)? ((LIST | ARRAY) (NOT NULL | EXCLAMATION_MARK)?)*;
+   (NOTHING | NULL | BOOLEAN | STRING | INT | SIGNED? INTEGER | FLOAT | DATE | LOCAL (TIME | DATETIME) | ZONED (TIME | DATETIME) | TIME (WITHOUT TIMEZONE | WITH TIMEZONE) | TIMESTAMP (WITHOUT TIMEZONE | WITH TIMEZONE) | DURATION | POINT | NODE | VERTEX | RELATIONSHIP | EDGE | MAP | (LIST | ARRAY) LT cypherTypeNameList GT | PATH | PROPERTY VALUE | ANY (NODE | VERTEX | RELATIONSHIP | EDGE | MAP | PROPERTY VALUE | VALUE? LT cypherTypeNameList GT | VALUE?)) (NOT NULL | EXCLAMATION_MARK)? ((LIST | ARRAY) (NOT NULL | EXCLAMATION_MARK)?)*;
 
 constraintNodePattern:
    variable labelOrRelType RPAREN;
@@ -867,7 +868,7 @@ symbolicLabelNameString:
    (escapedSymbolicNameString | unescapedLabelSymbolicNameString);
 
 unescapedLabelSymbolicNameString:
-   (IDENTIFIER | ACCESS | ACTIVE | ADMIN | ADMINISTRATOR | ALIAS | ALIASES | ALL_SHORTEST_PATH | ALL | ALTER | AND | ANY | ARRAY | AS | ASC | ASCENDING | ASSERT | ASSIGN | AT | BINDINGS | BOOL | BOOLEAN | BOOSTED | BREAK | BRIEF | BTREE | BUILT | BY | CALL | CASE | CHANGE | CIDR | COLLECT | COMMAND | COMMANDS | COMMIT | COMPOSITE | CONSTRAINT | CONSTRAINTS | CONTAINS | CONTINUE | COPY | COUNT | CREATE | CSV | CURRENT | DATA | DATABASE | DATABASES | DATE | DATETIME | DBMS | DEALLOCATE | DEFAULT_TOKEN | DEFINED | DELETE | DENY | DESC | DESCENDING | DESTROY | DETACH | DIFFERENT | DISTINCT | DRIVER | DROP | DRYRUN | DUMP | DURATION | EACH | EDGE | ELEMENT | ELEMENTS | ELSE | ENABLE | ENCRYPTED | END | ENDS | ERROR | EXECUTABLE | EXECUTE | EXIST | EXISTENCE | EXISTS | FAIL | FALSE | FIELDTERMINATOR | FLOAT | FOREACH | FOR | FROM | FULLTEXT | FUNCTION | FUNCTIONS | GRANT | GRAPH | GRAPHS | GROUP | GROUPS | HEADERS | HOME | IF | IMMUTABLE | IN | INDEX | INDEXES | INFINITY | INT | INTEGER | IS | JOIN | KEY | LABEL | LABELS | LIMITROWS | LIST | LOAD | LOCAL | LOOKUP | MATCH | MANAGEMENT | MAP | MERGE | NAME | NAMES | NAN | NEW | NODE | NODETACH | NODES | NONE | NORMALIZE | NOTHING | NOWAIT | OF | ON | ONLY | OPTIONAL | OPTIONS | OPTION | OR | ORDER | OUTPUT | PASSWORD | PASSWORDS | PATH | PATHS | PERIODIC | PLAINTEXT | POINT | POPULATED | PRIMARY | PRIMARIES | PRIVILEGE | PRIVILEGES | PROCEDURE | PROCEDURES | PROPERTIES | PROPERTY | RANGE | READ | REALLOCATE | REDUCE | REL | RELATIONSHIP | RELATIONSHIPS | REMOVE | RENAME | REPEATABLE | REPLACE | REPORT | REQUIRE | REQUIRED | RETURN | REVOKE | ROLE | ROLES | ROW | ROWS | SCAN | SEC | SECOND | SECONDARY | SECONDARIES | SECONDS | SEEK | SERVER | SERVERS | SET | SETTING | SETTINGS | SHORTEST | SHORTEST_PATH | SHOW | SIGNED | SINGLE | SKIPROWS | START | STARTS | STATUS | STOP | STRING | SUPPORTED | SUSPENDED | TARGET | TERMINATE | TEXT | THEN | TIME | TIMESTAMP | TIMEZONE | TO | TOPOLOGY | TRANSACTION | TRANSACTIONS | TRAVERSE | TRUE | TYPE | TYPES | UNION | UNIQUE | UNIQUENESS | UNWIND | URL | USE | USER | USERS | USING | VALUE | VARCHAR | VECTOR | VERBOSE | VERTEX | WAIT | WHEN | WHERE | WITH | WITHOUT | WRITE | XOR | YIELD | ZONED);
+   (IDENTIFIER | ACCESS | ACTIVE | ADMIN | ADMINISTRATOR | ALIAS | ALIASES | ALL_SHORTEST_PATH | ALL | ALTER | AND | ANY | ARRAY | AS | ASC | ASCENDING | ASSERT | ASSIGN | AT | BINDINGS | BOOLEAN | BOOSTED | BREAK | BRIEF | BTREE | BUILT | BY | CALL | CASE | CHANGE | CIDR | COLLECT | COMMAND | COMMANDS | COMMIT | COMPOSITE | CONSTRAINT | CONSTRAINTS | CONTAINS | CONTINUE | COPY | COUNT | CREATE | CSV | CURRENT | DATA | DATABASE | DATABASES | DATE | DATETIME | DBMS | DEALLOCATE | DEFAULT_TOKEN | DEFINED | DELETE | DENY | DESC | DESCENDING | DESTROY | DETACH | DIFFERENT | DISTINCT | DRIVER | DROP | DRYRUN | DUMP | DURATION | EACH | EDGE | ELEMENT | ELEMENTS | ELSE | ENABLE | ENCRYPTED | END | ENDS | ERROR | EXECUTABLE | EXECUTE | EXIST | EXISTENCE | EXISTS | FAIL | FALSE | FIELDTERMINATOR | FLOAT | FOREACH | FOR | FROM | FULLTEXT | FUNCTION | FUNCTIONS | GRANT | GRAPH | GRAPHS | GROUP | GROUPS | HEADERS | HOME | IF | IMMUTABLE | IN | INDEX | INDEXES | INFINITY | INT | INTEGER | IS | JOIN | KEY | LABEL | LABELS | LIMITROWS | LIST | LOAD | LOCAL | LOOKUP | MATCH | MANAGEMENT | MAP | MERGE | NAME | NAMES | NAN | NEW | NODE | NODETACH | NODES | NONE | NORMALIZE | NOTHING | NOWAIT | OF | ON | ONLY | OPTIONAL | OPTIONS | OPTION | OR | ORDER | OUTPUT | PASSWORD | PASSWORDS | PATH | PATHS | PERIODIC | PLAINTEXT | POINT | POPULATED | PRIMARY | PRIMARIES | PRIVILEGE | PRIVILEGES | PROCEDURE | PROCEDURES | PROPERTIES | PROPERTY | RANGE | READ | REALLOCATE | REDUCE | REL | RELATIONSHIP | RELATIONSHIPS | REMOVE | RENAME | REPEATABLE | REPLACE | REPORT | REQUIRE | REQUIRED | RETURN | REVOKE | ROLE | ROLES | ROW | ROWS | SCAN | SEC | SECOND | SECONDARY | SECONDARIES | SECONDS | SEEK | SERVER | SERVERS | SET | SETTING | SETTINGS | SHORTEST | SHORTEST_PATH | SHOW | SIGNED | SINGLE | SKIPROWS | START | STARTS | STATUS | STOP | STRING | SUPPORTED | SUSPENDED | TARGET | TERMINATE | TEXT | THEN | TIME | TIMESTAMP | TIMEZONE | TO | TOPOLOGY | TRANSACTION | TRANSACTIONS | TRAVERSE | TRUE | TYPE | TYPES | UNION | UNIQUE | UNIQUENESS | UNWIND | URL | USE | USER | USERS | USING | VALUE |  VECTOR | VERBOSE | VERTEX | WAIT | WHEN | WHERE | WITH | WITHOUT | WRITE | XOR | YIELD | ZONED);
 
 endOfFile:
    EOF;

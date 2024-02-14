@@ -54,49 +54,49 @@ class ExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestS
   }
 
   test("thing CONTAINS 'a' + 'b'") {
-    gives[Expression](contains(varFor("thing"), add(literalString("a"), literalString("b"))))
+    parsesTo[Expression](contains(varFor("thing"), add(literalString("a"), literalString("b"))))
   }
 
   test("thing STARTS WITH 'a' + 'b'") {
-    gives[Expression](startsWith(varFor("thing"), add(literalString("a"), literalString("b"))))
+    parsesTo[Expression](startsWith(varFor("thing"), add(literalString("a"), literalString("b"))))
   }
 
   test("thing ENDS WITH 'a' + 'b'") {
-    gives[Expression](endsWith(varFor("thing"), add(literalString("a"), literalString("b"))))
+    parsesTo[Expression](endsWith(varFor("thing"), add(literalString("a"), literalString("b"))))
   }
 
   test("2*(2.0-1.5)") {
-    gives[Expression] {
+    parsesTo[Expression] {
       multiply(literal(2), subtract(literal(2.0), literal(1.5)))
     }
   }
 
   test("+1.5") {
-    gives[Expression] {
+    parsesTo[Expression] {
       unaryAdd(literal(1.5))
     }
   }
 
   test("+1") {
-    gives[Expression] {
+    parsesTo[Expression] {
       unaryAdd(literal(1))
     }
   }
 
   test("2*(2.0 - +1.5)") {
-    gives[Expression] {
+    parsesTo[Expression] {
       multiply(literal(2), subtract(literal(2.0), unaryAdd(literal(1.5))))
     }
   }
 
   test("0-1") {
-    gives[Expression] {
+    parsesTo[Expression] {
       subtract(literal(0), literal(1))
     }
   }
 
   test("0-0.1") {
-    gives[Expression] {
+    parsesTo[Expression] {
       subtract(literal(0), literal(0.1))
     }
   }

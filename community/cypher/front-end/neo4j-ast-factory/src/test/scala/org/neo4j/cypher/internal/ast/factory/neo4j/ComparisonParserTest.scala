@@ -23,27 +23,27 @@ import org.neo4j.cypher.internal.expressions.Expression
 class ComparisonParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("a < b") {
-    gives[Expression](lt(id("a"), id("b")))
+    parsesTo[Expression](lt(id("a"), id("b")))
   }
 
   test("a > b") {
-    gives[Expression](gt(id("a"), id("b")))
+    parsesTo[Expression](gt(id("a"), id("b")))
   }
 
   test("a > b AND b > c") {
-    gives[Expression](and(gt(id("a"), id("b")), gt(id("b"), id("c"))))
+    parsesTo[Expression](and(gt(id("a"), id("b")), gt(id("b"), id("c"))))
   }
 
   test("a > b > c") {
-    gives[Expression](ands(gt(id("a"), id("b")), gt(id("b"), id("c"))))
+    parsesTo[Expression](ands(gt(id("a"), id("b")), gt(id("b"), id("c"))))
   }
 
   test("a > b > c > d") {
-    gives[Expression](ands(gt(id("a"), id("b")), gt(id("b"), id("c")), gt(id("c"), id("d"))))
+    parsesTo[Expression](ands(gt(id("a"), id("b")), gt(id("b"), id("c")), gt(id("c"), id("d"))))
   }
 
   test("a < b > c = d <= e >= f") {
-    gives[Expression](ands(
+    parsesTo[Expression](ands(
       lt(id("a"), id("b")),
       gt(id("b"), id("c")),
       eq(id("c"), id("d")),

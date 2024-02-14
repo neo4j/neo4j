@@ -27,6 +27,8 @@ import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.factory.neo4j.ReplaceUnicodeEscapeSequences
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
+import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 
 /**
@@ -56,6 +58,7 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
       }
 
       astBuilder.exitEveryRule(localCtx)
+      if (DEBUG) println(s"Exit ${localCtx.getClass.getSimpleName} AST=${localCtx.asInstanceOf[AstRuleCtx].ast}")
 
       // TODO Save memory by removing the parse tree as we go.
       // localCtx.children = null
@@ -64,6 +67,7 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 
       // Throw exception if EOF is not reached
       if (_ctx == null) {
+        // TODO hides other failures sometimes
         throwIfEofNotReached(localCtx)
       }
     }
@@ -96,6 +100,7 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 }
 
 object CypherAstParser {
+  final val DEBUG = false
 
   def apply(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), true)
   def apply(input: TokenStream): CypherAstParser = new CypherAstParser(input, true)

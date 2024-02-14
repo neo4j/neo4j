@@ -19,11 +19,10 @@ package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.LiteralBuilder.cypherStringToString
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.child
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.Null
@@ -31,11 +30,26 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
 
 trait LiteralBuilder extends CypherParserListener {
+
+  override def exitLiteral(ctx: CypherParser.LiteralContext): Unit = {
+    ctx.ast = ctx.children.get(0) match {
+      case rule: AstRuleCtx => rule.ast
+      case token: TerminalNode => token.getSymbol.getType match {
+          case CypherParser.TRUE     => True()(pos(ctx))
+          case CypherParser.FALSE    => False()(pos(ctx))
+          case CypherParser.INFINITY => Infinity()(pos(ctx))
+          case CypherParser.NAN      => NaN()(pos(ctx))
+          case CypherParser.NULL     => Null()(pos(ctx))
+        }
+      case other => throw new IllegalStateException(s"Unexpected child $other")
+    }
+  }
 
   final override def exitPathLengthLiteral(
     ctx: CypherParser.PathLengthLiteralContext
@@ -58,32 +72,9 @@ trait LiteralBuilder extends CypherParserListener {
     ctx: CypherParser.ListLiteralContext
   ): Unit = {}
 
-  override def exitNummericLiteral(
-    ctx: CypherParser.NummericLiteralContext
-  ): Unit = {}
-
-  override def exitStringsLiteral(ctx: CypherParser.StringsLiteralContext): Unit =
-    ctx.ast = child[AstRuleCtx](ctx, 0).ast
-
   override def exitStringLiteral(ctx: CypherParser.StringLiteralContext): Unit = {
     val text = ctx.start.getInputStream.getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1))
     ctx.ast = StringLiteral(cypherStringToString(text))(pos(ctx), pos(ctx.stop))
-  }
-
-  override def exitOtherLiteral(
-    ctx: CypherParser.OtherLiteralContext
-  ): Unit = {}
-
-  override def exitBooleanLiteral(
-    ctx: CypherParser.BooleanLiteralContext
-  ): Unit = {}
-
-  override def exitKeywordLiteral(ctx: CypherParser.KeywordLiteralContext): Unit = {
-    ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
-      case CypherParser.INFINITY => Infinity()(pos(ctx))
-      case CypherParser.NAN      => NaN()(pos(ctx))
-      case CypherParser.NULL     => Null()(pos(ctx))
-    }
   }
 }
 

@@ -18,29 +18,33 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.Expression
 
 class FloatLiteralParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("float literals fail to parse in expressions") {
-    parsing[Expression]("NaN") shouldGive NaNLiteral
-    parsing[Expression]("nan") shouldGive NaNLiteral
-    parsing[Expression]("nAn") shouldGive NaNLiteral
-    parsing[Expression]("Inf") shouldGive InfinityLiteral
-    parsing[Expression]("inf") shouldGive InfinityLiteral
-    parsing[Expression]("Infinity") shouldGive InfinityLiteral
-    parsing[Expression]("infinity") shouldGive InfinityLiteral
+    "NaN" should parseTo[Expression](NaNLiteral)
+    "nan" should parseTo[Expression](NaNLiteral)
+    "nAn" should parseTo[Expression](NaNLiteral)
+    "Inf" should parseTo[Expression](InfinityLiteral)
+    "inf" should parseTo[Expression](InfinityLiteral)
+    "Infinity" should parseTo[Expression](InfinityLiteral)
+    "infinity" should parseTo[Expression](InfinityLiteral)
 
-    parsing[Expression]("-infinity") shouldGive unarySubtract(InfinityLiteral)
-    parsing[Expression]("-inf") shouldGive unarySubtract(InfinityLiteral)
-    parsing[Expression]("1 - infinity") shouldGive subtract(literalInt(1), InfinityLiteral)
-    parsing[Expression]("infinity > 0") shouldGive greaterThan(InfinityLiteral, literalInt(0))
-    parsing[Expression]("CASE WHEN NaN THEN infinity END") shouldGive caseExpression(
+    "-infinity" should parseTo[Expression](unarySubtract(InfinityLiteral))
+    "-inf" should parseTo[Expression](unarySubtract(InfinityLiteral))
+    "1 - infinity" should parseTo[Expression](subtract(literalInt(1), InfinityLiteral))
+    "infinity > 0" should parseTo[Expression](greaterThan(InfinityLiteral, literalInt(0)))
+    "CASE WHEN NaN THEN infinity END" should parseTo[Expression](NotAntlr)(caseExpression(
       None,
       None,
       (NaNLiteral, InfinityLiteral)
-    )
-    parsing[Expression]("{inf: infinity, nan: NaN}") shouldGive mapOf(("inf", InfinityLiteral), ("nan", NaNLiteral))
-    parsing[Expression]("[inf, Infinity, NaN]") shouldGive listOf(InfinityLiteral, InfinityLiteral, NaNLiteral)
+    ))
+    "{inf: infinity, nan: NaN}" should parseTo[Expression](mapOf(
+      ("inf", InfinityLiteral),
+      ("nan", NaNLiteral)
+    ))
+    "[inf, Infinity, NaN]" should parseTo[Expression](NotAntlr)(listOf(InfinityLiteral, InfinityLiteral, NaNLiteral))
   }
 }

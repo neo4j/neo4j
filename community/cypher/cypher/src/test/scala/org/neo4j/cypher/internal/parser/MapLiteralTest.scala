@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
@@ -58,7 +57,7 @@ class MapLiteralTest extends AstParsingTestBase {
   }
 
   private def assertCommand(cypher: String, expected: commands.expressions.Expression): Unit = {
-    cypher should parse[Expression](NotAntlr).withAstLike(e => convert(e) shouldBe expected)
+    cypher should parse[Expression].withAstLike(e => convert(e) shouldBe expected)
   }
 
   private def lit(o: Any) = LiteralHelper.literal(o)

@@ -27,20 +27,20 @@ import org.neo4j.cypher.internal.expressions.NFKDNormalForm
 class NormalizedPredicateParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("'string' IS NORMALIZED") {
-    gives[Expression] {
+    parsesTo[Expression] {
       isNormalized(literalString("string"), NFCNormalForm)
     }
   }
 
   test("'string' IS NOT NORMALIZED") {
-    gives[Expression] {
+    parsesTo[Expression] {
       isNotNormalized(literalString("string"), NFCNormalForm)
     }
   }
 
   Seq(NFCNormalForm, NFDNormalForm, NFKCNormalForm, NFKDNormalForm).foreach { normalForm =>
     test(s"'string' IS ${normalForm.description} NORMALIZED") {
-      gives[Expression] {
+      parsesTo[Expression] {
         isNormalized(literalString("string"), normalForm)
       }
     }
@@ -48,14 +48,14 @@ class NormalizedPredicateParserTest extends AstParsingTestBase with LegacyAstPar
 
   Seq(NFCNormalForm, NFDNormalForm, NFKCNormalForm, NFKDNormalForm).foreach { normalForm =>
     test(s"'string' IS NOT ${normalForm.description} NORMALIZED") {
-      gives[Expression] {
+      parsesTo[Expression] {
         isNotNormalized(literalString("string"), normalForm)
       }
     }
   }
 
   test("'hello ' + 'world'  IS NORMALIZED") {
-    gives[Expression] {
+    parsesTo[Expression] {
       isNormalized(add(literalString("hello "), literalString("world")), NFCNormalForm)
     }
   }

@@ -139,16 +139,6 @@ class ExpressionsTest extends AstParsingTestBase {
     )
   }
 
-  test("literal_maps") {
-    assertCommand("{ name: 'Andres' }", commands.expressions.LiteralMap(Map("name" -> lit("Andres"))))
-
-    assertCommand(
-      "{ meta : { name: 'Andres' } }",
-      commands.expressions.LiteralMap(Map("meta" -> commands.expressions.LiteralMap(Map("name" -> lit("Andres")))))
-    )
-    assertCommand("{ }", commands.expressions.LiteralMap(Map()))
-  }
-
   test("better_map_support") {
     assertCommand(
       "map.key1.key2.key3",

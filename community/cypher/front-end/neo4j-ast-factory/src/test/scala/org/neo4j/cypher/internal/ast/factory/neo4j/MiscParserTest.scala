@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
@@ -245,19 +244,12 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   }
 
   test("map expression") {
-    "{a:1}" should parse[MapExpression].toAsts {
-      case JavaCc => mapOf("a" -> literal(1))
-      case Antlr  => mapOf("a" -> null) // TODO
-    }
-    "{a:1,b:2,c:3}" should parse[MapExpression].toAsts {
-      case JavaCc => mapOf("a" -> literal(1), "b" -> literal(2), "c" -> literal(3))
-      case Antlr  => mapOf("a" -> null, "b" -> null, "c" -> null) // TODO
-    }
-    "{}" should parseTo[MapExpression](mapOf())
+    "{a:1}" should parseTo[MapExpression](mapOf("a" -> literal(1)))
+    "{a:1,b:2,c:3}" should parseTo[MapExpression](mapOf("a" -> literal(1), "b" -> literal(2), "c" -> literal(3)))
+    "{}" should parseTo[Expression](mapOf())
     // Not sure if should be allowed, but behaves as before at least
-    "{,a:1}" should parse[MapExpression].toAsts {
-      case JavaCc => mapOf("a" -> literal(1))
-      case Antlr  => mapOf("a" -> null) // TODO
-    }
+    "{,a:1}" should parseTo[MapExpression](mapOf("a" -> literal(1)))
+    "{ name: 'Andres' }" should parseTo[Expression](mapOf("name" -> literal("Andres")))
+    "{ meta : { name: 'Andres' } }" should parseTo[Expression](mapOf("meta" -> mapOf("name" -> literal("Andres"))))
   }
 }

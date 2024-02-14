@@ -144,7 +144,7 @@ BINDINGS:
    B I N D I N G S;
 
 BOOL:
-   B O O L;
+   B O O L -> type(BOOLEAN);
 
 BOOLEAN:
    B O O L E A N;
@@ -515,10 +515,10 @@ MINUS:
 PERCENT:
    '%';
 
-NEQ:
+INVALID_NEQ:
    '!=';
 
-NEQ2:
+NEQ:
    '<>';
 
 NAME:
@@ -894,7 +894,7 @@ VALUE:
    V A L U E;
 
 VARCHAR:
-   V A R C H A R;
+   V A R C H A R -> type(STRING);
 
 VECTOR:
    V E C T O R;

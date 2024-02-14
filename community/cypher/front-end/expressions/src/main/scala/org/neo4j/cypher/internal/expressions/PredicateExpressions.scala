@@ -44,7 +44,7 @@ object Ands {
       Ands(exprs)(exprs.head.position)
   }
 
-  def apply(exprs: Iterable[Expression])(position: InputPosition): Ands = {
+  def apply(exprs: IterableOnce[Expression])(position: InputPosition): Ands = {
     Ands(ListSet.from(exprs))(position)
   }
 }

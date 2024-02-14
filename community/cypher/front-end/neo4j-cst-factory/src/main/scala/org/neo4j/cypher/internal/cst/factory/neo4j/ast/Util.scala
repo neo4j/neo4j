@@ -26,11 +26,41 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.immutable.ArraySeq
+import scala.collection.immutable.ListSet
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 object Util {
   @inline def cast[T](o: Any): T = o.asInstanceOf[T]
 
-  @inline def child[T <: AstRuleCtx](ctx: AstRuleCtx, index: Int): T = ctx.getChild(index).asInstanceOf[T]
+  @inline def child[T <: ParseTree](ctx: AstRuleCtx, index: Int): T = ctx.getChild(index).asInstanceOf[T]
+
+  @inline def ctxChild(ctx: AstRuleCtx, index: Int): AstRuleCtx = ctx.getChild(index).asInstanceOf[AstRuleCtx]
+
+  @inline def astChild[T <: ASTNode](ctx: AstRuleCtx, index: Int): T =
+    ctx.getChild(index).asInstanceOf[AstRuleCtx].ast()
+
+  def astChildListSet[T <: ASTNode](ctx: AstRuleCtx): ListSet[T] = {
+    ListSet.from(collectAst(ctx))
+  }
+
+  def astBinaryFold[T <: ASTNode](ctx: AstRuleCtx, f: (T, TerminalNode, T) => T): T = {
+    ctx.children.size match {
+      case 1 => ctxChild(ctx, 0).ast()
+      case size =>
+        val z = f(ctxChild(ctx, 0).ast(), child(ctx, 1), ctxChild(ctx, 2).ast())
+        if (size == 3) z
+        else ctx.children.asScala.drop(3).toSeq.grouped(2).foldLeft(z) {
+          case (acc, Seq(token: TerminalNode, rhs: AstRuleCtx)) => f(acc, token, rhs.ast())
+          case _ => throw new IllegalStateException(s"Unexpected parse result $ctx")
+        }
+    }
+  }
+
+  private def collectAst[T <: ASTNode](ctx: AstRuleCtx): Iterable[T] = {
+    ctx.children.asScala.collect {
+      case astCtx: AstRuleCtx => astCtx.ast[T]()
+    }
+  }
   @inline def nodeChild(ctx: AstRuleCtx, index: Int): TerminalNode = ctx.getChild(index).asInstanceOf[TerminalNode]
 
   @inline def lastChild[T <: ParseTree](ctx: AstRuleCtx): T =
@@ -51,4 +81,6 @@ object Util {
 
   @inline def pos(token: Token): InputPosition = token.asInstanceOf[CypherToken].position()
   @inline def pos(ctx: ParserRuleContext): InputPosition = pos(ctx.start)
+
+  @inline def pos(node: TerminalNode): InputPosition = pos(node.getSymbol)
 }

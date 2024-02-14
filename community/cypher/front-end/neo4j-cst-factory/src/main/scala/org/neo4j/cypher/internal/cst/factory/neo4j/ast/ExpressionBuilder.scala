@@ -17,15 +17,66 @@
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
 import org.antlr.v4.runtime.misc.Interval
+import org.antlr.v4.runtime.tree.TerminalNode
+import org.neo4j.cypher.internal.ast.IsNormalized
+import org.neo4j.cypher.internal.ast.IsNotNormalized
+import org.neo4j.cypher.internal.ast.IsNotTyped
+import org.neo4j.cypher.internal.ast.IsTyped
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astBinaryFold
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChild
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChildListSet
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astPairs
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.child
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
+import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.Divide
+import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.InvalidNotEquals
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Modulo
+import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.NFCNormalForm
+import org.neo4j.cypher.internal.expressions.NFDNormalForm
+import org.neo4j.cypher.internal.expressions.NFKCNormalForm
+import org.neo4j.cypher.internal.expressions.NFKDNormalForm
+import org.neo4j.cypher.internal.expressions.NormalForm
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.NotEquals
+import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RegexMatch
+import org.neo4j.cypher.internal.expressions.StartsWith
+import org.neo4j.cypher.internal.expressions.Subtract
+import org.neo4j.cypher.internal.expressions.UnaryAdd
+import org.neo4j.cypher.internal.expressions.UnarySubtract
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.parser.CypherParser.NormalFormComparisonContext
+import org.neo4j.cypher.internal.parser.CypherParser.NullComparisonContext
+import org.neo4j.cypher.internal.parser.CypherParser.TypeComparisonContext
 import org.neo4j.cypher.internal.parser.CypherParserListener
+
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 trait ExpressionBuilder extends CypherParserListener {
 
@@ -151,55 +202,183 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitExpression(
     ctx: CypherParser.ExpressionContext
-  ): Unit = {}
-
-  final override def exitExpression12(
-    ctx: CypherParser.Expression12Context
-  ): Unit = {}
+  ): Unit = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    ctx.ast = ctx.children.size match {
+      case 1 => ctxChild(ctx, 0).ast
+      case 3 => Or(astChild(ctx, 0), astChild(ctx, 2))(pos(nodeChild(ctx, 1)))
+      case _ => Ors(astChildListSet(ctx))(pos(ctx))
+    }
+  }
 
   final override def exitExpression11(
     ctx: CypherParser.Expression11Context
-  ): Unit = {}
+  ): Unit = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => Xor(lhs, rhs)(pos(token)))
+  }
 
   final override def exitExpression10(
     ctx: CypherParser.Expression10Context
-  ): Unit = {}
+  ): Unit = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => And(lhs, rhs)(pos(token)))
+  }
 
   final override def exitExpression9(
     ctx: CypherParser.Expression9Context
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ctx.children.size match {
+      case 1 => ctxChild(ctx, 0).ast
+      case 2 => Not(astChild(ctx, 1))(pos(ctx))
+      case size => ctx.NOT().asScala.foldRight(lastChild[AstRuleCtx](ctx).ast[Expression]()) { case (not, acc) =>
+          Not(acc)(pos(not.getSymbol))
+        }
+    }
+  }
 
   final override def exitExpression8(
     ctx: CypherParser.Expression8Context
-  ): Unit = {}
+  ): Unit = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    ctx.ast = ctx.children.size match {
+      case 1 => ctxChild(ctx, 0).ast
+      case 3 => binaryPredicate(child(ctx, 0), child(ctx, 1), child(ctx, 2))
+      case _ =>
+        Ands(ctx.children.asScala.toSeq.sliding(3, 2).map {
+          case Seq(lhs: AstRuleCtx, token: TerminalNode, rhs: AstRuleCtx) => binaryPredicate(lhs, token, rhs)
+          case _ => throw new IllegalStateException(s"Unexpected parse results $ctx")
+        })(pos(nodeChild(ctx, 1)))
+    }
+  }
+
+  private def binaryPredicate(lhs: AstRuleCtx, token: TerminalNode, rhs: AstRuleCtx): Expression = {
+    token.getSymbol.getType match {
+      case CypherParser.EQ          => Equals(lhs.ast(), rhs.ast())(pos(token.getSymbol))
+      case CypherParser.INVALID_NEQ => InvalidNotEquals(lhs.ast(), rhs.ast())(pos(token.getSymbol))
+      case CypherParser.NEQ         => NotEquals(lhs.ast(), rhs.ast())(pos(token.getSymbol))
+      case CypherParser.LE          => LessThanOrEqual(lhs.ast(), rhs.ast())(pos(token.getSymbol))
+      case CypherParser.GE          => GreaterThanOrEqual(lhs.ast(), rhs.ast())(pos(token.getSymbol))
+      case CypherParser.LT          => LessThan(lhs.ast(), rhs.ast())(pos(token.getSymbol))
+      case CypherParser.GT          => GreaterThan(lhs.ast(), rhs.ast())(pos(token.getSymbol))
+    }
+  }
 
   final override def exitExpression7(
     ctx: CypherParser.Expression7Context
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ctx.children.size match {
+      case 1 => ctxChild(ctx, 0).ast
+      case _ =>
+        val lhs = ctxChild(ctx, 0).ast[Expression]()
+        ctxChild(ctx, 1) match {
+          case strCtx: CypherParser.StringAndListComparisonContext => stringAndListComparisonExpression(lhs, strCtx)
+          case nullCtx: CypherParser.NullComparisonContext         => nullComparisonExpression(lhs, nullCtx)
+          case typeCtx: CypherParser.TypeComparisonContext         => typeComparisonExpression(lhs, typeCtx)
+          case nfCtx: CypherParser.NormalFormComparisonContext     => normalFormComparisonExpression(lhs, nfCtx)
+          case _ => throw new IllegalStateException(s"Unexpected parse result $ctx")
+        }
+    }
+  }
 
-  final override def exitComparisonExpression6(
-    ctx: CypherParser.ComparisonExpression6Context
-  ): Unit = {}
+  private def stringAndListComparisonExpression(
+    lhs: Expression,
+    ctx: CypherParser.StringAndListComparisonContext
+  ): Expression = {
+    val rhs = lastChild[AstRuleCtx](ctx).ast[Expression]()
+    val token = child[TerminalNode](ctx, 0).getSymbol
+    token.getType match {
+      case CypherParser.REGEQ    => RegexMatch(lhs, rhs)(pos(token))
+      case CypherParser.STARTS   => StartsWith(lhs, rhs)(pos(token))
+      case CypherParser.ENDS     => EndsWith(lhs, rhs)(pos(token))
+      case CypherParser.CONTAINS => Contains(lhs, rhs)(pos(token))
+      case CypherParser.IN       => In(lhs, rhs)(pos(token))
+    }
+  }
+
+  private def nullComparisonExpression(lhs: Expression, ctx: NullComparisonContext): Expression = {
+    if (ctx.NOT() == null) IsNull(lhs)(pos(ctx))
+    else IsNotNull(lhs)(pos(ctx))
+  }
+
+  private def typeComparisonExpression(lhs: Expression, ctx: TypeComparisonContext): Expression = {
+    if (ctx.NOT() == null) IsTyped(lhs, lastChild[AstRuleCtx](ctx).ast())(pos(ctx))
+    else IsNotTyped(lhs, lastChild[AstRuleCtx](ctx).ast())(pos(ctx))
+  }
+
+  private def normalFormComparisonExpression(lhs: Expression, ctx: NormalFormComparisonContext): Expression = {
+    val nf = if (ctx.normalForm() == null) NFCNormalForm else ctx.normalForm().ast[NormalForm]()
+
+    if (ctx.NOT() == null) IsNormalized(lhs, nf)(pos(ctx))
+    else IsNotNormalized(lhs, nf)(pos(ctx))
+  }
+
+  override def exitComparisonExpression6(ctx: CypherParser.ComparisonExpression6Context): Unit = {}
+
+  override def exitNormalForm(ctx: CypherParser.NormalFormContext): Unit = {
+    ctx.ast = child[TerminalNode](ctx, 0).getSymbol.getType match {
+      case CypherParser.NFC  => NFCNormalForm
+      case CypherParser.NFD  => NFDNormalForm
+      case CypherParser.NFKC => NFKCNormalForm
+      case CypherParser.NFKD => NFKDNormalForm
+    }
+
+  }
 
   final override def exitExpression6(
     ctx: CypherParser.Expression6Context
-  ): Unit = {}
+  ): Unit = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    ctx.ast = astBinaryFold(ctx, binaryAdditive)
+  }
+
+  private def binaryAdditive(lhs: Expression, token: TerminalNode, rhs: Expression): Expression = {
+    token.getSymbol.getType match {
+      case CypherParser.PLUS  => Add(lhs, rhs)(pos(token.getSymbol))
+      case CypherParser.MINUS => Subtract(lhs, rhs)(pos(token.getSymbol))
+    }
+  }
 
   final override def exitExpression5(
     ctx: CypherParser.Expression5Context
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = astBinaryFold(ctx, binaryMultiplicative)
+  }
+
+  private def binaryMultiplicative(lhs: Expression, token: TerminalNode, rhs: Expression): Expression = {
+    token.getSymbol.getType match {
+      case CypherParser.TIMES   => Multiply(lhs, rhs)(pos(token.getSymbol))
+      case CypherParser.DIVIDE  => Divide(lhs, rhs)(pos(token.getSymbol))
+      case CypherParser.PERCENT => Modulo(lhs, rhs)(pos(token.getSymbol))
+    }
+  }
 
   final override def exitExpression4(
     ctx: CypherParser.Expression4Context
-  ): Unit = {}
+  ): Unit = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
+    ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => Pow(lhs, rhs)(pos(token.getSymbol)))
+  }
 
   final override def exitExpression3(
     ctx: CypherParser.Expression3Context
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ctx.children.size match {
+      case 1 => ctxChild(ctx, 0).ast()
+      case _ =>
+        if (ctx.PLUS() != null) UnaryAdd(lastChild[AstRuleCtx](ctx).ast())(pos(ctx))
+        else UnarySubtract(lastChild[AstRuleCtx](ctx).ast())(pos(ctx))
+    }
+  }
 
   final override def exitExpression2(
     ctx: CypherParser.Expression2Context
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ctx.children.size match {
+      case 1 => ctxChild(ctx, 0).ast()
+      case _ => null // TODO
+    }
+  }
 
   final override def exitPostFix1(
     ctx: CypherParser.PostFix1Context
@@ -215,7 +394,12 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitExpression1(
     ctx: CypherParser.Expression1Context
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ctx.children.size match {
+      case 1 => ctxChild(ctx, 0).ast()
+      case _ => null
+    }
+  }
 
   final override def exitCaseExpression(
     ctx: CypherParser.CaseExpressionContext
@@ -260,6 +444,10 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitShortestPathExpression(
     ctx: CypherParser.ShortestPathExpressionContext
   ): Unit = {}
+
+  override def exitParenthesizedExpression(
+    ctx: CypherParser.ParenthesizedExpressionContext
+  ): Unit = { ctx.ast = ctxChild(ctx, 1).ast }
 
   final override def exitMapProjection(
     ctx: CypherParser.MapProjectionContext
@@ -367,10 +555,6 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.CreateConstraintContext
   ): Unit = {}
 
-  final override def exitCypherTypeName(
-    ctx: CypherParser.CypherTypeNameContext
-  ): Unit = {}
-
   final override def exitCypherTypeNameList(
     ctx: CypherParser.CypherTypeNameListContext
   ): Unit = {}
@@ -466,5 +650,4 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.FunctionArgumentContext
   ): Unit = {}
 
-  override def exitNormalForm(ctx: CypherParser.NormalFormContext): Unit = {}
 }
