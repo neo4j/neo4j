@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.GrowingArray
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport.DEBUG_MEMORY_TRACKING
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.MemoryTrackerPerOperator
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.OperatorMemoryTracker
+import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
@@ -199,11 +200,12 @@ class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
  *
  * Keeps track of per-operator heap-usage which adds a performance overhead so this class should only be used for PROFILE queries.
  */
-class ProfilingParallelTrackingQueryMemoryTracker(memoryTracker: MemoryTracker) extends QueryMemoryTracker
+class ProfilingParallelTrackingQueryMemoryTracker extends QueryMemoryTracker
     with MemoryTrackerForOperatorProvider {
 
   private val memoryPerOperator: HeapTrackingConcurrentLongObjectHashMap[MemoryTracker] =
-    HeapTrackingConcurrentLongObjectHashMap.newMap(memoryTracker)
+    HeapTrackingConcurrentLongObjectHashMap.newMap(EmptyMemoryTracker.INSTANCE)
+
   private lazy val delegate = new WorkerThreadDelegatingMemoryTracker
 
   override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
@@ -228,7 +230,7 @@ class ProfilingParallelTrackingQueryMemoryTracker(memoryTracker: MemoryTracker) 
 
   override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = memoryPerOperator.computeIfAbsent(
     operatorId,
-    i =>
+    _ =>
       new ProfilingParallelHighWaterMarkTrackingWorkerMemoryTracker(delegate)
   )
 
