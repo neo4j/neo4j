@@ -97,6 +97,98 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     nodeGetProperty(n, "x") should equal(THREADS * UPDATES)
   }
 
+  test("Should order correctly using an index despite concurrent updates") {
+    // Given
+    execute(
+      """
+        |UNWIND range(0,1000) AS i
+        |CREATE (:L {x: i})
+        |""".stripMargin
+    )
+    graph.createNodeIndex("L", "x")
+
+    val query =
+      """CYPHER
+        |MATCH (n:L) WHERE n.x IS NOT NULL
+        |RETURN n.x AS x ORDER BY n.x
+        |""".stripMargin
+
+    println(execute("EXPLAIN " + query).executionPlanDescription())
+
+    val scrambler =
+      """
+        |MATCH (n:L)
+        |WITH n ORDER BY rand()
+        |WITH collect(n) AS items
+        |UNWIND range(0, 1000) AS index
+        |WITH index, items[index] as n
+        |WITH *, n.x as prev
+        |SET n.x = index
+        |RETURN prev, index
+        |""".stripMargin
+
+    // When
+    val executor = Executors.newFixedThreadPool(THREADS)
+
+    val queryCallable = new Callable[Unit] {
+      override def call(): Unit = {
+        // Cheap, so way more runs of these
+        for (_ <- 1 to 500) {
+          var retry = true;
+          while (retry) {
+            try {
+              println(s"[${Thread.currentThread().getId}] starts reading")
+              val res = execute(query).columnAs[Long]("x").toList
+              println(s"[${Thread.currentThread().getId}] stops  reading")
+              res.sliding(2).foreach {
+                case List(a, b) =>
+                  if (a > b) {
+                    throw new RuntimeException(res.mkString(" "))
+                  }
+                case _ =>
+              }
+              retry = false
+            } catch {
+              case e: DeadlockDetectedException => e
+              case t: Throwable                 => throw new RuntimeException(t)
+            }
+          }
+        }
+      }
+    }
+
+    val scrambleCallable = new Callable[Unit] {
+      override def call(): Unit = {
+        // Way more expensive, so let's have fewer runs
+        for (_ <- 1 to 3) {
+          var retry = true;
+          while (retry) {
+            try {
+              println(s"[${Thread.currentThread().getId}] starts scrambling")
+              execute(scrambler)
+              println(s"[${Thread.currentThread().getId}] stops  scrambling")
+              retry = false
+            } catch {
+              case e: DeadlockDetectedException => e
+              case t: Throwable                 => throw new RuntimeException(t)
+            }
+          }
+        }
+      }
+    }
+
+    val futures = (1 to THREADS) map { i =>
+      if (i % 2 == 0)
+        executor.submit(scrambleCallable)
+      else
+        executor.submit(queryCallable)
+    }
+
+    try {
+      futures.foreach(_.get())
+    } finally executor.shutdown()
+  }
+
   private def race(query: String): Unit = {
     val executor = Executors.newFixedThreadPool(THREADS)
 
