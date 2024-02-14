@@ -31,6 +31,8 @@ import org.neo4j.kernel.database.NormalizedDatabaseName
 
 class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
+  final private val NL: String = System.lineSeparator()
+
   final private val productsDatabaseReference = mock[DatabaseReference]
 
   when(productsDatabaseReference.fullName())
@@ -71,10 +73,11 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .planBuilder()
       .produceResults("product")
       .runQueryAt(
-        query =
-          """MATCH (`product`)
-            |  WHERE (`product`):`Product`
-            |RETURN `product` AS `product`""".stripMargin,
+        query = List(
+          "MATCH (`product`)",
+          "  WHERE (`product`):`Product`",
+          "RETURN `product` AS `product`"
+        ).mkString(NL),
         graphReference = "db.products",
         columns = Set("product")
       )
@@ -94,13 +97,14 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .planBuilder()
       .produceResults("code")
       .runQueryAt(
-        query =
-          """MATCH (`product`)
-            |  WHERE (`product`):`Product`
-            |RETURN DISTINCT (((`product`).`code`) + ("#")) + ((`product`).`version`) AS `code`
-            |  ORDER BY `code` ASCENDING
-            |  SKIP 2
-            |  LIMIT 20""".stripMargin,
+        query = List(
+          "MATCH (`product`)",
+          "  WHERE (`product`):`Product`",
+          "RETURN DISTINCT (((`product`).`code`) + (\"#\")) + ((`product`).`version`) AS `code`",
+          "  ORDER BY `code` ASCENDING",
+          "  SKIP 2",
+          "  LIMIT 20"
+        ).mkString(NL),
         graphReference = "db.products",
         columns = Set("code")
       )
@@ -120,10 +124,11 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .planBuilder()
       .produceResults()
       .runQueryAt(
-        query =
-          """MATCH (`product`)
-            |  WHERE (`product`):`Product`
-            |DELETE `product`""".stripMargin,
+        query = List(
+          "MATCH (`product`)",
+          "  WHERE (`product`):`Product`",
+          "DELETE `product`"
+        ).mkString(NL),
         graphReference = "db.products"
       )
       .argument()
@@ -149,20 +154,22 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .union()
       .|.projection("product AS product")
       .|.runQueryAt(
-        query =
-          """MATCH (`product`)
-            |  WHERE (((`product`).`deleted`) IN ([false])) AND ((`product`):`Product`)
-            |RETURN `product` AS `product`""".stripMargin,
+        query = List(
+          "MATCH (`product`)",
+          "  WHERE (((`product`).`deleted`) IN ([false])) AND ((`product`):`Product`)",
+          "RETURN `product` AS `product`"
+        ).mkString(NL),
         graphReference = "db.products_bis",
         columns = Set("product")
       )
       .|.argument()
       .projection("product AS product")
       .runQueryAt(
-        query =
-          """MATCH (`product`)
-            |  WHERE (`product`):`Product`
-            |RETURN `product` AS `product`""".stripMargin,
+        query = List(
+          "MATCH (`product`)",
+          "  WHERE (`product`):`Product`",
+          "RETURN `product` AS `product`"
+        ).mkString(NL),
         graphReference = "db.products",
         columns = Set("product")
       )
@@ -197,11 +204,12 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .produceResults("product", "customer")
       .apply()
       .|.runQueryAt(
-        query =
-          """WITH $`pId` AS `pId`
-            |MATCH (`customer`)-[`anon_0`:`BOUGHT`]->(`anon_1`)
-            |  WHERE ((`customer`):`Customer`) AND (((`anon_1`).`id`) IN ([`pId`])) AND ((`anon_1`):`Product`)
-            |RETURN `customer` AS `customer`""".stripMargin,
+        query = List(
+          "WITH $`pId` AS `pId`",
+          "MATCH (`customer`)-[`anon_0`:`BOUGHT`]->(`anon_1`)",
+          "  WHERE ((`customer`):`Customer`) AND (((`anon_1`).`id`) IN ([`pId`])) AND ((`anon_1`):`Product`)",
+          "RETURN `customer` AS `customer`"
+        ).mkString(NL),
         graphReference = "db.customers",
         parameters = Map("$pId" -> "pId"),
         columns = Set("customer")
@@ -212,11 +220,12 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .projection("product.name AS `product.name`")
       .apply()
       .|.runQueryAt(
-        query =
-          """WITH $`i` AS `i`
-            |MATCH (`product`)
-            |  WHERE (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)
-            |RETURN `product` AS `product`""".stripMargin,
+        query = List(
+          "WITH $`i` AS `i`",
+          "MATCH (`product`)",
+          "  WHERE (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)",
+          "RETURN `product` AS `product`"
+        ).mkString(NL),
         graphReference = "db.products",
         parameters = Map("$i" -> "i"),
         columns = Set("product")
@@ -266,11 +275,12 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .|.union()
       .|.|.projection("customer AS customer")
       .|.|.runQueryAt(
-        query =
-          """WITH $`pId` AS `pId`
-            |MATCH (`customer`)-[`anon_2`:`BOUGHT`]->(`anon_3`)
-            |  WHERE ((`customer`):`Customer`) AND (((`anon_3`).`id`) IN ([`pId`])) AND ((`anon_3`):`Product`)
-            |RETURN `customer` AS `customer`""".stripMargin,
+        query = List(
+          "WITH $`pId` AS `pId`",
+          "MATCH (`customer`)-[`anon_2`:`BOUGHT`]->(`anon_3`)",
+          "  WHERE ((`customer`):`Customer`) AND (((`anon_3`).`id`) IN ([`pId`])) AND ((`anon_3`):`Product`)",
+          "RETURN `customer` AS `customer`"
+        ).mkString(NL),
         graphReference = "db.customerEU",
         parameters = Map("$pId" -> "pId"),
         columns = Set("customer")
@@ -284,11 +294,12 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .|.|.argument()
       .|.projection("customer AS customer")
       .|.runQueryAt(
-        query =
-          """WITH $`pId` AS `pId`
-            |MATCH (`customer`)-[`anon_0`:`BOUGHT`]->(`anon_1`)
-            |  WHERE ((`customer`):`Customer`) AND (((`anon_1`).`id`) IN ([`pId`])) AND ((`anon_1`):`Product`)
-            |RETURN `customer` AS `customer`""".stripMargin,
+        query = List(
+          "WITH $`pId` AS `pId`",
+          "MATCH (`customer`)-[`anon_0`:`BOUGHT`]->(`anon_1`)",
+          "  WHERE ((`customer`):`Customer`) AND (((`anon_1`).`id`) IN ([`pId`])) AND ((`anon_1`):`Product`)",
+          "RETURN `customer` AS `customer`"
+        ).mkString(NL),
         graphReference = "db.customerAME",
         parameters = Map("$pId" -> "pId"),
         columns = Set("customer")
@@ -299,11 +310,12 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .projection("product.name AS `product.name`")
       .apply()
       .|.runQueryAt(
-        query =
-          """WITH $`i` AS `i`
-            |MATCH (`product`)
-            |  WHERE (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)
-            |RETURN `product` AS `product`""".stripMargin,
+        query = List(
+          "WITH $`i` AS `i`",
+          "MATCH (`product`)",
+          "  WHERE (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)",
+          "RETURN `product` AS `product`"
+        ).mkString(NL),
         graphReference = "db.products",
         parameters = Map("$i" -> "i"),
         columns = Set("product")
@@ -333,12 +345,13 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .produceResults("product")
       .apply()
       .|.runQueryAt(
-        query =
-          """WITH $`anon_0` AS `i`
-            |MATCH (`product`)
-            |  WHERE (((`product`).`version`) IN ([`i`])) AND (((`product`).`status`) IN ([$`i`])) AND ((`product`):`Product`)
-            |RETURN `product` AS `product`
-            |  ORDER BY (`product`).`name` ASCENDING""".stripMargin,
+        query = List(
+          "WITH $`anon_0` AS `i`",
+          "MATCH (`product`)",
+          "  WHERE (((`product`).`version`) IN ([`i`])) AND (((`product`).`status`) IN ([$`i`])) AND ((`product`):`Product`)",
+          "RETURN `product` AS `product`",
+          "  ORDER BY (`product`).`name` ASCENDING"
+        ).mkString(NL),
         graphReference = "db.products",
         parameters = Map("$anon_0" -> "i"),
         columns = Set("product")

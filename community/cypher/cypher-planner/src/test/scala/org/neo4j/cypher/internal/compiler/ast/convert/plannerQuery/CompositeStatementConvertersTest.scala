@@ -54,6 +54,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
  */
 class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+  final private val NL: String = System.lineSeparator()
+
   override val semanticFeatures: List[SemanticFeature] = List(
     SemanticFeature.UseAsMultipleGraphsSelector
   )
@@ -81,9 +83,11 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
         .empty
         .withHorizon(RunQueryAtProjection(
           graphReference = GraphDirectReference(CatalogName(List("db", "products")))(pos),
-          queryString = """MATCH (`product`)
-                          |  WHERE (`product`):`Product`
-                          |RETURN `product` AS `product`""".stripMargin,
+          queryString = List(
+            "MATCH (`product`)",
+            "  WHERE (`product`):`Product`",
+            "RETURN `product` AS `product`"
+          ).mkString(NL),
           parameters = Map.empty,
           columns = Set(varFor("product"))
         ))
@@ -105,13 +109,15 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
         .empty
         .withHorizon(RunQueryAtProjection(
           graphReference = GraphDirectReference(CatalogName(List("db", "products")))(pos),
-          queryString = """UNWIND [1, 2, 3] AS `i`
-                          |MATCH (`product`)
-                          |  WHERE (`product`):`Product`
-                          |RETURN DISTINCT (`product`).`code` AS `code`
-                          |  ORDER BY `code` ASCENDING
-                          |  SKIP 5
-                          |  LIMIT 10""".stripMargin,
+          queryString = List(
+            "UNWIND [1, 2, 3] AS `i`",
+            "MATCH (`product`)",
+            "  WHERE (`product`):`Product`",
+            "RETURN DISTINCT (`product`).`code` AS `code`",
+            "  ORDER BY `code` ASCENDING",
+            "  SKIP 5",
+            "  LIMIT 10"
+          ).mkString(NL),
           parameters = Map.empty,
           columns = Set(varFor("code"))
         ))
@@ -187,9 +193,11 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
         .empty
         .withHorizon(RunQueryAtProjection(
           graphReference = GraphDirectReference(CatalogName(List("db", "products")))(pos),
-          queryString = """MATCH (`product`)
-                          |  WHERE (`product`):`Product`
-                          |RETURN `product` AS `product`""".stripMargin,
+          queryString = List(
+            "MATCH (`product`)",
+            "  WHERE (`product`):`Product`",
+            "RETURN `product` AS `product`"
+          ).mkString(NL),
           parameters = Map.empty,
           columns = Set(varFor("product"))
         ))
@@ -215,9 +223,11 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
         .empty
         .withHorizon(RunQueryAtProjection(
           graphReference = GraphDirectReference(CatalogName(List("db", "products_bis")))(pos),
-          queryString = """MATCH (`product`)
-                          |  WHERE (((`product`).`deleted`) IN ([false])) AND ((`product`):`Product`)
-                          |RETURN `product` AS `product`""".stripMargin,
+          queryString = List(
+            "MATCH (`product`)",
+            "  WHERE (((`product`).`deleted`) IN ([false])) AND ((`product`):`Product`)",
+            "RETURN `product` AS `product`"
+          ).mkString(NL),
           parameters = Map.empty,
           columns = Set(varFor("product"))
         ))
@@ -341,11 +351,12 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                       .addArgumentId(varFor("i"))
                   ).withHorizon(RunQueryAtProjection(
                     graphReference = GraphDirectReference(CatalogName(List("db", "products")))(pos),
-                    queryString =
-                      """WITH $`i` AS `i`
-                        |MATCH (`product`)
-                        |  WHERE (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)
-                        |RETURN `product` AS `product`""".stripMargin,
+                    queryString = List(
+                      "WITH $`i` AS `i`",
+                      "MATCH (`product`)",
+                      "  WHERE (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)",
+                      "RETURN `product` AS `product`"
+                    ).mkString(NL),
                     parameters = Map(parameter("i", CTAny) -> varFor("i")),
                     columns = Set(varFor("product"))
                   )),
@@ -397,11 +408,12 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                                     ).withHorizon(RunQueryAtProjection(
                                       graphReference =
                                         GraphDirectReference(CatalogName(List("db", "customerAME")))(pos),
-                                      queryString =
-                                        """WITH $`pId` AS `pId`
-                                          |MATCH (`customer`)-[`bought`]->(`product`)
-                                          |  WHERE ((`product`).`id`) IN ([`pId`])
-                                          |RETURN `customer` AS `customer`""".stripMargin,
+                                      queryString = List(
+                                        "WITH $`pId` AS `pId`",
+                                        "MATCH (`customer`)-[`bought`]->(`product`)",
+                                        "  WHERE ((`product`).`id`) IN ([`pId`])",
+                                        "RETURN `customer` AS `customer`"
+                                      ).mkString(NL),
                                       parameters = Map(parameter("pId", CTAny) -> varFor("pId")),
                                       columns = Set(varFor("customer"))
                                     )),
@@ -445,11 +457,12 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                                       .addArgumentId(varFor("pId"))
                                   ).withHorizon(RunQueryAtProjection(
                                     graphReference = GraphDirectReference(CatalogName(List("db", "customerEU")))(pos),
-                                    queryString =
-                                      """WITH $`pId` AS `pId`
-                                        |MATCH (`customer`)-[`bought`]->(`product`)
-                                        |  WHERE ((`product`).`id`) IN ([`pId`])
-                                        |RETURN `customer` AS `customer`""".stripMargin,
+                                    queryString = List(
+                                      "WITH $`pId` AS `pId`",
+                                      "MATCH (`customer`)-[`bought`]->(`product`)",
+                                      "  WHERE ((`product`).`id`) IN ([`pId`])",
+                                      "RETURN `customer` AS `customer`"
+                                    ).mkString(NL),
                                     parameters = Map(parameter("pId", CTAny) -> varFor("pId")),
                                     columns = Set(varFor("customer"))
                                   )),
@@ -509,11 +522,12 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
               horizon =
                 RunQueryAtProjection(
                   graphReference = GraphDirectReference(CatalogName(List("db", "customers")))(pos),
-                  queryString =
-                    """WITH $`pId` AS `pId`
-                      |MATCH (`customer`)-[`bought`]->(`product`)
-                      |  WHERE ((`product`).`id`) IN ([`pId`])
-                      |RETURN `customer` AS `customer`""".stripMargin,
+                  queryString = List(
+                    "WITH $`pId` AS `pId`",
+                    "MATCH (`customer`)-[`bought`]->(`product`)",
+                    "  WHERE ((`product`).`id`) IN ([`pId`])",
+                    "RETURN `customer` AS `customer`"
+                  ).mkString(NL),
                   parameters = Map(parameter("pId", CTAny) -> varFor("pId")),
                   columns = Set(varFor("customer"))
                 )
