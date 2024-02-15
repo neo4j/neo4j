@@ -205,6 +205,7 @@ public class ImportLogic implements Closeable {
             monitor.doubleRelationshipRecordUnitsEnabled();
         }
 
+        monitor.started();
         executionMonitor.initialize(dependencies);
     }
 
@@ -661,6 +662,7 @@ public class ImportLogic implements Closeable {
         log.info("Import " + (successful ? "completed successfully" : "failed") + ", took " + duration(totalTimeMillis)
                 + ". " + additionalInformation);
         closeAll(nodeRelationshipCache, nodeLabelsCache, idMapper);
+        monitor.completed(successful);
     }
 
     private void updatePeakMemoryUsage() {

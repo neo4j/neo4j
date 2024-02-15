@@ -36,8 +36,18 @@ public interface Monitor {
             long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory) {}
 
     /**
+     * Called right before import is starting.
+     */
+    default void started() {}
+
+    /**
      * Gets updated with a percentage of the overall import progress.
      * @param percentage overall import progress between 0..100.
      */
     default void percentageCompleted(int percentage) {}
+
+    /**
+     * Called after import have been completed.
+     */
+    default void completed(boolean success) {}
 }
