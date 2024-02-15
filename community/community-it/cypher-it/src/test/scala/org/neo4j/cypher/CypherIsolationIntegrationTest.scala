@@ -98,6 +98,9 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
   }
 
   test("Should order correctly using an index despite concurrent updates") {
+    // We need fewer Threads to reproduce the problem
+    val THREADS = 10
+
     // Given
     execute(
       """
@@ -107,14 +110,16 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     )
     graph.createNodeIndex("L", "x")
 
+    // This query will not plan a Sort.
+    // We test whether concurrent updates to the properties can
+    // lead to results in the wrong order.
     val query =
       """CYPHER
         |MATCH (n:L) WHERE n.x IS NOT NULL
         |RETURN n.x AS x ORDER BY n.x
         |""".stripMargin
 
-    println(execute("EXPLAIN " + query).executionPlanDescription())
-
+    // This query assigns new property values to each node.
     val scrambler =
       """
         |MATCH (n:L)
@@ -130,62 +135,47 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     // When
     val executor = Executors.newFixedThreadPool(THREADS)
 
-    val queryCallable = new Callable[Unit] {
-      override def call(): Unit = {
-        // Cheap, so way more runs of these
-        for (_ <- 1 to 500) {
-          var retry = true;
-          while (retry) {
-            try {
-              println(s"[${Thread.currentThread().getId}] starts reading")
-              val res = execute(query).columnAs[Long]("x").toList
-              println(s"[${Thread.currentThread().getId}] stops  reading")
-              res.sliding(2).foreach {
-                case List(a, b) =>
-                  if (a > b) {
-                    throw new RuntimeException(res.mkString(" "))
-                  }
-                case _ =>
+    // Run the scrambler concurrently
+    val futures = (1 to THREADS) map { _ =>
+      executor.submit(new Callable[Unit] {
+        override def call(): Unit = {
+          // Expensive, so let's have fewer runs
+          for (_ <- 1 to 3) {
+            var retry = true
+            while (retry) {
+              try {
+                execute(scrambler)
+                retry = false
+              } catch {
+                case _: DeadlockDetectedException =>
+                case t: Throwable => throw new RuntimeException(t)
               }
-              retry = false
-            } catch {
-              case e: DeadlockDetectedException => e
-              case t: Throwable                 => throw new RuntimeException(t)
             }
           }
         }
-      }
+      })
     }
 
-    val scrambleCallable = new Callable[Unit] {
-      override def call(): Unit = {
-        // Way more expensive, so let's have fewer runs
-        for (_ <- 1 to 3) {
-          var retry = true;
-          while (retry) {
-            try {
-              println(s"[${Thread.currentThread().getId}] starts scrambling")
-              execute(scrambler)
-              println(s"[${Thread.currentThread().getId}] stops  scrambling")
-              retry = false
-            } catch {
-              case e: DeadlockDetectedException => e
-              case t: Throwable                 => throw new RuntimeException(t)
-            }
-          }
-        }
-      }
-    }
-
-    val futures = (1 to THREADS) map { i =>
-      if (i % 2 == 0)
-        executor.submit(scrambleCallable)
-      else
-        executor.submit(queryCallable)
-    }
-
+    // And while waiting for all scrambler futures threads to be done,
+    // execute the read query and assert that results are in ascending order.
     try {
-      futures.foreach(_.get())
+      while(futures.exists(!_.isDone)) {
+        var retry = true
+        while (retry) {
+          try {
+            val res = execute(query).columnAs[Long]("x").toList
+            res.sliding(2).foreach {
+              case List(a, b) =>
+                a should be <= b
+              case _ =>
+            }
+            retry = false
+          } catch {
+            case _: DeadlockDetectedException =>
+            case t: Throwable => throw new RuntimeException(t)
+          }
+        }
+      }
     } finally executor.shutdown()
   }
 
@@ -196,7 +186,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
       executor.submit(new Callable[Unit] {
         override def call(): Unit = {
           for (x <- 1 to UPDATES) {
-            var retry = true;
+            var retry = true
             while (retry) {
               try {
                 execute(query)

@@ -118,7 +118,6 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
   override def postConditions: Set[StepSequencer.Condition] = InsertCachedProperties.postConditions
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    return from
 
     if (context.materializedEntitiesMode) {
       // When working with materialized entities only, caching properties is not useful.
