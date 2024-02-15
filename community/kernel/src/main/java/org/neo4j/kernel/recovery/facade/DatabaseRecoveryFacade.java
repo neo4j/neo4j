@@ -67,7 +67,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             RecoveryFacadeMonitor recoveryFacadeMonitor,
             RecoveryMode recoveryMode)
             throws IOException {
-        recovery(layout, recoveryCriteria, recoveryFacadeMonitor, recoveryMode);
+        recovery(layout, recoveryCriteria, recoveryFacadeMonitor, recoveryMode, false);
     }
 
     @Override
@@ -88,23 +88,34 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
         performRecovery(databaseLayout, recoveryCriteria, monitor, RecoveryMode.FULL);
     }
 
+    @Override
+    public void forceRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode recoveryMode)
+            throws IOException {
+        recovery(databaseLayout, RecoveryCriteria.ALL, monitor, RecoveryMode.FULL, true);
+    }
+
     private void recovery(
             DatabaseLayout databaseLayout,
             RecoveryCriteria recoveryCriteria,
             RecoveryFacadeMonitor monitor,
-            RecoveryMode mode)
+            RecoveryMode mode,
+            boolean force)
             throws IOException {
         monitor.recoveryStarted();
-        Recovery.performRecovery(Recovery.context(
-                        fs,
-                        pageCache,
-                        tracers,
-                        config,
-                        databaseLayout,
-                        memoryTracker,
-                        IOController.DISABLED,
-                        logProvider,
-                        emptyLogsFallbackKernelVersion)
+        var recoveryContext = Recovery.context(
+                fs,
+                pageCache,
+                tracers,
+                config,
+                databaseLayout,
+                memoryTracker,
+                IOController.DISABLED,
+                logProvider,
+                emptyLogsFallbackKernelVersion);
+        if (force) {
+            recoveryContext.force();
+        }
+        Recovery.performRecovery(recoveryContext
                 .recoveryPredicate(recoveryCriteria.toPredicate())
                 .recoveryMode(mode));
         monitor.recoveryCompleted();

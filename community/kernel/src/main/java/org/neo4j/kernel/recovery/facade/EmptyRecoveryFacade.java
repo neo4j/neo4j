@@ -55,4 +55,10 @@ class EmptyRecoveryFacade implements RecoveryFacade {
             throws IOException {
         // noop
     }
+
+    @Override
+    public void forceRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode recoveryMode)
+            throws IOException {
+        // noop
+    }
 }

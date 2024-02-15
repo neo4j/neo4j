@@ -41,4 +41,7 @@ public interface RecoveryFacade {
     void performRecovery(
             DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
             throws IOException;
+
+    void forceRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode recoveryMode)
+            throws IOException;
 }
