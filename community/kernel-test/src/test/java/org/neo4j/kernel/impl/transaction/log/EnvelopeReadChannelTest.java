@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
+import static org.neo4j.kernel.impl.transaction.log.EnvelopeWriteChannel.START_INDEX;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.IGNORE_KERNEL_VERSION;
@@ -116,7 +117,8 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeLogEnvelopeHeader(buffer, payloadChecksum, EnvelopeType.FULL, payloadLength, BASE_TX_CHECKSUM);
+            writeLogEnvelopeHeader(
+                    buffer, payloadChecksum, EnvelopeType.FULL, payloadLength, BASE_TX_CHECKSUM, START_INDEX);
             buffer.put(byteValue);
             buffer.putShort(shortValue);
             buffer.putInt(intValue);
@@ -155,7 +157,7 @@ class EnvelopeReadChannelTest {
     void shouldReadMultipleEnvelopesWithinOneSegment(int segmentSize) throws Exception {
         // GIVEN
         final var file = file(0);
-        final var size = (segmentSize - HEADER_SIZE) / 4;
+        final var size = (segmentSize / 4) - HEADER_SIZE;
         final var bytes1 = bytes(random, size);
         final var bytes2 = bytes(random, size);
         final var bytes3 = bytes(random, size);
@@ -163,9 +165,9 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1);
-            checksums[1] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[0], bytes2);
-            checksums[2] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[1], bytes3);
+            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            checksums[1] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[0], bytes2, START_INDEX + 1);
+            checksums[2] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[1], bytes3, START_INDEX + 2);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -176,14 +178,15 @@ class EnvelopeReadChannelTest {
             channel.get(bytesRead, size);
             assertThat(bytes1).isEqualTo(bytesRead);
             assertThat(checksums[0]).isEqualTo(channel.getChecksum());
-
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX);
             channel.get(bytesRead, size);
             assertThat(bytes2).isEqualTo(bytesRead);
             assertThat(checksums[1]).isEqualTo(channel.getChecksum());
-
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 1);
             channel.get(bytesRead, size);
             assertThat(bytes3).isEqualTo(bytesRead);
             assertThat(checksums[2]).isEqualTo(channel.getChecksum());
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 2);
         }
     }
 
@@ -196,7 +199,7 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes);
+            writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes, START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -206,6 +209,7 @@ class EnvelopeReadChannelTest {
             final var bytesRead = new byte[bytes.length];
             channel.get(bytesRead, bytes.length);
             assertThat(bytes).isEqualTo(bytesRead);
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX);
         }
     }
 
@@ -221,8 +225,9 @@ class EnvelopeReadChannelTest {
             writeZeroSegment(buffer, segmentSize);
 
             final var checksum = writeHeaderAndPayload(
-                    buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, copyOfRange(bytes, 0, beginChunkSize));
-            writeHeaderAndPayload(buffer, EnvelopeType.END, checksum, copyOfRange(bytes, beginChunkSize, bytes.length));
+                    buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, copyOfRange(bytes, 0, beginChunkSize), START_INDEX);
+            writeHeaderAndPayload(
+                    buffer, EnvelopeType.END, checksum, copyOfRange(bytes, beginChunkSize, bytes.length), START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -247,8 +252,9 @@ class EnvelopeReadChannelTest {
             writeZeroSegment(buffer, segmentSize);
 
             final var checksum = writeHeaderAndPayload(
-                    buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, copyOfRange(bytes, 0, beginChunkSize));
-            writeHeaderAndPayload(buffer, EnvelopeType.END, checksum, copyOfRange(bytes, beginChunkSize, bytes.length));
+                    buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, copyOfRange(bytes, 0, beginChunkSize), START_INDEX);
+            writeHeaderAndPayload(
+                    buffer, EnvelopeType.END, checksum, copyOfRange(bytes, beginChunkSize, bytes.length), START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -279,9 +285,10 @@ class EnvelopeReadChannelTest {
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
-            final var checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1);
+            final var checksum =
+                    writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
             buffer.put(new byte[zeros]);
-            writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksum, bytes2);
+            writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksum, bytes2, START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -312,11 +319,12 @@ class EnvelopeReadChannelTest {
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
-            final var checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1);
+            final var checksum =
+                    writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
 
             final var beginChecksum =
                     buildChecksum(EnvelopeType.BEGIN, Long.BYTES, checksum, (crcBuffer) -> crcBuffer.putLong(l1));
-            writeLogEnvelopeHeader(buffer, beginChecksum, EnvelopeType.BEGIN, Long.BYTES, checksum);
+            writeLogEnvelopeHeader(buffer, beginChecksum, EnvelopeType.BEGIN, Long.BYTES, checksum, START_INDEX);
             buffer.putLong(l1);
             buffer.put(zeros);
 
@@ -324,7 +332,7 @@ class EnvelopeReadChannelTest {
                     buildChecksum(EnvelopeType.END, Long.BYTES * 2, beginChecksum, (crcBuffer) -> crcBuffer
                             .putLong(l2)
                             .putLong(l3));
-            writeLogEnvelopeHeader(buffer, endChecksum, EnvelopeType.END, Long.BYTES * 2, beginChecksum);
+            writeLogEnvelopeHeader(buffer, endChecksum, EnvelopeType.END, Long.BYTES * 2, beginChecksum, START_INDEX);
             buffer.putLong(l2).putLong(l3);
         });
 
@@ -355,12 +363,13 @@ class EnvelopeReadChannelTest {
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
-            final var checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1);
+            final var checksum =
+                    writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
             buffer.put(zeros);
 
             final var fullChecksum =
                     buildChecksum(EnvelopeType.FULL, Long.BYTES, checksum, (crcBuffer) -> crcBuffer.putLong(l1));
-            writeLogEnvelopeHeader(buffer, fullChecksum, EnvelopeType.FULL, Long.BYTES, checksum);
+            writeLogEnvelopeHeader(buffer, fullChecksum, EnvelopeType.FULL, Long.BYTES, checksum, START_INDEX);
             buffer.putLong(l1);
         });
 
@@ -436,7 +445,7 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes);
+            writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes, START_INDEX);
             buffer.put(garbage); // Should be zero padding here
         });
 
@@ -463,8 +472,9 @@ class EnvelopeReadChannelTest {
             writeZeroSegment(buffer, segmentSize);
 
             final var payloadChecksum = buildChecksum(
-                    checksum, EnvelopeType.FULL, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION.version(), bytes);
-            writeLogEnvelopeHeader(buffer, payloadChecksum, EnvelopeType.FULL, segmentSize, BASE_TX_CHECKSUM);
+                    checksum, EnvelopeType.FULL, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION.version(), bytes, START_INDEX);
+            writeLogEnvelopeHeader(
+                    buffer, payloadChecksum, EnvelopeType.FULL, segmentSize, BASE_TX_CHECKSUM, START_INDEX);
             buffer.put(bytes);
         });
 
@@ -486,7 +496,7 @@ class EnvelopeReadChannelTest {
         final var path = file(0);
         writeSomeData(path, buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, bytes);
+            writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, bytes, START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, path);
@@ -514,7 +524,7 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes);
+            writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes, START_INDEX);
             buffer.put((byte) 13);
         });
 
@@ -549,13 +559,13 @@ class EnvelopeReadChannelTest {
         writeSomeData(path1, buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
-            var checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, bytes0);
-            checksum = writeHeaderAndPayload(buffer, EnvelopeType.MIDDLE, checksum, bytes1);
+            var checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, bytes0, START_INDEX);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.MIDDLE, checksum, bytes1, START_INDEX);
             endChecksum.setValue(checksum);
         });
         writeSomeData(path2, buffer -> {
             writeZeroSegment(buffer, segmentSize, endChecksum.intValue());
-            writeHeaderAndPayload(buffer, EnvelopeType.END, endChecksum.intValue(), bytes2);
+            writeHeaderAndPayload(buffer, EnvelopeType.END, endChecksum.intValue(), bytes2, START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, path1);
@@ -588,13 +598,13 @@ class EnvelopeReadChannelTest {
         writeSomeData(path1, buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
-            var checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, bytes0);
-            checksum = writeHeaderAndPayload(buffer, EnvelopeType.MIDDLE, checksum, bytes1);
+            var checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, bytes0, START_INDEX);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.MIDDLE, checksum, bytes1, START_INDEX);
             endChecksum.setValue(checksum);
         });
         writeSomeData(path2, buffer -> {
             writeZeroSegment(buffer, segmentSize, endChecksum.intValue());
-            writeHeaderAndPayload(buffer, EnvelopeType.END, endChecksum.intValue(), bytes2);
+            writeHeaderAndPayload(buffer, EnvelopeType.END, endChecksum.intValue(), bytes2, START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, path1);
@@ -620,7 +630,7 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize, 42);
-            writeHeaderAndPayload(buffer, EnvelopeType.FULL, 666, bytes);
+            writeHeaderAndPayload(buffer, EnvelopeType.FULL, 666, bytes, START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -648,7 +658,13 @@ class EnvelopeReadChannelTest {
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
             writeHeaderAndPayload(
-                    buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, invalid, LATEST_KERNEL_VERSION.version(), bytes);
+                    buffer,
+                    EnvelopeType.FULL,
+                    BASE_TX_CHECKSUM,
+                    invalid,
+                    LATEST_KERNEL_VERSION.version(),
+                    bytes,
+                    START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -674,10 +690,11 @@ class EnvelopeReadChannelTest {
             writeZeroSegment(buffer, segmentSize);
 
             var checksum = writeHeaderAndPayload(
-                    buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, copyOfRange(bytes, 0, chunkSize));
+                    buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, copyOfRange(bytes, 0, chunkSize), START_INDEX);
             checksum = writeHeaderAndPayload(
-                    buffer, EnvelopeType.MIDDLE, checksum, copyOfRange(bytes, chunkSize, chunkSize * 2));
-            writeHeaderAndPayload(buffer, EnvelopeType.END, checksum, copyOfRange(bytes, chunkSize * 2, bytes.length));
+                    buffer, EnvelopeType.MIDDLE, checksum, copyOfRange(bytes, chunkSize, chunkSize * 2), START_INDEX);
+            writeHeaderAndPayload(
+                    buffer, EnvelopeType.END, checksum, copyOfRange(bytes, chunkSize * 2, bytes.length), START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -704,10 +721,11 @@ class EnvelopeReadChannelTest {
             writeZeroSegment(buffer, segmentSize);
 
             var checksum = writeHeaderAndPayload(
-                    buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, copyOfRange(bytes, 0, chunkSize));
+                    buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, copyOfRange(bytes, 0, chunkSize), START_INDEX);
             checksum = writeHeaderAndPayload(
-                    buffer, EnvelopeType.MIDDLE, checksum, copyOfRange(bytes, chunkSize, chunkSize * 2));
-            writeHeaderAndPayload(buffer, EnvelopeType.END, checksum, copyOfRange(bytes, chunkSize * 2, chunkSize * 3));
+                    buffer, EnvelopeType.MIDDLE, checksum, copyOfRange(bytes, chunkSize, chunkSize * 2), START_INDEX);
+            writeHeaderAndPayload(
+                    buffer, EnvelopeType.END, checksum, copyOfRange(bytes, chunkSize * 2, chunkSize * 3), START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -748,7 +766,7 @@ class EnvelopeReadChannelTest {
         // GIVEN
         final var path = file(0);
 
-        final var payloadSize = segmentSize / 6;
+        final var payloadSize = (segmentSize / 8);
         final var envelopeSize = payloadSize + HEADER_SIZE;
         final var bytes1 = bytes(random, payloadSize);
         final var bytes2 = bytes(random, payloadSize);
@@ -761,9 +779,9 @@ class EnvelopeReadChannelTest {
         writeSomeData(path, buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
-            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1);
-            checksums[1] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[0], bytes2);
-            checksums[2] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[1], bytes3);
+            checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
+            checksums[1] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[0], bytes2, START_INDEX + 1);
+            checksums[2] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[1], bytes3, START_INDEX + 2);
         });
 
         final var logChannel = logChannel(fileSystem, path);
@@ -775,16 +793,19 @@ class EnvelopeReadChannelTest {
             channel.get(bytesRead, bytesRead.length);
             assertThat(bytes3).isEqualTo(bytesRead);
             assertThat(checksums[2]).isEqualTo(channel.getChecksum());
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 2);
 
             channel.position(positions[1]);
             channel.get(bytesRead, bytesRead.length);
             assertThat(bytes2).isEqualTo(bytesRead);
             assertThat(checksums[1]).isEqualTo(channel.getChecksum());
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX + 1);
 
             channel.position(positions[0]);
             channel.get(bytesRead, bytesRead.length);
             assertThat(bytes1).isEqualTo(bytesRead);
             assertThat(checksums[0]).isEqualTo(channel.getChecksum());
+            assertThat(channel.entryIndex()).isEqualTo(START_INDEX);
         }
     }
 
@@ -798,7 +819,7 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            writeHeaderAndPayload(buffer, envelopeType, BASE_TX_CHECKSUM, bytes);
+            writeHeaderAndPayload(buffer, envelopeType, BASE_TX_CHECKSUM, bytes, START_INDEX);
         });
 
         final var logChannel = logChannel(fileSystem, file);
@@ -823,35 +844,38 @@ class EnvelopeReadChannelTest {
 
         writeSomeData(file, buffer -> {
             writeZeroSegment(buffer, segmentSize);
-            int checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes);
-            checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, checksum, bytes);
-            checksum = writeHeaderAndPayload(buffer, EnvelopeType.END, checksum, bytes);
-            checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, checksum, bytes);
-            checksum = writeHeaderAndPayload(buffer, EnvelopeType.MIDDLE, checksum, bytes);
+            int checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes, START_INDEX);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, checksum, bytes, START_INDEX + 1);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.END, checksum, bytes, START_INDEX + 1);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, checksum, bytes, START_INDEX + 2);
 
-            buffer.put(new byte[HEADER_SIZE + 4]); // padding
+            buffer.put(new byte[8]); // padding
             assertThat(buffer.position()).isEqualTo(segmentSize * 2);
 
-            checksum = writeHeaderAndPayload(buffer, EnvelopeType.END, checksum, bytes);
-            checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksum, bytes);
-            writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksum, bytes);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.MIDDLE, checksum, bytes, START_INDEX + 2);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.END, checksum, bytes, START_INDEX + 2);
+            checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksum, bytes, START_INDEX + 3);
+            writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksum, bytes, START_INDEX + 4);
         });
 
         int[] positions = new int[] {
             segmentSize,
             segmentSize + entrySize,
             segmentSize + entrySize * 3,
-            segmentSize * 2 + entrySize,
             segmentSize * 2 + entrySize * 2,
+            segmentSize * 2 + entrySize * 3,
         };
 
         var logChannel = logChannel(fileSystem, file);
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
-            for (int position : positions) {
+            for (int i = 0; i < positions.length; i++) {
+                var position = positions[i];
                 channel.goToNextEntry();
+                assertThat(channel.entryIndex()).isEqualTo(START_INDEX + i);
                 assertThat(channel.position() - HEADER_SIZE).isEqualTo(position);
             }
+
             assertThatThrownBy(channel::goToNextEntry).isInstanceOf(ReadPastEndException.class);
         }
     }
@@ -887,17 +911,23 @@ class EnvelopeReadChannelTest {
     private int buildChecksum(
             EnvelopeType type, int payloadLength, int previousChecksum, Consumer<ByteBuffer> builder) {
         final var version = type.isStarting() ? LATEST_KERNEL_VERSION.version() : IGNORE_KERNEL_VERSION;
-        return buildChecksum(type, payloadLength, version, previousChecksum, builder);
+        return buildChecksum(type, payloadLength, version, previousChecksum, builder, START_INDEX);
     }
 
     private static int buildChecksum(
-            Checksum checksum, EnvelopeType type, int previousChecksum, byte kernelVersion, byte[] payload) {
+            Checksum checksum,
+            EnvelopeType type,
+            int previousChecksum,
+            byte kernelVersion,
+            byte[] payload,
+            long entryIndex) {
         return buildChecksum(
                 checksum,
                 ByteBuffer.allocate(HEADER_SIZE - Integer.BYTES + payload.length)
                         .order(LITTLE_ENDIAN)
                         .put(type.typeValue)
                         .putInt(payload.length)
+                        .putLong(entryIndex)
                         .put(kernelVersion)
                         .putInt(previousChecksum)
                         .put(payload)
@@ -909,12 +939,14 @@ class EnvelopeReadChannelTest {
             int payloadLength,
             byte kernelVersion,
             int previousChecksum,
-            Consumer<ByteBuffer> builder) {
+            Consumer<ByteBuffer> builder,
+            long entryIndex) {
         final var buffer = ByteBuffer.allocate(HEADER_SIZE - Integer.BYTES + payloadLength)
                 .order(LITTLE_ENDIAN)
                 // header data
                 .put(type.typeValue)
                 .putInt(payloadLength)
+                .putLong(entryIndex)
                 .put(kernelVersion)
                 .putInt(previousChecksum);
         builder.accept(buffer);
@@ -928,14 +960,20 @@ class EnvelopeReadChannelTest {
     }
 
     private static void writeLogEnvelopeHeader(
-            ByteBuffer buffer, int payloadChecksum, EnvelopeType type, int payloadLength, int previousChecksum) {
+            ByteBuffer buffer,
+            int payloadChecksum,
+            EnvelopeType type,
+            int payloadLength,
+            int previousChecksum,
+            long entryIndex) {
         final var version = type.isStarting() ? LATEST_KERNEL_VERSION.version() : IGNORE_KERNEL_VERSION;
-        writeLogEnvelopeHeader(buffer, payloadChecksum, type, payloadLength, version, previousChecksum);
+        writeLogEnvelopeHeader(buffer, payloadChecksum, type, payloadLength, version, previousChecksum, entryIndex);
     }
 
-    private int writeHeaderAndPayload(ByteBuffer buffer, EnvelopeType type, int previousChecksum, byte[] payload) {
+    private int writeHeaderAndPayload(
+            ByteBuffer buffer, EnvelopeType type, int previousChecksum, byte[] payload, long startIndex) {
         final var version = type.isStarting() ? LATEST_KERNEL_VERSION.version() : IGNORE_KERNEL_VERSION;
-        return writeHeaderAndPayload(buffer, type, previousChecksum, version, payload);
+        return writeHeaderAndPayload(buffer, type, previousChecksum, version, payload, startIndex);
     }
 
     private static void writeZeroSegment(ByteBuffer buffer, int segmentSize) {
@@ -963,9 +1001,15 @@ class EnvelopeReadChannelTest {
     }
 
     private int writeHeaderAndPayload(
-            ByteBuffer buffer, EnvelopeType type, int previousChecksum, byte kernelVersion, byte[] payload) {
-        final var payloadChecksum = buildChecksum(checksum, type, previousChecksum, kernelVersion, payload);
-        return writeHeaderAndPayload(buffer, type, previousChecksum, payloadChecksum, kernelVersion, payload);
+            ByteBuffer buffer,
+            EnvelopeType type,
+            int previousChecksum,
+            byte kernelVersion,
+            byte[] payload,
+            long startIndex) {
+        final var payloadChecksum = buildChecksum(checksum, type, previousChecksum, kernelVersion, payload, startIndex);
+        return writeHeaderAndPayload(
+                buffer, type, previousChecksum, payloadChecksum, kernelVersion, payload, startIndex);
     }
 
     private int writeHeaderAndPayload(
@@ -974,8 +1018,10 @@ class EnvelopeReadChannelTest {
             int previousChecksum,
             int payloadChecksum,
             byte kernelVersion,
-            byte[] payload) {
-        writeLogEnvelopeHeader(buffer, payloadChecksum, type, payload.length, kernelVersion, previousChecksum);
+            byte[] payload,
+            long entryIndex) {
+        writeLogEnvelopeHeader(
+                buffer, payloadChecksum, type, payload.length, kernelVersion, previousChecksum, entryIndex);
         buffer.put(payload);
         return payloadChecksum;
     }
@@ -986,10 +1032,12 @@ class EnvelopeReadChannelTest {
             EnvelopeType type,
             int payloadLength,
             byte kernelVersion,
-            int previousChecksum) {
+            int previousChecksum,
+            long entryIndex) {
         buffer.putInt(payloadChecksum)
                 .put(type.typeValue)
                 .putInt(payloadLength)
+                .putLong(entryIndex)
                 .put(kernelVersion)
                 .putInt(previousChecksum);
     }

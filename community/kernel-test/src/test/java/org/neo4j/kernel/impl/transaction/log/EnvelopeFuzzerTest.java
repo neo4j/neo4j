@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.impl.transaction.log.EnvelopeWriteChannel.START_INDEX;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
@@ -112,7 +113,13 @@ class EnvelopeFuzzerTest {
         // Write random data
         LogRotationForChannel logRotation = logRotation(storeChannel, segmentSize, preAllocate, rotationSize);
         try (EnvelopeWriteChannel envelopeWriteChannel = new EnvelopeWriteChannel(
-                storeChannel, buffer(bufferSize), segmentSize, initialChecksum, logRotation, DatabaseTracer.NULL)) {
+                storeChannel,
+                buffer(bufferSize),
+                segmentSize,
+                initialChecksum,
+                START_INDEX,
+                DatabaseTracer.NULL,
+                logRotation)) {
             logRotation.bindWriteChannel(envelopeWriteChannel);
             envelopeWriteChannel.putVersion(LATEST_KERNEL_VERSION.version());
 

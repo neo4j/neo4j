@@ -24,6 +24,7 @@ import static java.util.Arrays.copyOfRange;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.log.EnvelopeWriteChannel.START_INDEX;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -124,7 +125,7 @@ class EnvelopeWriteChannelTest {
                     .put(SMALL_BYTES)
                     .put(smallByteBuffer.position(0));
 
-            assertEnvelopeContents(data, envelope(EnvelopeType.FULL, 0xD4296D52, expected, version));
+            assertEnvelopeContents(data, envelope(EnvelopeType.FULL, START_INDEX, expected, version, 0xEB087CA8));
         }
     }
 
@@ -157,27 +158,27 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     slice(buffer, segmentSize),
-                    envelope(EnvelopeType.FULL, 0x051A6C10, byteData),
-                    envelope(EnvelopeType.FULL, 0xBA05ADE2, byteData));
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, 0x5C4F1DC1),
+                    envelope(EnvelopeType.FULL, START_INDEX + 1, byteData, 0x46104B29));
         }
     }
 
     @Test
     void writeAndPutChecksumThatFitsWithinTheSameSegment() throws IOException {
         int segmentSize = 128;
-        final var byteData = bytes(random, segmentSize / 4);
+        final var byteData = bytes(random, segmentSize / 6);
         final var chunkSize = byteData.length + HEADER_SIZE;
-        final var checksums = new int[] {0xFD7125A7, 0xC6A93F33};
+        final var checksums = new int[] {0x963CF93C, 0x748FC9CC};
 
         final var fileChannel = storeChannel();
         try (var channel = writeChannel(fileChannel, segmentSize, buffer())) {
             channel.putVersion(KERNEL_VERSION);
             channel.put(byteData, byteData.length);
-            assertThat(channel.putChecksum()).isEqualTo(checksums[0]);
+            assertChecksum(channel.putChecksum(), checksums[0]);
 
             channel.putVersion(KERNEL_VERSION);
             channel.put(byteData, byteData.length);
-            assertThat(channel.putChecksum()).isEqualTo(checksums[1]);
+            assertChecksum(channel.putChecksum(), checksums[1]);
             channel.prepareForFlush();
 
             assertThat(fileChannel.position())
@@ -186,8 +187,8 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.FULL, checksums[0], byteData),
-                    envelope(EnvelopeType.FULL, checksums[1], byteData));
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, checksums[0]),
+                    envelope(EnvelopeType.FULL, START_INDEX + 1, byteData, checksums[1]));
         }
     }
 
@@ -214,7 +215,8 @@ class EnvelopeWriteChannelTest {
                     .isEqualTo(segmentSize * 2);
 
             assertEnvelopeContents(
-                    channelData(fileChannel, segmentSize), envelope(EnvelopeType.FULL, 0x431DB6DC, byteData));
+                    channelData(fileChannel, segmentSize),
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, 0x6C50ADE7));
 
             final var data = slice(buffer);
             skipHeader(data);
@@ -245,7 +247,8 @@ class EnvelopeWriteChannelTest {
                     .isEqualTo(segmentSize * 2 + HEADER_SIZE * 2);
 
             assertEnvelopeContents(
-                    channelData(fileChannel, segmentSize), envelope(EnvelopeType.BEGIN, 0x8000B647, firstEnvelope));
+                    channelData(fileChannel, segmentSize),
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, 0x43E374D4));
 
             // Second envelope only exists in the buffer
             final var data = buffer.getBuffer().position(0);
@@ -262,7 +265,7 @@ class EnvelopeWriteChannelTest {
         byte[] firstEnvelope = copyOfRange(byteData, 0, firstPayloadLength);
         byte[] secondEnvelope = copyOfRange(byteData, firstPayloadLength, segmentSize);
 
-        final int[] checksums = new int[] {0x7DEBB6B4, 0x89C58380};
+        final int[] checksums = new int[] {0x47AFB72B, 0x4796C421};
 
         final var fileChannel = storeChannel();
         final var buffer = buffer(segmentSize * 2);
@@ -279,10 +282,11 @@ class EnvelopeWriteChannelTest {
                     .isEqualTo(segmentSize + (HEADER_SIZE * 2) + byteData.length);
 
             assertEnvelopeContents(
-                    channelData(fileChannel, segmentSize), envelope(EnvelopeType.BEGIN, checksums[0], firstEnvelope));
+                    channelData(fileChannel, segmentSize),
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, checksums[0]));
 
             assertEnvelopeContents(
-                    slice(buffer), checksums[0], envelope(EnvelopeType.END, checksums[1], secondEnvelope));
+                    slice(buffer), checksums[0], envelope(EnvelopeType.END, START_INDEX, secondEnvelope, checksums[1]));
         }
     }
 
@@ -290,7 +294,7 @@ class EnvelopeWriteChannelTest {
     void writeAndPutChecksumThatDoesntFitWithinOneSegment() throws IOException {
         int segmentSize = 256;
         final var byteData = bytes(random, segmentSize);
-        final int[] checksums = new int[] {0x7F764EE3, 0xBEA45455};
+        final int[] checksums = new int[] {0x503B55D8, 0xAA05BDEB};
         final var firstPayloadLength = segmentSize - HEADER_SIZE;
         byte[] firstEnvelope = copyOfRange(byteData, 0, firstPayloadLength);
         byte[] secondEnvelope = copyOfRange(byteData, firstPayloadLength, segmentSize);
@@ -308,10 +312,11 @@ class EnvelopeWriteChannelTest {
                     .isEqualTo((segmentSize * 2) + (HEADER_SIZE * 2));
 
             assertEnvelopeContents(
-                    channelData(fileChannel, segmentSize), envelope(EnvelopeType.BEGIN, checksums[0], firstEnvelope));
+                    channelData(fileChannel, segmentSize),
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, checksums[0]));
 
             assertEnvelopeContents(
-                    slice(buffer), checksums[0], envelope(EnvelopeType.END, checksums[1], secondEnvelope));
+                    slice(buffer), checksums[0], envelope(EnvelopeType.END, START_INDEX, secondEnvelope, checksums[1]));
         }
     }
 
@@ -324,7 +329,7 @@ class EnvelopeWriteChannelTest {
         byte[] secondEnvelope = copyOfRange(byteData, segmentPayloadSize, segmentPayloadSize * 2);
         byte[] thirdEnvelope = copyOfRange(byteData, segmentPayloadSize * 2, segmentSize * 2);
 
-        final int[] checksums = new int[] {0x8000B647, 0x1663CDFE, 0x27CE2ABB};
+        final int[] checksums = new int[] {0x43E374D4, 0x85E9481C, 0x1582AD9F};
 
         final var fileChannel = storeChannel();
         final var buffer = buffer(segmentSize);
@@ -342,11 +347,11 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.BEGIN, checksums[0], firstEnvelope),
-                    envelope(EnvelopeType.MIDDLE, checksums[1], secondEnvelope));
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, checksums[0]),
+                    envelope(EnvelopeType.MIDDLE, START_INDEX, secondEnvelope, checksums[1]));
 
             assertEnvelopeContents(
-                    slice(buffer), checksums[1], envelope(EnvelopeType.END, checksums[2], thirdEnvelope));
+                    slice(buffer), checksums[1], envelope(EnvelopeType.END, START_INDEX, thirdEnvelope, checksums[2]));
         }
     }
 
@@ -372,9 +377,9 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.BEGIN, 0x7F764EE3, firstEnvelope),
-                    envelope(EnvelopeType.MIDDLE, 0x70FA4B8D, secondEnvelope),
-                    envelope(EnvelopeType.END, 0xB089CF81, thirdEnvelope));
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, 0x503B55D8),
+                    envelope(EnvelopeType.MIDDLE, START_INDEX, secondEnvelope, 0x19FCDEF1),
+                    envelope(EnvelopeType.END, START_INDEX, thirdEnvelope, 0x05EFB889));
         }
     }
 
@@ -400,9 +405,9 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.BEGIN, 0x7F764EE3, firstEnvelope),
-                    envelope(EnvelopeType.MIDDLE, 0x70FA4B8D, secondEnvelope),
-                    envelope(EnvelopeType.END, 0xB089CF81, thirdEnvelope));
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, 0x503B55D8),
+                    envelope(EnvelopeType.MIDDLE, START_INDEX, secondEnvelope, 0x19FCDEF1),
+                    envelope(EnvelopeType.END, START_INDEX, thirdEnvelope, 0x05EFB889));
         }
     }
 
@@ -414,7 +419,7 @@ class EnvelopeWriteChannelTest {
         byte[] secondEnvelope = copyOfRange(byteData, 0, beginChunkSize);
         byte[] thirdEnvelope = copyOfRange(byteData, beginChunkSize, segmentSize);
 
-        final int[] checksums = new int[] {0x282E7194, 0x3D9C576F, 0x92277C6C};
+        final int[] checksums = new int[] {0x93469D92, 0x1DD002AC, 0xB1871410};
 
         final var fileChannel = storeChannel();
 
@@ -436,13 +441,13 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.FULL, checksums[0], SMALL_BYTES, KERNEL_VERSION),
-                    envelope(EnvelopeType.BEGIN, checksums[1], secondEnvelope, KERNEL_VERSION));
+                    envelope(EnvelopeType.FULL, START_INDEX, SMALL_BYTES, KERNEL_VERSION, checksums[0]),
+                    envelope(EnvelopeType.BEGIN, START_INDEX + 1, secondEnvelope, KERNEL_VERSION, checksums[1]));
 
             assertEnvelopeContents(
                     slice(buffer),
                     checksums[1],
-                    envelope(EnvelopeType.END, checksums[2], thirdEnvelope, KERNEL_VERSION));
+                    envelope(EnvelopeType.END, START_INDEX + 1, thirdEnvelope, KERNEL_VERSION, checksums[2]));
         }
     }
 
@@ -452,7 +457,7 @@ class EnvelopeWriteChannelTest {
         final var paddingSize = SMALL_BYTES.length - 1;
         final var byteData = bytes(random, segmentSize - HEADER_SIZE - paddingSize);
 
-        final int[] checksums = new int[] {0x5216D282, 0xDF25CA4A};
+        final int[] checksums = new int[] {0x823B6BD6, 0x98649051};
 
         final var fileChannel = storeChannel();
         final var buffer = buffer(segmentSize);
@@ -473,10 +478,13 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.FULL, checksums[0], byteData),
-                    padding(paddingSize));
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, checksums[0]),
+                    padding(paddingSize, START_INDEX));
 
-            assertEnvelopeContents(slice(buffer), checksums[0], envelope(EnvelopeType.FULL, checksums[1], SMALL_BYTES));
+            assertEnvelopeContents(
+                    slice(buffer),
+                    checksums[0],
+                    envelope(EnvelopeType.FULL, START_INDEX + 1, SMALL_BYTES, checksums[1]));
         }
     }
 
@@ -502,9 +510,9 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.FULL, 0xE600726A, byteData),
-                    padding(paddingSize),
-                    envelope(EnvelopeType.FULL, 0xC53263F4, SMALL_BYTES));
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, 0x5EC7972E),
+                    padding(paddingSize, START_INDEX),
+                    envelope(EnvelopeType.FULL, START_INDEX + 1, SMALL_BYTES, 0xCEC86301));
         }
     }
 
@@ -533,9 +541,9 @@ class EnvelopeWriteChannelTest {
                     ByteBuffer.allocate(8).order(LITTLE_ENDIAN).putLong(value).array();
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.FULL, 0x11CB35F7, byteData),
-                    padding(paddingSize),
-                    envelope(EnvelopeType.FULL, 0xFFF8C92F, valueBytes));
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, 0x06ADE140),
+                    padding(paddingSize, START_INDEX),
+                    envelope(EnvelopeType.FULL, START_INDEX + 1, valueBytes, 0xDA75189B));
         }
     }
 
@@ -567,7 +575,7 @@ class EnvelopeWriteChannelTest {
 
         final var initialLogVersion = 1L;
 
-        final int[] checksums = new int[] {0x7F764EE3, 0x70FA4B8D, 0xE8A3B138};
+        final int[] checksums = new int[] {0x503B55D8, 0x19FCDEF1, 0x986D6E3E};
 
         final var fileChannel = storeChannel(initialLogVersion);
         final var buffer = buffer(segmentSize);
@@ -592,14 +600,14 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.BEGIN, checksums[0], firstEnvelope),
-                    envelope(EnvelopeType.MIDDLE, checksums[1], secondEnvelope));
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, checksums[0]),
+                    envelope(EnvelopeType.MIDDLE, START_INDEX, secondEnvelope, checksums[1]));
 
             try (var rotatedFileChannel = storeChannel(initialLogVersion + 1)) {
                 assertEnvelopeContents(
                         channelData(rotatedFileChannel, segmentSize * 2, segmentSize),
                         checksums[1],
-                        envelope(EnvelopeType.MIDDLE, checksums[2], thirdEnvelope));
+                        envelope(EnvelopeType.MIDDLE, START_INDEX, thirdEnvelope, checksums[2]));
             }
 
             final var data = slice(buffer);
@@ -619,7 +627,7 @@ class EnvelopeWriteChannelTest {
         byte[] thirdEnvelope = copyOfRange(byteData, segmentPayloadSize * 2, segmentPayloadSize * 3);
         byte[] forthEnvelope = copyOfRange(byteData, segmentPayloadSize * 3, segmentSize * 3);
 
-        final int[] checksums = new int[] {0x7F764EE3, 0x70FA4B8D, 0xE8A3B138, 0x5EE5525B};
+        final int[] checksums = new int[] {0x503B55D8, 0x19FCDEF1, 0x986D6E3E, 0xDBA7BB53};
 
         final var initialLogVersion = 1L;
         final var fileChannel = storeChannel(initialLogVersion);
@@ -650,18 +658,18 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.BEGIN, checksums[0], firstEnvelope),
-                    envelope(EnvelopeType.MIDDLE, checksums[1], secondEnvelope));
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, checksums[0]),
+                    envelope(EnvelopeType.MIDDLE, START_INDEX, secondEnvelope, checksums[1]));
 
             try (var rotatedFileChannel = storeChannel(initialLogVersion + 1)) {
                 assertEnvelopeContents(
                         channelData(rotatedFileChannel, segmentSize * 2, segmentSize),
                         checksums[1],
-                        envelope(EnvelopeType.MIDDLE, checksums[2], thirdEnvelope));
+                        envelope(EnvelopeType.MIDDLE, START_INDEX, thirdEnvelope, checksums[2]));
             }
 
             assertEnvelopeContents(
-                    slice(buffer), checksums[2], envelope(EnvelopeType.END, checksums[3], forthEnvelope));
+                    slice(buffer), checksums[2], envelope(EnvelopeType.END, START_INDEX, forthEnvelope, checksums[3]));
         }
     }
 
@@ -678,7 +686,7 @@ class EnvelopeWriteChannelTest {
 
         final var initialLogVersion = 1L;
 
-        final int[] checksums = new int[] {0x7F764EE3, 0x70FA4B8D, 0xE8A3B138, 0x5EE5525B};
+        final int[] checksums = new int[] {0x503B55D8, 0x19FCDEF1, 0x986D6E3E, 0xDBA7BB53};
 
         final var fileChannel = storeChannel(initialLogVersion);
         final var rotatedPath = logPath(initialLogVersion + 1);
@@ -708,15 +716,15 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.BEGIN, checksums[0], firstEnvelope),
-                    envelope(EnvelopeType.MIDDLE, checksums[1], secondEnvelope));
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, checksums[0]),
+                    envelope(EnvelopeType.MIDDLE, START_INDEX, secondEnvelope, checksums[1]));
 
             try (var rotatedFileChannel = storeChannel(initialLogVersion + 1)) {
                 assertEnvelopeContents(
                         channelData(rotatedFileChannel, (int) rotatedFileSize, segmentSize),
                         checksums[1],
-                        envelope(EnvelopeType.MIDDLE, checksums[2], thirdEnvelope),
-                        envelope(EnvelopeType.END, checksums[3], forthEnvelope));
+                        envelope(EnvelopeType.MIDDLE, START_INDEX, thirdEnvelope, checksums[2]),
+                        envelope(EnvelopeType.END, START_INDEX, forthEnvelope, checksums[3]));
             }
         }
     }
@@ -735,7 +743,7 @@ class EnvelopeWriteChannelTest {
 
         final var initialLogVersion = 0L;
 
-        final int[] checksums = new int[] {0x8000B647, 0x1663CDFE, 0x5A41CE8C, 0x80BECA17, 0x95FAB958};
+        final int[] checksums = new int[] {0x43E374D4, 0x85E9481C, 0x7A0C38AE, 0xD1F3CA61, 0x8AD499D4};
 
         final var fileChannel = storeChannel(initialLogVersion);
 
@@ -772,22 +780,22 @@ class EnvelopeWriteChannelTest {
 
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
-                    envelope(EnvelopeType.BEGIN, checksums[0], firstEnvelope),
-                    envelope(EnvelopeType.MIDDLE, checksums[1], secondEnvelope));
+                    envelope(EnvelopeType.BEGIN, START_INDEX, firstEnvelope, checksums[0]),
+                    envelope(EnvelopeType.MIDDLE, START_INDEX, secondEnvelope, checksums[1]));
 
             try (var rotatedFileChannel = storeChannel(initialLogVersion + 1)) {
                 assertEnvelopeContents(
                         channelData(rotatedFileChannel, maxLogFileSize, segmentSize),
                         checksums[1],
-                        envelope(EnvelopeType.MIDDLE, checksums[2], thirdEnvelope),
-                        envelope(EnvelopeType.MIDDLE, checksums[3], forthEnvelope));
+                        envelope(EnvelopeType.MIDDLE, START_INDEX, thirdEnvelope, checksums[2]),
+                        envelope(EnvelopeType.MIDDLE, START_INDEX, forthEnvelope, checksums[3]));
             }
 
             try (var rotatedFileChannel = storeChannel(initialLogVersion + 2)) {
                 assertEnvelopeContents(
                         channelData(rotatedFileChannel, segmentSize * 2, segmentSize),
                         checksums[3],
-                        envelope(EnvelopeType.END, checksums[4], fifthEnvelope));
+                        envelope(EnvelopeType.END, START_INDEX, fifthEnvelope, checksums[4]));
             }
         }
     }
@@ -841,7 +849,7 @@ class EnvelopeWriteChannelTest {
             channel.prepareForFlush();
 
             // Truncate to first entry
-            channel.truncateToPosition(truncatePosition, 0xCF1AE743);
+            channel.truncateToPosition(truncatePosition, 0xCF1AE743, START_INDEX + 1);
 
             // Channel should be usable after truncate
             channel.putVersion(KERNEL_VERSION);
@@ -856,13 +864,15 @@ class EnvelopeWriteChannelTest {
 
             ByteBuffer byteBuffer = channelData(fileChannel, (int) truncatePosition, segmentSize);
             assertEnvelopeContents(
-                    byteBuffer, envelope(EnvelopeType.FULL, 0xCF1AE743, new byte[] {100, 0, 0, 0, 0, 0, 0, 0}));
+                    byteBuffer,
+                    envelope(EnvelopeType.FULL, START_INDEX, new byte[] {100, 0, 0, 0, 0, 0, 0, 0}, 0x74DA50D6));
 
             try (var rotatedFileChannel = storeChannel(2)) {
                 assertEnvelopeContents(
                         channelData(rotatedFileChannel, (int) secondFilePosition, segmentSize),
                         0xCF1AE743,
-                        envelope(EnvelopeType.FULL, 0x7DBD3BE8, new byte[] {101, 0, 0, 0, 0, 0, 0, 0}));
+                        envelope(
+                                EnvelopeType.FULL, START_INDEX + 1, new byte[] {101, 0, 0, 0, 0, 0, 0, 0}, 0xCB77F190));
             }
         }
     }
@@ -966,8 +976,8 @@ class EnvelopeWriteChannelTest {
             DatabaseTracer databaseTracer)
             throws IOException {
         channel.position(segmentSize);
-        final var writeChannel =
-                new EnvelopeWriteChannel(channel, scopedBuffer, segmentSize, checksum, logRotation, databaseTracer);
+        final var writeChannel = new EnvelopeWriteChannel(
+                channel, scopedBuffer, segmentSize, checksum, START_INDEX, databaseTracer, logRotation);
         if (logRotation instanceof LogRotationForChannel rotator) {
             rotator.bindWriteChannel(writeChannel);
         }
@@ -1037,6 +1047,7 @@ class EnvelopeWriteChannelTest {
                     data,
                     chunk.checksum,
                     chunk.type,
+                    chunk.entryIndex,
                     chunk.data.length,
                     chunk.kernelVersion,
                     previousChecksum,
@@ -1051,6 +1062,7 @@ class EnvelopeWriteChannelTest {
             ByteBuffer buffer,
             int checksum,
             EnvelopeType type,
+            long entryIndex,
             int payloadLength,
             byte kernelVersion,
             int previousChecksum,
@@ -1063,45 +1075,53 @@ class EnvelopeWriteChannelTest {
         }
 
         int payloadChecksum = buffer.getInt();
-        // System.out.printf("%d : 0x%08X%n", payloadChecksum, payloadChecksum);
+        assertChecksum(payloadChecksum, checksum);
 
-        assertThat(payloadChecksum).as("checksum").isEqualTo(checksum);
         assertThat(buffer.get()).as("type").isEqualTo(type.typeValue);
         assertThat(buffer.getInt()).as("payloadLength").isEqualTo(payloadLength);
+        assertThat(buffer.getLong()).as("entryIndex").isEqualTo(entryIndex);
         assertThat(buffer.get()).as("kernelVersion").isEqualTo(kernelVersion);
         int previousPayloadChecksum = buffer.getInt();
         assertThat(previousPayloadChecksum).as("previousChecksum").isEqualTo(previousChecksum);
         assertBytesArray(buffer, payload);
     }
 
+    private static void assertChecksum(int actual, int expected) {
+        // System.out.printf("%d : 0x%08X%n", actual, actual);
+        assertThat(actual).as("checksum").isEqualTo(expected);
+    }
+
     private static final class EnvelopeChunk {
         private final EnvelopeType type;
         private final int checksum;
         private final byte[] data;
+        private final long entryIndex;
         private final byte kernelVersion;
 
-        private EnvelopeChunk(EnvelopeType type, int checksum, byte[] data) {
-            this(type, checksum, data, KERNEL_VERSION);
+        private EnvelopeChunk(EnvelopeType type, long entryIndex, int checksum, byte[] data) {
+            this(type, entryIndex, checksum, data, KERNEL_VERSION);
         }
 
-        private EnvelopeChunk(EnvelopeType type, int checksum, byte[] data, byte kernelVersion) {
+        private EnvelopeChunk(EnvelopeType type, long entryIndex, int checksum, byte[] data, byte kernelVersion) {
             this.type = type;
             this.checksum = checksum;
             this.data = data;
             this.kernelVersion = kernelVersion;
+            this.entryIndex = entryIndex;
         }
     }
 
-    private static EnvelopeChunk envelope(EnvelopeType begin, int checksum, byte[] payload) {
-        return new EnvelopeChunk(begin, checksum, payload);
+    private static EnvelopeChunk envelope(EnvelopeType type, long entryIndex, byte[] payload, int checksum) {
+        return new EnvelopeChunk(type, entryIndex, checksum, payload);
     }
 
-    private static EnvelopeChunk envelope(EnvelopeType begin, int checksum, byte[] payload, byte kernelVersion) {
-        return new EnvelopeChunk(begin, checksum, payload, kernelVersion);
+    private static EnvelopeChunk envelope(
+            EnvelopeType type, long entryIndex, byte[] payload, byte kernelVersion, int checksum) {
+        return new EnvelopeChunk(type, entryIndex, checksum, payload, kernelVersion);
     }
 
-    private static EnvelopeChunk padding(int size) {
-        return new EnvelopeChunk(EnvelopeType.ZERO, 0, new byte[size]);
+    private static EnvelopeChunk padding(int size, long entryIndex) {
+        return new EnvelopeChunk(EnvelopeType.ZERO, entryIndex, 0, new byte[size]);
     }
 
     private static void assertZeroHeaderBytes(ByteBuffer buffer) {

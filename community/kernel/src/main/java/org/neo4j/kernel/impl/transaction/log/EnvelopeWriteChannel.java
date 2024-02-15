@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
  * <strong>only</strong> flush up until the <em>last completed envelope</em>.
  */
 public class EnvelopeWriteChannel implements PhysicalLogChannel {
+    public static final long START_INDEX = 0;
     private static final byte[] PADDING_ZEROES = new byte[MAX_ZERO_PADDING_SIZE];
 
     private final Checksum checksum = CHECKSUM_FACTORY.get();
@@ -90,6 +91,9 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     private StoreChannel channel;
     private int currentEnvelopeStart;
     private byte currentVersion = IGNORE_KERNEL_VERSION;
+    // The index of the current entry. See LogEnvelopeHeader.index.
+    private long currentIndex;
+
     private int lastWrittenPosition;
     private boolean begin = true;
     private int nextSegmentOffset;
@@ -103,8 +107,9 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
             ScopedBuffer scopedBuffer,
             int segmentBlockSize,
             int initialChecksum,
-            LogRotation logRotation,
-            DatabaseTracer databaseTracer)
+            long currentIndex,
+            DatabaseTracer databaseTracer,
+            LogRotation logRotation)
             throws IOException {
         this.channel = requireNonNull(channel);
         this.scopedBuffer = requireNonNull(scopedBuffer);
@@ -115,7 +120,7 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         this.databaseTracer = requireNonNull(databaseTracer);
         this.buffer = scopedBuffer.getBuffer();
         this.checksumView = buffer.duplicate().order(buffer.order());
-
+        this.currentIndex = currentIndex;
         requireMultipleOf("Buffer", buffer.capacity(), "segment block size", segmentBlockSize);
 
         initialPositions(channel.position());
@@ -317,13 +322,14 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         return !closed;
     }
 
-    public void truncateToPosition(long position, int previousChecksum) throws IOException {
+    public void truncateToPosition(long position, int previousChecksum, long currentIndex) throws IOException {
         requireNonNegative(position);
         checkArgument(position <= channel.position(), "Can only truncate written data.");
         checkArgument(position >= segmentBlockSize, "Truncating the first segment is not possible");
         this.previousChecksum = previousChecksum;
         channel.truncate(position);
         rotateLogFile();
+        this.currentIndex = currentIndex;
     }
 
     @Override
@@ -380,7 +386,11 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         int checksumStartOffset = currentEnvelopeStart + Integer.BYTES;
         buffer.position(checksumStartOffset);
         assert currentVersion != -1;
-        buffer.put(type.typeValue).putInt(payLoadLength).put(currentVersion).putInt(previousChecksum);
+        buffer.put(type.typeValue)
+                .putInt(payLoadLength)
+                .putLong(currentIndex)
+                .put(currentVersion)
+                .putInt(previousChecksum);
 
         // Calculate the checksum and insert
         checksum.reset();
@@ -392,6 +402,9 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         buffer.position(payloadEndOffset);
         currentEnvelopeStart = payloadEndOffset;
         begin = end;
+        if (end) {
+            currentIndex++;
+        }
     }
 
     private static EnvelopeType completedEnvelopeType(boolean begin, boolean end) {

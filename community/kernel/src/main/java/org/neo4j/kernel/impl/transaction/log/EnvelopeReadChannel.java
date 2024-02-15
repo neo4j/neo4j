@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.EnvelopeTyp
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * A channel for reading segmented data from a file. All reads are buffer, one segment at a time.
@@ -99,6 +100,7 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     private int previousChecksum;
     private long currentSegment;
     private EnvelopeType payloadType;
+    private long entryIndex;
     private byte payloadVersion;
     private int payloadStartOffset;
     private int payloadEndOffset;
@@ -140,6 +142,11 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
                 scopedBuffer.close();
             }
         }
+    }
+
+    @VisibleForTesting
+    long entryIndex() {
+        return entryIndex;
     }
 
     @Override
@@ -461,11 +468,13 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         }
 
         int nextPayloadLength = buffer.getInt();
+        long nextPayloadIndex = buffer.getLong();
         byte nextPayloadVersion = buffer.get();
         int previousEnvelopeChecksumFromHeader = buffer.getInt();
 
         payloadType = nextEnvelopeType;
         payloadVersion = nextPayloadVersion;
+        entryIndex = nextPayloadIndex;
         payloadStartOffset = buffer.position();
         payloadEndOffset = payloadStartOffset + nextPayloadLength;
         if (payloadEndOffset > segmentBlockSize) {

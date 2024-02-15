@@ -34,6 +34,10 @@ import org.neo4j.kernel.KernelVersion;
 public record LogEnvelopeHeader(
         // The type of the envelope
         EnvelopeType type,
+        // The index of the entry that this envelope belongs to. An entry can be composed of a single FULL
+        // or a combination of BEGIN, MIDDLE and END envelopes, in which case all of them will have the same
+        // index.
+        long index,
         // The length of the data payload within the envelope
         int payLoadLength,
         /*
@@ -51,10 +55,11 @@ public record LogEnvelopeHeader(
         int payloadChecksum) {
 
     public static final int HEADER_SIZE = Integer.BYTES // payload checksum
+            + Byte.BYTES // envelope type
             + Integer.BYTES // payload length
+            + Long.BYTES // entry index
             + Byte.BYTES // kernel version
-            + Integer.BYTES // previous checksum
-            + Byte.BYTES; // envelope type
+            + Integer.BYTES; // previous checksum
 
     public static final int MAX_ZERO_PADDING_SIZE = Long.BYTES + LogEnvelopeHeader.HEADER_SIZE;
 
