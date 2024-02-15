@@ -148,7 +148,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
                 retry = false
               } catch {
                 case _: DeadlockDetectedException =>
-                case t: Throwable => throw new RuntimeException(t)
+                case t: Throwable                 => throw new RuntimeException(t)
               }
             }
           }
@@ -159,7 +159,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     // And while waiting for all scrambler futures threads to be done,
     // execute the read query and assert that results are in ascending order.
     try {
-      while(futures.exists(!_.isDone)) {
+      while (futures.exists(!_.isDone)) {
         var retry = true
         while (retry) {
           try {
@@ -172,7 +172,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
             retry = false
           } catch {
             case _: DeadlockDetectedException =>
-            case t: Throwable => throw new RuntimeException(t)
+            case t: Throwable                 => throw new RuntimeException(t)
           }
         }
       }
