@@ -214,16 +214,13 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
       case JavaCc =>
         isTyped(add(listOf(trueLiteral), prop("n", "p")), StringType(isNullable = true)(pos))
       case Antlr =>
-        isTyped(add(null, null), null)
+        isTyped(add(null, null), StringType(isNullable = true)(pos))
     }
 
     // (3 - 4) IS NOT TYPED BOOLEAN
-    "3 - 4 IS NOT :: BOOLEAN" should parseAs[Expression].toAsts {
-      case JavaCc =>
-        isNotTyped(subtract(literalInt(3), literalInt(4)), BooleanType(isNullable = true)(pos))
-      case Antlr =>
-        isNotTyped(subtract(literalInt(3), literalInt(4)), null)
-    }
+    "3 - 4 IS NOT :: BOOLEAN" should parseTo[Expression](
+      isNotTyped(subtract(literalInt(3), literalInt(4)), BooleanType(isNullable = true)(pos))
+    )
   }
 
   test("precedence 6 - left-associativity") {

@@ -175,29 +175,25 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("all combinations of types should behave") {
     forAll(allCombinations) { case (typeString, typeExpr) =>
-      s"x IS :: $typeString" should parseAs[Expression].toAsts {
-        case JavaCc => isTyped(varFor("x"), typeExpr)
-        case Antlr  => isTyped(varFor("x"), null)
-      }
+      // Java CC produces invalid input positions in some cases
+      s"x IS :: $typeString" should parseAs[Expression].toAstIgnorePos(isTyped(varFor("x"), typeExpr))
 
       s"n.prop IS TYPED $typeString" should parseAs[Expression].toAsts {
         case JavaCc => isTyped(prop(varFor("n"), "prop"), typeExpr)
-        case Antlr  => isTyped(null, null)
+        case Antlr  => isTyped(null, typeExpr)
       }
 
-      s"5 :: $typeString" should parseAs[Expression].toAsts {
-        case JavaCc => isTyped(literalInt(5L), typeExpr)
-        case Antlr  => isTyped(literalInt(5L), null)
-      }
+      // Java CC produces invalid input positions in some cases
+      s"5 :: $typeString" should parseAs[Expression].toAstIgnorePos(isTyped(literalInt(5L), typeExpr))
 
-      s"x + y IS NOT :: $typeString" should parseAs[Expression].toAsts {
-        case JavaCc => isNotTyped(add(varFor("x"), varFor("y")), typeExpr)
-        case Antlr  => isNotTyped(add(varFor("x"), varFor("y")), null)
+      // Java CC produces invalid input positions in some cases
+      s"x + y IS NOT :: $typeString" should parseAs[Expression].toAstIgnorePos {
+        isNotTyped(add(varFor("x"), varFor("y")), typeExpr)
       }
 
       s"['a', 'b', 'c'] IS NOT TYPED $typeString" should parseAs[Expression].toAsts {
         case JavaCc => isNotTyped(listOfString("a", "b", "c"), typeExpr)
-        case Antlr  => isNotTyped(null, null)
+        case Antlr  => isNotTyped(null, typeExpr)
       }
 
       // This should not be supported according to CIP-87

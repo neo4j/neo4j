@@ -303,10 +303,10 @@ expression7:
    expression6 comparisonExpression6?;
 
 comparisonExpression6
-   : (REGEQ | STARTS WITH | ENDS WITH | CONTAINS | IN) expression6      #StringAndListComparison
-   | IS NOT? NULL                                                       #NullComparison
-   | (IS NOT? (TYPED | COLONCOLON) | COLONCOLON) cypherTypeNameList     #TypeComparison
-   | IS NOT? normalForm? NORMALIZED                                     #NormalFormComparison
+   : (REGEQ | STARTS WITH | ENDS WITH | CONTAINS | IN) expression6 #StringAndListComparison
+   | IS NOT? NULL                                                  #NullComparison
+   | (IS NOT? (TYPED | COLONCOLON) | COLONCOLON) type              #TypeComparison
+   | IS NOT? normalForm? NORMALIZED                                #NormalFormComparison
    ;
 
 normalForm:
@@ -528,13 +528,47 @@ stringsOrExpression:
 createConstraint:
    CONSTRAINT (ON LPAREN | FOR LPAREN | IF NOT EXISTS (ON | FOR) LPAREN | symbolicNameOrStringParameter? (IF NOT EXISTS)? (ON | FOR) LPAREN) (
        constraintNodePattern | constraintRelPattern
-   ) (ASSERT EXISTS propertyList | (REQUIRE | ASSERT) propertyList (COLONCOLON cypherTypeNameList | IS (UNIQUE | KEY | createConstraintNodeCheck | createConstraintRelCheck | NOT NULL | (TYPED | COLONCOLON) cypherTypeNameList))) (OPTIONS mapOrParameter)?;
+   ) (ASSERT EXISTS propertyList | (REQUIRE | ASSERT) propertyList (COLONCOLON type | IS (UNIQUE | KEY | createConstraintNodeCheck | createConstraintRelCheck | NOT NULL | (TYPED | COLONCOLON) type))) (OPTIONS mapOrParameter)?;
 
-cypherTypeNameList:
-   cypherTypeNamePart (BAR cypherTypeNamePart)*;
+type:
+   typePart (BAR typePart)*;
 
-cypherTypeNamePart:
-   (NOTHING | NULL | BOOLEAN | STRING | INT | SIGNED? INTEGER | FLOAT | DATE | LOCAL (TIME | DATETIME) | ZONED (TIME | DATETIME) | TIME (WITHOUT TIMEZONE | WITH TIMEZONE) | TIMESTAMP (WITHOUT TIMEZONE | WITH TIMEZONE) | DURATION | POINT | NODE | VERTEX | RELATIONSHIP | EDGE | MAP | (LIST | ARRAY) LT cypherTypeNameList GT | PATH | PROPERTY VALUE | ANY (NODE | VERTEX | RELATIONSHIP | EDGE | MAP | PROPERTY VALUE | VALUE? LT cypherTypeNameList GT | VALUE?)) (NOT NULL | EXCLAMATION_MARK)? ((LIST | ARRAY) (NOT NULL | EXCLAMATION_MARK)?)*;
+typePart:
+   typeName typeNullability? typeListSuffix*;
+
+typeName
+   // Note! These are matched based on the first token. Take precaution in ExpressionBuilder.scala when modifying
+   : NOTHING
+   | NULL
+   | BOOLEAN
+   | STRING
+   | INT
+   | SIGNED? INTEGER
+   | FLOAT
+   | DATE
+   | LOCAL (TIME | DATETIME)
+   | ZONED (TIME | DATETIME)
+   | TIME (WITHOUT TIMEZONE | WITH TIMEZONE)
+   | TIMESTAMP (WITHOUT TIMEZONE | WITH TIMEZONE)
+   | DURATION
+   | POINT
+   | NODE
+   | VERTEX
+   | RELATIONSHIP
+   | EDGE
+   | MAP
+   | (LIST | ARRAY) LT type GT
+   | PATH
+   | PROPERTY VALUE
+   | ANY (NODE | VERTEX | RELATIONSHIP | EDGE | MAP | PROPERTY VALUE | VALUE? LT type GT | VALUE)?
+   ;
+
+
+ typeNullability:
+    (NOT NULL | EXCLAMATION_MARK);
+
+ typeListSuffix:
+    (LIST | ARRAY) typeNullability?;
 
 constraintNodePattern:
    variable labelOrRelType RPAREN;

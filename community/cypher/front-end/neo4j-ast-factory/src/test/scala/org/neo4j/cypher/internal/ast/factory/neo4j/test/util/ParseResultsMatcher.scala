@@ -160,7 +160,7 @@ trait AstMatchers {
         .flatMap {
           case Seq((parserA, resultA), (parserB, resultB)) =>
             findPosMismatch(resultA.toTry.get, resultB.toTry.get)
-              .map(m => Vector(Seq(parserA, parserB), m))
+              .map(m => Vector[Any](Seq(parserA, parserB), m, results.cypher))
           case _ => None
         }
         .nextOption()
@@ -168,9 +168,11 @@ trait AstMatchers {
       MatchResult(
         mismatch.isEmpty,
         """Expected parsers {0} to have equal positions but found mismatch:
-          |{1}""".stripMargin,
+          |{1}
+          |
+          |Cypher:{2}""".stripMargin,
         "Expected parsers {0} to not have equal positions but found no mismatch",
-        mismatch.getOrElse(Vector(parsers, None))
+        mismatch.getOrElse(Vector(parsers, None, results.cypher))
       )
     }
   }
