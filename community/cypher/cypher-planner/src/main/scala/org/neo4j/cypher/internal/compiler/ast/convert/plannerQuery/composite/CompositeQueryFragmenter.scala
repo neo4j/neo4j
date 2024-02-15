@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.composite
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.composite.CompositeQuery.Single
 import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -28,8 +27,6 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.symbols.CTAny
-
-import scala.annotation.tailrec
 
 object CompositeQueryFragmenter {
 
@@ -113,7 +110,7 @@ object CompositeQueryFragmenter {
             val subQuery = fragmentQuery(cancellationChecker, nameGenerator, existingParameterNames, innerQuery)
             fragments.addSubQuery(
               subQuery,
-              innerQuery.isCorrelated || hasGraphReferenceDependencies(subQuery),
+              innerQuery.isCorrelated,
               innerQuery.isReturning,
               call.inTransactionsParameters
             )
@@ -122,36 +119,6 @@ object CompositeQueryFragmenter {
         }
         fragments.result()
     }
-
-  /**
-   * Checks whether the query, or any of its component in the case of a union, has any graph reference dependencies.
-   * A graph reference can only depend on its direct parent query, so this function does not recurse into sub-queries.
-   *
-   * For example:
-   * {{{
-   *   UNWIND ['db.customerAME', 'db.customerEU'] as component
-   *   CALL {
-   *     USE graph.byName(component) // depends on `component`, defined in its parent query, without importing it
-   *     MATCH (n)
-   *     RETURN n.prop as prop
-   *   }
-   *   RETURN prop
-   * }}}
-   */
-  @tailrec
-  private def hasGraphReferenceDependencies(query: CompositeQuery): Boolean = {
-    def checkSingleQuery(singleQuery: CompositeQuery.Single): Boolean =
-      singleQuery match {
-        case Single.Foreign(graphReference, _, _) => graphReference.dependencies.nonEmpty
-        case Single.Fragments(_, _)               => false // no need to recurse into sub-queries
-      }
-
-    query match {
-      case single: Single => checkSingleQuery(single)
-      case CompositeQuery.Union(_, lhs, rhs, _) =>
-        checkSingleQuery(rhs) || hasGraphReferenceDependencies(lhs)
-    }
-  }
 
   /**
    * The clauses making up a composite (sub-)query.

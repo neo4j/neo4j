@@ -109,7 +109,14 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def returnVariables: ReturnVariables = clauses.last.returnVariables
 
-  override def isCorrelated: Boolean = partitionedClauses.importingWith.isDefined
+  /**
+   * The query is correlated if it imports variables from a parent query, this can happen if:
+   *   - it contains an importing `WITH` clause (in first position or in second position right after a `USE` clause), or
+   *   - it starts with a dynamic `USE` clause where the graph reference depends on a variable when invoking `graph.byName` or `graph.byElementId` (in a composite query).
+   */
+  override def isCorrelated: Boolean =
+    partitionedClauses.importingWith.isDefined ||
+      partitionedClauses.initialGraphSelection.exists(_.graphReference.dependencies.nonEmpty)
 
   override def isReturning: Boolean = clauses.last match {
     case _: Return => true
