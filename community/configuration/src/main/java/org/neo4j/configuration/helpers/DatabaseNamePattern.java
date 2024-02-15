@@ -28,20 +28,23 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public class DatabaseNamePattern {
     private final Optional<Pattern> regexPattern;
     private final String databaseName;
+    private final String normalizedDatabaseName;
 
     public DatabaseNamePattern(String name) {
         validateDatabaseNamePattern(name);
         this.regexPattern =
                 ConfigPatternBuilder.optionalPatternFromConfigString(name.toLowerCase(), Pattern.CASE_INSENSITIVE);
         this.databaseName = name;
+        this.normalizedDatabaseName = new NormalizedDatabaseName(name).name();
     }
 
     public boolean matches(String value) {
-        return regexPattern.map(p -> p.matcher(value).matches()).orElse(databaseName.equals(value));
+        return regexPattern.map(p -> p.matcher(value).matches()).orElse(normalizedDatabaseName.equals(value));
     }
 
     public boolean containsPattern() {
@@ -50,6 +53,10 @@ public class DatabaseNamePattern {
 
     public String getDatabaseName() {
         return databaseName;
+    }
+
+    public String getNormalizedDatabaseName() {
+        return normalizedDatabaseName;
     }
 
     @Override
