@@ -220,13 +220,7 @@ class ProfilingParallelTrackingQueryMemoryTracker extends QueryMemoryTracker
     }
   }
 
-  override def heapHighWaterMark(): Long = {
-    var count = 0L
-    memoryPerOperator.forEachValue(v => {
-      count += v.heapHighWaterMark()
-    })
-    count
-  }
+  override def heapHighWaterMark(): Long = delegate.heapHighWaterMark()
 
   override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = memoryPerOperator.computeIfAbsent(
     operatorId,
