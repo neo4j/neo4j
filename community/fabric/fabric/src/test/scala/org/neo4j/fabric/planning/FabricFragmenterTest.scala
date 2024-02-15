@@ -275,7 +275,7 @@ class FabricFragmenterTest
       val frag = fragment(
         """WITH 1 AS x
           |CALL {
-          |  USE g(x)
+          |  USE graph.byName(x)
           |  RETURN 2 AS y
           |}
           |RETURN x
@@ -284,7 +284,7 @@ class FabricFragmenterTest
 
       inside(frag) {
         case Leaf(Apply(_, inner: Leaf, _), _, _) =>
-          inner.use.shouldEqual(Declared(use(function("g", calledFromUseClause = true, varFor("x")))))
+          inner.use.shouldEqual(Declared(use(useClauseFunction(Seq("graph"), "byName", varFor("x")))))
       }
     }
 
@@ -293,7 +293,7 @@ class FabricFragmenterTest
         """WITH 1 AS x
           |CALL {
           |  WITH x
-          |  USE g(x)
+          |  USE graph.byName(x)
           |  RETURN 2 AS y
           |}
           |RETURN x
@@ -302,7 +302,7 @@ class FabricFragmenterTest
 
       inside(frag) {
         case Leaf(Apply(_, inner: Leaf, _), _, _) =>
-          inner.use.shouldEqual(Declared(use(function("g", calledFromUseClause = true, varFor("x")))))
+          inner.use.shouldEqual(Declared(use(useClauseFunction(Seq("graph"), "byName", varFor("x")))))
       }
     }
 
@@ -313,7 +313,7 @@ class FabricFragmenterTest
           fragment(
             """WITH 1 AS x
               |CALL {
-              |  USE g(z)
+              |  USE graph.byName(z)
               |  RETURN 2 AS y
               |}
               |RETURN x
@@ -332,7 +332,7 @@ class FabricFragmenterTest
             """WITH 1 AS x, 2 AS y
               |CALL {
               |  WITH x
-              |  USE g(y)
+              |  USE graph.byName(y)
               |  RETURN 2 AS z
               |}
               |RETURN z

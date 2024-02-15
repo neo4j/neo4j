@@ -364,7 +364,7 @@ class SubqueryCallSemanticAnalysisTest
       """
         |WITH 1 AS g, 2 AS k
         |CALL {
-        |  USE v(g, w(k))
+        |  USE graph.byName(g, w(k))
         |  RETURN 1 AS a
         |}
         |RETURN a
@@ -377,7 +377,7 @@ class SubqueryCallSemanticAnalysisTest
       """
         |WITH 1 AS g, 2 AS k
         |CALL {
-        |  USE v(g, w(k))
+        |  USE graph.byName(g, w(k))
         |  RETURN 1 AS a
         |}
         |RETURN a
@@ -386,7 +386,7 @@ class SubqueryCallSemanticAnalysisTest
       query,
       Set(
         SemanticError(
-          messageProvider.createDynamicGraphReferenceUnsupportedError("v(g, w(k))"),
+          messageProvider.createDynamicGraphReferenceUnsupportedError("graph.byName(g, w(k))"),
           InputPosition(30, 4, 3)
         )
       ),
@@ -399,7 +399,7 @@ class SubqueryCallSemanticAnalysisTest
       """
         |WITH 1 AS g, 2 AS k
         |CALL {
-        |  USE a.b.v(g, x.g(), x.v(k))
+        |  USE graph.byName(g, x.g(), x.v(k))
         |  RETURN 1 AS a
         |}
         |RETURN a
@@ -412,7 +412,7 @@ class SubqueryCallSemanticAnalysisTest
       """
         |WITH 1 AS x
         |CALL {
-        |  USE v(2, 'x', x, x+3)
+        |  USE graph.byName(2, 'x', x, x+3)
         |  RETURN 1 AS a
         |}
         |RETURN a
@@ -425,7 +425,7 @@ class SubqueryCallSemanticAnalysisTest
       """
         |WITH 1 AS x
         |CALL {
-        |  USE v(2, 'x', y, x+3)
+        |  USE graph.byName(2, 'x', y, x+3)
         |  RETURN 1 AS a
         |}
         |RETURN a
@@ -433,7 +433,7 @@ class SubqueryCallSemanticAnalysisTest
 
     expectErrorsFrom(
       query,
-      Set(SemanticError("Variable `y` not defined", InputPosition(36, 4, 17))),
+      Set(SemanticError("Variable `y` not defined", InputPosition(47, 4, 28))),
       pipelineWithUseAsMultipleGraphsSelector
     )
   }
@@ -636,7 +636,7 @@ class SubqueryCallSemanticAnalysisTest
   override def messageProvider: ErrorMessageProvider = new ErrorMessageProviderAdapter {
 
     override def createDynamicGraphReferenceUnsupportedError(graphName: String): String =
-      "A very nice message explaining why dynamic graph references are not allowed" + graphName
+      "A very nice message explaining why dynamic graph references are not allowed: " + graphName
 
     override def createMultipleGraphReferencesError(graphName: String, transactionalDefault: Boolean = false): String =
       "A very nice message explaining why multiple graph references are not allowed: " + graphName

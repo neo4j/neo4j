@@ -92,6 +92,8 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions.Function.isIdFunction
+import org.neo4j.cypher.internal.expressions.functions.GraphByElementId
+import org.neo4j.cypher.internal.expressions.functions.GraphByName
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
@@ -108,6 +110,7 @@ import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTGraphRef
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -456,7 +459,7 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
 
   private def checkDynamicGraphSelector: SemanticCheck =
     graphReference match {
-      case gr: GraphFunctionReference => checkExpressions(gr.functionInvocation.args)
+      case gr: GraphFunctionReference => gr.checkFunctionCall chain checkExpressions(gr.functionInvocation.args)
       case _: GraphDirectReference    => success
     }
 
@@ -513,6 +516,18 @@ final case class GraphFunctionReference(functionInvocation: FunctionInvocation)(
   val position: InputPosition
 ) extends GraphReference with SemanticAnalysisTooling {
   override def print: String = ExpressionStringifier(_.asCanonicalStringVal).apply(functionInvocation)
+
+  def checkFunctionCall: SemanticCheck = {
+    functionInvocation.function match {
+      case GraphByName      => success
+      case GraphByElementId => success
+      case _ =>
+        SemanticCheck.error(SemanticError(
+          s"Type mismatch: USE clause must be given a ${CTGraphRef.toString}. Use either the name or alias of a database or the graph functions `graph.byName` and `graph.byElementId`.",
+          functionInvocation.position
+        ))
+    }
+  }
 }
 
 trait SingleRelTypeCheck {

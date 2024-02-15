@@ -658,7 +658,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
   test("subquery leading USE may reference outer variables") {
     // WITH 1 AS x, 2 AS y
     // CALL {
-    //   USE g(x, y)
+    //   USE graph.byName(x, y)
     //   WITH x
     //   RETURN 1 AS z
     // }
@@ -666,7 +666,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     singleQuery(
       with_(literal(1).as("x"), literal(2).as("y")),
       subqueryCall(
-        use(function("g", varFor("x"), varFor("y"))),
+        use(function("graph.byName", varFor("x"), varFor("y"))),
         with_(varFor("x").aliased),
         return_(literal(1).as("z"))
       ),
@@ -680,7 +680,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // WITH 1 AS x, 2 AS y
     // CALL {
     //   WITH x
-    //   USE g(x, y)
+    //   USE graph.byName(x, y)
     //   RETURN 3 AS z
     // }
     // RETURN x, y
@@ -688,7 +688,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       with_(literal(1).as("x"), literal(2).as("y")),
       subqueryCall(
         with_(varFor("x").aliased),
-        use(function("g", varFor("x"), varFor("y"))),
+        use(function("graph.byName", varFor("x"), varFor("y"))),
         return_(literal(3).as("z"))
       ),
       return_(varFor("x").aliased, varFor("y").aliased)

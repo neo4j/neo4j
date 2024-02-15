@@ -383,6 +383,15 @@ trait AstConstructionTestSupport {
   def function(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(Namespace(ns.toList)(pos), FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
+  def useClauseFunction(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
+    FunctionInvocation(
+      Namespace(ns.toList)(pos),
+      FunctionName(name)(pos),
+      distinct = false,
+      args.toIndexedSeq,
+      calledFromUseClause = true
+    )(pos)
+
   def function(
     name: String,
     order: ArgumentOrder,

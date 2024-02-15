@@ -453,7 +453,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   test("Allow view invocation in USE when UseAsMultipleGraphsSelector feature is set") {
     val query =
       """
-        |USE v($g, w($k))
+        |USE graph.byName($g, w($k))
         |RETURN 1
         |""".stripMargin
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
@@ -462,14 +462,14 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   test("Don't allow view invocation in USE when UseAsSingleGraphSelector feature is set") {
     val query =
       """
-        |USE v($g, w($k))
+        |USE graph.byName($g, w($k))
         |RETURN 1
         |""".stripMargin
     expectErrorsFrom(
       query,
       Set(
         SemanticError(
-          messageProvider.createDynamicGraphReferenceUnsupportedError("v($g, w($k))"),
+          messageProvider.createDynamicGraphReferenceUnsupportedError("graph.byName($g, w($k))"),
           InputPosition(1, 2, 1)
         )
       ),
@@ -480,22 +480,22 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   test("Allow qualified view invocation in USE") {
     val query =
       """
-        |USE a.b.v($g, x.g(), x.v($k))
+        |USE graph.byName($g, x.g(), x.v($k))
         |RETURN 1
         |""".stripMargin
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
   }
 
   test("Allow expressions in view invocations (with feature flag)") {
-    val query = "USE v(2, 'x', $x, $x+3) RETURN 1"
+    val query = "USE graph.byName(2, 'x', $x, $x+3) RETURN 1"
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
   }
 
   test("Expressions in view invocations are checked (with feature flag)") {
-    val query = "USE v(2, 'x', y, $x+3) RETURN 1"
+    val query = "USE graph.byName(2, 'x', y, $x+3) RETURN 1"
     expectErrorsFrom(
       query,
-      Set(SemanticError("Variable `y` not defined", InputPosition(14, 1, 15))),
+      Set(SemanticError("Variable `y` not defined", InputPosition(25, 1, 26))),
       pipelineWithUseAsMultipleGraphsSelector
     )
   }

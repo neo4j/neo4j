@@ -104,7 +104,7 @@ abstract class CommunityQueryRoutingAcceptanceTest(newStackEnabled: java.lang.Bo
     val query =
       """
         |WITH 1 AS g
-        |USE v(g)
+        |USE graph.byElementId(g)
         |RETURN 1
         |""".stripMargin
 
@@ -113,7 +113,7 @@ abstract class CommunityQueryRoutingAcceptanceTest(newStackEnabled: java.lang.Bo
         SYSTEM_DATABASE_NAME,
         query,
         Status.Statement.SyntaxError,
-        MessageUtilProvider.createDynamicGraphReferenceUnsupportedError("v(g)")
+        MessageUtilProvider.createDynamicGraphReferenceUnsupportedError("graph.byElementId(g)")
       )
     } else {
       failWithError(
