@@ -125,13 +125,8 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
             TransactionState txState = read.txState();
             return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
         } else if (hasChanges()) {
-            // Get labels from store and put in intSet, unfortunately we get longs back
             TransactionState txState = read.txState();
-            final MutableIntSet labels = new IntHashSet();
-            for (int labelToken : storeCursor.labels()) {
-                labels.add(labelToken);
-            }
-
+            final MutableIntSet labels = new IntHashSet(storeCursor.labels());
             // Augment what was found in store with what we have in tx state
             return Labels.from(txState.augmentLabels(labels, txState.getNodeState(storeCursor.entityReference())));
         } else {
@@ -148,15 +143,9 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
             properties(propertyCursor, selection);
             return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
         } else if (hasChanges()) {
-            // Get labels from store and put in intSet, unfortunately we get longs back
             TransactionState txState = read.txState();
-            final MutableIntSet labels = new IntHashSet();
-            for (int labelToken : storeCursor.labels()) {
-                labels.add(labelToken);
-            }
-
+            final MutableIntSet labels = new IntHashSet(storeCursor.labels());
             properties(propertyCursor, selection);
-
             // Augment what was found in store with what we have in tx state
             return Labels.from(txState.augmentLabels(labels, txState.getNodeState(storeCursor.entityReference())));
         } else {
@@ -203,7 +192,6 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         if (tracer != null) {
             tracer.onHasLabel(label);
         }
-        // Get labels from store and put in intSet, unfortunately we get longs back
         return storeCursor.hasLabel(label);
     }
 
