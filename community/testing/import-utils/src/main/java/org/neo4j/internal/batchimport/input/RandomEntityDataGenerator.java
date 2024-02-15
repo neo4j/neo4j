@@ -83,7 +83,7 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
                                             break;
                                         }
                                         // referencing some very likely non-existent node id
-                                        nodeId = randoms.nextLong();
+                                        nodeId = randoms.nextLong() & 0xFFFFFF_FFFFFFFFL;
                                     }
                                 }
                                 if (entry.type() == Type.START_ID) {
