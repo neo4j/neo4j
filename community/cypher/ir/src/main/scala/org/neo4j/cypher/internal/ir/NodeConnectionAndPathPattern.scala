@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier.backtick
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -144,7 +145,7 @@ final case class PatternRelationship(
   override def toString: String = solvedString
 
   override def solvedString: String =
-    s"(${boundaryNodes._1.name})$solvedStringSuffix"
+    s"(${backtick(boundaryNodes._1.name)})$solvedStringSuffix"
 
   override def solvedStringSuffix: String = {
     val lArrow = if (dir == SemanticDirection.INCOMING) "<" else ""
@@ -161,7 +162,7 @@ final case class PatternRelationship(
       case VarPatternLength(x, None)        => s"*$x.."
       case VarPatternLength(min, Some(max)) => s"*$min..$max"
     }
-    s"$lArrow-[${variable.name}$typesStr$lengthStr]-$rArrow(${boundaryNodes._2.name})"
+    s"$lArrow-[${backtick(variable.name)}$typesStr$lengthStr]-$rArrow(${backtick(boundaryNodes._2.name)})"
   }
 }
 
@@ -275,11 +276,11 @@ final case class QuantifiedPathPattern(
     val where =
       if (selections.isEmpty) ""
       else selections.flatPredicates.map(QueryGraph.stringifier(_)).mkString(" WHERE ", " AND ", "")
-    s" (${ExhaustiveNodeConnection.solvedString(patternRelationships.toIndexedSeq)}$where)${repetition.solvedString} (${rightBinding.outer.name})"
+    s" (${ExhaustiveNodeConnection.solvedString(patternRelationships.toIndexedSeq)}$where)${repetition.solvedString} (${backtick(rightBinding.outer.name)})"
   }
 
   override def solvedString: String =
-    s"(${leftBinding.outer.name})$solvedStringSuffix"
+    s"(${backtick(leftBinding.outer.name)})$solvedStringSuffix"
 
   val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies) ++ argumentIds
 

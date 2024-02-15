@@ -51,7 +51,10 @@ class SolvedStringTest extends CypherFunSuite with LogicalPlanningTestSupport wi
     "ANY SHORTEST (a) ((b:B)-[r:R]->(c:C) WHERE r.prop = 0)+ (d)" -> "SHORTEST 1 ((a) ((b)-[r:R]->(c) WHERE b:B AND c:C AND r.prop IN [0]){1, } (d) WHERE unique(r))",
     // Test different patterns
     "ANY SHORTEST (a)-[r:R]-(b)<-[r2:R2]-(c) ((c_in)-[q:Q]->(d_in))+ (d) ((d_in2)-[q2:Q2]->(e_in))+ (e)" -> "SHORTEST 1 ((a)-[r:R]-(b)<-[r2:R2]-(c) ((c_in)-[q:Q]->(d_in)){1, } (d) ((d_in2)-[q2:Q2]->(e_in)){1, } (e) WHERE unique(q) AND unique(q2))",
-    "ANY SHORTEST (a) ((a_in)-[r:R]->(b_in)<-[r2:R2]-(c_in))+ (c)-[r3:R3]-(d)" -> "SHORTEST 1 ((a) ((a_in)-[r:R]->(b_in)<-[r2:R2]-(c_in)){1, } (c)-[r3:R3]-(d) WHERE unique(r + r2))"
+    "ANY SHORTEST (a) ((a_in)-[r:R]->(b_in)<-[r2:R2]-(c_in))+ (c)-[r3:R3]-(d)" -> "SHORTEST 1 ((a) ((a_in)-[r:R]->(b_in)<-[r2:R2]-(c_in)){1, } (c)-[r3:R3]-(d) WHERE unique(r + r2))",
+    // Test backticked identifiers
+    "ANY SHORTEST (` n@0`)-[`r`]->(`123`)" -> "SHORTEST 1 ((` n@0`)-[r]->(`123`))",
+    "ANY SHORTEST (` UNNAMED`) ((` n@0`)-[`r`]->(`123`))+ (`987other`)" -> "SHORTEST 1 ((` UNNAMED`) ((` n@0`)-[r]->(`123`)){1, } (`987other`) WHERE unique(r))"
   )
 
   test("solvedString is correct") {

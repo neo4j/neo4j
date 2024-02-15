@@ -753,7 +753,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     ShortestPathParameters(
       "start",
       "end",
-      "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE `a`.prop IN [5]){1, } (end) WHERE unique(`r`))",
+      "SHORTEST 1 ((start) ((`a`)-[`r`:R]->(`b`) WHERE `a`.prop IN [5]){1, } (end) WHERE unique(`r`))",
       Set(),
       Set.empty,
       StatefulShortestPath.Selector.Shortest(1),
@@ -1033,7 +1033,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .statefulShortestPath(
           "start",
           "end",
-          "SHORTEST 1 ((start)-[s]-(x) ((a)-[r:R]->(b) WHERE `a`.prop IN [5]){1, } (end) WHERE NOT s IN `r` AND unique(`r`) AND x.prop IN [5])",
+          "SHORTEST 1 ((start)-[s]-(x) ((`a`)-[`r`:R]->(`b`) WHERE `a`.prop IN [5]){1, } (end) WHERE NOT s IN `r` AND unique(`r`) AND x.prop IN [5])",
           None,
           Set.empty,
           Set.empty,
@@ -1247,7 +1247,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .statefulShortestPath(
           "start",
           "end",
-          "SHORTEST 1 ((start) ((a)-[r]->(b) WHERE NOT `a`:Label AND NOT `b`:Label AND NOT `r`:R){1, } (end) WHERE unique(`r`))",
+          "SHORTEST 1 ((start) ((`a`)-[`r`]->(`b`) WHERE NOT `a`:Label AND NOT `b`:Label AND NOT `r`:R){1, } (end) WHERE unique(`r`))",
           None,
           Set.empty,
           Set.empty,
@@ -1311,7 +1311,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .statefulShortestPath(
           "start",
           "end",
-          "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE `a`.prop IN [5] AND NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE unique(`r`))",
+          "SHORTEST 1 ((start) ((`a`)-[`r`:R]->(`b`) WHERE `a`.prop IN [5] AND NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE unique(`r`))",
           None,
           Set.empty,
           Set.empty,
