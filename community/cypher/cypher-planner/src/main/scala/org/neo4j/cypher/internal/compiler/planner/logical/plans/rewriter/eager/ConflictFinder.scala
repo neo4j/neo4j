@@ -542,11 +542,7 @@ object ConflictFinder {
     def conflictsWithItself = writePlan eq readPlan
 
     // a merge plan can never conflict with its children
-    def mergeConflictWithChild = writePlan.isInstanceOf[Merge] && hasChildRec(writePlan, readPlan)
-
-    def hasChildRec(plan: LogicalPlan, child: LogicalPlan): Boolean = {
-      (plan eq child) || plan.lhs.exists(hasChildRec(_, child)) || plan.rhs.exists(hasChildRec(_, child))
-    }
+    def mergeConflictWithChild = writePlan.isInstanceOf[Merge] && hasChild(writePlan, readPlan)
 
     // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
     def conflictsWithUnstablePlan =
@@ -568,7 +564,7 @@ object ConflictFinder {
     }
 
     /**
-     * Deleting plans can conflict, if they evaluate expressions. Otherwise not. 
+     * Deleting plans can conflict, if they evaluate expressions. Otherwise not.
      */
     def simpleDeletingPlansConflict =
       simpleDeletingPlan(writePlan) && simpleDeletingPlan(readPlan)
@@ -669,5 +665,20 @@ object ConflictFinder {
         val maybeLhs = outerPlan.lhs.flatMap(recurse)
         maybeLhs.orElse(outerPlan.rhs.flatMap(recurse))
     }
+  }
+
+  /**
+   * Checks whether a plan has a child plan (recursively),
+   * using reference equality.
+   */
+  private[eager] def hasChild(plan: LogicalPlan, child: LogicalPlan): Boolean = {
+    hasChildMatching(plan, _ eq child)
+  }
+
+  /**
+   * Checks whether a plan has a child plan matching the predicate, recursively.
+   */
+  private[eager] def hasChildMatching(plan: LogicalPlan, pred: LogicalPlan => Boolean): Boolean = {
+    pred(plan) || plan.lhs.exists(hasChildMatching(_, pred)) || plan.rhs.exists(hasChildMatching(_, pred))
   }
 }

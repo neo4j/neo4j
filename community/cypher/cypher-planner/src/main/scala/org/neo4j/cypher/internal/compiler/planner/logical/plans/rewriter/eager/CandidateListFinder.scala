@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.ConflictingPlanPair
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.hasChild
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.hasChildMatching
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
@@ -151,28 +153,28 @@ object CandidateListFinder {
       // For better readability
       val lhs = this
 
+      def conflictsWithRHS(conflictingPlanPair: ConflictingPlanPair): Boolean = {
+        hasChildMatching(plan.right, p => conflictingPlanPair.first == Ref(p) || conflictingPlanPair.second == Ref(p))
+      }
+
       val lhsConflicts = lhs.openSequences.values.flatten.map(_.conflict)
       val rhsConflicts = rhs.openSequences.values.flatten.map(_.conflict)
       // Conflicts where one conflicting plan is on the LHS and the other on the RHS
-      val solvedConflicts = lhsConflicts.toSet intersect rhsConflicts.toSet
+      val solvedLHSvsRHSConflicts = (lhsConflicts.toSet intersect rhsConflicts.toSet)
+        .filter {
+          case ConflictingPlanPair(first, second, _) =>
+            (hasChild(plan.left, first.value) && hasChild(plan.right, second.value)) ||
+            (hasChild(plan.left, second.value) && hasChild(plan.right, first.value))
+        }
 
-      /**
-       * Whether the two plans in the conflict have been found in LHS and RHS respectively
-       */
-      def isSolvedLHSvsRHS(os: OpenSequence) = {
-        solvedConflicts.contains(os.conflict)
+      def isSolvedConflictingPlanPair(cpp: ConflictingPlanPair) = {
+        solvedLHSvsRHSConflicts.contains(cpp) ||
+          lhs.candidateLists.exists(_.conflict == cpp) ||
+          rhs.candidateLists.exists(_.conflict == cpp)
       }
 
       def isSolved(os: OpenSequence) = {
-        isSolvedLHSvsRHS(os) ||
-        lhs.candidateLists.exists(_.conflict == os.conflict) ||
-        rhs.candidateLists.exists(_.conflict == os.conflict)
-      }
-
-      def isSolvedConflictingPlanPair(cpp: ConflictingPlanPair) = {
-        solvedConflicts.contains(cpp) ||
-        lhs.candidateLists.exists(_.conflict == cpp) ||
-        rhs.candidateLists.exists(_.conflict == cpp)
+        isSolvedConflictingPlanPair(os.conflict)
       }
 
       /**
@@ -186,7 +188,7 @@ object CandidateListFinder {
       )
 
       def assertNoLhsVsRHSConflicts: Boolean = {
-        if (solvedConflicts.nonEmpty) {
+        if (solvedLHSvsRHSConflicts.nonEmpty) {
           throw new IllegalStateException(
             s"We do not expect conflicts between the two branches of a ${plan.getClass.getSimpleName} yet. "
           )
@@ -230,8 +232,19 @@ object CandidateListFinder {
       // Compute new open sequences
       val filteredRhsOpenSequences =
         if (eagerizationStrategy.emptyCandidateListsForRHSvsTopConflicts)
-          rhs.openSequences.view.mapValues(_.map(_.copy(candidates = List.empty))).toMap
+          rhs.openSequences.view.mapValues(_.map {
+            case o@OpenSequence(_, layer, conflict) =>
+              if (conflictsWithRHS(conflict)) {
+                OpenSequence(List.empty, layer, conflict)
+              } else {
+                o
+              }
+          }).toMap
         else rhs.openSequences
+
+      // TODO we still have duplicate openSequences in the Seq.
+      //  we should consider keying this by the conflict (ConflictingPlanPair) so that we are sure that
+      //  per conflict there can only be one openSequence.
 
       // We keep only those open sequences where one of the conflicting plans has not been traversed yet and remove the ones that have already been solved.
       val newOpenSequences = lhs.openSequences.fuse(filteredRhsOpenSequences)(_ ++ _).map {
@@ -243,7 +256,9 @@ object CandidateListFinder {
       val lhsVsRhsConflictCandidateLists =
         if (eagerizationStrategy.eagerizeLHSvsRHSConflicts) {
           // Take the candidate list from the LHS for a conflict between LHS and RHS
-          lhs.openSequences.values.flatten.filter(isSolvedLHSvsRHS).map(_.candidateListWithConflict)
+          lhs.openSequences.values.flatten
+            .filter(os => solvedLHSvsRHSConflicts.contains(os.conflict))
+            .map(_.candidateListWithConflict)
         } else {
           Seq.empty
         }
@@ -368,7 +383,8 @@ object CandidateListFinder {
 
     val sequencesAcc = LogicalPlans.foldPlan(SequencesAcc(conflictsMap))(
       plan,
-      (acc, p) => processPlan(acc, p),
+      (acc, p) =>
+        processPlan(acc, p),
       (lhsAcc, rhsAcc, p) =>
         p match {
           case _: ApplyPlan =>

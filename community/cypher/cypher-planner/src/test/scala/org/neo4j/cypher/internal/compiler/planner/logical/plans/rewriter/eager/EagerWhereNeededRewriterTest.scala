@@ -7290,6 +7290,50 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("should correctly eagerize AssertSameNode on the RHS of Apply") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .apply()
+      .|.expand("(o)-->(anotherO)")
+      .|.assertSameNode("o")
+      .|.|.nodeIndexOperator("o:O(prop = 0)", unique = true)
+      .|.nodeIndexOperator("o:OO(prop = 0)", unique = true)
+      .create(createNodeWithProperties("newO", Seq("O", "OO"), "{prop: 0}"))
+      .filter("m:M")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .apply()
+      .|.expand("(o)-->(anotherO)")
+      .|.assertSameNode("o")
+      .|.|.nodeIndexOperator("o:O(prop = 0)", unique = true)
+      .|.nodeIndexOperator("o:OO(prop = 0)", unique = true)
+      .eager(ListSet(
+        PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(7), Id(5))),
+        PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(7), Id(6))),
+        LabelReadSetConflict(labelName("O")).withConflict(Conflict(Id(7), Id(3))),
+        LabelReadSetConflict(labelName("O")).withConflict(Conflict(Id(7), Id(5))),
+        LabelReadSetConflict(labelName("O")).withConflict(Conflict(Id(7), Id(6))),
+        LabelReadSetConflict(labelName("OO")).withConflict(Conflict(Id(7), Id(3))),
+        LabelReadSetConflict(labelName("OO")).withConflict(Conflict(Id(7), Id(5))),
+        LabelReadSetConflict(labelName("OO")).withConflict(Conflict(Id(7), Id(6)))
+      ))
+      .create(createNodeWithProperties("newO", Seq("O", "OO"), "{prop: 0}"))
+      .filter("m:M")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+      .build()
+
+    result shouldEqual expectedPlan
+  }
+
   test("Should be eager in Delete/Read conflict with read in AssertSameRelationship") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("count")
