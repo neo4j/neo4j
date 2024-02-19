@@ -22,13 +22,13 @@ package org.neo4j.internal.id.indexed;
 import static java.util.Collections.emptySet;
 import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrder;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.index.internal.gbptree.StructureWriteLog.structureWriteLog;
 import static org.neo4j.internal.id.IdValidator.assertIdWithinMaxCapacity;
 import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -74,7 +74,6 @@ import org.neo4j.internal.id.range.ContinuousIdRange;
 import org.neo4j.internal.id.range.PageIdRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -346,7 +345,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 .orElseThrow();
         this.maxId = maxId;
         this.monitor = monitor;
-        this.lockedPageRanges = isMultiVersioned(config) ? ConcurrentHashMap.newKeySet() : emptySet();
+        this.lockedPageRanges = isMultiVersioned(openOptions) ? ConcurrentHashMap.newKeySet() : emptySet();
         this.defaultMerger = new IdRangeMerger(false, monitor);
         this.recoveryMerger = new IdRangeMerger(true, monitor);
 
@@ -393,7 +392,8 @@ public class IndexedIdGenerator implements IdGenerator {
         }
         monitor.opened(highestWrittenId.get(), highId.get());
 
-        this.strictlyPrioritizeFreelist = config.get(GraphDatabaseInternalSettings.strictly_prioritize_id_freelist);
+        this.strictlyPrioritizeFreelist = !isMultiVersioned(openOptions)
+                && config.get(GraphDatabaseInternalSettings.strictly_prioritize_id_freelist);
         this.cacheOptimisticRefillThreshold = strictlyPrioritizeFreelist ? 0 : cacheCapacity / 4;
         this.scanner = new FreeIdScanner(
                 idsPerEntry,
@@ -429,7 +429,7 @@ public class IndexedIdGenerator implements IdGenerator {
                     headerReader,
                     recoveryCleanupWorkCollector,
                     readOnly,
-                    openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
+                    openOptions.newWithout(MULTI_VERSIONED),
                     databaseName,
                     "Indexed ID generator",
                     contextFactory,
@@ -835,7 +835,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 NO_HEADER_READER,
                 immediate(),
                 true,
-                openOptions.newWithout(PageCacheOpenOptions.MULTI_VERSIONED),
+                openOptions.newWithout(MULTI_VERSIONED),
                 DEFAULT_DATABASE_NAME,
                 "Indexed ID generator",
                 contextFactory,
@@ -991,7 +991,7 @@ public class IndexedIdGenerator implements IdGenerator {
         return new ArrayBasedRange(ids, idsPerPage);
     }
 
-    private static boolean isMultiVersioned(Config config) {
-        return "multiversion".equals(config.get(db_format));
+    private static boolean isMultiVersioned(ImmutableSet<OpenOption> openOptions) {
+        return openOptions.contains(MULTI_VERSIONED);
     }
 }
