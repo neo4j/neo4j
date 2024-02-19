@@ -91,7 +91,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         this.nonInlinedPredicate = nonInlinedPredicate;
         this.isGroupSelector = isGroupSelector;
         this.hooks = hooks;
-        this.dataManager = new DataManager(mt, hooks, this, initialCountForTargetNodes, numberOfNfaStates);
+        this.dataManager = new DataManager(mt, hooks, initialCountForTargetNodes, numberOfNfaStates);
         this.bfsExpander = new BFSExpander(dataManager, pgCursor, intoTarget, hooks, mt);
         this.sourceData = new NodeData(mt, source, startState, 0, dataManager, intoTarget);
 

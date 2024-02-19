@@ -93,6 +93,9 @@ public abstract sealed class TwoWaySignpost {
     }
 
     /**
+     * Indicates that this signpost has been activated at least twice, and is therefore a product graph duplicate in the
+     * currently-traced path.
+     * <p>
      * The "active" mechanism is used during path tracing to simplify duplicate relationship checking. While we're
      * laying out a path during path tracing, we always start from the target and trace our way back to the source
      * incrementally. During this process, we're interested in knowing if the currently laid out subpath towards
@@ -106,17 +109,17 @@ public abstract sealed class TwoWaySignpost {
      * <p>
      * It's important to call deActivate() on the signposts when we remove them from the laid out subpath we're tracing.
      */
-    public abstract boolean isActive();
+    public abstract boolean isDoublyActive();
 
     /**
-     * See java doc comment for SourceSignpost.isActive()
+     * See java doc comment for SourceSignpost.isDoublyActive()
      */
     public abstract void activate();
 
     /**
-     * See java doc comment for SourceSignpost.isActive()
+     * See java doc comment for SourceSignpost.isDoublyActive()
      */
-    public abstract void deActivate();
+    public abstract void deactivate();
 
     public void addSourceLength(int lengthFromSource) {
         this.lengthsFromSource.set(lengthFromSource);
@@ -138,6 +141,7 @@ public abstract sealed class TwoWaySignpost {
     public void pruneSourceLength(int lengthFromSource) {
         prevNode.dataManager.hooks.pruneSourceLength(this, lengthFromSource);
         this.lengthsFromSource.set(lengthFromSource, false);
+        this.forwardNode.synchronizeLengthAfterPrune(lengthFromSource);
     }
 
     public void setVerified(int lengthFromSource) {
@@ -171,8 +175,8 @@ public abstract sealed class TwoWaySignpost {
         }
 
         @Override
-        public boolean isActive() {
-            return activations > 0;
+        public boolean isDoublyActive() {
+            return activations > 1;
         }
 
         @Override
@@ -181,7 +185,7 @@ public abstract sealed class TwoWaySignpost {
         }
 
         @Override
-        public void deActivate() {
+        public void deactivate() {
             Preconditions.checkArgument(activations > 0, "Signpost activations should never be negative");
             activations -= 1;
         }
@@ -236,8 +240,7 @@ public abstract sealed class TwoWaySignpost {
         }
 
         @Override
-        public boolean isActive() {
-            // Node juxtapositions may be duplicated, and we implement this by saying that they're never active
+        public boolean isDoublyActive() {
             return false;
         }
 
@@ -247,7 +250,7 @@ public abstract sealed class TwoWaySignpost {
         }
 
         @Override
-        public void deActivate() {
+        public void deactivate() {
             // Node juxtapositions may be duplicated, and we implement this by saying that they're never active
         }
 

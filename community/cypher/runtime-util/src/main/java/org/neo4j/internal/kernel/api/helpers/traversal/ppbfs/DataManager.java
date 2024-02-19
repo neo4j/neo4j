@@ -49,7 +49,6 @@ import org.neo4j.util.Preconditions;
 final class DataManager implements AutoCloseable {
 
     private final HeapTrackingNodeDatas nodeDatas;
-    private final PGPathPropagatingBFS ppbfs;
     private final HeapTrackingArrayList<NodeData> targets;
 
     // Possible optimisation: Try to turn nodesToPropagateAtLengthPair into a queue and check for set deduplication
@@ -69,12 +68,7 @@ final class DataManager implements AutoCloseable {
      * @param numberOfNFAStates          Width of the NFA state array for each datagraph node
      */
     public DataManager(
-            MemoryTracker memoryTracker,
-            PPBFSHooks hooks,
-            PGPathPropagatingBFS ppbfs,
-            int initialCountForTargetNodes,
-            int numberOfNFAStates) {
-        this.ppbfs = ppbfs;
+            MemoryTracker memoryTracker, PPBFSHooks hooks, int initialCountForTargetNodes, int numberOfNFAStates) {
         this.mt = memoryTracker;
         this.hooks = hooks;
         this.nodeDatas = new HeapTrackingNodeDatas(memoryTracker, numberOfNFAStates);
@@ -142,6 +136,10 @@ final class DataManager implements AutoCloseable {
      * @param totalLength
      */
     public void propagateAll(int totalLength) {
+        assert nodesToPropagate.isEmpty() || nodesToPropagate.keysView().min() >= totalLength
+                : "The current implementation is structured such that we never should schedule nodes to propagate for a "
+                        + "depth which has already passed. If we do (as the algo is implemented here), we will loop for ever.";
+
         hooks.propagateAll(this.nodesToPropagate, totalLength);
 
         var nodesToPropagateForLength = nodesToPropagate.get(totalLength);
@@ -181,9 +179,6 @@ final class DataManager implements AutoCloseable {
     }
 
     public boolean hasNodesToPropagateOrExpand() {
-        assert nodesToPropagate.isEmpty() || nodesToPropagate.keysView().min() >= ppbfs.nextDepth()
-                : "The current implementation is structured such that we never should schedule nodes to propagate for a "
-                        + "depth which has already passed. If we do (as the algo is implemented here), we will loop for ever.";
         return nodeDatas.currentLevelHasNodes() || nodesToPropagate.notEmpty();
     }
 
@@ -193,6 +188,7 @@ final class DataManager implements AutoCloseable {
                 !targets.contains(nodeData),
                 "Caller is responsible for adding any node as a target at most once per level");
         targets.add(nodeData);
+        hooks.addTarget(nodeData);
     }
 
     public HeapTrackingArrayList<NodeData> targets() {

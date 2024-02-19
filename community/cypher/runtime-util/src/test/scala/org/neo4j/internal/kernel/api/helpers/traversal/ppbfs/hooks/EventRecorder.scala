@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.AddTarget
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.Event
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.NextLevel
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.PropagateLengthPair
@@ -49,6 +50,9 @@ private[ppbfs] class EventRecorder {
 
   def returnPath(entities: Long*): EventRecorder =
     record(ReturnPath(entities))
+
+  def addTarget(id: Long): EventRecorder =
+    record(AddTarget(id))
 }
 
 private[ppbfs] object EventRecorder {
@@ -57,4 +61,5 @@ private[ppbfs] object EventRecorder {
   case class PropagateLengthPair(nodeId: Long, lengthFromSource: Int, lengthToTarget: Int) extends Event
   case class SchedulePropagation(nodeId: Long, lengthFromSource: Int, lengthToTarget: Int) extends Event
   case class ReturnPath(entities: Seq[Long]) extends Event
+  case class AddTarget(nodeId: Long) extends Event
 }

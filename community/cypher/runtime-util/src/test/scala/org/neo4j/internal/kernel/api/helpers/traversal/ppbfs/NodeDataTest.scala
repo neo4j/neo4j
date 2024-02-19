@@ -52,5 +52,5 @@ class NodeDataTest extends CypherFunSuite {
     nodeData.isTarget shouldBe true
   }
 
-  private def dataManager() = new DataManager(EmptyMemoryTracker.INSTANCE, PPBFSHooks.NULL, null, 1, 1)
+  private def dataManager() = new DataManager(EmptyMemoryTracker.INSTANCE, PPBFSHooks.NULL, 1, 1)
 }

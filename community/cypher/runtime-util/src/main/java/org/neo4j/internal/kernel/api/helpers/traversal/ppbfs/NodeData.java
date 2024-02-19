@@ -104,7 +104,7 @@ public final class NodeData implements AutoCloseable {
         return sourceSignposts.get(index);
     }
 
-    public void synchronizeLength(int lengthFromSource) {
+    public void synchronizeLengthAfterPrune(int lengthFromSource) {
         // Potential optimisation:
         //   This method is always called together with nextSignpostIndexForLength. If we were to return the first
         //   index with a SourceSignpost at the corresponding length from this method,
@@ -261,7 +261,7 @@ public final class NodeData implements AutoCloseable {
         });
     }
 
-    public boolean decrementTargetCount() {
+    public void decrementTargetCount() {
         dataManager.hooks.decrementTargetCount(this, remainingTargetCount);
 
         remainingTargetCount--;
@@ -269,10 +269,7 @@ public final class NodeData implements AutoCloseable {
 
         if (remainingTargetCount == 0) {
             this.dataManager.decrementLiveTargetCount();
-            return true;
         }
-
-        return false;
     }
 
     public boolean hasMinDistToTarget(int minDistToTarget) {

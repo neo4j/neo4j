@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer.TracedPa
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TestGraph.Rel
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventPPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.AddTarget
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.NextLevel
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
@@ -799,8 +800,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .events()
 
     val expected = new EventRecorder()
-      .nextLevel(0)
-      .nextLevel(1)
       .nextLevel(2)
       .schedulePropagation(b, 2, 1)
       .returnPath(a, ab, b, bc, c)
@@ -810,7 +809,25 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .nextLevel(4)
       .getEvents
 
-    events shouldBe expected
+    events should contain inOrderElementsOf expected
+  }
+
+  test("node should not be considered a target if it does not match the intoTarget specifier") {
+    val graph = TestGraph.builder
+    val a = graph.node()
+    val b = graph.node()
+    val c = graph.node()
+    graph.rel(a, b)
+    graph.rel(a, c)
+
+    val events = fixture()
+      .withGraph(graph.build())
+      .from(a)
+      .into(c)
+      .withNfa(anyDirectedPath)
+      .events()
+
+    events should (contain(AddTarget(c)) and not contain AddTarget(b))
   }
 
   /*********************************************************
@@ -963,12 +980,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     hooks: PPBFSHooks
   ) {
     def withGraph(graph: TestGraph): FixtureBuilder[A] = copy(graph = graph)
-
-    def fromGraph(f: TestGraph.Builder => 1L): FixtureBuilder[A] = {
-      val builder = TestGraph.builder
-      val source = f(builder)
-      copy(source = source, graph = builder.build())
-    }
 
     def withNfa(f: PGStateBuilder => Unit): FixtureBuilder[A] = copy(nfa = {
       val builder = new PGStateBuilder

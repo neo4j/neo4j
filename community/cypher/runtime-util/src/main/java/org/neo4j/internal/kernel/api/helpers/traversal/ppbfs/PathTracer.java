@@ -20,8 +20,6 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 import java.util.BitSet;
-import org.neo4j.collection.trackable.HeapTrackingArrayList;
-import org.neo4j.collection.trackable.HeapTrackingIntArrayList;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
@@ -40,31 +38,22 @@ import org.neo4j.values.virtual.VirtualValues;
  */
 public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath> {
     private final PPBFSHooks hooks;
-    private NodeData targetNode;
+    private final SignpostStack stack;
     private NodeData sourceNode;
 
     /** The length of the currently traced path when projected back to the data graph */
     private int dgLength;
 
-    /** The current path of signposts from the target to the source */
-    private final HeapTrackingArrayList<TwoWaySignpost> activeSignposts;
-
-    /** The index of each signpost in activeSignposts, relative to its NodeData parent */
-    private final HeapTrackingIntArrayList nodeSourceSignpostIndices;
-
     private final BitSet pgTrailToTarget;
     private final BitSet betweenDuplicateRels;
-    private int currentDgLengthToTarget;
 
     /**
      * Because path tracing performs much of the bookkeeping of PPBFS, we may need to continue to trace paths to a
      * target node, even if we have already yielded the K paths necessary for that target node.
      * This flag tracks whether we should continue to yield paths when tracing.
      */
-    private boolean saturated;
-
     public boolean isSaturated() {
-        return this.saturated;
+        return stack.target().remainingTargetCount() == 0;
     }
 
     private boolean shouldReturnSingleNodePath;
@@ -76,11 +65,10 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     private boolean ready = false;
 
     public PathTracer(MemoryTracker memoryTracker, PPBFSHooks hooks) {
-        this.activeSignposts = HeapTrackingArrayList.newArrayList(memoryTracker);
-        this.nodeSourceSignpostIndices = HeapTrackingIntArrayList.newIntArrayList(memoryTracker);
         this.pgTrailToTarget = new BitSet();
         this.betweenDuplicateRels = new BitSet();
         this.hooks = hooks;
+        this.stack = new SignpostStack(memoryTracker, hooks);
     }
 
     /**
@@ -97,17 +85,12 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
      * a given length.
      */
     public void resetWithNewTargetNodeAndDGLength(NodeData targetNode, int dgLength) {
-        this.ready = true;
-        this.targetNode = targetNode;
-
         Preconditions.checkArgument(
                 targetNode.remainingTargetCount() >= 0, "remainingTargetCount should not be decremented beyond 0");
-        this.saturated = targetNode.remainingTargetCount() == 0;
 
-        this.activeSignposts.clear();
+        this.ready = true;
 
-        this.nodeSourceSignpostIndices.clear();
-        this.nodeSourceSignpostIndices.add(-1);
+        this.stack.reset(targetNode, dgLength);
 
         this.pgTrailToTarget.clear();
         this.pgTrailToTarget.set(0);
@@ -115,7 +98,6 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         this.betweenDuplicateRels.clear();
 
         this.dgLength = dgLength;
-        this.currentDgLengthToTarget = 0;
         this.shouldReturnSingleNodePath = targetNode == sourceNode && dgLength == 0;
         super.reset();
     }
@@ -128,51 +110,15 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         return this.ready;
     }
 
-    private NodeData current() {
-        return activeSignposts.isEmpty() ? targetNode : this.activeSignposts.last().prevNode;
-    }
-
-    private int currentIndex() {
-        return this.nodeSourceSignpostIndices.last();
-    }
-
-    private void deactivateCurrent() {
-        this.nodeSourceSignpostIndices.removeLast();
-        if (this.activeSignposts.notEmpty()) {
-            TwoWaySignpost currentSignpost = activeSignposts.removeLast();
-
-            this.currentDgLengthToTarget -= currentSignpost.dataGraphLength();
-            int dgLengthFromSource = this.dgLength - currentDgLengthToTarget;
-
-            hooks.deactivateSignpost(dgLengthFromSource, currentSignpost);
-            currentSignpost.deActivate();
-            if (!currentSignpost.isVerifiedAtLength(dgLengthFromSource)
-                    && !this.betweenDuplicateRels.get(this.activeSignposts.size())) {
-                NodeData nodeBeforeCurrent = activeSignposts.isEmpty()
-                        ? targetNode
-                        : activeSignposts.get(activeSignposts.size() - 1).prevNode;
-                currentSignpost.pruneSourceLength(dgLengthFromSource);
-                nodeBeforeCurrent.synchronizeLength(dgLengthFromSource);
-            }
+    private void popCurrent() {
+        var popped = stack.pop();
+        if (popped == null) {
+            return;
         }
-    }
 
-    private void activateSignpost(NodeData current, int nextIndex) {
-        var sourceSignpost = current.getSourceSignpost(nextIndex);
-        this.activeSignposts.add(sourceSignpost);
-        this.betweenDuplicateRels.set(this.activeSignposts.size() - 1, false);
-
-        hooks.activateSignpost(dgLength - currentDgLengthToTarget, sourceSignpost);
-
-        this.currentDgLengthToTarget += sourceSignpost.dataGraphLength();
-        this.nodeSourceSignpostIndices.set(this.nodeSourceSignpostIndices.size() - 1, nextIndex);
-        this.nodeSourceSignpostIndices.add(-1);
-
-        boolean isTargetPGTrail = pgTrailToTarget.get(this.activeSignposts.size() - 1) && !sourceSignpost.isActive();
-        pgTrailToTarget.set(this.activeSignposts.size(), isTargetPGTrail);
-
-        if (isTargetPGTrail && !sourceSignpost.hasBeenTraced()) {
-            sourceSignpost.setMinDistToTarget(currentDgLengthToTarget);
+        int sourceLength = stack.lengthFromSource();
+        if (!popped.isVerifiedAtLength(sourceLength) && !this.betweenDuplicateRels.get(stack.size())) {
+            popped.pruneSourceLength(sourceLength);
         }
     }
 
@@ -182,40 +128,38 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
             throw new IllegalStateException("PathTracer attempted to iterate without fully configuring.");
         }
 
-        if (shouldReturnSingleNodePath && !saturated) {
+        if (shouldReturnSingleNodePath && !isSaturated()) {
             shouldReturnSingleNodePath = false;
-            return currentPath();
+            Preconditions.checkState(
+                    stack.lengthFromSource() == 0, "Attempting to return a path that does not reach the source");
+            return stack.currentPath();
         }
 
-        while (this.nodeSourceSignpostIndices.notEmpty()) {
-            NodeData current = current();
-            int currentIndex = currentIndex();
-            int nextIndex = current.nextSignpostIndexForLength(currentIndex, this.dgLength - currentDgLengthToTarget);
-            if (nextIndex == -1) {
-                deactivateCurrent();
+        while (stack.hasNext()) {
+            if (!stack.pushNext()) {
+                popCurrent();
             } else {
-                this.activateSignpost(current, nextIndex);
-                TwoWaySignpost sourceSignpost = activeSignposts.last();
+                var sourceSignpost = stack.headSignpost();
+                this.betweenDuplicateRels.set(stack.size() - 1, false);
 
-                // Possible optimisation:
-                // instead of isActive(), use !pgTrailToTarget.get(currentIndex) however we would often find that the
-                // signpost was not duplicated and possibly run allNodesAreValidatedBetweenDuplicates for no benefit
-                // (would also need to update that method)
-                if (sourceSignpost.isActive() && allNodesAreValidatedBetweenDuplicates()) {
-                    hooks.skippingDuplicateRelationship(this.targetNode, this.activeSignposts);
-                    hooks.deactivateSignpost(dgLength - currentDgLengthToTarget, sourceSignpost);
-                    this.activeSignposts.removeLast();
-                    this.nodeSourceSignpostIndices.removeLast();
-                    this.currentDgLengthToTarget -= sourceSignpost.dataGraphLength();
-                } else {
-                    sourceSignpost.activate();
+                boolean isTargetPGTrail = pgTrailToTarget.get(stack.size() - 1) && !sourceSignpost.isDoublyActive();
+                pgTrailToTarget.set(stack.size(), isTargetPGTrail);
 
+                if (isTargetPGTrail && !sourceSignpost.hasBeenTraced()) {
+                    sourceSignpost.setMinDistToTarget(stack.lengthToTarget());
+                }
+
+                if (sourceSignpost.isDoublyActive() && allNodesAreValidatedBetweenDuplicates()) {
+                    hooks.skippingDuplicateRelationship(stack::currentPath);
+                    stack.pop();
                     // the order of these predicates is important since validateTrail has side effects:
-                    if (sourceSignpost.prevNode == sourceNode && validateTrail() && !saturated) {
-                        TracedPath path = currentPath();
-                        hooks.returnPath(path);
-                        return path;
-                    }
+                } else if (sourceSignpost.prevNode == sourceNode && validateTrail() && !isSaturated()) {
+                    Preconditions.checkState(
+                            stack.lengthFromSource() == 0,
+                            "Attempting to return a path that does not reach the source");
+                    TracedPath path = stack.currentPath();
+                    hooks.returnPath(path);
+                    return path;
                 }
             }
         }
@@ -223,16 +167,16 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     }
 
     private boolean allNodesAreValidatedBetweenDuplicates() {
-        var lastSignpost = this.activeSignposts.last();
-        int dgLengthFromSource = dgLength - currentDgLengthToTarget;
+        var lastSignpost = stack.headSignpost();
+        int dgLengthFromSource = stack.lengthFromSource();
 
         if (!lastSignpost.prevNode.validatedAtLength(dgLengthFromSource)) {
             return false;
         }
 
         dgLengthFromSource += lastSignpost.dataGraphLength();
-        for (int i = this.activeSignposts.size() - 2; i >= 0; i--) {
-            var candidate = this.activeSignposts.get(i);
+        for (int i = stack.size() - 2; i >= 0; i--) {
+            var candidate = stack.signpost(i);
 
             if (!candidate.prevNode.validatedAtLength(dgLengthFromSource)) {
                 return false;
@@ -240,7 +184,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
 
             if (candidate.dataGraphRelationshipEquals(lastSignpost)) {
                 // i + 1 because the upper duplicate isn't between duplicates and shouldn't be protected from pruning
-                this.betweenDuplicateRels.set(i + 1, this.activeSignposts.size() - 1, true);
+                this.betweenDuplicateRels.set(i + 1, stack.size() - 1, true);
                 return true;
             }
 
@@ -250,58 +194,29 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         throw new IllegalStateException("Expected duplicate relationship in SHORTEST trail validation");
     }
 
-    private TracedPath currentPath() {
-        var entities = new PathEntity[activeSignposts.size() + dgLength + 1];
-
-        int index = entities.length - 1;
-        entities[index--] = PathEntity.fromNode(targetNode);
-
-        for (var signpost : this.activeSignposts) {
-            if (signpost instanceof TwoWaySignpost.RelSignpost relSignpost) {
-                entities[index--] = PathEntity.fromRel(relSignpost);
-            }
-
-            entities[index--] = PathEntity.fromNode(signpost.prevNode);
-        }
-
-        Preconditions.checkState(
-                index == -1,
-                "Traced path length was not as expected (expected " + entities.length + " but found "
-                        + (entities.length - (index + 1)) + ")");
-
-        return new TracedPath(entities);
-    }
-
     private boolean validateTrail() {
         int dgLengthFromSource = 0;
-        for (int i = activeSignposts.size() - 1; i >= 0; i--) {
-            TwoWaySignpost signpost = activeSignposts.get(i);
+        for (int i = stack.size() - 1; i >= 0; i--) {
+            TwoWaySignpost signpost = stack.signpost(i);
             dgLengthFromSource += signpost.dataGraphLength();
-            for (int j = activeSignposts.size() - 1; j > i; j--) {
-                if (signpost.dataGraphRelationshipEquals(activeSignposts.get(j))) {
-                    hooks.invalidTrail(this::currentPath);
+            for (int j = stack.size() - 1; j > i; j--) {
+                if (signpost.dataGraphRelationshipEquals(stack.signpost(j))) {
+                    hooks.invalidTrail(stack::currentPath);
                     return false;
                 }
             }
             if (!signpost.isVerifiedAtLength(dgLengthFromSource)) {
                 signpost.setVerified(dgLengthFromSource);
-                NodeData node = i == 0 ? targetNode : activeSignposts.get(i - 1).prevNode;
-                if (!node.validatedAtLength(dgLengthFromSource)) {
-                    node.validateLengthState(dgLengthFromSource, dgLength - dgLengthFromSource);
+                if (!signpost.forwardNode.validatedAtLength(dgLengthFromSource)) {
+                    signpost.forwardNode.validateLengthState(dgLengthFromSource, dgLength - dgLengthFromSource);
                 }
             }
         }
         return true;
     }
 
-    public NodeData targetNode() {
-        return targetNode;
-    }
-
     public void decrementTargetCount() {
-        if (this.targetNode.decrementTargetCount()) {
-            this.saturated = true;
-        }
+        stack.target().decrementTargetCount();
     }
 
     public record PathEntity(SlotOrName slotOrName, long id, EntityType entityType) {

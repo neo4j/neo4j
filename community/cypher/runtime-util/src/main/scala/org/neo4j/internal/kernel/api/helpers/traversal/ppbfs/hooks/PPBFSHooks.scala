@@ -54,7 +54,7 @@ abstract class PPBFSHooks {
   // PathTracer
   def returnPath(tracedPath: PathTracer.TracedPath): Unit = {}
   def invalidTrail(getTracedPath: () => PathTracer.TracedPath): Unit = {}
-  def skippingDuplicateRelationship(target: NodeData, activePath: HeapTrackingArrayList[TwoWaySignpost]): Unit = {}
+  def skippingDuplicateRelationship(getTracedPath: () => PathTracer.TracedPath): Unit = {}
   def activateSignpost(currentLength: Int, child: TwoWaySignpost): Unit = {}
   def deactivateSignpost(currentLength: Int, last: TwoWaySignpost): Unit = {}
 
@@ -72,6 +72,7 @@ abstract class PPBFSHooks {
   def newRow(nodeId: Long): Unit = {}
   def finishedPropagation(targets: HeapTrackingArrayList[NodeData]): Unit = {}
   def decrementTargetCount(nodeData: NodeData, remainingTargetCount: Int): Unit = {}
+  def addTarget(nodeData: NodeData): Unit = {}
 
   // Signpost
   def pruneSourceLength(sourceSignpost: TwoWaySignpost, lengthFromSource: Int): Unit = {}

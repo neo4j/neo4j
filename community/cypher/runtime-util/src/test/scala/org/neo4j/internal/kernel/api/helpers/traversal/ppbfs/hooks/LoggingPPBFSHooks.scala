@@ -94,19 +94,8 @@ object LoggingPPBFSHooks extends PPBFSHooks {
     )
   }
 
-  override def skippingDuplicateRelationship(
-    target: NodeData,
-    activeSignposts: HeapTrackingArrayList[TwoWaySignpost]
-  ): Unit = {
-    val sb = new StringBuilder
-    activeSignposts.asScala.toSeq.reverse.foreach {
-      case sp: TwoWaySignpost.RelSignpost =>
-        sb.append("(").append(sp.prevNode.id).append('@').append(sp.prevNode.state.id)
-          .append(")-[").append(sp.relId).append("]->")
-      case _ => ()
-    }
-    sb.append("(").append(target.id).append(',').append(target.state.id).append(")")
-    log("duplicate rels skipped" -> sb.toString())
+  override def skippingDuplicateRelationship(getTracedPath: () => PathTracer.TracedPath): Unit = {
+    log("duplicate rels skipped" -> getTracedPath().toString)
   }
 
   override def returnPath(tracedPath: PathTracer.TracedPath): Unit = {
@@ -151,6 +140,10 @@ object LoggingPPBFSHooks extends PPBFSHooks {
     }
 
     log("nodesToPropagate" -> str)
+  }
+
+  override def addTarget(nodeData: NodeData): Unit = {
+    log("targetNode" -> nodeData)
   }
 
   private var color = DebugSupport.Blue
