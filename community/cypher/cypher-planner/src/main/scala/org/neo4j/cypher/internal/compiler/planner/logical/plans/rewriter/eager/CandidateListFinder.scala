@@ -190,7 +190,7 @@ object CandidateListFinder {
       def assertNoLhsVsRHSConflicts: Boolean = {
         if (solvedLHSvsRHSConflicts.nonEmpty) {
           throw new IllegalStateException(
-            s"We do not expect conflicts between the two branches of a ${plan.getClass.getSimpleName} yet. "
+            s"We do not expect conflicts between the two branches of a ${plan.getClass.getSimpleName} yet."
           )
         }
         false
@@ -242,14 +242,10 @@ object CandidateListFinder {
           }).toMap
         else rhs.openSequences
 
-      // TODO we still have duplicate openSequences in the Seq.
-      //  we should consider keying this by the conflict (ConflictingPlanPair) so that we are sure that
-      //  per conflict there can only be one openSequence.
-
       // We keep only those open sequences where one of the conflicting plans has not been traversed yet and remove the ones that have already been solved.
       val newOpenSequences = lhs.openSequences.fuse(filteredRhsOpenSequences)(_ ++ _).map {
         case (endPlan, openSequences) =>
-          (endPlan, openSequences.filter(!isSolved(_)))
+          (endPlan, openSequences.filter(!isSolved(_)).distinct)
       }
         .filter(_._2.nonEmpty)
 
