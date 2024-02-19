@@ -37,6 +37,7 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
+import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockTracer;
@@ -88,7 +89,8 @@ final class RelationshipLockHelper {
             long nodeId,
             RecordAccess<RelationshipRecord, Void> relRecords,
             ResourceLocker locks,
-            LockTracer lockTracer) {
+            LockTracer lockTracer,
+            VersionContext versionContext) {
         long nextRel = firstInChain;
         RecordAccess.RecordProxy<RelationshipRecord, Void> rBefore = null;
 
@@ -98,11 +100,12 @@ final class RelationshipLockHelper {
                 boolean r1Locked = locks.tryExclusiveLock(RELATIONSHIP, nextRel);
                 RecordAccess.RecordProxy<RelationshipRecord, Void> r1 = relRecords.getOrLoad(nextRel, null, ALWAYS);
                 RelationshipRecord r1Record = r1.forReadingLinkage();
-                if (!r1Locked || !r1Record.inUse()) {
+                if (!r1Locked || !r1Record.inUse() || versionContext.invisibleHeadObserved()) {
                     nextRel = r1Record.getNextRel(nodeId);
                     if (r1Locked) {
                         locks.releaseExclusive(RELATIONSHIP, r1.getKey());
                     }
+                    versionContext.resetObsoleteHeadState();
                     continue;
                 }
 
@@ -111,12 +114,13 @@ final class RelationshipLockHelper {
                     boolean r2Locked = locks.tryExclusiveLock(RELATIONSHIP, r2Id);
                     RecordAccess.RecordProxy<RelationshipRecord, Void> r2 = relRecords.getOrLoad(r2Id, null, ALWAYS);
                     RelationshipRecord r2Record = r2.forReadingLinkage();
-                    if (!r2Locked || !r2Record.inUse()) {
+                    if (!r2Locked || !r2Record.inUse() || versionContext.invisibleHeadObserved()) {
                         nextRel = r2Record.getNextRel(nodeId);
                         locks.releaseExclusive(RELATIONSHIP, r1.getKey());
                         if (r2Locked) {
                             locks.releaseExclusive(RELATIONSHIP, r2.getKey());
                         }
+                        versionContext.resetObsoleteHeadState();
                         continue;
                     }
                     // We can insert in between r1 and r2 here

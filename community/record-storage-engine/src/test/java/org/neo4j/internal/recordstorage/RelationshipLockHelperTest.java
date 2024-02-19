@@ -49,6 +49,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.neo4j.internal.recordstorage.RelationshipLockHelper.SortedLockList;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
@@ -243,7 +244,12 @@ class RelationshipLockHelperTest {
         // When
         RecordAccess.RecordProxy<RelationshipRecord, Void> entrypoint =
                 RelationshipLockHelper.findAndLockInsertionPoint(
-                        chain.get(0).getId(), nodeId, relRecords, locks, LockTracer.NONE);
+                        chain.get(0).getId(),
+                        nodeId,
+                        relRecords,
+                        locks,
+                        LockTracer.NONE,
+                        CursorContext.NULL_CONTEXT.getVersionContext());
 
         // Then
         long[] actualLocks = locks.getExclusiveLocks(ResourceType.RELATIONSHIP).toArray();

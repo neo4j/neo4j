@@ -62,6 +62,7 @@ public class RelationshipModifier {
     private final int denseNodeThreshold;
     private final ResourceLocker locks;
     private final LockTracer lockTracer;
+    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final RelationshipCreator creator;
     private final RelationshipDeleter deleter;
@@ -78,6 +79,7 @@ public class RelationshipModifier {
         this.denseNodeThreshold = denseNodeThreshold;
         this.locks = locks;
         this.lockTracer = lockTracer;
+        this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
 
         this.creator =
@@ -508,7 +510,9 @@ public class RelationshipModifier {
                     locks.acquireExclusive(lockTracer, RELATIONSHIP, firstInChain);
                 }
                 // and a good insertion point by walking the chain with try-locks
-                return findAndLockInsertionPoint(firstInChain, nodeId, relRecords, locks, lockTracer);
+                var versionContext = cursorContext.getVersionContext();
+                versionContext.resetObsoleteHeadState();
+                return findAndLockInsertionPoint(firstInChain, nodeId, relRecords, locks, lockTracer, versionContext);
             }
         }
         return null;
