@@ -43,6 +43,8 @@ import org.neo4j.configuration.SslSystemInternalSettings;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.test.extension.Inject;
@@ -255,6 +257,25 @@ class SslPolicyLoaderTest {
 
         // then
         assertNull(sslPolicy);
+    }
+
+    @Test
+    void shouldLogWarningIfHostnameValidationDisabledByDefault() {
+
+        var logProvider = new AssertableLogProvider();
+        SslPolicyConfig policyConfig = SslPolicyConfig.forScope(TESTING);
+        Config config = newBuilder()
+                .set(neo4j_home, home.toAbsolutePath())
+                .set(SslSystemInternalSettings.ignore_dotfiles, false)
+                .set(policyConfig.enabled, Boolean.TRUE)
+                .set(policyConfig.base_directory, Path.of("certificates/default"))
+                .build();
+
+        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create(fileSystem, config, logProvider);
+        LogAssertions.assertThat(logProvider)
+                .containsMessageWithArguments(
+                        "SSL Hostname verification is disabled by default. Consider explicitly setting %s",
+                        policyConfig.verify_hostname.name());
     }
 
     private static Path makeDir(Path parent, String child) throws IOException {

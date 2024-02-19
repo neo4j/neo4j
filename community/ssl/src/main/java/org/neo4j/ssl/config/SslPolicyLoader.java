@@ -178,6 +178,12 @@ public class SslPolicyLoader {
         List<String> tlsVersions = config.get(policyConfig.tls_versions);
         List<String> ciphers = config.get(policyConfig.ciphers);
 
+        if (!verifyHostname && !config.isExplicitlySet(policyConfig.verify_hostname)) {
+            log.warn(
+                    "SSL Hostname verification is disabled by default. Consider explicitly setting %s",
+                    policyConfig.verify_hostname.name());
+        }
+
         return new SslPolicy(
                 keyAndChain.privateKey,
                 keyAndChain.keyCertChain,
