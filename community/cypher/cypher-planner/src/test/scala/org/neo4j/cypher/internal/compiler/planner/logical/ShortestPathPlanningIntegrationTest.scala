@@ -54,6 +54,8 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import java.lang.Boolean.FALSE
+
 import scala.collection.immutable.ListSet
 
 class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
@@ -93,6 +95,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
   private val all_if_possible_planner = plannerBase
     .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+    .build()
+
+  private val shortest_without_legacy = plannerBase
+    .withSetting(GraphDatabaseInternalSettings.gpm_shortest_to_legacy_shortest_enabled, FALSE)
     .build()
 
   private val nonDeduplicatingPlanner =
@@ -212,9 +218,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setFinalState(3)
       .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = shortest_without_legacy.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      shortest_without_legacy.subPlanBuilder()
         .statefulShortestPath(
           "u",
           "v",

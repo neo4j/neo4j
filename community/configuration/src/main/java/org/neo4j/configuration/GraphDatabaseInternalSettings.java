@@ -1337,4 +1337,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .addConstraint(min(0))
             .dynamic()
             .build();
+
+    @Internal
+    @Description(
+            "Feature flag to enable/disable the rewriting of GPM Shortest patterns into legacy findShortest where convertions are possible")
+    public static final Setting<Boolean> gpm_shortest_to_legacy_shortest_enabled = newBuilder(
+                    "internal.cypher.enable_shortest_to_legacy_shortest", BOOL, true)
+            .build();
 }

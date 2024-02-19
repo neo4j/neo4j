@@ -288,4 +288,6 @@ class CypherPlannerConfiguration(
     )
     () => config.statefulShortestPlanningMode
   }
+
+  val gpmShortestToLegacyShortestEnabled: Boolean = config.gpmShortestToLegacyShortestEnabled
 }

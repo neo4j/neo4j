@@ -749,18 +749,35 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .build()
     )
 
-  val `((start)((a)-[r:R]->(b))+(end))` : ShortestPathParameters =
+  val `((start)((a{prop: 5})-[r:R]->(b))+(end))` : ShortestPathParameters =
     ShortestPathParameters(
       "start",
       "end",
-      "SHORTEST 1 ((start) ((a)-[r:R]->(b)){1, } (end) WHERE unique(`r`))",
+      "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE `a`.prop IN [5]){1, } (end) WHERE unique(`r`))",
       Set(),
       Set.empty,
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
-        .addTransition(0, 1, "(start) (a)")
+        .addTransition(0, 1, "(start) (a WHERE cacheNFromStore[a.prop] = 5)")
         .addTransition(1, 2, "(a)-[r:R]->(b)")
-        .addTransition(2, 1, "(b) (a)")
+        .addTransition(2, 1, "(b) (a WHERE cacheNFromStore[a.prop] = 5)")
+        .addTransition(2, 3, "(b) (end)")
+        .setFinalState(3)
+        .build()
+    )
+
+  val `((start)(({prop: 5})-[r:R]->())+(end))` : ShortestPathParameters =
+    ShortestPathParameters(
+      "start",
+      "end",
+      "SHORTEST 1 ((start) ((anon_0)-[r:R]->(b) WHERE `anon_0`.prop IN [5]){1, } (end) WHERE unique(`r`))",
+      Set(),
+      Set.empty,
+      StatefulShortestPath.Selector.Shortest(1),
+      new TestNFABuilder(0, "start")
+        .addTransition(0, 1, "(start) (anon_0 WHERE cacheNFromStore[anon_0.prop] = 5)")
+        .addTransition(1, 2, "(anon_0)-[r:R]->(b)")
+        .addTransition(2, 1, "(b) (anon_0 WHERE cacheNFromStore[anon_0.prop] = 5)")
         .addTransition(2, 3, "(b) (end)")
         .setFinalState(3)
         .build()
@@ -994,7 +1011,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
     val query =
-      "MATCH ANY SHORTEST ((start {prop: 5})-[s]-(x) ((a)-[r:R]->(b))+(end)) DELETE s RETURN end"
+      "MATCH ANY SHORTEST ((start {prop: 5})-[s]-(x) ((a{prop: 5})-[r:R]->(b))+(end)) DELETE s RETURN end"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
@@ -1016,7 +1033,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .statefulShortestPath(
           "start",
           "end",
-          "SHORTEST 1 ((start)-[s]-(x) ((a)-[r:R]->(b)){1, } (end) WHERE NOT s IN `r` AND unique(`r`))",
+          "SHORTEST 1 ((start)-[s]-(x) ((a)-[r:R]->(b) WHERE `a`.prop IN [5]){1, } (end) WHERE NOT s IN `r` AND unique(`r`) AND x.prop IN [5])",
           None,
           Set.empty,
           Set.empty,
@@ -1024,10 +1041,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
-            .addTransition(0, 1, "(start)-[s]-(x)")
-            .addTransition(1, 2, "(x) (a)")
+            .addTransition(0, 1, "(start)-[s]-(x WHERE x.prop = 5)")
+            .addTransition(1, 2, "(x) (a WHERE cacheNFromStore[a.prop] = 5)")
             .addTransition(2, 3, "(a)-[r:R]->(b)")
-            .addTransition(3, 2, "(b) (a)")
+            .addTransition(3, 2, "(b) (a WHERE cacheNFromStore[a.prop] = 5)")
             .addTransition(3, 4, "(b) (end)")
             .setFinalState(4)
             .build(),
@@ -1143,7 +1160,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
     val query =
-      "MATCH ANY SHORTEST ((start {prop: 5})((a)-[r:R]->(b))+(end)) MERGE (start)-[t:T]-(end) RETURN end"
+      "MATCH ANY SHORTEST ((start {prop: 5})(({prop: 5})-[r:R]->(b))+(end)) MERGE (start)-[t:T]-(end) RETURN end"
 
     val expected = planner.planBuilder()
       .produceResults("end")
@@ -1155,7 +1172,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .lpEager(ListSet(
         TypeReadSetConflict(relTypeName("T")).withConflict(Conflict(Id(2), Id(6)))
       ))
-      .statefulShortestPath(`((start)((a)-[r:R]->(b))+(end))`)
+      .statefulShortestPath(`((start)(({prop: 5})-[r:R]->())+(end))`)
       .cartesianProduct()
       .|.allNodeScan("end")
       .filter("start.prop = 5")
@@ -1176,7 +1193,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
     val query =
-      "MATCH ANY SHORTEST ((start {prop: 5})((a)-[r:R]->(b))+(end)) MERGE (start)-[t:R]-(end) RETURN end"
+      "MATCH ANY SHORTEST ((start {prop: 5})((a{prop: 5})-[r:R]->(b))+(end)) MERGE (start)-[t:R]-(end) RETURN end"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
@@ -1194,7 +1211,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .|.expandInto("(start)-[t:R]-(end)")
       .|.argument("start", "end")
       .eager(reason)
-      .statefulShortestPath(`((start)((a)-[r:R]->(b))+(end))`)
+      .statefulShortestPath(`((start)((a{prop: 5})-[r:R]->(b))+(end))`)
       .cartesianProduct()
       .|.allNodeScan("end")
       .filter("start.prop = 5")
@@ -1268,7 +1285,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
     val query =
-      "MATCH (x:Label) DELETE x WITH 1 as z MATCH ANY SHORTEST ((start:!Label {prop: 5})((a:!Label)-[r:R]->(b:!Label))+(end:!Label)) return end"
+      "MATCH (x:Label) DELETE x WITH 1 as z MATCH ANY SHORTEST ((start:!Label {prop: 5})((a:!Label{prop: 5})-[r:R]->(b:!Label))+(end:!Label)) return end"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
@@ -1294,7 +1311,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .statefulShortestPath(
           "start",
           "end",
-          "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE unique(`r`))",
+          "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE `a`.prop IN [5] AND NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE unique(`r`))",
           None,
           Set.empty,
           Set.empty,
@@ -1302,9 +1319,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
-            .addTransition(0, 1, "(start) (a WHERE NOT a:Label)")
+            .addTransition(0, 1, "(start) (a WHERE cacheNFromStore[a.prop] = 5 AND NOT a:Label)")
             .addTransition(1, 2, "(a)-[r:R]->(b WHERE NOT b:Label)")
-            .addTransition(2, 1, "(b) (a WHERE NOT a:Label)")
+            .addTransition(2, 1, "(b) (a WHERE cacheNFromStore[a.prop] = 5 AND NOT a:Label)")
             .addTransition(2, 3, "(b) (end)")
             .setFinalState(3)
             .build(),

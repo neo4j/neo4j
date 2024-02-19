@@ -1226,6 +1226,31 @@ Feature: PathSelectorAcceptance
       | ANY 1             |
       | ANY 2             |
 
+  Scenario Outline: PathSelector should handle legacy var-length with set upper bound
+    And having executed:
+      """
+        CREATE (:A)-[:R]->(:B)-[:T]->(:B)
+      """
+    When executing query:
+      """
+        MATCH <pathSelector> (p=(a:A)-[*0..1]-(b:B)) RETURN p
+      """
+    Then the result should be, in any order:
+      | p                    |
+      | <(:A)-[:R {}]->(:B)> |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |
+
   Scenario Outline: PathSelector should handle a previously bound boundary node
     And having executed:
       """

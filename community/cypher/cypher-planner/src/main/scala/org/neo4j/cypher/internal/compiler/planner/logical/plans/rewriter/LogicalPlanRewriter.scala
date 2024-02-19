@@ -76,6 +76,9 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
       inSequence(context.cancellationChecker)(
         ForAllRepetitionsPredicateRewriter(anonymousVariableNameGenerator),
         RemoveUnusedGroupVariablesRewriter,
+        if (context.config.gpmShortestToLegacyShortestEnabled)
+          StatefulShortestToFindShortestRewriter(solveds, anonymousVariableNameGenerator)
+        else identity,
         TrailToVarExpandRewriter(
           labelAndRelTypeInfos,
           otherAttributes.withAlso(solveds, cardinalities, effectiveCardinalities, providedOrders)
