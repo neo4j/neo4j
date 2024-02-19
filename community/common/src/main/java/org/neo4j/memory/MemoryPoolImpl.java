@@ -40,18 +40,18 @@ public class MemoryPoolImpl implements MemoryPool {
      */
     public MemoryPoolImpl(long limit, boolean strict, String limitSettingName) {
         this.limitSettingName = limitSettingName;
-        this.maxMemory.set(validateSize(limit));
+        this.maxMemory.setRelease(validateSize(limit));
         this.strict = strict;
     }
 
     @Override
     public long usedHeap() {
-        return usedHeapBytes.get();
+        return usedHeapBytes.getAcquire();
     }
 
     @Override
     public long usedNative() {
-        return usedNativeBytes.get();
+        return usedNativeBytes.getAcquire();
     }
 
     @Override
@@ -71,35 +71,36 @@ public class MemoryPoolImpl implements MemoryPool {
 
     @Override
     public void reserveHeap(long bytes) {
-        reserveMemory(bytes, usedHeapBytes);
+        reserveMemory(bytes, usedHeapBytes, usedNativeBytes);
     }
 
     @Override
     public void reserveNative(long bytes) {
-        reserveMemory(bytes, usedNativeBytes);
+        reserveMemory(bytes, usedNativeBytes, usedHeapBytes);
     }
 
-    private void reserveMemory(long bytes, AtomicLong counter) {
-        long max;
-        long usedMemoryBefore;
-        do {
-            max = maxMemory.get();
-            usedMemoryBefore = counter.get();
-            if (strict && totalUsed() + bytes > max) {
+    private void reserveMemory(long bytes, AtomicLong poolCounter, AtomicLong complementPoolValue) {
+        long max = strict ? maxMemory.getAcquire() : Long.MAX_VALUE;
+
+        long newCounterValue = poolCounter.addAndGet(bytes);
+        if (strict) {
+            long localTotal = newCounterValue + complementPoolValue.getAcquire();
+            if (localTotal > max) {
+                poolCounter.addAndGet(-bytes);
                 throw new MemoryLimitExceededException(
-                        bytes, max, totalUsed(), MemoryPoolOutOfMemoryError, limitSettingName);
+                        bytes, max, localTotal - bytes, MemoryPoolOutOfMemoryError, limitSettingName);
             }
-        } while (!counter.weakCompareAndSetVolatile(usedMemoryBefore, usedMemoryBefore + bytes));
+        }
     }
 
     @Override
     public long totalSize() {
-        return maxMemory.get();
+        return maxMemory.getAcquire();
     }
 
     @Override
     public void setSize(long size) {
-        maxMemory.set(validateSize(size));
+        maxMemory.setRelease(validateSize(size));
     }
 
     private static long validateSize(long size) {
