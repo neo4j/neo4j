@@ -770,7 +770,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     ShortestPathParameters(
       "start",
       "end",
-      "SHORTEST 1 ((start) ((anon_0)-[r:R]->(b) WHERE `anon_0`.prop IN [5]){1, } (end) WHERE unique(`r`))",
+      "SHORTEST 1 ((start) ((`anon_0`)-[`r`:R]->(`b`) WHERE `anon_0`.prop IN [5]){1, } (end) WHERE unique(`r`))",
       Set(),
       Set.empty,
       StatefulShortestPath.Selector.Shortest(1),
