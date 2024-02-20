@@ -520,46 +520,40 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 60)
+      .setLabelCardinality("B", 60)
+      .build()
+
     test(s"$cypherToken-$orderCapability: Should not need to sort after Label disjunction") {
       val query = s"MATCH (m) WHERE m:A OR m:B RETURN m ORDER BY m $cypherToken"
 
-      val plan = plannerBuilder()
-        .setAllNodesCardinality(100)
-        .setLabelCardinality("A", 60)
-        .setLabelCardinality("B", 60)
-        .build()
+      val plan = planner
         .plan(query)
         .stripProduceResults
 
-      plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-        .unionNodeByLabelsScan("m", Seq("A", "B"), plannedOrder)
-        .build())
-        or equal(new LogicalPlanBuilder(wholePlan = false)
-          .unionNodeByLabelsScan("m", Seq("B", "A"), plannedOrder)
-          .build()))
+      plan should equal(
+        planner.subPlanBuilder()
+          .unionNodeByLabelsScan("m", Seq("A", "B"), plannedOrder)
+          .build()
+      )(SymmetricalLogicalPlanEquality)
     }
 
     test(s"$cypherToken-$orderCapability: Should do a PartialSort after ordered union for Label disjunction") {
       val query = s"MATCH (m) WHERE m:A OR m:B RETURN m ORDER BY m $cypherToken, m.prop"
 
-      val plan = plannerBuilder()
-        .setAllNodesCardinality(100)
-        .setLabelCardinality("A", 60)
-        .setLabelCardinality("B", 60)
-        .build()
+      val plan = planner
         .plan(query)
         .stripProduceResults
 
-      plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-        .partialSortColumns(Seq(sortOrder("m")), Seq(Ascending(v"m.prop")))
-        .projection("m.prop AS `m.prop`")
-        .unionNodeByLabelsScan("m", Seq("A", "B"), plannedOrder)
-        .build())
-        or equal(new LogicalPlanBuilder(wholePlan = false)
+      plan should equal(
+        planner.subPlanBuilder()
           .partialSortColumns(Seq(sortOrder("m")), Seq(Ascending(v"m.prop")))
           .projection("m.prop AS `m.prop`")
-          .unionNodeByLabelsScan("m", Seq("B", "A"), plannedOrder)
-          .build()))
+          .unionNodeByLabelsScan("m", Seq("A", "B"), plannedOrder)
+          .build()
+      )(SymmetricalLogicalPlanEquality)
     }
 
     test(

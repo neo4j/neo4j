@@ -2179,7 +2179,19 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       )(pos)
     )(pos))(pos)
 
-    def upperHalfOfExpectedPlan() = {
+    val nfa = new TestNFABuilder(0, "a")
+      .addTransition(0, 1, "(a) (b)")
+      .addTransition(1, 2, "(b)-[r]->(c)")
+      .addTransition(2, 1, "(c) (b)")
+      .addTransition(2, 3, "(c) (d)")
+      .addTransition(3, 4, "(d) (e)")
+      .addTransition(4, 5, "(e)<-[s]-(f)")
+      .addTransition(5, 4, "(f) (e)")
+      .addTransition(5, 6, "(f) (g)")
+      .setFinalState(6)
+      .build()
+
+    plan should equal(
       planner.subPlanBuilder()
         .projection(Map("p" -> path))
         .statefulShortestPathExpr(
@@ -2192,35 +2204,15 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set("d" -> "d"),
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
-          new TestNFABuilder(0, "a")
-            .addTransition(0, 1, "(a) (b)")
-            .addTransition(1, 2, "(b)-[r]->(c)")
-            .addTransition(2, 1, "(c) (b)")
-            .addTransition(2, 3, "(c) (d)")
-            .addTransition(3, 4, "(d) (e)")
-            .addTransition(4, 5, "(e)<-[s]-(f)")
-            .addTransition(5, 4, "(f) (e)")
-            .addTransition(5, 6, "(f) (g)")
-            .setFinalState(6)
-            .build(),
+          nfa,
           ExpandInto,
           reverseGroupVariableProjections = false
         )
-    }
-
-    plan should (equal(
-      upperHalfOfExpectedPlan()
         .cartesianProduct()
         .|.allNodeScan("g")
         .allNodeScan("a")
         .build()
-    ) or equal(
-      upperHalfOfExpectedPlan()
-        .cartesianProduct()
-        .|.allNodeScan("a")
-        .allNodeScan("g")
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("Should handle both path and sub-path assignment") {

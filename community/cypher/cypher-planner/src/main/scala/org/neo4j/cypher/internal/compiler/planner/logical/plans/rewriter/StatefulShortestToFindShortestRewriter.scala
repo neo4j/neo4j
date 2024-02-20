@@ -246,7 +246,7 @@ case class StatefulShortestToFindShortestRewriter(
       ).size &&
       // Here we check that the same amount of inner node predicates exists on both nodes
       inlinedNodePredicates.distinct.size * 2 == inlinedNodePredicates.size &&
-      // For kleine star all node predicates inside the QPP needs to exist on at least one of the outer juxtaposed nodes,
+      // For Kleene star all node predicates inside the QPP needs to exist on at least one of the outer juxtaposed nodes,
       // otherwise the 0 case would have a misrepresented predicate
       ((qpp.repetition.min != 0L) ||
         juxtaposedNodesCoversInnerNodesPredicates(

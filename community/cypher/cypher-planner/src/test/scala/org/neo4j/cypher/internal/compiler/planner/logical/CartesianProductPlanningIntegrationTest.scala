@@ -151,35 +151,14 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     // A x (BC) = 30 + 30 = 60 // winner
     // (BC) x A = 30 + 30 = 60 // or winner
 
-    batchedPlan should (equal(batched.planBuilder()
+    batchedPlan should equal(batched.planBuilder()
       .produceResults("a", "b", "c")
       .cartesianProduct()
       .|.cartesianProduct()
       .|.|.nodeByLabelScan("c", "C")
       .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
-      .build()) or equal(batched.planBuilder()
-      .produceResults("a", "b", "c")
-      .cartesianProduct()
-      .|.cartesianProduct()
-      .|.|.nodeByLabelScan("b", "B")
-      .|.nodeByLabelScan("c", "C")
-      .nodeByLabelScan("a", "A")
-      .build()) or equal(batched.planBuilder()
-      .produceResults("a", "b", "c")
-      .cartesianProduct()
-      .|.nodeByLabelScan("a", "A")
-      .cartesianProduct()
-      .|.nodeByLabelScan("c", "C")
-      .nodeByLabelScan("b", "B")
-      .build()) or equal(batched.planBuilder()
-      .produceResults("a", "b", "c")
-      .cartesianProduct()
-      .|.nodeByLabelScan("a", "A")
-      .cartesianProduct()
-      .|.nodeByLabelScan("b", "B")
-      .nodeByLabelScan("c", "C")
-      .build()))
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test("should plan cartesian product of two plans so the cost is minimized") {
@@ -218,17 +197,12 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     // A x B = 30 + 20 = 50
     // B x A = 20 + 30 = 50
 
-    batchedPlan should (equal(batched.planBuilder()
+    batchedPlan should equal(batched.planBuilder()
       .produceResults("a", "b")
       .cartesianProduct()
       .|.nodeByLabelScan("a", "A")
       .nodeByLabelScan("b", "B")
-      .build()) or equal(batched.planBuilder()
-      .produceResults("a", "b")
-      .cartesianProduct()
-      .|.nodeByLabelScan("b", "B")
-      .nodeByLabelScan("a", "A")
-      .build()))
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test("should plan value hash join for the output of two functions being compared") {
@@ -325,18 +299,14 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
-    plan should (equal(planner.subPlanBuilder()
-      .expandInto("(a)-[anon_0*1..2]-(b)")
-      .cartesianProduct()
-      .|.nodeByIdSeek("b", Set(), 0)
-      .nodeByIdSeek("a", Set(), 0)
-      .build()) or
-      equal(planner.subPlanBuilder()
+    plan should equal(
+      planner.subPlanBuilder()
         .expandInto("(a)-[anon_0*1..2]-(b)")
         .cartesianProduct()
-        .|.nodeByIdSeek("a", Set(), 0)
-        .nodeByIdSeek("b", Set(), 0)
-        .build()))
+        .|.nodeByIdSeek("b", Set(), 0)
+        .nodeByIdSeek("a", Set(), 0)
+        .build()
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test(
@@ -355,24 +325,17 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
-    plan should (equal(planner.subPlanBuilder()
-      .sort("1 ASC")
-      .projection("1 AS 1")
-      .aggregation(Seq(), Seq("count(b) AS `count(b)`"))
-      .expandInto("(a)-[anon_0*1..2]-(b)")
-      .cartesianProduct()
-      .|.nodeByIdSeek("b", Set(), 0)
-      .nodeByIdSeek("a", Set(), 0)
-      .build()) or
-      equal(planner.subPlanBuilder()
+    plan should equal(
+      planner.subPlanBuilder()
         .sort("1 ASC")
         .projection("1 AS 1")
         .aggregation(Seq(), Seq("count(b) AS `count(b)`"))
         .expandInto("(a)-[anon_0*1..2]-(b)")
         .cartesianProduct()
-        .|.nodeByIdSeek("a", Set(), 0)
-        .nodeByIdSeek("b", Set(), 0)
-        .build()))
+        .|.nodeByIdSeek("b", Set(), 0)
+        .nodeByIdSeek("a", Set(), 0)
+        .build()
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("Plans ExpandInto on top of CartesianProduct for single relationship - Generic ORDER BY solved in LHS") {
@@ -467,19 +430,14 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
-    plan should (equal(planner.subPlanBuilder()
-      .expandInto("(a)-[anon_0*1..2]-(b)")
-      .filter("labels(a) = labels(b)")
-      .cartesianProduct()
-      .|.nodeByIdSeek("b", Set(), 0)
-      .nodeByIdSeek("a", Set(), 0)
-      .build()) or
-      equal(planner.subPlanBuilder()
+    plan should equal(
+      planner.subPlanBuilder()
         .expandInto("(a)-[anon_0*1..2]-(b)")
         .filter("labels(a) = labels(b)")
         .cartesianProduct()
-        .|.nodeByIdSeek("a", Set(), 0)
-        .nodeByIdSeek("b", Set(), 0)
-        .build()))
+        .|.nodeByIdSeek("b", Set(), 0)
+        .nodeByIdSeek("a", Set(), 0)
+        .build()
+    )(SymmetricalLogicalPlanEquality)
   }
 }

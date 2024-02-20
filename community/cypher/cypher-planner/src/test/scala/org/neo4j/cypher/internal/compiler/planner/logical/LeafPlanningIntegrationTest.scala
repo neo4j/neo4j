@@ -52,7 +52,6 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
-import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -89,7 +88,6 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
-import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cost
@@ -706,19 +704,24 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  val awesomePlanner = plannerBuilder()
+    .setAllNodesCardinality(1000)
+    .setLabelCardinality("Awesome", 100)
+    .addNodeIndex("Awesome", Seq("prop1"), 0.1, 0.01)
+    .addNodeIndex("Awesome", Seq("prop2"), 0.1, 0.01)
+    .build()
+
   test("should plan hinted index seek when there are multiple or indices") {
-    val plan =
-      new givenConfig {
-        indexOn("Awesome", "prop1")
-        indexOn("Awesome", "prop2")
-      } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
-
-    val seek1 = nodeIndexSeek("n:Awesome(prop1 = 42)", _ => DoNotGetValue)
-    val seek2 = nodeIndexSeek("n:Awesome(prop2 = 3)", _ => DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
-    val alt1 = Distinct(Union(seek2, seek1), Map(v"n" -> v"n"))
-    val alt2 = Distinct(Union(seek1, seek2), Map(v"n" -> v"n"))
-
-    plan._1 should (equal(alt1) or equal(alt2))
+    val query = "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
+    awesomePlanner.plan(query) should equal(
+      awesomePlanner.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:Awesome(prop2 = 3)")
+        .nodeIndexOperator("n:Awesome(prop1 = 42)")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should plan hinted unique index seek") {
@@ -1175,31 +1178,29 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should be able to OR together two index seeks") {
-    val plan = (new givenConfig {
-      indexOn("Awesome", "prop1")
-      indexOn("Awesome", "prop2")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n")._1
-
-    val seek1 = nodeIndexSeek("n:Awesome(prop1 = 42)", _ => DoNotGetValue)
-    val seek2 = nodeIndexSeek("n:Awesome(prop2 = 'apa')", _ => DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
-    val alt1 = Distinct(Union(seek2, seek1), Map(v"n" -> v"n"))
-    val alt2 = Distinct(Union(seek1, seek2), Map(v"n" -> v"n"))
-
-    plan should (equal(alt1) or equal(alt2))
+    val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n"
+    awesomePlanner.plan(query) should equal(
+      awesomePlanner.planBuilder()
+        .produceResults("n")
+        .distinct("n as n")
+        .union()
+        .|.nodeIndexOperator("n:Awesome(prop1 = 42)")
+        .nodeIndexOperator("n:Awesome(prop2 = 'apa')")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should be able to OR together two index range seeks") {
-    val plan = (new givenConfig {
-      indexOn("Awesome", "prop1")
-      indexOn("Awesome", "prop2")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 >= 42 OR n.prop2 STARTS WITH 'apa' RETURN n")._1
-
-    val seek1 = nodeIndexSeek("n:Awesome(prop1 >= 42)")
-    val seek2 = nodeIndexSeek("n:Awesome(prop2 STARTS WITH 'apa')", propIds = Some(Map("prop2" -> 1)))
-    val alt1 = Distinct(Union(seek1, seek2), Map(v"n" -> v"n"))
-    val alt2 = Distinct(Union(seek2, seek1), Map(v"n" -> v"n"))
-
-    plan should (equal(alt1) or equal(alt2))
+    val query = "MATCH (n:Awesome) WHERE n.prop1 >= 42 OR n.prop2 STARTS WITH 'apa' RETURN n"
+    awesomePlanner.plan(query) should equal(
+      awesomePlanner.planBuilder()
+        .produceResults("n")
+        .distinct("n as n")
+        .union()
+        .|.nodeIndexOperator("n:Awesome(prop1 >= 42)")
+        .nodeIndexOperator("n:Awesome(prop2 STARTS WITH 'apa')")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should use transitive closure to figure out we can use index") {

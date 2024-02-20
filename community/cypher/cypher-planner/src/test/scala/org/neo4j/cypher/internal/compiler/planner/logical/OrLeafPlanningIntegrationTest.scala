@@ -79,7 +79,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -87,15 +87,7 @@ class OrLeafPlanningIntegrationTest
         .|.nodeIndexOperator("n:L(p2 = 2)", indexType = IndexType.RANGE)
         .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p2 = 2)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with index range seeks of property disjunctions") {
@@ -110,7 +102,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -118,15 +110,7 @@ class OrLeafPlanningIntegrationTest
         .|.nodeIndexOperator("n:L(p2 < 7)", indexType = IndexType.RANGE)
         .nodeIndexOperator("n:L(p1 > 3)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1 > 3)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p2 < 7)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with index range-between seeks of property disjunctions") {
@@ -141,7 +125,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -149,15 +133,7 @@ class OrLeafPlanningIntegrationTest
         .|.nodeIndexOperator("n:L(3 < p2 < 7)", indexType = IndexType.RANGE)
         .nodeIndexOperator("n:L(3 < p1 < 10)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(3 < p1 < 10)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(3 < p2 < 7)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with index seeks of property disjunctions with label conjunction") {
@@ -172,7 +148,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -182,16 +158,7 @@ class OrLeafPlanningIntegrationTest
         .filterExpression(hasLabels("n", "P"))
         .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .filterExpression(hasLabels("n", "P"))
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p2 = 2)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with index seeks of property disjunctions with label conjunction and solve single index hint") {
@@ -207,7 +174,7 @@ class OrLeafPlanningIntegrationTest
          |RETURN n""".stripMargin
     )
 
-    plan() should (equal(
+    plan() should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -217,16 +184,7 @@ class OrLeafPlanningIntegrationTest
         .filterExpression(hasLabels("n", "P"))
         .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .filterExpression(hasLabels("n", "P"))
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p2 = 2)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
   }
 
@@ -244,7 +202,7 @@ class OrLeafPlanningIntegrationTest
          |RETURN n""".stripMargin
     )
 
-    plan() should (equal(
+    plan() should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -254,16 +212,7 @@ class OrLeafPlanningIntegrationTest
         .filterExpression(hasLabels("n", "P"))
         .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .filterExpression(hasLabels("n", "P"))
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p2 = 2)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
   }
 
@@ -317,7 +266,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN r""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
@@ -325,15 +274,7 @@ class OrLeafPlanningIntegrationTest
         .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", indexType = IndexType.RANGE)
         .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("r")
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with relationship index seeks of property disjunctions and solve single index hint") {
@@ -349,7 +290,7 @@ class OrLeafPlanningIntegrationTest
          |RETURN r""".stripMargin
     )
 
-    plan() should (equal(
+    plan() should equal(
       cfg.planBuilder()
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
@@ -357,15 +298,7 @@ class OrLeafPlanningIntegrationTest
         .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", indexType = IndexType.RANGE)
         .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("r")
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
   }
 
@@ -383,7 +316,7 @@ class OrLeafPlanningIntegrationTest
          |RETURN r""".stripMargin
     )
 
-    plan() should (equal(
+    plan() should equal(
       cfg.planBuilder()
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
@@ -391,15 +324,7 @@ class OrLeafPlanningIntegrationTest
         .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", indexType = IndexType.RANGE)
         .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("r")
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
   }
 
@@ -416,7 +341,7 @@ class OrLeafPlanningIntegrationTest
     )
 
     // Possible improvement: We could have planned this as OrderedDistinct
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -424,15 +349,7 @@ class OrLeafPlanningIntegrationTest
         .|.nodeIndexOperator("n:P(p1 = 1)", indexType = IndexType.RANGE)
         .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:P(p1 = 1)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with index seeks of label disjunctions and solve single index hint") {
@@ -450,7 +367,7 @@ class OrLeafPlanningIntegrationTest
 
     // Possible improvement: We could have planned this as OrderedDistinct
     // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -458,15 +375,7 @@ class OrLeafPlanningIntegrationTest
         .|.nodeIndexOperator("n:P(p1 = 1)", indexType = IndexType.RANGE)
         .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:P(p1 = 1)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with index seeks of label disjunctions and solve two index hints") {
@@ -485,7 +394,7 @@ class OrLeafPlanningIntegrationTest
 
     // Possible improvement: We could have planned this as OrderedDistinct
     // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -493,15 +402,7 @@ class OrLeafPlanningIntegrationTest
         .|.nodeIndexOperator("n:P(p1 = 1)", indexType = IndexType.RANGE)
         .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:P(p1 = 1)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with label scan + filter on one side of label disjunctions if there is only one index") {
@@ -515,7 +416,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -524,16 +425,7 @@ class OrLeafPlanningIntegrationTest
         .|.nodeByLabelScan("n", "P", IndexOrderAscending)
         .nodeIndexOperator("n:L(p1 < 1)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator("n:L(p1 < 1)", indexType = IndexType.RANGE)
-        .filter("n.p1 = 1")
-        .nodeByLabelScan("n", "P", IndexOrderAscending)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with relationship index seeks of relationship type disjunctions") {
@@ -549,7 +441,7 @@ class OrLeafPlanningIntegrationTest
     )
 
     // Possible improvement: We could have planned this as OrderedDistinct
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
@@ -557,15 +449,7 @@ class OrLeafPlanningIntegrationTest
         .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", indexType = IndexType.RANGE)
         .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("r")
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with relationship index seeks of relationship type disjunctions and solve single index hint") {
@@ -582,7 +466,7 @@ class OrLeafPlanningIntegrationTest
     )
 
     // Possible improvement: We could have planned this as OrderedDistinct
-    plan() should (equal(
+    plan() should equal(
       cfg.planBuilder()
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
@@ -590,15 +474,7 @@ class OrLeafPlanningIntegrationTest
         .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", indexType = IndexType.RANGE)
         .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("r")
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
   }
 
@@ -617,7 +493,7 @@ class OrLeafPlanningIntegrationTest
     )
 
     // Possible improvement: We could have planned this as OrderedDistinct
-    plan() should (equal(
+    plan() should equal(
       cfg.planBuilder()
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
@@ -625,15 +501,7 @@ class OrLeafPlanningIntegrationTest
         .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", indexType = IndexType.RANGE)
         .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("r")
-        .distinct("r AS r", "a AS a", "b AS b")
-        .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
   }
 
@@ -646,17 +514,12 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("L", "P"))
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with label scans of label disjunctions only and solve single scan hint") {
@@ -670,17 +533,12 @@ class OrLeafPlanningIntegrationTest
     )
 
     // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("L", "P"))
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with label scans of label disjunctions only and solve two scan hints") {
@@ -695,17 +553,12 @@ class OrLeafPlanningIntegrationTest
     )
 
     // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("L", "P"))
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with relationship type scans of relationship type disjunctions only") {
@@ -859,19 +712,13 @@ class OrLeafPlanningIntegrationTest
     )
 
     // Possible improvement: This could be planned with a nodeByLabelScan and a nodeIndexSeek
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .filterExpression(ors(hasLabels("n", "L"), propEquality("n", "p1", 1)))
         .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .filterExpression(ors(hasLabels("n", "L"), propEquality("n", "p1", 1)))
-        .unionNodeByLabelsScan("n", Seq("L", "P"))
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should work with relationship index disjunction of conjunctions") {
@@ -912,17 +759,12 @@ class OrLeafPlanningIntegrationTest
 
     val plan = cfg.plan(s"MATCH (n) WHERE n:L or n:P RETURN n")
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .unionNodeByLabelsScan("n", Seq("L", "P"))
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should prefer type scan to relationship index scan from existence constraint with same cardinality") {
@@ -960,19 +802,13 @@ class OrLeafPlanningIntegrationTest
 
     val plan = cfg.plan(s"MATCH (n) WHERE n:L or n:P RETURN n.p1 AS p")
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("p")
         .projection("n.p1 AS p")
         .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("p")
-        .projection("n.p1 AS p")
-        .unionNodeByLabelsScan("n", Seq("P", "L"))
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test(
@@ -1019,19 +855,13 @@ class OrLeafPlanningIntegrationTest
 
     val plan = cfg.plan(s"MATCH (n) WHERE n:L or n:P RETURN count(n.p2) AS c")
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("c")
         .aggregation(Seq(), Seq("count(n.p2) AS c"))
         .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("c")
-        .aggregation(Seq(), Seq("count(n.p2) AS c"))
-        .unionNodeByLabelsScan("n", Seq("P", "L"))
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test(
@@ -1077,21 +907,14 @@ class OrLeafPlanningIntegrationTest
 
     val plan = cfg.plan(s"MATCH (n) WHERE (n:L or n:P) AND n.p1 <> 1 RETURN count(n.p2) AS c")
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("c")
         .aggregation(Seq(), Seq("count(n.p2) AS c"))
         .filter("not n.p1 = 1")
         .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("c")
-        .aggregation(Seq(), Seq("count(n.p2) AS c"))
-        .filter("not n.p1 = 1")
-        .unionNodeByLabelsScan("n", Seq("P", "L"))
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should prefer union relationship type scan for aggregated property, even if other property is referenced") {
@@ -1252,7 +1075,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -1266,21 +1089,7 @@ class OrLeafPlanningIntegrationTest
           indexType = IndexType.RANGE
         )
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator(
-          "n:L(prop > 123)",
-          argumentIds = Set(),
-          getValue = Map("prop" -> DoNotGetValue),
-          indexType = IndexType.RANGE
-        )
-        .filter("n:L")
-        .nodeByIdSeek("n", Set(), 1)
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should solve element id seekable predicates in OR expression") {
@@ -1295,7 +1104,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -1309,21 +1118,7 @@ class OrLeafPlanningIntegrationTest
           indexType = IndexType.RANGE
         )
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .distinct("n AS n")
-        .union()
-        .|.nodeIndexOperator(
-          "n:L(prop > 123)",
-          argumentIds = Set(),
-          getValue = Map("prop" -> DoNotGetValue),
-          indexType = IndexType.RANGE
-        )
-        .filter("n:L")
-        .nodeByElementIdSeek("n", Set(), "'some-id'")
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should be able to cope with disjunction of overlapping predicates") {
@@ -1355,7 +1150,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN a""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       planner.planBuilder()
         .produceResults("a")
         .filter(
@@ -1369,21 +1164,7 @@ class OrLeafPlanningIntegrationTest
         .filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
         .nodeIndexOperator("a:A(prop2)")
         .build()
-    ) or equal(
-      planner.planBuilder()
-        .produceResults("a")
-        .filter(
-          "a.prop2 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL",
-          "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL"
-        )
-        .distinct("a AS a")
-        .union()
-        .|.filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
-        .|.nodeIndexOperator("a:A(prop2)")
-        .filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
-        .nodeByLabelScan("a", "A")
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should be able to cope with any combination of disjunction of predicates") {
@@ -1481,19 +1262,13 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan should equal(
       cfg.planBuilder()
         .produceResults("n")
         .filter("n.p1 < 1")
         .unionNodeByLabelsScan("n", Seq("P", "L"))
         .build()
-    ) or equal(
-      cfg.planBuilder()
-        .produceResults("n")
-        .filter("n.p1 < 1")
-        .unionNodeByLabelsScan("n", Seq("L", "P"))
-        .build()
-    ))
+    )(SymmetricalLogicalPlanEquality)
   }
 
   test("should not crash on XOR predicates that might get rewritten to Ors with a single predicate") {
