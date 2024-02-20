@@ -73,6 +73,61 @@ object CandidateListFinder {
       copy(candidates = candidate :: candidates)
   }
 
+  /**
+   * @param eagerizeLHSvsRHSConflicts               if `true` a conflict between the LHS and the RHS needs an Eager on the LHS
+   * @param emptyCandidateListsForRHSvsTopConflicts if `true` a conflict between the RHS and the Top can only be solved by
+   *                                                an Eager on Top
+   */
+  private case class BinaryPlanEagerizationStrategy(
+    eagerizeLHSvsRHSConflicts: Boolean,
+    emptyCandidateListsForRHSvsTopConflicts: Boolean
+  )
+
+  private object BinaryPlanEagerizationStrategy {
+
+    private def assertNoLhsVsRHSConflicts(plan: LogicalPlan, hasLhsVsRhsConflicts: Boolean): Boolean = {
+      if (hasLhsVsRhsConflicts) {
+        throw new IllegalStateException(
+          s"We do not expect conflicts between the two branches of a ${plan.getClass.getSimpleName} yet."
+        )
+      }
+      false
+    }
+
+    def forPlan(plan: LogicalBinaryPlan, hasLhsVsRhsConflicts: Boolean): BinaryPlanEagerizationStrategy = plan match {
+      case _: EagerLogicalPlan => BinaryPlanEagerizationStrategy(
+          eagerizeLHSvsRHSConflicts = false,
+          emptyCandidateListsForRHSvsTopConflicts = false
+        )
+      case _: Union => BinaryPlanEagerizationStrategy(
+          eagerizeLHSvsRHSConflicts = false,
+          emptyCandidateListsForRHSvsTopConflicts = false
+        )
+      case _: OrderedUnion => BinaryPlanEagerizationStrategy(
+          eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+          emptyCandidateListsForRHSvsTopConflicts = false
+        )
+      case _: AssertSameNode => BinaryPlanEagerizationStrategy(
+          eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+          emptyCandidateListsForRHSvsTopConflicts = true
+        )
+      case _: AssertSameRelationship => BinaryPlanEagerizationStrategy(
+          eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+          emptyCandidateListsForRHSvsTopConflicts = true
+        )
+      case _: CartesianProduct => BinaryPlanEagerizationStrategy(
+          eagerizeLHSvsRHSConflicts = true,
+          emptyCandidateListsForRHSvsTopConflicts = true
+        )
+      case _: RepeatOptions => BinaryPlanEagerizationStrategy(
+          eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+          emptyCandidateListsForRHSvsTopConflicts = true
+        )
+      case p: ApplyPlan =>
+        throw new IllegalStateException(s"combineWithRhs is not supposed to be called with ApplyPlans. Got: $p")
+    }
+  }
+
   private object SequencesAcc {
 
     def removeConflict(
@@ -177,63 +232,13 @@ object CandidateListFinder {
         isSolvedConflictingPlanPair(os.conflict)
       }
 
-      /**
-       * @param eagerizeLHSvsRHSConflicts               if `true` a conflict between the LHS and the RHS needs an Eager on the LHS
-       * @param emptyCandidateListsForRHSvsTopConflicts if `true` a conflict between the RHS and the Top can only be solved by
-       *                                                an Eager on Top
-       */
-      case class BinaryPlanEagerizationStrategy(
-        eagerizeLHSvsRHSConflicts: Boolean,
-        emptyCandidateListsForRHSvsTopConflicts: Boolean
-      )
-
-      def assertNoLhsVsRHSConflicts: Boolean = {
-        if (solvedLHSvsRHSConflicts.nonEmpty) {
-          throw new IllegalStateException(
-            s"We do not expect conflicts between the two branches of a ${plan.getClass.getSimpleName} yet."
-          )
-        }
-        false
-      }
-
-      val eagerizationStrategy = plan match {
-        case _: EagerLogicalPlan => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = false,
-            emptyCandidateListsForRHSvsTopConflicts = false
-          )
-        case _: Union => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = false,
-            emptyCandidateListsForRHSvsTopConflicts = false
-          )
-        case _: OrderedUnion => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts,
-            emptyCandidateListsForRHSvsTopConflicts = false
-          )
-        case _: AssertSameNode => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts,
-            emptyCandidateListsForRHSvsTopConflicts = true
-          )
-        case _: AssertSameRelationship => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts,
-            emptyCandidateListsForRHSvsTopConflicts = true
-          )
-        case _: CartesianProduct => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = true,
-            emptyCandidateListsForRHSvsTopConflicts = true
-          )
-        case _: RepeatOptions => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts,
-            emptyCandidateListsForRHSvsTopConflicts = true
-          )
-        case p: ApplyPlan =>
-          throw new IllegalStateException(s"combineWithRhs is not supposed to be called with ApplyPlans. Got: $p")
-      }
+      val eagerizationStrategy = BinaryPlanEagerizationStrategy.forPlan(plan, solvedLHSvsRHSConflicts.nonEmpty)
 
       // Compute new open sequences
       val filteredRhsOpenSequences =
         if (eagerizationStrategy.emptyCandidateListsForRHSvsTopConflicts)
           rhs.openSequences.view.mapValues(_.map {
-            case o@OpenSequence(_, layer, conflict) =>
+            case o @ OpenSequence(_, layer, conflict) =>
               if (conflictsWithRHS(conflict)) {
                 OpenSequence(List.empty, layer, conflict)
               } else {
@@ -282,6 +287,86 @@ object CandidateListFinder {
     }
   }
 
+  private def pushLayerForLeafPlans(acc: SequencesAcc, p: LogicalPlan): SequencesAcc = {
+    p match {
+      case _: LogicalLeafPlan => acc.pushLayer()
+      case _ => acc
+    }
+  }
+
+  private def checkConstraints(p: LogicalPlan): Unit = {
+    p match {
+      // All Semi Apply variants must have read-only RHSs
+      // If this changes in the future, the correct way to eagerize a SemiApply variant
+      // that conflicts with its RHS is like this:
+      // .selectOrSemiApply("var1")
+      // .|.setLabel("n:A")
+      // .|. ...
+      // .eager()
+      // .projection("a:A AS var1")
+      // . ...
+      case s: SingleFromRightLogicalPlan if !s.right.readOnly =>
+        throw new IllegalStateException(
+          "Eagerness analysis does not support if the RHS of a SingleFromRightLogicalPlan contains writes"
+        )
+
+      case _ =>
+    }
+  }
+
+  private def updateSequences(acc: SequencesAcc, p: Ref[LogicalPlan]): SequencesAcc = {
+    // Find conflicts that contain this plan
+    val SequencesAcc(remainingConflicts, newOpenSequences, _, _) =
+      acc.openConflicts.get(p) match {
+        case Some(conflicts) =>
+          // Start with an empty accumulator, except that all conflicts are kept, except the ones that will now
+          // get converted to open sequences.
+          val innerAcc = SequencesAcc(acc.openConflicts.removed(p))
+          conflicts.foldLeft(innerAcc) {
+            case (innerAcc, conflict) =>
+              val withOpenSequence = if (conflict.first == p) {
+                // Add an open sequence that ends at the other plan and initially contains p as a candidate
+                innerAcc.withAddedOpenSequence(p, conflict.second, conflict, acc.currentLayer)
+              } else {
+                // Add an open sequence that ends at the other plan and initially contains p as a candidate
+                innerAcc.withAddedOpenSequence(p, conflict.first, conflict, acc.currentLayer)
+              }
+
+              // Make sure to also remove the conflict from the "other" side.
+              // It has already been removed from the Set with `p` as the key.
+              val updatedInnerConflicts = SequencesAcc.removeConflict(innerAcc.openConflicts, conflict)
+              withOpenSequence.copy(openConflicts = updatedInnerConflicts)
+          }
+        case None =>
+          SequencesAcc(acc.openConflicts)
+      }
+
+    // Find open sequences that are closed by this plan
+    val newCandidateLists = acc.openSequences.getOrElse(p, Seq.empty).map(_.candidateListWithConflict)
+
+    val remainingOpenSequences = {
+      // All sequences that do not end in p
+      (acc.openSequences - p)
+        .view.mapValues(_.map {
+        case os@OpenSequence(_, layer, _) if acc.currentLayer == layer =>
+          // Add p to all remaining open sequences on the same layer
+          os.withAddedCandidate(p)
+        case os => os
+      }).toMap
+    }
+
+    acc.copy(
+      openConflicts = remainingConflicts,
+      openSequences = remainingOpenSequences.fuse(newOpenSequences)(_ ++ _),
+      candidateLists = acc.candidateLists ++ newCandidateLists
+    )
+  }
+
+  private def processPlan(acc: SequencesAcc, plan: LogicalPlan): SequencesAcc = {
+    checkConstraints(plan)
+    updateSequences(pushLayerForLeafPlans(acc, plan), Ref(plan))
+  }
+
   /**
    * For each conflict between two plans, find a candidate list of plans. Planning Eager on top of any plan
    * in the candidate list will solve the respective conflict.
@@ -289,87 +374,6 @@ object CandidateListFinder {
    * This is done by traversing the plan and accumulating the plans between the two conflicting plans as candidates.
    */
   private[eager] def findCandidateLists(plan: LogicalPlan, conflicts: Seq[ConflictingPlanPair]): Seq[CandidateList] = {
-
-    def pushLayerForLeafPlans(acc: SequencesAcc, p: LogicalPlan): SequencesAcc = {
-      p match {
-        case _: LogicalLeafPlan => acc.pushLayer()
-        case _                  => acc
-      }
-    }
-
-    def checkConstraints(p: LogicalPlan): Unit = {
-      p match {
-        // All Semi Apply variants must have read-only RHSs
-        // If this changes in the future, the correct way to eagerize a SemiApply variant
-        // that conflicts with its RHS is like this:
-        // .selectOrSemiApply("var1")
-        // .|.setLabel("n:A")
-        // .|. ...
-        // .eager()
-        // .projection("a:A AS var1")
-        // . ...
-        case s: SingleFromRightLogicalPlan if !s.right.readOnly =>
-          throw new IllegalStateException(
-            "Eagerness analysis does not support if the RHS of a SingleFromRightLogicalPlan contains writes"
-          )
-
-        case _ =>
-      }
-    }
-
-    def updateSequences(acc: SequencesAcc, p: Ref[LogicalPlan]): SequencesAcc = {
-      // Find conflicts that contain this plan
-      val SequencesAcc(remainingConflicts, newOpenSequences, _, _) =
-        acc.openConflicts.get(p) match {
-          case Some(conflicts) =>
-            // Start with an empty accumulator, except that all conflicts are kept, except the ones that will now
-            // get converted to open sequences.
-            val innerAcc = SequencesAcc(acc.openConflicts.removed(p))
-            conflicts.foldLeft(innerAcc) {
-              case (innerAcc, conflict) =>
-                val withOpenSequence = if (conflict.first == p) {
-                  // Add an open sequence that ends at the other plan and initially contains p as a candidate
-                  innerAcc.withAddedOpenSequence(p, conflict.second, conflict, acc.currentLayer)
-                } else {
-                  // Add an open sequence that ends at the other plan and initially contains p as a candidate
-                  innerAcc.withAddedOpenSequence(p, conflict.first, conflict, acc.currentLayer)
-                }
-
-                // Make sure to also remove the conflict from the "other" side.
-                // It has already been removed from the Set with `p` as the key.
-                val updatedInnerConflicts = SequencesAcc.removeConflict(innerAcc.openConflicts, conflict)
-                withOpenSequence.copy(openConflicts = updatedInnerConflicts)
-            }
-          case None =>
-            SequencesAcc(acc.openConflicts)
-        }
-
-      // Find open sequences that are closed by this plan
-      val newCandidateLists = acc.openSequences.getOrElse(p, Seq.empty).map(_.candidateListWithConflict)
-
-      val remainingOpenSequences = {
-        // All sequences that do not end in p
-        (acc.openSequences - p)
-          .view.mapValues(_.map {
-            case os @ OpenSequence(_, layer, _) if acc.currentLayer == layer =>
-              // Add p to all remaining open sequences on the same layer
-              os.withAddedCandidate(p)
-            case os => os
-          }).toMap
-      }
-
-      acc.copy(
-        openConflicts = remainingConflicts,
-        openSequences = remainingOpenSequences.fuse(newOpenSequences)(_ ++ _),
-        candidateLists = acc.candidateLists ++ newCandidateLists
-      )
-    }
-
-    def processPlan(acc: SequencesAcc, plan: LogicalPlan): SequencesAcc = {
-      checkConstraints(plan)
-      updateSequences(pushLayerForLeafPlans(acc, plan), Ref(plan))
-    }
-
     val conflictsMapBuilder = scala.collection.mutable.MultiDict.empty[Ref[LogicalPlan], ConflictingPlanPair]
     conflicts.foreach {
       case c @ ConflictingPlanPair(first, second, _) =>
