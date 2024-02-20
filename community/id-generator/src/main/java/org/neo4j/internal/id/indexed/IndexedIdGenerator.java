@@ -112,7 +112,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
         void normalized(long idRange);
 
-        void bridged(long bridgedId, long numberOfIds);
+        void bridged(long bridgedId);
 
         void checkpoint(long highestWrittenId, long highId);
 
@@ -157,7 +157,7 @@ public class IndexedIdGenerator implements IdGenerator {
             public void normalized(long idRange) {}
 
             @Override
-            public void bridged(long bridgedId, long numberOfIds) {}
+            public void bridged(long bridgedId) {}
 
             @Override
             public void checkpoint(long highestWrittenId, long highId) {}

@@ -72,7 +72,7 @@ class LoggingIndexedIdGeneratorMonitorTest {
             clock.forward(timeStep, MILLISECONDS);
             monitor.allocatedFromReused(2, 1);
             clock.forward(timeStep, MILLISECONDS);
-            monitor.bridged(3, 2);
+            monitor.bridged(3);
             clock.forward(timeStep, MILLISECONDS);
             monitor.cached(4, 1);
             clock.forward(timeStep, MILLISECONDS);
@@ -103,7 +103,7 @@ class LoggingIndexedIdGeneratorMonitorTest {
         verify(dumper).typeAndTwoIds(LoggingIndexedIdGeneratorMonitor.Type.OPENED, time += timeStep, 98, 99);
         verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.ALLOCATE_HIGH, time += timeStep, 1, 1);
         verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.ALLOCATE_REUSED, time += timeStep, 2, 1);
-        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.BRIDGED, time += timeStep, 3, 2);
+        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.BRIDGED, time += timeStep, 3);
         verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.CACHED, time += timeStep, 4, 1);
         verify(dumper).typeAndTwoIds(LoggingIndexedIdGeneratorMonitor.Type.CHECKPOINT, time += timeStep, 5, 6);
         verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_USED, time += timeStep, 8, 1);
@@ -188,7 +188,7 @@ class LoggingIndexedIdGeneratorMonitorTest {
             }
 
             @Override
-            public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id, long numberOfIds) {
+            public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id, int numberOfIds) {
                 int intId = toIntExact(id);
                 assertFalse(ids.get(intId));
                 ids.set(intId);
@@ -251,7 +251,7 @@ class LoggingIndexedIdGeneratorMonitorTest {
             }
 
             @Override
-            public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id, long numberOfIds) {
+            public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id, int numberOfIds) {
                 if (lastId.longValue() != -1) {
                     assertTrue(id > lastId.longValue());
                 }

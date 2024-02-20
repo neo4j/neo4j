@@ -46,7 +46,6 @@ class IdRange {
     static final int BITSET_COMMIT = 0;
     static final int BITSET_REUSE = 1;
     static final int BITSET_RESERVED = 2;
-    static final int BITSET_ALL = -1;
 
     static final int BITSET_SIZE = Long.SIZE;
 
@@ -106,8 +105,12 @@ class IdRange {
         }
     }
 
+    void setBitsForAllTypes(int offset, int numberOfIds) {
+        setBits(-1, offset, numberOfIds);
+    }
+
     private void updateBitSet(int type, int bitSetIndex, long mask) {
-        if (type == BITSET_ALL) {
+        if (type == -1) {
             bitSets[BITSET_COMMIT][bitSetIndex] |= mask;
             bitSets[BITSET_REUSE][bitSetIndex] |= mask;
             bitSets[BITSET_RESERVED][bitSetIndex] |= mask;
