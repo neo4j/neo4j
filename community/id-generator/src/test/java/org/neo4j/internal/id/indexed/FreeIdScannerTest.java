@@ -839,11 +839,6 @@ class FreeIdScannerTest {
                 }
 
                 @Override
-                public void flush() {
-                    actual.flush();
-                }
-
-                @Override
                 public void close() {
                     actual.close();
                 }

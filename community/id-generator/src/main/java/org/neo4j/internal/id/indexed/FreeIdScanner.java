@@ -261,15 +261,6 @@ class FreeIdScanner {
                 // the ID to be allocated, used and (again) deleted and freed before marked as reserved here,
                 // and therefore "lost" until next restart.
                 marker.markReserved(id, numberOfIds);
-            }
-
-            marker.flush();
-
-            iterator = pendingIdQueue.longIterator();
-            while (iterator.hasNext()) {
-                var combinedId = iterator.next();
-                var id = idFromCombinedId(combinedId);
-                var numberOfIds = numberOfIdsFromCombinedId(combinedId);
                 var accepted = cache.offer(id, numberOfIds, monitor);
                 if (accepted < numberOfIds) {
                     long idToUndo = id + accepted;

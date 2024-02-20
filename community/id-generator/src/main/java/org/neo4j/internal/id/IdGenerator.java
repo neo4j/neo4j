@@ -271,8 +271,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         void markUncached(long id, int numberOfIds);
 
-        void flush();
-
         @Override
         void close();
 
@@ -301,11 +299,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
             @Override
             public void markUncached(long id, int numberOfIds) {
                 actual.markUncached(id, numberOfIds);
-            }
-
-            @Override
-            public void flush() {
-                actual.flush();
             }
 
             @Override
@@ -467,9 +460,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         @Override
         public void markUncached(long id, int numberOfIds) {}
-
-        @Override
-        public void flush() {}
 
         @Override
         public void close() {}
