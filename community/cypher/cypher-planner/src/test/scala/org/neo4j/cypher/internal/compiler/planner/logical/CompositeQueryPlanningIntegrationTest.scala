@@ -380,9 +380,10 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       .produceResults("prop")
       .apply()
       .|.runQueryAt(
-        query =
-          """MATCH (`n`)
-            |RETURN (`n`).`prop` AS `prop`""".stripMargin,
+        query = List(
+          "MATCH (`n`)",
+          "RETURN (`n`).`prop` AS `prop`"
+        ).mkString(NL),
         graphReference = "graph.byName(component)",
         columns = Set("prop")
       )
