@@ -25,6 +25,8 @@ import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +36,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.ZippedStore;
@@ -58,6 +61,7 @@ public class FailingDatabaseUpgradeTransactionIT {
             .filter(dbmsRuntimeVersion -> dbmsRuntimeVersion.kernelVersion() == OLD_KERNEL_VERSION)
             .findFirst()
             .orElseThrow();
+    private static final int MAX_TRANSACTIONS = 10;
 
     @Inject
     protected TestDirectory testDirectory;
@@ -101,8 +105,14 @@ public class FailingDatabaseUpgradeTransactionIT {
             Future<Object> readTx = null;
             try {
                 readTx = executor.executeDontWait(() -> {
-                    try (Transaction ignored = db.beginTx()) {
+                    Collection<AutoCloseable> txs = new ArrayList<>();
+                    try {
+                        for (int i = 0; i < MAX_TRANSACTIONS - 1; i++) {
+                            txs.add(db.beginTx());
+                        }
+                    } finally {
                         barrier.reached();
+                        IOUtils.closeAll(txs);
                     }
                     return null;
                 });
@@ -161,7 +171,7 @@ public class FailingDatabaseUpgradeTransactionIT {
 
     protected void startDbms() {
         dbms = configure(createDbmsBuilder())
-                .setConfig(GraphDatabaseSettings.max_concurrent_transactions, 2)
+                .setConfig(GraphDatabaseSettings.max_concurrent_transactions, MAX_TRANSACTIONS)
                 .build();
         db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         systemDb = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
