@@ -89,33 +89,24 @@ class IdRange {
         return 1L << bitIndex;
     }
 
-    void setBits(int type, int offset, int numberOfIds) {
-        int bitSetIndex = offset >> BITSET_SHIFT;
-        int bitIndex = offset & BITSET_AND_MASK;
-        if (numberOfIds == 1) {
-            updateBitSet(type, bitSetIndex, bitMask(bitIndex));
-        } else {
-            int endLongIndex = (offset + numberOfIds - 1) >> BITSET_SHIFT;
-            for (int longIndex = bitSetIndex; longIndex <= endLongIndex; longIndex++, bitIndex = 0) {
-                int numBitsInThisLong = Math.min(BITSET_SIZE - bitIndex, numberOfIds);
-                long mask = numBitsInThisLong == BITSET_SIZE ? -1 : ((1L << numBitsInThisLong) - 1) << bitIndex;
-                updateBitSet(type, longIndex, mask);
-                numberOfIds -= numBitsInThisLong;
-            }
+    void setBits(int type, int n, int numIds) {
+        for (int i = 0; i < numIds; i++) {
+            int bit = n + i;
+            int longIndex = bit >> BITSET_SHIFT;
+            int bitIndex = bit & BITSET_AND_MASK;
+            bitSets[type][longIndex] |= bitMask(bitIndex);
         }
     }
 
-    void setBitsForAllTypes(int offset, int numberOfIds) {
-        setBits(-1, offset, numberOfIds);
-    }
-
-    private void updateBitSet(int type, int bitSetIndex, long mask) {
-        if (type == -1) {
-            bitSets[BITSET_COMMIT][bitSetIndex] |= mask;
-            bitSets[BITSET_REUSE][bitSetIndex] |= mask;
-            bitSets[BITSET_RESERVED][bitSetIndex] |= mask;
-        } else {
-            bitSets[type][bitSetIndex] |= mask;
+    void setBitsForAllTypes(int n, int numIds) {
+        for (int i = 0; i < numIds; i++) {
+            int bit = n + i;
+            int longIndex = bit >> BITSET_SHIFT;
+            int bitIndex = bit & BITSET_AND_MASK;
+            long mask = bitMask(bitIndex);
+            bitSets[BITSET_COMMIT][longIndex] |= mask;
+            bitSets[BITSET_REUSE][longIndex] |= mask;
+            bitSets[BITSET_RESERVED][longIndex] |= mask;
         }
     }
 
