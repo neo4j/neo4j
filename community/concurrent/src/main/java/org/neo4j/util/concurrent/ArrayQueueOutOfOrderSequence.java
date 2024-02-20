@@ -21,127 +21,93 @@ package org.neo4j.util.concurrent;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
-import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.neo4j.internal.helpers.Numbers;
 
 /**
  * A crude, synchronized implementation of OutOfOrderSequence. Please implement a faster one if need be.
  */
 public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
-    // odd means updating, even means no one is updating
-    private volatile int version;
-    private volatile long highestGapFreeNumber;
-    private volatile long[] highestGapFreeMeta;
     private final SequenceArray outOfOrderQueue;
-    private long[] metaArray;
-    private volatile long highestEverSeen;
+    private final AtomicReference<NumberWithMeta> highestGapFreeNumber;
+    private final AtomicLong highestEverSeen;
+    private final AtomicReference<ReverseSnapshot> reverseSnapshot;
 
-    private volatile ReverseSnapshot reverseSnapshot;
-
-    public ArrayQueueOutOfOrderSequence(long startingNumber, int initialArraySize, long[] initialMeta) {
-        this.highestGapFreeNumber = startingNumber;
-        this.highestEverSeen = startingNumber;
-        this.highestGapFreeMeta = Arrays.copyOf(initialMeta, initialMeta.length);
-        this.metaArray = Arrays.copyOf(initialMeta, initialMeta.length);
-        this.outOfOrderQueue = new SequenceArray(initialMeta.length + 1, initialArraySize);
-        this.reverseSnapshot = new ReverseSnapshot(startingNumber, startingNumber, EMPTY_LONG_ARRAY);
+    public ArrayQueueOutOfOrderSequence(long startingNumber, int initialArraySize, Meta initialMeta) {
+        this.highestGapFreeNumber = new AtomicReference<>(new NumberWithMeta(startingNumber, initialMeta));
+        this.highestEverSeen = new AtomicLong(startingNumber);
+        this.outOfOrderQueue = new SequenceArray(Numbers.ceilingPowerOfTwo(initialArraySize));
+        this.reverseSnapshot =
+                new AtomicReference<>(new ReverseSnapshot(startingNumber, startingNumber, EMPTY_LONG_ARRAY));
     }
 
     @Override
-    public synchronized boolean offer(long number, long[] meta) {
-        highestEverSeen = Math.max(highestEverSeen, number);
-        if (highestGapFreeNumber + 1 == number) {
-            version++;
-            highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree(number, metaArray);
-            highestGapFreeMeta = highestGapFreeNumber == number ? meta : Arrays.copyOf(metaArray, metaArray.length);
-            reverseSnapshot = null;
-            version++;
+    public synchronized boolean offer(long number, Meta meta) {
+        highestEverSeen.setRelease(Math.max(highestEverSeen.getAcquire(), number));
+        NumberWithMeta localGapFree = highestGapFreeNumber.getAcquire();
+        if (localGapFree.number() + 1 == number) {
+            highestGapFreeNumber.setRelease(outOfOrderQueue.pollHighestGapFree(number, meta));
+            reverseSnapshot.setRelease(null);
             return true;
         }
 
-        if (number <= highestGapFreeNumber) {
+        if (number <= localGapFree.number()) {
             throw new IllegalStateException("Was offered " + number + ", but highest gap-free is "
                     + highestGapFreeNumber + " and was only expecting values higher than that");
         }
-        outOfOrderQueue.offer(highestGapFreeNumber, number, pack(meta));
-        reverseSnapshot = null;
+        outOfOrderQueue.offer(localGapFree.number(), number, meta);
+        reverseSnapshot.setRelease(null);
         return false;
     }
 
     @Override
     public long highestEverSeen() {
-        return this.highestEverSeen;
-    }
-
-    private long[] pack(long[] meta) {
-        metaArray = meta;
-        return metaArray;
+        return this.highestEverSeen.getAcquire();
     }
 
     @Override
-    public long[] get() {
-        long number;
-        long[] meta;
-        while (true) {
-            int versionBefore = version;
-            if ((versionBefore & 1) == 1) { // Someone else is updating those values as we speak, go another round
-                continue;
-            }
-
-            number = highestGapFreeNumber;
-            meta = highestGapFreeMeta;
-            if (version == versionBefore) { // We read a consistent version of these two values
-                break;
-            }
-        }
-
-        return createResult(number, meta);
-    }
-
-    private static long[] createResult(long number, long[] meta) {
-        long[] result = new long[meta.length + 1];
-        result[0] = number;
-        System.arraycopy(meta, 0, result, 1, meta.length);
-        return result;
+    public NumberWithMeta get() {
+        return highestGapFreeNumber.getAcquire();
     }
 
     @Override
     public long getHighestGapFreeNumber() {
-        return highestGapFreeNumber;
+        return highestGapFreeNumber.getAcquire().number();
     }
 
     @Override
-    public synchronized void set(long number, long[] meta) {
-        highestEverSeen = number;
-        highestGapFreeNumber = number;
-        highestGapFreeMeta = meta;
+    public synchronized void set(long number, Meta meta) {
+        highestEverSeen.setRelease(number);
+        highestGapFreeNumber.setRelease(new NumberWithMeta(number, meta));
         outOfOrderQueue.clear();
     }
 
     @Override
     public synchronized Snapshot snapshot() {
-        return new Snapshot(highestGapFreeNumber, outOfOrderQueue.snapshot());
+        return new Snapshot(highestGapFreeNumber.getAcquire().number(), outOfOrderQueue.snapshot());
     }
 
     @Override
     public ReverseSnapshot reverseSnapshot() {
-        var rs = reverseSnapshot;
+        var rs = reverseSnapshot.getAcquire();
         if (rs != null) {
             return rs;
         }
         synchronized (this) {
-            rs = reverseSnapshot;
+            rs = reverseSnapshot.getAcquire();
             if (rs != null) {
                 return rs;
             }
             rs = createReverseSnapshot();
-            reverseSnapshot = rs;
+            reverseSnapshot.setRelease(rs);
             return rs;
         }
     }
 
     private ReverseSnapshot createReverseSnapshot() {
-        long gapFree = highestGapFreeNumber;
-        long everSeen = highestEverSeen;
+        long gapFree = highestGapFreeNumber.getAcquire().number();
+        long everSeen = highestEverSeen.getAcquire();
         if (everSeen == gapFree) {
             return new ReverseSnapshot(gapFree, everSeen, EMPTY_LONG_ARRAY);
         }
@@ -152,6 +118,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
     @Override
     public synchronized String toString() {
         return String.format(
-                "out-of-order-sequence:%d %d [%s]", highestEverSeen, highestGapFreeNumber, outOfOrderQueue);
+                "out-of-order-sequence:%d %d [%s]",
+                highestEverSeen.getAcquire(), highestGapFreeNumber.getAcquire().number(), outOfOrderQueue);
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.internal.counts;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.api.factory.Sets.immutable;
@@ -50,6 +49,7 @@ import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.util.concurrent.OutOfOrderSequence.EMPTY_META;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -321,7 +321,7 @@ class GBPTreeGenericCountsStoreTest {
                 }
             }
         }
-        OutOfOrderSequence lastClosedTxId = new ArrayQueueOutOfOrderSequence(nextTxId.get(), 200, EMPTY_LONG_ARRAY);
+        OutOfOrderSequence lastClosedTxId = new ArrayQueueOutOfOrderSequence(nextTxId.get(), 200, EMPTY_META);
 
         // when
         for (int r = 0; r < numberOfRounds; r++) {
@@ -332,7 +332,7 @@ class GBPTreeGenericCountsStoreTest {
                 // Sleep a random time after getting the txId, this creates bigger temporary gaps in the txId sequence
                 Thread.sleep(ThreadLocalRandom.current().nextInt(5));
                 generateAndApplyTransaction(expected, txId);
-                lastClosedTxId.offer(txId, EMPTY_LONG_ARRAY);
+                lastClosedTxId.offer(txId, EMPTY_META);
             }));
             race.addContestant(throwing(() -> {
                 long checkpointTxId = lastClosedTxId.getHighestGapFreeNumber();

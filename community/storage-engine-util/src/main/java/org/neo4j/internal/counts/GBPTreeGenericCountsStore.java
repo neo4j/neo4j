@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.counts;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.internal.counts.CountsChanges.ABSENT;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
@@ -28,6 +27,7 @@ import static org.neo4j.internal.counts.CountsKey.strayTxId;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.util.Preconditions.checkState;
+import static org.neo4j.util.concurrent.OutOfOrderSequence.EMPTY_META;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -177,9 +177,8 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         try (var cursorContext = contextFactory.create(OPEN_COUNT_STORE_TAG)) {
             this.txIdInformation = readTxIdInformation(headerReader.highestGapFreeTxId(), cursorContext);
             // Recreate the tx id state as it was from last checkpoint (or base if empty)
-            this.idSequence =
-                    new ArrayQueueOutOfOrderSequence(txIdInformation.highestGapFreeTxId, 200, EMPTY_LONG_ARRAY);
-            this.txIdInformation.strayTxIds.forEach(txId -> idSequence.offer(txId, EMPTY_LONG_ARRAY));
+            this.idSequence = new ArrayQueueOutOfOrderSequence(txIdInformation.highestGapFreeTxId, 200, EMPTY_META);
+            this.txIdInformation.strayTxIds.forEach(txId -> idSequence.offer(txId, EMPTY_META));
             // Only care about initial counts rebuilding if the tree was created right now when opening this tree
             // The actual rebuilding will happen in start()
             // We need to check NEEDS_REBUILDING_HIGH_ID here for backwards compatibility. We used to write this value
@@ -250,7 +249,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
             try (CountUpdater updater = createDirectUpdater(false, cursorContext)) {
                 rebuilder.rebuild(updater, cursorContext, memoryTracker);
             } finally {
-                idSequence.set(rebuilder.lastCommittedTxId(), EMPTY_LONG_ARRAY);
+                idSequence.set(rebuilder.lastCommittedTxId(), EMPTY_META);
             }
         }
         started = true;

@@ -20,7 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -76,6 +75,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
+import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 @ExtendWith(RandomExtension.class)
 @EphemeralPageCacheExtension
@@ -215,7 +215,7 @@ class MultiRootGBPTreeTest {
         var firstSeed = random.nextLong(0, Integer.MAX_VALUE);
         var highRootId = new AtomicLong();
         var deletedRootIds = LongSets.mutable.empty();
-        var sequence = new ArrayQueueOutOfOrderSequence(-1, 50, EMPTY_LONG_ARRAY);
+        var sequence = new ArrayQueueOutOfOrderSequence(-1, 50, OutOfOrderSequence.EMPTY_META);
 
         // when
         var race = new Race().withEndCondition(() -> highRootId.get() >= maxNumRoots);
@@ -244,7 +244,7 @@ class MultiRootGBPTreeTest {
                 try (var writer = tree.access(rootKeyLayout.key(rootId)).writer(NULL_CONTEXT)) {
                     writer.put(layout.key(firstSeed + rootId), layout.value(firstSeed + rootId));
                 }
-                sequence.offer(rootId, EMPTY_LONG_ARRAY);
+                sequence.offer(rootId, OutOfOrderSequence.EMPTY_META);
             }
         }));
         race.goUnchecked();

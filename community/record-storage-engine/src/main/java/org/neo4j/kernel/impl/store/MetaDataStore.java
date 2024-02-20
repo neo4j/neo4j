@@ -64,6 +64,7 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.util.HighestTransactionId;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
+import org.neo4j.util.concurrent.OutOfOrderSequence.Meta;
 
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHeader> implements MetadataProvider {
     private static final String TYPE_DESCRIPTOR = "NeoStore";
@@ -160,13 +161,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 lastCommittedTx.commitTimestamp(),
                 lastCommittedTx.consensusIndex());
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
-        lastClosedTx = new ArrayQueueOutOfOrderSequence(lastCommittedTx.transactionId(), 200, new long[] {
-            logPosition.getLogVersion(),
-            logPosition.getByteOffset(),
-            lastCommittedTx.checksum(),
-            lastCommittedTx.commitTimestamp(),
-            lastCommittedTx.consensusIndex()
-        });
+        lastClosedTx = new ArrayQueueOutOfOrderSequence(
+                lastCommittedTx.transactionId(),
+                200,
+                new Meta(
+                        logPosition.getLogVersion(),
+                        logPosition.getByteOffset(),
+                        lastCommittedTx.checksum(),
+                        lastCommittedTx.commitTimestamp(),
+                        lastCommittedTx.consensusIndex()));
     }
 
     private static ImmutableSet<OpenOption> buildOptions(ImmutableSet<OpenOption> openOptions) {
@@ -220,7 +223,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             long logVersion) {
         assertNotClosed();
         lastCommittingTx.set(transactionId);
-        lastClosedTx.set(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
+        lastClosedTx.set(transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
         highestCommittedTransaction.set(transactionId, checksum, commitTimestamp, consensusIndex);
     }
 
@@ -317,9 +320,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     @Override
     public ClosedTransactionMetadata getLastClosedTransaction() {
         assertNotClosed();
-        long[] txData = lastClosedTx.get();
+        var txData = lastClosedTx.get();
         return new ClosedTransactionMetadata(
-                txData[0], new LogPosition(txData[1], txData[2]), (int) txData[3], txData[4], txData[5]);
+                txData.number(),
+                new LogPosition(txData.meta().logVersion(), txData.meta().byteOffset()),
+                txData.meta().checksum(),
+                txData.meta().commitTimestamp(),
+                txData.meta().consensusIndex());
     }
 
     @Override
@@ -330,8 +337,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             int checksum,
             long commitTimestamp,
             long consensusIndex) {
-        lastClosedTx.offer(
-                transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
+        lastClosedTx.offer(transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
     }
 
     @Override
@@ -343,7 +349,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             long commitTimestamp,
             long consensusIndex) {
         assertNotClosed();
-        lastClosedTx.set(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
+        lastClosedTx.set(transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
     }
 
     public void logRecords(final DiagnosticsLogger logger) {

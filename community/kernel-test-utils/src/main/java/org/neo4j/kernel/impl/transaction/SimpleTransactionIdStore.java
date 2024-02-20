@@ -31,13 +31,15 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
+import org.neo4j.util.concurrent.OutOfOrderSequence.Meta;
 
 /**
  * Simple implementation of a {@link TransactionIdStore}.
  */
 public class SimpleTransactionIdStore implements TransactionIdStore {
     private final AtomicLong committingTransactionId = new AtomicLong();
-    private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence(-1, 100, new long[4]);
+    private final OutOfOrderSequence closedTransactionId =
+            new ArrayQueueOutOfOrderSequence(-1, 100, OutOfOrderSequence.EMPTY_META);
     private final AtomicReference<TransactionId> committedTransactionId = new AtomicReference<>(
             new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
 
@@ -109,9 +111,13 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
 
     @Override
     public ClosedTransactionMetadata getLastClosedTransaction() {
-        long[] data = closedTransactionId.get();
+        var data = closedTransactionId.get();
         return new ClosedTransactionMetadata(
-                data[0], new LogPosition(data[1], data[2]), (int) data[3], data[4], data[5]);
+                data.number(),
+                new LogPosition(data.meta().logVersion(), data.meta().byteOffset()),
+                data.meta().checksum(),
+                data.meta().commitTimestamp(),
+                data.meta().consensusIndex());
     }
 
     @Override
@@ -125,7 +131,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
         committingTransactionId.set(transactionId);
         committedTransactionId.set(new TransactionId(transactionId, checksum, commitTimestamp, consensusIndex));
         closedTransactionId.set(
-                transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
+                transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
     }
 
     @Override
@@ -137,7 +143,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
             long commitTimestamp,
             long consensusIndex) {
         closedTransactionId.offer(
-                transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
+                transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
     }
 
     @Override
@@ -149,6 +155,6 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
             long commitTimestamp,
             long consensusIndex) {
         closedTransactionId.set(
-                transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
+                transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
     }
 }

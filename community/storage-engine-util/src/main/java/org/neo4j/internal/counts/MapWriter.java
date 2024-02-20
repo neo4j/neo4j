@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.counts;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -59,7 +57,7 @@ public class MapWriter implements CountUpdater.CountWriter {
     @Override
     public void close() {
         if (closeSequence) {
-            idSequence.offer(txId, EMPTY_LONG_ARRAY);
+            idSequence.offer(txId, OutOfOrderSequence.EMPTY_META);
         }
     }
 }

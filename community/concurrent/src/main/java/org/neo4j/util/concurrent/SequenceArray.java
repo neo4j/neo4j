@@ -22,21 +22,27 @@ package org.neo4j.util.concurrent;
 import static java.lang.Math.max;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
+import org.neo4j.internal.helpers.Numbers;
+import org.neo4j.util.Preconditions;
+import org.neo4j.util.concurrent.OutOfOrderSequence.Meta;
+import org.neo4j.util.concurrent.OutOfOrderSequence.NumberWithMeta;
+
 public class SequenceArray {
     private static final long UNSET = -1L;
     // This is the backing store, treated as a ring, courtesy of cursor
     private long[] array;
+    private Meta[] metas;
     private int cursor;
     private int itemsAhead;
-    private final int longsPerItem;
-    private int capacity;
+    private int capacityMask;
     private int missingCount;
 
-    SequenceArray(int longsPerItem, int initialCapacity) {
-        this.longsPerItem = longsPerItem;
-        this.capacity = initialCapacity;
-        this.array = new long[capacity * longsPerItem];
+    SequenceArray(int initialCapacity) {
+        Preconditions.requirePowerOfTwo(initialCapacity);
+        this.array = new long[initialCapacity];
+        this.metas = new Meta[initialCapacity];
         this.missingCount = 0;
+        this.capacityMask = initialCapacity - 1;
     }
 
     public void clear() {
@@ -45,7 +51,7 @@ public class SequenceArray {
         missingCount = 0;
     }
 
-    void offer(long baseNumber, long number, long[] meta) {
+    void offer(long baseNumber, long number, Meta meta) {
         int diff = (int) (number - baseNumber);
         ensureArrayCapacity(diff);
         int index = cursor + diff - 1;
@@ -63,18 +69,18 @@ public class SequenceArray {
         }
         int absIndex = index(index);
         array[absIndex] = number;
-        System.arraycopy(meta, 0, array, absIndex + 1, longsPerItem - 1);
+        metas[absIndex] = meta;
         itemsAhead = max(itemsAhead, diff);
     }
 
     private int index(int logicalIndex) {
-        return (logicalIndex % capacity) * longsPerItem;
+        return logicalIndex & capacityMask;
     }
 
-    long pollHighestGapFree(long given, long[] meta) {
+    NumberWithMeta pollHighestGapFree(long given, Meta givenMeta) {
         // when nothing is ahead given is gap free
         if (itemsAhead == 0) {
-            return given;
+            return new NumberWithMeta(given, givenMeta);
         }
         // "given" would be placed at cursor
         long number = given;
@@ -104,9 +110,7 @@ public class SequenceArray {
             // advance cursor once more so it points to "empty" space with zero items ahead
             advanceCursor();
         }
-        // copy the meta values into the supplied meta
-        System.arraycopy(array, absIndex + 1, meta, 0, longsPerItem - 1);
-        return number;
+        return new NumberWithMeta(number, number == given ? givenMeta : metas[absIndex]);
     }
 
     private void advanceCursor() {
@@ -116,20 +120,23 @@ public class SequenceArray {
     }
 
     private int advanceCursor(int cursor) {
-        return (cursor + 1) % capacity;
+        return (cursor + 1) & capacityMask;
     }
 
     private void ensureArrayCapacity(int capacity) {
-        while (capacity > this.capacity) {
-            int newCapacity = this.capacity * 2;
-            long[] newArray = new long[newCapacity * longsPerItem];
-            // Copy contents to new array, newArray starting at 0
+        if (capacity > array.length) {
+            int newCapacity = Numbers.ceilingPowerOfTwo(capacity);
+            long[] newArray = new long[newCapacity];
+            Meta[] newMetas = new Meta[newCapacity];
             for (int i = 0; i < itemsAhead; i++) {
-                System.arraycopy(array, index(cursor + i), newArray, index(i), longsPerItem);
+                int index = index(cursor + i);
+                newArray[i] = array[index];
+                newMetas[i] = metas[index];
             }
             this.array = newArray;
-            this.capacity = newCapacity;
+            this.metas = newMetas;
             this.cursor = 0;
+            this.capacityMask = newCapacity - 1;
         }
     }
 

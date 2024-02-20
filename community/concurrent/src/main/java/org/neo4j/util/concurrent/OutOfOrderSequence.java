@@ -29,6 +29,12 @@ package org.neo4j.util.concurrent;
  * the highest gap-free number set.
  */
 public interface OutOfOrderSequence {
+
+    record Meta(long logVersion, long byteOffset, int checksum, long commitTimestamp, long consensusIndex) {}
+
+    Meta EMPTY_META = new Meta(-1L, -1L, 0, -1L, -1L);
+
+    record NumberWithMeta(long number, Meta meta) {}
     /**
      * Offers a number to this sequence.
      *
@@ -36,7 +42,7 @@ public interface OutOfOrderSequence {
      * @param meta meta data about the number
      * @return {@code true} if highest gap-free number changed as part of this call, otherwise {@code false}.
      */
-    boolean offer(long number, long[] meta);
+    boolean offer(long number, Meta meta);
 
     /**
      * @return the highest number, without its meta data.
@@ -46,14 +52,14 @@ public interface OutOfOrderSequence {
     /**
      * @return {@code long[]} with the highest offered gap-free number and its meta data.
      */
-    long[] get();
+    NumberWithMeta get();
 
     /**
      * @return the highest gap-free number, without its meta data.
      */
     long getHighestGapFreeNumber();
 
-    void set(long number, long[] meta);
+    void set(long number, Meta meta);
 
     Snapshot snapshot();
 
