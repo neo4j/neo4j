@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.ConflictingPlanPair
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.hasChild
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.hasChildMatching
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
@@ -123,8 +122,10 @@ object CandidateListFinder {
           eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
           emptyCandidateListsForRHSvsTopConflicts = true
         )
-      case p: ApplyPlan =>
-        throw new IllegalStateException(s"combineWithRhs is not supposed to be called with ApplyPlans. Got: $p")
+      case _: ApplyPlan => BinaryPlanEagerizationStrategy(
+          eagerizeLHSvsRHSConflicts = true,
+          emptyCandidateListsForRHSvsTopConflicts = true
+        )
     }
   }
 
@@ -178,14 +179,16 @@ object CandidateListFinder {
 
     def pushLayer(): SequencesAcc = copy(currentLayer = currentLayer + 1)
 
-    def popLayer(): SequencesAcc = {
+    def popLayer(emptyCandidateListsForRHSvsTopConflicts: Boolean): SequencesAcc = {
       val newLayer = currentLayer - 1
-      // All open sequences of this layer are moved to the upper layer and lose all candidates so far.
-      // This is because a conflict between a plan on the RHS and on top of an Apply must be solved with an Eager on top of the Apply.
+      // All open sequences of this layer are moved to the upper layer.
+      // If instructed to, they also lose all candidates so far.
+      // This is because a conflict between a plan on the RHS and on top of, e.g. an Apply must be solved with an Eager on top of the Apply.
       val newOpenSequences = openSequences.view.mapValues {
         _.map {
-          case OpenSequence(_, layer, conflict) if layer == currentLayer =>
-            OpenSequence(List.empty, newLayer, conflict)
+          case OpenSequence(candidates, layer, conflict) if layer == currentLayer =>
+            val newCandidates = if (emptyCandidateListsForRHSvsTopConflicts) List.empty else candidates
+            OpenSequence(newCandidates, newLayer, conflict)
           case x => x
         }
       }.toMap
@@ -194,103 +197,6 @@ object CandidateListFinder {
         openSequences = newOpenSequences,
         candidateLists = candidateLists
       )
-    }
-
-    /**
-     * Combine a SequencesAcc from the LHS of a binary plan with a SequencesAcc from the RHS.
-     *
-     * @param rhs  the RHS SequencesAcc
-     * @param plan the binary plan. Not an ApplyPlan.
-     * @return the combined SequencesAcc.
-     */
-    def combineWithRhs(rhs: SequencesAcc, plan: LogicalBinaryPlan): SequencesAcc = {
-      AssertMacros.checkOnlyWhenAssertionsAreEnabled(currentLayer == rhs.currentLayer)
-      // For better readability
-      val lhs = this
-
-      def conflictsWithRHS(conflictingPlanPair: ConflictingPlanPair): Boolean = {
-        hasChildMatching(plan.right, p => conflictingPlanPair.first == Ref(p) || conflictingPlanPair.second == Ref(p))
-      }
-
-      val lhsConflicts = lhs.openSequences.values.flatten.map(_.conflict)
-      val rhsConflicts = rhs.openSequences.values.flatten.map(_.conflict)
-      // Conflicts where one conflicting plan is on the LHS and the other on the RHS
-      val solvedLHSvsRHSConflicts = (lhsConflicts.toSet intersect rhsConflicts.toSet)
-        .filter {
-          case ConflictingPlanPair(first, second, _) =>
-            (hasChild(plan.left, first.value) && hasChild(plan.right, second.value)) ||
-            (hasChild(plan.left, second.value) && hasChild(plan.right, first.value))
-        }
-
-      def isSolvedConflictingPlanPair(cpp: ConflictingPlanPair) = {
-        solvedLHSvsRHSConflicts.contains(cpp) ||
-          lhs.candidateLists.exists(_.conflict == cpp) ||
-          rhs.candidateLists.exists(_.conflict == cpp)
-      }
-
-      def isSolved(os: OpenSequence) = {
-        isSolvedConflictingPlanPair(os.conflict)
-      }
-
-      val eagerizationStrategy = BinaryPlanEagerizationStrategy.forPlan(plan, solvedLHSvsRHSConflicts.nonEmpty)
-
-      // Compute new open sequences
-      val filteredRhsOpenSequences =
-        if (eagerizationStrategy.emptyCandidateListsForRHSvsTopConflicts)
-          rhs.openSequences.view.mapValues(_.map {
-            case o @ OpenSequence(_, layer, conflict) =>
-              if (conflictsWithRHS(conflict)) {
-                OpenSequence(List.empty, layer, conflict)
-              } else {
-                o
-              }
-          }).toMap
-        else rhs.openSequences
-
-      // We keep only those open sequences where one of the conflicting plans has not been traversed yet and remove the ones that have already been solved.
-      val newOpenSequences = lhs.openSequences.fuse(filteredRhsOpenSequences)(_ ++ _).map {
-        case (endPlan, openSequences) =>
-          (endPlan, openSequences.filter(!isSolved(_)).distinct)
-      }
-        .filter(_._2.nonEmpty)
-
-      val lhsVsRhsConflictCandidateLists =
-        if (eagerizationStrategy.eagerizeLHSvsRHSConflicts) {
-          // Take the candidate list from the LHS for a conflict between LHS and RHS
-          lhs.openSequences.values.flatten
-            .filter(os => solvedLHSvsRHSConflicts.contains(os.conflict))
-            .map(_.candidateListWithConflict)
-        } else {
-          Seq.empty
-        }
-
-      // If one of the plans of a conflict has been found and an open sequence was created, we can disregard the original conflict coming from the other side
-      val lhsRemainingOpenConflicts = rhsConflicts.foldLeft(lhs.openConflicts) {
-        case (lhsConflictsMap, rhsConflict) => SequencesAcc.removeConflict(lhsConflictsMap, rhsConflict)
-      }
-      val rhsRemainingOpenConflicts = lhsConflicts.foldLeft(rhs.openConflicts) {
-        case (rhsConflictsMap, lhsConflict) => SequencesAcc.removeConflict(rhsConflictsMap, lhsConflict)
-      }
-      val remainingOpenConflicts = lhsRemainingOpenConflicts.fuse(rhsRemainingOpenConflicts)(_ ++ _)
-        .view
-        .mapValues(_.filterNot(isSolvedConflictingPlanPair))
-        .filter {
-          case (_, conflicts) => conflicts.nonEmpty
-        }
-        .toMap
-
-      copy(
-        openConflicts = remainingOpenConflicts,
-        openSequences = newOpenSequences,
-        candidateLists = lhs.candidateLists ++ rhs.candidateLists ++ lhsVsRhsConflictCandidateLists
-      )
-    }
-  }
-
-  private def pushLayerForLeafPlans(acc: SequencesAcc, p: LogicalPlan): SequencesAcc = {
-    p match {
-      case _: LogicalLeafPlan => acc.pushLayer()
-      case _ => acc
     }
   }
 
@@ -348,11 +254,11 @@ object CandidateListFinder {
       // All sequences that do not end in p
       (acc.openSequences - p)
         .view.mapValues(_.map {
-        case os@OpenSequence(_, layer, _) if acc.currentLayer == layer =>
-          // Add p to all remaining open sequences on the same layer
-          os.withAddedCandidate(p)
-        case os => os
-      }).toMap
+          case os @ OpenSequence(_, layer, _) if acc.currentLayer == layer =>
+            // Add p to all remaining open sequences on the same layer
+            os.withAddedCandidate(p)
+          case os => os
+        }).toMap
     }
 
     acc.copy(
@@ -362,9 +268,39 @@ object CandidateListFinder {
     )
   }
 
+  private def preProcessBinaryPlan(acc: SequencesAcc, plan: LogicalBinaryPlan): SequencesAcc = {
+    // Partition all candidate lists into whether they solve a lhs vs rhs conflict of the given binary plan,
+    // or some other conflict.
+    val (lHSvsRHSCandidateLists, otherCandidateLists) = acc.candidateLists.partition {
+      case CandidateList(_, ConflictingPlanPair(first, second, _)) =>
+        (hasChild(plan.left, first.value) && hasChild(plan.right, second.value)) ||
+        (hasChild(plan.left, second.value) && hasChild(plan.right, first.value))
+    }
+
+    val eagerizationStrategy = BinaryPlanEagerizationStrategy.forPlan(plan, lHSvsRHSCandidateLists.nonEmpty)
+
+    val newCandidateLists = if (eagerizationStrategy.eagerizeLHSvsRHSConflicts) {
+      acc.candidateLists
+    } else {
+      otherCandidateLists
+    }
+
+    acc.copy(
+      candidateLists = newCandidateLists
+    ).popLayer(eagerizationStrategy.emptyCandidateListsForRHSvsTopConflicts)
+  }
+
   private def processPlan(acc: SequencesAcc, plan: LogicalPlan): SequencesAcc = {
     checkConstraints(plan)
-    updateSequences(pushLayerForLeafPlans(acc, plan), Ref(plan))
+
+    Function.chain[SequencesAcc](Seq(
+      plan match {
+        case plan: LogicalBinaryPlan => preProcessBinaryPlan(_, plan)
+        case _: LogicalLeafPlan      => _.pushLayer()
+        case _                       => identity
+      },
+      updateSequences(_, Ref(plan))
+    ))(acc)
   }
 
   /**
@@ -381,22 +317,9 @@ object CandidateListFinder {
     }
     val conflictsMap = conflictsMapBuilder.sets.view.mapValues(_.toSet).toMap
 
-    val sequencesAcc = LogicalPlans.foldPlan(SequencesAcc(conflictsMap))(
+    val sequencesAcc = LogicalPlans.simpleFoldPlan(SequencesAcc(conflictsMap))(
       plan,
-      (acc, p) =>
-        processPlan(acc, p),
-      (lhsAcc, rhsAcc, p) =>
-        p match {
-          case _: ApplyPlan =>
-            // Pop a layer and use the RHS acc which was initialized with the LHS acc
-            processPlan(rhsAcc.popLayer(), p)
-          case b: LogicalBinaryPlan =>
-            // as a non-apply binary plan, we need to combine the information from both legs
-            processPlan(
-              lhsAcc.combineWithRhs(rhsAcc, b),
-              b
-            )
-        }
+      processPlan
     )
 
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.openSequences.isEmpty)
