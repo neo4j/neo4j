@@ -174,19 +174,14 @@ class IdRange {
         var firstFreeI = -1;
         var prevFreeI = -1;
         var baseI = 0;
-
-        // If we're looking in a range w/ current generation it's more efficient to let the REUSE bits dictate
-        // which bits we're looking at because they are a subset of the COMMIT bits,
-        // and otherwise we have to look at the COMMIT bits.
-        var primaryBitSet = differentGeneration ? BITSET_COMMIT : BITSET_REUSE;
-        var secondaryBitSet = differentGeneration ? -1 : BITSET_COMMIT;
         for (var i = 0; i < numOfLongs; i++, baseI += BITSET_SIZE) {
-            var primaryBits = bitSets[primaryBitSet][i];
-            var secondaryBits = secondaryBitSet == -1 ? -1L : bitSets[secondaryBitSet][i];
+            var commitBits = bitSets[BITSET_COMMIT][i];
+            var reuseBits = bitSets[BITSET_REUSE][i];
             var reservedBits = bitSets[BITSET_RESERVED][i];
-            while (primaryBits != 0) {
-                var bit = Long.lowestOneBit(primaryBits);
-                if (differentGeneration || (secondaryBits & bit) != 0 && (reservedBits & bit) == 0) {
+
+            while (commitBits != 0) {
+                var bit = Long.lowestOneBit(commitBits);
+                if (differentGeneration || ((reuseBits & bit) != 0 && (reservedBits & bit) == 0)) {
                     var localBitIndex = Long.numberOfTrailingZeros(bit);
                     var bitIndex = baseI + localBitIndex;
                     if (firstFreeI == -1) {
@@ -203,7 +198,7 @@ class IdRange {
                         firstFreeI = prevFreeI = bitIndex;
                     }
                 }
-                primaryBits ^= bit;
+                commitBits ^= bit;
             }
         }
 
