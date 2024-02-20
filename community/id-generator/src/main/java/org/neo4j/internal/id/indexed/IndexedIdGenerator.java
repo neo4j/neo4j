@@ -40,7 +40,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -261,10 +261,10 @@ public class IndexedIdGenerator implements IdGenerator {
     private final long maxId;
 
     /**
-     * Means of communicating that there are stored free ids that {@link FreeIdScanner} could pick up.
-     * It's typically incremented by {@link IdRangeMarker} and compared in {@link FreeIdScanner}.
+     * Means of communicating whether or not there are stored free ids that {@link FreeIdScanner} could pick up. Is also cleared by
+     * {@link FreeIdScanner} as soon as it notices that it has run out of stored free ids.
      */
-    private final AtomicInteger freeIdsNotifier = new AtomicInteger();
+    private final AtomicBoolean atLeastOneIdOnFreelist = new AtomicBoolean();
 
     /**
      * Current generation of this id generator. Generation is used to normalize id states so that a deleted id of a previous generation
@@ -383,7 +383,7 @@ public class IndexedIdGenerator implements IdGenerator {
                     idsPerEntry);
             // Let's optimistically assume that there may be some free ids in here. This will ensure that a scan
             // is triggered on first request
-            this.freeIdsNotifier.incrementAndGet();
+            this.atLeastOneIdOnFreelist.set(true);
         } else {
             // We're creating this file, so set initial values
             this.highId.set(initialHighId.getAsLong());
@@ -400,7 +400,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 tree,
                 layout,
                 cache,
-                freeIdsNotifier,
+                atLeastOneIdOnFreelist,
                 this::contextualMarker,
                 generation,
                 strictlyPrioritizeFreelist,
@@ -648,7 +648,7 @@ public class IndexedIdGenerator implements IdGenerator {
                     lock,
                     started ? defaultMerger : recoveryMerger,
                     started,
-                    freeIdsNotifier,
+                    atLeastOneIdOnFreelist,
                     generation,
                     highestWrittenId,
                     bridgeIdGaps,

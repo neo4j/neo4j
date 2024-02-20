@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
@@ -239,7 +238,7 @@ class IdRangeMarkerTest {
                 mock(Lock.class),
                 mock(ValueMerger.class),
                 true,
-                new AtomicInteger(),
+                new AtomicBoolean(),
                 1,
                 new AtomicLong(-1),
                 true,
@@ -266,7 +265,7 @@ class IdRangeMarkerTest {
                 mock(Lock.class),
                 IdRangeMerger.DEFAULT,
                 true,
-                new AtomicInteger(),
+                new AtomicBoolean(),
                 1,
                 new AtomicLong(reservedId - 1),
                 true,
@@ -295,7 +294,7 @@ class IdRangeMarkerTest {
                 mock(Lock.class),
                 IdRangeMerger.DEFAULT,
                 true,
-                new AtomicInteger(),
+                new AtomicBoolean(),
                 1,
                 new AtomicLong(-1),
                 true,
@@ -327,7 +326,7 @@ class IdRangeMarkerTest {
                 mock(Lock.class),
                 IdRangeMerger.DEFAULT,
                 true,
-                new AtomicInteger(),
+                new AtomicBoolean(),
                 1,
                 new AtomicLong(highestWrittenId),
                 true,
@@ -353,7 +352,7 @@ class IdRangeMarkerTest {
     @Test
     void shouldMarkDeletedAndFree() throws IOException {
         // given
-        var freeIdsNotifier = new AtomicInteger();
+        var freeIdsNotifier = new AtomicBoolean();
         try (var marker = new IdRangeMarker(
                 idsPerEntry,
                 layout,
@@ -372,7 +371,7 @@ class IdRangeMarkerTest {
         }
 
         // then
-        assertThat(freeIdsNotifier.get()).isGreaterThan(0);
+        assertThat(freeIdsNotifier.get()).isTrue();
         assertThat(gatherIds(IdRange.IdState.FREE)).isEqualTo(LongSets.immutable.of(5, 6, 7));
     }
 
@@ -389,7 +388,7 @@ class IdRangeMarkerTest {
                 mock(Lock.class),
                 IdRangeMerger.DEFAULT,
                 true,
-                new AtomicInteger(),
+                new AtomicBoolean(),
                 1,
                 new AtomicLong(-1),
                 true,
@@ -431,7 +430,7 @@ class IdRangeMarkerTest {
                 lock,
                 merger,
                 true,
-                new AtomicInteger(),
+                new AtomicBoolean(),
                 1,
                 highestWritternId,
                 true,
