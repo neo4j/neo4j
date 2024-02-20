@@ -212,4 +212,66 @@ object LogicalPlans {
     }
     acc
   }
+
+  /**
+   * Fold over this logical plan tree in execution order.
+   *
+   * In this fold, the plan tree is visited in execution order, starting from
+   * the leftmost leaf, and moving towards the root.
+   *
+   * Unlike [[foldPlan()]], this does not treat ApplyPlans and other binary plans differently.
+   * Instead, a single accumulator gets passed through.
+   *
+   * NOTE: To avoid unpleasant surprises it is important that ACC is immutable,
+   * unless you really know what you're doing. The same ACC instance might
+   * be passed into several callback with the expectation of it being unchanged.
+   *
+   * @param f                   called on any leaf and unary plans. maps (currentAcc, plan) => acc for plan
+   */
+  def simpleFoldPlan[ACC](initialAcc: ACC)(
+    root: LogicalPlan,
+    f: (ACC, LogicalPlan) => ACC
+  ): ACC = {
+    var stack: List[LogicalPlan] = root :: Nil
+    var acc: ACC = initialAcc
+    var comingFrom: LogicalPlan = null
+
+    def populate(): Unit = {
+      while (!stack.head.isLeaf) {
+        stack = stack.head.lhs.get :: stack
+      }
+    }
+
+    populate()
+
+    while (stack != Nil) {
+      val current = stack.head
+      val newStack = stack.tail
+      stack = newStack
+
+      (current.lhs, current.rhs) match {
+        case (None, None) =>
+          acc = f(acc, current)
+        case (Some(_), None) =>
+          acc = f(acc, current)
+        case (Some(lhs), Some(rhs)) if comingFrom eq lhs =>
+          stack = rhs :: current :: stack
+          populate()
+        case (Some(_), Some(rhs)) if comingFrom eq rhs =>
+          acc = f(acc, current)
+        case (Some(_), Some(_)) =>
+          throw new IllegalStateException(
+            s"Tried to map bad logical plan. In a two child plan, we must come from either RHS or LHS: op: $current"
+          )
+        case (None, Some(_)) =>
+          throw new IllegalStateException(
+            s"Tried to map bad logical plan. We can not have a RHS without having a LHS: op: $current"
+          )
+      }
+
+      comingFrom = current
+    }
+    acc
+  }
+
 }
