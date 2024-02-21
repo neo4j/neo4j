@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.logical.plans.ExhaustiveLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 import scala.annotation.tailrec
@@ -40,10 +39,13 @@ object skipAndLimit extends PlanTransformer {
 
   @tailrec
   def shouldPlanExhaustiveLimit(plan: LogicalPlan, limit: Option[Long]): Boolean = plan match {
-    case _: UpdatingPlan                                 => true
+    case p if p.isUpdatingPlan                           => true
     case _: ExhaustiveLogicalPlan if limit.exists(_ > 0) => false
     case p: LogicalBinaryPlan => if (p.hasUpdatingRhs) true else shouldPlanExhaustiveLimit(p.left, limit)
-    case p: LogicalPlan       => if (p.lhs.nonEmpty) shouldPlanExhaustiveLimit(p.lhs.get, limit) else false
+    case p: LogicalPlan => p.lhs match {
+        case Some(source) => shouldPlanExhaustiveLimit(source, limit)
+        case None         => false
+      }
   }
 
   def planLimitOnTopOf(plan: LogicalPlan, count: Expression)(implicit idGen: IdGen): LogicalPlan =
