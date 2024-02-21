@@ -164,7 +164,7 @@ object ConflictFinder {
   }
 
   private def canConflictWithCreateOrDelete(lp: LogicalPlan): Boolean = {
-    !lp.isInstanceOf[UpdatingPlan] || containsNestedPlanExpression(lp)
+    !lp.isUpdatingPlan || containsNestedPlanExpression(lp)
   }
 
   private def containsNestedPlanExpression(lp: LogicalPlan): Boolean = {
@@ -367,6 +367,7 @@ object ConflictFinder {
   ): Iterable[ConflictingPlanPair] = {
     if (readsAndWrites.reads.callInTxPlans.nonEmpty) {
       for {
+        // FIXME
         updatingPlan <- wholePlan.folder.findAllByClass[UpdatingPlan].filterNot(isInTransactionalApply(_, wholePlan))
         txPlan <- readsAndWrites.reads.callInTxPlans
       } yield {
