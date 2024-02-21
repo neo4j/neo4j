@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -1841,6 +1842,99 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .build())
     }
 
+    test(
+      s"$cypherToken-$orderCapability: Needs sort if a write plan invalidates order"
+    ) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("A", 1000)
+        .addNodeIndex("A", Seq("prop"), 0.001, 0.001, providesOrder = orderCapability)
+        .build()
+
+      planner.plan(
+        s"""
+           |MATCH (a:A) WHERE a.prop IS NOT NULL
+           |SET a.foo = a.prop / 2
+           |RETURN a ORDER BY a.prop $cypherToken
+           |""".stripMargin
+      ) should equal(
+        planner.planBuilder()
+          .produceResults("a")
+          .sortColumns(Seq(sortOrder("a.prop")))
+          .projection("cacheN[a.prop] AS `a.prop`")
+          .eager()
+          .setNodeProperty("a", "foo", "cacheNFromStore[a.prop] / 2")
+          .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => DoNotGetValue)
+          .build()
+      )
+    }
+
+    test(
+      s"$cypherToken-$orderCapability: Needs sort if a write procedure invalidates order"
+    ) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("A", 1000)
+        .addNodeIndex("A", Seq("prop"), 0.001, 0.001, providesOrder = orderCapability)
+        .addProcedure(
+          procedureSignature("my.write")
+            .withAccessMode(ProcedureReadWriteAccess)
+            .build()
+        )
+        .build()
+
+      planner.plan(
+        s"""
+           |MATCH (a:A) WHERE a.prop IS NOT NULL
+           |CALL my.write()
+           |RETURN a ORDER BY a.prop $cypherToken
+           |""".stripMargin
+      ) should equal(
+        planner.planBuilder()
+          .produceResults("a")
+          .sortColumns(Seq(sortOrder("a.prop")))
+          .projection("cacheN[a.prop] AS `a.prop`")
+          .procedureCall("my.write()")
+          .cacheProperties("cacheNFromStore[a.prop]")
+          .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => DoNotGetValue)
+          .build()
+      )
+    }
+
+    test(
+      s"$cypherToken-$orderCapability: Needs sort if a write procedure in a subquery invalidates order"
+    ) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("A", 1000)
+        .addNodeIndex("A", Seq("prop"), 0.001, 0.001, providesOrder = orderCapability)
+        .addProcedure(
+          procedureSignature("my.write")
+            .withAccessMode(ProcedureReadWriteAccess)
+            .build()
+        )
+        .build()
+
+      planner.plan(
+        s"""
+           |MATCH (a:A) WHERE a.prop IS NOT NULL
+           |CALL {
+           |  CALL my.write()
+           |}
+           |RETURN a ORDER BY a.prop $cypherToken
+           |""".stripMargin
+      ) should equal(
+        planner.planBuilder()
+          .produceResults("a")
+          .sortColumns(Seq(sortOrder("a.prop")))
+          .projection("a.prop AS `a.prop`")
+          .subqueryForeach()
+          .|.procedureCall("my.write()")
+          .|.argument()
+          .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => DoNotGetValue)
+          .build()
+      )
+    }
   }
 
   // Composite index

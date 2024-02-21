@@ -3310,9 +3310,8 @@ case class LogicalPlanProducer(
       // MERGE will either be ordered by its inner plan or create a single row which by
       // definition is ordered. However if you do ON MATCH SET ... that might invalidate the
       // inner ordering.
-      case m: Merge        => m.onMatch.nonEmpty
-      case _: UpdatingPlan => true
-      case _               => false
+      case m: Merge => m.onMatch.nonEmpty
+      case _        => plan.isUpdatingPlan
     }) || executionModel.invalidatesProvidedOrder(plan)
   }
 
