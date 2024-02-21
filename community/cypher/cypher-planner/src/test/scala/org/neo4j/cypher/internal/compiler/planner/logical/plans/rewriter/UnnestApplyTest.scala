@@ -22,9 +22,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
+import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
@@ -42,7 +45,7 @@ import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Assertion
 
 class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport
-    with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
+    with LogicalPlanConstructionTestSupport with AstConstructionTestSupport with ProcedureTestSupport {
 
   private val po_n: ProvidedOrder = DefaultProvidedOrderFactory.asc(v"n")
 
@@ -633,6 +636,29 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .apply()
       .|.apply()
       .|.|.setProperty("m", "prop", "5")
+      .|.|.argument("m")
+      .|.filter("m.prop > 0")
+      .|.expand("(n)--(m)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "N")
+      .build()
+
+    rewrite(input) should equal(input)
+  }
+
+  test("should not unnest nested Apply with write procedure call") {
+    val resolver = new LogicalPlanResolver(
+      procedures = Set(
+        procedureSignature("my.writeProc")
+          .withAccessMode(ProcedureReadWriteAccess)
+          .build()
+      )
+    )
+    val input = new LogicalPlanBuilder(resolver = resolver)
+      .produceResults("n")
+      .apply()
+      .|.apply()
+      .|.|.procedureCall("my.writeProc()")
       .|.|.argument("m")
       .|.filter("m.prop > 0")
       .|.expand("(n)--(m)")

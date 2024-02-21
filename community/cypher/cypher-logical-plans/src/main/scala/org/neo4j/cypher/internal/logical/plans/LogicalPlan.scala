@@ -375,7 +375,7 @@ sealed trait RelationshipTypeScan {
 }
 
 sealed abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
-  final lazy val hasUpdatingRhs: Boolean = right.folder.treeExists { case _: UpdatingPlan => true }
+  final lazy val hasUpdatingRhs: Boolean = !right.readOnly
   final def lhs: Option[LogicalPlan] = Some(left)
   final def rhs: Option[LogicalPlan] = Some(right)
 
