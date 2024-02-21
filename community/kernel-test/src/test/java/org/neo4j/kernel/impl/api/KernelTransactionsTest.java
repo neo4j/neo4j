@@ -737,7 +737,7 @@ class KernelTransactionsTest {
 
         DefaultTracers tracers = new DefaultTracers(
                 "null", NullLog.getInstance(), new Monitors(), mock(JobScheduler.class), clock, config);
-        final DatabaseTracers databaseTracers = new DatabaseTracers(tracers);
+        final DatabaseTracers databaseTracers = new DatabaseTracers(tracers, DEFAULT_DATABASE_ID);
 
         KernelTransactions transactions;
         if (testKernelTransactions) {

@@ -34,12 +34,12 @@ public class DatabaseTracers {
     private final PageCacheTracer pageCacheTracer;
     private final VersionStorageTracer versionStorageTracer;
 
-    public DatabaseTracers(Tracers tracers) {
+    public DatabaseTracers(Tracers tracers, NamedDatabaseId namedDatabaseId) {
         this(
-                tracers.getDatabaseTracer(),
+                tracers.getDatabaseTracer(namedDatabaseId),
                 tracers.getLockTracer(),
                 tracers.getPageCacheTracer(),
-                tracers.getVersionStorageTracer());
+                tracers.getVersionStorageTracer(namedDatabaseId));
     }
 
     public DatabaseTracers(

@@ -23,11 +23,13 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.logging.AssertableLogProvider;
@@ -53,8 +55,9 @@ class DefaultTracersTest {
     @Test
     void mustProduceNullImplementationsWhenRequested() {
         DefaultTracers tracers = createTracers("null");
+        var namedDatabaseId = DatabaseIdFactory.from("foo", UUID.randomUUID());
         assertThat(tracers.getPageCacheTracer()).isEqualTo(PageCacheTracer.NULL);
-        assertThat(tracers.getDatabaseTracer()).isEqualTo(DatabaseTracer.NULL.NULL);
+        assertThat(tracers.getDatabaseTracer(namedDatabaseId)).isEqualTo(DatabaseTracer.NULL.NULL);
         assertNoWarning();
     }
 
@@ -84,8 +87,9 @@ class DefaultTracersTest {
     }
 
     private static void assertDefaultImplementation(DefaultTracers tracers) {
+        var namedDatabaseId = DatabaseIdFactory.from("bar", UUID.randomUUID());
         assertThat(tracers.getPageCacheTracer()).isInstanceOf(DefaultPageCacheTracer.class);
-        assertThat(tracers.getDatabaseTracer()).isInstanceOf(DefaultTracer.class);
+        assertThat(tracers.getDatabaseTracer(namedDatabaseId)).isInstanceOf(DefaultTracer.class);
     }
 
     private void assertNoWarning() {

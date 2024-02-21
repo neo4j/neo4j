@@ -26,6 +26,7 @@ import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACER
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.InternalLog;
@@ -134,12 +135,12 @@ public class DefaultTracers implements Tracers {
     }
 
     @Override
-    public DatabaseTracer getDatabaseTracer() {
+    public DatabaseTracer getDatabaseTracer(NamedDatabaseId namedDatabaseId) {
         return tracersFactory.createDatabaseTracer(pageCacheTracer, clock);
     }
 
     @Override
-    public VersionStorageTracer getVersionStorageTracer() {
+    public VersionStorageTracer getVersionStorageTracer(NamedDatabaseId namedDatabaseId) {
         return tracersFactory.createVersionStorageTracer(pageCacheTracer, log);
     }
 

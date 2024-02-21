@@ -165,6 +165,7 @@ public final class Recovery {
      * @param tracers                           underlying operation tracers
      * @param config                            custom configuration
      * @param emptyLogsFallbackKernelVersion    provides the kernel version if no logs exists
+     * @param databaseId databaseId of database to recover
      * @return helper recovery checker
      */
     public static DatabaseRecoveryFacade recoveryFacade(
@@ -174,11 +175,12 @@ public final class Recovery {
             Config config,
             MemoryTracker memoryTracker,
             InternalLogProvider logProvider,
-            KernelVersionProvider emptyLogsFallbackKernelVersion) {
+            KernelVersionProvider emptyLogsFallbackKernelVersion,
+            NamedDatabaseId databaseId) {
         return new DatabaseRecoveryFacade(
                 fs,
                 pageCache,
-                new DatabaseTracers(tracers),
+                new DatabaseTracers(tracers, databaseId),
                 config,
                 memoryTracker,
                 logProvider,

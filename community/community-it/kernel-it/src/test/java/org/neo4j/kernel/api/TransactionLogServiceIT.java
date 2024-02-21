@@ -68,6 +68,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -986,12 +987,12 @@ class TransactionLogServiceIT {
         }
 
         @Override
-        public DatabaseTracer getDatabaseTracer() {
+        public DatabaseTracer getDatabaseTracer(NamedDatabaseId namedDatabaseId) {
             return new InjectableBeforeApplyDatabaseTracer();
         }
 
         @Override
-        public VersionStorageTracer getVersionStorageTracer() {
+        public VersionStorageTracer getVersionStorageTracer(NamedDatabaseId namedDatabaseId) {
             return VersionStorageTracer.NULL;
         }
 
