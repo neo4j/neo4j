@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
+import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport
+import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -30,7 +33,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.ListSet
 
-class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps {
+class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps with ProcedureTestSupport {
 
   private def eagerizePlan(planBuilder: LogicalPlanBuilder, plan: LogicalPlan): LogicalPlan =
     EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(
@@ -185,6 +188,40 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
         .|.filter("m.prop = 0")
         .|.eager(ListSet(EagernessReason.UpdateStrategyEager))
         .|.create(createNode("m"))
+        .|.eager(ListSet(EagernessReason.UpdateStrategyEager))
+        .|.argument("n")
+        .eager(ListSet(EagernessReason.UpdateStrategyEager))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("inserts eager before and after apply plan if RHS has write procedure call") {
+    val resolver = new LogicalPlanResolver(
+      procedures = Set(
+        procedureSignature("my.writeProc")
+          .withAccessMode(ProcedureReadWriteAccess)
+          .build()
+      )
+    )
+    val planBuilder = new LogicalPlanBuilder(resolver = resolver)
+      .produceResults("n")
+      .apply()
+      .|.filter("m.prop = 0")
+      .|.procedureCall("my.writeProc()")
+      .|.argument("n")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder(resolver = resolver)
+        .produceResults("n")
+        .eager(ListSet(EagernessReason.UpdateStrategyEager))
+        .apply()
+        .|.filter("m.prop = 0")
+        .|.eager(ListSet(EagernessReason.UpdateStrategyEager))
+        .|.procedureCall("my.writeProc()")
         .|.eager(ListSet(EagernessReason.UpdateStrategyEager))
         .|.argument("n")
         .eager(ListSet(EagernessReason.UpdateStrategyEager))

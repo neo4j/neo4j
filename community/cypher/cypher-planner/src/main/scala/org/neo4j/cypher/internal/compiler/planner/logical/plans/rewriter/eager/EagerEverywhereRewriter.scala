@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -51,13 +51,13 @@ case class EagerEverywhereRewriter(attributes: Attributes[LogicalPlan]) extends 
   private def eagerizeBinaryPlan(lp: LogicalBinaryPlan): LogicalBinaryPlan = {
     var res = lp
     lp.left match {
-      case up: UpdatingPlan =>
-        res = res.withLhs(eager(up))(SameId(lp.id))
+      case p if p.isUpdatingPlan =>
+        res = res.withLhs(eager(p))(SameId(lp.id))
       case _ =>
     }
     lp.right match {
-      case up: UpdatingPlan =>
-        res = res.withRhs(eager(up))(SameId(lp.id))
+      case p if p.isUpdatingPlan =>
+        res = res.withRhs(eager(p))(SameId(lp.id))
       case _ =>
     }
     res
@@ -81,8 +81,11 @@ case class EagerEverywhereRewriter(attributes: Attributes[LogicalPlan]) extends 
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): LogicalPlan = {
     plan.endoRewrite(bottomUp(Rewriter.lift {
-      case up: UpdatingPlan =>
-        eager(up.withLhs(eager(up.source))(SameId(up.id)))
+      case p: LogicalUnaryPlan if p.isUpdatingPlan =>
+        eager(p.withLhs(eager(p.source))(SameId(p.id)))
+
+      case p: LogicalPlan if p.isUpdatingPlan =>
+        throw new IllegalStateException("We don't expect non-unary updating plans.")
 
       case ap: ApplyPlan =>
         eagerizeApplyPlan(ap)
