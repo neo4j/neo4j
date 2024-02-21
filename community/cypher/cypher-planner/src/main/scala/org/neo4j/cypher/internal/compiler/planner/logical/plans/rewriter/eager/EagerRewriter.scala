@@ -63,11 +63,10 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     if (context.eagerAnalyzer != CypherEagerAnalyzerOption.lp) return from
+    if (from.logicalPlan.readOnly) return from
 
     val attributes: Attributes[LogicalPlan] = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
     val lPStateWithEagerProcedureCall = eagerizeProcedureCalls(from, attributes)
-
-    if (from.logicalPlan.readOnly) return lPStateWithEagerProcedureCall
 
     val cardinalities = lPStateWithEagerProcedureCall.planningAttributes.cardinalities
 
