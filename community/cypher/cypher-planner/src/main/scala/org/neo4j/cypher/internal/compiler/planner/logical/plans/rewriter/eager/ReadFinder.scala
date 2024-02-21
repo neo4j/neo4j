@@ -868,15 +868,15 @@ object ReadFinder {
         SetNodeProperty(_, _, _, _) |
         SetRelationshipProperties(_, _, _) |
         SetRelationshipPropertiesFromMap(_, _, _, _) |
-        SetRelationshipProperty(_, _, _, _) =>
+        SetRelationshipProperty(_, _, _, _) |
+        Eager(_, _) =>
         PlanReads()
 
       case _: PhysicalPlanningPlan |
         _: CommandLogicalPlan |
         _: LogicalLeafPlanExtension |
         _: LogicalPlanExtension |
-        _: TestOnlyPlan |
-        _: Eager =>
+        _: TestOnlyPlan =>
         throw new IllegalStateException(s"Unsupported plan in eagerness analysis: $plan")
     }
 
