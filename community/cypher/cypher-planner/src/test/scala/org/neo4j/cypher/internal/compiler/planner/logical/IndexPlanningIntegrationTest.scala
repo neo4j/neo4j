@@ -2406,4 +2406,102 @@ class IndexPlanningIntegrationTest
         |.build()""".stripMargin
     )
   }
+
+  test("should use the widest applicable composite index to estimate cardinality") {
+    val aNodes = 900
+
+    val existsSelectivity = 0.5
+    val uniqueSelectivity = 0.2
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", aNodes)
+      .addNodeIndex("A", Seq("a", "b", "c", "d"), 0.2, 0.01)
+      .addNodeIndex("A", Seq("a", "b", "c"), existsSelectivity, uniqueSelectivity)
+      .addNodeIndex("A", Seq("a", "b"), 0.9, 0.5)
+      .addNodeIndex("A", Seq("a"), 1.0, 1)
+      .build()
+
+    val query = "MATCH (n:A {a: 1, b: 2, c: 3}) RETURN n"
+    val planState = planner.planState(query)
+
+    val expectedCardinality = aNodes * existsSelectivity * uniqueSelectivity
+
+    val expectedPlanBuilder = planner.planBuilder()
+      .produceResults("n").withCardinality(expectedCardinality)
+      .nodeIndexOperator("n:A(a = 1, b = 2, c = 3)", supportPartitionedScan = false).withCardinality(
+        expectedCardinality
+      )
+
+    planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
+  }
+
+  test("should use multiple disjoint composite indexes to estimate cardinality") {
+    val aNodes = 900
+
+    val abExistsSelectivity = 1.0
+    val abUniqueSelectivity = 0.5
+
+    val cdExistsSelectivity = 0.6
+    val cdUniqueSelectivity = 0.1
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", aNodes)
+      .addNodeIndex("A", Seq("a", "b"), abExistsSelectivity, abUniqueSelectivity)
+      .addNodeIndex("A", Seq("c", "d"), cdExistsSelectivity, cdUniqueSelectivity)
+      .build()
+
+    val query = "MATCH (n:A {a: 1, b: 2, c: 3, d: 4}) RETURN n"
+    val planState = planner.planState(query)
+
+    val cdCardinality = aNodes * cdExistsSelectivity * cdUniqueSelectivity
+    val abCardinality = cdCardinality * abExistsSelectivity * abUniqueSelectivity
+
+    val expectedPlanBuilder = planner.planBuilder()
+      .produceResults("n").withCardinality(abCardinality)
+      .filterExpression(andsReorderable("n.a = 1", "n.b = 2")).withCardinality(abCardinality)
+      .nodeIndexOperator("n:A(c = 3, d = 4)", supportPartitionedScan = false).withCardinality(cdCardinality)
+
+    planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
+  }
+
+  test(
+    "should use the widest applicable composite index to estimate cardinality, even if better predicate coverage is possible from narrower indexes"
+  ) {
+    val aNodes = 900
+
+    val abExistsSelectivity = 1.0
+    val abUniqueSelectivity = 0.5
+
+    val cdExistsSelectivity = 0.6
+    val cdUniqueSelectivity = 0.1
+
+    val abcExistsSelectivity = 0.7
+    val abcUniqueSelectivity = 0.3
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", aNodes)
+      .addNodeIndex("A", Seq("a", "b", "c"), abcExistsSelectivity, abcUniqueSelectivity)
+      .addNodeIndex("A", Seq("a", "b"), abExistsSelectivity, abUniqueSelectivity)
+      .addNodeIndex("A", Seq("c", "d"), cdExistsSelectivity, cdUniqueSelectivity)
+      .build()
+
+    val query = "MATCH (n:A {a: 1, b: 2, c: 3, d: 4}) RETURN n"
+    val planState = planner.planState(query)
+
+    val cdCardinality = aNodes * cdExistsSelectivity * cdUniqueSelectivity
+
+    val abcCardinality =
+      aNodes * abcExistsSelectivity * abcUniqueSelectivity *
+        (PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY * PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY).factor // `d = 4` predicate is not covered by :A(a,b,c) index
+
+    val expectedPlanBuilder = planner.planBuilder()
+      .produceResults("n").withCardinality(abcCardinality)
+      .filterExpression(andsReorderable("n.a = 1", "n.b = 2")).withCardinality(abcCardinality)
+      .nodeIndexOperator("n:A(c = 3, d = 4)", supportPartitionedScan = false).withCardinality(cdCardinality)
+
+    planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
+  }
 }

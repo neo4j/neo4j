@@ -195,11 +195,14 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     val queryGraphs = getQueryGraphs(labelInfo, relTypeInfo, unwrappedSelections)
 
     // we search for index matches for each variable individually to increase the chance of cache hits
-    val indexMatches =
+    val indexMatches = {
       queryGraphs.relQgs.flatMap(relationshipIndexMatchCache(_, semanticTable, indexPredicateProviderContext)) ++
         queryGraphs.nodeQgs.flatMap(nodeIndexMatchCache(_, semanticTable, indexPredicateProviderContext))
+    } filter {
+      _.propertyPredicates.size > 1
+    }
 
-    if (indexMatches.forall(_.propertyPredicates.size <= 1)) {
+    if (indexMatches.isEmpty) {
       // If we match with no composite index we can use the singleExpressionSelectivityCalculator
       return fallback
     }
@@ -234,17 +237,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
       }.toSet
 
     // Keep only index matches that have no overlaps - otherwise the math gets very complicated.
-    val disjointPredicatesWithSelectivities = selectivitiesForPredicates.filter {
-      case s1 @ SelectivitiesForPredicates(predicates1, _, _, _) => selectivitiesForPredicates.forall {
-          case s2 @ SelectivitiesForPredicates(predicates2, _, _, _) =>
-            s1 == s2 || predicates1.intersect(predicates2).isEmpty
-        }
-    }
-
-    // For performance, keep only predicates of composite indexes
-    val compositeDisjointPredicatesWithSelectivities = disjointPredicatesWithSelectivities.filter {
-      case SelectivitiesForPredicates(_, _, _, numberOfIndexedProperties) => numberOfIndexedProperties > 1
-    }
+    val compositeDisjointPredicatesWithSelectivities =
+      greedyDisjointPredicatesWithSelectivities(selectivitiesForPredicates, unwrappedSelections.flatPredicatesSet)
 
     val coveredPredicates = compositeDisjointPredicatesWithSelectivities.flatMap(_.solvedPredicates)
     val notCoveredPredicates = unwrappedSelections.flatPredicates.filter(!coveredPredicates.contains(_))
@@ -268,6 +262,40 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
 
     combiner.andTogetherSelectivities(notCoveredPredicatesSelectivities ++ coveredPredicatesSelectivities).getOrElse(
       Selectivity.ONE
+    )
+  }
+
+  /**
+   * Greedily chooses indexes that cover the most predicates, without overlapping with other chosen indexes.
+   */
+  private def greedyDisjointPredicatesWithSelectivities(
+    selectivitiesForPredicates: Set[SelectivitiesForPredicates],
+    allPredicates: Set[Expression]
+  ): Set[SelectivitiesForPredicates] = {
+    @tailrec
+    def run(
+      selectivitiesForPredicates: Seq[SelectivitiesForPredicates],
+      covered: Set[Expression],
+      uncovered: Set[Expression],
+      result: Set[SelectivitiesForPredicates]
+    ): Set[SelectivitiesForPredicates] = {
+      if (uncovered.isEmpty) result
+      else {
+        selectivitiesForPredicates match {
+          case Seq() =>
+            result
+          case Seq(x, xs @ _*) if covered.intersect(x.solvedPredicates).isEmpty =>
+            run(xs, covered ++ x.solvedPredicates, uncovered -- x.solvedPredicates, result + x)
+          case _ =>
+            run(selectivitiesForPredicates.tail, covered, uncovered, result)
+        }
+      }
+    }
+    run(
+      selectivitiesForPredicates.toSeq.sortBy(_.solvedPredicates.size)(Ordering[Int].reverse),
+      Set.empty,
+      allPredicates,
+      Set.empty
     )
   }
 

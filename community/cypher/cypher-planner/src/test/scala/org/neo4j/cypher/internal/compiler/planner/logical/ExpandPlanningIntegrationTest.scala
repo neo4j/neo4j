@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -793,5 +794,37 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
         .allRelationshipsScan("(x)-[anon_0]->(y)")
         .build()
     )
+  }
+
+  test(
+    "should NOT plan Expand(Into) and CartesianProduct of two composite index seeks with high uniqueSelectivity (i.e. many duplicate entries)"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 800)
+      .setLabelCardinality("B", 600)
+      .addNodeIndex("A", Seq("x", "y", "z"), existsSelectivity = 0.5, uniqueSelectivity = 0.8)
+      .addNodeIndex("A", Seq("x", "y"), existsSelectivity = 0.8, uniqueSelectivity = 0.9)
+      .addNodeIndex("B", Seq("x", "y", "z"), existsSelectivity = 0.4, uniqueSelectivity = 0.7)
+      .addNodeIndex("B", Seq("x", "y"), existsSelectivity = 0.9, uniqueSelectivity = 0.8)
+      .setRelationshipCardinality("()-[]->()", 2000)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 2000)
+      .setRelationshipCardinality("()-[]->(:B)", 2000)
+      .setRelationshipCardinality("(:A)-[]->()", 2000)
+      .defaultRelationshipCardinalityTo0(false)
+      .build()
+
+    val q =
+      """
+        |MATCH (a:A {x:1, y: 2, z: 3})-[r]->(b:B {x: 4, y: 5, z: 6})
+        |RETURN a, b
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .filterExpressionOrString("a:A", andsReorderable("a.x = 1", "a.y = 2", "a.z = 3"))
+      .expandAll("(b)<-[r]-(a)")
+      .nodeIndexOperator("b:B(x = 4, y = 5, z = 6)", supportPartitionedScan = false)
+      .build()
   }
 }
