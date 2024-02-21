@@ -278,8 +278,23 @@ sealed abstract class LogicalPlan(idGen: IdGen)
 
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
+  /**
+   * @return `true` if this plan can perform updates.
+   *         Recurses into child plans.
+   */
   def readOnly: Boolean = !this.folder.treeExists {
+    case p: LogicalPlan => p.isUpdatingPlan
+  }
+
+  /**
+   * @return `true` if this plan can perform updates.
+   *         Does not recurse into child plans.
+   */
+  def isUpdatingPlan: Boolean = this match {
     case _: UpdatingPlan => true
+    case procedureCall: ProcedureCall =>
+      !procedureCall.call.containsNoUpdates
+    case _ => false
   }
 
   def indexUsage(): Seq[IndexUsage] = {
@@ -339,7 +354,15 @@ sealed trait AggregatingPlan extends LogicalPlan {
   )(idGen: IdGen): AggregatingPlan
 }
 
-// Marker interface for all plans that performs updates
+/**
+ * Marker interface for all plans that performs updates.
+ * IMPORTANT NOTE:
+ * This does not include write procedure calls.
+ * So, to exhaustively check for all plans that can perform updates,
+ * you have to include [[ProcedureCall]] if `!procedureCall.call.containsNoUpdates`.
+ *
+ * [[LogicalPlan.isUpdatingPlan]] does that check for you if needed.
+ */
 sealed trait UpdatingPlan extends LogicalUnaryPlan {
   override def withLhs(source: LogicalPlan)(idGen: IdGen): UpdatingPlan
 
