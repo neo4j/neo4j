@@ -1747,8 +1747,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       //definition is ordered. However if you do ON MATCH SET ... that might invalidate the
       //inner ordering.
       case m: Merge => m.onMatch.nonEmpty
-      case _: UpdatingPlan => true
-      case _ => false
+      case _=> plan.isUpdatingPlan
     }) || executionModel.invalidatesProvidedOrder(plan)
   }
 
