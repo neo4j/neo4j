@@ -276,6 +276,7 @@ trait RelationshipTypeScan {
 }
 
 abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
+  final lazy val hasUpdatingRhs: Boolean = !right.readOnly
   final def lhs: Option[LogicalPlan] = Some(left)
   final def rhs: Option[LogicalPlan] = Some(right)
 

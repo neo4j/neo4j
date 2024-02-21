@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExhaustiveLimitPlanningIntegrationTest
@@ -75,6 +76,37 @@ class ExhaustiveLimitPlanningIntegrationTest
       .produceResults("m")
       .exhaustiveLimit(3)
       .create(createNode("m", "M"))
+      .nodeByLabelScan("n", "N")
+      .build()
+  }
+
+  test("should plan exhaustive limit for reads followed by write procedure call followed by LIMIT") {
+    // given
+    val config = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 10)
+      .addProcedure(
+        procedureSignature("my.writeProc")
+          .withAccessMode(ProcedureReadWriteAccess)
+          .build()
+      )
+      .build()
+
+    val query =
+      s"""
+         |MATCH (n:N)
+         |CALL my.writeProc()
+         |RETURN n LIMIT 3
+         |""".stripMargin
+
+    // when
+    val plan = config.plan(query)
+
+    // then
+    plan shouldEqual config.planBuilder()
+      .produceResults("n")
+      .exhaustiveLimit(3)
+      .procedureCall("my.writeProc()")
       .nodeByLabelScan("n", "N")
       .build()
   }
@@ -133,7 +165,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .limit(3)
       .expand("(m)-[r]->(o)")
       .sort(Seq(Ascending("m")))
-      .eager()//TODO: this eager is not necessary
+      .eager()
       .create(createNode("m", "M"))
       .nodeByLabelScan("n", "N")
       .build()
@@ -167,6 +199,42 @@ class ExhaustiveLimitPlanningIntegrationTest
       .exhaustiveLimit(3)
       .apply(fromSubquery = true)
       .|.create(createNode("m", "M"))
+      .|.argument()
+      .nodeByLabelScan("n", "N")
+      .build()
+  }
+
+  test("should plan exhaustive limit for write procedure call in subquery") {
+    // given
+    val config = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(1000)
+      .setLabelCardinality("N", 10)
+      .addProcedure(
+        procedureSignature("my.writeProc")
+          .withAccessMode(ProcedureReadWriteAccess)
+          .build()
+      )
+      .build()
+
+    val query =
+      s"""
+         |MATCH (n:N)
+         |CALL {
+         |  CALL my.writeProc()
+         |}
+         |RETURN n LIMIT 3
+         |""".stripMargin
+
+    // when
+    val plan = config.plan(query)
+
+    // then
+    plan shouldEqual config.planBuilder()
+      .produceResults("n")
+      .exhaustiveLimit(3)
+      .subqueryForeach()
+      .|.procedureCall("my.writeProc()")
       .|.argument()
       .nodeByLabelScan("n", "N")
       .build()
@@ -255,7 +323,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .limit(add(literalInt(3), literalInt(10)))
       .expand("(m)-[r]->(o)")
       .sort(Seq(Ascending("m")))
-      .eager()//TODO: this eager is not necessary
+      .eager()
       .create(createNode("m", "M"))
       .nodeByLabelScan("n", "N")
       .build()
