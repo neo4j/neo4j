@@ -102,7 +102,7 @@ public interface DatabaseCreationContext
 
     Monitors getMonitors();
 
-    Tracers getTracers();
+    DatabaseTracers getTracers();
 
     GlobalProcedures getGlobalProcedures();
 

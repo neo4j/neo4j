@@ -44,6 +44,12 @@ public interface TransactionTracer extends TransactionLogCounters
         }
 
         @Override
+        public CommitEvent beginAsyncCommit()
+        {
+            return CommitEvent.NULL;
+        }
+
+        @Override
         public long appendedBytes()
         {
             return 0;
@@ -86,4 +92,13 @@ public interface TransactionTracer extends TransactionLogCounters
      * @param cursorContext page cursor context that used by transaction
      */
     TransactionEvent beginTransaction( CursorContext cursorContext );
+
+    /**
+     * A commit starts in a context where it is detached from the
+     * execution of a transaction, for example when transactions
+     * are replicated in a cluster setting.
+     *
+     * @return An event that represents the commit.
+     */
+    CommitEvent beginAsyncCommit();
 }

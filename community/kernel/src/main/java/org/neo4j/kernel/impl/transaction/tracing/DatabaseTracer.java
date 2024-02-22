@@ -74,6 +74,12 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
         }
 
         @Override
+        public CommitEvent beginAsyncCommit()
+        {
+            return CommitEvent.NULL;
+        }
+
+        @Override
         public long appendedBytes()
         {
             return 0;

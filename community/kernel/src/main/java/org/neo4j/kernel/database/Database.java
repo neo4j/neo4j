@@ -138,7 +138,6 @@ import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
@@ -303,7 +302,7 @@ public class Database extends LifecycleAdapter
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
         this.databaseFacade = new GraphDatabaseFacade( this, databaseConfig, dbmsInfo, databaseAvailabilityGuard );
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory( databaseConfig, databaseFacade );
-        this.tracers = new DatabaseTracers( context.getTracers() );
+        this.tracers = context.getTracers();
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
@@ -588,13 +587,14 @@ public class Database extends LifecycleAdapter
             long time = clock.millis();
             transactionRepresentation.setHeader( EMPTY_BYTE_ARRAY, time, storageEngine.metadataProvider().getLastClosedTransactionId(), time,
                     leaseService.newClient().leaseId(), AuthSubject.AUTH_DISABLED );
-            try ( var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL ) )
+            try ( var commitEvent = tracers.getDatabaseTracer().beginAsyncCommit();
+                  var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL ) )
             {
                 TransactionToApply toApply =
                         new TransactionToApply( transactionRepresentation, CursorContext.NULL, storeCursors );
 
                 TransactionCommitProcess commitProcess = databaseDependencies.resolveDependency( TransactionCommitProcess.class );
-                commitProcess.commit( toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
+                commitProcess.commit( toApply, commitEvent, TransactionApplicationMode.INTERNAL );
             }
         } );
 
@@ -1048,6 +1048,11 @@ public class Database extends LifecycleAdapter
     public StorageEngineFactory getStorageEngineFactory()
     {
         return storageEngineFactory;
+    }
+
+    public DatabaseTracers getTracers()
+    {
+        return tracers;
     }
 
     private void prepareStop( Predicate<PagedFile> deleteFilePredicate )

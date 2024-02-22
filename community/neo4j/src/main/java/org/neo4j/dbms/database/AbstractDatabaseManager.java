@@ -46,6 +46,7 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.SystemGraphDatabaseIdRepository;
@@ -189,11 +190,12 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         var databaseConfig = new DatabaseConfig( databaseOptions.settings(), config, namedDatabaseId );
         var storageEngineFactory = DatabaseCreationContext.selectStorageEngine( globalModule.getFileSystem(), globalModule.getNeo4jLayout(),
                 globalModule.getPageCache(), databaseConfig, namedDatabaseId );
+        var tracers = new DatabaseTracers( globalModule.getTracers() );
 
         return new ModularDatabaseCreationContext( namedDatabaseId, globalModule, parentDependencies, parentMonitors,
                                                    editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ),
                                                    databaseConfig, LeaseService.NO_LEASES, editionDatabaseComponents.getExternalIdReuseConditionProvider(),
-                                                   storageEngineFactory, edition.getReadOnlyChecker() );
+                                                   storageEngineFactory, edition.getReadOnlyChecker(), tracers );
     }
 
     private void forEachDatabase( BiConsumer<NamedDatabaseId,DB> consumer, boolean systemDatabaseLast, String operationName )
