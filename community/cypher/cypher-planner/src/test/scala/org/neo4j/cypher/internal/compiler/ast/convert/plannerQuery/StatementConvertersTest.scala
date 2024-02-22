@@ -2129,7 +2129,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should not cancel processing when clause count is below the limit") {
     val clauses = for (i <- 1 to 5) yield merge(nodePat(Some(s"n$i")))
     val query = singleQuery(clauses: _*)
-    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val queryASTSize = query.folder.fold(0) {
+      case _ => _ + 1
+    }
+    val cancellationChecker = new TestCountdownCancellationChecker(2 * (queryASTSize + clauses.size))
     noException shouldBe thrownBy {
       StatementConverters.convertToPlannerQuery(
         query,
@@ -2146,7 +2149,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         null // should cancel before processing this bad clause
 
     val query = singleQuery(clauses: _*)
-    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val queryASTSize = query.folder.fold(0) {
+      case _ => _ + 1
+    }
+    val cancellationChecker = new TestCountdownCancellationChecker(queryASTSize + clauses.size)
     val ex = the[RuntimeException] thrownBy {
       StatementConverters.convertToPlannerQuery(
         query,
@@ -2164,7 +2170,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         null // should cancel before processing this bad clause
 
     val query = singleQuery(foreach("i", v"list", clauses: _*))
-    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val queryASTSize = query.folder.fold(0) {
+      case _ => _ + 1
+    }
+    val cancellationChecker = new TestCountdownCancellationChecker(queryASTSize + clauses.size)
     val ex = the[RuntimeException] thrownBy {
       StatementConverters.convertToPlannerQuery(
         query,
@@ -2182,7 +2191,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         null // should cancel before processing this bad clause
 
     val query = singleQuery(subqueryCall(clauses: _*))
-    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val queryASTSize = query.folder.fold(0) {
+      case _ => _ + 1
+    }
+    val cancellationChecker = new TestCountdownCancellationChecker(queryASTSize + clauses.size)
     val ex = the[RuntimeException] thrownBy {
       StatementConverters.convertToPlannerQuery(
         query,
@@ -2201,7 +2213,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val single = singleQuery(subqueryCall(clauses: _*))
     val unionQuery = ProjectingUnionAll(single, single, List.empty)(pos)
-    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val queryASTSize = unionQuery.folder.fold(0) {
+      case _ => _ + 1
+    }
+    val cancellationChecker = new TestCountdownCancellationChecker(queryASTSize + clauses.size)
     val ex = the[RuntimeException] thrownBy {
       StatementConverters.convertToPlannerQuery(
         unionQuery,

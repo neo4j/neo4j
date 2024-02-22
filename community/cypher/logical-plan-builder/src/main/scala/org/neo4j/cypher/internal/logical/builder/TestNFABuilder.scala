@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.State
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.combineHasLabels
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.inSequence
 
@@ -62,7 +63,10 @@ object TestNFABuilder {
         }
 
         val rewrittenNodeJointPredicate =
-          nodeJointPredicate.endoRewrite(inSequence(flattenBooleanOperators, combineHasLabels))
+          nodeJointPredicate.endoRewrite(inSequence(
+            flattenBooleanOperators.instance(CancellationChecker.NeverCancelled),
+            combineHasLabels
+          ))
 
         Some((nodeVariable, rewrittenNodeJointPredicate.map(Expand.VariablePredicate(nodeVariable, _))))
       case _ => None

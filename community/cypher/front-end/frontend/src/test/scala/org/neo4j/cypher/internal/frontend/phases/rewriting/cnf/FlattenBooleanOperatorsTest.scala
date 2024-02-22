@@ -17,11 +17,13 @@
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
+import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class FlattenBooleanOperatorsTest extends CypherFunSuite with PredicateTestSupport {
 
-  val rewriter = flattenBooleanOperators
+  override val rewriter: Rewriter = flattenBooleanOperators.instance(CancellationChecker.NeverCancelled)
 
   test("Should be able to flatten a simple and") {
     and(P, Q) <=> ands(P, Q)

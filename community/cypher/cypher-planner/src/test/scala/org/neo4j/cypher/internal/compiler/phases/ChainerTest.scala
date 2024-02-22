@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -48,6 +50,12 @@ class ChainerTest extends CypherFunSuite {
     override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
 
+  private def mockContext = {
+    val m = mock[BaseContext]
+    when(m.cancellationChecker).thenReturn(CancellationChecker.NeverCancelled)
+    m
+  }
+
   test("legal chain") {
     val init = InitialState(
       "Q",
@@ -58,7 +66,7 @@ class ChainerTest extends CypherFunSuite {
     val r = Chainer
       .chainTransformers(Seq(BB, BL, LL))
       .asInstanceOf[Transformer[BaseContext, BaseState, LogicalPlanState]]
-      .transform(init, null)
+      .transform(init, mockContext)
     r.queryText should be("Q")
   }
 
@@ -73,7 +81,7 @@ class ChainerTest extends CypherFunSuite {
       Chainer
         .chainTransformers(Seq(BB, LL, BL))
         .asInstanceOf[Transformer[BaseContext, BaseState, LogicalPlanState]]
-        .transform(init, null)
+        .transform(init, mockContext)
     }
   }
 }

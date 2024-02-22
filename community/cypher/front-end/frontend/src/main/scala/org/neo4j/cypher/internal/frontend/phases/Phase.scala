@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.frontend.helpers.closing
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
-import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.StepSequencer
 
 /*

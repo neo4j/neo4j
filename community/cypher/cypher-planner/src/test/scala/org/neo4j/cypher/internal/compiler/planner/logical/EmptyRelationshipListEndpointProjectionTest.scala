@@ -61,7 +61,7 @@ class EmptyRelationshipListEndpointProjectionTest extends CypherFunSuite with Pl
       QuantifiedPathPatternNodeInsertRewriter.instance,
       nameAllPatternElements.getRewriter(orgAstState, Map.empty, ceF, anonVarGen),
       normalizePredicates.getRewriter(orgAstState, Map.empty, ceF, anonVarGen),
-      flattenBooleanOperators
+      flattenBooleanOperators.instance(CancellationChecker.NeverCancelled)
     ))
   }
 

@@ -166,7 +166,7 @@ public class QueryProcessorImpl implements QueryProcessor {
                 cancellationChecker,
                 targetsComposite);
         var catalogInfo = resolveCatalogInfo(parsedQuery.statement(), targetsComposite);
-        var rewrittenQueryText = rewriteQueryText(parsedQuery, preParsedQuery.options());
+        var rewrittenQueryText = rewriteQueryText(parsedQuery, preParsedQuery.options(), cancellationChecker);
         var maybeExtractedParams = formatMaybeExtractedParams(parsedQuery);
         var statementType = StatementType.of(parsedQuery.statement(), resolver);
         var parsingNotifications = CollectionConverters.asJava(notificationLogger.notifications());
@@ -194,9 +194,10 @@ public class QueryProcessorImpl implements QueryProcessor {
         return toCatalogInfo(graphSelections);
     }
 
-    private static String rewriteQueryText(BaseState parsedQuery, QueryOptions queryOptions) {
+    private static String rewriteQueryText(
+            BaseState parsedQuery, QueryOptions queryOptions, CancellationChecker cancellationChecker) {
         var rewrittenStatement = flattenBooleanOperators
-                .instance()
+                .instance(cancellationChecker)
                 .apply(RemoveUseRewriter.instance().apply(parsedQuery.statement()));
         var rewrittenStatementString = QueryRenderer.render((Statement) rewrittenStatement);
 

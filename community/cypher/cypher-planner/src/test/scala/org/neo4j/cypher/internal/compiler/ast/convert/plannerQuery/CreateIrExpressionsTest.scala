@@ -68,6 +68,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -153,8 +154,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       AddUniquenessPredicates.rewriter,
       normalizePredicates(PredicateNormalizer.normalizeInlinedWhereClauses),
       normalizePredicates(PredicateNormalizer.normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator)),
-      flattenBooleanOperators,
-      CreateIrExpressions(anonymousVariableNameGenerator, semanticTable)
+      flattenBooleanOperators.instance(CancellationChecker.NeverCancelled),
+      CreateIrExpressions(anonymousVariableNameGenerator, semanticTable, CancellationChecker.NeverCancelled)
     )
     e.endoRewrite(rewriter)
   }

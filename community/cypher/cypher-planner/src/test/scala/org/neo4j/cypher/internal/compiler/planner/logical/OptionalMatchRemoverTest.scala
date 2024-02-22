@@ -71,7 +71,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with PlannerQueryRewriterT
       normalizeExistsPatternExpressions(orgAstState),
       normalizeHasLabelsAndHasType(orgAstState),
       AddUniquenessPredicates.rewriter,
-      flattenBooleanOperators,
+      flattenBooleanOperators.instance(CancellationChecker.NeverCancelled),
       insertWithBetweenOptionalMatchAndMatch.instance
     ))
     // computeDependenciesForExpressions needs a new run of SemanticChecker after normalizeExistsPatternExpressions

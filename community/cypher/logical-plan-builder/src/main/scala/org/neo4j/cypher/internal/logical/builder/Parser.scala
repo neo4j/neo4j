@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
@@ -93,7 +94,9 @@ object Parser {
     invalidateInputPositions,
     replaceWrongFunctionInvocation,
     LabelExpressionPredicateNormalizer.instance,
-    flattenBooleanOperators // It is otherwise impossible to create instances of Ands / Ors
+    flattenBooleanOperators.instance(
+      CancellationChecker.NeverCancelled
+    ) // It is otherwise impossible to create instances of Ands / Ors
   )(in).asInstanceOf[T]
 
   private val regex = s"(.+) [Aa][Ss] (.+)".r

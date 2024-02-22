@@ -65,7 +65,7 @@ class InlineRelationshipTypePredicatesTest extends CypherFunSuite with PlannerQu
       QuantifiedPathPatternNodeInsertRewriter.instance,
       nameAllPatternElements.getRewriter(orgAstState, Map.empty, ceF, anonVarGen),
       normalizePredicates.getRewriter(orgAstState, Map.empty, ceF, anonVarGen),
-      flattenBooleanOperators,
+      flattenBooleanOperators.instance(CancellationChecker.NeverCancelled),
       expandStar(orgAstState),
       simplifyPredicates(orgAstState)
     ))

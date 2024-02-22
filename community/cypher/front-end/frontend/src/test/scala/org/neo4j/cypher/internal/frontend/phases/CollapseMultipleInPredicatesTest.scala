@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.TestContext
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.rewriting.RewriteTest
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -66,5 +67,7 @@ class CollapseMultipleInPredicatesTest extends CypherFunSuite with RewriteTest {
   }
 
   override protected def parseForRewriting(queryText: String): Statement =
-    super.parseForRewriting(queryText).endoRewrite(inSequence(flattenBooleanOperators))
+    super.parseForRewriting(queryText).endoRewrite(
+      inSequence(flattenBooleanOperators.instance(CancellationChecker.NeverCancelled))
+    )
 }

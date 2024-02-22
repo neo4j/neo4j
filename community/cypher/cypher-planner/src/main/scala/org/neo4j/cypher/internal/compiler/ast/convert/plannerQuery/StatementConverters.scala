@@ -136,9 +136,11 @@ object StatementConverters {
   private def rewriteAndCheckQuery(
     query: Query,
     semanticTable: SemanticTable,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
   ): Query = {
-    val rewrittenQuery = query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable))
+    val rewrittenQuery =
+      query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable, cancellationChecker))
     val nodes = findBlacklistedNodes(query)
     require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
     rewrittenQuery
@@ -157,7 +159,7 @@ object StatementConverters {
     importedVariables: Set[LogicalVariable] = Set.empty,
     position: QueryProjection.Position = QueryProjection.Position.Final
   ): PlannerQuery = {
-    val rewrittenQuery = rewriteAndCheckQuery(query, semanticTable, anonymousVariableNameGenerator)
+    val rewrittenQuery = rewriteAndCheckQuery(query, semanticTable, anonymousVariableNameGenerator, cancellationChecker)
     convertToNestedPlannerQuery(
       rewrittenQuery,
       semanticTable,
@@ -232,7 +234,7 @@ object StatementConverters {
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker
   ): PlannerQuery = {
-    val rewrittenQuery = rewriteAndCheckQuery(query, semanticTable, anonymousVariableNameGenerator)
+    val rewrittenQuery = rewriteAndCheckQuery(query, semanticTable, anonymousVariableNameGenerator, cancellationChecker)
     val compositeQuery =
       CompositeQueryFragmenter.fragment(cancellationChecker, anonymousVariableNameGenerator, rewrittenQuery)
     CompositeQueryConverter.convert(cancellationChecker, anonymousVariableNameGenerator, semanticTable, compositeQuery)

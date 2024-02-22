@@ -63,7 +63,8 @@ import org.neo4j.cypher.internal.util.topDown
 
 case class CreateIrExpressions(
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-  semanticTable: SemanticTable
+  semanticTable: SemanticTable,
+  cancellationChecker: CancellationChecker
 ) extends Rewriter {
   private val pathStepBuilder: PathPatternPart => PathStep = projectNamedPaths.patternPartPathExpression
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
@@ -79,7 +80,7 @@ case class CreateIrExpressions(
    * The only one that is crucial to fix is that And => Ands and Or => Ors because that is assumed in IR creation.
    */
   private val fixExtractedPredicatesRewriter =
-    flattenBooleanOperators
+    flattenBooleanOperators.instance(cancellationChecker)
 
   private def createPathExpression(pattern: PatternExpression): PathExpression = {
     val pos = pattern.position
@@ -132,77 +133,78 @@ case class CreateIrExpressions(
     PlannerQueryBuilder.finalizeQuery(query)
   }
 
-  private val instance: Rewriter = topDown(Rewriter.lift {
-    /**
+  private val instance: Rewriter = topDown(
+    Rewriter.lift {
+      /**
      * Rewrites exists( (n)-[anon_0]->(anon_1:M) ) into
      * IR for MATCH (n)-[anon_0]->(anon_1:M)
      */
-    case exists @ Exists(pe @ PatternExpression(pattern)) =>
-      val existsVariable = varFor(anonymousVariableNameGenerator.nextName)
-      val query = getPlannerQuery(pattern, pe.dependencies, None, RegularQueryProjection())
-      ExistsIRExpression(query, existsVariable, stringifier(exists))(
-        exists.position,
-        pe.computedIntroducedVariables,
-        pe.computedScopeDependencies
-      )
+      case exists @ Exists(pe @ PatternExpression(pattern)) =>
+        val existsVariable = varFor(anonymousVariableNameGenerator.nextName)
+        val query = getPlannerQuery(pattern, pe.dependencies, None, RegularQueryProjection())
+        ExistsIRExpression(query, existsVariable, stringifier(exists))(
+          exists.position,
+          pe.computedIntroducedVariables,
+          pe.computedScopeDependencies
+        )
 
-    /**
+      /**
      * Rewrites exists{ MATCH (n)-[anon_0]->(anon_1:M) RETURN n} into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN n
      *
      */
-    case existsExpression @ ExistsExpression(q) =>
-      val existsVariable = varFor(anonymousVariableNameGenerator.nextName)
-      val plannerQuery = StatementConverters.convertToPlannerQuery(
-        q,
-        semanticTable,
-        anonymousVariableNameGenerator,
-        CancellationChecker.NeverCancelled,
-        existsExpression.scopeDependencies
-      )
-      ExistsIRExpression(plannerQuery, existsVariable, stringifier(existsExpression))(
-        existsExpression.position,
-        existsExpression.computedIntroducedVariables,
-        existsExpression.computedScopeDependencies
-      )
+      case existsExpression @ ExistsExpression(q) =>
+        val existsVariable = varFor(anonymousVariableNameGenerator.nextName)
+        val plannerQuery = StatementConverters.convertToPlannerQuery(
+          q,
+          semanticTable,
+          anonymousVariableNameGenerator,
+          CancellationChecker.NeverCancelled,
+          existsExpression.scopeDependencies
+        )
+        ExistsIRExpression(plannerQuery, existsVariable, stringifier(existsExpression))(
+          existsExpression.position,
+          existsExpression.computedIntroducedVariables,
+          existsExpression.computedScopeDependencies
+        )
 
-    /**
+      /**
      * Rewrites (n)-[anon_0]->(anon_1:M) into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN PathExpression(NodePathStep(n, RelationshipPathStep(anon_0, NodePathStep(anon_1, NilPathStep))))
      */
-    case pe @ PatternExpression(pattern) =>
-      val variableToCollect = varFor(anonymousVariableNameGenerator.nextName)
-      val collection = varFor(anonymousVariableNameGenerator.nextName)
+      case pe @ PatternExpression(pattern) =>
+        val variableToCollect = varFor(anonymousVariableNameGenerator.nextName)
+        val collection = varFor(anonymousVariableNameGenerator.nextName)
 
-      val pathExpression = createPathExpression(pe)
-      val query = getPlannerQuery(
-        pattern,
-        pe.dependencies,
-        None,
-        RegularQueryProjection(Map(variableToCollect -> pathExpression))
-      )
-      ListIRExpression(query, variableToCollect, collection, stringifier(pe))(
-        pe.position,
-        pe.computedIntroducedVariables,
-        pe.computedScopeDependencies
-      )
+        val pathExpression = createPathExpression(pe)
+        val query = getPlannerQuery(
+          pattern,
+          pe.dependencies,
+          None,
+          RegularQueryProjection(Map(variableToCollect -> pathExpression))
+        )
+        ListIRExpression(query, variableToCollect, collection, stringifier(pe))(
+          pe.position,
+          pe.computedIntroducedVariables,
+          pe.computedScopeDependencies
+        )
 
-    /**
+      /**
      * Rewrites COUNT { (n)-[anon_0]->(anon_1:M) } into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN count(*)
      */
-    case countExpression @ CountExpression(q) =>
-      val countVariable = varFor(anonymousVariableNameGenerator.nextName)
-      val arguments = countExpression.dependencies
-      val plannerQuery = StatementConverters.convertToPlannerQuery(
-        q,
-        semanticTable,
-        anonymousVariableNameGenerator,
-        CancellationChecker.NeverCancelled,
-        arguments
-      )
+      case countExpression @ CountExpression(q) =>
+        val countVariable = varFor(anonymousVariableNameGenerator.nextName)
+        val arguments = countExpression.dependencies
+        val plannerQuery = StatementConverters.convertToPlannerQuery(
+          q,
+          semanticTable,
+          anonymousVariableNameGenerator,
+          CancellationChecker.NeverCancelled,
+          arguments
+        )
 
-      /**
+        /**
        * For single queries not containing SKIP, LIMIT, WHERE, DISTINCT, aggregation, etc.,
        * it is fine to just override the horizon with an aggregating projection and rewrite away the InterestingOrder.
        * For other single queries we can add the aggregating projection in an additional tail.
@@ -211,82 +213,84 @@ case class CreateIrExpressions(
        * For these cases we instead add the query as a CallSubqueryHorizon
        * and then set the tail as the aggregating query projection.
        */
-      val finalizedQuery = plannerQuery match {
-        case query: RegularSinglePlannerQuery =>
-          query.tailOrSelf.horizon match {
-            // Simply some Return items but no SKIP, LIMIT, WHERE, DISTINCT, aggregation, etc.
-            case RegularQueryProjection(_, QueryPagination(None, None), Selections(SetExtractor()), _) =>
-              // We can simply override the final horizon with our aggregation.
-              plannerQuery.asSinglePlannerQuery
-                .updateTailOrSelf(_.withHorizon(
-                  AggregatingQueryProjection(aggregationExpressions =
-                    Map(countVariable -> CountStar()(q.position))
-                  )
-                ))
-                // And also remove any ORDER BY since that won't have any impact in a COUNT subquery anyway.
-                .updateTailOrSelf(_.withInterestingOrder(InterestingOrder.empty))
-            case _ =>
-              // In any other case we add another tail with our aggregation.
-              plannerQuery.asSinglePlannerQuery
-                .updateTailOrSelf(_.withTail(RegularSinglePlannerQuery(
+        val finalizedQuery = plannerQuery match {
+          case query: RegularSinglePlannerQuery =>
+            query.tailOrSelf.horizon match {
+              // Simply some Return items but no SKIP, LIMIT, WHERE, DISTINCT, aggregation, etc.
+              case RegularQueryProjection(_, QueryPagination(None, None), Selections(SetExtractor()), _) =>
+                // We can simply override the final horizon with our aggregation.
+                plannerQuery.asSinglePlannerQuery
+                  .updateTailOrSelf(_.withHorizon(
+                    AggregatingQueryProjection(aggregationExpressions =
+                      Map(countVariable -> CountStar()(q.position))
+                    )
+                  ))
+                  // And also remove any ORDER BY since that won't have any impact in a COUNT subquery anyway.
+                  .updateTailOrSelf(_.withInterestingOrder(InterestingOrder.empty))
+              case _ =>
+                // In any other case we add another tail with our aggregation.
+                plannerQuery.asSinglePlannerQuery
+                  .updateTailOrSelf(_.withTail(RegularSinglePlannerQuery(
+                    horizon = AggregatingQueryProjection(aggregationExpressions =
+                      Map(countVariable -> CountStar()(q.position))
+                    )
+                  )))
+            }
+          case _ => RegularSinglePlannerQuery(
+              queryGraph = QueryGraph(
+                argumentIds = arguments
+              ),
+              horizon = CallSubqueryHorizon(
+                callSubquery = plannerQuery,
+                correlated = true,
+                yielding = true,
+                inTransactionsParameters = None
+              ),
+              tail = Some(
+                RegularSinglePlannerQuery(
                   horizon = AggregatingQueryProjection(aggregationExpressions =
-                    Map(countVariable -> CountStar()(q.position))
+                    Map(countVariable -> CountStar()(countExpression.position))
                   )
-                )))
-          }
-        case _ => RegularSinglePlannerQuery(
-            queryGraph = QueryGraph(
-              argumentIds = arguments
-            ),
-            horizon = CallSubqueryHorizon(
-              callSubquery = plannerQuery,
-              correlated = true,
-              yielding = true,
-              inTransactionsParameters = None
-            ),
-            tail = Some(
-              RegularSinglePlannerQuery(
-                horizon = AggregatingQueryProjection(aggregationExpressions =
-                  Map(countVariable -> CountStar()(countExpression.position))
                 )
               )
             )
-          )
-      }
+        }
 
-      CountIRExpression(finalizedQuery, countVariable, stringifier(countExpression))(
-        countExpression.position,
-        countExpression.computedIntroducedVariables,
-        countExpression.computedScopeDependencies
-      )
+        CountIRExpression(finalizedQuery, countVariable, stringifier(countExpression))(
+          countExpression.position,
+          countExpression.computedIntroducedVariables,
+          countExpression.computedScopeDependencies
+        )
 
-    /**
+      /**
      * Rewrites COLLECT { (n)-[anon_0]->(anon_1:M) RETURN n } into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN n
      */
-    case collectExpression @ CollectExpression(q) =>
-      val collectVariable = varFor(anonymousVariableNameGenerator.nextName)
-      val arguments = collectExpression.dependencies
-      val plannerQuery = StatementConverters.convertToPlannerQuery(
-        q,
-        semanticTable,
-        anonymousVariableNameGenerator,
-        CancellationChecker.NeverCancelled,
-        arguments
-      )
+      case collectExpression @ CollectExpression(q) =>
+        val collectVariable = varFor(anonymousVariableNameGenerator.nextName)
+        val arguments = collectExpression.dependencies
+        val plannerQuery = StatementConverters.convertToPlannerQuery(
+          q,
+          semanticTable,
+          anonymousVariableNameGenerator,
+          CancellationChecker.NeverCancelled,
+          arguments
+        )
 
-      /**
+        /**
        * Collect Subqueries may only return one item, we also know that all branches of Union
        * clauses will have the same variable name. This is all checked earlier in semantic checking.
        */
-      val toCollectVar = collectExpression.query.returnVariables.explicitVariables.head
+        val toCollectVar = collectExpression.query.returnVariables.explicitVariables.head
 
-      ListIRExpression(plannerQuery, toCollectVar, collectVariable, stringifier(collectExpression))(
-        collectExpression.position,
-        collectExpression.computedIntroducedVariables,
-        collectExpression.computedScopeDependencies
-      )
-  })
+        ListIRExpression(plannerQuery, toCollectVar, collectVariable, stringifier(collectExpression))(
+          collectExpression.position,
+          collectExpression.computedIntroducedVariables,
+          collectExpression.computedScopeDependencies
+        )
+    },
+    cancellation = cancellationChecker
+  )
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }
