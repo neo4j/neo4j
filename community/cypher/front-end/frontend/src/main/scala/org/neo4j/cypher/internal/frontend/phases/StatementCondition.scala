@@ -17,12 +17,13 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.StepSequencer
 
 case class StatementCondition(inner: ValidatingCondition) extends ValidatingCondition {
 
-  override def apply(state: Any): Seq[String] = state match {
-    case s: BaseState => inner(s.statement())
+  override def apply(state: Any)(cancellationChecker: CancellationChecker): Seq[String] = state match {
+    case s: BaseState => inner(s.statement())(cancellationChecker: CancellationChecker)
     case x            => throw new IllegalStateException(s"Unknown state: $x")
   }
 

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFe
 import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeatures
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -61,7 +62,7 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
     val transformedState = pipeline.transform(initialState, TestContext(logger))
 
     // Check that we didn't introduce any duplicate AST nodes
-    noReferenceEqualityAmongVariables(transformedState.statement()) shouldBe empty
+    noReferenceEqualityAmongVariables(transformedState.statement())(CancellationChecker.NeverCancelled) shouldBe empty
 
     logger.notifications
   }

@@ -22,11 +22,13 @@ import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val collector: Any => Seq[Variable] = collectNodesOfType[Variable]()
+  private val collector: Any => Seq[Variable] =
+    collectNodesOfType[Variable]().apply(_)(CancellationChecker.NeverCancelled)
 
   test("collect all variables") {
     val idA = varFor("a")

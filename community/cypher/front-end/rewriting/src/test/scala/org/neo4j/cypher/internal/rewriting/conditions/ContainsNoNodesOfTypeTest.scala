@@ -24,11 +24,13 @@ import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val condition: Any => Seq[String] = containsNoNodesOfType[UnaliasedReturnItem]()
+  val condition: Any => Seq[String] =
+    containsNoNodesOfType[UnaliasedReturnItem]().apply(_)(CancellationChecker.NeverCancelled)
 
   test("Happy when not finding UnaliasedReturnItem") {
     val ast: ASTNode =

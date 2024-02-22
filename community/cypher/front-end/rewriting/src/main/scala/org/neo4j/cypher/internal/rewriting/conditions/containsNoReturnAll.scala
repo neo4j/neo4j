@@ -18,13 +18,16 @@ package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 
 case object containsNoReturnAll extends ValidatingCondition {
 
   private val matcher = containsNoMatchingNodes({
     case ri: ReturnItems if ri.includeExisting => "ReturnItems(includeExisting = true, ...)"
   })
-  def apply(that: Any) = matcher(that)
+
+  override def apply(that: Any)(cancellationChecker: CancellationChecker): Seq[String] =
+    matcher(that)(cancellationChecker)
 
   override def name: String = productPrefix
 }

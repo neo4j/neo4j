@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.rewriteOrderById
 import org.neo4j.cypher.internal.rewriting.rewriters.simplifyIterablePredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.unwrapParenthesizedPath
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
@@ -103,12 +104,13 @@ object ASTRewriter {
     semanticState: SemanticState,
     parameterTypeMapping: Map[String, ParameterTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
   ): Statement = {
     val rewriters = orderedSteps.map { step =>
       val rewriter =
         step.getRewriter(semanticState, parameterTypeMapping, cypherExceptionFactory, anonymousVariableNameGenerator)
-      RewriterStep.validatingRewriter(rewriter, step)
+      RewriterStep.validatingRewriter(rewriter, step, cancellationChecker)
     }
 
     val combined = inSequence(rewriters: _*)

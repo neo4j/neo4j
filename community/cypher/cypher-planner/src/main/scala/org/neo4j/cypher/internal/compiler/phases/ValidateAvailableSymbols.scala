@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -46,14 +47,14 @@ import org.neo4j.cypher.internal.util.attribution.Id
 object ValidateAvailableSymbols extends ValidatingCondition {
   override def name: String = "ValidateAvailableSymbols"
 
-  override def apply(input: Any): Seq[String] = {
-    input.folder.treeFold(Seq.empty[String]) {
-      case plan: LogicalPlan => acc => TraverseChildren(acc ++ doApply(plan, input))
+  override def apply(input: Any)(cancellationChecker: CancellationChecker): Seq[String] = {
+    input.folder(cancellationChecker).treeFold(Seq.empty[String]) {
+      case plan: LogicalPlan => acc => TraverseChildren(acc ++ doApply(plan, input)(cancellationChecker))
     }
   }
 
-  private def doApply(plan: LogicalPlan, input: Any): Seq[String] = {
-    val unavailable = readVariables(plan).diff(availableVariables(plan))
+  private def doApply(plan: LogicalPlan, input: Any)(cancellationChecker: CancellationChecker): Seq[String] = {
+    val unavailable = readVariables(plan)(cancellationChecker).diff(availableVariables(plan))
     if (unavailable.nonEmpty) {
       Seq(
         s"""Plan references unavailable variables ${unavailable.mkString(", ")}
@@ -79,14 +80,18 @@ object ValidateAvailableSymbols extends ValidatingCondition {
       plan.rhs.map(_.availableSymbols).getOrElse(Set.empty)
   }
 
-  private def readVariables(plan: LogicalPlan): Set[LogicalVariable] = readVariables(plan, plan.id)
+  private def readVariables(plan: LogicalPlan)(cancellationChecker: CancellationChecker): Set[LogicalVariable] =
+    readVariables(plan, plan.id)(cancellationChecker)
 
   /*
    * Returns variables that are read in the specified plan.
    * Note! This implementation is not complete.
    */
-  private def readVariables(plan: LogicalPlan, id: Id): Set[LogicalVariable] = {
-    plan.folder.treeFold(Set.empty[LogicalVariable]) {
+  private def readVariables(
+    plan: LogicalPlan,
+    id: Id
+  )(cancellationChecker: CancellationChecker): Set[LogicalVariable] = {
+    plan.folder(cancellationChecker).treeFold(Set.empty[LogicalVariable]) {
       case otherPlan: LogicalPlan if otherPlan.id != id => acc => SkipChildren(acc)
       case v: LogicalVariable => acc =>
           SkipChildren(acc + v)

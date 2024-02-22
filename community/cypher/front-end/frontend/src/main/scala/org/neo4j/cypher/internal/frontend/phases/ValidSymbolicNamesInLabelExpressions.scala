@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.collection.mutable.ListBuffer
@@ -36,28 +37,35 @@ import scala.collection.mutable.ListBuffer
 object ValidSymbolicNamesInLabelExpressions extends ValidatingCondition {
   override def name: String = "Valid symbolic names in label expressions"
 
-  override def apply(ast: Any): Seq[String] =
-    ast.folder.fold(ListBuffer.empty[String]) {
+  override def apply(ast: Any)(cancellationChecker: CancellationChecker): Seq[String] =
+    ast.folder(cancellationChecker).fold(ListBuffer.empty[String]) {
       case NodePattern(_, Some(labelExpression), _, _) =>
-        restrictSymbolicNames("node pattern", labelExpression, _.isInstanceOf[LabelName])
+        restrictSymbolicNames("node pattern", labelExpression, cancellationChecker, _.isInstanceOf[LabelName])
 
       case RelationshipPattern(_, Some(labelExpression), _, _, _, _) =>
-        restrictSymbolicNames("relationship pattern", labelExpression, _.isInstanceOf[RelTypeName])
+        restrictSymbolicNames("relationship pattern", labelExpression, cancellationChecker, _.isInstanceOf[RelTypeName])
 
       case LabelExpressionPredicate(_, labelExpression) =>
-        restrictSymbolicNames("label expression predicate", labelExpression, _.isInstanceOf[LabelOrRelTypeName])
+        restrictSymbolicNames(
+          "label expression predicate",
+          labelExpression,
+          cancellationChecker,
+          _.isInstanceOf[LabelOrRelTypeName]
+        )
     }.toSeq
 
   private def restrictSymbolicNames(
     context: String,
     labelExpression: LabelExpression,
+    cancellationChecker: CancellationChecker,
     symbolicNamePredicate: SymbolicName => Boolean
   )(
     errors: ListBuffer[String]
   ): ListBuffer[String] =
     errors.addAll(
-      labelExpression.folder.treeFindByClass[SymbolicName].filterNot(symbolicNamePredicate).map(symbolicName =>
-        s"Illegal symbolic name $symbolicName inside a $context at position: ${symbolicName.position}"
+      labelExpression.folder(cancellationChecker).treeFindByClass[SymbolicName].filterNot(symbolicNamePredicate).map(
+        symbolicName =>
+          s"Illegal symbolic name $symbolicName inside a $context at position: ${symbolicName.position}"
       )
     )
 }

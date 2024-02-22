@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.StepSequencer
 
 trait Transformer[-C <: BaseContext, -FROM, +TO] {
@@ -32,9 +33,12 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
 
   def postConditions: Set[StepSequencer.Condition]
 
-  final protected[Transformer] def checkConditions(state: Any, conditions: Set[StepSequencer.Condition]): Boolean = {
+  final protected[Transformer] def checkConditions(
+    state: Any,
+    conditions: Set[StepSequencer.Condition]
+  )(cancellationChecker: CancellationChecker): Boolean = {
     val messages: Seq[String] = conditions.toSeq.collect {
-      case v: ValidatingCondition => v(state)
+      case v: ValidatingCondition => v(state)(cancellationChecker)
     }.flatten
     if (messages.nonEmpty) {
       val prefix = s"Conditions started failing after running these phases: $name\n"
@@ -75,7 +79,7 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
     val step2 = after.transform(step1, context)
 
     // Checking conditions inside assert so they are not run in production
-    checkOnlyWhenAssertionsAreEnabled(checkConditions(step2, first.postConditions))
+    checkOnlyWhenAssertionsAreEnabled(checkConditions(step2, first.postConditions)(context.cancellationChecker))
 
     step2
   }

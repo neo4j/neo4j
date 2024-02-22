@@ -62,7 +62,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
 
     val rewriters = orderedSteps.map { step =>
       val rewriter = step.getRewriter(context.cypherExceptionFactory)
-      RewriterStep.validatingRewriter(rewriter, step)
+      RewriterStep.validatingRewriter(rewriter, step, context.cancellationChecker)
     }
 
     val rewrittenStatement = from.statement().endoRewrite(inSequence(rewriters.toSeq: _*))

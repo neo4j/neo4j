@@ -20,27 +20,30 @@ import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
 case object aggregationsAreIsolated extends ValidatingCondition {
 
-  def apply(that: Any): Seq[String] = that.folder.treeFold(Seq.empty[String]) {
-    case expr: Expression if hasAggregateButIsNotAggregate(expr) =>
-      acc => SkipChildren(acc :+ s"Expression $expr contains child expressions which are aggregations")
+  override def apply(that: Any)(cancellationChecker: CancellationChecker): Seq[String] = {
+    that.folder(cancellationChecker).treeFold(Seq.empty[String]) {
+      case expr: Expression if hasAggregateButIsNotAggregate(expr)(cancellationChecker) =>
+        acc => SkipChildren(acc :+ s"Expression $expr contains child expressions which are aggregations")
+    }
   }
 
   override def name: String = productPrefix
 }
 
-object hasAggregateButIsNotAggregate extends (Expression => Boolean) {
+object hasAggregateButIsNotAggregate {
 
-  def apply(expression: Expression): Boolean = expression match {
+  def apply(expression: Expression)(cancellationChecker: CancellationChecker): Boolean = expression match {
     case IsAggregate(_) => false
     case _: FullSubqueryExpression =>
       false // Full Subquery Expressions contain Regular Queries which can have aggregations
     case e: Expression =>
-      e.folder.treeFold[Boolean](false) {
+      e.folder(cancellationChecker).treeFold[Boolean](false) {
         case _: FullSubqueryExpression => SkipChildren(_)
         case IsAggregate(_)            => _ => SkipChildren(true)
       }

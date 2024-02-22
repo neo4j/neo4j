@@ -17,10 +17,13 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.reflect.ClassTag
 
-case class collectNodesOfType[T <: ASTNode]()(implicit tag: ClassTag[T]) extends (Any => Seq[T]) {
-  def apply(that: Any): Seq[T] = that.folder.findAllByClass[T]
+case class collectNodesOfType[T <: ASTNode]()(implicit tag: ClassTag[T]) {
+
+  def apply(that: Any)(cancellationChecker: CancellationChecker): Seq[T] =
+    that.folder(cancellationChecker).findAllByClass[T]
 }

@@ -22,11 +22,12 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.functions.Function.isIdFunction
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 
 case object normalizedEqualsArguments extends ValidatingCondition {
 
-  def apply(that: Any): Seq[String] = {
-    val equals = collectNodesOfType[Equals]().apply(that)
+  override def apply(that: Any)(cancellationChecker: CancellationChecker): Seq[String] = {
+    val equals = collectNodesOfType[Equals]().apply(that)(cancellationChecker)
     equals.collect {
       case eq @ Equals(expr, Property(_, _)) if !expr.isInstanceOf[Property] && notIdFunction(expr) =>
         s"Equals at ${eq.position} is not normalized: $eq"

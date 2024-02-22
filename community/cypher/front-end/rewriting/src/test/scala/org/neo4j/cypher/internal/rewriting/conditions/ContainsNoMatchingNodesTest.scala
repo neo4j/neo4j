@@ -21,13 +21,14 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ContainsNoMatchingNodesTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val condition: Any => Seq[String] = containsNoMatchingNodes({
     case ri: ReturnItems if ri.includeExisting => "ReturnItems(includeExisting = true, ...)"
-  })
+  })(_)(CancellationChecker.NeverCancelled)
 
   test("Happy when not finding ReturnItems(includeExisting = true, ...)") {
     val ast: ASTNode = Return(

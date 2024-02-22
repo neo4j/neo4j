@@ -18,15 +18,16 @@ package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.reflect.ClassTag
 
 case class containsNoNodesOfType[T <: ASTNode]()(implicit val tag: ClassTag[T]) extends ValidatingCondition {
 
-  def apply(that: Any): Seq[String] =
+  override def apply(that: Any)(cancellationChecker: CancellationChecker): Seq[String] =
     that
-      .folder
+      .folder(cancellationChecker)
       .treeFindByClass[T]
       .map(node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}")
       .toSeq

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -123,7 +124,8 @@ trait RewritePhaseTest {
         semanticState,
         Map.empty,
         exceptionFactory,
-        nameGenerator
+        nameGenerator,
+        CancellationChecker.NeverCancelled
       )
     } else {
       cleanedAst

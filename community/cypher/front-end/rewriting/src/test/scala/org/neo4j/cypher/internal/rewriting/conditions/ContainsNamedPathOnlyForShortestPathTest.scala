@@ -27,10 +27,13 @@ import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstConstructionTestSupport {
-  private val condition: Any => Seq[String] = containsNamedPathOnlyForShortestPath
+
+  private val condition: Any => Seq[String] =
+    containsNamedPathOnlyForShortestPath(_)(CancellationChecker.NeverCancelled)
 
   test("happy when we have no named paths") {
     val ast = SingleQuery(Seq(

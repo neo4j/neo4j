@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.rewriting.conditions
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 
 case object containsNamedPathOnlyForShortestPath extends ValidatingCondition {
 
@@ -27,7 +28,8 @@ case object containsNamedPathOnlyForShortestPath extends ValidatingCondition {
       namedPart.toString
   })
 
-  def apply(that: Any): Seq[String] = matcher(that)
+  override def apply(that: Any)(cancellationChecker: CancellationChecker): Seq[String] =
+    matcher(that)(cancellationChecker)
 
   override def name: String = productPrefix
 }

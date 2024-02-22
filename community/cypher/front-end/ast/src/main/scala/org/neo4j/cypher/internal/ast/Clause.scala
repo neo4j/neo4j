@@ -689,11 +689,12 @@ case class Match(
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
     val expressionStringifier = ExpressionStringifier(preferSingleQuotes = true)
     val patternStringifier = PatternStringifier(expressionStringifier)
-    lazy val patternString = try {
-      patternStringifier(pattern)
-    } catch {
-      case _: StackOverflowError => ""
-    }
+    lazy val patternString =
+      try {
+        patternStringifier(pattern)
+      } catch {
+        case _: StackOverflowError => ""
+      }
     val cc = connectedComponents(pattern.patternParts)
     // if we have multiple connected components we will have
     // a cartesian product

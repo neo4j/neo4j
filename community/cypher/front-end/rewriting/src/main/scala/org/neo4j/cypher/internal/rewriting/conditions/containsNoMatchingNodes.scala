@@ -16,16 +16,20 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
+import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class containsNoMatchingNodes(matcher: PartialFunction[ASTNode, String]) extends (Any => Seq[String]) {
+case class containsNoMatchingNodes(matcher: PartialFunction[ASTNode, String]) extends ValidatingCondition {
 
-  def apply(that: Any): Seq[String] = {
-    that.folder.fold(Seq.empty[(String, InputPosition)]) {
+  override def apply(that: Any)(cancellationChecker: CancellationChecker): Seq[String] = {
+    that.folder(cancellationChecker).fold(Seq.empty[(String, InputPosition)]) {
       case node: ASTNode if matcher.isDefinedAt(node) =>
         acc => acc :+ ((matcher(node), node.position))
     }.map { case (name, position) => s"Expected none but found $name at position $position" }
   }
+
+  override def name: String = productPrefix
 }

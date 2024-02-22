@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 
 import scala.reflect.ClassTag
 
 case class CompilationContains[T]()(implicit val tag: ClassTag[T]) extends ValidatingCondition {
 
-  override def apply(in: Any): Seq[String] = in match {
+  override def apply(in: Any)(cancellationChecker: CancellationChecker): Seq[String] = in match {
     case state: LogicalPlanState =>
       tag.runtimeClass match {
         case x if classOf[Statement] == x && state.maybeStatement.isEmpty     => Seq("Statement missing")

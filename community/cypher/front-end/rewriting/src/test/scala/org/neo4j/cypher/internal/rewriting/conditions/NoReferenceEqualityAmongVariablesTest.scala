@@ -21,11 +21,12 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NoReferenceEqualityAmongVariablesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val collector: Any => Seq[String] = noReferenceEqualityAmongVariables
+  private val collector: Any => Seq[String] = noReferenceEqualityAmongVariables(_)(CancellationChecker.NeverCancelled)
 
   test("unhappy when same Variable instance is used multiple times") {
     val id = varFor("a")

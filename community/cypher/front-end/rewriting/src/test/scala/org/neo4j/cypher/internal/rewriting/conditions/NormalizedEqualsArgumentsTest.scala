@@ -19,11 +19,12 @@ package org.neo4j.cypher.internal.rewriting.conditions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val condition: Any => Seq[String] = normalizedEqualsArguments
+  private val condition: Any => Seq[String] = normalizedEqualsArguments(_)(CancellationChecker.NeverCancelled)
 
   test("happy if the property in equals is normalized") {
     val ast = equals(prop("a", "prop"), literalInt(12))
@@ -41,7 +42,7 @@ class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionT
 trait NormalizedEqualsArgumentsIdTestBase extends CypherFunSuite with AstConstructionTestSupport {
   protected def makeId(e: Expression): FunctionInvocation
 
-  private val condition: Any => Seq[String] = normalizedEqualsArguments
+  private val condition: Any => Seq[String] = normalizedEqualsArguments(_)(CancellationChecker.NeverCancelled)
 
   test("happy if the Id-function in equals is normalized") {
     val ast = equals(makeId(varFor("a")), literalInt(12))

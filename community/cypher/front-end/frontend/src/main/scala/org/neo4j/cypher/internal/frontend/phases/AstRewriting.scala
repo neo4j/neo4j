@@ -39,7 +39,8 @@ case class AstRewriting(parameterTypeMapping: Map[String, ParameterTypeInfo] = M
       in.semantics(),
       parameterTypeMapping,
       context.cypherExceptionFactory,
-      in.anonymousVariableNameGenerator
+      in.anonymousVariableNameGenerator,
+      context.cancellationChecker
     )
     in.withStatement(rewrittenStatement)
   }

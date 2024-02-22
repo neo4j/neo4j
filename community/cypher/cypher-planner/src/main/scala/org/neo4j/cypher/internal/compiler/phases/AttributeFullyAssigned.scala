@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.attribution.Attribute
 
@@ -35,7 +36,7 @@ import scala.reflect.ClassTag
 case class AttributeFullyAssigned[T <: Attribute[LogicalPlan, _]]()(implicit val tag: ClassTag[T])
     extends ValidatingCondition {
 
-  override def apply(in: Any): Seq[String] = in match {
+  override def apply(in: Any)(cancellationChecker: CancellationChecker): Seq[String] = in match {
     case state: LogicalPlanState =>
       val plan = state.logicalPlan
       val attribute = tag.runtimeClass match {
@@ -47,7 +48,7 @@ case class AttributeFullyAssigned[T <: Attribute[LogicalPlan, _]]()(implicit val
         case x                                         => throw new IllegalArgumentException(s"Unknown attribute: $x")
       }
 
-      plan.folder.treeFold(Seq.empty[String]) {
+      plan.folder(cancellationChecker).treeFold(Seq.empty[String]) {
         case plan: LogicalPlan => acc =>
             if (!attribute.isDefinedAt(plan.id)) {
               val error =

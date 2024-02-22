@@ -17,11 +17,12 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.util.AssertionRunner
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 
-case class ValidatingRewriter(inner: Rewriter, step: Step) extends Rewriter {
+case class ValidatingRewriter(inner: Rewriter, step: Step, cancellationChecker: CancellationChecker) extends Rewriter {
 
   final override def apply(that: AnyRef): AnyRef = {
     val result = inner(that)
@@ -31,7 +32,7 @@ case class ValidatingRewriter(inner: Rewriter, step: Step) extends Rewriter {
 
   private def validate(input: AnyRef): Unit = {
     val failures = step.postConditions.collect {
-      case f: ValidatingCondition => f.name -> f(input)
+      case f: ValidatingCondition => f.name -> f(input)(cancellationChecker)
     }
     if (failures.exists(_._2.nonEmpty)) {
       throw new IllegalStateException(buildErrorMessage(failures))
@@ -53,16 +54,17 @@ case class ValidatingRewriter(inner: Rewriter, step: Step) extends Rewriter {
 
 object RewriterStep {
 
-  def validatingRewriter(inner: Rewriter, step: Step): Rewriter = {
+  def validatingRewriter(inner: Rewriter, step: Step, cancellationChecker: CancellationChecker): Rewriter = {
     if (AssertionRunner.isAssertionsEnabled) {
-      ValidatingRewriter(inner, step)
+      ValidatingRewriter(inner, step, cancellationChecker)
     } else {
       inner
     }
   }
 }
 
-trait ValidatingCondition extends (Any => Seq[String]) with StepSequencer.Condition {
+trait ValidatingCondition extends StepSequencer.Condition {
+  def apply(a: Any)(cancellationChecker: CancellationChecker): Seq[String]
   def name: String
   override def toString(): String = name
 }

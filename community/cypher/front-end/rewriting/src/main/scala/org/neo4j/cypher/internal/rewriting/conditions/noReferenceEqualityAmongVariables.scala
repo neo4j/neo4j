@@ -18,12 +18,13 @@ package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Ref
 
 case object noReferenceEqualityAmongVariables extends ValidatingCondition {
 
-  def apply(that: Any): Seq[String] = {
-    val ids = collectNodesOfType[Variable]().apply(that).map(Ref[Variable])
+  override def apply(that: Any)(cancellationChecker: CancellationChecker): Seq[String] = {
+    val ids = collectNodesOfType[Variable]().apply(that)(cancellationChecker).map(Ref[Variable])
     ids.groupBy(x => x).collect {
       case (id, others) if others.size > 1 =>
         s"The instance ${id.value} is used ${others.size} times"

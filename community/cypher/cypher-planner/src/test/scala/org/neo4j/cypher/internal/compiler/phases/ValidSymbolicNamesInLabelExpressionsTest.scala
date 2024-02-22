@@ -35,21 +35,24 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ValidSymbolicNamesInLabelExpressionsTest extends CypherFunSuite with AstConstructionTestSupport {
 
+  val condition: Any => Seq[String] = ValidSymbolicNamesInLabelExpressions(_)(CancellationChecker.NeverCancelled)
+
   test("A NodePattern can contain a Label in its label expression") {
     val labelName = LabelName("A")(InputPosition.NONE)
     val nodePattern = NodePattern(None, Some(Leaf(labelName)), None, None)(InputPosition.NONE)
-    ValidSymbolicNamesInLabelExpressions(nodePattern) shouldBe empty
+    condition(nodePattern) shouldBe empty
   }
 
   test("A NodePattern cannot contain a RelType in its label expression") {
     val relTypeName = RelTypeName("A")(InputPosition(1, 3, 2))
     val nodePattern = NodePattern(None, Some(Leaf(relTypeName)), None, None)(InputPosition.NONE)
-    ValidSymbolicNamesInLabelExpressions(nodePattern) shouldEqual List(
+    condition(nodePattern) shouldEqual List(
       "Illegal symbolic name RelTypeName(A) inside a node pattern at position: line 3, column 2 (offset: 1)"
     )
   }
@@ -58,7 +61,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends CypherFunSuite with AstCo
     val relTypeName = RelTypeName("A")(InputPosition.NONE)
     val relationshipPattern =
       RelationshipPattern(None, Some(Leaf(relTypeName)), None, None, None, SemanticDirection.BOTH)(InputPosition.NONE)
-    ValidSymbolicNamesInLabelExpressions(relationshipPattern) shouldBe empty
+    condition(relationshipPattern) shouldBe empty
   }
 
   test("A RelationshipPattern cannot contain a LabelOrRelType in its label expression") {
@@ -67,7 +70,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends CypherFunSuite with AstCo
       RelationshipPattern(None, Some(Leaf(labelOrRelTypeName)), None, None, None, SemanticDirection.BOTH)(
         InputPosition.NONE
       )
-    ValidSymbolicNamesInLabelExpressions(relationshipPattern) shouldEqual List(
+    condition(relationshipPattern) shouldEqual List(
       "Illegal symbolic name LabelOrRelTypeName(A) inside a relationship pattern at position: line 3, column 2 (offset: 1)"
     )
   }
@@ -76,14 +79,14 @@ class ValidSymbolicNamesInLabelExpressionsTest extends CypherFunSuite with AstCo
     val entity = Variable("n")(InputPosition.NONE)
     val labelOrRelTypeName = LabelOrRelTypeName("A")(InputPosition.NONE)
     val labelExpressionPredicate = LabelExpressionPredicate(entity, Leaf(labelOrRelTypeName))(InputPosition.NONE)
-    ValidSymbolicNamesInLabelExpressions(labelExpressionPredicate) shouldBe empty
+    condition(labelExpressionPredicate) shouldBe empty
   }
 
   test("A LabelExpressionPredicate cannot contain a Label in its label expression") {
     val entity = Variable("n")(InputPosition.NONE)
     val labelName = LabelName("A")(InputPosition(1, 3, 2))
     val labelExpressionPredicate = LabelExpressionPredicate(entity, Leaf(labelName))(InputPosition.NONE)
-    ValidSymbolicNamesInLabelExpressions(labelExpressionPredicate) shouldEqual List(
+    condition(labelExpressionPredicate) shouldEqual List(
       "Illegal symbolic name LabelName(A) inside a label expression predicate at position: line 3, column 2 (offset: 1)"
     )
   }
@@ -105,7 +108,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends CypherFunSuite with AstCo
     val matchClause = Match(optional = false, MatchMode.default(InputPosition.NONE), pattern, Seq.empty, Some(where))(
       InputPosition.NONE
     )
-    ValidSymbolicNamesInLabelExpressions(matchClause) shouldBe empty
+    condition(matchClause) shouldBe empty
   }
 
   test("Report all errors in a more complex invalid AST") {
@@ -121,7 +124,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends CypherFunSuite with AstCo
     val matchClause = Match(optional = false, MatchMode.default(InputPosition.NONE), pattern, Seq.empty, Some(where))(
       InputPosition.NONE
     )
-    ValidSymbolicNamesInLabelExpressions(matchClause) shouldEqual List(
+    condition(matchClause) shouldEqual List(
       "Illegal symbolic name RelTypeName(A) inside a node pattern at position: line 3, column 2 (offset: 1)",
       "Illegal symbolic name LabelName(B) inside a label expression predicate at position: line 10, column 42 (offset: 41)"
     )

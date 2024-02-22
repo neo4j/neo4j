@@ -94,7 +94,14 @@ trait QueryGraphProducer {
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
     // if you ever want to have parameters in here, fix the map
     val firstRewriteStep =
-      ASTRewriter.rewrite(cleanedStatement, semanticState, Map.empty, exceptionFactory, anonymousVariableNameGenerator)
+      ASTRewriter.rewrite(
+        cleanedStatement,
+        semanticState,
+        Map.empty,
+        exceptionFactory,
+        anonymousVariableNameGenerator,
+        CancellationChecker.NeverCancelled
+      )
     val state = LogicalPlanState(
       query,
       None,

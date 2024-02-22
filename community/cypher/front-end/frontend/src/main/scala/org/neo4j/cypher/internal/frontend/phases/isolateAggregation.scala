@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.hasAggregateButIsNotAggregate
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -63,22 +64,23 @@ import org.neo4j.cypher.internal.util.topDown
 case object isolateAggregation extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
   override def instance(from: BaseState, context: BaseContext): Rewriter =
-    bottomUp(rewriter(from), cancellation = context.cancellationChecker)
+    bottomUp(rewriter(from)(context.cancellationChecker), cancellation = context.cancellationChecker)
 
-  private def rewriter(from: BaseState) = Rewriter.lift {
+  private def rewriter(from: BaseState)(cancellationChecker: CancellationChecker): Rewriter = Rewriter.lift {
     case q @ SingleQuery(clauses) =>
       val newClauses = clauses.flatMap {
-        case clause: ProjectionClause if clauseNeedingWork(clause) =>
+        case clause: ProjectionClause if clauseNeedingWork(clause)(cancellationChecker) =>
           val clauseReturnItems = clause.returnItems.items
           val (returnsItemsWithAggregations, others) =
-            clauseReturnItems.partition(r => hasAggregateButIsNotAggregate(r.expression))
+            clauseReturnItems.partition(r => hasAggregateButIsNotAggregate(r.expression)(cancellationChecker))
 
           val withAggregations = returnsItemsWithAggregations.map(_.expression).toSet
 
-          val withReturnItems: Set[ReturnItem] = extractExpressionsToInclude(withAggregations).map {
-            e =>
-              AliasedReturnItem(e, Variable(from.anonymousVariableNameGenerator.nextName)(e.position))(e.position)
-          } ++ others
+          val withReturnItems: Set[ReturnItem] =
+            extractExpressionsToInclude(withAggregations)(cancellationChecker).map {
+              e =>
+                AliasedReturnItem(e, Variable(from.anonymousVariableNameGenerator.nextName)(e.position))(e.position)
+            } ++ others
           val pos = clause.position
           val withClause = With(
             distinct = false,
@@ -124,30 +126,32 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
     topDown(inner)
   }
 
-  private def extractExpressionsToInclude(originalExpressions: Set[Expression]): Set[Expression] = {
+  private def extractExpressionsToInclude(originalExpressions: Set[Expression])(
+    cancellationChecker: CancellationChecker
+  ): Set[Expression] = {
     val expressionsToGoToWith: Set[Expression] = fixedPoint {
       (expressions: Set[Expression]) =>
         expressions.flatMap {
-          case e @ ReduceExpression(scope, init, coll) if hasAggregateButIsNotAggregate(e) =>
+          case e @ ReduceExpression(scope, init, coll) if hasAggregateButIsNotAggregate(e)(cancellationChecker) =>
             Seq(init, coll) ++ scope.expression.dependencies.diff(Set(e.accumulator) ++ Set(e.variable))
 
-          case e @ ListComprehension(scope, expr) if hasAggregateButIsNotAggregate(e) =>
+          case e @ ListComprehension(scope, expr) if hasAggregateButIsNotAggregate(e)(cancellationChecker) =>
             scope.extractExpression match {
               case None => Seq(expr)
               case Some(extract) =>
                 Seq(expr) ++ extract.dependencies.diff(Set(e.variable))
             }
 
-          case e @ DesugaredMapProjection(entity, items, _) if hasAggregateButIsNotAggregate(e) =>
+          case e @ DesugaredMapProjection(entity, items, _) if hasAggregateButIsNotAggregate(e)(cancellationChecker) =>
             items.map(_.exp) :+ entity
 
-          case e: IterablePredicateExpression if hasAggregateButIsNotAggregate(e) =>
+          case e: IterablePredicateExpression if hasAggregateButIsNotAggregate(e)(cancellationChecker) =>
             val predicate: Expression =
               e.innerPredicate.getOrElse(throw new IllegalStateException("Should never be empty"))
             // Weird way of doing it to make scalac happy
             Set(e.expression) ++ predicate.dependencies - e.variable
 
-          case e if hasAggregateButIsNotAggregate(e) =>
+          case e if hasAggregateButIsNotAggregate(e)(cancellationChecker) =>
             e.arguments
 
           case e =>
@@ -163,8 +167,8 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
   private def isNotConstantExpression(expr: Expression): Boolean =
     IsAggregate(expr) || expr.dependencies.nonEmpty
 
-  private def clauseNeedingWork(c: Clause): Boolean = c.folder.treeExists {
-    case e: Expression => hasAggregateButIsNotAggregate(e)
+  private def clauseNeedingWork(c: Clause)(cancellationChecker: CancellationChecker): Boolean = c.folder.treeExists {
+    case e: Expression => hasAggregateButIsNotAggregate(e)(cancellationChecker)
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
