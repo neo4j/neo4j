@@ -163,6 +163,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
+import org.neo4j.storageengine.api.txstate.validation.ValidationLockDumper;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.ElementIdMapper;
@@ -284,6 +285,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile InnerTransactionHandlerImpl innerTransactionHandler;
 
     private final TransactionValidator transactionValidator;
+    private final ValidationLockDumper validationLockDumper;
     private final TransactionCommitter committer;
     private final ChunkedTransactionSink txStateWriter;
     private boolean failedCleanup = false;
@@ -422,6 +424,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.kernelTransactions = kernelTransactions;
         this.transactionValidator =
                 transactionValidatorFactory.createTransactionValidator(memoryTracker, transactionMonitor);
+        this.validationLockDumper = transactionValidatorFactory.createValidationLockDumper();
         this.committer = createCommitter(commitmentFactory, multiVersioned);
         this.transactionEventListeners = new TransactionEventListeners(transactionEventListeners, this, storageReader);
         this.txStateWriter = createChunkWriter(multiVersioned);
@@ -1526,6 +1529,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         storageEngine,
                         transactionStore,
                         transactionValidator,
+                        validationLockDumper,
                         logProvider)
                 : new DefaultCommitter(
                         this,
@@ -1533,8 +1537,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         kernelVersionProvider,
                         transactionalCursors,
                         transactionIdGenerator,
-                        commitProcess,
-                        transactionValidator);
+                        commitProcess);
     }
 
     public static class Statistics {

@@ -88,4 +88,7 @@ public class NoLocksClient implements LockManager.Client {
     public long activeLockCount() {
         return 0;
     }
+
+    @Override
+    public void reset() {}
 }

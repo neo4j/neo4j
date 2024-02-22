@@ -146,6 +146,12 @@ public class ParallelAccessCheck {
             return wrappedLockClient.activeLockCount();
         }
 
+        @Override
+        public void reset() {
+            checkNotCypherWorkerThread();
+            wrappedLockClient.reset();
+        }
+
         public LockManager.Client getWrappedLockClient() {
             return wrappedLockClient;
         }

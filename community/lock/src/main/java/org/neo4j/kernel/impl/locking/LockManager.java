@@ -111,6 +111,8 @@ public interface LockManager {
         long getTransactionId();
 
         long activeLockCount();
+
+        void reset();
     }
 
     /**

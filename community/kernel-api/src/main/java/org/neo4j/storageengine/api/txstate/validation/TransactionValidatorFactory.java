@@ -22,10 +22,21 @@ package org.neo4j.storageengine.api.txstate.validation;
 import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.memory.MemoryTracker;
 
-@FunctionalInterface
 public interface TransactionValidatorFactory {
-    TransactionValidatorFactory EMPTY_VALIDATOR_FACTORY =
-            (memoryTracker, transactionMonitor) -> TransactionValidator.EMPTY_VALIDATOR;
+    TransactionValidatorFactory EMPTY_VALIDATOR_FACTORY = new TransactionValidatorFactory() {
+        @Override
+        public TransactionValidator createTransactionValidator(
+                MemoryTracker memoryTracker, TransactionMonitor transactionMonitor) {
+            return TransactionValidator.EMPTY_VALIDATOR;
+        }
+
+        @Override
+        public ValidationLockDumper createValidationLockDumper() {
+            return ValidationLockDumper.EMPTY_DUMPER;
+        }
+    };
 
     TransactionValidator createTransactionValidator(MemoryTracker memoryTracker, TransactionMonitor transactionMonitor);
+
+    ValidationLockDumper createValidationLockDumper();
 }

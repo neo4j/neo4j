@@ -956,8 +956,7 @@ public class Database extends AbstractDatabase {
                 storageEngine,
                 readOnlyDatabaseChecker,
                 databaseConfig.get(GraphDatabaseInternalSettings.out_of_disk_space_protection));
-        var transactionValidatorFactory =
-                storageEngine.createTransactionValidatorFactory(databaseLockManager, databaseConfig);
+        var transactionValidatorFactory = storageEngine.createTransactionValidatorFactory(databaseConfig);
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned

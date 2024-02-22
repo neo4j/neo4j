@@ -47,7 +47,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
@@ -341,7 +340,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public TransactionValidatorFactory createTransactionValidatorFactory(LockManager lockManager, Config config) {
+        public TransactionValidatorFactory createTransactionValidatorFactory(Config config) {
             return TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
         }
 

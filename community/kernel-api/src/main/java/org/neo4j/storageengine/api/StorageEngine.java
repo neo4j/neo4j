@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.LockGroup;
@@ -71,7 +70,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     /**
      * Create multi versioned stores transaction validator factory. Validator factory produces noop validators in all other engines.
      */
-    TransactionValidatorFactory createTransactionValidatorFactory(LockManager lockManager, Config config);
+    TransactionValidatorFactory createTransactionValidatorFactory(Config config);
 
     StorageLocks createStorageLocks(ResourceLocker locker);
 

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,7 +33,6 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.storageengine.api.txstate.validation.TransactionValidationResource.EMPTY_VALIDATION_RESOURCE;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -160,8 +158,6 @@ class KernelTransactionTestBase {
                 .thenReturn(List.of(new TestCommand()));
 
         when(enrichmentStrategy.check()).thenReturn(EnrichmentMode.OFF);
-        when(transactionValidator.validate(any(), anyLong(), any(), any(), any()))
-                .thenReturn(EMPTY_VALIDATION_RESOURCE);
 
         transactionExecutionMonitor.reset();
     }

@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.ChunkedTransaction;
 import org.neo4j.kernel.impl.api.chunk.CommandChunk;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -61,6 +62,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.validation.TransactionConflictException;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
+import org.neo4j.storageengine.api.txstate.validation.ValidationLockDumper;
 
 public final class ChunkCommitter implements TransactionCommitter {
     private final KernelTransactionImplementation ktx;
@@ -78,6 +80,7 @@ public final class ChunkCommitter implements TransactionCommitter {
     private final StorageEngine storageEngine;
     private final LogicalTransactionStore transactionStore;
     private final TransactionValidator transactionValidator;
+    private final ValidationLockDumper validationLockDumper;
     private final Log log;
     private long lastTransactionIdWhenStarted;
     private long startTimeMillis;
@@ -95,6 +98,7 @@ public final class ChunkCommitter implements TransactionCommitter {
             StorageEngine storageEngine,
             LogicalTransactionStore transactionStore,
             TransactionValidator transactionValidator,
+            ValidationLockDumper validationLockDumper,
             LogProvider logProvider) {
         this.ktx = ktx;
         this.commitmentFactory = commitmentFactory;
@@ -107,6 +111,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         this.storageEngine = storageEngine;
         this.transactionStore = transactionStore;
         this.transactionValidator = transactionValidator;
+        this.validationLockDumper = validationLockDumper;
         this.log = logProvider.getLog(ChunkCommitter.class);
     }
 
@@ -123,57 +128,64 @@ public final class ChunkCommitter implements TransactionCommitter {
             long lastTransactionIdWhenStarted,
             boolean commit)
             throws KernelException {
-        List<StorageCommand> extractedCommands = ktx.extractCommands(memoryTracker);
-        if (!extractedCommands.isEmpty() || (commit && transactionPayload != null)) {
-            if (kernelVersion == null) {
-                this.kernelVersion = kernelVersionProvider.kernelVersion();
-                this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;
-                this.startTimeMillis = lastTransactionIdWhenStarted;
-                this.leaseClient = leaseClient;
-            }
-            if (commit) {
-                validateCurrentKernelVersion();
-            }
-            try (var validationResource = transactionValidator.validate(
-                    extractedCommands, ktx.getTransactionSequenceNumber(), cursorContext, leaseClient, lockTracer)) {
-                var chunkMetadata = new ChunkMetadata(
-                        chunkNumber == BASE_CHUNK_NUMBER,
-                        commit,
-                        false,
-                        previousBatchLogPosition,
-                        chunkNumber,
-                        new MutableLong(UNKNOWN_CONSENSUS_INDEX),
-                        startTimeMillis,
-                        lastTransactionIdWhenStarted,
-                        commitTime,
-                        leaseClient.leaseId(),
-                        kernelVersion,
-                        ktx.securityContext().subject().userSubject());
-                if (transactionPayload == null) {
-                    transactionPayload = new ChunkedTransaction(
-                            cursorContext,
-                            ktx.getTransactionSequenceNumber(),
-                            transactionalCursors,
-                            commitmentFactory.newCommitment(),
-                            transactionIdGenerator);
+        LockManager.Client lockClient = ktx.lockClient();
+        try {
+            List<StorageCommand> extractedCommands = ktx.extractCommands(memoryTracker);
+            if (!extractedCommands.isEmpty() || (commit && transactionPayload != null)) {
+                if (kernelVersion == null) {
+                    this.kernelVersion = kernelVersionProvider.kernelVersion();
+                    this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;
+                    this.startTimeMillis = lastTransactionIdWhenStarted;
+                    this.leaseClient = leaseClient;
                 }
-                CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
-                transactionPayload.init(chunk);
-                commitProcess.commit(transactionPayload, transactionWriteEvent, INTERNAL);
+                if (commit) {
+                    validateCurrentKernelVersion();
+                }
+                try {
+                    transactionValidator.validate(
+                            extractedCommands, cursorContext, lockClient, lockTracer, validationLockDumper);
+                    var chunkMetadata = new ChunkMetadata(
+                            chunkNumber == BASE_CHUNK_NUMBER,
+                            commit,
+                            false,
+                            previousBatchLogPosition,
+                            chunkNumber,
+                            new MutableLong(UNKNOWN_CONSENSUS_INDEX),
+                            startTimeMillis,
+                            lastTransactionIdWhenStarted,
+                            commitTime,
+                            leaseClient.leaseId(),
+                            kernelVersion,
+                            ktx.securityContext().subject().userSubject());
+                    if (transactionPayload == null) {
+                        transactionPayload = new ChunkedTransaction(
+                                cursorContext,
+                                ktx.getTransactionSequenceNumber(),
+                                transactionalCursors,
+                                commitmentFactory.newCommitment(),
+                                transactionIdGenerator);
+                    }
+                    CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
+                    transactionPayload.init(chunk);
+                    commitProcess.commit(transactionPayload, transactionWriteEvent, INTERNAL);
 
-                validationResource.chunkAppended(chunkNumber, transactionPayload.transactionId());
-                transactionWriteEvent.chunkAppended(
-                        chunkNumber, ktx.getTransactionSequenceNumber(), transactionPayload.transactionId());
-            } catch (TransactionConflictException tce) {
-                throw tce;
-            } catch (Exception e) {
-                log.debug("Transaction chunk commit failure.", e);
-                throw e;
+                    validationLockDumper.dumpLocks(
+                            transactionValidator, lockClient, chunkNumber, transactionPayload.transactionId());
+                    transactionWriteEvent.chunkAppended(
+                            chunkNumber, ktx.getTransactionSequenceNumber(), transactionPayload.transactionId());
+                } catch (TransactionConflictException tce) {
+                    throw tce;
+                } catch (Exception e) {
+                    log.debug("Transaction chunk commit failure.", e);
+                    throw e;
+                }
+                previousBatchLogPosition = transactionPayload.lastBatchLogPosition();
+                chunkNumber++;
             }
-            previousBatchLogPosition = transactionPayload.lastBatchLogPosition();
-            chunkNumber++;
+            return transactionPayload != null ? transactionPayload.transactionId() : KernelTransaction.READ_ONLY_ID;
+        } finally {
+            lockClient.reset();
         }
-        return transactionPayload != null ? transactionPayload.transactionId() : KernelTransaction.READ_ONLY_ID;
     }
 
     @Override

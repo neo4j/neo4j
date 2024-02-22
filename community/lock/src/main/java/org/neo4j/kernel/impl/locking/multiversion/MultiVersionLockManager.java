@@ -100,6 +100,11 @@ public class MultiVersionLockManager implements LockManager {
         }
 
         @Override
+        public void reset() {
+            delegate.reset();
+        }
+
+        @Override
         public boolean tryExclusiveLock(ResourceType resourceType, long resourceId) {
             if (resourceType != PAGE) {
                 return false;

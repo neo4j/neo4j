@@ -82,7 +82,6 @@ import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionRepository;
-import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -396,11 +395,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public TransactionValidatorFactory createTransactionValidatorFactory(LockManager lockManager, Config config) {
+    public TransactionValidatorFactory createTransactionValidatorFactory(Config config) {
         if (!isMultiVersionedFormat()) {
             return TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
         }
-        return new TransactionCommandValidatorFactory(neoStores, config, lockManager, internalLogProvider);
+        return new TransactionCommandValidatorFactory(neoStores, config, internalLogProvider);
     }
 
     private boolean isMultiVersionedFormat() {

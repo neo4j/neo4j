@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -928,7 +927,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         transaction.txState().nodeDoCreate(5);
         RuntimeException foo = new RuntimeException("foo");
         RuntimeException bar = new RuntimeException("bar");
-        doThrow(foo).when(transactionValidator).validate(anyCollection(), anyLong(), any(), any(), any());
+        doThrow(foo).when(locksClient).prepareForCommit();
         doThrow(bar).when(storageEngine).release(any(), any(), any(), anyBoolean());
         assertThatThrownBy(transaction::commit).isSameAs(foo).hasSuppressedException(bar);
     }

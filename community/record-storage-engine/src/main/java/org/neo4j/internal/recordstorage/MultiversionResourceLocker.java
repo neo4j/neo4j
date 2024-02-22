@@ -23,13 +23,17 @@ import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdFor
 
 import java.util.Collection;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
 
-class MultiversionResourceLocker implements ResourceLocker {
+public class MultiversionResourceLocker implements ResourceLocker {
+    public static final int PAGE_ID_BITS = 54;
+    public static final long PAGE_ID_MASK = (1L << PAGE_ID_BITS) - 1;
+
     private final ResourceLocker locks;
     private final int recordsPerPage;
 
@@ -43,7 +47,11 @@ class MultiversionResourceLocker implements ResourceLocker {
         if (resourceType != ResourceType.RELATIONSHIP) {
             return locks.tryExclusiveLock(resourceType, resourceId);
         }
-        return locks.tryExclusiveLock(ResourceType.PAGE, pageIdForRecord(resourceId, recordsPerPage));
+        return locks.tryExclusiveLock(ResourceType.PAGE, getResourceId(resourceId));
+    }
+
+    private long getResourceId(long resourceId) {
+        return pageIdForRecord(resourceId, recordsPerPage) | ((long) StoreType.RELATIONSHIP.ordinal() << PAGE_ID_BITS);
     }
 
     @Override
@@ -51,7 +59,7 @@ class MultiversionResourceLocker implements ResourceLocker {
         if (resourceType != ResourceType.RELATIONSHIP) {
             locks.acquireExclusive(tracer, resourceType, resourceIds);
         } else if (resourceIds.length == 1) {
-            locks.acquireExclusive(tracer, resourceType, pageIdForRecord(resourceIds[0], recordsPerPage));
+            locks.acquireExclusive(tracer, resourceType, getResourceId(resourceIds[0]));
         } else {
             long[] pageIds = new long[resourceIds.length];
             for (int i = 0; i < resourceIds.length; i++) {
@@ -81,7 +89,7 @@ class MultiversionResourceLocker implements ResourceLocker {
         if (resourceType != ResourceType.RELATIONSHIP) {
             locks.acquireShared(tracer, resourceType, resourceIds);
         } else if (resourceIds.length == 1) {
-            locks.acquireShared(tracer, resourceType, pageIdForRecord(resourceIds[0], recordsPerPage));
+            locks.acquireShared(tracer, resourceType, getResourceId(resourceIds[0]));
         } else {
             long[] pageIds = new long[resourceIds.length];
             for (int i = 0; i < resourceIds.length; i++) {
@@ -96,7 +104,7 @@ class MultiversionResourceLocker implements ResourceLocker {
         if (resourceType != ResourceType.RELATIONSHIP) {
             locks.releaseShared(resourceType, resourceIds);
         } else if (resourceIds.length == 1) {
-            locks.releaseShared(resourceType, pageIdForRecord(resourceIds[0], recordsPerPage));
+            locks.releaseShared(resourceType, getResourceId(resourceIds[0]));
         } else {
             long[] pageIds = new long[resourceIds.length];
             for (int i = 0; i < resourceIds.length; i++) {

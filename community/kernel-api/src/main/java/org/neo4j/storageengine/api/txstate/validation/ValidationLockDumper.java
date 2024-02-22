@@ -19,10 +19,10 @@
  */
 package org.neo4j.storageengine.api.txstate.validation;
 
-import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.impl.locking.LockManager;
 
-public interface TransactionValidationResource extends Resource {
-    TransactionValidationResource EMPTY_VALIDATION_RESOURCE = () -> {};
+public interface ValidationLockDumper {
+    ValidationLockDumper EMPTY_DUMPER = (validator, lockClient, chunkNumber, txId) -> {};
 
-    default void chunkAppended(int chunkNumber, long txId) {}
+    void dumpLocks(TransactionValidator validator, LockManager.Client lockClient, int chunkNumber, long txId);
 }

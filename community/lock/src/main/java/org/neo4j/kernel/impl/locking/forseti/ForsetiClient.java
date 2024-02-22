@@ -649,6 +649,11 @@ public class ForsetiClient implements LockManager.Client {
         return activeLockCount.get();
     }
 
+    @Override
+    public void reset() {
+        releaseAllLocks();
+    }
+
     void copyWaitListTo(Set<ForsetiClient> other) {
         other.add(this);
         other.addAll(waitList);
