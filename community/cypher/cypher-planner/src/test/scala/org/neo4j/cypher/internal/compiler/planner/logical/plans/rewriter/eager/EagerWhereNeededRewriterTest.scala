@@ -74,8 +74,6 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -96,9 +94,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
    * contains the nested plan.
    */
   private def subPlanBuilderWithIdOffset(): LogicalPlanBuilder =
-    new LogicalPlanBuilder(wholePlan = false) {
-      override val idGen: IdGen = new SequentialIdGen(100)
-    }
+    new LogicalPlanBuilder(wholePlan = false, initialId = 100)
 
   private def eagerizePlan(
     planBuilder: LogicalPlanBuilder,

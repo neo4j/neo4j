@@ -305,7 +305,8 @@ trait Resolver {
  */
 abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[T, IMPL]](
   protected val resolver: Resolver,
-  wholePlan: Boolean = true
+  wholePlan: Boolean = true,
+  initialId: Int = 0
 ) {
 
   self: IMPL =>
@@ -382,7 +383,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     }
   }
 
-  val idGen: IdGen = new SequentialIdGen()
+  val idGen: IdGen = new SequentialIdGen(initialId)
 
   private var tree: Tree = _
   private val looseEnds = new ArrayBuffer[Tree]

@@ -131,7 +131,10 @@ object expressionVariableAllocation {
             allocateVariables(
               outerVars,
               (
-                x.singletonNodeVariables.map(_.nfaExprVar) ++
+                x.nfa.predicateVariables ++
+                  // these are not actually required as expression variables, but they are allocated
+                  // in order to satisfy the SlottedRewriter
+                  x.singletonNodeVariables.map(_.nfaExprVar) ++
                   x.singletonRelationshipVariables.map(_.nfaExprVar) ++
                   x.nodeVariableGroupings.map(_.singleton) ++
                   x.relationshipVariableGroupings.map(_.singleton)
@@ -139,7 +142,9 @@ object expressionVariableAllocation {
             )
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
-      case x: NFA =>
+      // this case is a bit of a hack to provide expression variable allocation in NFAToProductGraphCursorIT without
+      // requiring a StatefulShortestPath plan; we check if x eq input to prevent multiple allocations in the 'real' case
+      case x: NFA if input eq x =>
         outerVars =>
           // all of the predicates in the NFA use expression variables because they are not yet written to the row
           // when evaluated during NFA traversal

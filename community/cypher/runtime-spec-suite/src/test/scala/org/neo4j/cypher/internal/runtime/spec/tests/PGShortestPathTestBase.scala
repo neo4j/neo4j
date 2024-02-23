@@ -21,9 +21,14 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Selector
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -2751,6 +2756,66 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
     )
 
     runtimeResult should beColumns(retVars: _*).withRows(oneToOneSortedPaths("p", expected))
+  }
+
+  test("nested plan expressions should work inside an NFA transition predicate") {
+
+    val v = givenGraph {
+      fromTemplate("""
+             .---->()-->()-->()
+             |                |
+             |                v
+        (u:User)-->()-->()-->(v)-->(:N)
+             |                |
+             |                v
+             '---->()----->(w:User)
+      """) node "v"
+    }
+
+    // initialId = 100 so that it doesn't clash with the main query when setting attributes
+    val npe = new LogicalPlanBuilder(wholePlan = false, resolver = this, initialId = 100)
+      .filter("n_npe:N")
+      .expand("(v_inner)-[r_npe]->(n_npe)")
+      .argument("v_inner")
+      .build()
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("v")
+      .statefulShortestPath(
+        "u",
+        "w",
+        "SHORTEST 1 ((u:User) ((a)-[r]->(b))+ (v)--(w:User) WHERE (v)-->(:N))",
+        None,
+        Set(("a_inner", "a")),
+        Set(("r_inner", "r")),
+        Set(("v_inner", "v")),
+        Set(("  UNNAMED22", "  UNNAMED0")),
+        Selector.Shortest(1),
+        new TestNFABuilder(0, "u")
+          .addTransition(0, 1, "(u) (a_inner)")
+          .addTransition(1, 2, "(a_inner)-[r_inner]->(b_inner)")
+          .addTransition(2, 1, "(b_inner) (a_inner)")
+          .addTransition(
+            2 -> "b_inner",
+            3 -> "v_inner",
+            NodeJuxtapositionPredicate(Some(VariablePredicate(
+              varFor("v_inner"),
+              NestedPlanExistsExpression(npe, "EXISTS { (v_inner)-->(:N) }")(pos)
+            )))
+          )
+          .addTransition(3, 4, "(v_inner)-[`  UNNAMED22`]-(w)")
+          .setFinalState(4)
+          .build(),
+        ExpandInto
+      )
+      .cartesianProduct()
+      .|.nodeByLabelScan("u", "User", IndexOrderNone)
+      .nodeByLabelScan("w", "User", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("v").withRows(Seq(Array(v)))
   }
 
   test("should find non-shortest paths when all shortest paths have duplicate relationships") {

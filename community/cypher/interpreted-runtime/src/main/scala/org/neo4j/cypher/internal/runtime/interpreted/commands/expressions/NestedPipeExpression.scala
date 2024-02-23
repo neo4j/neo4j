@@ -67,5 +67,5 @@ abstract class NestedPipeExpression(
     all.buildAndClose()
   }
 
-  override def toString: String = s"${getClass.getSimpleName}}()"
+  override def toString: String = s"${getClass.getSimpleName}()"
 }
