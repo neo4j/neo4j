@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationshipCount;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationships;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEventKind.Relationship;
-import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEventKind.RelationshipTypeScan;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +46,6 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -250,7 +247,9 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                 exhaustCursor(cursor);
 
                 // then
-                tracer.assertEvents(new TraceEvent(RelationshipTypeScan, typeOne), new TraceEvent(Relationship, rel1));
+                tracer.assertEvents(
+                        TestKernelReadTracer.relationshipTypeScanEvent(typeOne),
+                        TestKernelReadTracer.relationshipEvent(rel1));
 
                 // when
                 relationshipTypeScan(tx, typeTwo, cursor, IndexOrder.NONE);
@@ -259,9 +258,9 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
                 // then
                 tracer.assertEvents(
-                        new TraceEvent(RelationshipTypeScan, typeTwo),
-                        new TraceEvent(Relationship, tracedRelationships[0]),
-                        new TraceEvent(Relationship, tracedRelationships[1]));
+                        TestKernelReadTracer.relationshipTypeScanEvent(typeTwo),
+                        TestKernelReadTracer.relationshipEvent(tracedRelationships[0]),
+                        TestKernelReadTracer.relationshipEvent(tracedRelationships[1]));
             }
         }
     }

@@ -53,10 +53,16 @@ class DefaultNodeCursorTest {
         var storageCursor = mock(StorageNodeCursor.class);
         try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, internalCursors, false)) {
             defaultCursor.single(NODEID, read);
+            final TestKernelReadTracer tracer = addTracerAndReturn(defaultCursor);
+
             assertTrue(defaultCursor.next());
+            tracer.clear();
+
             assertFalse(defaultCursor.hasLabel());
             // Should not have touched the store to verify that no label exists
             verify(storageCursor, never()).hasLabel();
+            // Verify that the tracer captured the event
+            tracer.assertEvents(TestKernelReadTracer.hasLabelEvent());
         }
     }
 
@@ -67,11 +73,16 @@ class DefaultNodeCursorTest {
 
         var storageCursor = mock(StorageNodeCursor.class);
         try (var defaultCursor = new DefaultNodeCursor((c) -> {}, storageCursor, internalCursors, false)) {
+            final TestKernelReadTracer tracer = addTracerAndReturn(defaultCursor);
             defaultCursor.single(NODEID, read);
             assertTrue(defaultCursor.next());
+            tracer.clear();
+
             assertFalse(defaultCursor.hasLabel(7));
             // Should not have touched the store to verify that the label exists
             verify(storageCursor, never()).hasLabel(7);
+            // Verify that the tracer captured the event
+            tracer.assertEvents(TestKernelReadTracer.hasLabelEvent(7));
         }
     }
 
@@ -96,5 +107,11 @@ class DefaultNodeCursorTest {
         when(read.hasTxStateWithChanges()).thenReturn(true);
         when(read.txState()).thenReturn(txState);
         return read;
+    }
+
+    private static TestKernelReadTracer addTracerAndReturn(DefaultNodeCursor nodeCursor) {
+        final TestKernelReadTracer tracer = new TestKernelReadTracer();
+        nodeCursor.setTracer(tracer);
+        return tracer;
     }
 }

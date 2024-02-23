@@ -32,7 +32,7 @@ public class TestKernelReadTracer implements KernelReadTracer {
 
     private final List<TraceEvent> traceEvents;
 
-    TestKernelReadTracer() {
+    public TestKernelReadTracer() {
         traceEvents = new ArrayList<>();
     }
 
@@ -110,15 +110,15 @@ public class TestKernelReadTracer implements KernelReadTracer {
         HasLabel
     }
 
-    static class TraceEvent {
+    public static class TraceEvent {
         final TraceEventKind kind;
         final long hash;
 
-        TraceEvent(TraceEventKind kind) {
+        private TraceEvent(TraceEventKind kind) {
             this(kind, 1);
         }
 
-        TraceEvent(TraceEventKind kind, long hash) {
+        private TraceEvent(TraceEventKind kind, long hash) {
             this.kind = kind;
             this.hash = hash;
         }
@@ -146,35 +146,35 @@ public class TestKernelReadTracer implements KernelReadTracer {
         }
     }
 
-    static TraceEvent nodeEvent(long nodeReference) {
+    public static TraceEvent nodeEvent(long nodeReference) {
         return new TraceEvent(TraceEventKind.Node, nodeReference);
     }
 
-    static TraceEvent labelScanEvent(int label) {
+    public static TraceEvent labelScanEvent(int label) {
         return new TraceEvent(TraceEventKind.LabelScan, label);
     }
 
-    static TraceEvent relationshipTypeScanEvent(int type) {
+    public static TraceEvent relationshipTypeScanEvent(int type) {
         return new TraceEvent(TraceEventKind.RelationshipTypeScan, type);
     }
 
-    static TraceEvent indexSeekEvent() {
+    public static TraceEvent indexSeekEvent() {
         return new TraceEvent(TraceEventKind.IndexSeek, 1);
     }
 
-    static TraceEvent relationshipEvent(long relationshipReference) {
+    public static TraceEvent relationshipEvent(long relationshipReference) {
         return new TraceEvent(TraceEventKind.Relationship, relationshipReference);
     }
 
-    static TraceEvent propertyEvent(int propertyKey) {
+    public static TraceEvent propertyEvent(int propertyKey) {
         return new TraceEvent(TraceEventKind.Property, propertyKey);
     }
 
-    static TraceEvent hasLabelEvent(int label) {
+    public static TraceEvent hasLabelEvent(int label) {
         return new TraceEvent(TraceEventKind.HasLabel, label);
     }
 
-    static TraceEvent hasLabelEvent() {
+    public static TraceEvent hasLabelEvent() {
         return new TraceEvent(TraceEventKind.HasLabel);
     }
 }

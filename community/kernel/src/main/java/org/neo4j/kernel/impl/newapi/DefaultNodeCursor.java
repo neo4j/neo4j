@@ -183,13 +183,16 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         if (hasChanges()) {
             TransactionState txState = read.txState();
             LongDiffSets diffSets = txState.nodeStateLabelDiffSets(nodeReference());
-            if (diffSets.getAdded().contains(label)) {
+            if (diffSets.isAdded(label)) {
+                if (tracer != null) {
+                    tracer.onHasLabel(label);
+                }
                 return true;
             }
-            if (currentNodeIsAddedInTx()) {
-                return false;
-            }
-            if (diffSets.getRemoved().contains(label) || currentAddedInTx != NO_ID) {
+            if (currentNodeIsAddedInTx() || diffSets.isRemoved(label)) {
+                if (tracer != null) {
+                    tracer.onHasLabel(label);
+                }
                 return false;
             }
         }
@@ -206,14 +209,23 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
             TransactionState txState = read.txState();
             LongDiffSets diffSets = txState.nodeStateLabelDiffSets(nodeReference());
             if (diffSets.getAdded().notEmpty()) {
+                if (tracer != null) {
+                    tracer.onHasLabel();
+                }
                 return true;
             }
             if (currentNodeIsAddedInTx()) {
+                if (tracer != null) {
+                    tracer.onHasLabel();
+                }
                 return false;
             }
             // If we remove labels in the transaction we need to do a full check so that we don't remove all of the
             // nodes
             if (diffSets.getRemoved().notEmpty()) {
+                if (tracer != null) {
+                    tracer.onHasLabel();
+                }
                 return labels().numberOfTokens() > 0;
             }
         }
@@ -221,7 +233,6 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         if (tracer != null) {
             tracer.onHasLabel();
         }
-
         return storeCursor.hasLabel();
     }
 
