@@ -45,8 +45,6 @@ import org.neo4j.values.virtual.VirtualValues
 
 import java.util.function.ToLongFunction
 
-import scala.collection.mutable
-
 case class StatefulShortestPathSlottedPipe(
   source: Pipe,
   sourceSlot: Slot,
@@ -109,7 +107,7 @@ case class StatefulShortestPathSlottedPipe(
   private def withPathVariables(original: CypherRow, path: TracedPath): CypherRow = {
     val row = new SlottedRow(slots)
     row.copyAllFrom(original)
-    val groupMap = mutable.HashMap.empty[Int, ListValueBuilder]
+    val groupMap = Array.ofDim[ListValueBuilder](slots.numberOfReferences)
 
     var i = 0
     while (i < path.entities().length) {
@@ -117,7 +115,12 @@ case class StatefulShortestPathSlottedPipe(
       e.slotOrName match {
         case SlotOrName.Slotted(slotOffset, isGroup) =>
           if (isGroup) {
-            groupMap.getOrElseUpdate(slotOffset, ListValueBuilder.newListBuilder()).add(e.idValue)
+            var builder = groupMap(slotOffset)
+            if (builder == null) {
+              builder = ListValueBuilder.newListBuilder()
+              groupMap(slotOffset) = builder
+            }
+            builder.add(e.idValue)
           } else {
             row.setLongAt(slotOffset, e.id)
           }
@@ -128,9 +131,9 @@ case class StatefulShortestPathSlottedPipe(
     }
 
     groupSlots.foreach { offset =>
-      val value = groupMap.get(offset) match {
-        case Some(list) => if (reverseGroupVariableProjections) list.build().reverse() else list.build()
-        case None       => VirtualValues.EMPTY_LIST
+      val value = groupMap(offset) match {
+        case null => VirtualValues.EMPTY_LIST
+        case list => if (reverseGroupVariableProjections) list.build().reverse() else list.build()
       }
       row.setRefAt(offset, value)
     }

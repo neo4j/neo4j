@@ -184,9 +184,9 @@ final class DataManager implements AutoCloseable {
 
     public void addTarget(NodeData nodeData) {
         Preconditions.checkArgument(nodeData.isTarget(), "Node must be a target");
-        Preconditions.checkState(
-                !targets.contains(nodeData),
-                "Caller is responsible for adding any node as a target at most once per level");
+        assert !targets.contains(nodeData)
+                : // contains on arraylist is expensive
+                "Caller is responsible for adding any node as a target at most once per level";
         targets.add(nodeData);
         hooks.addTarget(nodeData);
     }

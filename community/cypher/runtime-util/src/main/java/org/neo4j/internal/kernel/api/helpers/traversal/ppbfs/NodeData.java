@@ -22,7 +22,6 @@ package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
 
 import java.util.BitSet;
-import java.util.function.Consumer;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
@@ -225,11 +224,13 @@ public final class NodeData implements AutoCloseable {
             return;
         }
 
-        forEachTargetSignpost(signpost -> {
-            if (signpost.minDistToTarget() == lengthToTarget) {
-                signpost.propagate(lengthFromSource, lengthToTarget);
+        if (targetSignposts != null) {
+            for (TwoWaySignpost tsp : targetSignposts) {
+                if (tsp.minDistToTarget() == lengthToTarget) {
+                    tsp.propagate(lengthFromSource, lengthToTarget);
+                }
             }
-        });
+        }
     }
 
     public void validateLengthState(int lengthFromSource, int tracedLengthToTarget) {
@@ -247,18 +248,21 @@ public final class NodeData implements AutoCloseable {
                 : "First time tracing should be with shortest length to target";
 
         validatedLengthsFromSource.set(lengthFromSource);
-        forEachTargetSignpost(tsp -> {
-            int lengthToTarget = tsp.minDistToTarget();
-            if (lengthToTarget != TwoWaySignpost.NO_TARGET_DISTANCE) {
-                Preconditions.checkState(
-                        lengthToTarget >= tracedLengthToTarget,
-                        "First time tracing should be with shortest length to target");
-                if (lengthToTarget > tracedLengthToTarget) {
-                    // We don't want to register to propagate for the same length pair again
-                    dataManager.schedulePropagation(this, lengthFromSource, lengthToTarget);
+        // We don't want to register to propagate for the same length pair again
+        if (targetSignposts != null) {
+            for (TwoWaySignpost tsp : targetSignposts) {
+                int lengthToTarget = tsp.minDistToTarget();
+                if (lengthToTarget != TwoWaySignpost.NO_TARGET_DISTANCE) {
+                    Preconditions.checkState(
+                            lengthToTarget >= tracedLengthToTarget,
+                            "First time tracing should be with shortest length to target");
+                    if (lengthToTarget > tracedLengthToTarget) {
+                        // We don't want to register to propagate for the same length pair again
+                        dataManager.schedulePropagation(this, lengthFromSource, lengthToTarget);
+                    }
                 }
             }
-        });
+        }
     }
 
     public void decrementTargetCount() {
@@ -289,14 +293,6 @@ public final class NodeData implements AutoCloseable {
         Preconditions.checkState(
                 !res || targetSignposts.notEmpty(), "If targetSignposts isn't null it's never supposed to be empty");
         return res;
-    }
-
-    public void forEachTargetSignpost(Consumer<TwoWaySignpost> f) {
-        if (targetSignposts != null) {
-            for (TwoWaySignpost tsp : targetSignposts) {
-                f.accept(tsp);
-            }
-        }
     }
 
     private int minDistToTarget() {

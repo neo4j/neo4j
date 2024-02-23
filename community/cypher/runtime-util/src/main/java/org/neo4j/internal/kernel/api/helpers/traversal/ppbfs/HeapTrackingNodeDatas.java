@@ -89,12 +89,12 @@ final class HeapTrackingNodeDatas implements AutoCloseable {
     private final int numberOfNFAStates;
 
     public HeapTrackingNodeDatas(MemoryTracker memoryTracker, int numberOfNFAStates) {
-        this.previousLevels = HeapTrackingArrayList.newArrayList(memoryTracker);
-        this.currentLevel = HeapTrackingLongObjectHashMap.createLongObjectHashMap(memoryTracker);
-        this.nextLevel = HeapTrackingLongObjectHashMap.createLongObjectHashMap(memoryTracker);
-        this.nextLevelQueue = HeapTrackingArrayList.newArrayList(memoryTracker);
+        this.memoryTracker = memoryTracker.getScopedMemoryTracker();
+        this.previousLevels = HeapTrackingArrayList.newArrayList(this.memoryTracker);
+        this.currentLevel = HeapTrackingLongObjectHashMap.createLongObjectHashMap(this.memoryTracker);
+        this.nextLevel = HeapTrackingLongObjectHashMap.createLongObjectHashMap(this.memoryTracker);
+        this.nextLevelQueue = HeapTrackingArrayList.newArrayList(this.memoryTracker);
         this.numberOfNFAStates = numberOfNFAStates;
-        this.memoryTracker = memoryTracker;
     }
 
     public void addToNextLevel(NodeData nodeData) {
@@ -164,39 +164,7 @@ final class HeapTrackingNodeDatas implements AutoCloseable {
 
     @Override
     public void close() {
-        previousLevels.forEach(level -> {
-            level.forEach(grouping -> {
-                grouping.forEach(x -> {
-                    if (x != null) {
-                        x.close();
-                    }
-                });
-                grouping.close();
-            });
-            level.close();
-        });
-        previousLevels.close();
-
-        currentLevel.forEach(grouping -> {
-            grouping.forEach(x -> {
-                if (x != null) {
-                    x.close();
-                }
-            });
-            grouping.close();
-        });
-        currentLevel.close();
-
-        nextLevel.forEachValue(grouping -> {
-            grouping.forEach(x -> {
-                if (x != null) {
-                    x.close();
-                }
-            });
-            grouping.close();
-        });
-        nextLevel.close();
-
-        nextLevelQueue.close();
+        // we don't need to iterate & close the inner collections because we can just close the scoped memory tracker
+        this.memoryTracker.close();
     }
 }
