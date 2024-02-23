@@ -179,7 +179,8 @@ object Metrics {
       relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-      cardinalityModel: CardinalityModel
+      cardinalityModel: CardinalityModel,
+      argumentIds: Set[LogicalVariable]
     ): Selectivity
   }
 

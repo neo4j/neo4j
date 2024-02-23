@@ -133,7 +133,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    cardinalityModel: CardinalityModel
+    cardinalityModel: CardinalityModel,
+    argumentIds: Set[LogicalVariable]
   ): Selectivity = {
 
     // The selections we get for cardinality estimation might contain partial predicates.
@@ -192,7 +193,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
       return fallback
     }
 
-    val queryGraphs = getQueryGraphs(labelInfo, relTypeInfo, unwrappedSelections)
+    val queryGraphs = getQueryGraphs(labelInfo, relTypeInfo, unwrappedSelections, argumentIds)
 
     // we search for index matches for each variable individually to increase the chance of cache hits
     val indexMatches = {
@@ -346,12 +347,14 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
   private def getQueryGraphs(
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
-    unwrappedSelections: Selections
+    unwrappedSelections: Selections,
+    argumentIds: Set[LogicalVariable]
   ): NodeRelQgs = {
     val expressionsContainingVariable = unwrappedSelections.expressionsContainingVariable
     val variables = expressionsContainingVariable.keys
     val nodes = variables.filter(labelInfo.contains)
     val relationships = variables.filter(relTypeInfo.contains)
+    val availableSymbols = argumentIds ++ nodes ++ relationships
 
     def findSelectionsFor(variable: LogicalVariable): Selections =
       unwrappedSelections.filter(expressionsContainingVariable(variable))
@@ -360,7 +363,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     val nodeQgs = nodes.map { n =>
       QueryGraph(
         patternNodes = Set(n),
-        selections = findSelectionsFor(n)
+        selections = findSelectionsFor(n),
+        argumentIds = availableSymbols - n
       )
     }
     val relQgs = relationships.map { r =>
@@ -372,7 +376,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
           Seq.empty,
           SimplePatternLength
         )),
-        selections = findSelectionsFor(r)
+        selections = findSelectionsFor(r),
+        argumentIds = availableSymbols - r
       )
     }
 

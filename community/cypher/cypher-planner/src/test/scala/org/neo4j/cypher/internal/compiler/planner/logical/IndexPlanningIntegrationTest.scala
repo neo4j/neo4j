@@ -2504,4 +2504,88 @@ class IndexPlanningIntegrationTest
 
     planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
   }
+
+  test("should use the widest applicable composite index to estimate cardinality of a nested index join") {
+    val aNodes = 900
+
+    val abcExistsSelectivity = 0.5
+    val abcUniqueSelectivity = 0.3
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", aNodes)
+      .addNodeIndex("A", Seq("a", "b", "c"), abcExistsSelectivity, abcUniqueSelectivity)
+      .addNodeIndex("A", Seq("a", "b"), existsSelectivity = 0.9, uniqueSelectivity = 0.5)
+      .addNodeIndex("A", Seq("id"), existsSelectivity = 1, uniqueSelectivity = 1.0 / aNodes, isUnique = true)
+      .build()
+
+    val query = "MATCH (x:A {id: 123}), (n:A {a: x.prop, b: 2, c: 3}) RETURN n"
+    val planState = planner.planState(query)
+
+    val expectedCardinality = aNodes * abcExistsSelectivity * abcUniqueSelectivity
+
+    val expectedPlanBuilder = planner.planBuilder()
+      .produceResults("n").withCardinality(expectedCardinality)
+      .apply().withCardinality(expectedCardinality)
+      .|.nodeIndexOperator(
+        "n:A(a = ???, b = 2, c = 3)",
+        argumentIds = Set("x"),
+        paramExpr = Some(prop("x", "prop")),
+        supportPartitionedScan = false
+      ).withCardinality(expectedCardinality)
+      .nodeIndexOperator("x:A(id = 123)", unique = true, supportPartitionedScan = false).withCardinality(1.0)
+
+    planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
+  }
+
+  test("should use the widest applicable composite relationship index to estimate cardinality of a nested index join") {
+    val relCount = 900
+
+    val abcExistsSelectivity = 0.5
+    val abcUniqueSelectivity = 0.3
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", relCount)
+      .setRelationshipCardinality("()-[:KNOWS]->()", relCount)
+      .addRelationshipIndex("REL", Seq("a", "b", "c"), abcExistsSelectivity, abcUniqueSelectivity)
+      .addRelationshipIndex("REL", Seq("a", "b"), existsSelectivity = 0.9, uniqueSelectivity = 0.5)
+      .addRelationshipIndex(
+        "KNOWS",
+        Seq("id"),
+        existsSelectivity = 1,
+        uniqueSelectivity = 1.0 / relCount,
+        isUnique = true
+      )
+      .build()
+
+    val query =
+      """
+        |MATCH
+        |  (a)-[r:KNOWS {id: 123}]->(b),
+        |  (x)-[q:REL {a: r.prop, b: 2, c: 3}]->(y)
+        |RETURN q
+        |""".stripMargin
+
+    val planState = planner.planState(query)
+
+    val expectedCardinality = relCount * abcExistsSelectivity * abcUniqueSelectivity
+
+    val expectedPlanBuilder = planner.planBuilder()
+      .produceResults("q").withCardinality(expectedCardinality)
+      .apply().withCardinality(expectedCardinality)
+      .|.relationshipIndexOperator(
+        "(x)-[q:REL(a = ???, b = 2, c = 3)]->(y)",
+        argumentIds = Set("r", "a", "b"),
+        paramExpr = Some(prop("r", "prop")),
+        supportPartitionedScan = false
+      ).withCardinality(expectedCardinality)
+      .relationshipIndexOperator(
+        "(a)-[r:KNOWS(id = 123)]->(b)",
+        unique = true,
+        supportPartitionedScan = false
+      ).withCardinality(1.0)
+
+    planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
+  }
 }

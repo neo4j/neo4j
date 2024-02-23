@@ -56,7 +56,8 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
       indexPredicateProviderContext = null,
       cardinalityModel = null,
       allNodesCardinality = null,
-      LabelInferenceStrategy.NoInference
+      LabelInferenceStrategy.NoInference,
+      Set.empty
     )
     val labelInfo: LabelInfo = Map(v"a" -> Set(LabelName("L")(InputPosition.NONE)))
     val cardinality = getSimpleRelationshipCardinality(
@@ -88,7 +89,8 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
       indexPredicateProviderContext = null,
       cardinalityModel = null,
       allNodesCardinality = null,
-      LabelInferenceStrategy.NoInference
+      LabelInferenceStrategy.NoInference,
+      Set.empty
     )
     val labelInfo: LabelInfo = Map(v"a" -> Set(LabelName("L")(InputPosition.NONE)))
     val cardinality = getSimpleRelationshipCardinality(
@@ -120,7 +122,8 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
       indexPredicateProviderContext = null,
       cardinalityModel = null,
       allNodesCardinality = Cardinality.SINGLE,
-      LabelInferenceStrategy.NoInference
+      LabelInferenceStrategy.NoInference,
+      Set.empty
     )
     val labelInfo: LabelInfo = Map(v"a" -> Set(LabelName("L")(InputPosition.NONE)))
     val relationship =
@@ -147,7 +150,8 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
       indexPredicateProviderContext = null,
       cardinalityModel = null,
       allNodesCardinality = null,
-      LabelInferenceStrategy.NoInference
+      LabelInferenceStrategy.NoInference,
+      Set.empty
     )
     val directions = List(SemanticDirection.INCOMING, SemanticDirection.OUTGOING, SemanticDirection.BOTH)
     for (direction <- directions) withClue(direction) {

@@ -65,7 +65,8 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
         relTypeInfo,
         semanticTable,
         IndexCompatiblePredicatesProviderContext.default,
-        cardinalityModel
+        cardinalityModel,
+        Set.empty
       )
     }
   }

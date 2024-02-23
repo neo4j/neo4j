@@ -84,7 +84,8 @@ class QuantifiedPathPatternCardinalityModelTest extends CypherFunSuite with Quan
       indexPredicateProviderContext = null,
       cardinalityModel = null,
       allNodesCardinality = Cardinality(200),
-      LabelInferenceStrategy.NoInference
+      LabelInferenceStrategy.NoInference,
+      Set.empty
     )
 
     val labelInfo: LabelInfo =

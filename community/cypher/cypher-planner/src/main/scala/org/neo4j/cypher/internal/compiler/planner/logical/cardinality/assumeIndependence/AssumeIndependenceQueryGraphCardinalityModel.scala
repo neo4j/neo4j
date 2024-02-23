@@ -62,7 +62,8 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       indexPredicateProviderContext,
       cardinalityModel,
       allNodesCardinality,
-      labelInferenceStrategy
+      labelInferenceStrategy,
+      queryGraph.argumentIds
     )
     // First calculate the cardinality of the "top-level" match query graph while keeping track of newly encountered node labels
     val (moreLabelInfo, matchCardinality) = getBaseQueryGraphCardinality(context, labelInfo, queryGraph)

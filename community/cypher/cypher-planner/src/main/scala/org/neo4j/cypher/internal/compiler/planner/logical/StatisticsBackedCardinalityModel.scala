@@ -116,7 +116,8 @@ class StatisticsBackedCardinalityModel(
           plannerQuery.horizon,
           semanticTable,
           indexPredicateProviderContext,
-          cardinalityModel
+          cardinalityModel,
+          plannerQuery.queryGraph.argumentIds
         )
         afterHorizon.withFusedLabelInfo(plannerQuery.firstLabelInfo)
     }
@@ -137,7 +138,8 @@ class StatisticsBackedCardinalityModel(
     horizon: QueryHorizon,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    cardinalityModel: CardinalityModel
+    cardinalityModel: CardinalityModel,
+    argumentIds: Set[LogicalVariable]
   ): CardinalityAndInput = horizon match {
     case projection: QueryProjection =>
       val cardinalityBeforeSkip = queryProjectionCardinalityBeforeLimit(cardinalityAndInput.cardinality, projection)
@@ -149,7 +151,8 @@ class StatisticsBackedCardinalityModel(
         projection.selections,
         semanticTable,
         indexPredicateProviderContext,
-        cardinalityModel
+        cardinalityModel,
+        argumentIds
       )
 
     // Unwind
@@ -273,7 +276,8 @@ class StatisticsBackedCardinalityModel(
     where: Selections,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    cardinalityModel: CardinalityModel
+    cardinalityModel: CardinalityModel,
+    argumentIds: Set[LogicalVariable]
   ): CardinalityAndInput = {
     val inboundCardinality = inputBeforeSelection.cardinality
     val fusedInput = inputBeforeSelection.withFusedLabelInfo(where.labelInfo)
@@ -283,7 +287,8 @@ class StatisticsBackedCardinalityModel(
       fusedInput.relTypeInfo,
       semanticTable,
       indexPredicateProviderContext,
-      cardinalityModel
+      cardinalityModel,
+      argumentIds
     )
     val cardinality = inboundCardinality * whereSelectivity
     CardinalityAndInput(cardinality, fusedInput.labelInfo, fusedInput.relTypeInfo)

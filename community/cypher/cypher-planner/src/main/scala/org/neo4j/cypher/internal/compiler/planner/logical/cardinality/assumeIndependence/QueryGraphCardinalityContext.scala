@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -41,7 +42,8 @@ case class QueryGraphCardinalityContext(
   indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
   cardinalityModel: CardinalityModel,
   allNodesCardinality: Cardinality,
-  labelInferenceStrategy: LabelInferenceStrategy
+  labelInferenceStrategy: LabelInferenceStrategy,
+  argumentIds: Set[LogicalVariable]
 ) {
 
   def predicatesSelectivity(labelInfo: LabelInfo, predicates: Set[Predicate]): Selectivity =
@@ -61,6 +63,7 @@ case class QueryGraphCardinalityContext(
         relTypeInfo ++ extraRelTypeInfo,
         semanticTable,
         indexPredicateProviderContext,
-        cardinalityModel
+        cardinalityModel,
+        argumentIds
       )
 }
