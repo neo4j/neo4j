@@ -58,13 +58,12 @@ import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Inside
 
 import java.lang.Boolean.FALSE
-
-import scala.collection.immutable.ListSet
 
 class OptionalMatchIDPPlanningIntegrationTest
     extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)

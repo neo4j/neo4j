@@ -41,9 +41,9 @@ import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.combineHasLabels
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.inSequence
 
-import scala.collection.immutable.ListSet
 import scala.util.control.NonFatal
 
 object TestNFABuilder {

@@ -35,8 +35,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.InputPosition
-
-import scala.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 case class PlannerQueryBuilder(q: SinglePlannerQuery, semanticTable: SemanticTable) {
 

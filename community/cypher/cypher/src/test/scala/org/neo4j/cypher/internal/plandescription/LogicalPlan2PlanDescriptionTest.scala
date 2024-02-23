@@ -421,6 +421,7 @@ import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTFloat
@@ -444,7 +445,6 @@ import org.neo4j.values.storable.Values.stringValue
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.immutable
-import scala.collection.immutable.ListSet
 import scala.language.implicitConversions
 
 object LogicalPlan2PlanDescriptionTest {

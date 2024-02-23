@@ -18,10 +18,10 @@ package org.neo4j.cypher.internal.util
 
 import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 import scala.annotation.tailrec
 import scala.collection.IterableFactory
-import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -84,17 +84,20 @@ object Rewritable {
         that match {
           case a: RewritableUniversal =>
             a.dup(children)
-          case _: collection.IndexedSeq[_] =>
+          case _: scala.collection.IndexedSeq[_] =>
             children.toIndexedSeq
           case _: List[_] =>
             children.toList
-          case _: collection.Seq[_] =>
+          case _: scala.collection.Seq[_] =>
             children
-          case _: collection.immutable.ListSet[_] =>
+          case _: scala.collection.immutable.ListSet[_] =>
+            // We should use our own ListSet, but let us keep this anyway.
             children.to(IterableFactory.toFactory(ListSet))
-          case _: collection.Set[_] =>
+          case _: ListSet[_] =>
+            children.to(IterableFactory.toFactory(ListSet))
+          case _: scala.collection.Set[_] =>
             children.toSet
-          case _: collection.Map[_, _] =>
+          case _: scala.collection.Map[_, _] =>
             val builder = Map.newBuilder[AnyRef, AnyRef]
             children.iterator.grouped(2).foreach {
               case Seq(k, v) => builder.addOne((k, v))

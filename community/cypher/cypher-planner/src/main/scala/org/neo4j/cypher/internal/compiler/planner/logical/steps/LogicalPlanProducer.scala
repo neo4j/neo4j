@@ -276,10 +276,9 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
 import org.neo4j.exceptions.InternalException
-
-import scala.collection.immutable.ListSet
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.

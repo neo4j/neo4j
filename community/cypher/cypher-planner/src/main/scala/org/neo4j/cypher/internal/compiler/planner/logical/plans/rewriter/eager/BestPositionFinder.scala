@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
-import scala.collection.immutable.ListSet
 import scala.collection.mutable
 
 /**

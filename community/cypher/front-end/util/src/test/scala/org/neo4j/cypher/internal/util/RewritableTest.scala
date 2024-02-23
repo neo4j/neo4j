@@ -27,9 +27,8 @@ import org.neo4j.cypher.internal.util.RewritableTest.Pos
 import org.neo4j.cypher.internal.util.RewritableTest.Sum
 import org.neo4j.cypher.internal.util.RewritableTest.Val
 import org.neo4j.cypher.internal.util.RewritableTest.Wrap
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-
-import scala.collection.immutable.ListSet
 
 object RewritableTest {
   trait Exp extends Product with Rewritable

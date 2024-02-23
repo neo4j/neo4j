@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -46,7 +47,6 @@ import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
-import scala.collection.immutable.ListSet
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt

@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.CypherToken
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 import scala.collection.immutable.ArraySeq
-import scala.collection.immutable.ListSet
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 object Util {

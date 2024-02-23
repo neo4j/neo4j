@@ -17,9 +17,9 @@
 package org.neo4j.cypher.internal.util
 
 import org.neo4j.cypher.internal.util.Foldable.Folder
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 import scala.annotation.tailrec
-import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
@@ -28,8 +28,8 @@ object Foldable {
   implicit class TreeAny(val that: Any) extends AnyVal {
 
     def treeChildren: Iterator[AnyRef] = that match {
-      case s: collection.Seq[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case s: Set[_]            => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case s: scala.collection.Seq[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case s: Set[_]                  => s.iterator.asInstanceOf[Iterator[AnyRef]]
       case m: Map[_, _] =>
         m.iterator.flatMap { case (k, v) => Iterator[Any](k, v) }.asInstanceOf[Iterator[AnyRef]]
       case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]
@@ -37,9 +37,12 @@ object Foldable {
     }
 
     def reverseTreeChildren: Iterator[AnyRef] = that match {
-      case s: collection.Seq[_] => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]
+      case s: scala.collection.Seq[_] => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]
       // For list sets, the order matters.
-      case s: ListSet[_] => reverseListSetIterator(s).asInstanceOf[Iterator[AnyRef]]
+      case s: scala.collection.immutable.ListSet[_] =>
+        // We should use our own ListSet, but let us keep this anyway.
+      reverseListSetIterator(s).asInstanceOf[Iterator[AnyRef]]
+      case s: ListSet[_] => s.toVector.reverseIterator.asInstanceOf[Iterator[AnyRef]]
       // For Sets and Maps, order doesn't really matter, but if the order is swapped around that often breaks expectations anyhow.
       case s: Set[_] => s.toVector.reverseIterator.asInstanceOf[Iterator[AnyRef]]
       case m: Map[_, _] =>
@@ -53,7 +56,7 @@ object Foldable {
      * while this method only traverses the Set once.
      * This is possible because `last` and `init` are O(1) for ListSets.
      */
-    private def reverseListSetIterator[A](listSet: ListSet[A]): Iterator[A] = {
+    private def reverseListSetIterator[A](listSet:  scala.collection.immutable.ListSet[A]): Iterator[A] = {
       var values = listSet
       val reversed = List.newBuilder[A]
       while (values.nonEmpty) {

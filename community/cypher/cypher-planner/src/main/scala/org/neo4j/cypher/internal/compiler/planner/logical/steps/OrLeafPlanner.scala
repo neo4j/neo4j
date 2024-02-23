@@ -49,8 +49,7 @@ import org.neo4j.cypher.internal.logical
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.util.InputPosition
-
-import scala.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 object OrLeafPlanner {
 

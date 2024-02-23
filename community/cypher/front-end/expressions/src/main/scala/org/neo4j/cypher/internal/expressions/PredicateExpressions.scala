@@ -18,11 +18,10 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.expressions.CanonicalStringHelper.nodeRelationCanonicalString
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTString
-
-import scala.collection.immutable.ListSet
 
 case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression
     with BinaryOperatorExpression {
@@ -71,7 +70,7 @@ case class AndsReorderable(exprs: ListSet[Expression])(override val position: In
 case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression
     with BinaryOperatorExpression {
 
-  override val signatures = Vector(
+  override val signatures: Seq[ExpressionTypeSignature] = Vector(
     TypeSignature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 }

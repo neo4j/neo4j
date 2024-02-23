@@ -38,10 +38,10 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
-import scala.collection.immutable.ListSet
 
 object EagerAnalyzer {
 

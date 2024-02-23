@@ -40,8 +40,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
-
-import scala.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 case object LogicalPlanContainsEagerIfNeeded extends StepSequencer.Condition
 

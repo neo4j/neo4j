@@ -55,10 +55,10 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
-import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.control.TailCalls

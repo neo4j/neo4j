@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import scala.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 object ListSetSupport {
 

@@ -38,9 +38,8 @@ import org.neo4j.cypher.internal.rewriting.rewriters.unwrapParenthesizedPath
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.topDown
-
-import scala.collection.immutable.ListSet
 
 /**
  * Moves predicates from inside a PatternPartWithSelector into the surrounding Match clause,

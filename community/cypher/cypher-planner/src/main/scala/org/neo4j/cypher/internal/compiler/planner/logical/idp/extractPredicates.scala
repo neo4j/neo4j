@@ -43,8 +43,7 @@ import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
-
-import scala.collection.immutable.ListSet
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 object extractPredicates {
 

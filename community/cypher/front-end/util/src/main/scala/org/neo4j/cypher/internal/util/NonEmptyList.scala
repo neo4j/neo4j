@@ -17,9 +17,9 @@
 package org.neo4j.cypher.internal.util
 
 import org.neo4j.cypher.internal.util.NonEmptyList.IteratorConverter
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 import scala.annotation.tailrec
-import scala.collection.immutable.ListSet
 import scala.collection.mutable
 
 object NonEmptyList {

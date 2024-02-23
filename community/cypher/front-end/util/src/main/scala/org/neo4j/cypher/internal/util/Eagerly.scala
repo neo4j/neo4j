@@ -34,7 +34,7 @@ object Eagerly {
   def immutableMapValues[A, B, C](m: Iterable[(A, B)], f: B => C): immutable.Map[A, C] =
     mapToBuilder(m, f, immutable.Map.newBuilder[A, C])
 
-  def mutableMapValues[A, B, C](m: collection.Map[A, B], f: B => C): mutable.Map[A, C] =
+  def mutableMapValues[A, B, C](m: scala.collection.Map[A, B], f: B => C): mutable.Map[A, C] =
     mapToBuilder(m, f, mutable.Map.newBuilder[A, C])
 
   private def mapToBuilder[A, B, C, To](

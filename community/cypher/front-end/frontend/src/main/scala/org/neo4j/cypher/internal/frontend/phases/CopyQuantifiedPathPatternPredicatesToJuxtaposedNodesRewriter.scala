@@ -28,9 +28,8 @@ import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredic
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.topDown
-
-import scala.collection.immutable.ListSet
 
 /**
  * Before

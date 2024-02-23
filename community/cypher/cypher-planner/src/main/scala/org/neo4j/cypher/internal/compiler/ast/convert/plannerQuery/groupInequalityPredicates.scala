@@ -28,9 +28,8 @@ import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.topDown
-
-import scala.collection.immutable.ListSet
 
 /**
  * This transforms

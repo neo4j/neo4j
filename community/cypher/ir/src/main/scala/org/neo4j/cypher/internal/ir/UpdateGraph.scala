@@ -49,13 +49,13 @@ import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 import scala.annotation.tailrec
-import scala.collection.immutable.ListSet
 
 object UpdateGraph {
 

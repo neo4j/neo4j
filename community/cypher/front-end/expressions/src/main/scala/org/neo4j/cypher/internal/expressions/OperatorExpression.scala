@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-import java.util.Locale
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
-import scala.collection.immutable.ListSet
+import java.util.Locale
 
 trait OperatorExpression {
   self: Expression =>

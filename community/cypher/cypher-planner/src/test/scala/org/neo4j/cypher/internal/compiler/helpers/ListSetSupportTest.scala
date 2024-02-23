@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.compiler.helpers.ListSetSupport.RichListSet
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
-
-import scala.collection.immutable.ListSet
 
 class ListSetSupportTest extends AnyFunSuite with Matchers {
 

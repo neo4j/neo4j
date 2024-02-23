@@ -65,13 +65,13 @@ import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Modifier
 
-import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
@@ -2683,7 +2683,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
       interpreter.beQuietDuring {
         // imports
         interpreter.interpret(
-          """import scala.collection.immutable.ListSet
+          """import org.neo4j.cypher.internal.util.collection.immutable.ListSet
             |
             |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
             |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue

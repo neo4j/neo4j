@@ -28,9 +28,8 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
-
-import scala.collection.immutable.ListSet
 
 case class Where(expression: Expression)(val position: InputPosition)
     extends ASTNode with SemanticCheckable with HasMappableExpressions[Where] {

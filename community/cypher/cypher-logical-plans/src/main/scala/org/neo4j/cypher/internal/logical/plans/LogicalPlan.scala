@@ -73,6 +73,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
 import org.neo4j.graphdb.schema.IndexType
@@ -81,7 +82,6 @@ import org.neo4j.util.Preconditions
 import java.lang.reflect.Method
 
 import scala.annotation.tailrec
-import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 

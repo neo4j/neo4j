@@ -299,10 +299,9 @@ import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
-
-import scala.collection.immutable.ListSet
 
 object LogicalPlan2PlanDescription {
 

@@ -173,12 +173,12 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.SizeBucket
 import org.neo4j.cypher.internal.util.UnknownSize
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import java.nio.charset.StandardCharsets
 
 import scala.annotation.tailrec
-import scala.collection.immutable.ListSet
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 

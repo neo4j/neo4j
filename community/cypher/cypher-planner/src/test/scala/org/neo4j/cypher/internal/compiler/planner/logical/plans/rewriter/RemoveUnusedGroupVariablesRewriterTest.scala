@@ -35,10 +35,9 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
-
-import scala.collection.immutable.ListSet
 
 class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

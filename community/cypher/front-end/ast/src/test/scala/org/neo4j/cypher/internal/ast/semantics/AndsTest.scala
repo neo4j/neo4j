@@ -21,9 +21,8 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
-
-import scala.collection.immutable.ListSet
 
 class AndsTest extends SemanticFunSuite {
 
