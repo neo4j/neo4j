@@ -33,6 +33,7 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.api.transaction.serial.DatabaseSerialGuard.EMPTY_GUARD;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -272,6 +273,7 @@ class KernelTransactionTestBase {
                 mock(DatabaseHealth.class),
                 NullLogProvider.getInstance(),
                 validatorFactory,
+                EMPTY_GUARD,
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
     }
 

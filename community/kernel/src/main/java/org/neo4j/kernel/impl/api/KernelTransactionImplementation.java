@@ -118,6 +118,9 @@ import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.transaction.serial.DatabaseSerialGuard;
+import org.neo4j.kernel.impl.api.transaction.serial.SerialExecutionGuard;
+import org.neo4j.kernel.impl.api.transaction.serial.TransactionSerialExecutionGuard;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
@@ -288,6 +291,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ValidationLockDumper validationLockDumper;
     private final TransactionCommitter committer;
     private final ChunkedTransactionSink txStateWriter;
+    private final DatabaseSerialGuard databaseSerialGuard;
+    private final SerialExecutionGuard serialExecutionGuard;
     private boolean failedCleanup = false;
 
     public KernelTransactionImplementation(
@@ -329,6 +334,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             DatabaseHealth databaseHealth,
             LogProvider logProvider,
             TransactionValidatorFactory transactionValidatorFactory,
+            DatabaseSerialGuard databaseSerialGuard,
             boolean multiVersioned) {
         this.logProvider = logProvider;
         this.closed = true;
@@ -422,9 +428,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);
         this.collectionsFactory = collectionsFactorySupplier.create();
         this.kernelTransactions = kernelTransactions;
+        this.databaseSerialGuard = databaseSerialGuard;
         this.transactionValidator =
                 transactionValidatorFactory.createTransactionValidator(memoryTracker, transactionMonitor);
         this.validationLockDumper = transactionValidatorFactory.createValidationLockDumper();
+        this.serialExecutionGuard = createSerialGuard(multiVersioned);
         this.committer = createCommitter(commitmentFactory, multiVersioned);
         this.transactionEventListeners = new TransactionEventListeners(transactionEventListeners, this, storageReader);
         this.txStateWriter = createChunkWriter(multiVersioned);
@@ -620,7 +628,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public boolean isSchemaTransaction() {
-        return writeState == TransactionWriteState.SCHEMA;
+        return TransactionWriteState.SCHEMA == writeState;
+    }
+
+    public boolean isDataTransaction() {
+        return TransactionWriteState.DATA == writeState;
     }
 
     /**
@@ -1286,6 +1298,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);
             }
+            serialExecutionGuard.release();
             transactionEventListeners.reset();
             terminationMark = null;
             type = null;
@@ -1508,6 +1521,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
+    private SerialExecutionGuard createSerialGuard(boolean multiVersioned) {
+        return multiVersioned
+                ? new TransactionSerialExecutionGuard(databaseSerialGuard, this)
+                : SerialExecutionGuard.EMPTY_GUARD;
+    }
+
     private ChunkedTransactionSink createChunkWriter(boolean multiVersioned) {
         return multiVersioned
                 ? new ChunkSink(committer, transactionEventListeners, clocks, config)
@@ -1530,6 +1549,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         transactionStore,
                         transactionValidator,
                         validationLockDumper,
+                        serialExecutionGuard,
                         logProvider)
                 : new DefaultCommitter(
                         this,

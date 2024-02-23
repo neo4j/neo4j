@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
+import static org.neo4j.kernel.impl.api.transaction.serial.DatabaseSerialGuard.EMPTY_GUARD;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,6 +64,8 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.transaction.serial.DatabaseSerialGuard;
+import org.neo4j.kernel.impl.api.transaction.serial.MultiVersionDatabaseSerialGuard;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
@@ -157,6 +160,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final ApplyEnrichmentStrategy enrichmentStrategy;
     private final AbstractSecurityLog securityLog;
     private final boolean multiVersioned;
+    private final DatabaseSerialGuard databaseSerialGuard;
     private final KernelTransactionDecorator kernelTransactionDecorator;
     private ScopedMemoryPool transactionMemoryPool;
 
@@ -253,6 +257,7 @@ public class KernelTransactions extends LifecycleAdapter
                 config);
         this.enrichmentStrategy = this.databaseDependencies.resolveDependency(ApplyEnrichmentStrategy.class);
         this.securityLog = this.databaseDependencies.resolveDependency(AbstractSecurityLog.class);
+        this.databaseSerialGuard = multiVersioned ? new MultiVersionDatabaseSerialGuard(allTransactions) : EMPTY_GUARD;
         if (this.databaseDependencies.containsDependency(KernelTransactionDecorator.class)) {
             this.kernelTransactionDecorator =
                     this.databaseDependencies.resolveDependency(KernelTransactionDecorator.class);
@@ -273,6 +278,17 @@ public class KernelTransactions extends LifecycleAdapter
         BooleanSupplier isStale = () -> !globalProcedures.getCurrentView().equals(procedureView);
         SecurityContext securityContext = loginContext.authorize(
                 new TokenHoldersIdLookup(tokenHolders, procedureView, isStale), namedDatabaseId.name(), securityLog);
+        var tx = newKernelTransaction(type, clientInfo, timeout, securityContext, procedureView);
+        databaseSerialGuard.acquireSerialLock(tx);
+        return tx;
+    }
+
+    private KernelTransaction newKernelTransaction(
+            KernelTransaction.Type type,
+            ClientConnectionInfo clientInfo,
+            TransactionTimeout timeout,
+            SecurityContext securityContext,
+            ProcedureView procedureView) {
         try {
             while (!newTransactionsLock.readLock().tryLock(1, TimeUnit.SECONDS)) {
                 assertRunning();
@@ -531,6 +547,7 @@ public class KernelTransactions extends LifecycleAdapter
                     databaseHealth,
                     internalLogProvider,
                     transactionValidatorFactory,
+                    databaseSerialGuard,
                     multiVersioned);
             this.transactions.add(tx);
             return tx;

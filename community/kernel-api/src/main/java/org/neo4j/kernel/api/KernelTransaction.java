@@ -295,7 +295,12 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
          * An EXPLICIT transaction is opened by the user, they have control to commit it and roll it back, and they can execute multiple queries in that
          * transaction.
          */
-        EXPLICIT
+        EXPLICIT,
+
+        /**
+         * Transaction that forbids any other concurrent mutator transaction commit
+         */
+        SERIAL
     }
 
     /**

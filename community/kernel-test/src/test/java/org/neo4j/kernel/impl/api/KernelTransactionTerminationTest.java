@@ -36,6 +36,7 @@ import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABL
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.TransactionTimeout.NO_TIMEOUT;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.api.transaction.serial.DatabaseSerialGuard.EMPTY_GUARD;
 import static org.neo4j.kernel.impl.locking.NoLocksClient.NO_LOCKS_CLIENT;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
@@ -304,6 +305,7 @@ class KernelTransactionTerminationTest {
                     mock(DatabaseHealth.class),
                     NullLogProvider.getInstance(),
                     TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY,
+                    EMPTY_GUARD,
                     false);
 
             this.monitor = monitor;

@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.ChunkedTransaction;
 import org.neo4j.kernel.impl.api.chunk.CommandChunk;
+import org.neo4j.kernel.impl.api.transaction.serial.SerialExecutionGuard;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -81,6 +82,7 @@ public final class ChunkCommitter implements TransactionCommitter {
     private final LogicalTransactionStore transactionStore;
     private final TransactionValidator transactionValidator;
     private final ValidationLockDumper validationLockDumper;
+    private final SerialExecutionGuard serialExecutionGuard;
     private final Log log;
     private long lastTransactionIdWhenStarted;
     private long startTimeMillis;
@@ -99,6 +101,7 @@ public final class ChunkCommitter implements TransactionCommitter {
             LogicalTransactionStore transactionStore,
             TransactionValidator transactionValidator,
             ValidationLockDumper validationLockDumper,
+            SerialExecutionGuard serialExecutionGuard,
             LogProvider logProvider) {
         this.ktx = ktx;
         this.commitmentFactory = commitmentFactory;
@@ -112,6 +115,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         this.transactionStore = transactionStore;
         this.transactionValidator = transactionValidator;
         this.validationLockDumper = validationLockDumper;
+        this.serialExecutionGuard = serialExecutionGuard;
         this.log = logProvider.getLog(ChunkCommitter.class);
     }
 
@@ -132,6 +136,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         try {
             List<StorageCommand> extractedCommands = ktx.extractCommands(memoryTracker);
             if (!extractedCommands.isEmpty() || (commit && transactionPayload != null)) {
+                serialExecutionGuard.check();
                 if (kernelVersion == null) {
                     this.kernelVersion = kernelVersionProvider.kernelVersion();
                     this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;
