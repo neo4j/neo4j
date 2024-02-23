@@ -222,6 +222,12 @@ class FoldableTest extends CypherFunSuite {
     list.reverseTreeChildren.toList shouldEqual List(Add(Val(2), Val(3)), Val(1))
   }
 
+  test("should get children in scala ListSet in reverse") {
+    val list = scala.collection.immutable.ListSet(Val(1), Add(Val(2), Val(3)))
+
+    list.reverseTreeChildren.toList shouldEqual List(Add(Val(2), Val(3)), Val(1))
+  }
+
   test("should get children in Set") {
     val list = Set(Val(1), Add(Val(2), Val(3)))
 

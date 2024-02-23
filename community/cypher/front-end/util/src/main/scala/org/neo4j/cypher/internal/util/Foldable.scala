@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.util.Foldable.Folder
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 import scala.annotation.tailrec
+import scala.collection.AbstractIterator
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
@@ -41,7 +42,7 @@ object Foldable {
       // For list sets, the order matters.
       case s: scala.collection.immutable.ListSet[_] =>
         // We should use our own ListSet, but let us keep this anyway.
-      reverseListSetIterator(s).asInstanceOf[Iterator[AnyRef]]
+        reverseListSetIterator(s).asInstanceOf[Iterator[AnyRef]]
       case s: ListSet[_] => s.toVector.reverseIterator.asInstanceOf[Iterator[AnyRef]]
       // For Sets and Maps, order doesn't really matter, but if the order is swapped around that often breaks expectations anyhow.
       case s: Set[_] => s.toVector.reverseIterator.asInstanceOf[Iterator[AnyRef]]
@@ -56,15 +57,18 @@ object Foldable {
      * while this method only traverses the Set once.
      * This is possible because `last` and `init` are O(1) for ListSets.
      */
-    private def reverseListSetIterator[A](listSet:  scala.collection.immutable.ListSet[A]): Iterator[A] = {
-      var values = listSet
-      val reversed = List.newBuilder[A]
-      while (values.nonEmpty) {
-        reversed.addOne(values.last)
-        values = values.init
+    private def reverseListSetIterator[A](listSet: scala.collection.immutable.ListSet[A]): Iterator[A] =
+      new AbstractIterator[A] {
+        private[this] var current = listSet
+
+        override def hasNext: Boolean = current.nonEmpty
+
+        override def next(): A = {
+          val r = current.last
+          current = current.init
+          r
+        }
       }
-      reversed.result().iterator
-    }
 
     private def reverseProductIterator(p: Product) = new Iterator[AnyRef] {
       private var c: Int = p.productArity - 1
