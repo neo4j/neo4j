@@ -1572,8 +1572,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         final var indexProviderDescriptor = prototype.getIndexProvider();
         final var indexProvider = indexProviders.getIndexProvider(indexProviderDescriptor);
         assertSupportedInVersion(
-                "Failed to create index with provider '%s'.".formatted(indexProviderDescriptor.name()),
-                indexProvider.getMinimumRequiredVersion());
+                indexProvider.getMinimumRequiredVersion(),
+                "Failed to create index with provider '%s'.",
+                indexProviderDescriptor.name());
 
         // valid schema checks
         final var indexType = prototype.getIndexType();
@@ -1582,17 +1583,29 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         if (indexType == IndexType.VECTOR) {
             switch (prototype.schema().entityType()) {
                 case NODE -> assertSupportedInVersion(
-                        "Failed to create node vector index.", KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED);
+                        KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED, "Failed to create node vector index.");
                 case RELATIONSHIP -> {
-                    assertSupportedInVersion(
-                            "Failed to create relationship vector index.", KernelVersion.VERSION_VECTOR_2_INTRODUCED);
-
+                    boolean supported = true;
                     final var descriptor = prototype.getIndexProvider();
                     final var version = VectorIndexVersion.fromDescriptor(descriptor);
+                    final var unsupportedMessage =
+                            new StringBuilder(384).append("Failed to create relationship vector index.");
                     if (version == VectorIndexVersion.V1_0) {
-                        throw new UnsupportedOperationException(
-                                "Relationship vector indexes with provider '%s' are not supported."
-                                        .formatted(descriptor.name()));
+                        supported = false;
+                        final var latestDescriptor = VectorIndexVersion.latestSupportedVersion(
+                                        dbmsRuntimeRepository.getVersion().kernelVersion())
+                                .descriptor();
+                        unsupportedMessage
+                                .append(" Relationship vector indexes with provider '")
+                                .append(descriptor.name())
+                                .append("' are not supported, use a newer vector index provider such as '")
+                                .append(latestDescriptor.name())
+                                .append("'.");
+                    }
+
+                    supported &= checkSupportedInVerson(unsupportedMessage, KernelVersion.VERSION_VECTOR_2_INTRODUCED);
+                    if (!supported) {
+                        throw new UnsupportedOperationException(unsupportedMessage.toString());
                     }
                 }
             }
@@ -1707,8 +1720,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         if (schema.entityType() == RELATIONSHIP) {
             assertSupportedInVersion(
-                    "Failed to create Relationship Uniqueness constraint.",
-                    KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
+                    KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED,
+                    "Failed to create Relationship Uniqueness constraint.");
         }
 
         exclusiveSchemaLock(schema);
@@ -1870,23 +1883,37 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         }
     }
 
-    private void assertSupportedInVersion(String message, KernelVersion minimumVersionForSupport) {
+    private void assertSupportedInVersion(KernelVersion minimumVersionForSupport, String message, Object... args) {
+        final var unsupportedMessage = new StringBuilder(256).append(message.formatted(args));
+        if (!checkSupportedInVerson(unsupportedMessage, minimumVersionForSupport)) {
+            throw new UnsupportedOperationException(unsupportedMessage.toString());
+        }
+    }
+
+    private boolean checkSupportedInVerson(StringBuilder sb, KernelVersion minimumVersionForSupport) {
         final var currentStoreVersion = kernelVersionProvider.kernelVersion();
         if (currentStoreVersion.isAtLeast(minimumVersionForSupport)) {
             // New or upgraded store, good to go
-            return;
+            return true;
         }
 
         final var currentDbmsVersion = dbmsRuntimeRepository.getVersion().kernelVersion();
         if (currentDbmsVersion.isAtLeast(minimumVersionForSupport)) {
             // Dbms runtime version is good, current transaction will trigger the upgrade transaction
             // we will double-check the kernel version during commit
-            return;
+            return true;
         }
 
-        throw new UnsupportedOperationException(
-                "%s Version was %s, but required version for operation is %s. Please upgrade dbms using 'dbms.upgrade()'."
-                        .formatted(message, currentDbmsVersion.name(), minimumVersionForSupport.name()));
+        if (!sb.isEmpty()) {
+            sb.append(' ');
+        }
+        sb.append("Version was ")
+                .append(currentDbmsVersion.name())
+                .append(", but required version for operation is ")
+                .append(minimumVersionForSupport.name())
+                .append(". Please upgrade dbms using 'dbms.upgrade()'.");
+
+        return false;
     }
 
     @Override
@@ -1895,8 +1922,8 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         if (schema.entityType() == RELATIONSHIP) {
             assertSupportedInVersion(
-                    "Failed to create Relationship Key constraint.",
-                    KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
+                    KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED,
+                    "Failed to create Relationship Key constraint.");
         }
 
         exclusiveSchemaLock(schema);
@@ -2119,7 +2146,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             throw new UnsupportedOperationException("Composite property type constraints are not supported.");
         }
         assertSupportedInVersion(
-                "Failed to create property type constraint.", KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED);
+                KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED, "Failed to create property type constraint.");
 
         ConstraintDescriptor constraint = lockAndValidatePropertyTypeConstraint(schema, name, propertyType);
 
@@ -2153,8 +2180,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         // For expanded support, we require the kernel version below:
         if (!typeConstraintEnabled && (isUnion || hasListType)) {
             assertSupportedInVersion(
-                    "Failed to create property type constraint with %s.".formatted(propertyType.userDescription()),
-                    KernelVersion.VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED);
+                    KernelVersion.VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED,
+                    "Failed to create property type constraint with %s.",
+                    propertyType.userDescription());
         }
 
         return lockAndValidateNonIndexPropertyConstraint(
