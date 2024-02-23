@@ -115,6 +115,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.RunQueryAt
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
@@ -956,6 +957,10 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         if (slots.getMetaDataSlot(p.key, Id(p.planId)).isEmpty) {
           throw new IllegalStateException(s"Expected MetaDataSlot for (${p.key}, ${p.planId}) to already exist.")
         }
+
+      case p: RunQueryAt =>
+        p.columns.foreach(v => slots.newReference(v.name, true, CTAny))
+
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }

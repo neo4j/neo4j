@@ -23,7 +23,9 @@ import org.neo4j.values.AnyValue
 
 case class ParameterMapping(private val mapping: Map[String, OffsetAndDefault] = Map.empty) {
   def size: Int = mapping.size
+  def nonEmpty: Boolean = mapping.nonEmpty
   def foreach[U](f: (String, OffsetAndDefault) => U): Unit = mapping.foreach(m => f(m._1, m._2))
+  def contains(key: String): Boolean = mapping.contains(key)
   def offsetFor(key: String): Int = mapping(key).offset
   def defaultValueFor(key: String): Option[AnyValue] = mapping(key).default
 

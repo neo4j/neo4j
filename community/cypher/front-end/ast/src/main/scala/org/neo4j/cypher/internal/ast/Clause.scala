@@ -503,7 +503,7 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
   }
 }
 
-sealed trait GraphReference extends ASTNode with SemanticCheckable {
+sealed trait GraphReference extends Expression with SemanticCheckable {
   override def semanticCheck: SemanticCheck = success
   def print: String
   def dependencies: Set[LogicalVariable]
@@ -513,6 +513,7 @@ final case class GraphDirectReference(catalogName: CatalogName)(val position: In
   override def print: String = catalogName.qualifiedNameString
 
   override def dependencies: Set[LogicalVariable] = Set.empty
+  override def isConstantForQuery: Boolean = true
 }
 
 final case class GraphFunctionReference(functionInvocation: FunctionInvocation)(
@@ -533,6 +534,7 @@ final case class GraphFunctionReference(functionInvocation: FunctionInvocation)(
         ))
     }
   }
+  override def isConstantForQuery: Boolean = false
 }
 
 trait SingleRelTypeCheck {

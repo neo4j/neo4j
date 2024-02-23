@@ -140,6 +140,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipTypeScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RemoveLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RollupApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RunQueryAtTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RuntimeDebugLoggingTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrSemiApplyTestBase
@@ -407,6 +408,7 @@ class InterpretedLetSelectOrAntiSemiApplyTest
 class InterpretedNestedPlanExpressionTest
     extends NestedPlanExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRollupApplyTest extends RollupApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedRunQueryAtTest extends RunQueryAtTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedAllRelationshipsScanTest
     extends AllRelationshipsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

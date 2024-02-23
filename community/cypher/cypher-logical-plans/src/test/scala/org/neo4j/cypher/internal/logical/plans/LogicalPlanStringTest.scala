@@ -20,12 +20,15 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
+import org.neo4j.cypher.internal.ast.GraphDirectReference
+import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.IsNormalized
 import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
@@ -263,7 +266,9 @@ object LogicalPlanStringTest {
       classOf[RunQueryAt] -> "graphReference",
       classOf[RunQueryAt] -> "parameters",
       classOf[RunQueryAtProjection] -> "graphReference",
-      classOf[RunQueryAtProjection] -> "queryString"
+      classOf[RunQueryAtProjection] -> "queryString",
+      classOf[GraphFunctionReference] -> "print",
+      classOf[GraphDirectReference] -> "print"
     )
 
     val whiteListedClasses: Set[Class[_]] = Set[Class[_]](
@@ -318,7 +323,8 @@ object LogicalPlanStringTest {
       classOf[IdentityMap[_, _]],
       classOf[Clause],
       classOf[CustomExpression],
-      classOf[ErrorExpression]
+      classOf[ErrorExpression],
+      classOf[CatalogName]
     )
 
     val whiteListedMethodNames: Set[String] = Set(

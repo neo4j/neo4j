@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.FileResource
 import org.neo4j.cypher.internal.ast.FulltextIndexes
+import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.KeyConstraints
@@ -329,6 +331,7 @@ import org.neo4j.cypher.internal.logical.plans.RevokeLoadAction
 import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.RunQueryAt
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -7727,6 +7730,28 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         SingleChild(lhsPD),
         Seq(details("ns.datetime(23391882379) AS function")),
         Set("a", "function")
+      )
+    )
+  }
+
+  test("RunQueryAt") {
+    assertGood(
+      attach(
+        RunQueryAt(
+          lhsLP,
+          "inner query",
+          GraphDirectReference(CatalogName("composite", "remote"))(pos),
+          Map.empty,
+          Set(Variable("col")(pos))
+        ),
+        666.0
+      ),
+      planDescription(
+        id,
+        "RunQueryAt",
+        SingleChild(lhsPD),
+        Seq(),
+        Set("a", "col")
       )
     )
   }

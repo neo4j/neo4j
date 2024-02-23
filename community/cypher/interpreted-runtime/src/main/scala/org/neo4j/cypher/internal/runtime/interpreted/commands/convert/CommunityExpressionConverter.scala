@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.GraphDirectReference
+import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
@@ -58,6 +60,8 @@ import org.neo4j.cypher.internal.expressions.functions.Exp
 import org.neo4j.cypher.internal.expressions.functions.File
 import org.neo4j.cypher.internal.expressions.functions.Floor
 import org.neo4j.cypher.internal.expressions.functions.Function
+import org.neo4j.cypher.internal.expressions.functions.GraphByElementId
+import org.neo4j.cypher.internal.expressions.functions.GraphByName
 import org.neo4j.cypher.internal.expressions.functions.Haversin
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.expressions.functions.IsEmpty
@@ -139,7 +143,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters.ShortestPathsConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ConstantGraphReference
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.IdExpressionGraphReference
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NameExpressionGraphReference
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointBoundingBoxSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.VariableCommand
@@ -463,10 +470,14 @@ case class CommunityExpressionConverter(
         commands.expressions.ElementIdToRelationshipIdFunction(self.toCommandExpression(id, rhs))
       case ElementIdToLongId(RELATIONSHIP_TYPE, ElementIdToLongId.Mode.Many, rhs) =>
         commands.expressions.ElementIdListToRelationshipIdListFunction(self.toCommandExpression(id, rhs))
-      case _: IsRepeatTrailUnique => predicates.True()
-      case _: NullCheckAssert     => commands.expressions.Literal(NO_VALUE)
-      case _: NonCompilable       => commands.expressions.Literal(NO_VALUE)
-      case _                      => null
+      case _: IsRepeatTrailUnique                    => predicates.True()
+      case _: NullCheckAssert                        => commands.expressions.Literal(NO_VALUE)
+      case _: NonCompilable                          => commands.expressions.Literal(NO_VALUE)
+      case GraphDirectReference(catalogName)         => ConstantGraphReference(catalogName)
+      case GraphFunctionReference(GraphByName(name)) => NameExpressionGraphReference(self.toCommandExpression(id, name))
+      case GraphFunctionReference(GraphByElementId(elementId)) =>
+        IdExpressionGraphReference(self.toCommandExpression(id, elementId))
+      case _ => null
     }
 
     Option(result)

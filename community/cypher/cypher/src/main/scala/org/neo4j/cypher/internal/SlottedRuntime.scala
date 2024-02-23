@@ -120,7 +120,8 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
         context.tokenContext,
         queryIndexRegistrator,
         context.anonymousVariableNameGenerator,
-        context.isCommunity
+        context.isCommunity,
+        physicalPlan.parameterMapping
       )(query.semanticTable)
       val pipeBuilder = new SlottedPipeMapper(
         fallback,

@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
+import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
@@ -101,7 +102,8 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
       planContext,
       mock[QueryIndexRegistrator],
       new AnonymousVariableNameGenerator(),
-      isCommunity = true
+      isCommunity = true,
+      ParameterMapping.empty
     )(semanticTable)
 
   private def build(logicalPlan: LogicalPlan): Pipe =

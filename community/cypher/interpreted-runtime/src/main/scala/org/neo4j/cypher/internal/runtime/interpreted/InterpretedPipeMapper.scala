@@ -146,6 +146,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.RunQueryAt
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -194,6 +195,7 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
@@ -300,6 +302,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipCountFrom
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RemoveLabelsPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RollUpApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RunQueryAtPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SelectOrSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetLabelsOperation
@@ -363,7 +366,8 @@ case class InterpretedPipeMapper(
   tokenContext: ReadTokenContext,
   indexRegistrator: QueryIndexRegistrator,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-  isCommunity: Boolean
+  isCommunity: Boolean,
+  parameterMapping: ParameterMapping
 )(implicit semanticTable: SemanticTable) extends PipeMapper {
 
   private def getBuildExpression(id: Id): internal.expressions.Expression => Expression =
@@ -1532,6 +1536,16 @@ case class InterpretedPipeMapper(
           rowProcessing,
           call.callResultTypes,
           call.callResultIndices
+        )(id = id)
+
+      case RunQueryAt(_, query, graph, parameters, columns) =>
+        RunQueryAtPipe(
+          source,
+          query,
+          expressionConverters.toCommandExpression(id, graph),
+          parameters.view.mapValues(expressionConverters.toCommandExpression(id, _)).toMap,
+          columns,
+          parameterMapping
         )(id = id)
 
       case LoadCSV(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping, bufferSize) =>

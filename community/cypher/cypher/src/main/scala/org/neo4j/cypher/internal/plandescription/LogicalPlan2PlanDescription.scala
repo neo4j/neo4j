@@ -225,6 +225,7 @@ import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.RunQueryAt
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
@@ -2560,6 +2561,18 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities,
           withDistinctness
         )
+
+      case p: RunQueryAt =>
+        PlanDescriptionImpl(
+          id,
+          "RunQueryAt",
+          children,
+          arguments = Seq.empty,
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
