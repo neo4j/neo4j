@@ -27,7 +27,6 @@ import java.time.Duration;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.ToolingMemoryCalculations;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
-import org.neo4j.configuration.helpers.FromPaths;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import picocli.CommandLine.ITypeConverter;
@@ -55,18 +54,6 @@ public interface Converters {
                 return databaseName;
             } catch (Exception e) {
                 throw new TypeConversionException(format("Invalid database name '%s'. (%s)", name, e));
-            }
-        }
-    }
-
-    class FromPathsConverter implements ITypeConverter<FromPaths> {
-
-        @Override
-        public FromPaths convert(String value) throws Exception {
-            try {
-                return new FromPaths(value);
-            } catch (Exception ex) {
-                throw new TypeConversionException(format("Invalid from parameter '%s'. (%s)", value, ex));
             }
         }
     }
