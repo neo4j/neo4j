@@ -114,6 +114,13 @@ public class GraphFunctionsTest extends CypherFunSuite {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"composite.local", "composite.remote"})
+    public void graphByNameUpperCase(String name) {
+        DatabaseReference graph = GraphFunctions.graphByName(name.toUpperCase(), composite, securityContext);
+        assertEquals(name, graph.fullName().name());
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"local", "composite.hiddenLocal", "composite.hiddenRemote", "composite", ""})
     public void graphByNameInvalid(String name) {
         Assertions.assertThrows(

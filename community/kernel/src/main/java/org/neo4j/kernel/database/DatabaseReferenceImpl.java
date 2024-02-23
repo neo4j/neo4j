@@ -265,7 +265,7 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
 
         public Optional<DatabaseReference> getConstituentByName(String databaseName) {
             for (DatabaseReference constituent : constituents) {
-                if (constituent.fullName().name().equals(databaseName)) {
+                if (constituent.fullName().equals(new NormalizedDatabaseName(databaseName))) {
                     return Optional.of(constituent);
                 }
             }

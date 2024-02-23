@@ -86,4 +86,15 @@ public class MapCachingDatabaseReferenceRepositoryTest {
         verify(delegate, atLeast(2)).getExternalDatabaseReferences();
         verify(delegate, atLeast(2)).getCompositeDatabaseReferences();
     }
+
+    @Test
+    void shouldIgnoreCase() {
+        var lookup = databaseRefRepo.getByAlias(name.name().toLowerCase());
+        var lookup2 = databaseRefRepo.getByAlias(name.name().toUpperCase());
+
+        assertThat(lookup).contains(ref);
+        assertThat(lookup).isEqualTo(lookup2);
+
+        verify(delegate, atMostOnce()).getByAlias(name);
+    }
 }
