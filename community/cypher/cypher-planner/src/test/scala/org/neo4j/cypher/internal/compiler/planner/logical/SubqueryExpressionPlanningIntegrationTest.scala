@@ -3613,7 +3613,11 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val npeExpression =
       NestedPlanExistsExpression(expectedNestedPlan, s"EXISTS { MATCH (a)-[r:X]->(b)$NL  WHERE b:Foo }")(pos)
-    val caseExp = caseExpression(Some(prop("a", "prop")), Some(falseLiteral), literalInt(1) -> npeExpression)
+    val caseExp = caseExpression(
+      Some(prop("a", "prop")),
+      Some(falseLiteral),
+      equals(prop("a", "prop"), literalInt(1)) -> npeExpression
+    )
 
     logicalPlan should equal(
       planner.planBuilder()

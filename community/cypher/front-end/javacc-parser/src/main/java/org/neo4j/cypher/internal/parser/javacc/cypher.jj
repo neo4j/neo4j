@@ -3479,6 +3479,22 @@ EXPRESSION Expression8() throws Exception:
     }
 }
 
+EXPRESSION Expression8ComparatorExpression( EXPRESSION lhs ) throws Exception:
+{
+    Token t;
+    EXPRESSION e;
+    EXPRESSION rhs;
+}
+{
+        LOOKAHEAD( 2 ) t=<EQ>  rhs=Expression7() { return astFactory.eq( pos( t ), lhs, rhs); }
+        | t=<NEQ> rhs=Expression7() { return astFactory.neq( pos( t ), lhs, rhs ); }
+        | t=<NEQ2> rhs=Expression7() { return astFactory.neq2( pos( t ), lhs, rhs ); }
+        | t=<LE> rhs=Expression7() { return astFactory.lte( pos( t ), lhs, rhs ); }
+        | t=<GE> rhs=Expression7() { return astFactory.gte( pos( t ), lhs, rhs ); }
+        | t=<LT> rhs=Expression7() { return astFactory.lt( pos( t ), lhs, rhs ); }
+        | t=<GT> rhs=Expression7() { return astFactory.gt( pos( t ), lhs, rhs ); }
+}
+
 EXPRESSION Expression7() throws Exception:
 {
     EXPRESSION e;
@@ -3503,6 +3519,32 @@ EXPRESSION ComparisonExpression6( EXPRESSION lhs ) throws Exception:
     | t=<ENDS> <WITH> rhs=Expression6() { return astFactory.endsWith( pos( t ), lhs, rhs ); }
     | t=<CONTAINS> rhs=Expression6() { return astFactory.contains( pos( t ), lhs, rhs ); }
     | t=<IN> rhs=Expression6() { return astFactory.in( pos( t ), lhs, rhs ); }
+    | t=<IS> (
+        <NULL> { return astFactory.isNull( pos( t ), lhs ); }
+        | <NOT> (
+            <NULL> { return astFactory.isNotNull( pos( t ), lhs ); }
+            | ((<TYPED> | <COLONCOLON>) typeName = cypherTypeName() { return astFactory.isNotTyped( pos( t ), lhs, typeName ); })
+            | (normalForm = normalForm() <NORMALIZED> { return astFactory.isNotNormalized( pos( t ), lhs, normalForm ); })
+        )
+        | (<TYPED> | <COLONCOLON>) typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
+        |  normalForm = normalForm() <NORMALIZED>{ return astFactory.isNormalized( pos( t ), lhs, normalForm ); }
+
+    )
+    | t=<COLONCOLON> typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
+}
+
+EXPRESSION ComparisonExpression6CaseExpressions( EXPRESSION lhs ) throws Exception:
+{
+    Token t;
+    EXPRESSION rhs;
+    ParserCypherTypeName typeName;
+    ParserNormalForm normalForm;
+}
+{
+    LOOKAHEAD( 2 ) t=<REGEQ> rhs=Expression6() { return astFactory.regeq( pos( t ), lhs, rhs ); }
+    | t=<STARTS> <WITH> rhs=Expression6() { return astFactory.startsWith( pos( t ), lhs, rhs ); }
+    | t=<ENDS> <WITH> rhs=Expression6() { return astFactory.endsWith( pos( t ), lhs, rhs ); }
+    | t=<CONTAINS> rhs=Expression6() { return astFactory.contains( pos( t ), lhs, rhs ); }
     | t=<IS> (
         <NULL> { return astFactory.isNull( pos( t ), lhs ); }
         | <NOT> (
@@ -3698,6 +3740,72 @@ EXPRESSION Expression1() throws Exception:
 
 EXPRESSION CaseExpression() throws Exception:
 {
+    EXPRESSION e = null;
+}
+{
+    (
+        LOOKAHEAD( <CASE> Expression() <WHEN> ) e=SimpleCaseExpression()
+        | e=GeneralCaseExpression()
+    )
+    {
+        return e;
+    }
+}
+
+EXPRESSION SimpleCaseExpression() throws Exception:
+{
+    Token t;
+    EXPRESSION caseExpr;
+    EXPRESSION e;
+    List<EXPRESSION> tempWhen = new ArrayList<>();
+    List<EXPRESSION> when = new ArrayList<>();
+    List<EXPRESSION> then = new ArrayList<>();
+    EXPRESSION elseCase = null;
+}
+{
+    t=<CASE>  caseExpr=Expression()
+    <WHEN> tempWhen=simpleCaseWhenOperandList(caseExpr) { when.addAll( tempWhen ); }
+    <THEN> e=Expression() { for (var i = 0; i < tempWhen.size(); i++) { then.add( e ); } }
+    (
+        <WHEN> tempWhen=simpleCaseWhenOperandList(caseExpr) { when.addAll( tempWhen ); }
+        <THEN> e=Expression() { for (var i = 0; i < tempWhen.size(); i++) { then.add( e ); } }
+    )*
+    ( <ELSE> elseCase=Expression() )?
+    <END>
+    {
+        return astFactory.caseExpression( pos( t ), caseExpr, when, then, elseCase);
+    }
+}
+
+List<EXPRESSION> simpleCaseWhenOperandList( EXPRESSION caseExpr ) throws Exception:
+{
+    EXPRESSION e;
+    List<EXPRESSION> list = new ArrayList<>();
+}
+{
+    e=whenOperand( caseExpr ) { list.add( e ); }
+    ( LOOKAHEAD(2) <COMMA> e=whenOperand( caseExpr ) { list.add( e ); } )*
+    {
+        return list;
+    }
+}
+
+EXPRESSION whenOperand( EXPRESSION lhs ) throws Exception:
+{
+    Token t;
+    EXPRESSION e;
+}
+{
+    { t = token; }
+    (
+        e=ComparisonExpression6CaseExpressions( lhs ) { return e; }
+        | e=Expression8ComparatorExpression( lhs )  { return e; }
+        | e=Expression() { return astFactory.eq( pos( t ), lhs, e); }
+    )
+}
+
+EXPRESSION GeneralCaseExpression() throws Exception:
+{
     Token t;
     EXPRESSION caseExpr = null;
     EXPRESSION e;
@@ -3707,10 +3815,7 @@ EXPRESSION CaseExpression() throws Exception:
 }
 {
     t=<CASE>
-    (
-        LOOKAHEAD( Expression() <WHEN> ) caseExpr=Expression() <WHEN>
-        | <WHEN>
-    ) e=Expression() { when.add( e ); }
+    <WHEN> e=Expression() { when.add( e ); }
     <THEN> e=Expression() { then.add( e ); }
     (
         <WHEN> e=Expression() { when.add( e ); }

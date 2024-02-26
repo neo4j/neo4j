@@ -29,11 +29,11 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
 
-class GenericCaseTest extends CypherFunSuite {
+class CaseTest extends CypherFunSuite {
 
   test("case_with_single_alternative_works") {
     // GIVEN
-    val caseExpr = case_(
+    val caseExpr = genericCase(
       (1, 1) -> "one"
     )
 
@@ -46,7 +46,7 @@ class GenericCaseTest extends CypherFunSuite {
 
   test("case_with_two_alternatives_picks_the_second") {
     // GIVEN
-    val caseExpr = case_(
+    val caseExpr = genericCase(
       (1, 2) -> "one",
       (2, 2) -> "two"
     )
@@ -60,7 +60,7 @@ class GenericCaseTest extends CypherFunSuite {
 
   test("case_with_no_match_returns_null") {
     // GIVEN
-    val caseExpr = case_(
+    val caseExpr = genericCase(
       (1, 2) -> "one",
       (2, 3) -> "two"
     )
@@ -74,7 +74,7 @@ class GenericCaseTest extends CypherFunSuite {
 
   test("case_with_no_match_returns_default") {
     // GIVEN
-    val caseExpr = case_(
+    val caseExpr = genericCase(
       (1, 2) -> "one",
       (2, 3) -> "two"
     ) defaultsTo "other"
@@ -88,7 +88,7 @@ class GenericCaseTest extends CypherFunSuite {
 
   test("case_with_a_single_null_value_uses_the_default") {
     // GIVEN CASE WHEN null THEN 42 ELSE "defaults"
-    val caseExpr = GenericCase(IndexedSeq(CoercedPredicate(Null()) -> literal(42)), Some(literal("defaults")))
+    val caseExpr = CaseExpression(IndexedSeq(CoercedPredicate(Null()) -> literal(42)), Some(literal("defaults")))
 
     // WHEN
     val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
@@ -97,15 +97,83 @@ class GenericCaseTest extends CypherFunSuite {
     assert(result === stringValue("defaults"))
   }
 
-  private def case_(alternatives: ((Any, Any), Any)*): GenericCase = {
+  test("simple_case_with_single_alternative_works") {
+    // GIVEN
+    val caseExpr = simpleCase(1, 1 -> "one")
+
+    // WHEN
+    val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
+
+    // THEN
+    result should equal(stringValue("one"))
+  }
+
+  test("simple_case_with_two_alternatives_picks_the_second") {
+    // GIVEN
+    val caseExpr = simpleCase(2, 1 -> "one", 2 -> "two")
+
+    // WHEN
+    val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
+
+    // THEN
+    result should equal(stringValue("two"))
+  }
+
+  test("simple_case_with_no_match_returns_null") {
+    // GIVEN
+    val caseExpr = simpleCase(3, 1 -> "one", 2 -> "two")
+
+    // WHEN
+    val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
+
+    // THEN
+    result should equal(NO_VALUE)
+  }
+
+  test("simple_case_with_no_match_returns_default") {
+    // GIVEN
+    val caseExpr = simpleCase(3, 1 -> "one", 2 -> "two") defaultsTo "default"
+
+    // WHEN
+    val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
+
+    // THEN
+    result should equal(stringValue("default"))
+  }
+
+  test("simple_when_the_input_expression_is_null_return_the_else_case") {
+    // GIVEN
+    val caseExpr = simpleCase(null, 1 -> "one", 2 -> "two") defaultsTo "default"
+
+    // WHEN
+    val result = caseExpr(CypherRow.empty, QueryStateHelper.empty)
+
+    // THEN
+    assert(result == stringValue("default"))
+  }
+
+  test("simple case arguments should contain all children") {
+    val caseExpr = CaseExpression(IndexedSeq((Equals(literal(1), literal(2)), literal(3))), Some(literal(4)))
+    caseExpr.arguments should contain.allOf(Equals(literal(1), literal(2)), literal(3), literal(4))
+  }
+
+  private def simpleCase(in: Any, alternatives: (Any, Any)*): CaseExpression = {
+    val mappedAlt: IndexedSeq[(Predicate, Expression)] = alternatives.toIndexedSeq.map {
+      case (a, b) => (Equals(literal(in), literal(a)), literal(b))
+    }
+
+    CaseExpression(mappedAlt, None)
+  }
+
+  private def genericCase(alternatives: ((Any, Any), Any)*): CaseExpression = {
     val mappedAlt: IndexedSeq[(Predicate, Expression)] = alternatives.toIndexedSeq.map {
       case ((a, b), c) => (Equals(literal(a), literal(b)), literal(c))
     }
 
-    GenericCase(mappedAlt, None)
+    CaseExpression(mappedAlt, None)
   }
 
-  implicit class SimpleCasePimp(in: GenericCase) {
-    def defaultsTo(a: Any): GenericCase = GenericCase(in.alternatives, Some(literal(a)))
+  implicit class SimpleCasePimp(in: CaseExpression) {
+    def defaultsTo(a: Any): CaseExpression = CaseExpression(in.alternatives, Some(literal(a)))
   }
 }

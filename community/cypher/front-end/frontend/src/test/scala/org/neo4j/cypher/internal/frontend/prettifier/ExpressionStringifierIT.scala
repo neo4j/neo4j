@@ -63,9 +63,73 @@ class ExpressionStringifierIT extends CypherFunSuite {
       "n:A:B" -> "n:A:B",
       "not(true)" -> "NOT true",
       "case when 1 = n.prop then 1 when 2 = n.prop then 2 else 4 end" ->
-        "CASE WHEN 1 = n.prop THEN 1 WHEN 2 = n.prop THEN 2 ELSE 4 END",
+        """CASE
+          |  WHEN 1 = n.prop THEN 1
+          |  WHEN 2 = n.prop THEN 2
+          |  ELSE 4
+          |END""".stripMargin,
+      """
+        |CASE n.name
+        |    WHEN IS NULL THEN 1
+        |    WHEN IS NOT NORMALIZED THEN 2
+        |    WHEN IS NOT NFKD NORMALIZED THEN 3
+        |    WHEN IS TYPED BOOLEAN THEN 4
+        |    WHEN IS NOT TYPED STRING THEN 5
+        |    WHEN CONTAINS "B" THEN 6
+        |    WHEN STARTS WITH "A" THEN 7
+        |    WHEN ENDS WITH "k" THEN 8
+        |    WHEN =~ 'C.*t' THEN 9
+        |    WHEN IS NOT NULL THEN 10
+        |    WHEN IS NORMALIZED THEN 11
+        |    ELSE 13
+        |END
+        |""".stripMargin ->
+        """CASE n.name
+          |  WHEN IS NULL THEN 1
+          |  WHEN IS NOT NFC NORMALIZED THEN 2
+          |  WHEN IS NOT NFKD NORMALIZED THEN 3
+          |  WHEN IS :: BOOLEAN THEN 4
+          |  WHEN IS NOT :: STRING THEN 5
+          |  WHEN CONTAINS "B" THEN 6
+          |  WHEN STARTS WITH "A" THEN 7
+          |  WHEN ENDS WITH "k" THEN 8
+          |  WHEN =~ "C.*t" THEN 9
+          |  WHEN IS NOT NULL THEN 10
+          |  WHEN IS NFC NORMALIZED THEN 11
+          |  ELSE 13
+          |END""".stripMargin,
       "case n.prop when 1 then '1' when 2 then '2' else '4' end" ->
-        "CASE n.prop WHEN 1 THEN \"1\" WHEN 2 THEN \"2\" ELSE \"4\" END",
+        """CASE n.prop
+          |  WHEN 1 THEN "1"
+          |  WHEN 2 THEN "2"
+          |  ELSE "4"
+          |END""".stripMargin,
+      "case c.name wHen COntains \"mal\" THEN \"Sweden\" end" ->
+        """CASE c.name
+          |  WHEN CONTAINS "mal" THEN "Sweden"
+          |END""".stripMargin,
+      "case wHen true THEN \"yay\" end" ->
+        """CASE
+          |  WHEN true THEN "yay"
+          |END""".stripMargin,
+      "case wHen true THEN \"yay\"   else 1 end" ->
+        """CASE
+          |  WHEN true THEN "yay"
+          |  ELSE 1
+          |END""".stripMargin,
+      "case c.established wHen < 1500, 1633 THEN \"Old\" wheN > 2000 then \"New\" else \"Middle Aged\"  end" ->
+        """CASE c.established
+          |  WHEN < 1500 THEN "Old"
+          |  WHEN 1633 THEN "Old"
+          |  WHEN > 2000 THEN "New"
+          |  ELSE "Middle Aged"
+          |END""".stripMargin,
+      "case c.established wHen 1500 THEN \"Old\" wheN 2000 then \"New\" else \"Middle Aged\"  end" ->
+        """CASE c.established
+          |  WHEN 1500 THEN "Old"
+          |  WHEN 2000 THEN "New"
+          |  ELSE "Middle Aged"
+          |END""".stripMargin,
       "not(((1) = (2)) and ((3) = (4)))" -> "NOT (1 = 2 AND 3 = 4)",
       "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age)" ->
         "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age)",

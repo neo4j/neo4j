@@ -31,8 +31,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -40,28 +42,31 @@ import org.neo4j.cypher.internal.util.attribution.Id
 class CaseExpressionTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("simple_cases") {
+    val alt1: (Predicate, Expression) = (Equals(lit(1), lit(1)), lit("ONE"))
+    val alt2: (Predicate, Expression) = (Equals(lit(1), lit(2)), lit("TWO"))
+
     "CASE 1 WHEN 1 THEN 'ONE' END" should parse[CaseExpression](NotAntlr).withAstLike(convertsTo(
-      commands.expressions.SimpleCase(lit(1), Seq((lit(1), lit("ONE"))), None)
+      commands.expressions.CaseExpression(IndexedSeq(alt1), None)
     ))
 
     """CASE 1
          WHEN 1 THEN 'ONE'
          WHEN 2 THEN 'TWO'
        END""" should parse[CaseExpression](NotAntlr).withAstLike(convertsTo(
-      commands.expressions.SimpleCase(lit(1), Seq((lit(1), lit("ONE")), (lit(2), lit("TWO"))), None)
+      commands.expressions.CaseExpression(IndexedSeq(alt1, alt2), None)
     ))
 
     """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
          END""" should parse[CaseExpression](NotAntlr).withAstLike(convertsTo(
-      commands.expressions.SimpleCase(lit(1), Seq((lit(1), lit("ONE")), (lit(2), lit("TWO"))), None)
+      commands.expressions.CaseExpression(IndexedSeq(alt1, alt2), None)
     ))
     """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
          END""" should parse[CaseExpression](NotAntlr).withAstLike(convertsTo(
-      commands.expressions.SimpleCase(lit(1), Seq((lit(1), lit("ONE")), (lit(2), lit("TWO"))), None)
+      commands.expressions.CaseExpression(IndexedSeq(alt1, alt2), None)
     ))
 
     """CASE 1
@@ -69,13 +74,13 @@ class CaseExpressionTest extends AstParsingTestBase with LegacyAstParsingTestSup
            WHEN 2 THEN 'TWO'
                   ELSE 'DEFAULT'
          END""" should parse[CaseExpression](NotAntlr).withAstLike(convertsTo(
-      commands.expressions.SimpleCase(lit(1), Seq((lit(1), lit("ONE")), (lit(2), lit("TWO"))), Some(lit("DEFAULT")))
+      commands.expressions.CaseExpression(IndexedSeq(alt1, alt2), Some(lit("DEFAULT")))
     ))
   }
 
   test("generic_cases") {
     "CASE WHEN true THEN 'ONE' END" should parse[CaseExpression](NotAntlr).withAstLike(convertsTo(
-      commands.expressions.GenericCase(IndexedSeq((True(), lit("ONE"))), None)
+      commands.expressions.CaseExpression(IndexedSeq((True(), lit("ONE"))), None)
     ))
 
     val alt1 = (Equals(lit(1), lit(2)), lit("ONE"))
@@ -85,7 +90,7 @@ class CaseExpressionTest extends AstParsingTestBase with LegacyAstParsingTestSup
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
          END""" should parse[CaseExpression](NotAntlr).withAstLike(convertsTo(
-      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), None)
+      commands.expressions.CaseExpression(IndexedSeq(alt1, alt2), None)
     ))
 
     """CASE
@@ -93,7 +98,7 @@ class CaseExpressionTest extends AstParsingTestBase with LegacyAstParsingTestSup
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
          END""" should parse[CaseExpression](NotAntlr).withAstLike(convertsTo(
-      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(lit("OTHER")))
+      commands.expressions.CaseExpression(IndexedSeq(alt1, alt2), Some(lit("OTHER")))
     ))
   }
 

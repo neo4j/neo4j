@@ -33,11 +33,11 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
       expression = Some(literal("")),
       alternatives = IndexedSeq(
         (
-          literal(""),
+          equals(literal(""), literal("")),
           literal(1.0)
         ),
         (
-          literal(""),
+          equals(literal(""), literal("")),
           literal(1)
         )
       ),

@@ -265,7 +265,8 @@ case class Prettifier(
   useInCommands: Boolean = true
 ) {
 
-  private val NL = System.lineSeparator()
+  val NL: String = System.lineSeparator()
+  val BASE_INDENT: String = "  "
 
   private val base = IndentingQueryPrettifier()
 
@@ -1005,7 +1006,7 @@ case class Prettifier(
 
   case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {
     def indented(): IndentingQueryPrettifier = copy(indentLevel + 1)
-    val INDENT: String = "  " * indentLevel
+    val INDENT: String = BASE_INDENT * indentLevel
 
     private def asNewLine(l: String): String = NL + l
 

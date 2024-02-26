@@ -726,4 +726,16 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.FunctionArgumentContext
   ): Unit = {}
 
+  override def exitExpression8ComparatorExpression(ctx: CypherParser.Expression8ComparatorExpressionContext): Unit = {}
+
+  override def exitSimpleCaseExpression(ctx: CypherParser.SimpleCaseExpressionContext): Unit = {}
+
+  override def exitGeneralCaseExpression(ctx: CypherParser.GeneralCaseExpressionContext): Unit = {}
+
+  override def exitComparisonExpression6CaseExpression(ctx: CypherParser.ComparisonExpression6CaseExpressionContext)
+    : Unit = {}
+
+  override def exitSimpleCaseWhenOperandList(ctx: CypherParser.SimpleCaseWhenOperandListContext): Unit = {}
+
+  override def exitWhenOperand(ctx: CypherParser.WhenOperandContext): Unit = {}
 }

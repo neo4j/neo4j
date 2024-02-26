@@ -354,7 +354,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
           relationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b"))),
           single = true
         )(pos)),
-        caseExpression(Some(varFor("x")), Some(literalInt(2)), (trueLiteral, literalInt(1)))
+        caseExpression(Some(varFor("x")), Some(literalInt(2)), (equals(varFor("x"), trueLiteral), literalInt(1)))
       )
   }
 }

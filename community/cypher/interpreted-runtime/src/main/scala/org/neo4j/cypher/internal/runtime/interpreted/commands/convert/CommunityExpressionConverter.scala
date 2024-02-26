@@ -827,22 +827,11 @@ case class CommunityExpressionConverter(
       predicates.CachedIn(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs), id)
   }
 
-  private def caseExpression(id: Id, e: internal.expressions.CaseExpression, self: ExpressionConverters) =
-    e.expression match {
-      case Some(innerExpression) =>
-        val legacyAlternatives = e.alternatives
-          .map { a => (self.toCommandExpression(id, a._1), self.toCommandExpression(id, a._2)) }
-        commands.expressions
-          .SimpleCase(
-            self.toCommandExpression(id, innerExpression),
-            legacyAlternatives,
-            toCommandExpression(id, e.default, self)
-          )
-      case None =>
-        val predicateAlternatives = e.alternatives
-          .map { a => (self.toCommandPredicate(id, a._1), self.toCommandExpression(id, a._2)) }
-        commands.expressions.GenericCase(predicateAlternatives, toCommandExpression(id, e.default, self))
-    }
+  private def caseExpression(id: Id, e: internal.expressions.CaseExpression, self: ExpressionConverters) = {
+    val predicateAlternatives = e.alternatives
+      .map { a => (self.toCommandPredicate(id, a._1), self.toCommandExpression(id, a._2)) }
+    commands.expressions.CaseExpression(predicateAlternatives, toCommandExpression(id, e.default, self))
+  }
 
   private def hasALabelOrType(
     id: Id,

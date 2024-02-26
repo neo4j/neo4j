@@ -16,17 +16,28 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.IsNormalized
+import org.neo4j.cypher.internal.ast.IsNotNormalized
+import org.neo4j.cypher.internal.ast.IsNotTyped
+import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
+import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.NotEquals
+import org.neo4j.cypher.internal.expressions.RegexMatch
+import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
@@ -80,5 +91,27 @@ case object normalizeComparisons extends StepSequencer.Step with ASTRewriterFact
     case c @ HasTypes(expr, types) if types.size > 1 =>
       val hasTypes = types.map(t => HasTypes(expr.endoRewrite(copyVariables), Seq(t))(c.position))
       Ands(hasTypes)(c.position)
+    case c @ IsNull(lhs) =>
+      IsNull(lhs.endoRewrite(copyVariables))(c.position)
+    case c @ IsNotNull(lhs) =>
+      IsNotNull(lhs.endoRewrite(copyVariables))(c.position)
+    case c @ IsTyped(lhs, cypherType) =>
+      IsTyped(lhs.endoRewrite(copyVariables), cypherType)(c.position)
+    case c @ IsNotTyped(lhs, cypherType) =>
+      IsNotTyped(lhs.endoRewrite(copyVariables), cypherType)(c.position)
+    case c @ IsNormalized(lhs, normalForm) =>
+      IsNormalized(lhs.endoRewrite(copyVariables), normalForm)(c.position)
+    case c @ IsNotNormalized(lhs, normalForm) =>
+      IsNotNormalized(lhs.endoRewrite(copyVariables), normalForm)(c.position)
+    case c @ StartsWith(lhs, rhs) =>
+      StartsWith(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
+    case c @ EndsWith(lhs, rhs) =>
+      EndsWith(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
+    case c @ Contains(lhs, rhs) =>
+      Contains(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
+    case c @ In(lhs, rhs) =>
+      In(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
+    case c @ RegexMatch(lhs, rhs) =>
+      RegexMatch(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
   })
 }

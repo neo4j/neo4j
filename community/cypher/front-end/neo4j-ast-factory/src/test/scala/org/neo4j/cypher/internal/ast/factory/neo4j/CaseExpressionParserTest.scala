@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.NFCNormalForm
+import org.neo4j.cypher.internal.util.symbols.IntegerType
 
 class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -32,17 +34,168 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
     }
   }
 
+  test("CASE WHEN (e) THEN e END") {
+    yields {
+      CaseExpression(
+        None,
+        List(varFor("e") -> varFor("e")),
+        None
+      )
+    }
+  }
+
+  test("CASE WHEN e=1 THEN 4 WHEN e=2 THEN 6 ELSE 7 END") {
+    yields {
+      CaseExpression(
+        None,
+        List(equals(varFor("e"), literalInt(1)) -> literalInt(4), equals(varFor("e"), literalInt(2)) -> literalInt(6)),
+        Some(literalInt(7))
+      )
+    }
+  }
+
   test("CASE when(e) WHEN (e) THEN e ELSE null END") {
     yields {
       CaseExpression(
         Some(function("when", varFor("e"))),
-        List(varFor("e") -> varFor("e")),
+        List(equals(function("when", varFor("e")), varFor("e")) -> varFor("e")),
         Some(nullLiteral)
       )
     }
   }
 
+  test("CASE n.eyes WHEN \"blue\" THEN 1 WHEN \"brown\" THEN 2 ELSE 3 END") {
+    yields {
+      CaseExpression(
+        Some(prop("n", "eyes")),
+        List(
+          equals(prop("n", "eyes"), literalString("blue")) -> literalInt(1),
+          equals(prop("n", "eyes"), literalString("brown")) -> literalInt(2)
+        ),
+        Some(literalInt(3))
+      )
+    }
+  }
+
+  test("CASE n.eyes WHEN \"blue\" THEN 1 WHEN \"brown\" THEN 2 END") {
+    yields {
+      CaseExpression(
+        Some(prop("n", "eyes")),
+        List(
+          equals(prop("n", "eyes"), literalString("blue")) -> literalInt(1),
+          equals(prop("n", "eyes"), literalString("brown")) -> literalInt(2)
+        ),
+        None
+      )
+    }
+  }
+
+  test("CASE n.eyes WHEN \"blue\", \"green\", \"brown\" THEN 1 WHEN \"red\" THEN 2 END") {
+    yields {
+      CaseExpression(
+        Some(prop("n", "eyes")),
+        List(
+          equals(prop("n", "eyes"), literalString("blue")) -> literalInt(1),
+          equals(prop("n", "eyes"), literalString("green")) -> literalInt(1),
+          equals(prop("n", "eyes"), literalString("brown")) -> literalInt(1),
+          equals(prop("n", "eyes"), literalString("red")) -> literalInt(2)
+        ),
+        None
+      )
+    }
+  }
+
+  test(
+    """
+      |CASE n.eyes
+      | WHEN IS NULL THEN 1
+      | WHEN IS TYPED INTEGER THEN 2
+      | WHEN IS NORMALIZED THEN 3
+      | ELSE 4
+      |END""".stripMargin
+  ) {
+    yields {
+      CaseExpression(
+        Some(prop("n", "eyes")),
+        List(
+          isNull(prop("n", "eyes")) -> literalInt(1),
+          isTyped(prop("n", "eyes"), IntegerType(isNullable = true)(pos)) -> literalInt(2),
+          isNormalized(prop("n", "eyes"), NFCNormalForm) -> literalInt(3)
+        ),
+        Some(literalInt(4))
+      )
+    }
+  }
+
+  test(
+    """
+      |CASE n.eyes
+      | WHEN > 2, = 1, 5 THEN 1
+      | WHEN CONTAINS "blue" THEN 2
+      | WHEN STARTS WITH "gre", ENDS WITH "en" THEN 3
+      | ELSE 4
+      |END""".stripMargin
+  ) {
+    yields {
+      CaseExpression(
+        Some(prop("n", "eyes")),
+        List(
+          greaterThan(prop("n", "eyes"), literalInt(2)) -> literalInt(1),
+          equals(prop("n", "eyes"), literalInt(1)) -> literalInt(1),
+          equals(prop("n", "eyes"), literalInt(5)) -> literalInt(1),
+          contains(prop("n", "eyes"), literalString("blue")) -> literalInt(2),
+          startsWith(prop("n", "eyes"), literalString("gre")) -> literalInt(3),
+          endsWith(prop("n", "eyes"), literalString("en")) -> literalInt(3)
+        ),
+        Some(literalInt(4))
+      )
+    }
+  }
+
+  test(
+    """
+      |CASE n.eyes
+      | WHEN n.eyes > 2 THEN 1
+      | ELSE 4
+      |END""".stripMargin
+  ) {
+    yields {
+      CaseExpression(
+        Some(prop("n", "eyes")),
+        List(
+          equals(prop("n", "eyes"), greaterThan(prop("n", "eyes"), literalInt(2))) -> literalInt(1)
+        ),
+        Some(literalInt(4))
+      )
+    }
+  }
+
+  test(
+    """CASE n.eyes
+      | WHEN in[0] THEN 1
+      | ELSE 4
+      |END""".stripMargin
+  ) {
+    yields {
+      CaseExpression(
+        Some(prop("n", "eyes")),
+        List(
+          equals(prop("n", "eyes"), containerIndex(varFor("in"), literalInt(0))) -> literalInt(1)
+        ),
+        Some(literalInt(4))
+      )
+    }
+  }
+
   test("CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
+    failsToParse[CaseExpression]
+  }
+
+  test("CASE WHEN true, false THEN v2 ELSE null END") {
+    failsToParse[CaseExpression]
+  }
+
+  test("CASE n WHEN true, false, THEN 1 ELSE null END") {
     failsToParse[CaseExpression]
   }
 }

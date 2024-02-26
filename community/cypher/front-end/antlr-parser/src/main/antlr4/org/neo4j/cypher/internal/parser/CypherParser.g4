@@ -299,6 +299,9 @@ expression9:
 expression8:
    expression7 ((EQ | INVALID_NEQ | NEQ | LE | GE | LT | GT) expression7)*;
 
+expression8ComparatorExpression:
+   (EQ | NEQ | INVALID_NEQ | LE | GE | LT | GT) expression7;
+
 expression7:
    expression6 comparisonExpression6?;
 
@@ -307,6 +310,13 @@ comparisonExpression6
    | IS NOT? NULL                                                  #NullComparison
    | (IS NOT? (TYPED | COLONCOLON) | COLONCOLON) type              #TypeComparison
    | IS NOT? normalForm? NORMALIZED                                #NormalFormComparison
+   ;
+
+comparisonExpression6CaseExpression
+   : (REGEQ | STARTS WITH | ENDS WITH | CONTAINS) expression6
+   | IS NOT? NULL
+   | (IS NOT? (TYPED | COLONCOLON) | COLONCOLON) type
+   | IS NOT? normalForm? NORMALIZED
    ;
 
 normalForm:
@@ -351,7 +361,19 @@ literal:
    | NULL             #KeywordLiteral;
 
 caseExpression:
-   CASE (expression WHEN | WHEN) expression THEN expression (WHEN expression THEN expression)* (ELSE expression)? END;
+   (simpleCaseExpression | generalCaseExpression);
+
+simpleCaseExpression:
+   CASE expression (WHEN simpleCaseWhenOperandList THEN expression)+ (ELSE expression)? END;
+
+simpleCaseWhenOperandList:
+   whenOperand (COMMA whenOperand)*;
+
+whenOperand:
+   (comparisonExpression6CaseExpression | expression8ComparatorExpression | expression);
+
+generalCaseExpression:
+   CASE (WHEN expression THEN expression)+ (ELSE expression)? END;
 
 listComprehension:
    LBRACKET variable IN expression listComprehensionWhereAndBar;

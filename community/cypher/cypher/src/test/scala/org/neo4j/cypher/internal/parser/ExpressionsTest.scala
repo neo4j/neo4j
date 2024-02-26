@@ -43,7 +43,7 @@ class ExpressionsTest extends AstParsingTestBase {
   test("simple_cases") {
     assertCommand(
       "CASE 1 WHEN 1 THEN 'ONE' END",
-      commands.expressions.SimpleCase(lit(1), Seq((lit(1), lit("ONE"))), None)
+      commands.expressions.CaseExpression(IndexedSeq((Equals(lit(1), lit(1)), lit("ONE"))), None)
     )
 
     assertCommand(
@@ -51,7 +51,13 @@ class ExpressionsTest extends AstParsingTestBase {
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
          END""",
-      commands.expressions.SimpleCase(lit(1), Seq((lit(1), lit("ONE")), (lit(2), lit("TWO"))), None)
+      commands.expressions.CaseExpression(
+        IndexedSeq(
+          (Equals(lit(1), lit(1)), lit("ONE")),
+          (Equals(lit(1), lit(2)), lit("TWO"))
+        ),
+        None
+      )
     )
     assertCommand(
       """CASE 1
@@ -59,9 +65,11 @@ class ExpressionsTest extends AstParsingTestBase {
            WHEN 2 THEN 'TWO'
                   ELSE 'DEFAULT'
          END""",
-      commands.expressions.SimpleCase(
-        lit(1),
-        Seq((lit(1), lit("ONE")), (lit(2), lit("TWO"))),
+      commands.expressions.CaseExpression(
+        IndexedSeq(
+          (Equals(lit(1), lit(1)), lit("ONE")),
+          (Equals(lit(1), lit(2)), lit("TWO"))
+        ),
         Some(lit("DEFAULT"))
       )
     )
@@ -70,7 +78,7 @@ class ExpressionsTest extends AstParsingTestBase {
   test("generic_cases") {
     assertCommand(
       "CASE WHEN true THEN 'ONE' END",
-      commands.expressions.GenericCase(IndexedSeq((True(), lit("ONE"))), None)
+      commands.expressions.CaseExpression(IndexedSeq((True(), lit("ONE"))), None)
     )
 
     val alt1 = (Equals(lit(1), lit(2)), lit("ONE"))
@@ -81,7 +89,7 @@ class ExpressionsTest extends AstParsingTestBase {
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
          END""",
-      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), None)
+      commands.expressions.CaseExpression(IndexedSeq(alt1, alt2), None)
     )
     assertCommand(
       """CASE
@@ -89,7 +97,7 @@ class ExpressionsTest extends AstParsingTestBase {
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
          END""",
-      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(lit("OTHER")))
+      commands.expressions.CaseExpression(IndexedSeq(alt1, alt2), Some(lit("OTHER")))
     )
   }
 

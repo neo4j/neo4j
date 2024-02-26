@@ -896,11 +896,19 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     )
   } yield exp
 
-  def _case: Gen[CaseExpression] = for {
-    expression <- option(_expression)
+  def _case: Gen[CaseExpression] = oneOf(_simpleCase, _generalCase)
+
+  def _simpleCase: Gen[CaseExpression] = for {
+    expression <- _expression
+    caseOperand <- option(expression)
+    alternatives <- oneOrMore(tuple(Equals(expression, expression)(pos), _expression))
+    default <- option(_expression)
+  } yield CaseExpression(caseOperand, alternatives, default)(pos)
+
+  def _generalCase: Gen[CaseExpression] = for {
     alternatives <- oneOrMore(tuple(_expression, _expression))
     default <- option(_expression)
-  } yield CaseExpression(expression, alternatives, default)(pos)
+  } yield CaseExpression(None, alternatives, default)(pos)
 
   // Functions
   // ----------------------------------

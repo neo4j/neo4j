@@ -318,9 +318,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         // We don't cache all properties in case expressions to avoid the risk of reading properties that are not used.
         // Potential optimisation: Figure out properties that are shared between all case branches and cache them.
         case caseExp: CaseExpression => acc =>
-            val mainExpr = caseExp.expression
             val whenExprs = caseExp.alternatives.map { case (when, _) => when }
-            val accWithCase = (mainExpr ++ whenExprs).foldLeft(acc) {
+            val accWithCase = whenExprs.foldLeft(acc) {
               case (acc, expr) => findPropertiesInPlan(acc, logicalPlan, Some(expr))
             }
             SkipChildren(accWithCase)

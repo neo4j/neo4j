@@ -354,9 +354,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         SemanticExpressionCheck.check(ctx, x.expression) chain
           check(ctx, x.alternatives.flatMap { a => Seq(a._1, a._2) }) chain
           check(ctx, x.default) chain
-          when(x.expression.isEmpty) {
-            expectType(CTBoolean.covariant, x.alternatives.map(_._1))
-          } chain
+          expectType(CTBoolean.covariant, x.alternatives.map(_._1)) chain
           specifyType(possibleTypes, x)
 
       case x: AndedPropertyInequalities =>

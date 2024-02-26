@@ -423,3 +423,169 @@ Feature: CaseExpression
       | null  |
       | null  |
     And no side effects
+
+  Scenario: Simple case with comma separated where lists
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({salary : 1000}),
+            ({salary : 1500}),
+            ({salary : 2000}),
+            ({salary : 2500}),
+            ({salary : 3000}),
+            ({salary : 3500})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      RETURN
+      CASE n.salary
+          WHEN 1000, 1500 THEN 'low'
+          WHEN 2000, 2500 THEN 'med'
+          WHEN 3000, 3500 THEN 'high'
+      END AS res
+      """
+    Then the result should be, in any order:
+      | res    |
+      | 'low'  |
+      | 'low'  |
+      | 'med'  |
+      | 'med'  |
+      | 'high' |
+      | 'high' |
+    And no side effects
+
+  Scenario: Simple case with comma separated where lists and default
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({salary : 1000}),
+            ({salary : 1500}),
+            ({salary : 2000}),
+            ({salary : 2500}),
+            ({salary : 3000}),
+            ({salary : 3500})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      RETURN
+      CASE n.salary
+          WHEN 1000, 1500 THEN 'low'
+          WHEN 2000, 2500 THEN 'med'
+          ELSE 'high'
+      END AS res
+      """
+    Then the result should be, in any order:
+      | res    |
+      | 'low'  |
+      | 'low'  |
+      | 'med'  |
+      | 'med'  |
+      | 'high' |
+      | 'high' |
+    And no side effects
+
+  Scenario: Simple case with comma separated where lists and more complicated expressions
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({salary : 1000}),
+            ({salary : 1500}),
+            ({salary : 2000}),
+            ({salary : 2500}),
+            ({salary : 3000}),
+            ({salary : 3500})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      RETURN
+      CASE n.salary
+          WHEN 1000 + 500, id(n) * 0 + 1000 THEN 'low'
+          WHEN 1000 * 2, 5000 - 2500 THEN 'med'
+          ELSE 'high'
+      END AS res
+      """
+    Then the result should be, in any order:
+      | res    |
+      | 'low'  |
+      | 'low'  |
+      | 'med'  |
+      | 'med'  |
+      | 'high' |
+      | 'high' |
+    And no side effects
+
+  Scenario: Simple case with comparison operators
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (),
+            ({salary : 1000}),
+            ({salary : 1500}),
+            ({salary : 2000}),
+            ({salary : 2500}),
+            ({salary : 3000}),
+            ({salary : 3500})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      RETURN
+      CASE n.salary
+          WHEN < 1500, IS NULL THEN 'low'
+          WHEN <= 2500 THEN 'med'
+          ELSE 'high'
+      END AS res
+      """
+    Then the result should be, in any order:
+      | res    |
+      | 'low'  |
+      | 'low'  |
+      | 'med'  |
+      | 'med'  |
+      | 'med'  |
+      | 'high' |
+      | 'high' |
+    And no side effects
+
+  Scenario: Simple case with all comparison operators
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({name : "Alice"}),
+            ({name : "Bob"}),
+            ({name : "Cat"}),
+            ({name : "Dave"}),
+            ({name : "Erik"}),
+            ({name : "Fred"})
+      """
+    When executing query:
+      """
+      MATCH (n)
+      RETURN
+      CASE n.name
+          WHEN IS NULL THEN 1
+          WHEN IS NOT NORMALIZED THEN 2
+          WHEN IS NOT NFKD NORMALIZED THEN 3
+          WHEN IS TYPED BOOLEAN THEN 4
+          WHEN IS NOT TYPED STRING THEN 5
+          WHEN CONTAINS "B" THEN 6
+          WHEN STARTS WITH "A" THEN 7
+          WHEN ENDS WITH "k" THEN 8
+          WHEN =~ 'C.*t' THEN 9
+          WHEN IS NOT NULL THEN 10
+          WHEN IS NORMALIZED THEN 11
+          ELSE 13
+      END AS res
+      """
+    Then the result should be, in any order:
+      | res |
+      | 6   |
+      | 7   |
+      | 8   |
+      | 9   |
+      | 10  |
+      | 10  |
+    And no side effects
