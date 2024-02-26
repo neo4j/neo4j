@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL
@@ -86,7 +85,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       log,
       cacheFactory,
       CypherPlannerOption.default,
-      CypherUpdateStrategy.default,
       () => 1,
       compatibilityMode = Compatibility4_4)
     createCompiler(planner, log)
@@ -436,7 +434,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should clear all compiler library caches") {
     val compilerLibrary = createCompilerLibrary()
     val compilers = CypherVersion.values.map { version =>
-      compilerLibrary.selectCompiler(version, CypherPlannerOption.default, CypherRuntimeOption.default, CypherUpdateStrategy.default)
+      compilerLibrary.selectCompiler(version, CypherPlannerOption.default, CypherRuntimeOption.default)
     }
 
     compilers.foreach { compiler =>

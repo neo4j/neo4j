@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
 
@@ -40,10 +39,10 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
 
   def selectCompiler(cypherVersion: CypherVersion,
                      cypherPlanner: CypherPlannerOption,
-                     cypherRuntime: CypherRuntimeOption,
-                     cypherUpdateStrategy: CypherUpdateStrategy): Compiler = {
-    val key = CompilerKey(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy)
-    compilers.computeIfAbsent(key, ignore => factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy, executionEngineProvider))
+                     cypherRuntime: CypherRuntimeOption
+                     ): Compiler = {
+    val key = CompilerKey(cypherVersion, cypherPlanner, cypherRuntime)
+    compilers.computeIfAbsent(key, _ => factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime,  executionEngineProvider))
   }
 
   def clearCaches(): Long = {
@@ -66,6 +65,6 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
 
   case class CompilerKey(cypherVersion: CypherVersion,
                          cypherPlanner: CypherPlannerOption,
-                         cypherRuntime: CypherRuntimeOption,
-                         cypherUpdateStrategy: CypherUpdateStrategy)
+                         cypherRuntime: CypherRuntimeOption
+                         )
 }

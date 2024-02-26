@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_4
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherUpdateStrategy
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planning.CypherPlanner
+import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.logging.Log
@@ -53,7 +52,6 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
   override def createCompiler(cypherVersion: CypherVersion,
                               cypherPlanner: CypherPlannerOption,
                               cypherRuntime: CypherRuntimeOption,
-                              cypherUpdateStrategy: CypherUpdateStrategy,
                               executionEngineProvider: () => ExecutionEngine): Compiler = {
 
     val compatibilityMode = cypherVersion match {
@@ -70,7 +68,6 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
         log,
         cacheFactory,
         cypherPlanner,
-        cypherUpdateStrategy,
         LastCommittedTxIdProvider(graph),
         compatibilityMode)
 

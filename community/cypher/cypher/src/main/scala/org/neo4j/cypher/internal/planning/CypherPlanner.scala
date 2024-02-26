@@ -173,7 +173,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                          log: Log,
                          cacheFactory: CaffeineCacheFactory,
                          plannerOption: CypherPlannerOption,
-                         updateStrategy: CypherUpdateStrategy,
                          lastCommittedTxIdProvider: () => Long,
                          compatibilityMode: CypherCompatibilityVersion
     ) {
@@ -194,11 +193,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       log)
 
   monitors.addMonitorListener(planCache.logStalePlanRemovalMonitor(log), "cypher")
-
-  private val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
-    case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
-    case _ => None
-  }
 
   private val planner: compiler.CypherPlanner[PlannerContext] =
     new CypherPlannerFactory().costBasedCompiler(config, clock, monitors)
@@ -314,6 +308,10 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       case CypherRuntimeOption.pipelined => BatchedSingleThreaded(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
       case CypherRuntimeOption.parallel if !containsUpdates => BatchedParallel(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
       case _ => Volcano
+    }
+    val maybeUpdateStrategy: Option[UpdateStrategy] = options.queryOptions.updateStrategy match {
+      case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
+      case _                          => None
     }
 
     // Context used to create logical plans
