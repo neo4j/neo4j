@@ -60,15 +60,15 @@ public abstract class AbstractDatabaseContextFactory<CONTEXT, OPTIONS>
                 new CreatingTokenHolder(createRelationshipTypeCreator(kernelSupplier), TYPE_RELATIONSHIP_TYPE));
     }
 
-    private static TokenCreator createRelationshipTypeCreator(Supplier<Kernel> kernelSupplier) {
+    protected static TokenCreator createRelationshipTypeCreator(Supplier<Kernel> kernelSupplier) {
         return new DefaultRelationshipTypeCreator(kernelSupplier);
     }
 
-    private static TokenCreator createPropertyKeyCreator(Supplier<Kernel> kernelSupplier) {
+    protected static TokenCreator createPropertyKeyCreator(Supplier<Kernel> kernelSupplier) {
         return new DefaultPropertyTokenCreator(kernelSupplier);
     }
 
-    private static TokenCreator createLabelIdCreator(Supplier<Kernel> kernelSupplier) {
+    protected static TokenCreator createLabelIdCreator(Supplier<Kernel> kernelSupplier) {
         return new DefaultLabelIdCreator(kernelSupplier);
     }
 
