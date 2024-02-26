@@ -693,7 +693,7 @@ case class Match(
       try {
         patternStringifier(pattern)
       } catch {
-        case _: StackOverflowError => ""
+        case _: StackOverflowError => "<StackOverflowError>"
       }
     val cc = connectedComponents(pattern.patternParts)
     // if we have multiple connected components we will have
