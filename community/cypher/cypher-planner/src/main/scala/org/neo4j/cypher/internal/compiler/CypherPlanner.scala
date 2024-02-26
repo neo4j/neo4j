@@ -54,7 +54,6 @@ case class CypherPlanner[Context <: PlannerContext](
   monitors: Monitors,
   metricsFactory: MetricsFactory,
   config: CypherPlannerConfiguration,
-  updateStrategy: UpdateStrategy,
   clock: Clock
 ) {
 

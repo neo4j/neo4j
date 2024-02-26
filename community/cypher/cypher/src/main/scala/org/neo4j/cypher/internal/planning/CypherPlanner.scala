@@ -200,7 +200,7 @@ case class CypherPlanner(
   }
 
   private val planner: compiler.CypherPlanner[PlannerContext] =
-    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, maybeUpdateStrategy)
+    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors)
 
   private val schemaStateKey: SchemaStateKey = SchemaStateKey.newKey()
 
