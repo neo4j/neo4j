@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.security;
 
 import static org.neo4j.internal.helpers.Strings.escape;
 
+import java.util.regex.Pattern;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.log4j.Neo4jMapMessage;
@@ -118,6 +119,7 @@ public abstract class AbstractSecurityLog {
         private final String executingUser;
         private final String message;
         private final String authenticatedUser;
+        private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\R+");
 
         SecurityLogLine(String message) {
             this(null, null, null, message, null);
@@ -133,7 +135,7 @@ public abstract class AbstractSecurityLog {
             String sourceString = connectionInfo != null ? connectionInfo.asConnectionDetails() : "";
             this.executingUser = executingUser;
             // clean message of newlines
-            this.message = message.replaceAll("\\R+", " ");
+            this.message = NEWLINE_PATTERN.matcher(message).replaceAll(" ");
             this.authenticatedUser = authenticatedUser;
 
             with("type", "security");
