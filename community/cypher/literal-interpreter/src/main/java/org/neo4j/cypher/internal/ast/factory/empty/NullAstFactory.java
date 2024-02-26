@@ -81,6 +81,7 @@ public class NullAstFactory
                 NULL, // PRIVILEGE_RESOURCE,
                 NULL, // PRIVILEGE_QUALIFIER,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
@@ -840,12 +841,18 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL subqueryInTransactionsParams(NULL p, NULL batchParams, NULL errorParams, NULL reportParams) {
+    public NULL subqueryInTransactionsParams(
+            NULL p, NULL batchParams, NULL concurrencyParams, NULL errorParams, NULL reportParams) {
         return null;
     }
 
     @Override
     public NULL subqueryInTransactionsBatchParameters(NULL p, NULL batchSize) {
+        return null;
+    }
+
+    @Override
+    public NULL subqueryInTransactionsConcurrencyParameters(NULL p, NULL concurrency) {
         return null;
     }
 

@@ -302,6 +302,7 @@ import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
@@ -1495,10 +1496,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _inTransactionsParameters: Gen[InTransactionsParameters] =
     for {
       batchSize <- option(_expression)
+      concurrency <- option(option(_expression))
       onErrorBehaviour <- option(oneOf[InTransactionsOnErrorBehaviour](OnErrorContinue, OnErrorBreak, OnErrorFail))
       reportAs <- option(string)
     } yield InTransactionsParameters(
       batchSize.map(InTransactionsBatchParameters(_)(pos)),
+      concurrency.map(InTransactionsConcurrencyParameters(_)(pos)),
       onErrorBehaviour.map(InTransactionsErrorParameters(_)(pos)),
       reportAs.map(v => InTransactionsReportParameters(Variable(s"`$v`")(pos))(pos))
     )(pos)

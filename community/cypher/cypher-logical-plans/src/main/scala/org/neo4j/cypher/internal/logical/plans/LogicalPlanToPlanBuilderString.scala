@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.apache.commons.text.StringEscapeUtils
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -1372,14 +1373,10 @@ object LogicalPlanToPlanBuilderString {
           fieldTerminatorStr
         ).mkString(", ")
       case Eager(_, reasons) => reasons.map(eagernessReasonStr).mkString("ListSet(", ", ", ")")
-      case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
-        val params =
-          Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.map(_.name)
-        params.mkString(", ")
-      case TransactionApply(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
-        val params =
-          Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.map(_.name)
-        params.mkString(", ")
+      case TransactionForeach(_, _, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
+        callInTxParams(batchSize, concurrency, onErrorBehaviour, maybeReportAs)
+      case TransactionApply(_, _, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
+        callInTxParams(batchSize, concurrency, onErrorBehaviour, maybeReportAs)
       case RunQueryAt(_, query, graphReference, parameters, columns) =>
         val escapedQuery = StringEscapeUtils.escapeJava(query)
         val parametersString =
@@ -1978,6 +1975,24 @@ object LogicalPlanToPlanBuilderString {
 
   private def indexTypeToNamedArgumentString(indexType: IndexType): String = {
     s", indexType = ${indexType.getDeclaringClass.getSimpleName}.${indexType.name}"
+  }
+
+  private def callInTxParams(
+    batchSize: Expression,
+    concurrency: TransactionConcurrency,
+    onErrorBehaviour: InTransactionsOnErrorBehaviour,
+    maybeReportAs: Option[LogicalVariable]
+  ): String = {
+    val params =
+      Seq(
+        expressionStringifier(batchSize),
+        concurrency match {
+          case TransactionConcurrency.Concurrent(Some(concurrency)) => s"Concurrent(Some($concurrency))"
+          case c                                                    => c.toString
+        },
+        onErrorBehaviour.toString
+      ) ++ maybeReportAs.map(_.name)
+    params.mkString(", ")
   }
 }
 

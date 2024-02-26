@@ -242,6 +242,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
@@ -910,6 +911,14 @@ case class LogicalPlanProducer(
     }
   }
 
+  private def computeConcurrency(maybeConcurrency: Option[Option[Expression]]): TransactionConcurrency = {
+    maybeConcurrency match {
+      case Some(Some(concurrency)) => TransactionConcurrency.Concurrent(Some(concurrency))
+      case Some(None)              => TransactionConcurrency.Concurrent(None)
+      case None                    => TransactionConcurrency.Serial
+    }
+  }
+
   private def computeErrorBehaviour(maybeErrorParams: Option[InTransactionsErrorParameters])
     : InTransactionsOnErrorBehaviour = {
     maybeErrorParams.map(_.behaviour).getOrElse(TransactionForeach.defaultOnErrorBehaviour)
@@ -987,11 +996,12 @@ case class LogicalPlanProducer(
     val plan =
       if (yielding) {
         inTransactionsParameters match {
-          case Some(InTransactionsParameters(batchParams, errorParams, reportParams)) =>
+          case Some(InTransactionsParameters(batchParams, concurrencyParams, errorParams, reportParams)) =>
             TransactionApply(
               left,
               right,
               computeBatchSize(batchParams.map(_.batchSize)),
+              computeConcurrency(concurrencyParams.map(_.concurrency)),
               computeErrorBehaviour(errorParams),
               computeMaybeReportAs(reportParams)
             )
@@ -1004,11 +1014,12 @@ case class LogicalPlanProducer(
         }
       } else {
         inTransactionsParameters match {
-          case Some(InTransactionsParameters(batchParams, errorParams, reportParams)) =>
+          case Some(InTransactionsParameters(batchParams, concurrencyParams, errorParams, reportParams)) =>
             TransactionForeach(
               left,
               right,
               computeBatchSize(batchParams.map(_.batchSize)),
+              computeConcurrency(concurrencyParams.map(_.concurrency)),
               computeErrorBehaviour(errorParams),
               computeMaybeReportAs(reportParams)
             )

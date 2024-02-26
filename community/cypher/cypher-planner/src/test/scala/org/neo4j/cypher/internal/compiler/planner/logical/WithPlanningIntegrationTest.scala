@@ -562,7 +562,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
         .projection("n.name AS `n.name`")
         .sort("`n.age` ASC")
         .projection("n.age AS `n.age`")
-        .transactionApply(1000, OnErrorFail)
+        .transactionApply(1000, onErrorBehaviour = OnErrorFail)
         .|.create(createNodeWithProperties("n", Seq(), "{name: row.name, age: toInteger(row.age)}"))
         .|.argument("row")
         .loadCSV("$param", "row", HasHeaders, None)

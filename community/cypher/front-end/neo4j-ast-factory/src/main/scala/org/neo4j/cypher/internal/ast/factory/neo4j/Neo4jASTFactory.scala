@@ -586,6 +586,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       PrivilegeQualifier,
       SubqueryCall.InTransactionsParameters,
       SubqueryCall.InTransactionsBatchParameters,
+      SubqueryCall.InTransactionsConcurrencyParameters,
       SubqueryCall.InTransactionsErrorParameters,
       SubqueryCall.InTransactionsReportParameters,
       InputPosition,
@@ -863,11 +864,13 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def subqueryInTransactionsParams(
     p: InputPosition,
     batchParams: SubqueryCall.InTransactionsBatchParameters,
+    concurrencyParams: SubqueryCall.InTransactionsConcurrencyParameters,
     errorParams: SubqueryCall.InTransactionsErrorParameters,
     reportParams: SubqueryCall.InTransactionsReportParameters
   ): SubqueryCall.InTransactionsParameters =
     SubqueryCall.InTransactionsParameters(
       Option(batchParams),
+      Option(concurrencyParams),
       Option(errorParams),
       Option(reportParams)
     )(p)
@@ -877,6 +880,15 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     batchSize: Expression
   ): SubqueryCall.InTransactionsBatchParameters =
     SubqueryCall.InTransactionsBatchParameters(batchSize)(p)
+
+  override def subqueryInTransactionsConcurrencyParameters(
+    p: InputPosition,
+    concurrency: Expression
+  ): SubqueryCall.InTransactionsConcurrencyParameters =
+    concurrency match {
+      case null => SubqueryCall.InTransactionsConcurrencyParameters(None)(p)
+      case _    => SubqueryCall.InTransactionsConcurrencyParameters(Some(concurrency))(p)
+    }
 
   override def subqueryInTransactionsErrorParameters(
     p: InputPosition,

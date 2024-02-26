@@ -52,6 +52,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMAND;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMANDS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMIT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMPOSITE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONCURRENT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONTAINS;
@@ -314,6 +315,7 @@ public class IdentifierTokens {
             COMMANDS,
             COMMIT,
             COMPOSITE,
+            CONCURRENT,
             CONSTRAINT,
             CONSTRAINTS,
             CONTAINS,

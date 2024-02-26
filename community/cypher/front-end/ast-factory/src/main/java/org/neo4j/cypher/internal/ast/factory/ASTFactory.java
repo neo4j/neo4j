@@ -74,6 +74,7 @@ public interface ASTFactory<
                 PRIVILEGE_QUALIFIER,
                 SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                 SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
                 SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
                 SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                 POS,
@@ -303,10 +304,14 @@ public interface ASTFactory<
     SUBQUERY_IN_TRANSACTIONS_PARAMETERS subqueryInTransactionsParams(
             POS p,
             SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS batchParams,
+            SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS concurrencyParams,
             SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS errorParams,
             SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS reportParams);
 
     SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS subqueryInTransactionsBatchParameters(POS p, EXPRESSION batchSize);
+
+    SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS subqueryInTransactionsConcurrencyParameters(
+            POS p, EXPRESSION concurrency);
 
     SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS subqueryInTransactionsErrorParameters(
             POS p, CallInTxsOnErrorBehaviourType onErrorBehaviour);

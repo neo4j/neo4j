@@ -262,6 +262,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
@@ -2588,9 +2589,15 @@ case class LogicalPlan2PlanDescription(
 
   private def callInTxsDetails(
     batchSize: Expression,
+    concurrency: TransactionConcurrency,
     onErrorBehaviour: InTransactionsOnErrorBehaviour,
     maybeReportAs: Option[LogicalVariable]
   ) = {
+    val concurrencyParams = concurrency match {
+      case TransactionConcurrency.Concurrent(None)              => "CONCURRENT "
+      case TransactionConcurrency.Concurrent(Some(concurrency)) => s"${asPrettyString(concurrency)} CONCURRENT "
+      case _                                                    => ""
+    }
     val errorParams = onErrorBehaviour match {
       case OnErrorContinue => " ON ERROR CONTINUE"
       case OnErrorBreak    => " ON ERROR BREAK"
@@ -2599,7 +2606,9 @@ case class LogicalPlan2PlanDescription(
     val reportParams = maybeReportAs.fold("")(status => s" REPORT STATUS AS ${status.name}")
 
     Details(
-      pretty"IN TRANSACTIONS OF ${asPrettyString(batchSize)} ROWS${asPrettyString.raw(errorParams)}${asPrettyString.raw(reportParams)}"
+      pretty"IN ${asPrettyString.raw(concurrencyParams)}TRANSACTIONS OF ${asPrettyString(
+          batchSize
+        )} ROWS${asPrettyString.raw(errorParams)}${asPrettyString.raw(reportParams)}"
     )
   }
 
@@ -2806,8 +2815,8 @@ case class LogicalPlan2PlanDescription(
       case _: SemiApply =>
         PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables, withRawCardinalities, withDistinctness)
 
-      case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
-        val details = callInTxsDetails(batchSize, onErrorBehaviour, maybeReportAs)
+      case TransactionForeach(_, _, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
+        val details = callInTxsDetails(batchSize, concurrency, onErrorBehaviour, maybeReportAs)
         PlanDescriptionImpl(
           id,
           "TransactionForeach",
@@ -2818,8 +2827,8 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case TransactionApply(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
-        val details = callInTxsDetails(batchSize, onErrorBehaviour, maybeReportAs)
+      case TransactionApply(_, _, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
+        val details = callInTxsDetails(batchSize, concurrency, onErrorBehaviour, maybeReportAs)
         PlanDescriptionImpl(
           id,
           "TransactionApply",

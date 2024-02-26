@@ -375,6 +375,7 @@ import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
@@ -7391,6 +7392,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           rhsLP,
           batchSize = number("100"),
+          concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorContinue,
           maybeReportAs = None
         ),
@@ -7413,6 +7415,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           rhsLP,
           batchSize = number("100"),
+          concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorBreak,
           maybeReportAs = Some(varFor("status"))
         ),
@@ -7428,6 +7431,52 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
   }
 
+  test("TransactionForeach with explicit concurrency") {
+    assertGood(
+      attach(
+        TransactionForeach(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(Some(number("5"))),
+          onErrorBehaviour = OnErrorContinue,
+          maybeReportAs = None
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionForeach",
+        TwoChildren(lhsPD, rhsPD),
+        Seq(details("IN 5 CONCURRENT TRANSACTIONS OF 100 ROWS ON ERROR CONTINUE")),
+        Set("a")
+      )
+    )
+  }
+
+  test("TransactionForeach with default concurrency") {
+    assertGood(
+      attach(
+        TransactionForeach(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(None),
+          onErrorBehaviour = OnErrorContinue,
+          maybeReportAs = None
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionForeach",
+        TwoChildren(lhsPD, rhsPD),
+        Seq(details("IN CONCURRENT TRANSACTIONS OF 100 ROWS ON ERROR CONTINUE")),
+        Set("a")
+      )
+    )
+  }
+
   test("TransactionApply") {
     assertGood(
       attach(
@@ -7435,6 +7484,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           rhsLP,
           batchSize = number("100"),
+          concurrency = TransactionConcurrency.Serial,
           onErrorBehaviour = OnErrorFail,
           maybeReportAs = None
         ),
@@ -7457,6 +7507,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           rhsLP,
           batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(Some(number("5"))),
           onErrorBehaviour = OnErrorFail,
           maybeReportAs = Some(varFor("status"))
         ),
@@ -7466,8 +7517,54 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "TransactionApply",
         TwoChildren(lhsPD, rhsPD),
-        Seq(details("IN TRANSACTIONS OF 100 ROWS ON ERROR FAIL REPORT STATUS AS status")),
+        Seq(details("IN 5 CONCURRENT TRANSACTIONS OF 100 ROWS ON ERROR FAIL REPORT STATUS AS status")),
         Set("a", "b", "status")
+      )
+    )
+  }
+
+  test("TransactionApply with default concurrency") {
+    assertGood(
+      attach(
+        TransactionApply(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(None),
+          onErrorBehaviour = OnErrorFail,
+          maybeReportAs = None
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionApply",
+        TwoChildren(lhsPD, rhsPD),
+        Seq(details("IN CONCURRENT TRANSACTIONS OF 100 ROWS ON ERROR FAIL")),
+        Set("a", "b")
+      )
+    )
+  }
+
+  test("TransactionApply with specific concurrency") {
+    assertGood(
+      attach(
+        TransactionApply(
+          lhsLP,
+          rhsLP,
+          batchSize = number("100"),
+          concurrency = TransactionConcurrency.Concurrent(Some(number("5"))),
+          onErrorBehaviour = OnErrorFail,
+          maybeReportAs = None
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "TransactionApply",
+        TwoChildren(lhsPD, rhsPD),
+        Seq(details("IN 5 CONCURRENT TRANSACTIONS OF 100 ROWS ON ERROR FAIL")),
+        Set("a", "b")
       )
     )
   }

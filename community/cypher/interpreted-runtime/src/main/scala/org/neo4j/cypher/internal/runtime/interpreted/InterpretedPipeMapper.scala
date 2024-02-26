@@ -1887,7 +1887,7 @@ case class InterpretedPipeMapper(
       case SubqueryForeach(_, _) =>
         SubqueryForeachPipe(lhs, rhs)(id = id)
 
-      case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
+      case TransactionForeach(_, _, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
         TransactionForeachPipe(
           lhs,
           rhs,
@@ -1896,7 +1896,7 @@ case class InterpretedPipeMapper(
           maybeReportAs.map(_.name)
         )(id = id)
 
-      case TransactionApply(lhsPlan, rhsPlan, batchSize, onErrorBehaviour, maybeReportAs) =>
+      case TransactionApply(lhsPlan, rhsPlan, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
         TransactionApplyPipe(
           lhs,
           rhs,

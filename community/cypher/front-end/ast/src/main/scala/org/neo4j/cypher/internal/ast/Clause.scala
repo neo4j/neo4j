@@ -1584,6 +1584,18 @@ object SubqueryCall {
       checkExpressionIsStaticInt(batchSize, "OF ... ROWS", acceptsZero = false)
   }
 
+  final case class InTransactionsConcurrencyParameters(concurrency: Option[Expression])(val position: InputPosition)
+      extends ASTNode
+      with SemanticCheckable {
+
+    override def semanticCheck: SemanticCheck = {
+      if (concurrency.isEmpty) {
+        return SemanticCheck.success
+      }
+      checkExpressionIsStaticInt(concurrency.get, "IN ... CONCURRENT", acceptsZero = false)
+    }
+  }
+
   final case class InTransactionsReportParameters(reportAs: LogicalVariable)(val position: InputPosition)
       extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
 
@@ -1605,12 +1617,14 @@ object SubqueryCall {
 
   final case class InTransactionsParameters(
     batchParams: Option[InTransactionsBatchParameters],
+    concurrencyParams: Option[InTransactionsConcurrencyParameters],
     errorParams: Option[InTransactionsErrorParameters],
     reportParams: Option[InTransactionsReportParameters]
   )(val position: InputPosition) extends ASTNode with SemanticCheckable {
 
     override def semanticCheck: SemanticCheck = {
       val checkBatchParams = batchParams.foldSemanticCheck(_.semanticCheck)
+      val checkConcurrencyParams = concurrencyParams.foldSemanticCheck(_.semanticCheck)
       val checkReportParams = reportParams.foldSemanticCheck(_.semanticCheck)
 
       val checkErrorReportCombination: SemanticCheck = (errorParams, reportParams) match {
@@ -1627,7 +1641,7 @@ object SubqueryCall {
         case _ => SemanticCheck.success
       }
 
-      checkBatchParams chain checkReportParams chain checkErrorReportCombination
+      checkBatchParams chain checkConcurrencyParams chain checkReportParams chain checkErrorReportCombination
     }
   }
 

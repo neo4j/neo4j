@@ -366,6 +366,181 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
+  test("CALL IN TRANSACTIONS with concurrency 1") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN 1 CONCURRENT TRANSACTIONS
+        |""".stripMargin
+    expectNoErrorsFrom(query)
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency 0") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN 0 CONCURRENT TRANSACTIONS
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError("Invalid input. '0' is not a valid value. Must be a positive integer.", InputPosition(24, 3, 6))
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency -1") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN -1 CONCURRENT TRANSACTIONS
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError("Invalid input. '-1' is not a valid value. Must be a positive integer.", InputPosition(24, 3, 6))
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency 1.5") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN 1.5 CONCURRENT TRANSACTIONS
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Invalid input. '1.5' is not a valid value. Must be a positive integer.",
+          InputPosition(24, 3, 6)
+        ),
+        SemanticError("Type mismatch: expected Integer but was Float", InputPosition(24, 3, 6))
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency 'foo'") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN 'foo' CONCURRENT TRANSACTIONS
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Invalid input. 'foo' is not a valid value. Must be a positive integer.",
+          InputPosition(24, 3, 6)
+        ),
+        SemanticError("Type mismatch: expected Integer but was String", InputPosition(24, 3, 6))
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency NULL") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN NULL CONCURRENT TRANSACTIONS
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Invalid input. 'NULL' is not a valid value. Must be a positive integer.",
+          InputPosition(24, 3, 6)
+        )
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency larger than Long.Max") {
+    val concurrency = Long.MaxValue.toString + "0"
+    val query =
+      s"""CALL {
+         |  CREATE ()
+         |} IN $concurrency CONCURRENT TRANSACTIONS
+         |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError("integer is too large", InputPosition(24, 3, 6))
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency as a variable reference") {
+    val query =
+      s"""WITH 1 AS b
+         |CALL {
+         |  CREATE ()
+         |} IN b CONCURRENT TRANSACTIONS
+         |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "It is not allowed to refer to variables in IN ... CONCURRENT, so that the value for IN ... CONCURRENT can be statically calculated.",
+          InputPosition(36, 4, 6)
+        )
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency as a size PatternExpression") {
+    val query =
+      s"""CALL {
+         |  CREATE ()
+         |} IN size(()--()) CONCURRENT TRANSACTIONS
+         |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "It is not allowed to use patterns in the expression for IN ... CONCURRENT, so that the value for IN ... CONCURRENT can be statically calculated.",
+          InputPosition(24, 3, 6)
+        )
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency as a path PatternComprehension") {
+    val query =
+      s"""CALL {
+         |  CREATE ()
+         |} IN [path IN ()--() | 5] CONCURRENT TRANSACTIONS
+         |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "It is not allowed to use patterns in the expression for IN ... CONCURRENT, so that the value for IN ... CONCURRENT can be statically calculated.",
+          InputPosition(24, 3, 6)
+        ),
+        SemanticError("Type mismatch: expected Integer but was List<Integer>", InputPosition(24, 3, 6))
+      )
+    )
+  }
+
+  test("CALL IN TRANSACTIONS with concurrency as a CountExpression") {
+    val query =
+      s"""CALL {
+         |  CREATE ()
+         |} IN COUNT { ()--() } CONCURRENT TRANSACTIONS
+         |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "It is not allowed to use patterns in the expression for IN ... CONCURRENT, so that the value for IN ... CONCURRENT can be statically calculated.",
+          InputPosition(24, 3, 6)
+        )
+      )
+    )
+  }
+
   test("CALL IN TRANSACTIONS ON ERROR BREAK should pass semantic check") {
     val query =
       """CALL {

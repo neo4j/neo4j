@@ -2713,6 +2713,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
             |import org.neo4j.cypher.internal.expressions.PropertyKeyName
             |import org.neo4j.cypher.internal.logical.plans._
             |import org.neo4j.cypher.internal.logical.plans.Expand._
+            |import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Concurrent
+            |import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Serial
             |import org.neo4j.cypher.internal.logical.builder.TestException
             |import org.neo4j.cypher.internal.ir.HasHeaders
             |import org.neo4j.cypher.internal.ir.NoHeaders

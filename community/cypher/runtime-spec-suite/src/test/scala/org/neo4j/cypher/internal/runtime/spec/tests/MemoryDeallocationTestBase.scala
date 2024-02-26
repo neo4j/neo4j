@@ -782,7 +782,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     def query(rows: Int) = new LogicalQueryBuilder(this)
       .produceResults()
       .emptyResult()
-      .transactionForeach(10, errorBehaviour, status)
+      .transactionForeach(10, onErrorBehaviour = errorBehaviour, maybeReportAs = status)
       .|.projection("i * 2 as i2")
       .|.argument()
       .unwind(s"range(1, $rows) as i")
@@ -799,7 +799,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val status = if (errorBehaviour != OnErrorFail && random.nextBoolean()) Some("status") else None
     def query(rows: Int) = new LogicalQueryBuilder(this)
       .produceResults("i", "i2")
-      .transactionApply(10, errorBehaviour, status)
+      .transactionApply(10, onErrorBehaviour = errorBehaviour, maybeReportAs = status)
       .|.projection("i * 2 as i2")
       .|.argument()
       .unwind(s"range(1, $rows) as i")

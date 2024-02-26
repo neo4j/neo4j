@@ -48,7 +48,7 @@ abstract class RuntimeDebugLoggingTestBase[CONTEXT <: RuntimeContext](
     // then
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach(1, errorBehaviour, status)
+      .transactionForeach(1, onErrorBehaviour = errorBehaviour, maybeReportAs = status)
       .|.projection(s"1 / (x - $failureAt) as maybeBang")
       .|.argument()
       .unwind(s"range(0, ${size - 1}) as x")
@@ -73,7 +73,7 @@ abstract class RuntimeDebugLoggingTestBase[CONTEXT <: RuntimeContext](
     // then
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionApply(1, errorBehaviour, status)
+      .transactionApply(1, onErrorBehaviour = errorBehaviour, maybeReportAs = status)
       .|.projection(s"1 / (x - $failureAt) as maybeBang")
       .|.argument()
       .unwind(s"range(0, ${size - 1}) as x")

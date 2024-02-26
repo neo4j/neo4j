@@ -109,6 +109,7 @@ public class Cypher<STATEMENTS,
                     PRIVILEGE_QUALIFIER,
                     SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                     SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                    SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
                     SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
                     SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                     POS,
@@ -160,6 +161,7 @@ public class Cypher<STATEMENTS,
                PRIVILEGE_QUALIFIER,
                SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+               SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
                SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
                SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                POS,
@@ -212,6 +214,7 @@ public class Cypher<STATEMENTS,
                              PRIVILEGE_QUALIFIER,
                              SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                              SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                             SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
                              SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
                              SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                              POS,
@@ -443,6 +446,7 @@ TOKEN [IGNORE_CASE] :
     | < COMMANDS: "COMMANDS">
     | < COMMIT: "COMMIT" >
     | < COMPOSITE: "COMPOSITE" >
+    | < CONCURRENT: "CONCURRENT" >
     | < CONSTRAINT: "CONSTRAINT" >
     | < CONSTRAINTS: "CONSTRAINTS" >
     | < CONTAINS: "CONTAINS" >
@@ -2259,16 +2263,24 @@ SUBQUERY_IN_TRANSACTIONS_PARAMETERS SubqueryInTransactionsParameters() throws Ex
 {
     Token t;
     SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS batchParams = null;
+    SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS concurrencyParams = null;
     SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS errorParams = null;
     SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS reportParams = null;
+    EXPRESSION c = null;
     String repeatedBatch = "Duplicated OF ROWS parameter";
     String repeatedOnError = "Duplicated ON ERROR parameter";
     String repeatedReport = "Duplicated REPORT STATUS parameter";
 }
 {
-    t=<IN> <TRANSACTIONS>
+    t=<IN>
+    (
+        LOOKAHEAD(2) c=Expression() <CONCURRENT> { concurrencyParams = astFactory.subqueryInTransactionsConcurrencyParameters(pos( t ), c); }
+      | LOOKAHEAD(1) <CONCURRENT>                { concurrencyParams = astFactory.subqueryInTransactionsConcurrencyParameters(pos( t ), null); }
+      |                                          { concurrencyParams = null; }
+    )
+    t=<TRANSACTIONS>
     // The 3 parameters for CALL IN TRANSACTIONS:
-    // ON ERROR CONTINUE / BREAK / FAIL, OF ROWS and REPORT STATUS, can appear
+    // ON ERROR CONTINUE / BREAK / FAIL, OF ROWS, and REPORT STATUS, can appear
     // in any order and shouldn't be duplicated
     (
         (
@@ -2278,7 +2290,7 @@ SUBQUERY_IN_TRANSACTIONS_PARAMETERS SubqueryInTransactionsParameters() throws Ex
         )
     )*
     {
-        return astFactory.subqueryInTransactionsParams( pos( t ), batchParams, errorParams, reportParams);
+        return astFactory.subqueryInTransactionsParams( pos( t ), batchParams, concurrencyParams, errorParams, reportParams);
     }
 }
 
@@ -7255,6 +7267,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<COMMANDS>
         | t=<COMMIT>
         | t=<COMPOSITE>
+        | t=<CONCURRENT>
         | t=<CONSTRAINT>
         | t=<CONSTRAINTS>
         | t=<CONTAINS>

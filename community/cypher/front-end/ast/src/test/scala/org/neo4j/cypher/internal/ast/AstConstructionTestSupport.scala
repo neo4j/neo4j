@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
 import org.neo4j.cypher.internal.expressions.Add
@@ -837,7 +838,7 @@ trait AstConstructionTestSupport {
 
   def subqueryCallInTransactions(cs: Clause*): SubqueryCall = {
     val call = subqueryCall(cs: _*)
-    call.copy(inTransactionsParameters = Some(inTransactionsParameters(None, None, None)))(pos)
+    call.copy(inTransactionsParameters = Some(inTransactionsParameters(None, None, None, None)))(pos)
   }
 
   def subqueryCallInTransactions(
@@ -850,10 +851,11 @@ trait AstConstructionTestSupport {
 
   def inTransactionsParameters(
     batchParams: Option[InTransactionsBatchParameters],
+    concurrencyParams: Option[InTransactionsConcurrencyParameters],
     errorParams: Option[InTransactionsErrorParameters],
     reportParams: Option[InTransactionsReportParameters]
   ): SubqueryCall.InTransactionsParameters =
-    SubqueryCall.InTransactionsParameters(batchParams, errorParams, reportParams)(pos)
+    SubqueryCall.InTransactionsParameters(batchParams, concurrencyParams, errorParams, reportParams)(pos)
 
   def create(pattern: PatternElement, position: InputPosition = pos): Create =
     Create(Pattern.ForUpdate(Seq(PatternPart(pattern)))(pattern.position))(position)

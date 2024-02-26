@@ -1005,7 +1005,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionApply(400, OnErrorContinue, Some("s"))
+      .transactionApply(400, onErrorBehaviour = OnErrorContinue, maybeReportAs = Some("s"))
       .|.create(createNode("b"))
       .|.argument()
       .eager()
@@ -1029,7 +1029,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionApply(400, OnErrorFail)
+      .transactionApply(400, onErrorBehaviour = OnErrorFail)
       .|.create(createNode("b"))
       .|.argument()
       .eager()
@@ -1104,7 +1104,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionForeach(400, OnErrorBreak, Some("s"))
+      .transactionForeach(400, onErrorBehaviour = OnErrorBreak, maybeReportAs = Some("s"))
       .|.create(createNode("b"))
       .|.argument()
       .eager()
@@ -1127,7 +1127,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionForeach(400, OnErrorContinue)
+      .transactionForeach(400, onErrorBehaviour = OnErrorContinue)
       .|.create(createNode("b"))
       .|.argument()
       .eager()

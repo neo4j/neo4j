@@ -1811,7 +1811,7 @@ class SlottedPipeMapper(
           slots.get(variable).getOrElse(throw new InternalException(s"Foreach variable '$variable' has no slot"))
         ForeachSlottedApplyPipe(lhs, rhs, innerVariableSlot, convertExpressions(expression))(id)
 
-      case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
+      case TransactionForeach(_, _, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
         TransactionForeachSlottedPipe(
           lhs,
           rhs,
@@ -1820,7 +1820,7 @@ class SlottedPipeMapper(
           maybeReportAs.map(slots.apply)
         )(id = id)
 
-      case TransactionApply(lhsPlan, rhsPlan, batchSize, onErrorBehaviour, maybeReportAs) =>
+      case TransactionApply(lhsPlan, rhsPlan, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
         TransactionApplySlottedPipe(
           lhs,
           rhs,

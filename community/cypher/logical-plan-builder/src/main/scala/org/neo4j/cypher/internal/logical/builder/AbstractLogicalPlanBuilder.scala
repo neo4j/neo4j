@@ -236,6 +236,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
@@ -2671,24 +2672,38 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     aggregation(Seq(), Seq(s"collect($variable) AS $collection"))
   }
 
-  def batchParams(batchSize: Long): Expression = literalInt(batchSize)
-
   def transactionForeach(
     batchSize: Long = TransactionForeach.defaultBatchSize,
+    concurrency: TransactionConcurrency = TransactionConcurrency.Serial,
     onErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorFail,
     maybeReportAs: Option[String] = None
   ): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      TransactionForeach(lhs, rhs, batchParams(batchSize), onErrorBehaviour, maybeReportAs.map(varFor))(_)
+      TransactionForeach(
+        lhs,
+        rhs,
+        literalInt(batchSize),
+        concurrency,
+        onErrorBehaviour,
+        maybeReportAs.map(varFor)
+      )(_)
     ))
 
   def transactionApply(
     batchSize: Long = TransactionForeach.defaultBatchSize,
+    concurrency: TransactionConcurrency = TransactionConcurrency.Serial,
     onErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorFail,
     maybeReportAs: Option[String] = None
   ): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      TransactionApply(lhs, rhs, batchParams(batchSize), onErrorBehaviour, maybeReportAs.map(varFor))(_)
+      TransactionApply(
+        lhs,
+        rhs,
+        literalInt(batchSize),
+        concurrency,
+        onErrorBehaviour,
+        maybeReportAs.map(varFor)
+      )(_)
     ))
 
   def trail(

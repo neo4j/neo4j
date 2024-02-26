@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
@@ -42,7 +43,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
             (1, 8, 7)
           ))
         )(defaultPos),
-        Some(InTransactionsParameters(None, None, None)((1, 21, 20)))
+        Some(InTransactionsParameters(None, None, None, None)((1, 24, 23)))
       )(defaultPos)
     }
   }
@@ -52,6 +53,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(1))(pos)),
+          None,
           None,
           None
         ),
@@ -66,6 +68,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(1))(pos)),
           None,
+          None,
           None
         ),
         create(nodePat(Some("n")))
@@ -78,6 +81,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(42))(pos)),
+          None,
           None,
           None
         ),
@@ -92,6 +96,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(42))(pos)),
           None,
+          None,
           None
         ),
         create(nodePat(Some("n")))
@@ -104,6 +109,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(parameter("param", CTAny))(pos)),
+          None,
           None,
           None
         ),
@@ -118,6 +124,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(nullLiteral)(pos)),
           None,
+          None,
           None
         ),
         create(nodePat(Some("n")))
@@ -125,10 +132,66 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
     }
   }
 
+  test("CALL { CREATE (n) } IN CONCURRENT TRANSACTIONS OF 13 ROWS") {
+    val expected =
+      subqueryCallInTransactions(
+        inTransactionsParameters(
+          Some(InTransactionsBatchParameters(literalInt(13))(pos)),
+          Some(InTransactionsConcurrencyParameters(None)(pos)),
+          None,
+          None
+        ),
+        create(nodePat(Some("n")))
+      )
+    gives[SubqueryCall](expected)
+  }
+
+  test("CALL { CREATE (n) } IN 1 CONCURRENT TRANSACTIONS") {
+    val expected = subqueryCallInTransactions(
+      inTransactionsParameters(
+        None,
+        Some(InTransactionsConcurrencyParameters(Some(literalInt(1)))(pos)),
+        None,
+        None
+      ),
+      create(nodePat(Some("n")))
+    )
+    gives[SubqueryCall](expected)
+  }
+
+  test("CALL { CREATE (n) } IN 19 CONCURRENT TRANSACTIONS") {
+    val expected =
+      subqueryCallInTransactions(
+        inTransactionsParameters(
+          None,
+          Some(InTransactionsConcurrencyParameters(Some(literalInt(19)))(pos)),
+          None,
+          None
+        ),
+        create(nodePat(Some("n")))
+      )
+    gives[SubqueryCall](expected)
+  }
+
+  test("CALL { CREATE (n) } IN 19 CONCURRENT TRANSACTIONS OF 13 ROWS") {
+    val expected =
+      subqueryCallInTransactions(
+        inTransactionsParameters(
+          Some(InTransactionsBatchParameters(literalInt(13))(pos)),
+          Some(InTransactionsConcurrencyParameters(Some(literalInt(19)))(pos)),
+          None,
+          None
+        ),
+        create(nodePat(Some("n")))
+      )
+    gives[SubqueryCall](expected)
+  }
+
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status") {
     val expected =
       subqueryCallInTransactions(
         inTransactionsParameters(
+          None,
           None,
           None,
           Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
@@ -144,6 +207,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(50))(pos)),
           None,
+          None,
           Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
         ),
         create(nodePat(Some("n")))
@@ -156,6 +220,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(50))(pos)),
+          None,
           None,
           Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
         ),
@@ -174,18 +239,25 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
     case (errorKeyword, errorBehaviour) =>
       val errorString = s"ON ERROR $errorKeyword"
       val rowString = "OF 50 ROWS"
+      val concurrencyString = "7 CONCURRENT"
       val statusString = "REPORT STATUS AS status"
 
       val errorRowPermutations = List(errorString, rowString).permutations.toList
       val errorStatusPermutations = List(errorString, statusString).permutations.toList
       val errorRowStatusPermutations = List(errorString, rowString, statusString).permutations.toList
 
+      val expectedBatchParams = Some(InTransactionsBatchParameters(literalInt(50))(pos))
+      val expectedConcurrencyParams = Some(InTransactionsConcurrencyParameters(Some(literalInt(7)))(pos))
+      val expectedErrorParams = Some(InTransactionsErrorParameters(errorBehaviour)(pos))
+      val expectedStatusParams = Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
+
       test(s"CALL { CREATE (n) } IN TRANSACTIONS $errorString") {
         val expected =
           subqueryCallInTransactions(
             inTransactionsParameters(
               None,
-              Some(InTransactionsErrorParameters(errorBehaviour)(pos)),
+              None,
+              expectedErrorParams,
               None
             ),
             create(nodePat(Some("n")))
@@ -193,50 +265,94 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         gives[SubqueryCall](expected)
       }
 
-      errorRowPermutations.foreach(permutation =>
+      errorRowPermutations.foreach(permutation => {
         test(s"CALL { CREATE (n) } IN TRANSACTIONS ${permutation.head} ${permutation(1)}") {
           val expected =
             subqueryCallInTransactions(
               inTransactionsParameters(
-                Some(InTransactionsBatchParameters(literalInt(50))(pos)),
-                Some(InTransactionsErrorParameters(errorBehaviour)(pos)),
+                expectedBatchParams,
+                None,
+                expectedErrorParams,
                 None
               ),
               create(nodePat(Some("n")))
             )
           gives[SubqueryCall](expected)
         }
-      )
+        test(s"CALL { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)}") {
+          val expected =
+            subqueryCallInTransactions(
+              inTransactionsParameters(
+                expectedBatchParams,
+                expectedConcurrencyParams,
+                expectedErrorParams,
+                None
+              ),
+              create(nodePat(Some("n")))
+            )
+          gives[SubqueryCall](expected)
+        }
+      })
 
-      errorStatusPermutations.foreach(permutation =>
+      errorStatusPermutations.foreach(permutation => {
         test(s"CALL { CREATE (n) } IN TRANSACTIONS ${permutation.head} ${permutation(1)}") {
           val expected =
             subqueryCallInTransactions(
               inTransactionsParameters(
                 None,
-                Some(InTransactionsErrorParameters(errorBehaviour)(pos)),
-                Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
+                None,
+                expectedErrorParams,
+                expectedStatusParams
               ),
               create(nodePat(Some("n")))
             )
           gives[SubqueryCall](expected)
         }
-      )
+        test(s"CALL { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)}") {
+          val expected =
+            subqueryCallInTransactions(
+              inTransactionsParameters(
+                None,
+                expectedConcurrencyParams,
+                expectedErrorParams,
+                expectedStatusParams
+              ),
+              create(nodePat(Some("n")))
+            )
+          gives[SubqueryCall](expected)
+        }
+      })
 
-      errorRowStatusPermutations.foreach(permutation =>
+      errorRowStatusPermutations.foreach(permutation => {
         test(s"CALL { CREATE (n) } IN TRANSACTIONS ${permutation.head} ${permutation(1)} ${permutation(2)}") {
           val expected =
             subqueryCallInTransactions(
               inTransactionsParameters(
-                Some(InTransactionsBatchParameters(literalInt(50))(pos)),
-                Some(InTransactionsErrorParameters(errorBehaviour)(pos)),
-                Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
+                expectedBatchParams,
+                None,
+                expectedErrorParams,
+                expectedStatusParams
               ),
               create(nodePat(Some("n")))
             )
           gives[SubqueryCall](expected)
         }
-      )
+        test(
+          s"CALL { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)} ${permutation(2)}"
+        ) {
+          val expected =
+            subqueryCallInTransactions(
+              inTransactionsParameters(
+                expectedBatchParams,
+                expectedConcurrencyParams,
+                expectedErrorParams,
+                expectedStatusParams
+              ),
+              create(nodePat(Some("n")))
+            )
+          gives[SubqueryCall](expected)
+        }
+      })
   }
 
   // Negative tests

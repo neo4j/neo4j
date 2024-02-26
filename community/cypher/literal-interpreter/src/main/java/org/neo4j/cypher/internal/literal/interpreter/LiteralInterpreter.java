@@ -100,6 +100,7 @@ public class LiteralInterpreter
                 NULL, // PRIVILEGE_RESOURCE,
                 NULL, // PRIVILEGE_QUALIFIER,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_CONCURRENCY_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
                 NULL, // SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
@@ -461,13 +462,19 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL subqueryInTransactionsParams(NULL p, NULL batchParams, NULL errorParams, NULL reportParams) {
+    public NULL subqueryInTransactionsParams(
+            NULL p, NULL batchParams, NULL concurrencyParams, NULL errorParams, NULL reportParams) {
         throw new UnsupportedOperationException("subqueryInTransactionsParams is not a literal");
     }
 
     @Override
     public NULL subqueryInTransactionsBatchParameters(NULL p, Object batchSize) {
         throw new UnsupportedOperationException("subqueryInTransactionsBatchParameters is not a literal");
+    }
+
+    @Override
+    public NULL subqueryInTransactionsConcurrencyParameters(NULL p, Object concurrency) {
+        throw new UnsupportedOperationException("subqueryInTransactionsConcurrencyParameters is not a literal");
     }
 
     @Override

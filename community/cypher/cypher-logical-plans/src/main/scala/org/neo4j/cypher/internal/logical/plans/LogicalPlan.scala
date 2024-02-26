@@ -3981,6 +3981,7 @@ case class TransactionApply(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
   batchSize: Expression,
+  concurrency: TransactionConcurrency,
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   maybeReportAs: Option[LogicalVariable]
 )(
@@ -4037,11 +4038,11 @@ case class TransactionCommit(override val source: LogicalPlan, batchSize: Expres
  * }
  * }}}
  */
-
 case class TransactionForeach(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
   batchSize: Expression,
+  concurrency: TransactionConcurrency,
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   maybeReportAs: Option[LogicalVariable]
 )(

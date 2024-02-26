@@ -550,9 +550,9 @@ object VariableRefRewriter extends Rewriter {
             previouslyBoundRelationships = pRels.map(varRef),
             previouslyBoundRelationshipGroups = pRelGr.map(varRef)
           )(SameId(p.id))
-        case p @ TransactionApply(_, _, _, _, maybeReportAs) =>
+        case p @ TransactionApply(_, _, _, _, _, maybeReportAs) =>
           p.copy(maybeReportAs = maybeReportAs.map(varRef))(SameId(p.id))
-        case p @ TransactionForeach(_, _, _, _, maybeReportAs) =>
+        case p @ TransactionForeach(_, _, _, _, _, maybeReportAs) =>
           p.copy(maybeReportAs = maybeReportAs.map(varRef))(SameId(p.id))
         case p @ TriadicBuild(_, source, seen, _) =>
           p.copy(sourceId = varRef(source), seenId = varRef(seen))(SameId(p.id))

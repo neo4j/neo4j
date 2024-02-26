@@ -339,7 +339,7 @@ class FabricStitcherTest
     }
 
     "call in transactions" - {
-      val inTransactionParameters = Some(InTransactionsParameters(None, None, None)(pos))
+      val inTransactionParameters = Some(InTransactionsParameters(None, None, None, None)(pos))
 
       "unwind added and with clause not added for literals" in {
         /*
@@ -478,7 +478,7 @@ class FabricStitcherTest
     }
 
     "errors" - {
-      val inTransactionParameters = Some(InTransactionsParameters(None, None, None)(pos))
+      val inTransactionParameters = Some(InTransactionsParameters(None, None, None, None)(pos))
 
       "disallows call in transactions as apply" in {
         /*
