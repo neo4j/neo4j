@@ -956,7 +956,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
                 Map.of(ACCESS_MODE_HEADER, "READ"));
 
         assertThat(begin.status()).isEqualTo(200);
-        assertThat(begin).satisfies(hasErrors(Status.Statement.Request.Invalid));
+        assertThat(begin).satisfies(hasErrors(Status.Statement.AccessMode));
     }
 
     @Test
@@ -1022,7 +1022,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
                 quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"),
                 Map.of(ACCESS_MODE_HEADER, "WRITE"));
         assertThat(execute.status()).isEqualTo(200);
-        assertThat(execute).satisfies(hasErrors(Status.Request.Invalid));
+        assertThat(execute).satisfies(hasErrors(Status.Statement.AccessMode));
     }
 
     @Test

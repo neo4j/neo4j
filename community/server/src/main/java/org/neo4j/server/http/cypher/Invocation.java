@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.http.cypher;
 
-import static org.neo4j.fabric.executor.FabricExecutor.WRITING_IN_READ_NOT_ALLOWED_MSG;
-
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
@@ -302,21 +300,10 @@ class Invocation {
     }
 
     private void handleNeo4jError(Status status, Throwable cause) {
-
         if (cause instanceof FabricException || cause instanceof QueryRouterException) {
             // unwrap FabricException and QueryRouterException where possible.
             var rootCause = ((Status.HasStatus) cause).status();
-            if (rootCause.equals(Status.Statement.AccessMode)
-                    && cause.getMessage() != null
-                    && cause.getMessage().startsWith(WRITING_IN_READ_NOT_ALLOWED_MSG)) {
-
-                neo4jError = new Neo4jError(
-                        Status.Request.Invalid,
-                        "Routing WRITE queries is not supported in clusters "
-                                + "where Server-Side Routing is disabled.");
-            } else {
-                neo4jError = new Neo4jError(rootCause, cause.getCause() != null ? cause.getCause() : cause);
-            }
+            neo4jError = new Neo4jError(rootCause, cause.getCause() != null ? cause.getCause() : cause);
         } else {
             neo4jError = new Neo4jError(status, cause);
         }
