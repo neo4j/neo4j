@@ -94,9 +94,8 @@ object Parser {
     invalidateInputPositions,
     replaceWrongFunctionInvocation,
     LabelExpressionPredicateNormalizer.instance,
-    flattenBooleanOperators.instance(
-      CancellationChecker.NeverCancelled
-    ) // It is otherwise impossible to create instances of Ands / Ors
+    // Flattening boolean operators otherwise it is impossible to create instances of Ands / Ors
+    flattenBooleanOperators.instance(CancellationChecker.NeverCancelled)
   )(in).asInstanceOf[T]
 
   private val regex = s"(.+) [Aa][Ss] (.+)".r
