@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.MaybeReusable
 import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.PlanFingerprintReference
 import org.neo4j.cypher.internal.PreParsedQuery
-import org.neo4j.cypher.internal.QueryCache
-import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.SchemaCommandRuntime
@@ -38,6 +36,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.AstCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.AstCache.AstCacheValue
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache.CacheableLogicalPlan
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
@@ -439,9 +438,11 @@ case class CypherPlanner(
     val cacheableLogicalPlan =
       // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
       if (options.queryOptions.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
-        val cacheKey = CacheKey(
+        val cacheKey = LogicalPlanCache.key(
           syntacticQuery.statement(),
-          QueryCache.extractParameterTypeMap(filteredParams, config.useParameterSizeHint()),
+          options,
+          filteredParams,
+          config.useParameterSizeHint(),
           transactionalContextWrapper.kernelTransaction.dataRead().transactionStateHasChanges()
         )
 

@@ -151,7 +151,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     val cachedExecutionPlan =
       queryCaches.executionPlanCache.computeIfAbsent(
         cacheWhen = logicalPlanResult.shouldBeCached,
-        key = ExecutionPlanCacheKey(query.options.runtimeCacheKey, logicalPlan, planState.planningAttributes.cacheKey),
+        key = ExecutionPlanCacheKey(
+          query.options.executionPlanCacheKey,
+          logicalPlan,
+          planState.planningAttributes.cacheKey
+        ),
         compute =
           computeExecutionPlan(query, transactionalContext, logicalPlanResult, planState, logicalPlan, queryType)
       )

@@ -35,6 +35,83 @@ import org.neo4j.values.AnyValue
 class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
     with CacheCountsTestSupport {
 
+  test("updateStrategy is honoured by all caches") {
+    val stats = eengine.queryCaches.statistics()
+
+    val q = "MATCH (a) RETURN a"
+    execute(q)
+    execute("CYPHER updateStrategy=eager " + q)
+    execute("CYPHER updateStrategy=default " + q)
+
+    stats.preParserCacheEntries().shouldEqual(3)
+    stats.astCacheEntries().shouldEqual(2)
+    stats.logicalPlanCacheEntries().shouldEqual(2)
+    stats.executionPlanCacheEntries().shouldEqual(2)
+    stats.executableQueryCacheEntries().shouldEqual(2)
+  }
+
+  test("statefulShortestPlanningMode is honoured by all caches") {
+    val stats = eengine.queryCaches.statistics()
+
+    val q = "MATCH (a) RETURN a"
+    execute(q)
+    execute("CYPHER statefulShortestPlanningMode=all_if_possible " + q)
+    execute("CYPHER statefulShortestPlanningMode=into_only " + q)
+    execute("CYPHER statefulShortestPlanningMode=cost_weighted " + q)
+
+    stats.preParserCacheEntries().shouldEqual(4)
+    stats.astCacheEntries().shouldEqual(3)
+    stats.logicalPlanCacheEntries().shouldEqual(3)
+    stats.executionPlanCacheEntries().shouldEqual(3)
+    stats.executableQueryCacheEntries().shouldEqual(3)
+  }
+
+  test("eagerAnalyzer is honoured by all caches") {
+    val stats = eengine.queryCaches.statistics()
+
+    val q = "MATCH (a) RETURN a"
+    execute(q)
+    execute("CYPHER eagerAnalyzer=lp " + q)
+    execute("CYPHER eagerAnalyzer=ir " + q)
+
+    stats.preParserCacheEntries().shouldEqual(3)
+    stats.astCacheEntries().shouldEqual(2)
+    stats.logicalPlanCacheEntries().shouldEqual(2)
+    stats.executionPlanCacheEntries().shouldEqual(2)
+    stats.executableQueryCacheEntries().shouldEqual(2)
+  }
+
+  test("connectComponentsPlanner is honoured by all caches") {
+    val stats = eengine.queryCaches.statistics()
+
+    val q = "MATCH (a) RETURN a"
+    execute(q)
+    execute("CYPHER connectComponentsPlanner=greedy " + q)
+    execute("CYPHER connectComponentsPlanner=idp " + q)
+    execute("CYPHER connectComponentsPlanner=default " + q)
+
+    stats.preParserCacheEntries().shouldEqual(4)
+    stats.astCacheEntries().shouldEqual(3)
+    stats.logicalPlanCacheEntries().shouldEqual(3)
+    stats.executionPlanCacheEntries().shouldEqual(3)
+    stats.executableQueryCacheEntries().shouldEqual(3)
+  }
+
+  test("labelInference is honoured by all caches") {
+    val stats = eengine.queryCaches.statistics()
+
+    val q = "MATCH (a) RETURN a"
+    execute(q)
+    execute("CYPHER labelInference=enabled " + q)
+    execute("CYPHER labelInference=disabled " + q)
+
+    stats.preParserCacheEntries().shouldEqual(3)
+    stats.astCacheEntries().shouldEqual(2)
+    stats.logicalPlanCacheEntries().shouldEqual(2)
+    stats.executionPlanCacheEntries().shouldEqual(2)
+    stats.executableQueryCacheEntries().shouldEqual(2)
+  }
+
   test("can get up to date statistics on cache entries") {
 
     val stats = eengine.queryCaches.statistics()

@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.AstCache
@@ -244,7 +245,22 @@ object CypherQueryCaches {
   }
 
   object LogicalPlanCache extends CacheCompanion("logical_plan") with CacheMonitorHelpers {
-    type Key = CacheKey[Statement]
+    case class KeyParams(statement: Statement, queryOptions: String)
+
+    def key(
+      statement: Statement,
+      queryOptions: QueryOptions,
+      params: MapValue,
+      useParameterSizeHint: Boolean,
+      txStateHasChanges: Boolean
+    ): LogicalPlanCache.Key =
+      CacheKey(
+        KeyParams(statement, queryOptions.logicalPlanCacheKey),
+        QueryCache.extractParameterTypeMap(params, useParameterSizeHint),
+        txStateHasChanges
+      )
+
+    type Key = CacheKey[LogicalPlanCache.KeyParams]
     type Value = CacheableLogicalPlan
 
     case class CacheableLogicalPlan(
@@ -285,7 +301,7 @@ object CypherQueryCaches {
       override protected def createInner(
         innerFactory: CaffeineCacheFactory,
         size: CacheSize,
-        listener: RemovalListener[CacheKey[Statement], CachedValue]
+        listener: RemovalListener[CacheKey[LogicalPlanCache.KeyParams], CachedValue]
       ): cache.Cache[Key, CachedValue] = innerFactory.createWithSoftBackingCache(size, softSize, listener)
     }
   }

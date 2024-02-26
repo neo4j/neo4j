@@ -37,6 +37,9 @@ sealed trait InputQuery {
 
   def description: String
 
+  /**
+   * Cache key used for executableQueryCache and astCache
+   */
   def cacheKey: InputQuery.CacheKey
 
   def withRecompilationLimitReached: InputQuery
@@ -133,6 +136,8 @@ case class QueryOptions(
     copy(queryOptions = queryOptions.copy(executionMode = executionMode))
 
   /**
+   * Cache key used for executableQueryCache and astCache.
+   *
    * Even though the materializedEntitiesMode does influence planning,
    * it is not included in the cache key for 2 reasons.
    * - The option is only true iff running a Fabric query and a fabric query cannot equal a non-Fabric query.
@@ -143,8 +148,18 @@ case class QueryOptions(
     if (key.isBlank) key else "CYPHER " + key
   }
 
-  def runtimeCacheKey: String = {
+  /**
+   * Cache key used for executionPlanCache.
+   */
+  def executionPlanCacheKey: String = {
     cacheKey + recompilationLimitReached + materializedEntitiesMode
+  }
+
+  /**
+   * Cache key used for logicalPlanCache.
+   */
+  def logicalPlanCacheKey: String = {
+    queryOptions.logicalPlanCacheKey
   }
 
   def render: Option[String] = {

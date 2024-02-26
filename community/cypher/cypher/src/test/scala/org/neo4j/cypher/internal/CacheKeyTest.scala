@@ -76,4 +76,28 @@ class CacheKeyTest extends CypherFunSuite {
         """PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=lp labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
       )
   }
+
+  test("Only certain non-default options should be part of logical plan cache key") {
+    val options = CypherQueryOptions(
+      executionMode = CypherExecutionMode.profile,
+      planner = CypherPlannerOption.dp,
+      runtime = CypherRuntimeOption.pipelined,
+      updateStrategy = CypherUpdateStrategy.eager,
+      expressionEngine = CypherExpressionEngineOption.interpreted,
+      operatorEngine = CypherOperatorEngineOption.interpreted,
+      interpretedPipesFallback = CypherInterpretedPipesFallbackOption.allPossiblePlans,
+      replan = CypherReplanOption.force,
+      connectComponentsPlanner = CypherConnectComponentsPlannerOption.idp,
+      debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring)),
+      parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.disabled,
+      eagerAnalyzer = CypherEagerAnalyzerOption.lp,
+      labelInference = LabelInferenceOption.enabled,
+      statefulShortestPlanningModeOption = CypherStatefulShortestPlanningModeOption.allIfPossible
+    )
+
+    options.logicalPlanCacheKey
+      .shouldEqual(
+        """updateStrategy=eager connectComponentsPlanner=idp eagerAnalyzer=lp labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
+      )
+  }
 }
