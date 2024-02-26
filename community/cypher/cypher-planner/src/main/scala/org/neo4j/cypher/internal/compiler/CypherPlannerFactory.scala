@@ -32,9 +32,8 @@ class CypherPlannerFactory[C <: PlannerContext, T <: Transformer[C, LogicalPlanS
   def costBasedCompiler(config: CypherPlannerConfiguration,
                         clock: Clock,
                         monitors: Monitors,
-                        updateStrategy: Option[UpdateStrategy]): CypherPlanner[C] = {
+                        ): CypherPlanner[C] = {
     val metricsFactory = CachedSimpleMetricsFactory
-    val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
-    CypherPlanner(monitors, metricsFactory, config, actualUpdateStrategy, clock)
+    CypherPlanner(monitors, metricsFactory, config, clock)
   }
 }

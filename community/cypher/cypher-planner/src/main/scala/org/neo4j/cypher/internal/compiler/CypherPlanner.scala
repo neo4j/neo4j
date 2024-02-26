@@ -54,7 +54,7 @@ import scala.collection.JavaConverters.mapAsJavaMapConverter
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                                     metricsFactory: MetricsFactory,
                                                     config: CypherPlannerConfiguration,
-                                                    updateStrategy: UpdateStrategy,
+
                                                     clock: Clock) {
 
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
