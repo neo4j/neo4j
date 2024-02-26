@@ -23,7 +23,14 @@ import java.io.Closeable;
 import java.io.IOException;
 import org.neo4j.internal.batchimport.input.Input;
 
-public interface IncrementalBatchImporter extends Closeable {
+public interface IncrementalBatchImporter extends BatchImporter, Closeable {
+    @Override
+    default void doImport(Input input) throws IOException {
+        prepare(input);
+        build(input);
+        merge();
+    }
+
     void prepare(Input input) throws IOException;
 
     void build(Input input) throws IOException;

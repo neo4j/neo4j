@@ -232,11 +232,7 @@ class CsvImporter implements Importer {
                         case prepare -> importer.prepare(input);
                         case build -> importer.build(input);
                         case merge -> importer.merge();
-                        case all -> {
-                            importer.prepare(input);
-                            importer.build(input);
-                            importer.merge();
-                        }
+                        case all -> importer.doImport(input);
                         default -> throw new IllegalArgumentException("Unknown import mode " + incrementalStage);
                     }
                 }
