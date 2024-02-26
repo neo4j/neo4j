@@ -83,10 +83,10 @@ case object MoveBoundaryNodePredicates extends StatementRewriter
                   }
               }
               (newElement, extractedPredicates)
-            case element => (element, ListSet.empty)
+            case element => (element, ListSet.empty[Expression])
           }
           (patternPart.replaceElement(newElement), extractedPredicates)
-        case other => (other, ListSet.empty)
+        case other => (other, ListSet.empty[Expression])
       }.unzip
       val newPattern = Pattern.ForMatch(newParts)(pattern.position)
       matchClause.copy(
