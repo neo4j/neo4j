@@ -245,6 +245,11 @@ public interface Configuration {
         public ExternallyManagedPageCache providedPageCache() {
             return defaults.providedPageCache();
         }
+
+        @Override
+        public IndexConfig indexConfig() {
+            return defaults.indexConfig();
+        }
     }
 
     static Configuration withBatchSize(Configuration config, int batchSize) {

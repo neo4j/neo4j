@@ -255,6 +255,18 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         started = true;
     }
 
+    /**
+     * For special cases, e.g. during import and such where transaction history is rewritten or
+     * a special transaction is appended the counts stores need to know about this fact.
+     * @param newTxId transaction ID to let this counts store catch up to.
+     */
+    public void catchUpToTransactionId(long newTxId) {
+        long prevTxId = idSequence.getHighestGapFreeNumber();
+        for (long txId = prevTxId + 1; txId <= newTxId; txId++) {
+            idSequence.offer(txId, EMPTY_META);
+        }
+    }
+
     @Override
     public void close() {
         closeAllUnchecked(tree);
