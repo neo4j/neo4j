@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.util.InternalNotificationStats
@@ -52,7 +51,6 @@ class CommunityCompilerFactory(
   override def createCompiler(
     cypherPlanner: CypherPlannerOption,
     cypherRuntime: CypherRuntimeOption,
-    cypherUpdateStrategy: CypherUpdateStrategy,
     executionEngineProvider: () => ExecutionEngine
   ): Compiler = {
 
@@ -66,7 +64,6 @@ class CommunityCompilerFactory(
         log,
         queryCaches,
         cypherPlanner,
-        cypherUpdateStrategy,
         dependencies.resolveDependency(classOf[DatabaseReferenceRepository]),
         dependencies.resolveDependency(classOf[InternalNotificationStats])
       )

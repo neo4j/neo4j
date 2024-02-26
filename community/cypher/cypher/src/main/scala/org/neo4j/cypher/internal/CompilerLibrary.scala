@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.values.virtual.MapValue
@@ -43,17 +42,15 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
 
   def selectCompiler(
     cypherPlanner: CypherPlannerOption,
-    cypherRuntime: CypherRuntimeOption,
-    cypherUpdateStrategy: CypherUpdateStrategy
+    cypherRuntime: CypherRuntimeOption
   ): Compiler = {
-    val key = CompilerKey(cypherPlanner, cypherRuntime, cypherUpdateStrategy)
+    val key = CompilerKey(cypherPlanner, cypherRuntime)
     compilers.computeIfAbsent(
       key,
-      ignore =>
+      _ =>
         factory.createCompiler(
           cypherPlanner,
           cypherRuntime,
-          cypherUpdateStrategy,
           executionEngineProvider
         )
     )
@@ -91,7 +88,6 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
 
   case class CompilerKey(
     cypherPlanner: CypherPlannerOption,
-    cypherRuntime: CypherRuntimeOption,
-    cypherUpdateStrategy: CypherUpdateStrategy
+    cypherRuntime: CypherRuntimeOption
   )
 }

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 
 /**
  * Factory which creates cypher compilers.
@@ -32,7 +31,6 @@ trait CompilerFactory {
   def createCompiler(
     cypherPlanner: CypherPlannerOption,
     cypherRuntime: CypherRuntimeOption,
-    cypherUpdateStrategy: CypherUpdateStrategy,
     executionEngineProvider: () => ExecutionEngine
   ): Compiler
 }

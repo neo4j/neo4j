@@ -32,7 +32,7 @@ class CypherPlannerFactory[C <: PlannerContext, T <: Transformer[C, LogicalPlanS
   def costBasedCompiler(
     config: CypherPlannerConfiguration,
     clock: Clock,
-    monitors: Monitors,
+    monitors: Monitors
   ): CypherPlanner[C] = {
     val metricsFactory = CachedSimpleMetricsFactory
     CypherPlanner(monitors, metricsFactory, config, clock)

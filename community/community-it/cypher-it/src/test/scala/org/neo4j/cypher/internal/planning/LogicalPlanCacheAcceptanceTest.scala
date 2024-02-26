@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
@@ -103,7 +102,6 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
       log,
       caches,
       CypherPlannerOption.default,
-      CypherUpdateStrategy.default,
       null,
       null
     )
@@ -495,8 +493,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     val compilers = CypherRuntimeOption.values.map { runtime =>
       compilerLibrary.selectCompiler(
         CypherPlannerOption.default,
-        CommunityRuntimeFactory.getRuntime(runtime, disallowFallback = false).correspondingRuntimeOption.get,
-        CypherUpdateStrategy.default
+        CommunityRuntimeFactory.getRuntime(runtime, disallowFallback = false).correspondingRuntimeOption.get
       )
     }
 

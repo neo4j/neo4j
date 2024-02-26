@@ -139,8 +139,7 @@ class LibraryMasterCompiler(compilerLibrary: CompilerLibrary) extends MasterComp
     // Do the compilation
     val compiler = compilerLibrary.selectCompiler(
       query.options.queryOptions.planner,
-      query.options.queryOptions.runtime,
-      query.options.queryOptions.updateStrategy
+      query.options.queryOptions.runtime
     )
 
     compiler.compile(query, tracer, transactionalContext, params, notificationLogger)
