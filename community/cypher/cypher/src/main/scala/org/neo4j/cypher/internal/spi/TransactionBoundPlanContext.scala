@@ -310,6 +310,10 @@ class TransactionBoundPlanContext(
           if (behaviours.contains(EventuallyConsistent)) {
             // Ignore eventually consistent indexes. Those are for explicit querying via procedures.
             None
+          } else if (isUnique && (tc.schemaRead.indexGetOwningUniquenessConstraintId(reference) eq null)) {
+            // Unique indexes must have a matching constraint. If not, something went wrong during constraint creation.
+            // Shouldn't really happen.
+            None
           } else {
             kernelToCypher(reference.getIndexType) map { indexType =>
               IndexDescriptor(
