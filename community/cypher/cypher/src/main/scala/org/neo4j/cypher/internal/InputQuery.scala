@@ -34,6 +34,9 @@ sealed trait InputQuery {
 
   def description: String
 
+  /**
+   * Cache key used for executableQueryCache and astCache
+   */
   def cacheKey: InputQuery.CacheKey
 
   def withRecompilationLimitReached: InputQuery
@@ -107,13 +110,26 @@ case class QueryOptions(offset: InputPosition,
   def withExecutionMode(executionMode: CypherExecutionMode): QueryOptions =
     copy(queryOptions = queryOptions.copy(executionMode = executionMode))
 
+  /**
+   * Cache key used for executableQueryCache and astCache.
+   */
   def cacheKey: String = {
     val key = queryOptions.cacheKey
     if (key.isBlank) key else "CYPHER " + key
   }
 
-  def runtimeCacheKey: String = {
+  /**
+   * Cache key used for executionPlanCache.
+   */
+  def executionPlanCacheKey: String = {
     cacheKey + isPeriodicCommit + recompilationLimitReached + materializedEntitiesMode
+  }
+
+  /**
+   * Cache key used for logicalPlanCache.
+   */
+  def logicalPlanCacheKey: String = {
+    queryOptions.logicalPlanCacheKey
   }
 
   def render: Option[String] = {

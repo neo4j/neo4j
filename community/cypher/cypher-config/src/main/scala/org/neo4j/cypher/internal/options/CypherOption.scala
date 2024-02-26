@@ -44,6 +44,12 @@ abstract class CypherOption(inputName: String) {
 
   /** Renders this option value to a string for use in query cache keys */
   def cacheKey: String = render
+
+  /** Whether this option must be included in the logical plan cache key */
+  def relevantForLogicalPlanCacheKey: Boolean
+
+  /** Renders this option value to a string for use in logical plan query cache key */
+  def logicalPlanCacheKey: String = if (relevantForLogicalPlanCacheKey) render else ""
 }
 
 /**

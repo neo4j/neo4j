@@ -160,7 +160,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val queryType = getQueryType(planState)
     val (executionPlan, attributes) = executionPlanCache match {
       case Some(ePlanCache) if logicalPlanResult.shouldBeCached =>
-        val cacheKey = ExecutionPlanCacheKey(query.options.runtimeCacheKey, logicalPlan, planState.planningAttributes.cacheKey)
+        val cacheKey = ExecutionPlanCacheKey(
+          query.options.executionPlanCacheKey,
+          logicalPlan,
+          planState.planningAttributes.cacheKey
+        )
         var hit = true
         val result = ePlanCache.computeIfAbsent(cacheKey, {
           hit = false

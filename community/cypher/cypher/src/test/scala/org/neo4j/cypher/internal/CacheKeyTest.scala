@@ -68,4 +68,25 @@ class CacheKeyTest extends CypherFunSuite {
     options.cacheKey
       .shouldEqual("3.5 PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring")
   }
+
+  test("Only certain non-default options should be part of logical plan cache key") {
+    val options = CypherQueryOptions(
+      executionMode = CypherExecutionMode.profile,
+      version = CypherVersion.v3_5,
+      planner = CypherPlannerOption.dp,
+      runtime = CypherRuntimeOption.pipelined,
+      updateStrategy = CypherUpdateStrategy.eager,
+      expressionEngine = CypherExpressionEngineOption.interpreted,
+      operatorEngine = CypherOperatorEngineOption.interpreted,
+      interpretedPipesFallback = CypherInterpretedPipesFallbackOption.allPossiblePlans,
+      replan = CypherReplanOption.force,
+      connectComponentsPlanner = CypherConnectComponentsPlannerOption.idp,
+      debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring))
+    )
+
+    options.logicalPlanCacheKey
+      .shouldEqual(
+        """updateStrategy=eager connectComponentsPlanner=idp"""
+      )
+  }
 }

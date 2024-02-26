@@ -181,9 +181,14 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
 
-  private val cacheTracer: CacheTracer[CacheKey[Statement]] = monitors.newMonitor[CacheTracer[CacheKey[Statement]]]("cypher")
+  private val cacheTracer: CacheTracer[CacheKey[KeyParams]] = monitors.newMonitor[CacheTracer[CacheKey[KeyParams]]]("cypher")
 
-  private val planCache: AstLogicalPlanCache[Statement] =
+  case class KeyParams(statement: Statement, queryOptions: String)
+  object KeyParams {
+    def of(statement: Statement, queryOptions: QueryOptions): KeyParams = KeyParams(statement, queryOptions.logicalPlanCacheKey)
+  }
+
+  private val planCache: AstLogicalPlanCache[KeyParams] =
     new AstLogicalPlanCache(cacheFactory,
       config.queryCacheSize,
       cacheTracer,
@@ -369,7 +374,10 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
       if (options.queryOptions.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
         val cacheKey = CacheKey(
-          syntacticQuery.statement(),
+          KeyParams.of(
+            syntacticQuery.statement(),
+            options,
+          ),
           QueryCache.extractParameterTypeMap(filteredParams),
           transactionalContextWrapper.kernelTransaction.dataRead().transactionStateHasChanges()
         )
