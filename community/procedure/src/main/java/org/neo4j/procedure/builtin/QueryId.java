@@ -19,57 +19,27 @@
  */
 package org.neo4j.procedure.builtin;
 
-import java.util.Objects;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
-public class QueryId {
+public final class QueryId {
     public static final String PREFIX = "query-";
     private static final String EXPECTED_FORMAT_MSG = "(expected format: query-<id>)";
-    private final long internalId;
 
-    public QueryId(long internalId) throws InvalidArgumentsException {
-        if (internalId <= 0) {
-            throw new InvalidArgumentsException("Negative ids are not supported " + EXPECTED_FORMAT_MSG);
-        }
-        this.internalId = internalId;
-    }
+    private QueryId() {}
 
-    public static QueryId parse(String queryIdText) throws InvalidArgumentsException {
+    public static long parse(String queryIdText) throws InvalidArgumentsException {
         try {
             if (!queryIdText.startsWith(PREFIX)) {
                 throw new InvalidArgumentsException("Expected prefix " + PREFIX);
             }
             String qid = queryIdText.substring(PREFIX.length());
             var internalId = Long.parseLong(qid);
-            return new QueryId(internalId);
+            if (internalId <= 0) {
+                throw new InvalidArgumentsException("Negative ids are not supported " + EXPECTED_FORMAT_MSG);
+            }
+            return internalId;
         } catch (Exception e) {
             throw new InvalidArgumentsException("Could not parse id " + queryIdText + " " + EXPECTED_FORMAT_MSG, e);
         }
-    }
-
-    public long internalId() {
-        return internalId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        QueryId other = (QueryId) o;
-        return internalId == other.internalId;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(internalId);
-    }
-
-    @Override
-    public String toString() {
-        return PREFIX + internalId;
     }
 }

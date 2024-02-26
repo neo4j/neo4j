@@ -71,6 +71,6 @@ public class TransactionStatusIT {
                 (KernelTransactionImplementation) kernelTransaction,
                 nanoClock(),
                 ((KernelTransactionImplementation) kernelTransaction).concurrentCursorContextLookup());
-        assertDoesNotThrow(() -> new TransactionId("test", handle.getTransactionSequenceNumber()));
+        assertDoesNotThrow(() -> TransactionId.formatTransactionId("test", handle.getTransactionSequenceNumber()));
     }
 }

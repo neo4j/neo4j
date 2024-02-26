@@ -871,9 +871,8 @@ class Neo4jTransactionalContextIT {
         var currentQueryId = transactions.get(0).get("currentQueryId");
 
         // Then
-        var expectedTransactionId = new TransactionId(
-                        outerTx.getDatabaseName(), outerTx.kernelTransaction().getTransactionSequenceNumber())
-                .toString();
+        var expectedTransactionId = TransactionId.formatTransactionId(
+                outerTx.getDatabaseName(), outerTx.kernelTransaction().getTransactionSequenceNumber());
         var expectedQueryId = String.format("query-%s", ctx.executingQuery().id());
 
         assertThat(transactionId).isEqualTo(expectedTransactionId);

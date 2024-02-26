@@ -27,18 +27,8 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 class QueryIdTest {
     @Test
-    void printsQueryIds() throws InvalidArgumentsException {
-        assertThat(new QueryId(12L).toString()).isEqualTo("query-12");
-    }
-
-    @Test
-    void doesNotConstructNegativeQueryIds() {
-        assertThrows(InvalidArgumentsException.class, () -> new QueryId(-15L));
-    }
-
-    @Test
     void parsesQueryIds() throws InvalidArgumentsException {
-        assertThat(QueryId.parse("query-14")).isEqualTo(new QueryId(14L));
+        assertThat(QueryId.parse("query-14")).isEqualTo(14L);
     }
 
     @Test
