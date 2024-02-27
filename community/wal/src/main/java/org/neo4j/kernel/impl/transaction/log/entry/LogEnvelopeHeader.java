@@ -99,7 +99,13 @@ public record LogEnvelopeHeader(
          * An envelope of this type describes the end of a transaction that would not fully fit within a segment
          * block of a log file
          */
-        END((byte) 4);
+        END((byte) 4),
+        /**
+         * An envelope of this type describes a contiguous length of zero-bytes of a specific length.
+         * <strong>PLEASE NOTE</strong> envelopes of this type MUST only ever appear as the first envelope of
+         * the first segment in a log file. Anywhere else this appears must be considered a malformed log file.
+         */
+        START_OFFSET((byte) 5);
 
         private static final EnvelopeType[] VALUES = EnvelopeType.values();
         public final byte typeValue;

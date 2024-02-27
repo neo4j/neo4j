@@ -97,6 +97,11 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     private final int segmentMask;
 
     private LogVersionedStoreChannel channel;
+    // The log file header of the current file.
+    private LogHeader logHeader;
+    // In some situations we're not able to enforce the checksum chain, like when we reposition
+    // the channel position as we don't know the checksum of the envelope before it.
+    private boolean enforceChecksumChain;
     private int previousChecksum;
     private long currentSegment;
     private EnvelopeType payloadType;
@@ -130,12 +135,12 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             long startPosition = channel.position();
             readAndValidateFileHeader(true);
             if (startPosition < segmentBlockSize) {
-                loadSegmentIntoBuffer(1);
-            } else {
-                LogPositionMarker positionMarker = new LogPositionMarker();
-                positionMarker.mark(channel.getLogVersion(), startPosition);
-                setLogPosition(positionMarker);
+                startPosition = segmentBlockSize;
             }
+
+            LogPositionMarker positionMarker = new LogPositionMarker();
+            positionMarker.mark(channel.getLogVersion(), startPosition);
+            setLogPosition(positionMarker);
             successfulInitialization = true;
         } finally {
             if (!successfulInitialization) {
@@ -213,7 +218,9 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             }
         } else {
             loadSegmentIntoBuffer(newSegment);
-            if (newBufferOffset != 0) {
+            // Even if we're on offset 0, on the first segment we need to invoke this to make sure
+            // we're skipping the START_OFFSET envelope if it is present.
+            if (newBufferOffset != 0 || newSegment == 1) {
                 readAllEnvelopesUpToIncluding(newBufferOffset);
             }
         }
@@ -344,8 +351,12 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     private void readAllEnvelopesUpToIncluding(int bufferOffset) throws IOException {
         assert currentSegment != 0;
         payloadType = null;
+        // We need to skip the first checksum chain check as we don't know the previous checksum.
+        enforceChecksumChain = false;
         payloadVersion = IGNORE_KERNEL_VERSION;
         buffer.position(0);
+        payloadStartOffset = 0;
+        payloadEndOffset = 0;
 
         if (bufferOffset == buffer.limit()) {
             // Positioning at the end of the file
@@ -355,11 +366,53 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             return;
         }
 
-        buffer.position(0);
+        if (currentSegment == 1) {
+            consumeStartOffsetEnvelopeIfPresent();
+
+            // Since we're in the first segment, we might be able to restore the previous checksum from the file
+            // header.
+            if (logHeader != null) {
+                previousChecksum = logHeader.getPreviousLogFileChecksum();
+                enforceChecksumChain = true;
+            }
+
+            if (bufferOffset <= buffer.position()) {
+                // One of the two situation:
+                // (a) didn't had an START_OFFSET envelope, which means buffer.position() is still 0 and we
+                //     asked for bufferOffset to be 0. So we can just return and don't have to read anything
+                //     else
+                // (b) we had an START_OFFSET envelope, which means buffer.position() is now pointing to after
+                //     it and we asked for an offset inside the START_OFFSET envelope. So we don't have to
+                //     read anything else since we already skipped the START_OFFSET and positioned the buffer
+                //     at the start of the next envelope.
+                return;
+            }
+        }
+
         do {
             readEnvelopeHeader();
             skipToNextEnvelope();
         } while (payloadEndOffset <= bufferOffset);
+    }
+
+    private void consumeStartOffsetEnvelopeIfPresent() throws IOException {
+        assert buffer.position() == 0 : "buffer was not positioned at 0 when started checking for START_OFFSET";
+
+        buffer.getInt(); // envelope checksum
+        var type = EnvelopeType.of(buffer.get());
+        if (type == EnvelopeType.START_OFFSET) {
+            int offsetLength = buffer.getInt();
+            assert offsetLength > 0 : "START_OFFSET payload length should be bigger than 0";
+            buffer.position(HEADER_SIZE); // Skip the whole header.
+            enforceZeros(offsetLength);
+            assert buffer.position() == HEADER_SIZE + offsetLength
+                    : "buffer should have been positioned after START_OFFSET envelope";
+            payloadStartOffset = buffer.position();
+            payloadEndOffset = buffer.position();
+        } else {
+            // Not a START_OFFSET, so we rewind to read the envelope and process it as usual.
+            buffer.position(0);
+        }
     }
 
     private void skipToNextEnvelope() {
@@ -405,19 +458,33 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     }
 
     private void enforceTerminalZeros() throws IOException {
-        while (buffer.remaining() > Long.BYTES) {
+        enforceZeros(buffer.remaining());
+    }
+
+    private void enforceZeros(int length) throws IOException {
+        checkState(
+                length <= buffer.remaining(),
+                "Tried to enforce more zeros (%d) than the buffer's remaining size (%d).",
+                length,
+                buffer.remaining());
+
+        while (length >= Long.BYTES) {
             long value = buffer.getLong();
             if (value != 0) {
                 buffer.position(buffer.position() - Long.BYTES);
-                printExcessData();
+                // We break here, so it will continue on the loop below and point out exactly
+                // the position where the non-zero was found.
+                break;
             }
+            length -= Long.BYTES;
         }
-        while (buffer.remaining() > 0) {
+        while (length > 0) {
             final var value = buffer.get();
             if (value != 0) {
                 buffer.position(buffer.position() - Byte.BYTES);
                 printExcessData();
             }
+            length -= Byte.BYTES;
         }
     }
 
@@ -428,11 +495,10 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         final var excess = new byte[remaining];
         buffer.get(excess);
         throw new InvalidLogEnvelopeReadException("Unexpected data found at end of buffer at position " + position
-                + ". Expecting only zero padding at this point. Found: " + Arrays.toString(excess));
+                + ". Expecting only zeros at this point. Found: " + Arrays.toString(excess));
     }
 
     private void readEnvelopeHeader() throws IOException {
-        EnvelopeType previousPayloadType = payloadType;
         int nextEnvelopeChecksum;
         EnvelopeType nextEnvelopeType;
 
@@ -449,6 +515,12 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             nextEnvelopeChecksum = buffer.getInt();
             nextEnvelopeType = EnvelopeType.of(buffer.get());
 
+            if (nextEnvelopeType == EnvelopeType.START_OFFSET) {
+                // If we're on the first segment, we should have read and skipped the START_OFFSET envelope before
+                // coming here. So any START_OFFSET envelope we encounter is an error/malformed log file.
+                throw new InvalidLogEnvelopeReadException(
+                        EnvelopeType.START_OFFSET, currentSegment, buffer.position() - (Integer.BYTES + Byte.BYTES));
+            }
             if (nextEnvelopeType != EnvelopeType.ZERO) {
                 break;
             }
@@ -473,8 +545,8 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         int previousEnvelopeChecksumFromHeader = buffer.getInt();
 
         payloadType = nextEnvelopeType;
-        payloadVersion = nextPayloadVersion;
         entryIndex = nextPayloadIndex;
+        payloadVersion = nextPayloadVersion;
         payloadStartOffset = buffer.position();
         payloadEndOffset = payloadStartOffset + nextPayloadLength;
         if (payloadEndOffset > segmentBlockSize) {
@@ -483,10 +555,16 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
                             .formatted(payloadStartOffset, nextPayloadLength, segmentBlockSize));
         }
 
-        if (previousPayloadType != null && previousChecksum != previousEnvelopeChecksumFromHeader) {
-            throw new ChecksumMismatchException(
-                    "Envelope checksum chain is broken. Previous checksum '%d', expected: '%d'.",
-                    previousChecksum, previousEnvelopeChecksumFromHeader);
+        if (enforceChecksumChain) {
+            if (previousChecksum != previousEnvelopeChecksumFromHeader) {
+                throw new ChecksumMismatchException(
+                        "Envelope checksum chain is broken. Previous checksum '%d', expected: '%d'.",
+                        previousChecksum, previousEnvelopeChecksumFromHeader);
+            }
+        } else {
+            // If we skipped the checksum chain check because we're missing the previous checksum then
+            // we can enable it again now that we'll have it again.
+            enforceChecksumChain = true;
         }
         previousChecksum = nextEnvelopeChecksum;
 
@@ -543,17 +621,17 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             // Too small file to contain data, just return and let other methods return ReadPastEndException
             return;
         }
-        LogHeader logHeader = LogFormat.parseHeader(buffer, true, null);
+
+        logHeader = LogFormat.parseHeader(buffer, true, null);
         if (logHeader == null) {
             // Pre-allocated file, just return and let other methods return ReadPastEndException
             return;
         }
+
+        enforceChecksumChain = true;
         if (overwriteChecksum) {
             checkState(payloadType == null, "Can not override checksum in the middle of a payload");
             previousChecksum = logHeader.getPreviousLogFileChecksum();
-
-            // Checksum validation only run if we have a valid previous envelope, fake it!
-            payloadType = EnvelopeType.FULL;
         }
 
         checkState(segmentBlockSize == logHeader.getSegmentBlockSize(), "Changing segmentBlockSize not supported");

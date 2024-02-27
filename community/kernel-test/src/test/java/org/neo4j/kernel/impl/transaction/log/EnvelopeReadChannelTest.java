@@ -86,7 +86,6 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadSingleEnvelopeWithinOneSegment(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var byteValue = (byte) random.nextInt();
         final var shortValue = (short) random.nextInt();
         final var intValue = random.nextInt();
@@ -115,7 +114,7 @@ class EnvelopeReadChannelTest {
                         .put(bytesValue)
                         .put(byteBufferValue.position(0)));
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             writeLogEnvelopeHeader(
                     buffer, payloadChecksum, EnvelopeType.FULL, payloadLength, BASE_TX_CHECKSUM, START_INDEX);
@@ -129,7 +128,7 @@ class EnvelopeReadChannelTest {
             buffer.put(byteBufferValue.position(0));
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -156,21 +155,20 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadMultipleEnvelopesWithinOneSegment(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var size = (segmentSize / 4) - HEADER_SIZE;
         final var bytes1 = bytes(random, size);
         final var bytes2 = bytes(random, size);
         final var bytes3 = bytes(random, size);
         final var checksums = new int[3];
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
             checksums[1] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[0], bytes2, START_INDEX + 1);
             checksums[2] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[1], bytes3, START_INDEX + 2);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -194,15 +192,14 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadEnvelopeThatFillsSingleSegment(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var bytes = bytes(random, segmentSize - HEADER_SIZE);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes, START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -217,11 +214,10 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadDataThatSpansAcrossTwoSegment(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var beginChunkSize = segmentSize - HEADER_SIZE;
         final var bytes = bytes(random, segmentSize);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
             final var checksum = writeHeaderAndPayload(
@@ -230,7 +226,7 @@ class EnvelopeReadChannelTest {
                     buffer, EnvelopeType.END, checksum, copyOfRange(bytes, beginChunkSize, bytes.length), START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -244,11 +240,10 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadDataInChunksThatSpansAcrossSingleSegment(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var beginChunkSize = segmentSize - HEADER_SIZE;
         final var bytes = bytes(random, segmentSize);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
             final var checksum = writeHeaderAndPayload(
@@ -257,7 +252,7 @@ class EnvelopeReadChannelTest {
                     buffer, EnvelopeType.END, checksum, copyOfRange(bytes, beginChunkSize, bytes.length), START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -275,14 +270,13 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadEnvelopesAcrossSegmentsWithZeroPaddingPresent(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var zeros = random.nextInt(HEADER_SIZE / 4, HEADER_SIZE / 2);
         final var chunkSize1 = segmentSize - HEADER_SIZE - zeros;
         final var chunkSize2 = HEADER_SIZE * 2;
         final var bytes1 = bytes(random, chunkSize1);
         final var bytes2 = bytes(random, chunkSize2);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
             final var checksum =
@@ -291,7 +285,7 @@ class EnvelopeReadChannelTest {
             writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksum, bytes2, START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -309,14 +303,13 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadEnvelopesAcrossSegmentsWhenEnvelopeForcesZeroPadding(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var zeros = new byte[Integer.BYTES];
         final var bytes1 = bytes(random, segmentSize - (HEADER_SIZE * 2) - Long.BYTES - zeros.length);
         final var l1 = random.nextLong();
         final var l2 = random.nextLong();
         final var l3 = random.nextLong();
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
             final var checksum =
@@ -336,8 +329,7 @@ class EnvelopeReadChannelTest {
             buffer.putLong(l2).putLong(l3);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
-
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -355,12 +347,11 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadEnvelopesWithMaximumZeroPadding(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var zeros = new byte[MAX_ZERO_PADDING_SIZE - 1];
         final var bytes1 = bytes(random, segmentSize - HEADER_SIZE - zeros.length);
         final var l1 = random.nextLong();
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
             final var checksum =
@@ -373,8 +364,7 @@ class EnvelopeReadChannelTest {
             buffer.putLong(l1);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
-
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -390,34 +380,32 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldEnforceZeroEnvelopesBiggerThanMaxPaddingContainsOnlyZeroes(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var zerosWithGibberish = new byte[segmentSize];
         final var gibberishPosition = random.nextInt(segmentSize / 4, 3 * segmentSize / 4);
         zerosWithGibberish[gibberishPosition] = 42;
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             buffer.put(zerosWithGibberish);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
             assertThatThrownBy(channel::get)
                     .isInstanceOf(InvalidLogEnvelopeReadException.class)
-                    .hasMessageContaining("Expecting only zero padding at this point");
+                    .hasMessageContaining("Expecting only zeros at this point");
         }
     }
 
     @ParameterizedTest
     @ValueSource(ints = {128, 256})
     void readingPreAllocatedFile(int segmentSize) throws Exception {
-        final var file = file(0);
         final var zeros = new byte[segmentSize * 3];
-        writeSomeData(file, buffer -> buffer.put(zeros));
+        writeSomeData(buffer -> buffer.put(zeros));
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             assertThatThrownBy(channel::get).isInstanceOf(ReadPastEndException.class);
@@ -427,8 +415,7 @@ class EnvelopeReadChannelTest {
     @ParameterizedTest
     @ValueSource(ints = {128, 256})
     void shouldFailWhenReadingAnEmptyFile(int segmentSize) throws IOException {
-        final var logChannel = logChannel(fileSystem, file(0));
-
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             assertThatThrownBy(channel::get).isInstanceOf(ReadPastEndException.class);
@@ -439,17 +426,16 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldFailWhenEndOfSegmentAfterAnEnvelopeIsNotZeros(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var bytes = bytes(random, segmentSize - (HEADER_SIZE * 2));
         byte garbage = (byte) random.nextInt(1, 127);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes, START_INDEX);
             buffer.put(garbage); // Should be zero padding here
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -459,7 +445,7 @@ class EnvelopeReadChannelTest {
             assertThatThrownBy(channel::get)
                     .isInstanceOf(InvalidLogEnvelopeReadException.class)
                     .hasMessageContainingAll(
-                            "end of buffer", "Expecting only zero padding at this point", "[" + garbage + "]");
+                            "end of buffer", "Expecting only zeros at this point", "[" + garbage + "]");
         }
     }
 
@@ -467,8 +453,7 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldFailWhenInvalidPayloadLengthIsSpecified(int segmentSize) throws IOException {
         final var bytes = bytes(random, segmentSize / 2);
-        final var path = file(0);
-        writeSomeData(path, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
             final var payloadChecksum = buildChecksum(
@@ -478,7 +463,7 @@ class EnvelopeReadChannelTest {
             buffer.put(bytes);
         });
 
-        final var logChannel = logChannel(fileSystem, path);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -493,14 +478,12 @@ class EnvelopeReadChannelTest {
     void shouldFailWhenEnvelopeNotCompleted(int segmentSize) throws IOException {
         final var beginSize = segmentSize / 2;
         final var bytes = bytes(random, beginSize);
-        final var path = file(0);
-        writeSomeData(path, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, BASE_TX_CHECKSUM, bytes, START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, path);
-
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -519,17 +502,15 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldFailWhenStartOfNewSegmentIsInvalid(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var bytes = bytes(random, segmentSize - HEADER_SIZE);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes, START_INDEX);
             buffer.put((byte) 13);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
-
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -568,8 +549,7 @@ class EnvelopeReadChannelTest {
             writeHeaderAndPayload(buffer, EnvelopeType.END, endChecksum.intValue(), bytes2, START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, path1);
-
+        final var logChannel = logChannel(path1);
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, new TwoFileLogVersionBridge(path2), EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -607,8 +587,7 @@ class EnvelopeReadChannelTest {
             writeHeaderAndPayload(buffer, EnvelopeType.END, endChecksum.intValue(), bytes2, START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, path1);
-
+        final var logChannel = logChannel(path1);
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, new TwoFileLogVersionBridge(path2), EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -625,15 +604,14 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldBeAbleToReadFileThatStartsWithNonBaseChecksum(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var bytes = bytes(random, segmentSize / 2);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize, 42);
             writeHeaderAndPayload(buffer, EnvelopeType.FULL, 666, bytes, START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -647,7 +625,6 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldFailWhenPayloadChecksumIsInvalid(int segmentSize) throws IOException {
         // GIVEN
-        final var file = file(0);
         final var bytes = bytes(random, segmentSize / 4);
 
         checksum.reset();
@@ -655,7 +632,7 @@ class EnvelopeReadChannelTest {
         final var payloadChecksum = (int) checksum.getValue();
         final var invalid = random.nextBoolean() ? payloadChecksum + 1 : payloadChecksum - 1;
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             writeHeaderAndPayload(
                     buffer,
@@ -667,7 +644,7 @@ class EnvelopeReadChannelTest {
                     START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -681,12 +658,11 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadDataThatSpansAcrossMultipleSegments(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var totalSize = segmentSize * 2;
         final var chunkSize = segmentSize - HEADER_SIZE;
         final var bytes = bytes(random, totalSize);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
             var checksum = writeHeaderAndPayload(
@@ -697,8 +673,7 @@ class EnvelopeReadChannelTest {
                     buffer, EnvelopeType.END, checksum, copyOfRange(bytes, chunkSize * 2, bytes.length), START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
-
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -712,12 +687,11 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void shouldReadDataInChunksThatSpansAcrossMultipleSegments(int segmentSize) throws Exception {
         // GIVEN
-        final var file = file(0);
         final var chunkCount = 3;
         final var chunkSize = segmentSize - HEADER_SIZE;
         final var bytes = bytes(random, chunkSize * 3);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
             var checksum = writeHeaderAndPayload(
@@ -728,7 +702,7 @@ class EnvelopeReadChannelTest {
                     buffer, EnvelopeType.END, checksum, copyOfRange(bytes, chunkSize * 2, chunkSize * 3), START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -742,13 +716,229 @@ class EnvelopeReadChannelTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldSkipStartOffsetEnvelope(int segmentSize) throws Exception {
+        // GIVEN
+        final var startOffsetLength = random.nextInt(1, 64);
+
+        final var longValue = random.nextLong();
+        final var mainPayloadLength = Long.BYTES;
+        final var mainPayloadChecksum = buildChecksum(
+                EnvelopeType.FULL, mainPayloadLength, BASE_TX_CHECKSUM, (buffer) -> buffer.putLong(longValue));
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+            writeLogEnvelopeHeader(
+                    buffer, mainPayloadChecksum, EnvelopeType.FULL, mainPayloadLength, BASE_TX_CHECKSUM, START_INDEX);
+            buffer.putLong(longValue);
+        });
+
+        final var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            // THEN
+            assertThat(longValue).isEqualTo(channel.getLong());
+            assertThat(mainPayloadChecksum).isEqualTo(channel.getChecksum());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldSkipStartOffsetEnvelopeWhenOverridingChannelPosition(int segmentSize) throws Exception {
+        // GIVEN
+        final var startOffsetLength = random.nextInt(1, 64);
+
+        final var longValue = random.nextLong();
+        final var mainPayloadLength = Long.BYTES;
+        final var mainPayloadChecksum = buildChecksum(
+                EnvelopeType.FULL, mainPayloadLength, BASE_TX_CHECKSUM, (buffer) -> buffer.putLong(longValue));
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+            writeLogEnvelopeHeader(
+                    buffer, mainPayloadChecksum, EnvelopeType.FULL, mainPayloadLength, BASE_TX_CHECKSUM, START_INDEX);
+            buffer.putLong(longValue);
+        });
+
+        final var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            // THEN
+            assertThat(longValue).isEqualTo(channel.getLong());
+            assertThat(mainPayloadChecksum).isEqualTo(channel.getChecksum());
+
+            // Now let's override channel position to the beginning of the segment again:
+            channel.position(segmentSize);
+            assertThat(longValue).isEqualTo(channel.getLong());
+            assertThat(mainPayloadChecksum).isEqualTo(channel.getChecksum());
+
+            // Now let's override channel position to the middle of the START_OFFSET envelope:
+            channel.position(segmentSize + HEADER_SIZE / 2);
+            assertThat(longValue).isEqualTo(channel.getLong());
+            assertThat(mainPayloadChecksum).isEqualTo(channel.getChecksum());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldFailIfStartOffsetEnvelopePayloadHasNonZerosContent(int segmentSize) throws Exception {
+        // GIVEN
+        final var startOffsetLength = random.nextInt(1, 64);
+
+        final var longValue = random.nextLong();
+        final var mainPayloadLength = Long.BYTES;
+        final var mainPayloadChecksum = buildChecksum(
+                EnvelopeType.FULL, mainPayloadLength, BASE_TX_CHECKSUM, (buffer) -> buffer.putLong(longValue));
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            writeStartOffsetEnvelope(buffer, startOffsetLength, true);
+            writeLogEnvelopeHeader(buffer, mainPayloadChecksum, EnvelopeType.FULL, mainPayloadLength, 0, START_INDEX);
+            buffer.putLong(longValue);
+        });
+
+        final var logChannel = logChannel();
+        assertThatThrownBy(() -> new EnvelopeReadChannel(
+                        logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false))
+                .isInstanceOf(InvalidLogEnvelopeReadException.class)
+                .hasMessageContaining("Expecting only zeros at this point.");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldFailIfStartOffsetIsInAnotherSegmentThatNotTheFirstOne(int segmentSize) throws Exception {
+        // GIVEN
+        // First segment content: FULL
+        final var firstPayloadLength = segmentSize - HEADER_SIZE;
+        final var firstPayloadBytesValue = bytes(random, firstPayloadLength);
+        final var firstPayloadChecksum = buildChecksum(
+                EnvelopeType.FULL,
+                firstPayloadLength,
+                BASE_TX_CHECKSUM,
+                (buffer) -> buffer.put(firstPayloadBytesValue));
+
+        // Second segment: OFFSET + FULL
+        final var startOffsetLength = random.nextInt(1, 16);
+
+        final var secondPayloadLongValue = random.nextLong();
+        final var secondPayloadLength = Long.BYTES;
+        final var secondPayloadChecksum = buildChecksum(
+                EnvelopeType.FULL,
+                secondPayloadLength,
+                firstPayloadChecksum,
+                (buffer) -> buffer.putLong(secondPayloadLongValue));
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            // Write first segment:
+            writeLogEnvelopeHeader(
+                    buffer, firstPayloadChecksum, EnvelopeType.FULL, firstPayloadLength, BASE_TX_CHECKSUM, START_INDEX);
+            buffer.put(firstPayloadBytesValue);
+
+            // Write second segment:
+            // - First the offset:
+            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+            // - Then the second full:
+            writeLogEnvelopeHeader(
+                    buffer,
+                    secondPayloadChecksum,
+                    EnvelopeType.FULL,
+                    secondPayloadLength,
+                    firstPayloadChecksum,
+                    START_INDEX + 1);
+            buffer.putLong(secondPayloadLongValue);
+        });
+
+        final var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            // THEN
+            // We can read the first payload just fine:
+            byte[] readFirstPayload = new byte[firstPayloadLength];
+            channel.get(readFirstPayload, firstPayloadLength);
+            assertThat(firstPayloadBytesValue).isEqualTo(readFirstPayload);
+            assertThat(firstPayloadChecksum).isEqualTo(channel.getChecksum());
+
+            // But we fail to read the second one, because there is a START_OFFSET envelope at the beginning of the
+            // the second segment:
+            assertThatThrownBy(channel::getLong)
+                    .isInstanceOf(InvalidLogEnvelopeReadException.class)
+                    .hasMessage(
+                            "Unable to read log envelope data: unexpected chunk type 'START_OFFSET' at position 0 of "
+                                    + "segment 2");
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void shouldFailIfStartOffsetEnvelopeIsNotFirstEnvelopeOfSegment(int segmentSize) throws Exception {
+        // GIVEN
+        final var firstPayloadIntValue = random.nextInt();
+        final var firstPayloadLength = Integer.BYTES;
+        final var firstPayloadChecksum = buildChecksum(
+                EnvelopeType.FULL,
+                firstPayloadLength,
+                BASE_TX_CHECKSUM,
+                (buffer) -> buffer.putInt(firstPayloadIntValue));
+
+        final var startOffsetLength = random.nextInt(1, 32);
+
+        final var secondPayloadLongValue = random.nextLong();
+        final var secondPayloadLength = Long.BYTES;
+        final var secondPayloadChecksum = buildChecksum(
+                EnvelopeType.FULL,
+                secondPayloadLength,
+                firstPayloadChecksum,
+                (buffer) -> buffer.putLong(secondPayloadLongValue));
+
+        writeSomeData(buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            // Write one payload:
+            writeLogEnvelopeHeader(
+                    buffer, firstPayloadChecksum, EnvelopeType.FULL, firstPayloadLength, BASE_TX_CHECKSUM, START_INDEX);
+            buffer.putInt(firstPayloadIntValue);
+
+            // Write the offset positioned wrong:
+            writeStartOffsetEnvelope(buffer, startOffsetLength, false);
+
+            // Write another payload:
+            writeLogEnvelopeHeader(
+                    buffer,
+                    secondPayloadChecksum,
+                    EnvelopeType.FULL,
+                    secondPayloadLength,
+                    firstPayloadChecksum,
+                    START_INDEX + 1);
+            buffer.putLong(secondPayloadLongValue);
+        });
+
+        final var logChannel = logChannel();
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            // THEN
+            // We can read the first payload just fine:
+            assertThat(firstPayloadIntValue).isEqualTo(channel.getInt());
+            assertThat(firstPayloadChecksum).isEqualTo(channel.getChecksum());
+
+            // But when we try to read the second payload, since it needs to go through the START_OFFSET one
+            // it will blow-up as it is not at the beginning of the segment.
+            assertThatThrownBy(channel::getLong)
+                    .isInstanceOf(InvalidLogEnvelopeReadException.class)
+                    .hasMessage(
+                            "Unable to read log envelope data: unexpected chunk type 'START_OFFSET' at position 26 of segment 1");
+        }
+    }
+
     @Test
     void rawReadAheadChannelOpensRawChannelOnNext() throws IOException {
         // GIVEN
         final var path = file(0);
         directory.createFile(path.getFileName().toString());
 
-        final var logChannel = logChannel(fileSystem, path);
+        final var logChannel = logChannel();
         final var capturingLogVersionBridge = new RawCapturingLogVersionBridge();
 
         try (var channel = new EnvelopeReadChannel(
@@ -764,8 +954,6 @@ class EnvelopeReadChannelTest {
     @ValueSource(ints = {128, 256})
     void setPositionAcrossOneSegment(int segmentSize) throws IOException {
         // GIVEN
-        final var path = file(0);
-
         final var payloadSize = (segmentSize / 8);
         final var envelopeSize = payloadSize + HEADER_SIZE;
         final var bytes1 = bytes(random, payloadSize);
@@ -776,7 +964,7 @@ class EnvelopeReadChannelTest {
                 IntStream.range(0, 3).map(i -> segmentSize + (i * envelopeSize)).toArray();
 
         final var checksums = new int[3];
-        writeSomeData(path, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
 
             checksums[0] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes1, START_INDEX);
@@ -784,7 +972,7 @@ class EnvelopeReadChannelTest {
             checksums[2] = writeHeaderAndPayload(buffer, EnvelopeType.FULL, checksums[1], bytes3, START_INDEX + 2);
         });
 
-        final var logChannel = logChannel(fileSystem, path);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -814,15 +1002,14 @@ class EnvelopeReadChannelTest {
     void shouldFailForReadsOutsideOfTerminatingEnvelope(EnvelopeType envelopeType) throws Exception {
         int segmentSize = 128;
         // GIVEN
-        final var file = file(0);
         final var bytes = bytes(random, segmentSize / 2);
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             writeHeaderAndPayload(buffer, envelopeType, BASE_TX_CHECKSUM, bytes, START_INDEX);
         });
 
-        final var logChannel = logChannel(fileSystem, file);
+        final var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             // THEN
@@ -838,11 +1025,10 @@ class EnvelopeReadChannelTest {
     @Test
     void nextEntry() throws IOException {
         int segmentSize = 128;
-        final var file = file(0);
         final var bytes = bytes(random, 8);
         int entrySize = HEADER_SIZE + 8;
 
-        writeSomeData(file, buffer -> {
+        writeSomeData(buffer -> {
             writeZeroSegment(buffer, segmentSize);
             int checksum = writeHeaderAndPayload(buffer, EnvelopeType.FULL, BASE_TX_CHECKSUM, bytes, START_INDEX);
             checksum = writeHeaderAndPayload(buffer, EnvelopeType.BEGIN, checksum, bytes, START_INDEX + 1);
@@ -866,7 +1052,7 @@ class EnvelopeReadChannelTest {
             segmentSize * 2 + entrySize * 3,
         };
 
-        var logChannel = logChannel(fileSystem, file);
+        var logChannel = logChannel();
         try (var channel = new EnvelopeReadChannel(
                 logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             for (int i = 0; i < positions.length; i++) {
@@ -885,7 +1071,7 @@ class EnvelopeReadChannelTest {
         final var file = file(0);
         writeSomeData(file, buffer -> {});
 
-        var logChannel = logChannel(fileSystem, file);
+        var logChannel = logChannel();
         try (var channel =
                 new EnvelopeReadChannel(logChannel, 512, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
             assertThatThrownBy(channel::get).isInstanceOf(ReadPastEndException.class);
@@ -894,6 +1080,14 @@ class EnvelopeReadChannelTest {
 
     private Path file(int index) {
         return directory.homePath().resolve(String.valueOf(index));
+    }
+
+    /**
+     * Write data to file(0).
+     * A shortcut for the most common case, see {@link #writeSomeData(Path, ThrowingConsumer)} to write to other files.
+     */
+    private void writeSomeData(ThrowingConsumer<ByteBuffer, IOException> consumer) throws IOException {
+        writeSomeData(file(0), consumer);
     }
 
     private void writeSomeData(Path file, ThrowingConsumer<ByteBuffer, IOException> consumer) throws IOException {
@@ -1042,14 +1236,26 @@ class EnvelopeReadChannelTest {
                 .putInt(previousChecksum);
     }
 
+    private void writeStartOffsetEnvelope(ByteBuffer buffer, int length, boolean gibberish) {
+        final var payload = gibberish ? bytes(random, length) : new byte[length];
+        writeHeaderAndPayload(buffer, EnvelopeType.START_OFFSET, 0, payload, 0);
+    }
+
     private static byte[] bytes(RandomSupport random, int size) {
         final var bytes = new byte[size];
         random.nextBytes(bytes);
         return bytes;
     }
 
-    private static PhysicalLogVersionedStoreChannel logChannel(FileSystemAbstraction fileSystem, Path file)
-            throws IOException {
+    /**
+     * Get a PhysicalLogVersionedStoreChannel to log on file(0).
+     * Shortcut for the most common use, see {@link #logChannel(Path)} for other files.
+     */
+    private PhysicalLogVersionedStoreChannel logChannel() throws IOException {
+        return logChannel(file(0));
+    }
+
+    private PhysicalLogVersionedStoreChannel logChannel(Path file) throws IOException {
         return new PhysicalLogVersionedStoreChannel(
                 fileSystem.write(file),
                 0,
@@ -1075,7 +1281,7 @@ class EnvelopeReadChannelTest {
                 returned = true;
                 channel.close();
 
-                return logChannel(fileSystem, path);
+                return logChannel(path);
             }
             return channel;
         }

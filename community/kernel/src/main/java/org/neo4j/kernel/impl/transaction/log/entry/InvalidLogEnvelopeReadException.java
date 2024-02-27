@@ -33,6 +33,11 @@ public class InvalidLogEnvelopeReadException extends IOException {
         this(message("unexpected chunk type '%s'".formatted(unexpectedType)));
     }
 
+    public InvalidLogEnvelopeReadException(EnvelopeType unexpectedType, long segment, int position) {
+        this(message("unexpected chunk type '%s' at position %d of segment %d"
+                .formatted(unexpectedType, position, segment)));
+    }
+
     public InvalidLogEnvelopeReadException(String message) {
         super(message);
     }
