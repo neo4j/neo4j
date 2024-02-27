@@ -509,6 +509,7 @@ case object CypherStatefulShortestPlanningModeOption
       cypherConfigField = Some(_.statefulShortestPlanningMode)
     ) {
 
+  // If you get a bad CartesianProduct, see the comment on StatefulShortestPlanningMode.INTO_ONLY
   case object intoOnly extends CypherStatefulShortestPlanningModeOption("into_only")
   case object allIfPossible extends CypherStatefulShortestPlanningModeOption("all_if_possible")
   case object costWeighted extends CypherStatefulShortestPlanningModeOption("cost_weighted")

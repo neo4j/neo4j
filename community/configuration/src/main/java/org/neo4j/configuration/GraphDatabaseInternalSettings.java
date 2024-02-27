@@ -209,6 +209,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public enum StatefulShortestPlanningMode {
         /**
          * Only plan StatefulShortestPath(Into).
+         *
+         * Warning: when a selective path pattern is placed between two disconnected patterns, e.g.:
+         *
+         * MATCH ()-->(x), (y)-->()
+         * MATCH p = ANY SHORTEST (x)-->+(y)
+         *
+         * the planner will produce a CartesianProduct of boundary nodes, followed by a StatefulShortestPath(Into),
+         * before solving other patterns. If cardinality of such CartesianProduct is high, you might want to put
+         * your selective path pattern into a CALL {} subquery to solve the other patterns first.
          */
         INTO_ONLY,
         /**
