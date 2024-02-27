@@ -63,12 +63,16 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |RETURN 1 AS result
         |UNION
         |CALL { CREATE (x) } IN TRANSACTIONS
-        |RETURN 2 AS result""".stripMargin
+        |RETURN 2 AS result
+        |UNION
+        |CALL { CREATE (x) } IN TRANSACTIONS
+        |RETURN 3 AS result""".stripMargin
     expectErrorsFrom(
       query,
-      Set(
+      List(
         SemanticError("CALL { ... } IN TRANSACTIONS in a UNION is not supported", InputPosition(0, 1, 1)),
-        SemanticError("CALL { ... } IN TRANSACTIONS in a UNION is not supported", InputPosition(61, 4, 1))
+        SemanticError("CALL { ... } IN TRANSACTIONS in a UNION is not supported", InputPosition(61, 4, 1)),
+        SemanticError("CALL { ... } IN TRANSACTIONS in a UNION is not supported", InputPosition(122, 7, 1))
       )
     )
   }

@@ -95,17 +95,17 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
 
   def expectErrorsFrom(
     query: String,
-    expectedErrors: Set[SemanticError],
+    expectedErrors: Iterable[SemanticError],
     pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
   ): Unit =
-    runSemanticAnalysisWithPipeline(pipeline, query).errors.toSet shouldEqual expectedErrors
+    runSemanticAnalysisWithPipeline(pipeline, query).errors should contain theSameElementsAs expectedErrors
 
   def expectErrorMessagesFrom(
     query: String,
-    expectedErrors: Set[String],
+    expectedErrors: Iterable[String],
     pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
   ): Unit =
-    runSemanticAnalysisWithPipeline(pipeline, query).errorMessages.toSet shouldEqual expectedErrors
+    runSemanticAnalysisWithPipeline(pipeline, query).errorMessages should contain theSameElementsAs expectedErrors
 
   def expectNotificationsFrom(
     query: String,

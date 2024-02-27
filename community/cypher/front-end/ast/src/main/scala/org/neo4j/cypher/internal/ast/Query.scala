@@ -571,30 +571,33 @@ sealed trait Union extends Query {
 
   def containsUpdates: Boolean = lhs.containsUpdates || rhs.containsUpdates
 
-  private def semanticCheckAbstract(
-    queryCheck: Query => SemanticCheck,
-    singleQueryCheck: SingleQuery => SemanticCheck
-  ): SemanticCheck =
+  private def checkRecursively(semanticCheck: Query => SemanticCheck): SemanticCheck = {
+    def checkSingleQuery(singleQuery: SingleQuery): SemanticCheck = withScopedState {
+      semanticCheck(singleQuery) chain
+        checkNoInputDataStreamInsideUnionElement(singleQuery) chain
+        checkNoCallInTransactionInsideUnionElement(singleQuery)
+    }
+
+    def checkNestedQuery(query: Query): SemanticCheck =
+      query match {
+        case single: SingleQuery => checkSingleQuery(single)
+        case union: Union => withScopedState {
+            SemanticCheck.nestedCheck(union.checkRecursively(semanticCheck))
+          }
+      }
+
     checkUnionAggregation chain
-      withScopedState(queryCheck(lhs)) chain
-      withScopedState(singleQueryCheck(rhs)) chain
+      checkNestedQuery(lhs) chain
+      checkSingleQuery(rhs) chain
       checkColumnNamesAgree chain
       defineUnionVariables chain
-      checkInputDataStream chain
-      checkNoCallInTransactionInsideUnion chain
       SemanticState.recordCurrentScope(this)
+  }
 
-  def semanticCheck: SemanticCheck =
-    semanticCheckAbstract(
-      lhs => SemanticCheck.nestedCheck(lhs.semanticCheck),
-      rhs => rhs.semanticCheck
-    )
+  def semanticCheck: SemanticCheck = checkRecursively(_.semanticCheck)
 
   override def semanticCheckInSubqueryExpressionContext(canOmitReturn: Boolean): SemanticCheck =
-    semanticCheckAbstract(
-      lhs => SemanticCheck.nestedCheck(lhs.semanticCheckInSubqueryExpressionContext(canOmitReturn)),
-      rhs => rhs.semanticCheckInSubqueryExpressionContext(canOmitReturn)
-    )
+    checkRecursively(_.semanticCheckInSubqueryExpressionContext(canOmitReturn))
 
   override def checkImportingWith: SemanticCheck =
     SemanticCheck.nestedCheck(lhs.checkImportingWith) chain
@@ -605,10 +608,7 @@ sealed trait Union extends Query {
   override def isReturning: Boolean = rhs.isReturning // we assume lhs has the same value
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
-    semanticCheckAbstract(
-      lhs => SemanticCheck.nestedCheck(lhs.semanticCheckInSubqueryContext(outer)),
-      rhs => rhs.semanticCheckInSubqueryContext(outer)
-    )
+    checkRecursively(_.semanticCheckInSubqueryContext(outer))
 
   private def defineUnionVariables: SemanticCheck = (state: SemanticState) => {
     var result = SemanticCheckResult.success(state)
@@ -669,28 +669,15 @@ sealed trait Union extends Query {
   // Check that columns names agree between both parts of the union
   def checkColumnNamesAgree: SemanticCheck
 
-  private def checkInputDataStream: SemanticCheck = (state: SemanticState) => {
-
-    def checkSingleQuery(query: SingleQuery, state: SemanticState) = {
-      val idsClause = query.clauses.find(_.isInstanceOf[InputDataStream])
-      if (idsClause.isEmpty) {
-        SemanticCheckResult.success(state)
-      } else {
-        SemanticCheckResult.error(
-          state,
-          SemanticError("INPUT DATA STREAM is not supported in UNION queries", idsClause.get.position)
-        )
+  private def checkNoInputDataStreamInsideUnionElement(query: SingleQuery): SemanticCheck =
+    query
+      .clauses
+      .collectFirst {
+        case inputDataStream: InputDataStream => inputDataStream
       }
-    }
-
-    val lhsResult = lhs match {
-      case q: SingleQuery => checkSingleQuery(q, state)
-      case _              => SemanticCheckResult.success(state)
-    }
-
-    val rhsResult = checkSingleQuery(rhs, state)
-    SemanticCheckResult(state, lhsResult.errors ++ rhsResult.errors)
-  }
+      .foldSemanticCheck { inputDataStream =>
+        error("INPUT DATA STREAM is not supported in UNION queries", inputDataStream.position)
+      }
 
   private def checkUnionAggregation: SemanticCheck = (lhs, this) match {
     case (_: SingleQuery, _)                                      => None
@@ -701,13 +688,12 @@ sealed trait Union extends Query {
     case _ => Some(SemanticError("Invalid combination of UNION and UNION ALL", position))
   }
 
-  private def checkNoCallInTransactionInsideUnion: SemanticCheck = {
-    val nestedCallInTransactions = Seq(lhs, rhs).flatMap { qp => SubqueryCall.findTransactionalSubquery(qp) }
-
-    nestedCallInTransactions.foldSemanticCheck { nestedCallInTransactions =>
-      error("CALL { ... } IN TRANSACTIONS in a UNION is not supported", nestedCallInTransactions.position)
-    }
-  }
+  private def checkNoCallInTransactionInsideUnionElement(query: SingleQuery): SemanticCheck =
+    SubqueryCall
+      .findTransactionalSubquery(query)
+      .foldSemanticCheck { nestedCallInTransactions =>
+        error("CALL { ... } IN TRANSACTIONS in a UNION is not supported", nestedCallInTransactions.position)
+      }
 }
 
 /**
