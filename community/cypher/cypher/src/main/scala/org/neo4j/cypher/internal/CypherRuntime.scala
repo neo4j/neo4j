@@ -38,6 +38,7 @@ import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.kernel.api.AssertOpen
 import org.neo4j.logging.InternalLog
 import org.neo4j.notifications.RuntimeUnsupportedNotification
 
@@ -107,6 +108,8 @@ abstract class RuntimeContext {
   def anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   def materializedEntitiesMode: Boolean
   def isCommunity: Boolean
+
+  def assertOpen: AssertOpen
 }
 
 /**
@@ -129,7 +132,8 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
     materializedEntitiesMode: Boolean,
     operatorEngine: CypherOperatorEngineOption,
     interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    assertOpen: AssertOpen
   ): CONTEXT
 
   def config: CypherRuntimeConfiguration

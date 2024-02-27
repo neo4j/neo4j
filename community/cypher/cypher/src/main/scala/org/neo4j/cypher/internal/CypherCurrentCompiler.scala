@@ -200,7 +200,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       query.options.materializedEntitiesMode,
       query.options.queryOptions.operatorEngine,
       query.options.queryOptions.interpretedPipesFallback,
-      planState.anonymousVariableNameGenerator
+      planState.anonymousVariableNameGenerator,
+      transactionalContext.kernelTransaction()
     )
 
     val planningAttributesCopy = planState.planningAttributes

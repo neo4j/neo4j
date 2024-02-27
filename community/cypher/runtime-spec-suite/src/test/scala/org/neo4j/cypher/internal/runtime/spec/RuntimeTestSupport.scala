@@ -57,6 +57,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
+import org.neo4j.kernel.api.AssertOpen
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.query.CompilerInfo
@@ -806,7 +807,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       materializedEntitiesMode = queryOptions.materializedEntitiesMode,
       operatorEngine = queryOptions.queryOptions.operatorEngine,
       interpretedPipesFallback = queryOptions.queryOptions.interpretedPipesFallback,
-      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+      () => {}
     )
   }
 

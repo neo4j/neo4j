@@ -254,7 +254,8 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
           materializedEntitiesMode = true,
           operatorEngine = CypherOperatorEngineOption.default,
           interpretedPipesFallback = CypherInterpretedPipesFallbackOption.default,
-          anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
+          anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+          () => {}
         )
       }
     }
