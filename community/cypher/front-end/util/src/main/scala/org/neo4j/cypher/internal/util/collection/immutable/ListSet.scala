@@ -66,13 +66,12 @@ class ListSet[A](underlying: java.util.LinkedHashSet[A])
  * $factoryInfo
  *
  * @define Coll ListSet
- * @define coll list set
  */
 @SerialVersionUID(3L)
 object ListSet extends IterableFactory[ListSet] {
 
   /**
-   * The Builder defers building the ListSet until [[result()]] is called.
+   * The Builder defers building the $Coll until [[result()]] is called.
    * Thereby, the performance is much better than calling [[ListSet.incl()]] repeatedly:
    * The builder will only create one instance of an java.util.LinkedHashSet.
    */
