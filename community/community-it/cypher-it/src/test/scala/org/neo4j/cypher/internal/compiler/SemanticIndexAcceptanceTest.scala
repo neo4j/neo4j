@@ -107,7 +107,9 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
     graph.withTx(tx =>
       tx.schema().awaitIndexesOnline(30, TimeUnit.SECONDS)
     )
-    for (_ <- 1 to 1000) createLabeledNode("Label")
+    givenTx {
+      for (_ <- 1 to 1000) createLabeledNode("Label")
+    }
   }
 
   /**

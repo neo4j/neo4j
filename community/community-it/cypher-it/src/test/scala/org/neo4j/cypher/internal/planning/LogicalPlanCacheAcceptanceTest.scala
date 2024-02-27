@@ -350,12 +350,16 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
     val query: String = "match (n:Person:Dog) return n"
 
-    createLabeledNode("Dog")
-    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    givenTx {
+      createLabeledNode("Dog")
+      (0 until 50).foreach { _ => createLabeledNode("Person") }
+    }
     runQuery(query)
 
     // when
-    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    givenTx {
+      (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    }
     runQuery(query)
 
     // then
@@ -371,8 +375,11 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
     val query: String = "MATCH (n:Person) RETURN n"
-    (0 until MIN_NODES_ALL).foreach { _ => createNode() }
-    createLabeledNode("Person")
+
+    givenTx {
+      (0 until MIN_NODES_ALL).foreach { _ => createNode() }
+      createLabeledNode("Person")
+    }
 
     // when
     runQuery(query)
@@ -382,7 +389,9 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
 
     // when
     // we create enough nodes for NodesAllCardinality to trigger a replan
-    (0 until 10 * MIN_NODES_ALL).foreach { _ => createNode() }
+    givenTx {
+      (0 until 10 * MIN_NODES_ALL).foreach { _ => createNode() }
+    }
     runQuery(query)
 
     // then
@@ -394,7 +403,10 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock)
     val query: String = "MATCH (n:Person) RETURN n"
-    (0 until MIN_NODES_WITH_LABEL * 3).foreach { _ => createLabeledNode("Person") }
+
+    givenTx {
+      (0 until MIN_NODES_WITH_LABEL * 3).foreach { _ => createLabeledNode("Person") }
+    }
 
     // when
     runQuery(query)
@@ -405,7 +417,9 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     // when
     // we create enough nodes for NodesLabelCardinality("Dog") to trigger a replan
     // but not NodesAllCardinality or NodesLabelCardinality("Person")
-    (0 until MIN_NODES_WITH_LABEL * 3).foreach { _ => createLabeledNode("Dog") }
+    givenTx {
+      (0 until MIN_NODES_WITH_LABEL * 3).foreach { _ => createLabeledNode("Dog") }
+    }
     runQuery(query)
 
     // then
@@ -419,12 +433,16 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     compiler = createCompiler(cypherConfig(queryPlanTTL = 0), clock = clock, logProvider = logProvider)
     val query: String = "match (n:Person:Dog) return n"
 
-    createLabeledNode("Dog")
-    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    givenTx {
+      createLabeledNode("Dog")
+      (0 until 50).foreach { _ => createLabeledNode("Person") }
+    }
     runQuery(query)
 
     // when
-    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    givenTx {
+      (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    }
     val queryId = runQuery(query)
 
     // then

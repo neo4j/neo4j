@@ -47,8 +47,10 @@ class KillQueryTest extends ExecutionEngineFunSuite {
   test("run queries and kill them left and right") {
 
     // given
-    (1 to NODE_COUNT) foreach { x =>
-      createLabeledNode(Map("x" -> x, "name" -> ("apa" + x)), "Label")
+    givenTx {
+      (1 to NODE_COUNT) foreach { x =>
+        createLabeledNode(Map("x" -> x, "name" -> ("apa" + x)), "Label")
+      }
     }
 
     // when
