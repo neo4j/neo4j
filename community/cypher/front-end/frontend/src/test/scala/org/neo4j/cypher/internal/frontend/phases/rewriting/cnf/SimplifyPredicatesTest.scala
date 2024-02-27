@@ -188,9 +188,8 @@ class SimplifyPredicatesTest extends CypherFunSuite {
         AutoExtractedParameter("AUTOINT1", CTInteger)(position)
       )(position)
     ))(position)
-    val rewriter = flattenBooleanOperators.instance(CancellationChecker.NeverCancelled) andThen simplifyPredicates(
-      SemanticState.clean
-    )
+    val rewriter = flattenBooleanOperators.instance(CancellationChecker.NeverCancelled) andThen
+      simplifyPredicates(SemanticState.clean)
     val result = ast.rewrite(rewriter)
     ast should equal(result)
   }
