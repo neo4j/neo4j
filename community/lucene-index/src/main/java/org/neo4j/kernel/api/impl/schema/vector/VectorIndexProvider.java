@@ -57,6 +57,7 @@ import org.neo4j.values.storable.Value;
 
 public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     private final VectorIndexVersion version;
+    private final VectorDocumentStructure documentStructure;
     private final FileSystemAbstraction fileSystem;
     private final JobScheduler scheduler;
 
@@ -80,6 +81,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
                 config,
                 readOnlyChecker);
         this.version = version;
+        this.documentStructure = VectorDocumentStructures.documentStructureFor(version);
         this.fileSystem = fileSystem;
         this.scheduler = scheduler;
     }
@@ -112,7 +114,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour) {
         final var indexConfig = descriptor.getIndexConfig();
-        var luceneIndex = VectorIndexBuilder.create(descriptor, readOnlyChecker, config)
+        final var luceneIndex = VectorIndexBuilder.create(descriptor, documentStructure, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
                 .withWriterConfig(() -> IndexWriterConfigs.population(LuceneIndexType.VECTOR, config, indexConfig))
@@ -124,7 +126,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
 
         final var ignoreStrategy = new IgnoreStrategy(version, VectorUtils.vectorDimensionsFrom(indexConfig));
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
-        return new VectorIndexPopulator(luceneIndex, ignoreStrategy, similarityFunction);
+        return new VectorIndexPopulator(luceneIndex, ignoreStrategy, documentStructure, similarityFunction);
     }
 
     @Override
@@ -136,7 +138,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             boolean readOnly,
             StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
-        var builder = VectorIndexBuilder.create(descriptor, readOnlyChecker, config)
+        var builder = VectorIndexBuilder.create(descriptor, documentStructure, readOnlyChecker, config)
                 .withIndexStorage(getIndexStorage(descriptor.getId()));
         if (readOnly) {
             builder = builder.permanentlyReadOnly();
@@ -148,7 +150,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         final var indexConfig = descriptor.getIndexConfig();
         final var ignoreStrategy = new IgnoreStrategy(version, VectorUtils.vectorDimensionsFrom(indexConfig));
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
-        return new VectorIndexAccessor(luceneIndex, descriptor, ignoreStrategy, similarityFunction);
+        return new VectorIndexAccessor(luceneIndex, descriptor, ignoreStrategy, documentStructure, similarityFunction);
     }
 
     @Override

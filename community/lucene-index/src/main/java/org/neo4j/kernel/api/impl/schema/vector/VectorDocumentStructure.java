@@ -29,15 +29,16 @@ import org.apache.lucene.index.Term;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
 import org.neo4j.kernel.api.vector.VectorCandidate;
 
-class VectorDocumentStructure {
+abstract class VectorDocumentStructure {
     static final String ENTITY_ID_KEY = "id";
-    static final String VECTOR_VALUE_KEY = "vector";
 
     static Term newTermForChangeOrRemove(long id) {
         return new Term(ENTITY_ID_KEY, Long.toString(id));
     }
 
-    static Document createLuceneDocument(
+    abstract String vectorValueKeyFor(int dimensions);
+
+    Document createLuceneDocument(
             long id, VectorCandidate candidate, LuceneVectorSimilarityFunction similarityFunction) {
         final var vector = similarityFunction.maybeToValidVector(candidate);
         if (vector == null) {
@@ -47,7 +48,8 @@ class VectorDocumentStructure {
         final var document = new Document();
         final var idField = new StringField(ENTITY_ID_KEY, Long.toString(id), NO);
         final var idValueField = new NumericDocValuesField(ENTITY_ID_KEY, id);
-        final var valueField = new KnnFloatVectorField(VECTOR_VALUE_KEY, vector, similarityFunction.toLucene());
+        final var valueField =
+                new KnnFloatVectorField(vectorValueKeyFor(vector.length), vector, similarityFunction.toLucene());
         document.add(idField);
         document.add(idValueField);
         document.add(valueField);

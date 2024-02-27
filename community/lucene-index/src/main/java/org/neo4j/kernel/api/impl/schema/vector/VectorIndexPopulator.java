@@ -30,25 +30,28 @@ import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 
 class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<VectorIndexReader>> {
+    private final VectorDocumentStructure documentStructure;
     private final LuceneVectorSimilarityFunction similarityFunction;
 
     VectorIndexPopulator(
             DatabaseIndex<VectorIndexReader> luceneIndex,
             IndexUpdateIgnoreStrategy ignoreStrategy,
+            VectorDocumentStructure documentStructure,
             LuceneVectorSimilarityFunction similarityFunction) {
         super(luceneIndex, ignoreStrategy);
+        this.documentStructure = documentStructure;
         this.similarityFunction = similarityFunction;
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
-        return new VectorIndexPopulatingUpdater(writer, ignoreStrategy, similarityFunction);
+        return new VectorIndexPopulatingUpdater(writer, ignoreStrategy, documentStructure, similarityFunction);
     }
 
     @Override
     protected Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
         final var entityId = update.getEntityId();
         final var candidate = VectorCandidate.maybeFrom(update.values()[0]);
-        return VectorDocumentStructure.createLuceneDocument(entityId, candidate, similarityFunction);
+        return documentStructure.createLuceneDocument(entityId, candidate, similarityFunction);
     }
 }

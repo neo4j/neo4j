@@ -49,11 +49,17 @@ import org.neo4j.values.storable.Value;
 
 class VectorIndexReader extends AbstractLuceneIndexReader {
     private final List<SearcherReference> searchers;
+    private final VectorDocumentStructure documentStructure;
     private final int vectorDimensionality;
 
-    VectorIndexReader(IndexDescriptor descriptor, List<SearcherReference> searchers, IndexUsageTracker usageTracker) {
+    VectorIndexReader(
+            IndexDescriptor descriptor,
+            VectorDocumentStructure documentStructure,
+            List<SearcherReference> searchers,
+            IndexUsageTracker usageTracker) {
         super(descriptor, usageTracker);
         this.searchers = searchers;
+        this.documentStructure = documentStructure;
         this.vectorDimensionality = vectorDimensionsFrom(descriptor.getIndexConfig());
     }
 
@@ -128,7 +134,7 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
                         constraints.limit().orElse(Integer.MAX_VALUE));
                 final var effectiveK = k + constraints.skip().orElse(0);
                 yield VectorQueryFactory.approximateNearestNeighbors(
-                        nearestNeighborsPredicate.query(), Math.toIntExact(effectiveK));
+                        documentStructure, nearestNeighborsPredicate.query(), Math.toIntExact(effectiveK));
             }
             default -> throw invalidQuery(IllegalArgumentException::new, predicate);
         };

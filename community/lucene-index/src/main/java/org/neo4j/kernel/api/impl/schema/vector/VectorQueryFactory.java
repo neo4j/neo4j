@@ -30,8 +30,8 @@ class VectorQueryFactory {
         return new TermQuery(term);
     }
 
-    static Query approximateNearestNeighbors(float[] query, int k) {
-        return new KnnFloatVectorQuery(VectorDocumentStructure.VECTOR_VALUE_KEY, query, k);
+    static Query approximateNearestNeighbors(VectorDocumentStructure documentStructure, float[] query, int k) {
+        return new KnnFloatVectorQuery(documentStructure.vectorValueKeyFor(query.length), query, k);
     }
 
     static MatchAllDocsQuery allValues() {

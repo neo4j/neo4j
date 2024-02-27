@@ -34,13 +34,16 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 class VectorIndexPopulatingUpdater implements IndexUpdater {
     private final LuceneIndexWriter writer;
     private final IndexUpdateIgnoreStrategy ignoreStrategy;
+    private final VectorDocumentStructure documentStructure;
     private final LuceneVectorSimilarityFunction similarityFunction;
 
     VectorIndexPopulatingUpdater(
             LuceneIndexWriter writer,
             IndexUpdateIgnoreStrategy ignoreStrategy,
+            VectorDocumentStructure documentStructure,
             LuceneVectorSimilarityFunction similarityFunction) {
         this.writer = writer;
+        this.documentStructure = documentStructure;
         this.ignoreStrategy = ignoreStrategy;
         this.similarityFunction = similarityFunction;
     }
@@ -60,10 +63,10 @@ class VectorIndexPopulatingUpdater implements IndexUpdater {
             switch (updateMode) {
                 case ADDED -> writer.updateDocument(
                         VectorDocumentStructure.newTermForChangeOrRemove(entityId),
-                        VectorDocumentStructure.createLuceneDocument(entityId, candidate, similarityFunction));
+                        documentStructure.createLuceneDocument(entityId, candidate, similarityFunction));
                 case CHANGED -> writer.updateOrDeleteDocument(
                         VectorDocumentStructure.newTermForChangeOrRemove(entityId),
-                        VectorDocumentStructure.createLuceneDocument(entityId, candidate, similarityFunction));
+                        documentStructure.createLuceneDocument(entityId, candidate, similarityFunction));
                 case REMOVED -> writer.deleteDocuments(VectorDocumentStructure.newTermForChangeOrRemove(entityId));
             }
         } catch (IOException e) {

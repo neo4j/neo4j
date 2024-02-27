@@ -30,13 +30,16 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
 class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
+    private final VectorDocumentStructure documentStructure;
 
     VectorIndex(
             PartitionedIndexStorage indexStorage,
             IndexPartitionFactory partitionFactory,
+            VectorDocumentStructure documentStructure,
             IndexDescriptor descriptor,
             Config config) {
         super(indexStorage, partitionFactory, descriptor, config);
+        this.documentStructure = documentStructure;
     }
 
     @Override
@@ -49,6 +52,6 @@ class VectorIndex extends AbstractLuceneIndex<VectorIndexReader> {
     protected VectorIndexReader createPartitionedReader(
             List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
         final var searchers = acquireSearchers(partitions);
-        return new VectorIndexReader(descriptor, searchers, usageTracker);
+        return new VectorIndexReader(descriptor, documentStructure, searchers, usageTracker);
     }
 }
