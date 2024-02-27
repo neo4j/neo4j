@@ -2868,4 +2868,57 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .nodeByLabelScan("a", "A")
       .build())
   }
+
+  test("Should plan Sort before projection - if projection is order preserving (parallel runtime)") {
+    val query =
+      """MATCH (a:A)
+        |RETURN a, a.foo AS foo, a.bar AS bar
+        |  ORDER BY a.prop
+        |""".stripMargin
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("(:A)-[]->()", 100)
+      .setExecutionModel(BatchedParallel(1, 2))
+      .build()
+    val plan = planner.plan(query).stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("cacheN[a.foo] AS foo", "cacheN[a.bar] AS bar")
+      .cacheProperties("cacheNFromStore[a.bar]", "cacheNFromStore[a.foo]")
+      .sort("`a.prop` ASC")
+      .projection("a.prop AS `a.prop`")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build())
+  }
+
+  test(
+    "Should plan Sort between projections - if some projections are order preserving and others not (parallel runtime)"
+  ) {
+    val query =
+      """MATCH (a:A)
+        |RETURN a, a.foo AS foo, [(a)-->(b) | b.prop] AS bprops
+        |  ORDER BY a.prop
+        |""".stripMargin
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("(:A)-[]->()", 100)
+      .setExecutionModel(BatchedParallel(1, 2))
+      .build()
+    val plan = planner.plan(query).stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("a.foo AS foo")
+      .sort("`a.prop` ASC")
+      .projection("a.prop AS `a.prop`")
+      .rollUpApply("bprops", "anon_0")
+      .|.projection("b.prop AS anon_0")
+      .|.expandAll("(a)-[anon_1]->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build())
+  }
 }

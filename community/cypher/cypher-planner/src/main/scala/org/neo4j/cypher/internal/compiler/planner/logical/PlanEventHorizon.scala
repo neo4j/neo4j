@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ir.RunQueryAtProjection
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
+import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
@@ -163,6 +164,17 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         ))(selectedPlan)
 
       case regularProjection: RegularQueryProjection =>
+        val projectSubqueryExpressions: LogicalPlan => LogicalPlan = (p: LogicalPlan) => {
+          val subqueryExpressionProjections =
+            regularProjection.projections.filter(_._2.folder.treeFindByClass[IRExpression].nonEmpty)
+          projection(
+            p,
+            subqueryExpressionProjections,
+            Some(subqueryExpressionProjections),
+            context
+          )
+        }
+
         val planProjection: LogicalPlan => LogicalPlan = (p: LogicalPlan) =>
           if (regularProjection.projections.isEmpty && query.tail.isEmpty) {
             if (context.plannerState.isInSubquery) {
@@ -185,19 +197,17 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           planProjection,
           planWhere(regularProjection.selections)
         ))
-        def projectFirst = Function.chain(Seq(
-          planProjection,
-          planSort,
-          planSkipAndLimit,
-          planWhere(regularProjection.selections)
+        def projectSubqueryExpressionsFirst = Function.chain(Seq(
+          projectSubqueryExpressions,
+          sortFirst
         ))
 
         // Normally, we will first sort and then apply projections. This is cheaper in the the case of a LIMIT,
         // where the projection only needs to be applied to fewer rows.
-        // If the runtime is not order preserving, we should do projections (which can break an incoming order)
+        // If the runtime is not order preserving, we should do subquery expression projections (which can break an incoming order)
         // before sorting.
         if (context.settings.executionModel.providedOrderPreserving) sortFirst(selectedPlan)
-        else projectFirst(selectedPlan)
+        else projectSubqueryExpressionsFirst(selectedPlan)
 
       case distinctProjection: DistinctQueryProjection =>
         def planDistinct: LogicalPlan => LogicalPlan = distinct(_, distinctProjection, context)
