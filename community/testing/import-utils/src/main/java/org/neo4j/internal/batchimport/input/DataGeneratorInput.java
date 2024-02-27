@@ -119,7 +119,7 @@ public class DataGeneratorInput implements Input {
         return new DataDistribution(
                 nodeCount,
                 relationshipCount,
-                new DefaultLabelsGenerator(1),
+                new DefaultLabelsGenerator(1, 3),
                 new DefaultRelationshipTypeGenerator(1),
                 0,
                 0,
@@ -266,11 +266,11 @@ public class DataGeneratorInput implements Input {
         // of the relationshipDistribution nodes
         // 1 meaning dense nodes are evenly spread out across the node ID space. 0 not quite possible.
 
-        public DataDistribution withLabelCount(int labelCount) {
+        public DataDistribution withLabelCount(int labelCount, int maxLabelArrayLength) {
             return new DataDistribution(
                     nodeCount,
                     relationshipCount,
-                    new DefaultLabelsGenerator(labelCount),
+                    new DefaultLabelsGenerator(labelCount, maxLabelArrayLength),
                     relationshipTypeGenerator,
                     startNodeId,
                     factorBadNodeData,
@@ -439,12 +439,14 @@ public class DataGeneratorInput implements Input {
 
     public static class DefaultLabelsGenerator implements Function<RandomValues, String[]> {
         private final Distribution<String> distribution;
+        private final int maxLabelArrayLength;
 
-        public DefaultLabelsGenerator(int labelCount) {
-            this("Label", labelCount);
+        public DefaultLabelsGenerator(int labelCount, int maxLabelArrayLength) {
+            this("Label", labelCount, maxLabelArrayLength);
         }
 
-        public DefaultLabelsGenerator(String baseName, int labelCount) {
+        public DefaultLabelsGenerator(String baseName, int labelCount, int maxLabelArrayLength) {
+            this.maxLabelArrayLength = maxLabelArrayLength;
             this.distribution = new Distribution<>(tokens(baseName, labelCount));
         }
 
@@ -453,7 +455,7 @@ public class DataGeneratorInput implements Input {
             if (distribution.length() == 0) {
                 return NO_LABELS;
             }
-            int length = random.nextInt(min(3, distribution.length())) + 1;
+            int length = random.nextInt(min(maxLabelArrayLength, distribution.length())) + 1;
 
             String[] result = new String[length];
             for (int i = 0; i < result.length; ) {
@@ -510,11 +512,14 @@ public class DataGeneratorInput implements Input {
         @Override
         public Object apply(Entry entry, RandomValues random) {
             return switch (entry.extractor().name()) {
-                case "String" -> {
-                    var string = random.nextAlphaNumericTextValue(5, maxStringLength);
-                    yield uniqueStrings
-                            ? String.format("%s_%s", string, nextId.getAndIncrement())
-                            : string.stringValue();
+                case "String" -> randomString(random);
+                case "String[]" -> {
+                    int length = random.nextInt(random.intBetween(1, 10));
+                    var strings = new String[length];
+                    for (int i = 0; i < length; i++) {
+                        strings[i] = randomString(random);
+                    }
+                    yield strings;
                 }
                 case "boolean" -> random.nextBooleanValue().asObjectCopy();
                 case "boolean[]" -> random.nextBooleanArray().asObjectCopy();
@@ -530,8 +535,14 @@ public class DataGeneratorInput implements Input {
                 case "float[]" -> random.nextFloatArray().asObjectCopy();
                 case "double" -> random.nextDoubleValue().asObjectCopy();
                 case "double[]" -> random.nextDoubleArray().asObjectCopy();
-                default -> throw new IllegalArgumentException("" + entry);
+                default -> throw new IllegalArgumentException(
+                        "" + entry + " " + entry.extractor().name());
             };
+        }
+
+        private String randomString(RandomValues random) {
+            var string = random.nextAlphaNumericTextValue(5, maxStringLength);
+            return uniqueStrings ? String.format("%s_%s", string, nextId.getAndIncrement()) : string.stringValue();
         }
     }
 }

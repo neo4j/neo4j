@@ -31,13 +31,16 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import org.neo4j.common.EntityType;
 import org.neo4j.csv.reader.Configuration;
+import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -46,6 +49,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.DataGeneratorInput;
+import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
@@ -61,6 +65,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 public class SimpleRandomizedInput implements Input {
     private static final String ID_KEY = "id";
@@ -69,34 +75,68 @@ public class SimpleRandomizedInput implements Input {
     private final long nodeCount;
     private final long relationshipCount;
 
+    public SimpleRandomizedInput(long seed, long nodeCount, long relationshipCount) {
+        this(seed, DataGeneratorInput.data(nodeCount, relationshipCount), 0, 0);
+    }
+
     public SimpleRandomizedInput(
             long seed,
-            long nodeCount,
-            long relationshipCount,
-            float factorBadNodeData,
-            float factorBadRelationshipData) {
-        this.nodeCount = nodeCount;
-        this.relationshipCount = relationshipCount;
-        var dataDistribution = DataGeneratorInput.data(nodeCount, relationshipCount)
-                .withLabelCount(4)
-                .withRelationshipTypeCount(4)
-                .withFactorBadNodeData(factorBadNodeData)
-                .withFactorBadRelationshipData(factorBadRelationshipData);
+            DataGeneratorInput.DataDistribution dataDistribution,
+            int maxAdditionalNodeProperties,
+            int maxAdditionalRelationshipProperties) {
+        this.nodeCount = dataDistribution.nodeCount();
+        this.relationshipCount = dataDistribution.relationshipCount();
         var idType = IdType.INTEGER;
         var extractors = new Extractors(Configuration.COMMAS.arrayDelimiter());
         var groups = new Groups();
         var group = groups.getOrCreate(null);
+
+        List<Entry> additionalRelationshipEntries = new ArrayList<>();
+        additionalRelationshipEntries.add(
+                new Entry(SimpleRandomizedInput.ID_KEY, Type.PROPERTY, null, extractors.int_()));
+        additionalRelationshipEntries.addAll(
+                Arrays.asList(additionalPropertyEntries(maxAdditionalRelationshipProperties, group, extractors, seed)));
+
         actual = new DataGeneratorInput(
                 dataDistribution,
                 idType,
                 seed,
-                DataGeneratorInput.bareboneNodeHeader(ID_KEY, idType, group, extractors),
-                DataGeneratorInput.bareboneRelationshipHeader(
+                DataGeneratorInput.bareboneNodeHeader(
+                        ID_KEY,
                         idType,
                         group,
                         extractors,
-                        new Entry(SimpleRandomizedInput.ID_KEY, Type.PROPERTY, null, extractors.int_())),
+                        additionalPropertyEntries(maxAdditionalNodeProperties, group, extractors, seed)),
+                DataGeneratorInput.bareboneRelationshipHeader(
+                        idType, group, extractors, additionalRelationshipEntries.toArray(new Entry[0])),
                 groups);
+    }
+
+    private Entry[] additionalPropertyEntries(int count, Group group, Extractors extractors, long seed) {
+        var entries = new Entry[count];
+        var rng = new Random(seed);
+        for (int i = 0; i < count; i++) {
+            entries[i] = new Entry("p" + i, Type.PROPERTY, group, randomType(extractors, rng));
+        }
+        return entries;
+    }
+
+    private Extractor<?> randomType(Extractors extractors, Random random) {
+        return switch (random.nextInt(12)) {
+            case 0 -> extractors.byte_();
+            case 1 -> extractors.short_();
+            case 2 -> extractors.int_();
+            case 3 -> extractors.long_();
+            case 4 -> extractors.string();
+            case 5 -> extractors.boolean_();
+            case 6 -> extractors.byteArray();
+            case 7 -> extractors.shortArray();
+            case 8 -> extractors.intArray();
+            case 9 -> extractors.longArray();
+            case 10 -> extractors.stringArray();
+            case 11 -> extractors.booleanArray();
+            default -> throw new IllegalArgumentException();
+        };
     }
 
     @Override
@@ -286,7 +326,7 @@ public class SimpleRandomizedInput implements Input {
     }
 
     private static InputEntity relationshipWithId(Set<InputEntity> matches, Relationship relationship) {
-        Map<String, Object> dbProperties = relationship.getAllProperties();
+        Map<String, Value> dbProperties = toValueMap(relationship.getAllProperties());
         for (InputEntity candidate : matches) {
             if (dbProperties.equals(propertiesOf(candidate))) {
                 return candidate;
@@ -295,11 +335,17 @@ public class SimpleRandomizedInput implements Input {
         return null;
     }
 
-    private static Map<String, Object> propertiesOf(InputEntity entity) {
-        Map<String, Object> result = new HashMap<>();
+    private static Map<String, Value> toValueMap(Map<String, Object> map) {
+        Map<String, Value> result = new HashMap<>();
+        map.forEach((key, value) -> result.put(key, Values.of(value)));
+        return result;
+    }
+
+    private static Map<String, Value> propertiesOf(InputEntity entity) {
+        Map<String, Value> result = new HashMap<>();
         Object[] properties = entity.properties();
         for (int i = 0; i < properties.length; i++) {
-            result.put((String) properties[i++], properties[i]);
+            result.put((String) properties[i++], Values.of(properties[i]));
         }
         return result;
     }
