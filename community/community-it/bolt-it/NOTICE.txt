@@ -48,9 +48,25 @@ Apache Software License, Version 2.0
   Apache Shiro :: Cryptography :: Hashing
   Apache Shiro :: Event
   Apache Shiro :: Lang
+  Arrow Flight Core
+  Arrow Format
+  Arrow Memory - Core
+  Arrow Vectors
   Caffeine cache
   fastinfoset
+  FindBugs-jsr305
+  FlatBuffers Java API
+  Guava InternalFutureFailureAccess and InternalFutures
+  Guava ListenableFuture only
+  Guava: Google Core Libraries for Java
+  io.grpc:grpc-api
+  io.grpc:grpc-context
+  io.grpc:grpc-core
+  io.grpc:grpc-netty
+  io.grpc:grpc-protobuf
+  io.grpc:grpc-stub
   IPAddress
+  Jackson datatype: JSR310
   Jackson module: Old JAXB Annotations (javax.xml.bind)
   Jackson-annotations
   Jackson-core
@@ -86,9 +102,11 @@ Apache Software License, Version 2.0
   Netty/Buffer
   Netty/Codec
   Netty/Codec/HTTP
+  Netty/Codec/HTTP2
   Netty/Common
   Netty/Handler
   Netty/Resolver
+  Netty/TomcatNative [BoringSSL - Static]
   Netty/Transport
   Netty/Transport/Classes/Epoll
   Netty/Transport/Classes/KQueue
@@ -97,6 +115,7 @@ Apache Software License, Version 2.0
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
   picocli
+  proto-google-common-protos
   Scala Reflect
   scala-collection-contrib
   WMI4Java
@@ -109,6 +128,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
+  Protocol Buffers [Core]
   Zstandard
 
 BSD License 2-clause

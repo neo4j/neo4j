@@ -39,6 +39,3 @@ Apache Software License, Version 2.0
   J2ObjC Annotations
   Truth Core
 
-MIT License
-  Checker Qual
-

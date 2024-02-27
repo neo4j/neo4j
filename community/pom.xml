@@ -18,6 +18,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <modules>
+    <module>arrow-bom</module>
     <module>zstd-proxy</module>
     <module>token-api</module>
     <module>schema</module>
