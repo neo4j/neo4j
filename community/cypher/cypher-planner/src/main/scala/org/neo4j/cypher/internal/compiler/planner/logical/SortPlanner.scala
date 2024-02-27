@@ -192,13 +192,13 @@ object SortPlanner {
       updateSolved: Boolean
     ): LogicalPlan = {
       val projectionDeps = projections.flatMap(e => e._2.dependencies)
-      val projectionsToMarkSolved = projections.filter(_._2 match {
+      val projectionsToPlan = projections.filter(_._2 match {
         case IsAggregate(_) => false
         case _              => true
       })
-      if (projectionsToMarkSolved.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e))) {
-        val keepAllColumns = if (updateSolved) Some(projectionsToMarkSolved) else None
-        projection(plan, projectionsToMarkSolved, keepAllColumns, context)
+      if (projectionsToPlan.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e))) {
+        val projectionsToMarkSolved = if (updateSolved) Some(projectionsToPlan) else None
+        projection(plan, projectionsToPlan, projectionsToMarkSolved, context)
       } else
         plan
     }
