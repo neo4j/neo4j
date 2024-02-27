@@ -32,6 +32,8 @@ import org.eclipse.collections.api.factory.primitive.FloatLists;
 import org.eclipse.collections.api.factory.primitive.IntLists;
 import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.eclipse.collections.api.factory.primitive.ShortLists;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
+import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -48,6 +50,30 @@ public class VectorTestUtils {
     public static final RichIterable<AnyValue> SIMPLE_COSINE_INVALID_VECTORS;
     public static final RichIterable<AnyValue> L2_NORM_COSINE_VALID_VECTORS;
     public static final RichIterable<AnyValue> L2_NORM_COSINE_INVALID_VECTORS;
+
+    public static RichIterable<AnyValue> validVectorsFor(VectorSimilarityFunction function) {
+        if (function == VectorSimilarityFunctions.EUCLIDEAN) {
+            return EUCLIDEAN_VALID_VECTORS;
+        } else if (function == VectorSimilarityFunctions.SIMPLE_COSINE) {
+            return SIMPLE_COSINE_VALID_VECTORS;
+        } else if (function == VectorSimilarityFunctions.L2_NORM_COSINE) {
+            return L2_NORM_COSINE_VALID_VECTORS;
+        } else {
+            throw new IllegalArgumentException("unknown similarity function: %s".formatted(function));
+        }
+    }
+
+    public static RichIterable<AnyValue> invalidVectorsFor(VectorSimilarityFunction function) {
+        if (function == VectorSimilarityFunctions.EUCLIDEAN) {
+            return EUCLIDEAN_INVALID_VECTORS;
+        } else if (function == VectorSimilarityFunctions.SIMPLE_COSINE) {
+            return SIMPLE_COSINE_INVALID_VECTORS;
+        } else if (function == VectorSimilarityFunctions.L2_NORM_COSINE) {
+            return L2_NORM_COSINE_INVALID_VECTORS;
+        } else {
+            throw new IllegalArgumentException("unknown similarity function: %s".formatted(function));
+        }
+    }
 
     static {
         // A bit of a mess, but ensures many extreme combinations of:

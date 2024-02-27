@@ -123,6 +123,8 @@ import org.neo4j.cypher.internal.expressions.functions.ToUpper
 import org.neo4j.cypher.internal.expressions.functions.Trim
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.expressions.functions.ValueType
+import org.neo4j.cypher.internal.expressions.functions.VectorSimilarityCosine
+import org.neo4j.cypher.internal.expressions.functions.VectorSimilarityEuclidean
 import org.neo4j.cypher.internal.expressions.functions.WithinBBox
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
@@ -159,6 +161,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarity
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -750,6 +753,22 @@ case class CommunityExpressionConverter(
       case Type =>
         commands.expressions.RelationshipTypeFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ValueType => commands.expressions.ValueTypeFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case VectorSimilarityEuclidean =>
+        val firstArg = self.toCommandExpression(id, invocation.arguments.head)
+        val secondArg = self.toCommandExpression(id, invocation.arguments(1))
+        commands.expressions.VectorSimilarityFunction(
+          VectorSimilarity.EUCLIDEAN,
+          firstArg,
+          secondArg
+        )
+      case VectorSimilarityCosine =>
+        val firstArg = self.toCommandExpression(id, invocation.arguments.head)
+        val secondArg = self.toCommandExpression(id, invocation.arguments(1))
+        commands.expressions.VectorSimilarityFunction(
+          VectorSimilarity.COSINE,
+          firstArg,
+          secondArg
+        )
     }
 
   private def toCommandProperty(

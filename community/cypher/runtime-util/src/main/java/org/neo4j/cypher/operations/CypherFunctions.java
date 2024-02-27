@@ -81,6 +81,9 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarity;
+import org.neo4j.kernel.api.vector.VectorCandidate;
+import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
@@ -454,6 +457,55 @@ public final class CypherFunctions {
         } else {
             return NO_VALUE;
         }
+    }
+
+    @CalledFromGeneratedCode
+    public static Value vectorSimilarityEuclidean(AnyValue lhs, AnyValue rhs) {
+        return vectorSimilarity(VectorSimilarity.EUCLIDEAN, lhs, rhs);
+    }
+
+    @CalledFromGeneratedCode
+    public static Value vectorSimilarityCosine(AnyValue lhs, AnyValue rhs) {
+        return vectorSimilarity(VectorSimilarity.COSINE, lhs, rhs);
+    }
+
+    public static Value vectorSimilarity(VectorSimilarity similarity, AnyValue lhs, AnyValue rhs) {
+        final var function = similarity.latestImplementation();
+
+        if (lhs == NO_VALUE || rhs == NO_VALUE) {
+            return NO_VALUE;
+        }
+
+        final var a = toFloatArrayVector(function, lhs, "a");
+        final var b = toFloatArrayVector(function, rhs, "b");
+
+        if (a.length != b.length) {
+            throw new InvalidArgumentException(invalidSimilarityFunctionInputErrorMessage(
+                    function, "The supplied vectors do not have the same number of dimensions"));
+        }
+
+        return doubleValue(function.compare(a, b));
+    }
+
+    public static float[] toFloatArrayVector(VectorSimilarityFunction function, AnyValue arg, String argName) {
+        final VectorCandidate candidate = VectorCandidate.maybeFrom(arg);
+        if (candidate == null) {
+            throw new CypherTypeException(invalidSimilarityFunctionInputErrorMessage(
+                    function, "Expected argument %s to be a LIST<INTEGER | FLOAT>".formatted(argName)));
+        }
+
+        final float[] floatArray = function.maybeToValidVector(candidate);
+        if (floatArray == null) {
+            throw new InvalidArgumentException(invalidSimilarityFunctionInputErrorMessage(
+                    function, "Argument %s is not a valid vector for this similarity function".formatted(argName)));
+        }
+
+        return floatArray;
+    }
+
+    private static String invalidSimilarityFunctionInputErrorMessage(VectorSimilarityFunction function, String reason) {
+        return "Invalid input for 'vector.similarity.%s()': %s."
+                .formatted(function.name().toLowerCase(), reason);
     }
 
     public static AnyValue startNode(AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor) {

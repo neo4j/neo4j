@@ -3874,5 +3874,71 @@
     ],
     "rolesBoostedExecution": [],
     "isDeprecated": false
+  },
+  {
+    "name": "vector.similarity.cosine",
+    "category": "Vector",
+    "description": "Returns a `FLOAT` representing the similarity between the argument vectors based on their cosine.",
+    "signature": "vector.similarity.cosine(a :: LIST<INTEGER | FLOAT>, b :: LIST<INTEGER | FLOAT>) :: FLOAT",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "a",
+        "description": "a :: LIST<INTEGER | FLOAT>",
+        "type": "LIST<INTEGER | FLOAT>",
+        "isDeprecated": false
+      },
+      {
+        "name": "b",
+        "description": "b :: LIST<INTEGER | FLOAT>",
+        "type": "LIST<INTEGER | FLOAT>",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "FLOAT",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
+    "name": "vector.similarity.euclidean",
+    "category": "Vector",
+    "description": "Returns a `FLOAT` representing the similarity between the argument vectors based on their Euclidean distance.",
+    "signature": "vector.similarity.euclidean(a :: LIST<INTEGER | FLOAT>, b :: LIST<INTEGER | FLOAT>) :: FLOAT",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "a",
+        "description": "a :: LIST<INTEGER | FLOAT>",
+        "type": "LIST<INTEGER | FLOAT>",
+        "isDeprecated": false
+      },
+      {
+        "name": "b",
+        "description": "b :: LIST<INTEGER | FLOAT>",
+        "type": "LIST<INTEGER | FLOAT>",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "FLOAT",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   }
 ]

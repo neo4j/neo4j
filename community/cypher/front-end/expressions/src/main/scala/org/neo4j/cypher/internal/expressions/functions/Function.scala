@@ -39,6 +39,7 @@ object Category extends Enumeration {
   val STRING = "String"
   val SPATIAL = "Spatial"
   val GRAPH = "Graph"
+  val VECTOR = "Vector"
 }
 
 object Function {
@@ -136,7 +137,9 @@ object Function {
     Trim,
     Type,
     ValueType,
-    WithinBBox
+    WithinBBox,
+    VectorSimilarityEuclidean,
+    VectorSimilarityCosine
   )
 
   lazy val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase(Locale.ROOT), f) }.toMap

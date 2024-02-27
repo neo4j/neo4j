@@ -1070,6 +1070,96 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     )
   }
 
+  test("should handle valid cosine vector similarity function calls") {
+    // given
+    givenGraph {
+      val node = tx.createNode(label("Label"))
+      node.setProperty("vector", Seq(1.0, 0.0).toArray)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("similarity", "leftNull", "rightNull")
+      .projection(
+        "vector.similarity.cosine(args[0], args[1]) AS similarity",
+        "vector.similarity.cosine(NULL, args[1]) AS leftNull",
+        "vector.similarity.cosine(args[0], NULL) AS rightNull"
+      )
+      .unwind("""[
+                |[[1.0, 0.0], [0.0, 1.0]],
+                |[[0.0, 1.0], n.vector],
+                |[n.vector, [0.0, 1.0]],
+                |[n.vector, n.vector],
+                |[n.vector, NULL],
+                |[NULL, n.vector],
+                |[NULL, NULL]
+                |] AS args""".stripMargin.replace(System.lineSeparator(), ""))
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("similarity", "leftNull", "rightNull").withRows(
+      inOrder(
+        Seq(
+          Array(0.5, NO_VALUE, NO_VALUE),
+          Array(0.5, NO_VALUE, NO_VALUE),
+          Array(0.5, NO_VALUE, NO_VALUE),
+          Array(1.0, NO_VALUE, NO_VALUE),
+          Array(NO_VALUE, NO_VALUE, NO_VALUE),
+          Array(NO_VALUE, NO_VALUE, NO_VALUE),
+          Array(NO_VALUE, NO_VALUE, NO_VALUE)
+        )
+      )
+    )
+  }
+
+  test("should handle valid euclidean vector similarity function calls") {
+    // given
+    givenGraph {
+      val node = tx.createNode(label("Label"))
+      node.setProperty("vector", Seq(1.0, 0.0).toArray)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("similarity", "leftNull", "rightNull")
+      .projection(
+        "vector.similarity.euclidean(args[0], args[1]) AS similarity",
+        "vector.similarity.euclidean(NULL, args[1]) AS leftNull",
+        "vector.similarity.euclidean(args[0], NULL) AS rightNull"
+      )
+      .unwind("""[
+                |[[1.0, 0.0], [0.0, 0.0]],
+                |[[0.0, 0.0], n.vector],
+                |[n.vector, [0.0, 0.0]],
+                |[n.vector, n.vector],
+                |[n.vector, NULL],
+                |[NULL, n.vector],
+                |[NULL, NULL]
+                |] AS args""".stripMargin.replace(System.lineSeparator(), ""))
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("similarity", "leftNull", "rightNull").withRows(
+      inOrder(
+        Seq(
+          Array(0.5, NO_VALUE, NO_VALUE),
+          Array(0.5, NO_VALUE, NO_VALUE),
+          Array(0.5, NO_VALUE, NO_VALUE),
+          Array(1.0, NO_VALUE, NO_VALUE),
+          Array(NO_VALUE, NO_VALUE, NO_VALUE),
+          Array(NO_VALUE, NO_VALUE, NO_VALUE),
+          Array(NO_VALUE, NO_VALUE, NO_VALUE)
+        )
+      )
+    )
+  }
+
   test("should respect that toInteger of invalid string returns null") {
     // given, an empty db
     // when
