@@ -41,7 +41,7 @@ public class HighWaterMarkMemoryPool extends DelegatingMemoryPool {
     }
 
     public long heapHighWaterMark() {
-        return highWaterMark.get();
+        return highWaterMark.getAcquire();
     }
 
     public void reset() {
@@ -49,14 +49,10 @@ public class HighWaterMarkMemoryPool extends DelegatingMemoryPool {
     }
 
     private void computeNewHighWaterMark() {
-        long current;
-        long newValue;
-        do {
-            newValue = usedHeap();
-            current = highWaterMark.get();
-            if (current >= newValue) {
-                return;
-            }
-        } while (!highWaterMark.weakCompareAndSetVolatile(current, newValue));
+        long currentHeapUsage = usedHeap();
+        long currentHighMark = heapHighWaterMark();
+        if (currentHeapUsage > currentHighMark) {
+            highWaterMark.setRelease(currentHeapUsage);
+        }
     }
 }
