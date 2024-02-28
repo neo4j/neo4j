@@ -20,19 +20,16 @@
 package org.neo4j.fabric.util
 
 import org.neo4j.cypher.internal.ast.CatalogName
-import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.semantics.FeatureError
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.eval.Catalog
-import org.neo4j.fabric.planning.Use
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 
