@@ -30,7 +30,6 @@ import static org.neo4j.lock.ResourceType.PAGE;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +62,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
     private final Config config;
     private final TransactionMonitor transactionMonitor;
     private final PageCursor[] validationCursors;
-    private final EnumMap<StoreType, MutableLongSet> checkedPages;
+    private final MutableLongSet[] checkedPages;
     private LockManager.Client validationLockClient;
     private LockTracer lockTracer;
     private CursorContext cursorContext;
@@ -75,7 +74,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         this.neoStores = neoStores;
         this.config = config;
         this.validationCursors = new PageCursor[STORE_TYPES.length];
-        this.checkedPages = new EnumMap<>(StoreType.class);
+        this.checkedPages = new MutableLongSet[STORE_TYPES.length];
         this.transactionMonitor = transactionMonitor;
     }
 
@@ -224,7 +223,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
     }
 
     private void closeCursors() {
-        checkedPages.clear();
+        Arrays.fill(checkedPages, null);
         for (int i = 0; i < validationCursors.length; i++) {
             var cursor = validationCursors[i];
             if (cursor != null) {
@@ -235,10 +234,11 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
     }
 
     private void checkStore(long recordId, PageCursor pageCursor, StoreType storeType) throws IOException {
-        var checkedStorePages = checkedPages.get(storeType);
+        int position = storeType.ordinal();
+        var checkedStorePages = checkedPages[position];
         if (checkedStorePages == null) {
             checkedStorePages = LongSets.mutable.empty();
-            checkedPages.put(storeType, checkedStorePages);
+            checkedPages[position] = checkedStorePages;
         }
         long pageId =
                 pageIdForRecord(recordId, neoStores.getRecordStore(storeType).getRecordsPerPage());
@@ -247,7 +247,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         }
 
         var versionContext = cursorContext.getVersionContext();
-        long resourceId = pageId | ((long) storeType.ordinal() << PAGE_ID_BITS);
+        long resourceId = pageId | ((long) position << PAGE_ID_BITS);
         if (failFast && !validationLockClient.tryExclusiveLock(PAGE, resourceId)) {
             throw new TransactionConflictException(storeType.getDatabaseFile(), pageId);
         } else {
@@ -262,11 +262,11 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         checkedStorePages.add(pageId);
 
         if (dumpLocks) {
-            storyPageInfo(storeType, pageId, versionContext);
+            storePageInfo(storeType, pageId, versionContext);
         }
     }
 
-    private void storyPageInfo(StoreType storeType, long pageId, VersionContext versionContext) {
+    private void storePageInfo(StoreType storeType, long pageId, VersionContext versionContext) {
         long chainHead = versionContext.chainHeadVersion();
         observedPageVersions.put(new PageEntry(pageId, storeType), chainHead);
     }
