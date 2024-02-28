@@ -54,20 +54,6 @@ public final class FeatureToggles {
     }
 
     /**
-     * Get the value of a {@code boolean} system property.
-     *
-     * The absolute name of the system property is computed based on the package of the provided class and local name.
-     *
-     * @param location a class in the package that owns the flag.
-     * @param name the local name of the flag.
-     * @param defaultValue the default value of the flag if the system property is not assigned.
-     * @return the parsed value of the system property, or the default value.
-     */
-    public static boolean packageFlag(Class<?> location, String name, boolean defaultValue) {
-        return booleanProperty(name(location.getPackage(), name), defaultValue);
-    }
-
-    /**
      * Get the value of a {@code long} system property.
      *
      * The absolute name of the system property is computed based on the provided class and local name.
@@ -176,10 +162,6 @@ public final class FeatureToggles {
 
     private static String name(Class<?> location, String name) {
         return location.getCanonicalName() + "." + name;
-    }
-
-    private static String name(Package location, String name) {
-        return location.getName() + "." + name;
     }
 
     private static boolean booleanProperty(String flag, boolean defaultValue) {

@@ -98,7 +98,6 @@
       -Dlog4j2.disable.jmx=true
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/"
-      -Dinternal.dbms.multiversioned.store.override=${multiversion.store}
       -Dorg.neo4j.io.pagecache.impl.muninn.MuninnWritePageCursor.CHECK_WRITE_LOCKS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.TRACE_FILE_CLOSE=false
       -Dorg.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer.CHECK_REPORTED_COUNTERS=${cursor.counters.check}
@@ -132,7 +131,6 @@
     <excludedTestGroups/>
     <test.vm.heap.size>2G</test.vm.heap.size>
     <forkCounts>1</forkCounts>
-    <multiversion.store>false</multiversion.store>
     <parallel.tests>false</parallel.tests>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
     <cursor.counters.check>true</cursor.counters.check>
@@ -1001,19 +999,6 @@
       <properties>
         <forkCounts>1C</forkCounts>
         <parallel.tests>true</parallel.tests>
-      </properties>
-    </profile>
-    <profile>
-      <id>multiVersionPrototype</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>internal.dbms.multiversioned.store.override</name>
-        </property>
-      </activation>
-      <properties>
-        <excludedTestGroups>multiVersioned</excludedTestGroups>
-        <multiversion.store>true</multiversion.store>
       </properties>
     </profile>
     <profile>
