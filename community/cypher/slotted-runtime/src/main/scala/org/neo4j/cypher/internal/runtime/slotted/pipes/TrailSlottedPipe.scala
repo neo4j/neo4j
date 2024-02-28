@@ -25,6 +25,7 @@ import org.neo4j.collection.trackable.HeapTrackingCollections.newArrayDeque
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet
 import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
+import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.CastSupport.castOrFail
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -112,8 +113,9 @@ case class TrailSlottedPipe(
   reverseGroupVariableProjections: Boolean
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  private val emptyGroupNodes = emptyLists(groupNodes.length)
-  private val emptyGroupRelationships = emptyLists(groupRelationships.length)
+  private[this] val emptyGroupNodes = emptyLists(groupNodes.length)
+  private[this] val emptyGroupRelationships = emptyLists(groupRelationships.length)
+  private[this] val getStartNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(startSlot)
 
   override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
@@ -158,7 +160,7 @@ case class TrailSlottedPipe(
             Some(rhsInnerRow)
           }
 
-          val startNode = outerRow.getLongAt(startSlot.offset)
+          val startNode = getStartNodeFunction.applyAsLong(outerRow)
           if (NullChecker.entityIsNull(startNode)) {
             ClosingIterator.empty
           } else {
