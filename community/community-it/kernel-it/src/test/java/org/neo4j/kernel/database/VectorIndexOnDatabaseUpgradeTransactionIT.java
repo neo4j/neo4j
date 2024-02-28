@@ -61,7 +61,8 @@ import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class VectorIndexOnDatabaseUpgradeTransactionIT {
-    private static final DbmsRuntimeVersion LATEST_RUNTIME_VERSION = DbmsRuntimeVersion.GLORIOUS_FUTURE;
+    // keep these for future testing purposes
+    private static final DbmsRuntimeVersion LATEST_RUNTIME_VERSION = LatestVersions.LATEST_RUNTIME_VERSION;
     private static final KernelVersion LATEST_KERNEL_VERSION = LATEST_RUNTIME_VERSION.kernelVersion();
     private static final Label LABEL = Tokens.Suppliers.UUID.LABEL.get();
     private static final RelationshipType REL_TYPE = Tokens.Suppliers.UUID.RELATIONSHIP_TYPE.get();

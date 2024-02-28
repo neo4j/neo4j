@@ -42,7 +42,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -94,13 +93,7 @@ public class VectorIndexCreationTest {
 
         @ExtensionCallback
         void configure(TestDatabaseManagementServiceBuilder builder) {
-            builder.setConfig(GraphDatabaseInternalSettings.enable_vector_2, true)
-                    .setConfig(
-                            GraphDatabaseInternalSettings.latest_runtime_version,
-                            DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion())
-                    .setConfig(
-                            GraphDatabaseInternalSettings.latest_kernel_version,
-                            KernelVersion.GLORIOUS_FUTURE.version());
+            builder.setConfig(GraphDatabaseInternalSettings.enable_vector_2, true);
         }
 
         @BeforeAll

@@ -58,7 +58,7 @@ public enum KernelVersion {
     V5_13((byte) 12), // 5.13.
     V5_14((byte) 13), // 5.14.
     V5_15((byte) 14), // 5.15. Changes around CDC logical keys
-    V5_18((byte) 15), // 5.18.
+    V5_18((byte) 15), // 5.18. Introduce vector-2.0 index provider
 
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
@@ -83,7 +83,7 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_CDC_USER_METADATA_INTRODUCED = V5_12;
     public static final KernelVersion VERSION_CDC_LOGICAL_KEY_CHANGES = V5_15;
     public static final KernelVersion VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED = GLORIOUS_FUTURE;
-    public static final KernelVersion VERSION_VECTOR_2_INTRODUCED = GLORIOUS_FUTURE;
+    public static final KernelVersion VERSION_VECTOR_2_INTRODUCED = V5_18;
 
     // Keep updated each time there is an new schema rule added
     // related to IntegrityValidator

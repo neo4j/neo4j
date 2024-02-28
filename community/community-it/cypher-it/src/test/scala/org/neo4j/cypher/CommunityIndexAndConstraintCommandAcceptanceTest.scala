@@ -22,14 +22,12 @@ package org.neo4j.cypher
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
-import org.neo4j.dbms.database.DbmsRuntimeVersion
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.graphdb.schema.IndexType
-import org.neo4j.kernel.KernelVersion
 import org.neo4j.kernel.impl.api.index.IndexingService
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 
@@ -58,13 +56,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
   override def databaseConfig(): Map[Setting[_], Object] =
     super.databaseConfig() ++ Map(
       GraphDatabaseInternalSettings.type_constraints -> java.lang.Boolean.TRUE,
-      GraphDatabaseInternalSettings.enable_vector_2 -> java.lang.Boolean.TRUE,
-      GraphDatabaseInternalSettings.latest_runtime_version -> java.lang.Integer.valueOf(
-        DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion
-      ),
-      GraphDatabaseInternalSettings.latest_kernel_version -> java.lang.Byte.valueOf(
-        KernelVersion.GLORIOUS_FUTURE.version
-      )
+      GraphDatabaseInternalSettings.enable_vector_2 -> java.lang.Boolean.TRUE
     )
 
   // Index commands
