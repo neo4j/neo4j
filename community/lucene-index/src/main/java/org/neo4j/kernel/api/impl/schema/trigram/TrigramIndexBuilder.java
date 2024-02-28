@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.trigram;
 
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TRIGRAM;
-
 import java.util.function.Supplier;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,7 +27,8 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.Factory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigModes.TextModes;
 import org.neo4j.kernel.api.impl.index.WritableDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
@@ -45,7 +44,9 @@ public class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndex
         super(readOnlyChecker);
         this.descriptor = descriptor;
         this.config = config;
-        this.writerConfigFactory = () -> IndexWriterConfigs.standard(TRIGRAM, config, descriptor.getIndexConfig());
+
+        final var writerConfigBuilder = new IndexWriterConfigBuilder(TextModes.STANDARD, config);
+        this.writerConfigFactory = writerConfigBuilder::build;
     }
 
     /**

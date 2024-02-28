@@ -17,26 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema;
+package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.util.VisibleForTesting;
+import static org.neo4j.kernel.api.impl.index.IndexWriterConfigModes.DefaultModes;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_merge_factor;
 
-public enum LuceneIndexType {
-    @VisibleForTesting
-    TEST(null),
-    FULLTEXT(IndexType.FULLTEXT),
-    TEXT(IndexType.TEXT),
-    TRIGRAM(IndexType.TEXT),
-    VECTOR(IndexType.VECTOR);
+import org.apache.lucene.index.LogMergePolicy;
+import org.neo4j.configuration.Config;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigModes.Mode;
 
-    private final IndexType type;
-
-    LuceneIndexType(IndexType type) {
-        this.type = type;
-    }
-
-    public IndexType type() {
-        return type;
-    }
+public class TestIndexWriterModes {
+    public static final Mode STANDARD = new DefaultModes.Standard() {
+        @Override
+        public LogMergePolicy visitWithConfig(LogMergePolicy mergePolicy, Config config) {
+            mergePolicy.setMergeFactor(config.get(lucene_merge_factor));
+            return mergePolicy;
+        }
+    };
 }

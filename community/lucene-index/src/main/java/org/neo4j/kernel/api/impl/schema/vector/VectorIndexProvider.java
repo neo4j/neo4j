@@ -36,12 +36,13 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigModes.VectorModes;
 import org.neo4j.kernel.api.impl.index.LuceneSettings;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexType;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
+import org.neo4j.kernel.api.impl.schema.vector.codec.VectorCodecV2;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -114,17 +115,21 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             ImmutableSet<OpenOption> openOptions,
             StorageEngineIndexingBehaviour indexingBehaviour) {
         final var indexConfig = descriptor.getIndexConfig();
+        final var dimensions = VectorUtils.vectorDimensionsFrom(indexConfig);
+
+        final var codec = new VectorCodecV2(dimensions);
+        final var writerConfigBuilder = new IndexWriterConfigBuilder(VectorModes.POPULATION, config).withCodec(codec);
         final var luceneIndex = VectorIndexBuilder.create(descriptor, documentStructure, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .withWriterConfig(() -> IndexWriterConfigs.population(LuceneIndexType.VECTOR, config, indexConfig))
+                .withWriterConfig(writerConfigBuilder::build)
                 .build();
 
         if (luceneIndex.isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
 
-        final var ignoreStrategy = new IgnoreStrategy(version, VectorUtils.vectorDimensionsFrom(indexConfig));
+        final var ignoreStrategy = new IgnoreStrategy(version, dimensions);
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
         return new VectorIndexPopulator(luceneIndex, ignoreStrategy, documentStructure, similarityFunction);
     }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.VECTOR;
-
 import java.util.function.Supplier;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,10 +27,12 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.Factory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigModes.VectorModes;
 import org.neo4j.kernel.api.impl.index.WritableDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
+import org.neo4j.kernel.api.impl.schema.vector.codec.VectorCodecV2;
 
 class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> {
     private final IndexDescriptor descriptor;
@@ -49,7 +49,10 @@ class VectorIndexBuilder extends AbstractLuceneIndexBuilder<VectorIndexBuilder> 
         this.documentStructure = documentStructure;
         this.descriptor = descriptor;
         this.config = config;
-        this.writerConfigFactory = () -> IndexWriterConfigs.standard(VECTOR, config, descriptor.getIndexConfig());
+
+        final var codec = new VectorCodecV2(VectorUtils.vectorDimensionsFrom(descriptor.getIndexConfig()));
+        final var writerConfigBuilder = new IndexWriterConfigBuilder(VectorModes.STANDARD, config).withCodec(codec);
+        this.writerConfigFactory = writerConfigBuilder::build;
     }
 
     /**

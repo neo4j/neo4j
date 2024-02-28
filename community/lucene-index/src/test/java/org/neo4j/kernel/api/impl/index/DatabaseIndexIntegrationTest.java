@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TEST;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,7 +55,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -209,10 +207,10 @@ class DatabaseIndexIntegrationTest {
             extends WritableDatabaseIndex<TestLuceneIndex, AbstractTextIndexReader> {
         WritableTestDatabaseIndex(PartitionedIndexStorage indexStorage) {
             super(
-                    new TestLuceneIndex(
-                            indexStorage,
-                            new WritableIndexPartitionFactory(
-                                    () -> IndexWriterConfigs.standard(TEST, Config.defaults(), IndexConfig.empty()))),
+                    new TestLuceneIndex(indexStorage, new WritableIndexPartitionFactory(() -> {
+                        Config config = Config.defaults();
+                        return new IndexWriterConfigBuilder(TestIndexWriterModes.STANDARD, config).build();
+                    })),
                     writable(),
                     false);
         }

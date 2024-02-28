@@ -19,20 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.FULLTEXT;
-
-import java.util.function.Supplier;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigModes;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigModes.FulltextModes;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexType;
 import org.neo4j.token.api.TokenHolder;
 
 public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextIndexBuilder> {
@@ -78,9 +74,8 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
     }
 
     /**
-     * Whether to create the index in a {@link IndexWriterConfigs#population(LuceneIndexType,Config, IndexConfig) populating}
-     * mode, if {@code true}, or in a {@link IndexWriterConfigs#standard(LuceneIndexType,Config, IndexConfig) standard} mode, if
-     * {@code false}.
+     * Whether to create the index in a {@link IndexWriterConfigModes.FulltextModes#POPULATION populating} mode,
+     * if {@code true}, or in a {@link IndexWriterConfigModes.FulltextModes#STANDARD standard} mode, if {@code false}.
      *
      * @param isPopulating {@code true} if the index should be created in a populating mode.
      * @return this index builder.
@@ -101,15 +96,11 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
      * @return lucene schema index
      */
     public DatabaseIndex<FulltextIndexReader> build() {
-        Supplier<IndexWriterConfig> writerConfigFactory;
-        if (populating) {
-            writerConfigFactory =
-                    () -> IndexWriterConfigs.population(FULLTEXT, config, analyzer, descriptor.getIndexConfig());
-        } else {
-            writerConfigFactory =
-                    () -> IndexWriterConfigs.standard(FULLTEXT, config, analyzer, descriptor.getIndexConfig());
-        }
-        WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory(writerConfigFactory);
+        IndexWriterConfigBuilder writerConfigBuilder = populating
+                ? new IndexWriterConfigBuilder(FulltextModes.POPULATION, config).withAnalyzer(analyzer)
+                : new IndexWriterConfigBuilder(FulltextModes.STANDARD, config).withAnalyzer(analyzer);
+
+        WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory(writerConfigBuilder::build);
         FulltextIndex fulltextIndex = new FulltextIndex(
                 storageBuilder.build(),
                 partitionFactory,

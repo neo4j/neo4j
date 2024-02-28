@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.FULLTEXT;
-
 import java.io.Closeable;
 import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
@@ -34,7 +32,8 @@ import org.apache.lucene.store.Directory;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigModes.FulltextModes;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -93,7 +92,10 @@ class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable 
 
     private void openWriter() throws IOException {
         writer = new IndexWriter(
-                directory, IndexWriterConfigs.transactionState(FULLTEXT, config, analyzer, indexConfig));
+                directory,
+                new IndexWriterConfigBuilder(FulltextModes.TRANSACTION_STATE, config)
+                        .withAnalyzer(analyzer)
+                        .build());
     }
 
     SearcherReference getNearRealTimeSearcher() throws IOException {

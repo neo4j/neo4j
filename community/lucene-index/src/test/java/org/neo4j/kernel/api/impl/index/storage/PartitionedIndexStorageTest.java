@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.TEST;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -41,17 +40,18 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigBuilder;
+import org.neo4j.kernel.api.impl.index.TestIndexWriterModes;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.InMemoryDirectoryFactory;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
@@ -208,8 +208,9 @@ class PartitionedIndexStorageTest {
     private Directory createRandomLuceneDir(Path rootFolder) throws IOException {
         Path folder = createRandomFolder(rootFolder);
         Directory directory = directoryFactory.open(folder);
-        try (IndexWriter writer =
-                new IndexWriter(directory, IndexWriterConfigs.standard(TEST, Config.defaults(), IndexConfig.empty()))) {
+        Config config = Config.defaults();
+        IndexWriterConfig writerConfig = new IndexWriterConfigBuilder(TestIndexWriterModes.STANDARD, config).build();
+        try (IndexWriter writer = new IndexWriter(directory, writerConfig)) {
             writer.addDocument(randomDocument());
             writer.commit();
         }
