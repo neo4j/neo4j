@@ -123,9 +123,9 @@ case class unnestApply(
     case apply @ Apply(lhs, oex @ OptionalExpand(_: Argument, _, _, _, _, _, _, _)) =>
       unnestRightUnary(apply, lhs, oex)
 
-    // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
+    // π (Arg) Ax R => π (R) // if projections are simple and R is leaf and R is not using columns from π
     case apply @ Apply(projection @ Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan)
-      if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
+      if !projections.keys.exists(rhsLeaf.usedVariables.contains) && projections.values.forall(_.isSimple) =>
       val dependencies = projections.values.flatMap(_.dependencies).toSet
       val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet).addArgumentIds(dependencies)
       val res = projection.copy(rhsCopy, projections)(attributes.copy(projection.id))

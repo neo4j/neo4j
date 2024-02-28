@@ -139,6 +139,9 @@ case class FunctionInvocation(
       function != functions.File &&
       function != functions.Linenumber &&
       args.forall(_.isConstantForQuery)
+
+  override def isSimple: Boolean =
+    isDeterministic && subExpressions.isEmpty
 }
 
 case class FunctionName(name: String)(val position: InputPosition) extends SymbolicName {

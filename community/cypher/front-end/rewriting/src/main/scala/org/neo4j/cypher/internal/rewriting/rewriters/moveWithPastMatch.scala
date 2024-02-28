@@ -151,6 +151,7 @@ case object moveWithPastMatch extends StepSequencer.Step with DefaultPostConditi
     w.where.isEmpty &&
     !w.returnItems.includeExisting &&
     !w.returnItems.containsAggregate &&
+    w.returnItems.isSimple &&
     !w.distinct
   }
 }

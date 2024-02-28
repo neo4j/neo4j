@@ -32,6 +32,10 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest {
     assertIsNotRewritten("WITH 1 AS foo ORDER BY foo MATCH (n) RETURN n")
     assertIsNotRewritten("WITH 1 AS foo WHERE foo > 0 MATCH (n) RETURN n")
     assertIsNotRewritten("WITH *, 1 AS foo MATCH (n) RETURN n")
+    assertIsNotRewritten("WITH randomUUID() AS uuid MATCH (n:Node) RETURN n.index, uuid")
+    assertIsNotRewritten("WITH count{ RETURN 0 AS x } AS subqueryExpr MATCH (n:Node) RETURN n.index, uuid")
+    assertIsNotRewritten("WITH collect{ RETURN 0 AS x } AS subqueryExpr MATCH (n:Node) RETURN n.index, uuid")
+    assertIsNotRewritten("WITH exists{ RETURN 0 AS x } AS subqueryExpr MATCH (n:Node) RETURN n.index, uuid")
   }
 
   test("does not move WITH if MATCH uses projected variable") {
@@ -319,22 +323,6 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest {
            |MATCH ({m:$subqueryExpression { RETURN 0 AS x } })
            |WITH 1 AS n
            |RETURN *
-           |""".stripMargin
-      )
-    })
-  }
-
-  test("Variables outside of FullSubqueryExpressions should still be pulled out into the moved WITH") {
-    List("COUNT", "COLLECT", "EXISTS").foreach(subqueryExpression => {
-      assertRewrite(
-        s"""WITH $subqueryExpression { RETURN 0 AS x } as subqueryExpr
-           |MATCH (x:Person)
-           |RETURN x.name AS name, subqueryExpr
-           |""".stripMargin,
-        s"""
-           |MATCH (x:Person)
-           |WITH $subqueryExpression { RETURN 0 AS x } as subqueryExpr, x AS x
-           |RETURN x.name AS name, subqueryExpr
            |""".stripMargin
       )
     })

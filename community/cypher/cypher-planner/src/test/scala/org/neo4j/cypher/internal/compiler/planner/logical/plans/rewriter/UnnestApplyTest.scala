@@ -752,6 +752,22 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     rewrite(input) should equal(expected)
   }
 
+  test("should not unnest Apply with lhs Projection if it is not a simple projection") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("a", "x")
+      .apply()
+      .|.limit(1)
+      .|.filter("a.prop = prop")
+      .|.apply()
+      .|.|.allRelationshipsScan("(a)-[anon_0]-(anon_1)")
+      .|.projection("x.prop AS prop")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    rewrite(input) shouldEqual input
+  }
+
   implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
 
     def shouldRewriteToPlanWithAttributes(expectedBuilder: LogicalPlanBuilder): Assertion = {

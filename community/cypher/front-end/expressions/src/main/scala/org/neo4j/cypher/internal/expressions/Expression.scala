@@ -224,6 +224,13 @@ abstract class Expression extends ASTNode {
    * @return `true` if expression is constant and doesn't require the incoming row to be evaluated.
    */
   def isConstantForQuery: Boolean
+
+  /**
+   * An expression is simple if it's deterministic and cheap to evaluate.
+   * It's important to know when re-ordering clauses.
+   */
+  def isSimple: Boolean =
+    subExpressions.isEmpty
 }
 
 /**
