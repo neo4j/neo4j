@@ -196,7 +196,6 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
         }
         dbms = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setConfig(GraphDatabaseInternalSettings.automatic_upgrade_enabled, false)
-                .setConfig(GraphDatabaseInternalSettings.enable_vector_2, true)
                 .setConfig(GraphDatabaseInternalSettings.latest_runtime_version, LATEST_RUNTIME_VERSION.getVersion())
                 .setConfig(GraphDatabaseInternalSettings.latest_kernel_version, LATEST_KERNEL_VERSION.version())
                 .build();

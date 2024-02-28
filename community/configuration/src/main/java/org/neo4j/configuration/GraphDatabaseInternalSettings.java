@@ -1193,7 +1193,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Toggle experimental vector-2.0 index")
     public static final Setting<Boolean> enable_vector_2 =
-            newBuilder("internal.dbms.enable_vector_2", BOOL, false).build();
+            newBuilder("internal.dbms.enable_vector_2", BOOL, true).build();
 
     @Internal
     @Description(

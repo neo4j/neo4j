@@ -54,10 +54,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
   private def anyMap(elems: (String, Any)*): Map[String, Any] = Map[String, Any](elems: _*)
 
   override def databaseConfig(): Map[Setting[_], Object] =
-    super.databaseConfig() ++ Map(
-      GraphDatabaseInternalSettings.type_constraints -> java.lang.Boolean.TRUE,
-      GraphDatabaseInternalSettings.enable_vector_2 -> java.lang.Boolean.TRUE
-    )
+    super.databaseConfig() ++ Map(GraphDatabaseInternalSettings.type_constraints -> java.lang.Boolean.TRUE)
 
   // Index commands
 

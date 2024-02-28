@@ -49,7 +49,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.RecordType;
@@ -592,7 +591,6 @@ class SpecialisedIndexFullCheckTest {
     class VectorV2Index extends VectorIndexBase {
         VectorV2Index() {
             super(VectorIndexVersion.V2_0);
-            settings.put(GraphDatabaseInternalSettings.enable_vector_2, true);
         }
     }
 
