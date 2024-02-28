@@ -101,11 +101,17 @@ object ConvertToNFA {
   /**
    * Return True if the given expression
    * - does depend on at least one of the given entities
-   * - does not contain any IR expressions.
    */
   def canBeInlined(expression: Expression, entities: Set[LogicalVariable]): Boolean =
-    expression.folder.treeFindByClass[IRExpression].isEmpty &&
-      (expression.dependencies intersect entities).nonEmpty
+    (expression.dependencies intersect entities).nonEmpty
+
+  /**
+   * Return True if the given expression
+   * - does depend on at least one of the given entities
+   * - does not contain any IR expressions.
+   */
+  def canBeInlinedAndVariablesRewritten(expression: Expression, entities: Set[LogicalVariable]): Boolean =
+    expression.folder.treeFindByClass[IRExpression].isEmpty && canBeInlined(expression, entities)
 
   /**
    *

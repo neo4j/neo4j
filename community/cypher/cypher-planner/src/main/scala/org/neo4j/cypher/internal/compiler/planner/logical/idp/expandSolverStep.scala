@@ -378,12 +378,19 @@ object expandSolverStep {
     val (newConnections, liftedPredicates) =
       spp.pathPattern.connections.foldLeft((Seq[ExhaustiveNodeConnection](), Set[Expression]())) {
         case ((updatedNodeConnections, inlinedQppPredicates), nodeConnection) => nodeConnection match {
-            case pr: PatternRelationship    => (updatedNodeConnections.appended(pr), inlinedQppPredicates)
+            case pr: PatternRelationship => (updatedNodeConnections.appended(pr), inlinedQppPredicates)
             case qpp: QuantifiedPathPattern =>
+              case class VariableGroupingSet(
+                variableGroupings: Set[VariableGrouping],
+                inlineCheck: (Expression, Set[LogicalVariable]) => Boolean
+              )
+
               // All node variables, each in their own set
-              val nodeVariableGrouping = qpp.nodeVariableGroupings.map(Set(_))
+              val nodeVariableGrouping =
+                qpp.nodeVariableGroupings.map(s => VariableGroupingSet(Set(s), ConvertToNFA.canBeInlined))
               // All relationship variables, each in their own set
-              val relVariableGrouping = qpp.relationshipVariableGroupings.map(Set(_))
+              val relVariableGrouping =
+                qpp.relationshipVariableGroupings.map(s => VariableGroupingSet(Set(s), ConvertToNFA.canBeInlined))
               // All directed relationships in a set together with their boundary nodes.
               // We do this because predicates using only these can also be inlined.
               // See `getExtraRelationshipPredicates` in ConvertToNFA.
@@ -391,26 +398,30 @@ object expandSolverStep {
                 qpp.patternRelationships.toSet
                   .filterNot(_.dir == BOTH)
                   .map(pr => pr.boundaryNodesSet + pr.variable)
-                  .map(singletonVariables =>
-                    qpp.variableGroupings
+                  .map { singletonVariables =>
+                    val variableGroupings = qpp.variableGroupings
                       .filter(variableGrouping => singletonVariables.contains(variableGrouping.singleton))
-                  )
+                    // To be able to inline these extra predicates, we also need to know whether variables can
+                    // safely be rewritten in the expression.
+                    VariableGroupingSet(variableGroupings, ConvertToNFA.canBeInlinedAndVariablesRewritten)
+                  }
 
-              val variableGroupings: Set[Set[VariableGrouping]] =
+              val variableGroupings: Set[VariableGroupingSet] =
                 nodeVariableGrouping ++ relVariableGrouping ++ extraRelVariableGroupings
 
-              val extractedPredicates = variableGroupings.map { variableGrouping =>
-                val extracted = extractQPPPredicates(
-                  spp.selections.flatPredicates,
-                  variableGrouping,
-                  availableSymbols
-                )
-                val singletonVariables = variableGrouping.map(_.singleton)
-                val filteredPredicates = extracted.predicates
-                  .filter(extractedPredicate =>
-                    ConvertToNFA.canBeInlined(extractedPredicate.extracted, singletonVariables)
+              val extractedPredicates = variableGroupings.map {
+                case VariableGroupingSet(variableGrouping, inlineCheck) =>
+                  val extracted = extractQPPPredicates(
+                    spp.selections.flatPredicates,
+                    variableGrouping,
+                    availableSymbols
                   )
-                extracted.copy(predicates = filteredPredicates)
+                  val singletonVariables = variableGrouping.map(_.singleton)
+                  val filteredPredicates = extracted.predicates
+                    .filter(extractedPredicate =>
+                      inlineCheck(extractedPredicate.extracted, singletonVariables)
+                    )
+                  extracted.copy(predicates = filteredPredicates)
               }
 
               val inlinedPredicates = extractedPredicates.flatMap(_.predicates.map(_.extracted))

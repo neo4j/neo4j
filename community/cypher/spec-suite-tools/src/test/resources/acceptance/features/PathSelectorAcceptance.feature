@@ -1383,3 +1383,39 @@ Feature: PathSelectorAcceptance
       | [p = (m)-->()-->(:N) \| length(p) ] <> []                         |
       | COUNT { (m)-->()-->(:N) } = 1                                     |
       | COUNT { (m)-->()-->(:N) } = 1 AND (m)-->()-->(:N)                 |
+
+  Scenario: Find shortest path with pattern expression in QPP 2
+    Given having executed:
+      """
+        CREATE (u:User), (v:User)
+        CREATE (u)-[:R]->(b1)-[:R]->(b2)-[:R]->(b3)-[:R]->(v) // Path 1 (length 4)
+        CREATE (b1)-[:R]->(:N), (b2)-[:R]->(:N), (b3)-[:R]->(:N), (v)-[:R]->(:N)
+        CREATE (u)-[:R]->(b4)-[:R]->(b5)-[:R]->(v) // Path 2 (length 3)
+        CREATE (b4)-[:R]->(:N), (b5)-[:R]->(:N)
+        CREATE (u)-[:R]->(b6)-[:R]->(v) // Path 3 (length 2, doesn't match subquery)
+      """
+    When executing query:
+      """
+         MATCH p = ANY SHORTEST (u:User) ((a)-[r]->(b) WHERE (b)-->(:N))+ (v:User)
+         RETURN length(p) AS l
+      """
+    Then the result should be, in any order:
+      | l |
+      | 3 |
+
+  Scenario: Find shortest path with pattern expression outside QPP
+    Given having executed:
+      """
+        CREATE (u:User), (v)-[:R]->(w:User), (v)-[:R]->(:N)
+        CREATE (u)-[:R]->(b1)-[:R]->(b2)-[:R]->(b3)-[:R]->(v) // Path 1 (length 5)
+        CREATE (u)-[:R]->(b4)-[:R]->(b5)-[:R]->(v) // Path 2 (length 4)
+        CREATE (u)-[:R]->(b6)-[:R]->(w) // Path 3 (length 2, doesn't match subquery)
+      """
+    When executing query:
+      """
+         MATCH p = ANY SHORTEST ((u:User) ((a)-[r]->(b))+ (v)--(w:User) WHERE (v)-->(:N))
+         RETURN length(p) AS l
+      """
+    Then the result should be, in any order:
+      | l |
+      | 4 |

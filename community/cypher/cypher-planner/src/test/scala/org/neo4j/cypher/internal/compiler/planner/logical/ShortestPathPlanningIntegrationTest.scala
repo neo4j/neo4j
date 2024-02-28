@@ -47,8 +47,10 @@ import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
@@ -1640,6 +1642,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("should plan pattern expression predicates") {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
     val query =
       """MATCH ANY SHORTEST ((u:User) ((a)-[r]->(b))+ (v)-[s]->(w) WHERE (v)-->(:N))
         |RETURN *""".stripMargin
@@ -1659,12 +1665,13 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       plan = nestedPlan,
       solvedExpressionAsString = solvedNestedExpressionAsString
     )(pos)
+    val juxtapositionPredicate = NodeJuxtapositionPredicate(Some(VariablePredicate(v"v", patternExpressionPredicate)))
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
-      .addTransition(2, 3, "(b) (v)")
+      .addTransition(2 -> "b", 3 -> "v", juxtapositionPredicate)
       .addTransition(3, 4, "(v)-[s]->(w)")
       .setFinalState(4)
       .build()
@@ -1675,15 +1682,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           "u",
           "w",
           s"SHORTEST 1 ((u) ((`a`)-[`r`]->(`b`)){1, } (v)-[s]->(w) WHERE $solvedNestedExpressionAsString AND NOT s IN `r` AND unique(`r`))",
-          Some(patternExpressionPredicate),
+          None,
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
           singletonNodeVariables = Set("v" -> "v"),
           singletonRelationshipVariables = Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           expectedNfa,
-          ExpandInto,
-          reverseGroupVariableProjections = false
+          ExpandInto
         )
         .cartesianProduct()
         .|.allNodeScan("w")
@@ -1693,6 +1699,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("should plan pattern expression predicates inside QPP") {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
     val query =
       """MATCH ANY SHORTEST ((u:User)(
         |  (n)-[r]->(m)
@@ -1708,8 +1718,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val nestedPlan = planner.subPlanBuilder()
       .filter("`  UNNAMED1`:N")
       .expand("(`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)")
-      .projection("`  m@5`[`  UNNAMED2`] AS `  m@2`")
-      .argument("  m@5", "  UNNAMED2")
+      .argument("  m@2")
       .build()
 
     val solvedNestedExpressionAsString =
@@ -1720,16 +1729,17 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       solvedExpressionAsString =
         solvedNestedExpressionAsString
     )(pos)
-
-    val nonInlineablePredicate = allInList(
-      varFor("  UNNAMED2"),
-      function("range", literalInt(0), subtract(function("size", varFor("  m@5")), literalInt(1))),
-      nestedPlanExpression
+    val expansionPredicate = RelationshipExpansionPredicate(
+      v"  r@1",
+      None,
+      Seq.empty,
+      OUTGOING,
+      Some(VariablePredicate(v"  m@2", nestedPlanExpression))
     )
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (`  n@0`)")
-      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)")
+      .addTransition(1 -> "  n@0", 2 -> "  m@2", expansionPredicate)
       .addTransition(2, 1, "(`  m@2`) (`  n@0`)")
       .addTransition(2, 3, "(`  m@2`) (v)")
       .setFinalState(3)
@@ -1741,9 +1751,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "u",
           "v",
-          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`)){1, } (v) WHERE EXISTS { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
-            |  WHERE `  UNNAMED1`:N } AND unique(`  r@4`))""".stripMargin,
-          Some(nonInlineablePredicate),
+          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`) WHERE EXISTS { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
+            |  WHERE `  UNNAMED1`:N }){1, } (v) WHERE unique(`  r@4`))""".stripMargin,
+          None,
           Set(("  n@0", "  n@3"), ("  m@2", "  m@5")),
           Set(("  r@1", "  r@4")),
           Set(),
@@ -1843,6 +1853,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("should plan subquery expression inside QPP") {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
     // GIVEN
     val query =
       """MATCH ANY SHORTEST ((u:User)(
@@ -1859,13 +1873,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     // THEN
     val nestedPlan = planner.subPlanBuilder()
-      .apply()
-      .|.aggregation(Seq.empty, Seq("count(*) AS `  UNNAMED2`"))
-      .|.filter("`  UNNAMED1`:N")
-      .|.expand("(`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)")
-      .|.argument("  m@2")
-      .projection("`  m@5`[`  UNNAMED3`] AS `  m@2`")
-      .argument("  m@5", "  UNNAMED3")
+      .aggregation(Seq.empty, Seq("count(*) AS `  UNNAMED2`"))
+      .filter("`  UNNAMED1`:N")
+      .expand("(`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)")
+      .argument("  m@2")
       .build()
 
     val solvedNestedExpressionAsString =
@@ -1876,16 +1887,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       v"  UNNAMED2",
       solvedExpressionAsString = solvedNestedExpressionAsString
     )(pos)
-
-    val nonInlineablePredicate = allInList(
-      varFor("  UNNAMED3"),
-      function("range", literalInt(0), subtract(function("size", varFor("  m@5")), literalInt(1))),
-      equals(nestedPlanExpression, literalInt(2))
+    val eq2 = equals(nestedPlanExpression, literalInt(2))
+    val expansionPredicate = RelationshipExpansionPredicate(
+      v"  r@1",
+      None,
+      Seq.empty,
+      OUTGOING,
+      Some(VariablePredicate(v"  m@2", eq2))
     )
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (`  n@0`)")
-      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)")
+      .addTransition(1 -> "  n@0", 2 -> "  m@2", expansionPredicate)
       .addTransition(2, 1, "(`  m@2`) (`  n@0`)")
       .addTransition(2, 3, "(`  m@2`) (v)")
       .setFinalState(3)
@@ -1897,9 +1910,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "u",
           "v",
-          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`)){1, } (v) WHERE COUNT { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
-            |  WHERE `  UNNAMED1`:N } = 2 AND unique(`  r@4`))""".stripMargin,
-          Some(nonInlineablePredicate),
+          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`) WHERE COUNT { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
+            |  WHERE `  UNNAMED1`:N } = 2){1, } (v) WHERE unique(`  r@4`))""".stripMargin,
+          None,
           Set(("  n@0", "  n@3"), ("  m@2", "  m@5")),
           Set(("  r@1", "  r@4")),
           Set(),
@@ -1916,6 +1929,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("should plan subquery expression predicates with multiple dependencies") {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
     val query =
       """MATCH ANY SHORTEST ((u:User) ((a)-[r]->(b))+ (v)-[s]->(w)-[t]->(x) WHERE EXISTS { (v)<--(w) })
         |RETURN *""".stripMargin
@@ -2556,11 +2573,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("Should not inline relationship local (start and end node) predicate into NFA: NestedPlanExpression") {
-    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
+    // We compare "solvedExpressionAsString" nested inside NestedPlanExpressions.
     // This saves us from windows line break mismatches in those strings.
     implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
 
-    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE EXISTS { (v)-->({prop: v.prop + r2.prop + w.prop}) } ) RETURN *"
+    val query =
+      "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE EXISTS { (v)-->({prop: v.prop + r2.prop + w.prop}) } ) RETURN *"
 
     val expectedNestedPlan = planner.subPlanBuilder()
       .filter("anon_1.prop = v.prop + r2.prop + w.prop")
@@ -2592,7 +2610,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "u",
           "w",
-          s"SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE $solvedNestedExpressionAsString AND NOT r2 IN `r` AND unique(`r`))",
+          s"SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w) WHERE $solvedNestedExpressionAsString AND NOT r2 IN `r` AND unique(`r`))",
           Some(nestedPlanExpression),
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
