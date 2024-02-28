@@ -68,29 +68,27 @@ class ExpressionStringifierIT extends CypherFunSuite {
           |  WHEN 2 = n.prop THEN 2
           |  ELSE 4
           |END""".stripMargin,
-      """
-        |CASE n.name
+      """CASE n.name
         |    WHEN IS NULL THEN 1
         |    WHEN IS NOT NORMALIZED THEN 2
         |    WHEN IS NOT NFKD NORMALIZED THEN 3
         |    WHEN IS TYPED BOOLEAN THEN 4
         |    WHEN IS NOT TYPED STRING THEN 5
-        |    WHEN CONTAINS "B" THEN 6
+        |    WHEN :: POINT THEN 6
         |    WHEN STARTS WITH "A" THEN 7
         |    WHEN ENDS WITH "k" THEN 8
         |    WHEN =~ 'C.*t' THEN 9
         |    WHEN IS NOT NULL THEN 10
         |    WHEN IS NORMALIZED THEN 11
         |    ELSE 13
-        |END
-        |""".stripMargin ->
+        |END""".stripMargin ->
         """CASE n.name
           |  WHEN IS NULL THEN 1
           |  WHEN IS NOT NFC NORMALIZED THEN 2
           |  WHEN IS NOT NFKD NORMALIZED THEN 3
-          |  WHEN IS :: BOOLEAN THEN 4
-          |  WHEN IS NOT :: STRING THEN 5
-          |  WHEN CONTAINS "B" THEN 6
+          |  WHEN IS TYPED BOOLEAN THEN 4
+          |  WHEN IS NOT TYPED STRING THEN 5
+          |  WHEN IS TYPED POINT THEN 6
           |  WHEN STARTS WITH "A" THEN 7
           |  WHEN ENDS WITH "k" THEN 8
           |  WHEN =~ "C.*t" THEN 9
@@ -103,10 +101,6 @@ class ExpressionStringifierIT extends CypherFunSuite {
           |  WHEN 1 THEN "1"
           |  WHEN 2 THEN "2"
           |  ELSE "4"
-          |END""".stripMargin,
-      "case c.name wHen COntains \"mal\" THEN \"Sweden\" end" ->
-        """CASE c.name
-          |  WHEN CONTAINS "mal" THEN "Sweden"
           |END""".stripMargin,
       "case wHen true THEN \"yay\" end" ->
         """CASE

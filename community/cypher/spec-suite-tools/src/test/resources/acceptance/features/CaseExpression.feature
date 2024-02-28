@@ -571,7 +571,7 @@ Feature: CaseExpression
           WHEN IS NOT NFKD NORMALIZED THEN 3
           WHEN IS TYPED BOOLEAN THEN 4
           WHEN IS NOT TYPED STRING THEN 5
-          WHEN CONTAINS "B" THEN 6
+          WHEN :: POINT THEN 6
           WHEN STARTS WITH "A" THEN 7
           WHEN ENDS WITH "k" THEN 8
           WHEN =~ 'C.*t' THEN 9
@@ -582,10 +582,10 @@ Feature: CaseExpression
       """
     Then the result should be, in any order:
       | res |
-      | 6   |
       | 7   |
       | 8   |
       | 9   |
+      | 10  |
       | 10  |
       | 10  |
     And no side effects

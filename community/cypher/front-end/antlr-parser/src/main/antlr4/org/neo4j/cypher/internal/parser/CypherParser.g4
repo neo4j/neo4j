@@ -313,9 +313,9 @@ comparisonExpression6
    ;
 
 comparisonExpression6CaseExpression
-   : (REGEQ | STARTS WITH | ENDS WITH | CONTAINS) expression6
+   : (REGEQ | STARTS WITH | ENDS WITH) expression6
    | IS NOT? NULL
-   | (IS NOT? (TYPED | COLONCOLON) | COLONCOLON) type
+   | (IS NOT? TYPED | COLONCOLON) type
    | IS NOT? normalForm? NORMALIZED
    ;
 

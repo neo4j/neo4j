@@ -131,7 +131,6 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
     """
       |CASE n.eyes
       | WHEN > 2, = 1, 5 THEN 1
-      | WHEN CONTAINS "blue" THEN 2
       | WHEN STARTS WITH "gre", ENDS WITH "en" THEN 3
       | ELSE 4
       |END""".stripMargin
@@ -143,7 +142,6 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
           greaterThan(prop("n", "eyes"), literalInt(2)) -> literalInt(1),
           equals(prop("n", "eyes"), literalInt(1)) -> literalInt(1),
           equals(prop("n", "eyes"), literalInt(5)) -> literalInt(1),
-          contains(prop("n", "eyes"), literalString("blue")) -> literalInt(2),
           startsWith(prop("n", "eyes"), literalString("gre")) -> literalInt(3),
           endsWith(prop("n", "eyes"), literalString("en")) -> literalInt(3)
         ),
@@ -183,6 +181,62 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
           equals(prop("n", "eyes"), containerIndex(varFor("in"), literalInt(0))) -> literalInt(1)
         ),
         Some(literalInt(4))
+      )
+    }
+  }
+
+  test(
+    """CASE 2
+      |  WHEN contains + 1 THEN 'contains'
+      |  ELSE 'else'
+      |END""".stripMargin
+  ) {
+    yields {
+      CaseExpression(
+        Some(literalInt(2)),
+        List(
+          equals(literalInt(2), add(varFor("contains"), literalInt(1))) -> literalString("contains")
+        ),
+        Some(literalString("else"))
+      )
+    }
+  }
+
+  test(
+    """CASE 1
+      |  WHEN is::INT THEN 'is int'
+      |  ELSE 'else'
+      |END""".stripMargin
+  ) {
+    yields {
+      CaseExpression(
+        Some(literalInt(1)),
+        List(
+          equals(literalInt(1), isTyped(varFor("is"), IntegerType(isNullable = true)(pos))) -> literalString("is int")
+        ),
+        Some(literalString("else"))
+      )
+    }
+  }
+
+  // Test all type predicate expressions parse as expected
+  test(
+    """CASE 1
+      |  WHEN IS TYPED INT THEN 1
+      |  WHEN IS NOT TYPED INT THEN 2
+      |  WHEN :: INT THEN 3
+      |  ELSE 'else'
+      |END""".stripMargin
+  ) {
+    yields {
+      CaseExpression(
+        Some(literalInt(1)),
+        List(
+          isTyped(literalInt(1), IntegerType(isNullable = true)(pos)) -> literalInt(1),
+          isNotTyped(literalInt(1), IntegerType(isNullable = true)(pos)) -> literalInt(2),
+          isTyped(literalInt(1), IntegerType(isNullable = true)(pos)) -> literalInt(3)
+        ),
+        Some(literalString("else"))
       )
     }
   }

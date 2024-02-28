@@ -3533,32 +3533,6 @@ EXPRESSION ComparisonExpression6( EXPRESSION lhs ) throws Exception:
     | t=<COLONCOLON> typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
 }
 
-EXPRESSION ComparisonExpression6CaseExpressions( EXPRESSION lhs ) throws Exception:
-{
-    Token t;
-    EXPRESSION rhs;
-    ParserCypherTypeName typeName;
-    ParserNormalForm normalForm;
-}
-{
-    LOOKAHEAD( 2 ) t=<REGEQ> rhs=Expression6() { return astFactory.regeq( pos( t ), lhs, rhs ); }
-    | t=<STARTS> <WITH> rhs=Expression6() { return astFactory.startsWith( pos( t ), lhs, rhs ); }
-    | t=<ENDS> <WITH> rhs=Expression6() { return astFactory.endsWith( pos( t ), lhs, rhs ); }
-    | t=<CONTAINS> rhs=Expression6() { return astFactory.contains( pos( t ), lhs, rhs ); }
-    | t=<IS> (
-        <NULL> { return astFactory.isNull( pos( t ), lhs ); }
-        | <NOT> (
-            <NULL> { return astFactory.isNotNull( pos( t ), lhs ); }
-            | ((<TYPED> | <COLONCOLON>) typeName = cypherTypeName() { return astFactory.isNotTyped( pos( t ), lhs, typeName ); })
-            | (normalForm = normalForm() <NORMALIZED> { return astFactory.isNotNormalized( pos( t ), lhs, normalForm ); })
-        )
-        | (<TYPED> | <COLONCOLON>) typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
-        |  normalForm = normalForm() <NORMALIZED>{ return astFactory.isNormalized( pos( t ), lhs, normalForm ); }
-
-    )
-    | t=<COLONCOLON> typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
-}
-
 ParserNormalForm normalForm():
 {
     ParserNormalForm normalForm = ParserNormalForm.NFC;
@@ -3794,13 +3768,25 @@ EXPRESSION whenOperand( EXPRESSION lhs ) throws Exception:
 {
     Token t;
     EXPRESSION e;
+    EXPRESSION rhs;
+    ParserCypherTypeName typeName;
+    ParserNormalForm normalForm;
 }
 {
     { t = token; }
     (
-        e=ComparisonExpression6CaseExpressions( lhs ) { return e; }
-        | e=Expression8ComparatorExpression( lhs )  { return e; }
-        | e=Expression() { return astFactory.eq( pos( t ), lhs, e); }
+         t=<REGEQ> rhs=Expression6() { return astFactory.regeq( pos( t ), lhs, rhs ); }
+         | t=<STARTS> <WITH> rhs=Expression6() { return astFactory.startsWith( pos( t ), lhs, rhs ); }
+         | t=<ENDS> <WITH> rhs=Expression6() { return astFactory.endsWith( pos( t ), lhs, rhs ); }
+         | LOOKAHEAD( 3 ) t=<IS> <NULL> { return astFactory.isNull( pos( t ), lhs ); }
+         | LOOKAHEAD( 3 ) t=<IS> <NOT> <NULL> { return astFactory.isNotNull( pos( t ), lhs ); }
+         | LOOKAHEAD( 3 ) t=<IS> (normalForm = normalForm()) <NORMALIZED> { return astFactory.isNormalized( pos( t ), lhs, normalForm ); }
+         | LOOKAHEAD( 3 ) t=<IS> <NOT> (normalForm = normalForm()) <NORMALIZED> { return astFactory.isNotNormalized( pos( t ), lhs, normalForm ); }
+         | LOOKAHEAD( 3 ) t=<IS> <TYPED> typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
+         | LOOKAHEAD( 3 ) t=<IS> <NOT> <TYPED> typeName = cypherTypeName() { return astFactory.isNotTyped( pos( t ), lhs, typeName ); }
+         | t=<COLONCOLON> typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
+         | e=Expression8ComparatorExpression( lhs )  { return e; }
+         | e=Expression() { return astFactory.eq( pos( t ), lhs, e); }
     )
 }
 

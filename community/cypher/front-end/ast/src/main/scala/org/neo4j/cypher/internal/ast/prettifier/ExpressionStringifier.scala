@@ -163,8 +163,8 @@ private class DefaultExpressionStringifier(
   override def apply(ns: Namespace): String =
     ns.parts.map(backtick).mkString(".")
 
-  private def inner(outer: Expression, withLHS: Boolean = true)(inner: Expression): String = {
-    val str = stringify(inner, withLHS)
+  private def inner(outer: Expression, isCaseExpression: Boolean = false)(inner: Expression): String = {
+    val str = stringify(inner, isCaseExpression)
 
     def parens = (binding(outer), binding(inner)) match {
       case (_, Syntactic)                 => false
@@ -173,13 +173,13 @@ private class DefaultExpressionStringifier(
     }
 
     // Don't add parenthesis around expressions missing their LHS
-    if ((alwaysParens || parens) && withLHS) "(" + str + ")"
+    if ((alwaysParens || parens) && !isCaseExpression) "(" + str + ")"
     else str
   }
 
   // withLHS is for stringifying simple CASE expressions where the LHS has been
   // inferred from the case expression
-  private def stringify(ast: Expression, withLHS: Boolean = true): String = {
+  private def stringify(ast: Expression, isCaseExpression: Boolean = false): String = {
     ast match {
 
       case StringLiteral(txt) =>
@@ -189,9 +189,9 @@ private class DefaultExpressionStringifier(
         l.asCanonicalStringVal
 
       // Special case for SIMPLE CASE, when it is an equals, remove the LHS and =
-      case e: Equals if !withLHS => inner(ast)(e.rhs)
+      case e: Equals if isCaseExpression => inner(ast)(e.rhs)
 
-      case e: BinaryOperatorExpression if withLHS =>
+      case e: BinaryOperatorExpression if !isCaseExpression =>
         s"${inner(ast)(e.lhs)} ${e.canonicalOperatorSymbol} ${inner(ast)(e.rhs)}"
 
       case e: BinaryOperatorExpression =>
@@ -233,37 +233,39 @@ private class DefaultExpressionStringifier(
       case _: CountStar =>
         s"count(*)"
 
-      case IsNull(arg) if withLHS =>
+      case IsNull(arg) if !isCaseExpression =>
         s"${inner(ast)(arg)} IS NULL"
 
       case IsNull(_) =>
         "IS NULL"
 
-      case IsNotNull(arg) if withLHS =>
+      case IsNotNull(arg) if !isCaseExpression =>
         s"${inner(ast)(arg)} IS NOT NULL"
 
       case IsNotNull(_) =>
         "IS NOT NULL"
 
-      case e @ IsTyped(arg, predicateType) if withLHS =>
+      case e @ IsTyped(arg, predicateType) if !isCaseExpression =>
         s"${inner(ast)(arg)} ${e.canonicalOperatorSymbol} ${predicateType.description}"
 
+      // For the 5.x series it is breaking to use `IS ::` alone in a Case Expression
       case e @ IsTyped(_, predicateType) =>
-        s"${e.canonicalOperatorSymbol} ${predicateType.description}"
+        s"IS TYPED ${predicateType.description}"
 
-      case e @ IsNotTyped(arg, predicateType) if withLHS =>
+      case e @ IsNotTyped(arg, predicateType) if !isCaseExpression =>
         s"${inner(ast)(arg)} ${e.canonicalOperatorSymbol} ${predicateType.description}"
 
+      // For the 5.x series it is breaking to use `IS ::` alone in a Case Expression
       case e @ IsNotTyped(_, predicateType) =>
-        s"${e.canonicalOperatorSymbol} ${predicateType.description}"
+        s"IS NOT TYPED ${predicateType.description}"
 
-      case IsNormalized(arg, normalForm) if withLHS =>
+      case IsNormalized(arg, normalForm) if !isCaseExpression =>
         s"${inner(ast)(arg)} IS ${normalForm.description} NORMALIZED"
 
       case IsNormalized(_, normalForm) =>
         s"IS ${normalForm.description} NORMALIZED"
 
-      case IsNotNormalized(arg, normalForm) if withLHS =>
+      case IsNotNormalized(arg, normalForm) if !isCaseExpression =>
         s"${inner(ast)(arg)} IS NOT ${normalForm.description} NORMALIZED"
 
       case IsNotNormalized(_, normalForm) =>
@@ -373,7 +375,7 @@ private class DefaultExpressionStringifier(
           Seq(s"CASE ${inner(ast)(expression)}"),
           for {
             (e1, e2) <- alternatives
-            i <- Seq(s"${prettifier.BASE_INDENT}WHEN ${inner(ast, withLHS = false)(e1)} THEN ${inner(ast)(e2)}")
+            i <- Seq(s"${prettifier.BASE_INDENT}WHEN ${inner(ast, isCaseExpression = true)(e1)} THEN ${inner(ast)(e2)}")
           } yield i,
           for { e <- default.toSeq; i <- Seq(s"${prettifier.BASE_INDENT}ELSE ${inner(ast)(e)}") } yield i,
           Seq("END")
