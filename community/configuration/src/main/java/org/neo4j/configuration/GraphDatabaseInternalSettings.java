@@ -1191,11 +1191,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.latest_kernel_version", BYTE, null).build();
 
     @Internal
-    @Description("Toggle experimental vector-2.0 index")
-    public static final Setting<Boolean> enable_vector_2 =
-            newBuilder("internal.dbms.enable_vector_2", BOOL, true).build();
-
-    @Internal
     @Description(
             """
                     Ask page cache to close memory allocator on shutdown to clear native memory allocated for page cache pages.

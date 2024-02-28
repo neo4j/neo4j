@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -215,24 +214,22 @@ public class StaticIndexProviderMapFactory {
                         pageCacheTracer,
                         dependencies));
 
-        var vectorV2IndexProvider = databaseConfig.get(GraphDatabaseInternalSettings.enable_vector_2)
-                ? life.add(new VectorIndexProviderFactory(VectorIndexVersion.V2_0)
-                        .create(
-                                pageCache,
-                                fs,
-                                logService,
-                                monitors,
-                                databaseConfig,
-                                readOnlyChecker,
-                                mode,
-                                recoveryCleanupWorkCollector,
-                                databaseLayout,
-                                tokenHolders,
-                                scheduler,
-                                contextFactory,
-                                pageCacheTracer,
-                                dependencies))
-                : null;
+        var vectorV2IndexProvider = life.add(new VectorIndexProviderFactory(VectorIndexVersion.V2_0)
+                .create(
+                        pageCache,
+                        fs,
+                        logService,
+                        monitors,
+                        databaseConfig,
+                        readOnlyChecker,
+                        mode,
+                        recoveryCleanupWorkCollector,
+                        databaseLayout,
+                        tokenHolders,
+                        scheduler,
+                        contextFactory,
+                        pageCacheTracer,
+                        dependencies));
 
         return new StaticIndexProviderMap(
                 tokenIndexProvider,
