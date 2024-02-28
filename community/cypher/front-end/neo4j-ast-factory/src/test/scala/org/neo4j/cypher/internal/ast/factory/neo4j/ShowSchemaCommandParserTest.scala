@@ -809,6 +809,14 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     failsToParse[Statements]
   }
 
+  test("SHOW UNKNOWN INDEXES") {
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'UNKNOWN': expected""")
+  }
+
+  test("SHOW BUILT IN INDEXES") {
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'INDEXES': expected "FUNCTION" or "FUNCTIONS"""")
+  }
+
   // Show constraints
 
   private val oldConstraintTypes = Seq(
@@ -1571,6 +1579,17 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW EXISTENCE CONSTRAINT RETURN *") {
     failsToParse[Statements]
+  }
+
+  test("SHOW UNKNOWN CONSTRAINTS") {
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'UNKNOWN': expected""")
+  }
+
+  test("SHOW BUILT IN CONSTRAINTS") {
+    assertFailsWithMessageStart[Statements](
+      testName,
+      """Invalid input 'CONSTRAINTS': expected "FUNCTION" or "FUNCTIONS""""
+    )
   }
 
   // Invalid clause order tests for indexes and constraints

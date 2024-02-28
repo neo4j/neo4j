@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstra
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateVectorNodeIndex
+import org.neo4j.cypher.internal.ast.CreateVectorRelationshipIndex
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.IfExistsDo
@@ -347,6 +348,10 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE VECTOR INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) OPTIONS {...}
       case CreateVectorNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
         createVectorIndex(label, props, name, ifExistsDo, options)
+
+      // CREATE VECTOR INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) OPTIONS {...}
+      case CreateVectorRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
+        createVectorIndex(relType, props, name, ifExistsDo, options)
 
       // DROP INDEX name [IF EXISTS]
       case DropIndexOnName(name, ifExists, _) =>

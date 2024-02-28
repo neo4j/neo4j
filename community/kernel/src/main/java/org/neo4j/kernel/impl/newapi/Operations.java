@@ -1598,9 +1598,16 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                         unsupportedMessage
                                 .append(" Relationship vector indexes with provider '")
                                 .append(descriptor.name())
-                                .append("' are not supported, use a newer vector index provider such as '")
-                                .append(latestDescriptor.name())
-                                .append("'.");
+                                .append("' are not supported");
+
+                        if (!latestDescriptor.equals(descriptor)) {
+                            unsupportedMessage
+                                    .append(", use a newer vector index provider such as '")
+                                    .append(latestDescriptor.name())
+                                    .append('\'');
+                        }
+
+                        unsupportedMessage.append('.');
                     }
 
                     supported &= checkSupportedInVerson(unsupportedMessage, KernelVersion.VERSION_VECTOR_2_INTRODUCED);

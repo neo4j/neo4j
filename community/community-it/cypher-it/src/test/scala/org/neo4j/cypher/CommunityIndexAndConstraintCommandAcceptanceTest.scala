@@ -22,13 +22,14 @@ package org.neo4j.cypher
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
+import org.neo4j.dbms.database.DbmsRuntimeVersion
 import org.neo4j.exceptions.CypherExecutionException
-import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.kernel.KernelVersion
 import org.neo4j.kernel.impl.api.index.IndexingService
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 
@@ -56,7 +57,14 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
 
   override def databaseConfig(): Map[Setting[_], Object] =
     super.databaseConfig() ++ Map(
-      GraphDatabaseInternalSettings.type_constraints -> java.lang.Boolean.TRUE
+      GraphDatabaseInternalSettings.type_constraints -> java.lang.Boolean.TRUE,
+      GraphDatabaseInternalSettings.enable_vector_2 -> java.lang.Boolean.TRUE,
+      GraphDatabaseInternalSettings.latest_runtime_version -> java.lang.Integer.valueOf(
+        DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion
+      ),
+      GraphDatabaseInternalSettings.latest_kernel_version -> java.lang.Byte.valueOf(
+        KernelVersion.GLORIOUS_FUTURE.version
+      )
     )
 
   // Index commands
@@ -147,21 +155,21 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
     graph.getIndexTypeByName(indexName) should be(IndexType.VECTOR)
   }
 
-  test("Fail to create relationship vector index") {
+  test("Create relationship vector index") {
     // WHEN
-    val exception = the[SyntaxException] thrownBy {
-      execute(
-        s"CREATE VECTOR INDEX $indexName FOR ()-[r:$relType]-() ON r.$prop OPTIONS {indexConfig: $$map}",
-        Map("map" -> anyMap(
-          VECTOR_DIMENSIONS.getSettingName -> 50,
-          VECTOR_SIMILARITY_FUNCTION.getSettingName -> "COSINE"
-        ))
-      )
-    }
+    val statistics = execute(
+      s"CREATE VECTOR INDEX $indexName FOR ()-[r:$relType]-() ON r.$prop OPTIONS {indexConfig: $$map}",
+      Map("map" -> anyMap(
+        VECTOR_DIMENSIONS.getSettingName -> 50,
+        VECTOR_SIMILARITY_FUNCTION.getSettingName -> "COSINE"
+      ))
+    ).queryStatistics()
 
     // THEN
-    exception.getMessage should startWith("Vector indexes are not available on relationships.")
-    graph.indexExists(indexName) should be(false)
+    statistics should be(QueryStatistics(indexesAdded = 1))
+
+    graph.indexExists(indexName) should be(true)
+    graph.getIndexTypeByName(indexName) should be(IndexType.VECTOR)
   }
 
   test("Create node fulltext index") {

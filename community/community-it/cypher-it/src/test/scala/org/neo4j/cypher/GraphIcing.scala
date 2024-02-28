@@ -370,6 +370,37 @@ trait GraphIcing {
       )
     }
 
+    def createRelationshipVectorIndex(
+      name: String,
+      relType: String,
+      property: String,
+      dimensions: Int,
+      similarityFunction: String
+    ): IndexDefinition = {
+      createRelationshipIndex(
+        Some(name),
+        relType,
+        Seq(property),
+        IndexType.VECTOR,
+        maybeConfig = Some(getVectorConfigMap(dimensions, similarityFunction))
+      )
+    }
+
+    def createRelationshipVectorIndex(
+      relType: String,
+      property: String,
+      dimensions: Int,
+      similarityFunction: String
+    ): IndexDefinition = {
+      createRelationshipIndex(
+        None,
+        relType,
+        Seq(property),
+        IndexType.VECTOR,
+        maybeConfig = Some(getVectorConfigMap(dimensions, similarityFunction))
+      )
+    }
+
     private def getVectorConfigMap(dimensions: Int, similarityFunction: String): Map[String, String] =
       Map(
         IndexSettingImpl.VECTOR_DIMENSIONS.getSettingName -> dimensions.toString,

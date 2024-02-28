@@ -639,6 +639,14 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
     failsToParse[Statements]
   }
 
+  test("SHOW UNKNOWN FUNCTIONS") {
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'UNKNOWN': expected""")
+  }
+
+  test("SHOW LOOKUP FUNCTIONS") {
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'FUNCTIONS': expected "INDEX" or "INDEXES"""")
+  }
+
   // Invalid clause order
 
   for (prefix <- Seq("USE neo4j", "")) {

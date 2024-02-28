@@ -2637,6 +2637,20 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     assertFailsWithMessageStart[Statements](testName, """Invalid input 'n2': expected ")"""")
   }
 
+  test("CREATE UNKNOWN INDEX FOR (n1:Person) ON (n2.name)") {
+    assertFailsWithMessageStart[Statements](
+      testName,
+      """Invalid input 'UNKNOWN': expected "(", "ALL", "ANY" or "SHORTEST""""
+    )
+  }
+
+  test("CREATE BUILT IN INDEX FOR (n1:Person) ON (n2.name)") {
+    assertFailsWithMessageStart[Statements](
+      testName,
+      """Invalid input 'BUILT': expected "(", "ALL", "ANY" or "SHORTEST""""
+    )
+  }
+
   // Drop index
 
   test("DROP INDEX ON :Person(name)") {

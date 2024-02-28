@@ -99,6 +99,7 @@ import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.CreateVectorNodeIndex
+import org.neo4j.cypher.internal.ast.CreateVectorRelationshipIndex
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabaseName
@@ -2096,6 +2097,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     pointNodeIndex = CreatePointNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     pointRelIndex = CreatePointRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
     vectorNodeIndex = CreateVectorNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    vectorRelIndex = CreateVectorRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
     command <- oneOf(
       rangeNodeIndex,
       rangeRelIndex,
@@ -2107,7 +2109,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       textRelIndex,
       pointNodeIndex,
       pointRelIndex,
-      vectorNodeIndex
+      vectorNodeIndex,
+      vectorRelIndex
     )
   } yield command
 

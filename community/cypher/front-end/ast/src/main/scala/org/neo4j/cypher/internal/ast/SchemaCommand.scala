@@ -391,7 +391,9 @@ case class CreateVectorRelationshipIndex(
     copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
-    error("Vector indexes are not available on relationships.", relType.position)
+    checkOptionsMap("vector relationship index", options) chain
+      super.semanticCheck chain
+      checkSingleProperty("vector indexes", properties)
 }
 
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(

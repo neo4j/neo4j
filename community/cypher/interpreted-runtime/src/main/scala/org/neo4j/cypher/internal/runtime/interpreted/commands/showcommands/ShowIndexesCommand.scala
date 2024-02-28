@@ -367,7 +367,8 @@ object ShowIndexesCommand {
             val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
             s"CREATE VECTOR INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
           case EntityType.RELATIONSHIP =>
-            throw new IllegalArgumentException(s"$entityType not valid for $indexType index")
+            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+            s"CREATE VECTOR INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.LOOKUP =>
