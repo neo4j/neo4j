@@ -1165,8 +1165,7 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.15</version>
-        <scope>test</scope>
+        <version>1.16.1</version>
       </dependency>
 
       <dependency>
@@ -1323,7 +1322,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.21</version>
+        <version>1.26.0</version>
       </dependency>
       <dependency>
         <groupId>com.github.luben</groupId>

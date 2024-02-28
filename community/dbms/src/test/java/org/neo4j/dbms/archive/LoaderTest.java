@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms.archive;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
@@ -124,7 +124,7 @@ class LoaderTest
         try ( TarArchiveOutputStream tar = new TarArchiveOutputStream(
                 new GzipCompressorOutputStream( Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW ) ) ) )
         {
-            ArchiveEntry archiveEntry = tar.createArchiveEntry( testFile.toFile(), "../../../../etc/shadow" );
+            TarArchiveEntry archiveEntry = tar.createArchiveEntry( testFile.toFile(), "../../../../etc/shadow" );
             tar.putArchiveEntry( archiveEntry );
             tar.closeArchiveEntry();
         }

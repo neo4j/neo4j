@@ -23,6 +23,7 @@ Apache Software License, Version 2.0
   @firebase/util
   @firebase/webchannel-wrapper
   Apache Commons BeanUtils
+  Apache Commons Codec
   Apache Commons Collections
   Apache Commons Compress
   Apache Commons IO
