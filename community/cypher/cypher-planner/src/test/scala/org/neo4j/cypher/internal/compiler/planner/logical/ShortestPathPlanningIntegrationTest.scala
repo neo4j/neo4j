@@ -1759,6 +1759,89 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
+  test("should plan non-inlineable pattern expression predicates combined with normal predicate inside QPP") {
+    val query =
+      """MATCH ANY SHORTEST ((u:User)(
+        |  (n)-[r]->(m)
+        |    WHERE CASE
+        |      WHEN (m)-[]->(:N) THEN n.prop > m.prop
+        |      ELSE false
+        |    END
+        |  )+(v))
+        |RETURN *""".stripMargin
+    val planner = plannerBase
+      .enableDeduplicateNames(false)
+      .build()
+
+    val plan = planner.plan(query)
+
+    val nestedPlan = planner.subPlanBuilder()
+      .filter("`  UNNAMED1`:N")
+      .expand("(`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)")
+      .projection("`  m@5`[`  UNNAMED2`] AS `  m@2`")
+      .argument("  m@5", "  UNNAMED2")
+      .build()
+
+    val solvedNestedExpressionAsString =
+      """EXISTS { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
+        |  WHERE `  UNNAMED1`:N }""".stripMargin
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      plan = nestedPlan,
+      solvedExpressionAsString =
+        solvedNestedExpressionAsString
+    )(pos)
+
+    val nonInlineablePredicate = allInList(
+      v"  UNNAMED2",
+      function("range", literalInt(0), subtract(function("size", v"  m@5"), literalInt(1))),
+      caseExpression(
+        None,
+        Some(literalBoolean(false)),
+        (
+          nestedPlanExpression,
+          greaterThan(
+            propExpression(containerIndex(v"  n@3", v"  UNNAMED2"), "prop"),
+            propExpression(containerIndex(v"  m@5", v"  UNNAMED2"), "prop")
+          )
+        )
+      )
+    )
+
+    val expectedNfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (`  n@0`)")
+      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)")
+      .addTransition(2, 1, "(`  m@2`) (`  n@0`)")
+      .addTransition(2, 3, "(`  m@2`) (v)")
+      .setFinalState(3)
+      .build()
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("`  m@5`", "`  n@3`", "`  r@4`", "u", "v")
+        .statefulShortestPathExpr(
+          "u",
+          "v",
+          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`)){1, } (v) WHERE CASE
+            |  WHEN EXISTS { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
+            |  WHERE `  UNNAMED1`:N } THEN `  n@0`.prop > `  m@2`.prop
+            |  ELSE false
+            |END AND unique(`  r@4`))""".stripMargin,
+          Some(nonInlineablePredicate),
+          Set(("  n@0", "  n@3"), ("  m@2", "  m@5")),
+          Set(("  r@1", "  r@4")),
+          Set(),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          expectedNfa,
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.allNodeScan("v")
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
   test("should plan subquery expression inside QPP") {
     // GIVEN
     val query =

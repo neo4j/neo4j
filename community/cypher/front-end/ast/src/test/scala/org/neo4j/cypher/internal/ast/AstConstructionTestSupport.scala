@@ -234,6 +234,9 @@ trait AstConstructionTestSupport {
   def prop(variable: String, propKey: String, position: InputPosition = pos): Property =
     Property(varFor(variable, position), propName(propKey, increasePos(position, variable.length + 1)))(position)
 
+  def propExpression(variable: Expression, propKey: String, position: InputPosition = pos): Property =
+    Property(variable, propName(propKey))(position)
+
   def cachedNodeProp(variable: String, propKey: String): CachedProperty =
     cachedNodeProp(variable, propKey, variable)
 

@@ -1378,8 +1378,8 @@ Feature: PathSelectorAcceptance
       | <(:Start)-[:R {}]->(:Right)-[:R {}]->(:Right)-[:R {}]->(:End)> |
     Examples:
       | pattern                                                           |
-#      | (m)-->()-->(:N)                                                   |
-#      | CASE WHEN (m)-->() THEN EXISTS { (m)-->()-->(:N) } ELSE false END |
-#      | [p = (m)-->()-->(:N) \| length(p) ] <> []                         |
+      | (m)-->()-->(:N)                                                   |
+      | CASE WHEN (m)-->() THEN EXISTS { (m)-->()-->(:N) } ELSE false END |
+      | [p = (m)-->()-->(:N) \| length(p) ] <> []                         |
       | COUNT { (m)-->()-->(:N) } = 1                                     |
-#      | COUNT { (m)-->()-->(:N) } = 1 AND (m)-->()-->(:N)                 |
+      | COUNT { (m)-->()-->(:N) } = 1 AND (m)-->()-->(:N)                 |

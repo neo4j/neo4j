@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
@@ -74,9 +75,7 @@ case class ForAllRepetitionsPredicateRewriter(
     val iterVar = UnPositionedVariable.varFor(anonymousVariableNameGenerator.nextName)
 
     val singletonReplacements: Set[VariableGrouping] =
-      originalInnerPredicate.dependencies.flatMap { v =>
-        far.variableGroupingForSingleton(v)
-      }
+      originalInnerPredicate.dependencies.flatMap(far.variableGroupingForSingleton)
 
     val singletonsToBeReplaced = singletonReplacements.map(_.singleton)
 
@@ -91,6 +90,7 @@ case class ForAllRepetitionsPredicateRewriter(
 
     val npeRewriter = topDown(Rewriter.lift {
       case nestedPlanExpression: NestedPlanExpression =>
+        val singletonReplacements = nestedPlanExpression.dependencies.flatMap(far.variableGroupingForSingleton)
         val prependedPlan = prependGroupVariableProjection(
           originalInnerPredicate,
           iterVar,
@@ -100,8 +100,20 @@ case class ForAllRepetitionsPredicateRewriter(
 
         nestedPlanExpression.withPlan(prependedPlan)
     })
+
+    val otherRewriter = topDown(
+      Rewriter.lift {
+        case singletonVar: Variable if singletonsToBeReplaced.contains(singletonVar) =>
+          val groupVar = singletonReplacements.find(_.singleton == singletonVar).get.group
+          ContainerIndex(groupVar.copyId, iterVar.copyId)(pos)
+      },
+      stopper = _.isInstanceOf[NestedPlanExpression]
+    )
+
     val rewrittenPredicate = predicateWithoutAndedInequalities.folder.treeFindByClass[NestedPlanExpression].map { _ =>
-      predicateWithoutAndedInequalities.endoRewrite(npeRewriter)
+      predicateWithoutAndedInequalities
+        .endoRewrite(npeRewriter)
+        .endoRewrite(otherRewriter)
     }.getOrElse {
       singletonReplacements.foldLeft(predicateWithoutAndedInequalities) {
         case (expr, VariableGrouping(singletonVar, groupVar)) =>
