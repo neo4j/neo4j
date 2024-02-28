@@ -19,7 +19,7 @@
  */
 package org.neo4j.memory;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAccumulator;
 
 /**
  * Specialized memory pool used in parallel runtime that keeps track of the maximum reserved heap.
@@ -28,7 +28,7 @@ public class HighWaterMarkMemoryPool extends DelegatingMemoryPool {
 
     public static HighWaterMarkMemoryPool NO_TRACKING = new HighWaterMarkMemoryPool(MemoryPools.NO_TRACKING);
 
-    private final AtomicLong highWaterMark = new AtomicLong();
+    LongAccumulator highWaterMark = new LongAccumulator(Long::max, 0L);
 
     public HighWaterMarkMemoryPool(MemoryPool delegate) {
         super(delegate);
@@ -37,22 +37,14 @@ public class HighWaterMarkMemoryPool extends DelegatingMemoryPool {
     @Override
     public void reserveHeap(long bytes) {
         super.reserveHeap(bytes);
-        computeNewHighWaterMark();
+        highWaterMark.accumulate(usedHeap());
     }
 
     public long heapHighWaterMark() {
-        return highWaterMark.getAcquire();
+        return highWaterMark.get();
     }
 
     public void reset() {
-        highWaterMark.set(0L);
-    }
-
-    private void computeNewHighWaterMark() {
-        long currentHeapUsage = usedHeap();
-        long currentHighMark = heapHighWaterMark();
-        if (currentHeapUsage > currentHighMark) {
-            highWaterMark.setRelease(currentHeapUsage);
-        }
+        highWaterMark.reset();
     }
 }
