@@ -28,7 +28,7 @@ object WorkIdentity {
     WorkIdentityImpl(plan.id, plan.getClass.getSimpleName + postfix)
 
   def fromFusedPlans(fusedPlans: Iterable[LogicalPlan]): WorkIdentity = {
-    WorkIdentityImpl(fusedPlans.head.id, s"Fused(${fusedPlans.map(_.getClass.getSimpleName).mkString("->")})")
+    WorkIdentityImpl(fusedPlans.head.id, s"Fused(${fusedPlans.map(_.getClass.getSimpleName).mkString("-")})")
   }
 }
 
@@ -63,13 +63,14 @@ case class WorkIdentityImpl(workId: Id, workDescription: String) extends WorkIde
   override def workIdentity: WorkIdentity = this
 }
 
-case class WorkIdentityMutableDescriptionImpl(workId: Id, fixedPrefix: String, var mutableDescription: String)
+case class WorkIdentityMutableDescriptionImpl(workId: Id, prefix: String, description: String)
     extends WorkIdentityMutableDescription with HasWorkIdentity {
-  // Optimized for updates rather than reads since we do not know if it will be ever used
+
+  private[this] var _workDescription: String = prefix + description
 
   override def workIdentity: WorkIdentity = this
 
-  override def workDescription: String = fixedPrefix + mutableDescription
+  override def workDescription: String = _workDescription
 
-  override def updateDescription(newDescription: String): Unit = mutableDescription = newDescription
+  override def updateDescription(newDescription: String): Unit = _workDescription = prefix + newDescription
 }
