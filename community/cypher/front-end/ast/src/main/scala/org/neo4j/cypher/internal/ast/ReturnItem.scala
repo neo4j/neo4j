@@ -87,6 +87,8 @@ final case class ReturnItems(
   def returnVariables: ReturnVariables = ReturnVariables(includeExisting, items.flatMap(_.alias))
 
   def containsAggregate: Boolean = items.exists(_.expression.containsAggregate)
+
+  def isSimple: Boolean = items.exists(_.expression.isSimple)
 }
 
 sealed trait ReturnItem extends ASTNode with SemanticCheckable {

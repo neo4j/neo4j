@@ -111,9 +111,9 @@ case class unnestApply(override val solveds: Solveds,
       unnestRightUnary(apply, lhs, oex)
 
 
-    // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
+    // π (Arg) Ax R => π (R) // if projections are simple and R is leaf and R is not using columns from π
     case apply@RemovableApply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan, _)
-      if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
+      if !projections.keys.exists(rhsLeaf.usedVariables.contains) && projections.values.forall(_.isSimple) =>
       val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet)
       val res = projection.copy(rhsCopy, projections)(attributes.copy(projection.id))
       solveds.copy(projection.id, res.id)

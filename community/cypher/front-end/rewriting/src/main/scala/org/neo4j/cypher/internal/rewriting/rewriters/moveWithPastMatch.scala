@@ -143,6 +143,7 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
       w.where.isEmpty &&
       !w.returnItems.includeExisting &&
       !w.returnItems.containsAggregate &&
+      w.returnItems.isSimple &&
       !w.distinct
   }
 }
