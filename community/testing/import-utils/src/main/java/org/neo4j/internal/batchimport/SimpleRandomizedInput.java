@@ -130,16 +130,16 @@ public class SimpleRandomizedInput implements Input {
     public void verify(GraphDatabaseService db, boolean verifyIndex) throws IOException {
         Map<Number, InputEntity> expectedNodeData = new HashMap<>();
         Map<Integer, List<Long>> expectedLabelIndexData = new HashMap<>();
+        long numBadNodes = 0;
         try (InputIterator nodes = nodes(Collector.EMPTY).iterator();
                 InputChunk chunk = nodes.newChunk();
                 Transaction tx = db.beginTx()) {
-            Number lastId = null;
             InputEntity node;
             TokenRead tokenRead = ((InternalTransaction) tx).kernelTransaction().tokenRead();
             while (nodes.next(chunk)) {
                 while (chunk.next(node = new InputEntity())) {
                     Number id = (Number) node.id();
-                    if (lastId == null || id.longValue() > lastId.longValue()) {
+                    if (!expectedNodeData.containsKey(id)) {
                         expectedNodeData.put(id, node);
                         for (String label : node.labels()) {
                             int labelId = tokenRead.nodeLabel(label);
@@ -147,12 +147,14 @@ public class SimpleRandomizedInput implements Input {
                                     .computeIfAbsent(labelId, labelToken -> new ArrayList<>())
                                     .add((Long) id);
                         }
-                        lastId = id;
+                    } else {
+                        numBadNodes++;
                     }
                 }
             }
         }
         Map<RelationshipKey, Set<InputEntity>> expectedRelationshipData = new HashMap<>();
+        long numBadRelationships = 0;
         try (InputIterator relationships = relationships(Collector.EMPTY).iterator();
                 InputChunk chunk = relationships.newChunk()) {
             while (relationships.next(chunk)) {
@@ -160,9 +162,17 @@ public class SimpleRandomizedInput implements Input {
                 while (chunk.next(relationship = new InputEntity())) {
                     RelationshipKey key =
                             new RelationshipKey(relationship.startId(), relationship.stringType, relationship.endId());
-                    expectedRelationshipData
-                            .computeIfAbsent(key, k -> new HashSet<>())
-                            .add(relationship);
+                    if (key.startId != null
+                            && key.type != null
+                            && key.endId != null
+                            && expectedNodeData.containsKey((Number) relationship.startId())
+                            && expectedNodeData.containsKey((Number) relationship.endId())) {
+                        expectedRelationshipData
+                                .computeIfAbsent(key, k -> new HashSet<>())
+                                .add(relationship);
+                    } else {
+                        numBadRelationships++;
+                    }
                 }
             }
         }
@@ -200,8 +210,8 @@ public class SimpleRandomizedInput implements Input {
                         "Imported db is missing %d/%d nodes: %s",
                         expectedNodeData.size(), nodeCount, expectedNodeData));
             }
-            assertEquals(nodeCount, actualNodeCount);
-            assertEquals(relationshipCount, actualRelationshipCount);
+            assertEquals(nodeCount - numBadNodes, actualNodeCount);
+            assertEquals(relationshipCount - numBadRelationships, actualRelationshipCount);
             tx.commit();
         }
 
@@ -294,57 +304,7 @@ public class SimpleRandomizedInput implements Input {
         return result;
     }
 
-    private static class RelationshipKey {
-        final Object startId;
-        final String type;
-        final Object endId;
-
-        RelationshipKey(Object startId, String type, Object endId) {
-            this.startId = startId;
-            this.type = type;
-            this.endId = endId;
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((endId == null) ? 0 : endId.hashCode());
-            result = prime * result + ((startId == null) ? 0 : startId.hashCode());
-            result = prime * result + ((type == null) ? 0 : type.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null || getClass() != obj.getClass()) {
-                return false;
-            }
-            RelationshipKey other = (RelationshipKey) obj;
-            if (endId == null) {
-                if (other.endId != null) {
-                    return false;
-                }
-            } else if (!endId.equals(other.endId)) {
-                return false;
-            }
-            if (startId == null) {
-                if (other.startId != null) {
-                    return false;
-                }
-            } else if (!startId.equals(other.startId)) {
-                return false;
-            }
-            if (type == null) {
-                return other.type == null;
-            } else {
-                return type.equals(other.type);
-            }
-        }
-    }
+    private record RelationshipKey(Object startId, String type, Object endId) {}
 
     private static RelationshipKey keyOf(Relationship relationship) {
         return new RelationshipKey(
