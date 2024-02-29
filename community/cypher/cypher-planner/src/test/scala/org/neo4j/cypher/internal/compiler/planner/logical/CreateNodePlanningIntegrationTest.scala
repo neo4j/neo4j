@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setN
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.SyntaxException
 
 class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
@@ -156,6 +157,99 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       .create(createNode("a", "A", "B"))
       .argument()
       .build()
+  }
+
+  test("should fail plan create with labels/properties on already bound node in a path pattern") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(0)
+      .build()
+
+    for {
+      previousClause <- Seq("MATCH", "CREATE")
+      thisClause <- Seq("CREATE", "MERGE")
+      labelProperties <- Seq(":A:B", "{prop: 42}")
+    } {
+      val query =
+        s"""$previousClause (a)
+           |$thisClause (a $labelProperties)-[:REL]->()""".stripMargin
+      withClue(
+        s"""Query:
+           |$query
+           |""".stripMargin
+      ) {
+        val exception = the[SyntaxException] thrownBy cfg.plan(query)
+        exception.getMessage should equal(
+          "Can't create node `a` with labels or properties here. The variable is already declared in this context"
+        )
+      }
+    }
+  }
+
+  test("should fail to plan create with labels/properties on already bound node in a node pattern") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(0)
+      .build()
+
+    for {
+      previousClause <- Seq("MATCH", "CREATE")
+      thisClause <- Seq("CREATE", "MERGE")
+      labelProperties <- Seq(":A:B", "{prop: 42}")
+    } {
+      val query =
+        s"""$previousClause (a)
+           |$thisClause (a $labelProperties)""".stripMargin
+      withClue(
+        s"""Query:
+           |$query
+           |""".stripMargin
+      ) {
+        val exception = the[SyntaxException] thrownBy cfg.plan(query)
+        exception.getMessage should startWith("Variable `a` already declared")
+      }
+    }
+  }
+
+  test("should fail to plan create node with loop and labels/properties on second occurrence") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(0)
+      .build()
+
+    for {
+      labelProperties <- Seq(":A:B", "{prop: 42}")
+    } {
+      val query =
+        s"""CREATE (a)-[:REL]->(a $labelProperties)""".stripMargin
+      withClue(
+        s"""Query:
+           |$query
+           |""".stripMargin
+      ) {
+        val exception = the[SyntaxException] thrownBy cfg.plan(query)
+        exception.getMessage should equal(
+          "Can't create node `a` with labels or properties here. The variable is already declared in this context"
+        )
+      }
+    }
+  }
+
+  test("should plan create node with loop and labels/properties on first occurrence") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(0)
+      .build()
+
+    for {
+      labelProperties <- Seq(":A:B", "{prop: 42}")
+    } {
+      val query =
+        s"""CREATE (a $labelProperties)-[:REL]->(a)""".stripMargin
+      withClue(
+        s"""Query:
+           |$query
+           |""".stripMargin
+      ) {
+        noException should be thrownBy cfg.plan(query)
+      }
+    }
   }
 
   test("should plan create with properties") {
