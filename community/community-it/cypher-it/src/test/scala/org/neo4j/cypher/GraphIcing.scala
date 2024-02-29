@@ -621,8 +621,12 @@ trait GraphIcing {
     def getIndexConfig(name: String): Map[IndexSetting, AnyRef] = {
       withTx(tx => {
         val index = tx.schema().getIndexByName(name)
-        index.getIndexConfiguration.asScala.toMap
+        getIndexConfig(index)
       })
+    }
+
+    def getIndexConfig(index: IndexDefinition): Map[IndexSetting, AnyRef] = {
+      index.getIndexConfiguration.asScala.toMap
     }
 
     def getIndexProvider(name: String): IndexProviderDescriptor = {

@@ -32,6 +32,7 @@ import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNS
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
+import java.util.OptionalInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.collections.api.tuple.Pair;
@@ -94,7 +95,10 @@ class VectorIndexV1ForV512ConfigValidationTest {
                         VectorIndexConfig::dimensions,
                         VectorIndexConfig::similarityFunction,
                         VectorIndexConfig::quantization)
-                .containsExactly(VERSION.maxDimensions(), VERSION.similarityFunction("COSINE"), VectorQuantization.OFF);
+                .containsExactly(
+                        OptionalInt.of(VERSION.maxDimensions()),
+                        VERSION.similarityFunction("COSINE"),
+                        VectorQuantization.OFF);
 
         assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
                 .containsExactlyInAnyOrder(DIMENSIONS.getSettingName(), SIMILARITY_FUNCTION.getSettingName());
@@ -209,7 +213,7 @@ class VectorIndexV1ForV512ConfigValidationTest {
 
         assertThat(vectorIndexConfig)
                 .extracting(VectorIndexConfig::dimensions, VectorIndexConfig::similarityFunction)
-                .containsExactly(invalidDimensions, VERSION.similarityFunction("COSINE"));
+                .containsExactly(OptionalInt.of(invalidDimensions), VERSION.similarityFunction("COSINE"));
     }
 
     private void assertInvalidDimensions(int invalidDimensions, SettingsAccessor settings) {
@@ -220,7 +224,7 @@ class VectorIndexV1ForV512ConfigValidationTest {
                 .first()
                 .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
                 .extracting(InvalidValue::setting, InvalidValue::value)
-                .containsExactly(DIMENSIONS, invalidDimensions);
+                .containsExactly(DIMENSIONS, OptionalInt.of(invalidDimensions));
 
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)

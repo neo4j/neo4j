@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.missing;
 
 import java.util.Locale;
+import java.util.OptionalInt;
 import org.eclipse.collections.api.map.MapIterable;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.IncorrectType;
@@ -114,22 +115,26 @@ class IndexSettingValidators {
         }
     }
 
-    static final class DimensionsValidator extends IndexSettingValidator<IntegralValue, Integer> {
+    static final class DimensionsValidator extends IndexSettingValidator<IntegralValue, OptionalInt> {
         private final Range<Integer> supportedRange;
 
         DimensionsValidator(Range<Integer> supportedRange) {
-            super(IndexSetting.vector_Dimensions());
+            this(null, supportedRange);
+        }
+
+        DimensionsValidator(OptionalInt defaultValue, Range<Integer> supportedRange) {
+            super(IndexSetting.vector_Dimensions(), defaultValue);
             this.supportedRange = supportedRange;
         }
 
         @Override
-        Integer map(IntegralValue dimensions) {
-            return (int) dimensions.longValue();
+        OptionalInt map(IntegralValue dimensions) {
+            return OptionalInt.of((int) dimensions.longValue());
         }
 
         @Override
-        Value map(Integer dimensions) {
-            return Values.intValue(dimensions);
+        Value map(OptionalInt dimensions) {
+            return dimensions.isPresent() ? Values.intValue(dimensions.getAsInt()) : NoValue.NO_VALUE;
         }
 
         @Override
@@ -144,7 +149,8 @@ class IndexSettingValidators {
             }
 
             final var dimensions = map(integralValue);
-            return supportedRange.contains(dimensions)
+            return supportedRange.contains(dimensions.orElseThrow(() ->
+                            new IllegalStateException("'%s' should not be empty at this point.".formatted(setting))))
                     ? new Valid(setting, dimensions, map(dimensions))
                     : new InvalidValue(pending, dimensions, supportedRange);
         }

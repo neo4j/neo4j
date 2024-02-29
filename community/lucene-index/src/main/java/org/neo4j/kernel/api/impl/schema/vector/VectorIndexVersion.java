@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.OptionalInt;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.Sets;
@@ -83,7 +84,7 @@ public enum VectorIndexVersion {
                     Tuples.pair(
                             KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
                             new Validators(
-                                    descriptor(),
+                                    this,
                                     new DimensionsValidator(new Range<>(1, Integer.MAX_VALUE)), // this was a bug
                                     new SimilarityFunctionValidator(nameToSimilarityFunction()),
                                     new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF),
@@ -92,7 +93,7 @@ public enum VectorIndexVersion {
                     Tuples.pair(
                             KernelVersion.V5_12,
                             new Validators(
-                                    descriptor(),
+                                    this,
                                     new DimensionsValidator(new Range<>(1, maxDimensions())),
                                     new SimilarityFunctionValidator(nameToSimilarityFunction()),
                                     new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF),
@@ -120,7 +121,7 @@ public enum VectorIndexVersion {
                     Tuples.pair(
                             KernelVersion.VERSION_VECTOR_2_INTRODUCED,
                             new Validators(
-                                    descriptor(),
+                                    this,
                                     new DimensionsValidator(new Range<>(1, maxDimensions())),
                                     new SimilarityFunctionValidator(nameToSimilarityFunction()),
                                     new ReadDefaultOnly<>(IndexSetting.vector_Quantization(), VectorQuantization.OFF),
@@ -129,8 +130,8 @@ public enum VectorIndexVersion {
                     Tuples.pair(
                             KernelVersion.VERSION_VECTOR_QUANTIZATION_AND_HYPER_PARAMS,
                             new Validators(
-                                    descriptor(),
-                                    new DimensionsValidator(new Range<>(1, maxDimensions())),
+                                    this,
+                                    new DimensionsValidator(OptionalInt.empty(), new Range<>(1, maxDimensions())),
                                     new SimilarityFunctionValidator(
                                             VectorSimilarityFunctions.L2_NORM_COSINE, nameToSimilarityFunction()),
                                     new QuantizationValidator(

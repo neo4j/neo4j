@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 import org.apache.lucene.search.Query;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -47,7 +48,7 @@ import org.neo4j.values.storable.Value;
 
 class VectorIndexReader extends AbstractLuceneIndexReader {
     private final VectorDocumentStructure documentStructure;
-    private final int dimensions;
+    private final OptionalInt dimensions;
     private final List<SearcherReference> searchers;
 
     VectorIndexReader(
@@ -103,10 +104,10 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
         final var predicate = super.validateQuery(predicates);
         if (predicate instanceof final NearestNeighborsPredicate nearestNeighbour) {
             final var queryVector = nearestNeighbour.query();
-            if (queryVector.length != dimensions) {
+            if (dimensions.isPresent() && queryVector.length != dimensions.getAsInt()) {
                 throw new IndexNotApplicableKernelException(
                         "Index query vector has a dimensionality of %d, but indexed vectors have %d."
-                                .formatted(queryVector.length, dimensions));
+                                .formatted(queryVector.length, dimensions.getAsInt()));
             }
         }
         return predicate;

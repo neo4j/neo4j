@@ -245,9 +245,9 @@ public class VectorIndexProcedures {
                 .trustIsValidToVectorIndexConfig(new IndexConfigAccessor(index.getIndexConfig()));
 
         final var dimensions = vectorIndexConfig.dimensions();
-        if (dimensions != query.dimensions()) {
+        if (dimensions.isPresent() && query.dimensions() != dimensions.getAsInt()) {
             throw new IllegalArgumentException("Index query vector has %d dimensions, but indexed vectors have %d."
-                    .formatted(query.dimensions(), dimensions));
+                    .formatted(query.dimensions(), dimensions.getAsInt()));
         }
 
         final var similarityFunction = vectorIndexConfig.similarityFunction();

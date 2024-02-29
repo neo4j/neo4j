@@ -26,35 +26,41 @@ import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUA
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
 import java.util.Objects;
+import java.util.OptionalInt;
 import org.eclipse.collections.api.map.sorted.ImmutableSortedMap;
 import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigValidationWrapper;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.vector.VectorQuantization;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 
 public class VectorIndexConfig extends IndexConfigValidationWrapper {
-    private final int dimensions;
+    private final VectorIndexVersion version;
+    private final OptionalInt dimensions;
     private final VectorSimilarityFunction similarityFunction;
     private final VectorQuantization quantization;
     private final HnswConfig hnswConfig;
 
     VectorIndexConfig(
-            IndexProviderDescriptor descriptor,
+            VectorIndexVersion version,
             IndexConfig config,
             ImmutableSortedMap<IndexSetting, Object> settings,
             ImmutableSortedSet<String> validSettingNames,
             ImmutableSortedSet<String> possibleValidSettingNames) {
-        super(descriptor, config, settings, validSettingNames, possibleValidSettingNames);
+        super(version.descriptor(), config, settings, validSettingNames, possibleValidSettingNames);
+        this.version = version;
         this.dimensions = get(DIMENSIONS);
         this.similarityFunction = get(SIMILARITY_FUNCTION);
         this.quantization = get(QUANTIZATION);
         this.hnswConfig = new HnswConfig(get(HNSW_M), get(HNSW_EF_CONSTRUCTION));
     }
 
-    public int dimensions() {
+    public VectorIndexVersion version() {
+        return version;
+    }
+
+    public OptionalInt dimensions() {
         return dimensions;
     }
 
@@ -83,10 +89,10 @@ public class VectorIndexConfig extends IndexConfigValidationWrapper {
         if (!(o instanceof VectorIndexConfig that)) {
             return false;
         }
-        return dimensions == that.dimensions
-                && Objects.equals(similarityFunction, that.similarityFunction)
-                && quantization == that.quantization
-                && Objects.equals(hnswConfig, that.hnswConfig);
+        return Objects.equals(this.dimensions, that.dimensions)
+                && Objects.equals(this.similarityFunction, that.similarityFunction)
+                && this.quantization == that.quantization
+                && Objects.equals(this.hnswConfig, that.hnswConfig);
     }
 
     public record HnswConfig(int M, int efConstruction) {

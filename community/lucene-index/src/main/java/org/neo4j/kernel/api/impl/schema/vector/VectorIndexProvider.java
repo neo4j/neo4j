@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.OptionalInt;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -172,7 +173,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
                 new IgnoreStrategy(version, vectorIndexConfig.dimensions()), vectorIndexConfig.similarityFunction());
     }
 
-    record IgnoreStrategy(VectorIndexVersion version, int dimensions) implements IndexUpdateIgnoreStrategy {
+    record IgnoreStrategy(VectorIndexVersion version, OptionalInt dimensions) implements IndexUpdateIgnoreStrategy {
         @Override
         public boolean ignore(Value... values) {
             if (values.length != 1) {
@@ -185,7 +186,9 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             }
 
             final var candidate = VectorCandidate.maybeFrom(value);
-            return candidate == null || candidate.dimensions() != dimensions;
+            return candidate == null
+                    || dimensions.isPresent() && candidate.dimensions() != dimensions.getAsInt()
+                    || dimensions.isEmpty() && candidate.dimensions() < version.maxDimensions();
         }
     }
 

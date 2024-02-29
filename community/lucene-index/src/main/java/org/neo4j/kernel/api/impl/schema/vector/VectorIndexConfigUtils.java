@@ -136,7 +136,7 @@ public class VectorIndexConfigUtils {
         final var settingName = invalidRecord.settingName();
         throw switch (invalidRecord.state()) {
                 // this is a logic error
-            case VALID -> new IllegalStateException("%s should not be %s at. Provided: %s"
+            case VALID -> new IllegalStateException("%s should not be %s at this point. Provided: %s"
                     .formatted(IndexConfigValidationRecord.class.getSimpleName(), VALID, invalidRecord));
 
                 // this is an implementation mistake

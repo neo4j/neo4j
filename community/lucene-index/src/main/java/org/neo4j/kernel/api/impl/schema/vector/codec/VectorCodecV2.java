@@ -29,10 +29,12 @@ public class VectorCodecV2 extends Lucene99Codec {
 
     public VectorCodecV2(VectorIndexConfig config) {
         super();
+        final var dimensions =
+                config.dimensions().orElseGet(() -> config.version().maxDimensions());
         if (config.quantization() == VectorQuantization.LUCENE) {
-            this.vectorFormat = new LuceneKnnScalarQuantizedVectorFormatV2(config.dimensions(), config.hnsw());
+            this.vectorFormat = new LuceneKnnScalarQuantizedVectorFormatV2(dimensions, config.hnsw());
         } else {
-            this.vectorFormat = new LuceneKnnVectorFormatV2(config.dimensions(), config.hnsw());
+            this.vectorFormat = new LuceneKnnVectorFormatV2(dimensions, config.hnsw());
         }
     }
 

@@ -245,7 +245,8 @@ public class VectorIndexCreationTest {
             RequiredDimensions() {
                 super(
                         Entity.this.factory,
-                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V1_0)));
+                        inclusiveVersionRange(
+                                max(minimumVersionForEntity, VectorIndexVersion.V1_0), VectorIndexVersion.V1_0));
             }
 
             @ParameterizedTest
@@ -261,6 +262,48 @@ public class VectorIndexCreationTest {
             void shouldRequireSettingCoreAPI() {
                 final var settings = defaultSettings().unset(SETTING);
                 assertMissingExpectedSetting(SETTING, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
+            }
+        }
+
+        @Nested
+        class OptionalDimensions extends TestBase {
+            private static final IndexSetting SETTING = IndexSetting.vector_Dimensions();
+
+            OptionalDimensions() {
+                super(
+                        Entity.this.factory,
+                        inclusiveVersionRangeFrom(max(minimumVersionForEntity, VectorIndexVersion.V2_0)));
+            }
+
+            @ParameterizedTest
+            @MethodSource("validVersions")
+            @EnabledIf("hasValidVersions")
+            void shouldAcceptMissingSetting(VectorIndexVersion version) {
+                final var settings = defaultSettings().unset(SETTING);
+
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(version, settings, propKeyIds[0])));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertMissingSetting(SETTING, index.getIndexConfig());
+                // config via schema store
+                assertMissingSetting(SETTING, findIndex(index.getName()).getIndexConfig());
+            }
+
+            @Test
+            @EnabledIf("latestIsValid")
+            void shouldAcceptMissingSettingCoreAPI() {
+                final var settings = defaultSettings().unset(SETTING);
+
+                final var ref = new MutableObject<IndexDescriptor>();
+                assertDoesNotThrow(() -> ref.setValue(createVectorIndex(settings, PROP_KEYS.get(1))));
+                final var index = ref.getValue();
+
+                // config committed in tx
+                assertMissingSetting(SETTING, index.getIndexConfig());
+                // config via schema store
+                assertMissingSetting(SETTING, findIndex(index.getName()).getIndexConfig());
             }
         }
 

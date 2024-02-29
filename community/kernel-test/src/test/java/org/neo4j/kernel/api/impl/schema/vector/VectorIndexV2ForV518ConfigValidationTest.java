@@ -32,6 +32,7 @@ import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNS
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
+import java.util.OptionalInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.collections.api.tuple.Pair;
@@ -80,7 +81,7 @@ class VectorIndexV2ForV518ConfigValidationTest {
                         VectorIndexConfig::quantization,
                         VectorIndexConfig::hnsw)
                 .containsExactly(
-                        VERSION.maxDimensions(),
+                        OptionalInt.of(VERSION.maxDimensions()),
                         VERSION.similarityFunction("COSINE"),
                         VectorQuantization.OFF,
                         new HnswConfig(16, 100));
@@ -198,7 +199,7 @@ class VectorIndexV2ForV518ConfigValidationTest {
                 .first()
                 .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
                 .extracting(InvalidValue::setting, InvalidValue::value)
-                .containsExactly(DIMENSIONS, invalidDimensions);
+                .containsExactly(DIMENSIONS, OptionalInt.of(invalidDimensions));
 
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)

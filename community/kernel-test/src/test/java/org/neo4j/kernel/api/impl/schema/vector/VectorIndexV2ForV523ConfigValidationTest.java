@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.INCORRECT_TYPE;
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.INVALID_VALUE;
-import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.MISSING_SETTING;
 import static org.neo4j.internal.schema.IndexConfigValidationRecords.State.UNRECOGNIZED_SETTING;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.DIMENSIONS;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNSW_EF_CONSTRUCTION;
@@ -32,6 +31,7 @@ import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.HNS
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.QUANTIZATION;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorIndexConfigUtils.SIMILARITY_FUNCTION;
 
+import java.util.OptionalInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.collections.api.tuple.Pair;
@@ -41,7 +41,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.IncorrectType;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.InvalidValue;
-import org.neo4j.internal.schema.IndexConfigValidationRecords.MissingSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords.UnrecognizedSetting;
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.internal.schema.SettingsAccessor.IndexConfigAccessor;
@@ -100,7 +99,7 @@ class VectorIndexV2ForV523ConfigValidationTest {
                         VectorIndexConfig::quantization,
                         VectorIndexConfig::hnsw)
                 .containsExactly(
-                        VERSION.maxDimensions(),
+                        OptionalInt.of(VERSION.maxDimensions()),
                         VERSION.similarityFunction("COSINE"),
                         VectorQuantization.OFF,
                         new HnswConfig(16, 100));
@@ -116,9 +115,7 @@ class VectorIndexV2ForV523ConfigValidationTest {
 
     @Test
     void validIndexConfigWithDefaults() {
-        final var settings = VectorIndexSettings.create()
-                .withDimensions(VERSION.maxDimensions())
-                .toSettingsAccessor();
+        final var settings = VectorIndexSettings.create().toSettingsAccessor();
 
         final var validationRecords = VALIDATOR.validate(settings);
         assertThat(validationRecords.valid()).isTrue();
@@ -135,14 +132,13 @@ class VectorIndexV2ForV523ConfigValidationTest {
                         VectorIndexConfig::quantization,
                         VectorIndexConfig::hnsw)
                 .containsExactly(
-                        VERSION.maxDimensions(),
+                        OptionalInt.empty(),
                         VERSION.similarityFunction("COSINE"),
                         VectorQuantization.LUCENE,
                         new HnswConfig(16, 100));
 
         assertThat(vectorIndexConfig.config().entries().collect(Pair::getOne))
                 .containsExactlyInAnyOrder(
-                        DIMENSIONS.getSettingName(),
                         SIMILARITY_FUNCTION.getSettingName(),
                         QUANTIZATION.getSettingName(),
                         HNSW_M.getSettingName(),
@@ -173,26 +169,6 @@ class VectorIndexV2ForV523ConfigValidationTest {
                         unrecognisedSetting.getSettingName(),
                         "is an unrecognized setting for index with provider",
                         VERSION.descriptor().name());
-    }
-
-    @Test
-    void missingDimensions() {
-        final var settings = VectorIndexSettings.create()
-                .withSimilarityFunction(VERSION.similarityFunction("COSINE"))
-                .toSettingsAccessor();
-
-        final var validationRecords = VALIDATOR.validate(settings);
-        assertThat(validationRecords.invalid()).isTrue();
-        assertThat(validationRecords.get(MISSING_SETTING).castToSortedSet())
-                .hasSize(1)
-                .first()
-                .asInstanceOf(InstanceOfAssertFactories.type(MissingSetting.class))
-                .extracting(MissingSetting::setting)
-                .isEqualTo(DIMENSIONS);
-
-        assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContainingAll(DIMENSIONS.getSettingName(), "is expected to have been set");
     }
 
     @Test
@@ -258,7 +234,7 @@ class VectorIndexV2ForV523ConfigValidationTest {
                 .first()
                 .asInstanceOf(InstanceOfAssertFactories.type(InvalidValue.class))
                 .extracting(InvalidValue::setting, InvalidValue::value)
-                .containsExactly(DIMENSIONS, invalidDimensions);
+                .containsExactly(DIMENSIONS, OptionalInt.of(invalidDimensions));
 
         assertThatThrownBy(() -> VALIDATOR.validateToVectorIndexConfig(settings))
                 .isInstanceOf(IllegalArgumentException.class)

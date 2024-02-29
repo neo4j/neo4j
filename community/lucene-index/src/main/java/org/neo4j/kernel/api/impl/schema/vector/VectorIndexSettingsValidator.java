@@ -33,7 +33,6 @@ import org.eclipse.collections.api.set.sorted.ImmutableSortedSet;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfigValidationRecords;
 import org.neo4j.internal.schema.IndexConfigValidationWrapper;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SettingsAccessor;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.schema.vector.IndexSettingValidators.IndexSettingValidator;
@@ -58,15 +57,15 @@ public interface VectorIndexSettingsValidator {
     ImmutableSortedSet<IndexSetting> validSettings();
 
     class Validators implements VectorIndexSettingsValidator {
-        private final IndexProviderDescriptor descriptor;
+        private final VectorIndexVersion version;
         private final ImmutableSortedSet<IndexSettingValidator<? extends Value, ?>> validators;
         private final ImmutableSortedSet<IndexSetting> validSettings;
         private final ImmutableSortedSet<String> validSettingNames;
         private final ImmutableSortedSet<String> handledSettingNames;
 
         @SafeVarargs
-        Validators(IndexProviderDescriptor descriptor, IndexSettingValidator<? extends Value, ?>... validators) {
-            this.descriptor = descriptor;
+        Validators(VectorIndexVersion version, IndexSettingValidator<? extends Value, ?>... validators) {
+            this.version = version;
 
             // check we've not passed multiple validators for the same setting
             final var seenSettingNames = Sets.mutable.<String>withInitialCapacity(validators.length);
@@ -117,10 +116,10 @@ public interface VectorIndexSettingsValidator {
         @Override
         public VectorIndexConfig validateToVectorIndexConfig(
                 SettingsAccessor settings, IndexConfigValidationRecords validationRecords) {
-            assertValidRecords(validationRecords, descriptor, validSettingNames);
+            assertValidRecords(validationRecords, version.descriptor(), validSettingNames);
             final var validRecords = validationRecords.validRecords();
             return new VectorIndexConfig(
-                    descriptor,
+                    version,
                     toIndexConfig(validRecords, validSettingNames),
                     toValidSettings(validRecords),
                     validSettingNames,
@@ -131,7 +130,7 @@ public interface VectorIndexSettingsValidator {
         public VectorIndexConfig trustIsValidToVectorIndexConfig(SettingsAccessor settings) {
             final var validRecords = validators.collect(validator -> validator.trustIsValid(settings));
             return new VectorIndexConfig(
-                    descriptor,
+                    version,
                     toIndexConfig(validRecords),
                     toValidSettings(validRecords),
                     validSettingNames,
@@ -142,7 +141,7 @@ public interface VectorIndexSettingsValidator {
         public VectorIndexConfig trustIsValidToVectorIndexConfig(IndexConfigValidationRecords validationRecords) {
             final var validRecords = validationRecords.validRecords();
             return new VectorIndexConfig(
-                    descriptor,
+                    version,
                     toIndexConfig(validRecords),
                     toValidSettings(validRecords),
                     validSettingNames,
