@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.aggregation
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.distinct
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit
+import org.neo4j.cypher.internal.ir.AbstractProcedureCallProjection
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.CommandProjection
@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.exceptions.InternalException
 
 /*
 Planning event horizons means planning the WITH clauses between query patterns. Some of these clauses are inlined
@@ -226,8 +225,8 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           context.staticComponents.logicalPlanProducer.planUnwind(selectedPlan, variable, expression, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
-      case ProcedureCallProjection(call) =>
-        val projected = context.staticComponents.logicalPlanProducer.planProcedureCall(plan, call, context)
+      case projection: AbstractProcedureCallProjection =>
+        val projected = context.staticComponents.logicalPlanProducer.planProcedureCall(plan, projection.call, context)
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
@@ -276,9 +275,6 @@ case object PlanEventHorizon extends EventHorizonPlanner {
             .logicalPlanProducer
             .planRunQueryAt(plan, graphReference, queryString, parameters, columns, context)
         SortPlanner.ensureSortedPlanWithSolved(runQueryAt, interestingOrderConfig, context, updateSolvedOrdering)
-
-      case _ =>
-        throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")
     }
 
     // We need to check if reads introduced in the horizon conflicts with future writes
