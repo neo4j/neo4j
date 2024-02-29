@@ -69,7 +69,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 public class SimpleRandomizedInput implements Input {
-    private static final String ID_KEY = "id";
+    public static final String ID_KEY = "id";
 
     private final Input actual;
     private final long nodeCount;
