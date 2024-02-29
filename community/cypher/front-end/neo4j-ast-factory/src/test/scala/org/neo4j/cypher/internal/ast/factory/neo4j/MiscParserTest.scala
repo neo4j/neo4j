@@ -27,14 +27,18 @@ import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
+import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern.ForMatch
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -43,8 +47,10 @@ import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -251,5 +257,121 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     "{,a:1}" should parseTo[MapExpression](mapOf("a" -> literal(1)))
     "{ name: 'Andres' }" should parseTo[Expression](mapOf("name" -> literal("Andres")))
     "{ meta : { name: 'Andres' } }" should parseTo[Expression](mapOf("meta" -> mapOf("name" -> literal("Andres"))))
+  }
+
+  test("all(item IN list WHERE predicate)") {
+    parsesTo[Expression](allInList(varFor("item"), varFor("list"), varFor("predicate")))
+  }
+
+  test("all(item IN list)") {
+    parsesTo[Expression](AllIterablePredicate(varFor("item"), varFor("list"), None)(pos))
+  }
+
+  test("any(item IN list WHERE predicate)") {
+    parsesTo[Expression](anyInList(varFor("item"), varFor("list"), varFor("predicate")))
+  }
+
+  test("any(item IN list)") {
+    parsesTo[Expression](AnyIterablePredicate(varFor("item"), varFor("list"), None)(pos))
+  }
+
+  test("none(item IN list WHERE predicate)") {
+    parsesTo[Expression](noneInList(varFor("item"), varFor("list"), varFor("predicate")))
+  }
+
+  test("none(item IN list)") {
+    parsesTo[Expression](NoneIterablePredicate(varFor("item"), varFor("list"), None)(pos))
+  }
+
+  test("single(item IN list WHERE predicate)") {
+    parsesTo[Expression](singleInList(varFor("item"), varFor("list"), varFor("predicate")))
+  }
+
+  test("single(item IN list)") {
+    parsesTo[Expression](SingleIterablePredicate(varFor("item"), varFor("list"), None)(pos))
+  }
+
+  test("$123") {
+    parsesTo[Expression](parameter("123", CTAny))
+  }
+
+  test("$a") {
+    parsesTo[Expression](parameter("a", CTAny))
+  }
+
+  test("[1,2,3,4][1..2]") {
+    parses[Expression].toAsts {
+      case JavaCc => sliceFull(listOf(literal(1), literal(2), literal(3), literal(4)), literal(1), literal(2))
+      case Antlr  => sliceFull(null, literal(1), literal(2))
+    }
+  }
+
+  test("[1,2,3,4][1..2][2..3]") {
+    parses[Expression].toAsts {
+      case JavaCc => sliceFull(
+          sliceFull(listOf(literal(1), literal(2), literal(3), literal(4)), literal(1), literal(2)),
+          literal(2),
+          literal(3)
+        )
+      case Antlr => sliceFull(
+          sliceFull(null, literal(1), literal(2)),
+          literal(2),
+          literal(3)
+        )
+    }
+  }
+
+  test("collection[1..2]") {
+    parsesTo[Expression](sliceFull(varFor("collection"), literal(1), literal(2)))
+  }
+
+  test("[1,2,3,4][2]") {
+    parses[Expression].toAsts {
+      case JavaCc => containerIndex(listOf(literal(1), literal(2), literal(3), literal(4)), 2)
+      case Antlr  => containerIndex(null, 2)
+    }
+  }
+
+  test("[[1,2]][0][6]") {
+    parses[Expression].toAsts {
+      case JavaCc => containerIndex(containerIndex(listOf(listOf(literal(1), literal(2))), 0), 6)
+      case Antlr  => containerIndex(containerIndex(null, 0), 6)
+    }
+  }
+
+  test("collection[1..2][0]") {
+    parsesTo[Expression](containerIndex(sliceFull(varFor("collection"), literal(1), literal(2)), 0))
+  }
+
+  test("collection[..-2]") {
+    parsesTo[Expression](sliceTo(varFor("collection"), literal(-2)))
+  }
+
+  test("collection[1..]") {
+    parsesTo[Expression](sliceFrom(varFor("collection"), literal(1)))
+  }
+
+  test("{ name: 'Andres' }") {
+    parsesTo[Expression](mapOf(("name", literal("Andres"))))
+  }
+
+  test("{ meta : { name: 'Andres' } }") {
+    parsesTo[Expression](mapOf(("meta", mapOf(("name", literal("Andres"))))))
+  }
+
+  test("{ }") {
+    parsesTo[Expression](mapOf())
+  }
+
+  test("map.key1.key2.key3") {
+    parsesTo[Expression](prop(prop(prop("map", "key1"), "key2"), "key3"))
+  }
+
+  test("({ key: 'value' }).key") {
+    parsesTo[Expression](prop(mapOf(("key", literal("value"))), "key"))
+  }
+
+  test("({ inner1: { inner2: 'Value' } }).key") {
+    parsesTo[Expression](prop(mapOf(("inner1", mapOf(("inner2", literal("Value"))))), "key"))
   }
 }

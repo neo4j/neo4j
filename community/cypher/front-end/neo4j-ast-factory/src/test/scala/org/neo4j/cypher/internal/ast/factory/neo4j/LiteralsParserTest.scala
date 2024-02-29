@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.Literal
@@ -36,7 +35,6 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
@@ -45,7 +43,6 @@ import org.scalacheck.Shrink
 
 class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     with CypherScalaCheckDrivenPropertyChecks {
-  private val t = DummyPosition(0)
   implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny // 🤯
 
   test("can parse numbers") {
@@ -96,18 +93,18 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
   }
 
   test("can parse parameter syntax") {
-    parsing[Parameter]("$p") shouldGive expressions.ExplicitParameter("p", CTAny)(t)
-    parsing[Parameter]("$`the funny horse`") shouldGive expressions.ExplicitParameter("the funny horse", CTAny)(t)
-    parsing[Parameter]("$0") shouldGive expressions.ExplicitParameter("0", CTAny)(t)
+    "$p" should parseTo(parameter("p", CTAny))
+    "$`the funny horse`" should parseTo(parameter("the funny horse", CTAny))
+    "$0" should parseTo(parameter("0", CTAny))
 
     // parameter number boundaries
 
-    parsing[Parameter]("$1_2") shouldGive parameter("1_2", CTAny)
-    parsing[Parameter]("$1") shouldGive parameter("1", CTAny)
-    parsing[Parameter]("$1gibberish") shouldGive parameter("1gibberish", CTAny)
+    "$1_2" should parseTo(parameter("1_2", CTAny))
+    "$1" should parseTo(parameter("1", CTAny))
+    "$1gibberish" should parseTo(parameter("1gibberish", CTAny))
 
-    assertFails[Parameter]("$0_2")
-    assertFails[Parameter]("$1.0f")
+    "$0_2" should notParse[Parameter]
+    "$1.0f" should notParse[Parameter]
   }
 
   test("keyword literals") {
@@ -174,7 +171,7 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
     forAll(
       Gen.listOf[(String, String)](Gen.oneOf(
         genCodepoint.filter(c => c != '"' && c != '\\').map(c => Character.toString(c) -> Character.toString(c)),
-        genCypherUnicodeEscape,
+        genCypherUnicodeEscape.filter { case (_, e) => e != "\"" && e != "\\" },
         Gen.oneOf(escapeSequences)
       )),
       minSuccessful(100)

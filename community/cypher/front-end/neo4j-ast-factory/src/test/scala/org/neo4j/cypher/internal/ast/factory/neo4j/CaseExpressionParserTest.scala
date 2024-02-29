@@ -16,56 +16,133 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.NFCNormalForm
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 
-class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class CaseExpressionParserTest extends AstParsingTestBase {
 
   test("CASE WHEN (e) THEN e ELSE null END") {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         None,
         List(varFor("e") -> varFor("e")),
         Some(nullLiteral)
-      )
+      )(pos)
     }
   }
 
   test("CASE WHEN (e) THEN e END") {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         None,
         List(varFor("e") -> varFor("e")),
         None
-      )
+      )(pos)
     }
   }
 
   test("CASE WHEN e=1 THEN 4 WHEN e=2 THEN 6 ELSE 7 END") {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         None,
         List(equals(varFor("e"), literalInt(1)) -> literalInt(4), equals(varFor("e"), literalInt(2)) -> literalInt(6)),
         Some(literalInt(7))
-      )
+      )(pos)
+    }
+  }
+
+  test("CASE a WHEN b THEN c WHEN d THEN e WHEN f THEN g ELSE h END") {
+    parsesTo[Expression] {
+      CaseExpression(
+        Some(varFor("a")),
+        Array(
+          equals(varFor("a"), varFor("b")) -> varFor("c"),
+          equals(varFor("a"), varFor("d")) -> varFor("e"),
+          equals(varFor("a"), varFor("f")) -> varFor("g")
+        ),
+        Some(varFor("h"))
+      )(pos)
     }
   }
 
   test("CASE when(e) WHEN (e) THEN e ELSE null END") {
-    yields {
-      CaseExpression(
-        Some(function("when", varFor("e"))),
-        List(equals(function("when", varFor("e")), varFor("e")) -> varFor("e")),
-        Some(nullLiteral)
-      )
+    parses[Expression].toAsts {
+      case JavaCc => CaseExpression(
+          Some(function("when", varFor("e"))),
+          List(equals(function("when", varFor("e")), varFor("e")) -> varFor("e")),
+          Some(nullLiteral)
+        )(pos)
+      case Antlr => CaseExpression(
+          Some(null),
+          List(equals(null, varFor("e")) -> varFor("e")),
+          Some(nullLiteral)
+        )(pos)
     }
   }
 
+  // Copied from legacy test
+  test("some more case expressions") {
+    "CASE 1 WHEN 1 THEN 'ONE' END" should parseTo[Expression](
+      caseExpression(Some(literal(1)), None, (equals(literal(1), literal(1)), literal("ONE")))
+    )
+    """CASE 1
+         WHEN 1 THEN 'ONE'
+         WHEN 2 THEN 'TWO'
+       END""" should parseTo[Expression](
+      caseExpression(
+        Some(literal(1)),
+        None,
+        (equals(literal(1), literal(1)), literal("ONE")),
+        (equals(literal(1), literal(2)), literal("TWO"))
+      )
+    )
+    """CASE 1
+           WHEN 1 THEN 'ONE'
+           WHEN 2 THEN 'TWO'
+           ELSE 'DEFAULT'
+       END""" should parseTo[Expression](
+      caseExpression(
+        Some(literal(1)),
+        Some(literal("DEFAULT")),
+        (equals(literal(1), literal(1)), literal("ONE")),
+        (equals(literal(1), literal(2)), literal("TWO"))
+      )
+    )
+    "CASE WHEN true THEN 'ONE' END" should parseTo[Expression](
+      caseExpression(None, None, literal(true) -> literal("ONE"))
+    )
+    """CASE
+           WHEN 1=2     THEN 'ONE'
+           WHEN 2='apa' THEN 'TWO'
+         END""" should parseTo[Expression](
+      caseExpression(
+        None,
+        None,
+        (equals(literal(1), literal(2)), literal("ONE")),
+        (equals(literal(2), literal("apa")), literal("TWO"))
+      )
+    )
+    """CASE
+           WHEN 1=2     THEN 'ONE'
+           WHEN 2='apa' THEN 'TWO'
+                        ELSE 'OTHER'
+         END""" should parseTo[Expression](caseExpression(
+      None,
+      Some(literal("OTHER")),
+      (equals(literal(1), literal(2)), literal("ONE")),
+      (equals(literal(2), literal("apa")), literal("TWO"))
+    ))
+  }
+
   test("CASE n.eyes WHEN \"blue\" THEN 1 WHEN \"brown\" THEN 2 ELSE 3 END") {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(prop("n", "eyes")),
         List(
@@ -73,12 +150,12 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
           equals(prop("n", "eyes"), literalString("brown")) -> literalInt(2)
         ),
         Some(literalInt(3))
-      )
+      )(pos)
     }
   }
 
   test("CASE n.eyes WHEN \"blue\" THEN 1 WHEN \"brown\" THEN 2 END") {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(prop("n", "eyes")),
         List(
@@ -86,12 +163,12 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
           equals(prop("n", "eyes"), literalString("brown")) -> literalInt(2)
         ),
         None
-      )
+      )(pos)
     }
   }
 
   test("CASE n.eyes WHEN \"blue\", \"green\", \"brown\" THEN 1 WHEN \"red\" THEN 2 END") {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(prop("n", "eyes")),
         List(
@@ -101,7 +178,7 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
           equals(prop("n", "eyes"), literalString("red")) -> literalInt(2)
         ),
         None
-      )
+      )(pos)
     }
   }
 
@@ -114,7 +191,7 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
       | ELSE 4
       |END""".stripMargin
   ) {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(prop("n", "eyes")),
         List(
@@ -123,7 +200,7 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
           isNormalized(prop("n", "eyes"), NFCNormalForm) -> literalInt(3)
         ),
         Some(literalInt(4))
-      )
+      )(pos)
     }
   }
 
@@ -135,7 +212,7 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
       | ELSE 4
       |END""".stripMargin
   ) {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(prop("n", "eyes")),
         List(
@@ -146,7 +223,7 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
           endsWith(prop("n", "eyes"), literalString("en")) -> literalInt(3)
         ),
         Some(literalInt(4))
-      )
+      )(pos)
     }
   }
 
@@ -157,14 +234,14 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
       | ELSE 4
       |END""".stripMargin
   ) {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(prop("n", "eyes")),
         List(
           equals(prop("n", "eyes"), greaterThan(prop("n", "eyes"), literalInt(2))) -> literalInt(1)
         ),
         Some(literalInt(4))
-      )
+      )(pos)
     }
   }
 
@@ -174,14 +251,14 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
       | ELSE 4
       |END""".stripMargin
   ) {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(prop("n", "eyes")),
         List(
           equals(prop("n", "eyes"), containerIndex(varFor("in"), literalInt(0))) -> literalInt(1)
         ),
         Some(literalInt(4))
-      )
+      )(pos)
     }
   }
 
@@ -191,14 +268,14 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
       |  ELSE 'else'
       |END""".stripMargin
   ) {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(literalInt(2)),
         List(
           equals(literalInt(2), add(varFor("contains"), literalInt(1))) -> literalString("contains")
         ),
         Some(literalString("else"))
-      )
+      )(pos)
     }
   }
 
@@ -208,14 +285,14 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
       |  ELSE 'else'
       |END""".stripMargin
   ) {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(literalInt(1)),
         List(
           equals(literalInt(1), isTyped(varFor("is"), IntegerType(isNullable = true)(pos))) -> literalString("is int")
         ),
         Some(literalString("else"))
-      )
+      )(pos)
     }
   }
 
@@ -228,7 +305,7 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
       |  ELSE 'else'
       |END""".stripMargin
   ) {
-    yields {
+    parsesTo[Expression] {
       CaseExpression(
         Some(literalInt(1)),
         List(
@@ -237,19 +314,93 @@ class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingT
           isTyped(literalInt(1), IntegerType(isNullable = true)(pos)) -> literalInt(3)
         ),
         Some(literalString("else"))
-      )
+      )(pos)
     }
   }
 
   test("CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
-    failsToParse[CaseExpression]
+    failsParsing[CaseExpression]
+  }
+
+  test("CASE ELSE null END") {
+    failsParsing[CaseExpression]
+  }
+
+  test("CASE WHEN THEN v2 ELSE null END") {
+    failsParsing[CaseExpression]
   }
 
   test("CASE WHEN true, false THEN v2 ELSE null END") {
-    failsToParse[CaseExpression]
+    failsParsing[CaseExpression]
   }
 
   test("CASE n WHEN true, false, THEN 1 ELSE null END") {
-    failsToParse[CaseExpression]
+    failsParsing[CaseExpression]
+  }
+
+  test("case expression combinations") {
+    val in = varFor("input")
+    val alts = Seq(
+      "=~ '.*'" -> regex(in, literal(".*")),
+      "starts with 'zzz'" -> startsWith(in, literal("zzz")),
+      "ends with 'zzz'" -> endsWith(in, literal("zzz")),
+      "is null" -> isNull(in),
+      "is not null" -> isNotNull(in),
+      "is typed Int" -> isTyped(in, CTInteger),
+      "is not typed Int" -> isNotTyped(in, CTInteger),
+      ":: Int" -> isTyped(in, CTInteger),
+      "= 'x'" -> equals(in, literal("x")),
+      "<> 'x'" -> notEquals(in, literal("x")),
+      "!= 'x'" -> InvalidNotEquals(in, literal("x"))(pos),
+      "< 0" -> lessThan(in, literal(0)),
+      "> 0" -> greaterThan(in, literal(0)),
+      "<= 0" -> lessThanOrEqual(in, literal(0)),
+      ">= 0" -> greaterThanOrEqual(in, literal(0)),
+      "a" -> equals(in, varFor("a")),
+      "a.p" -> equals(in, prop("a", "p")),
+      "a[0]" -> equals(in, containerIndex(varFor("a"), 0)),
+      "false" -> equals(in, literal(false))
+    )
+
+    alts.foreach { case (cypherWhen, exp) =>
+      s"case ${in.name} when $cypherWhen then true end" should parseTo[Expression] {
+        caseExpression(Some(in), None, exp -> trueLiteral)
+      }
+      if (!exp.isInstanceOf[Equals]) {
+        s"case when ${in.name} $cypherWhen then true end" should parseTo[Expression] {
+          caseExpression(None, None, exp -> trueLiteral)
+        }
+      }
+    }
+
+    for {
+      (aCypher, aExp) <- alts
+      (bCypher, bExp) <- alts
+    } {
+      s"""case ${in.name}
+         |when $aCypher then 'a'
+         |when $bCypher then 'b'
+         |else 'c'
+         |end
+         |""".stripMargin should parseTo[Expression] {
+        caseExpression(Some(in), Some(literal("c")), aExp -> literal("a"), bExp -> literal("b"))
+      }
+      s"""case ${in.name}
+         |when $aCypher, $bCypher then 'yes'
+         |end
+         |""".stripMargin should parseTo[Expression] {
+        caseExpression(Some(in), None, aExp -> literal("yes"), bExp -> literal("yes"))
+      }
+    }
+
+    s"""case ${in.name}
+       |when
+       |  ${alts.map(_._1).mkString(",\n  ")}
+       |then
+       |  true
+       |end
+       |""".stripMargin should parseTo[Expression] {
+      caseExpression(Some(in), None, alts.map(a => a._2 -> trueLiteral): _*)
+    }
   }
 }

@@ -176,15 +176,19 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
   test("all combinations of types should behave") {
     forAll(allCombinations) { case (typeString, typeExpr) =>
       // Java CC produces invalid input positions in some cases
-      s"x IS :: $typeString" should parseAs[Expression].toAstIgnorePos(isTyped(varFor("x"), typeExpr))
-
-      s"n.prop IS TYPED $typeString" should parseAs[Expression].toAsts {
-        case JavaCc => isTyped(prop(varFor("n"), "prop"), typeExpr)
-        case Antlr  => isTyped(null, typeExpr)
+      s"x IS :: $typeString" should parseAs[Expression].toAstIgnorePos {
+        isTyped(varFor("x"), typeExpr)
       }
 
       // Java CC produces invalid input positions in some cases
-      s"5 :: $typeString" should parseAs[Expression].toAstIgnorePos(isTyped(literalInt(5L), typeExpr))
+      s"n.prop IS TYPED $typeString" should parseAs[Expression].toAstIgnorePos {
+        isTyped(prop(varFor("n"), "prop"), typeExpr)
+      }
+
+      // Java CC produces invalid input positions in some cases
+      s"5 :: $typeString" should parseAs[Expression].toAstIgnorePos {
+        isTyped(literalInt(5L), typeExpr)
+      }
 
       // Java CC produces invalid input positions in some cases
       s"x + y IS NOT :: $typeString" should parseAs[Expression].toAstIgnorePos {

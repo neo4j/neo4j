@@ -93,7 +93,7 @@ object AntlrRule {
   def MapProjection: AntlrRule[Cst.MapProjection] = fromParser(_.mapProjection())
   def NodePattern: AntlrRule[Cst.NodePattern] = fromParser(_.nodePattern())
   def NumberLiteral: AntlrRule[Cst.NumberLiteral] = fromParser(_.numberLiteral())
-  def Parameter: AntlrRule[Cst.Parameter] = fromParser(_.parameter())
+  def Parameter: AntlrRule[Cst.Parameter] = fromParser(_.parameter("ANY"))
   def ParenthesizedPath: AntlrRule[Cst.ParenthesizedPath] = fromParser(_.parenthesizedPath())
   def PatternComprehension: AntlrRule[Cst.PatternComprehension] = fromParser(_.patternComprehension())
   def Quantifier: AntlrRule[Cst.Quantifier] = fromParser(_.quantifier())

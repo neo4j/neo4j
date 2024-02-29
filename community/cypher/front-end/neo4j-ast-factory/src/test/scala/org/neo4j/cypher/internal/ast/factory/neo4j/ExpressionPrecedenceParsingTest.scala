@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
+import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ExtractScope
+import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.NFCNormalForm
@@ -214,7 +217,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
       case JavaCc =>
         isTyped(add(listOf(trueLiteral), prop("n", "p")), StringType(isNullable = true)(pos))
       case Antlr =>
-        isTyped(add(null, null), StringType(isNullable = true)(pos))
+        isTyped(add(null, prop("n", "p")), StringType(isNullable = true)(pos))
     }
 
     // (3 - 4) IS NOT TYPED BOOLEAN
@@ -275,86 +278,111 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
           unaryAdd(labelExpressionPredicate(varFor("expr"), labelOrRelTypeLeaf("Label")))
         ))
       case Antlr =>
-        unarySubtract(null)
+        unarySubtract(containerIndex(varFor("list"), unaryAdd(labelExpressionPredicate(varFor("expr"), null))))
     }
 
     // +(list[-(x.y)..+(5)])
-    "+list[-x.y..+5]" should parseAs[Expression].toAsts {
-      case JavaCc =>
-        unaryAdd(ListSlice(
-          varFor("list"),
-          Some(unarySubtract(prop(varFor("x"), "y"))),
-          Some(unaryAdd(literalInt(5)))
-        )(pos))
-      case Antlr =>
-        unaryAdd(null)
+    "+list[-x.y..+5]" should parseTo[Expression] {
+      unaryAdd(ListSlice(
+        varFor("list"),
+        Some(unarySubtract(prop(varFor("x"), "y"))),
+        Some(unaryAdd(literalInt(5)))
+      )(pos))
     }
   }
 
   test("precedence 2 vs 1") {
 
     // ($list)[(single(x IN y WHERE ('a' + 'b').prop))]
-    parsing[Expression]("$list[single(x IN y WHERE ('a' + 'b').prop)]") shouldGive
+    "$list[single(x IN y WHERE ('a' + 'b').prop)]" should parseTo[Expression] {
       containerIndex(
         parameter("list", CTAny),
         singleInList(varFor("x"), varFor("y"), prop(add(literalString("a"), literalString("b")), "prop"))
       )
+    }
 
     // (all(x IN y WHERE null)):Label
-    parsing[Expression]("all(x IN y WHERE null):Label") shouldGive
-      labelExpressionPredicate(allInList(varFor("x"), varFor("y"), nullLiteral), labelOrRelTypeLeaf("Label"))
+    "all(x IN y WHERE null):Label" should parse[Expression].toAsts {
+      case JavaCc => labelExpressionPredicate(
+          allInList(varFor("x"), varFor("y"), nullLiteral),
+          labelOrRelTypeLeaf("Label")
+        )
+      case Antlr => labelExpressionPredicate(
+          allInList(varFor("x"), varFor("y"), nullLiteral),
+          null
+        )
+    }
 
     // (none(x IN y WHERE true)).prop
-    parsing[Expression]("none(x IN y WHERE false).prop") shouldGive
-      prop(noneInList(varFor("x"), varFor("y"), falseLiteral), "prop")
+    "none(x IN y WHERE false).prop" should parseTo[Expression] {
+      prop(
+        noneInList(varFor("x"), varFor("y"), falseLiteral),
+        "prop"
+      )
+    }
 
     // (COLLECT {RETURN 42})[(any(x IN y WHERE (size('str')).prop))..(reduce(x=true, y IN list | x AND y))]
-    parsing[Expression](
-      "COLLECT {RETURN 42}[any(x IN y WHERE size('str').prop)..reduce(x=true, y IN list | x AND y)]"
-    ) shouldGive
-      ListSlice(
-        CollectExpression(
-          singleQuery(
-            return_(returnItem(literalInt(42), "42"))
-          )
-        )(pos, None, None),
-        Some(anyInList(varFor("x"), varFor("y"), prop(function("size", literalString("str")), "prop"))),
-        Some(reduce(varFor("x"), trueLiteral, varFor("y"), varFor("list"), and(varFor("x"), varFor("y"))))
-      )(pos)
+    "COLLECT {RETURN 42}[any(x IN y WHERE size('str').prop)..reduce(x=true, y IN list | x AND y)]" should
+      parse[Expression].toAsts {
+        case JavaCc => ListSlice(
+            CollectExpression(
+              singleQuery(
+                return_(returnItem(literalInt(42), "42"))
+              )
+            )(pos, None, None),
+            Some(anyInList(varFor("x"), varFor("y"), prop(function("size", literalString("str")), "prop"))),
+            Some(reduce(varFor("x"), trueLiteral, varFor("y"), varFor("list"), and(varFor("x"), varFor("y"))))
+          )(pos)
+        case Antlr => ListSlice(
+            null,
+            Some(anyInList(varFor("x"), varFor("y"), prop(null, "prop"))),
+            Some(null)
+          )(pos)
 
+      }
     // [(x IN (EXISTS {RETURN 42}) WHERE (x{.*}) = (COUNT {RETURN 42}))][([(n)-->() | n])]
-    parsing[Expression]("[x IN EXISTS {RETURN 42} WHERE x{.*} = COUNT {RETURN 42}][[(n)-->() | n]]") shouldGive
-      containerIndex(
-        listComprehension(
-          varFor("x"),
-          ExistsExpression(
-            singleQuery(
-              return_(returnItem(literalInt(42), "42"))
-            )
-          )(pos, None, None),
-          Some(
-            eq(
-              MapProjection(varFor("x"), List(AllPropertiesSelector()(pos)))(pos),
-              CountExpression(
-                singleQuery(
-                  return_(returnItem(literalInt(42), "42"))
-                )
-              )(pos, None, None)
-            )
+    "[x IN EXISTS {RETURN 42} WHERE x{.*} = COUNT {RETURN 42}][[(n)-->() | n]]" should parse[Expression].toAsts {
+      case JavaCc => containerIndex(
+          listComprehension(
+            varFor("x"),
+            ExistsExpression(
+              singleQuery(
+                return_(returnItem(literalInt(42), "42"))
+              )
+            )(pos, None, None),
+            Some(
+              eq(
+                MapProjection(varFor("x"), List(AllPropertiesSelector()(pos)))(pos),
+                CountExpression(
+                  singleQuery(
+                    return_(returnItem(literalInt(42), "42"))
+                  )
+                )(pos, None, None)
+              )
+            ),
+            None
           ),
-          None
-        ),
-        patternComprehension(relationshipChain(nodePat(Some("n")), relPat(), nodePat()), varFor("n"))
-      )
+          patternComprehension(relationshipChain(nodePat(Some("n")), relPat(), nodePat()), varFor("n"))
+        )
+      case Antlr => ContainerIndex(
+          ListComprehension(ExtractScope(varFor("x"), Some(equals(null, null)), None)(pos), null)(pos),
+          null
+        )(pos)
+    }
 
     // (shortestPath((a)-->(b)))[(CASE x WHEN true THEN 1 ELSE 2 END)]
-    parsing[Expression]("shortestPath((a)-->(b))[CASE x WHEN true THEN 1 ELSE 2 END]") shouldGive
-      containerIndex(
-        ShortestPathExpression(ShortestPathsPatternPart(
-          relationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b"))),
-          single = true
-        )(pos)),
-        caseExpression(Some(varFor("x")), Some(literalInt(2)), (equals(varFor("x"), trueLiteral), literalInt(1)))
-      )
+    "shortestPath((a)-->(b))[CASE x WHEN true THEN 1 ELSE 2 END]" should parse[Expression].toAsts {
+      case JavaCc => containerIndex(
+          ShortestPathExpression(ShortestPathsPatternPart(
+            relationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b"))),
+            single = true
+          )(pos)),
+          caseExpression(Some(varFor("x")), Some(literalInt(2)), (equals(varFor("x"), trueLiteral), literalInt(1)))
+        )
+      case Antlr => containerIndex(
+          null,
+          caseExpression(Some(varFor("x")), Some(literalInt(2)), (equals(varFor("x"), trueLiteral), literalInt(1)))
+        )
+    }
   }
 }

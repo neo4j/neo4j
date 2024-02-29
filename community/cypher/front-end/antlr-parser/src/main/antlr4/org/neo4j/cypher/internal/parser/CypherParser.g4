@@ -209,9 +209,6 @@ nodeLabels:
 nodeLabelsIs:
    IS symbolicNameString labelOrRelType*;
 
-labelExpressionPredicate:
-   labelExpression;
-
 labelOrRelType:
    COLON symbolicNameString;
 
@@ -219,7 +216,7 @@ labelOrRelTypes:
    COLON symbolicNameString (BAR symbolicNameString)*;
 
 properties:
-   (map | parameter);
+   (map | parameter["MAP"]);
 
 relationshipPattern:
    leftArrow? arrowLine (
@@ -296,27 +293,19 @@ expression10:
 expression9:
     NOT* expression8;
 
+// Making changes here? Consider looking at extendedWhen too.
 expression8:
    expression7 ((EQ | INVALID_NEQ | NEQ | LE | GE | LT | GT) expression7)*;
-
-expression8ComparatorExpression:
-   (EQ | NEQ | INVALID_NEQ | LE | GE | LT | GT) expression7;
 
 expression7:
    expression6 comparisonExpression6?;
 
+// Making changes here? Consider looking at extendedWhen too.
 comparisonExpression6
    : (REGEQ | STARTS WITH | ENDS WITH | CONTAINS | IN) expression6 #StringAndListComparison
    | IS NOT? NULL                                                  #NullComparison
    | (IS NOT? (TYPED | COLONCOLON) | COLONCOLON) type              #TypeComparison
    | IS NOT? normalForm? NORMALIZED                                #NormalFormComparison
-   ;
-
-comparisonExpression6CaseExpression
-   : (REGEQ | STARTS WITH | ENDS WITH) expression6
-   | IS NOT? NULL
-   | (IS NOT? TYPED | COLONCOLON) type
-   | IS NOT? normalForm? NORMALIZED
    ;
 
 normalForm:
@@ -335,10 +324,14 @@ expression3:
     expression2 | (PLUS | MINUS) expression2;
 
 expression2:
-   expression1 postFix1*;
+   expression1 postFix*;
 
-postFix1:
-   (property | labelExpressionPredicate | labelExpressionPredicate | LBRACKET expression RBRACKET | LBRACKET expression? DOTDOT expression? RBRACKET);
+postFix
+   : DOT propertyKeyName                                            #PropertyPostfix
+   | labelExpression                                                #LabelPostfix
+   | LBRACKET expression RBRACKET                                   #IndexPostfix
+   | LBRACKET fromExp=expression? DOTDOT toExp=expression? RBRACKET #RangePostfix
+   ;
 
 property:
    DOT propertyKeyName;
@@ -346,8 +339,27 @@ property:
 propertyExpression:
    expression1 property+;
 
-expression1:
-   (literal | parameter | caseExpression | COUNT LPAREN TIMES RPAREN | existsExpression | countExpression | collectExpression | mapProjection | listComprehension | patternComprehension | reduceExpression | allExpression | anyExpression | noneExpression | singleExpression | normalizeExpression | patternExpression | shortestPathExpression | parenthesizedExpression | functionInvocation | variable);
+expression1
+   : literal
+   | parameter["ANY"]
+   | caseExpression
+   | extendedCaseExpression
+   | COUNT LPAREN TIMES RPAREN
+   | existsExpression
+   | countExpression
+   | collectExpression
+   | mapProjection
+   | listComprehension
+   | patternComprehension
+   | reduceExpression
+   | listItemsPredicate
+   | normalizeExpression
+   | patternExpression
+   | shortestPathExpression
+   | parenthesizedExpression
+   | functionInvocation
+   | variable
+   ;
 
 literal:
    numberLiteral      #NummericLiteral
@@ -360,27 +372,34 @@ literal:
    | NAN              #KeywordLiteral
    | NULL             #KeywordLiteral;
 
-caseExpression:
-   (simpleCaseExpression | generalCaseExpression);
+caseExpression
+   : CASE caseAlternative+ (ELSE expression)? END
+   ;
 
-simpleCaseExpression:
-   CASE expression (WHEN simpleCaseWhenOperandList THEN expression)+ (ELSE expression)? END;
+caseAlternative
+   : WHEN expression THEN expression
+   ;
 
-simpleCaseWhenOperandList:
-   whenOperand (COMMA whenOperand)*;
+extendedCaseExpression
+   : CASE expression extendedCaseAlternative+ (ELSE elseExp=expression)? END
+   ;
 
-whenOperand:
-   (comparisonExpression6CaseExpression | expression8ComparatorExpression | expression);
+extendedCaseAlternative
+   : WHEN extendedWhen (COMMA extendedWhen)* THEN expression
+   ;
 
-generalCaseExpression:
-   CASE (WHEN expression THEN expression)+ (ELSE expression)? END;
+// Making changes here? Consider looking at comparisonExpression6 and expression8 too.
+extendedWhen
+   : (REGEQ | STARTS WITH | ENDS WITH) expression6           #WhenStringOrList
+   | IS NOT? NULL                                             #WhenNull
+   | (IS NOT? TYPED | COLONCOLON) type                        #WhenType
+   | IS NOT? normalForm? NORMALIZED                           #WhenForm
+   | (EQ | NEQ | INVALID_NEQ | LE | GE | LT | GT) expression7 #WhenComparator
+   | expression                                               #WhenEquals
+   ;
 
 listComprehension:
-   LBRACKET variable IN expression listComprehensionWhereAndBar;
-
-listComprehensionWhereAndBar:
-   (WHERE expression)? BAR expression RBRACKET |
-     (WHERE expression)? RBRACKET;
+   LBRACKET variable IN expression (WHERE whereExp=expression)? (BAR barExp=expression)? RBRACKET;
 
 patternComprehension:
    LBRACKET (variable EQ)? pathPatternNonEmpty (WHERE expression)? BAR expression RBRACKET;
@@ -391,17 +410,8 @@ patternComprehensionPrefix:
 reduceExpression:
    REDUCE LPAREN variable EQ expression COMMA variable IN expression BAR expression RPAREN;
 
-allExpression:
-   ALL LPAREN variable IN expression (WHERE expression)? RPAREN;
-
-anyExpression:
-   ANY LPAREN variable IN expression (WHERE expression)? RPAREN;
-
-noneExpression:
-   NONE LPAREN variable IN expression (WHERE expression)? RPAREN;
-
-singleExpression:
-   SINGLE LPAREN variable IN expression (WHERE expression)? RPAREN;
+listItemsPredicate:
+   (ALL|ANY|NONE|SINGLE) LPAREN variable IN inExp=expression (WHERE whereExp=expression)? RPAREN;
 
 normalizeExpression:
    NORMALIZE LPAREN expression (COMMA normalForm)? RPAREN;
@@ -442,11 +452,8 @@ listLiteral:
 propertyKeyName:
    symbolicNameString;
 
-parameter:
-   DOLLAR parameterName;
-
-parameterName:
-   (variable | UNSIGNED_DECIMAL_INTEGER);
+parameter[String paramType]:
+   DOLLAR (symbolicNameString | UNSIGNED_DECIMAL_INTEGER);
 
 functionInvocation:
    namespace symbolicNameString LPAREN (DISTINCT | ALL)? expression? (COMMA expression)* RPAREN;
@@ -709,7 +716,7 @@ setPassword:
    passwordExpression;
 
 passwordExpression:
-   (stringLiteral | parameter);
+   (stringLiteral | parameter["STRING"]);
 
 passwordChangeRequired:
    CHANGE NOT? REQUIRED;
@@ -874,7 +881,7 @@ symbolicAliasNameList:
    symbolicAliasNameOrParameter (COMMA symbolicAliasNameOrParameter)*;
 
 symbolicAliasNameOrParameter:
-   symbolicAliasName | parameter;
+   symbolicAliasName | parameter["STRING"];
 
 symbolicAliasName:
    symbolicNameString (DOT symbolicNameString)*;
@@ -883,7 +890,7 @@ symbolicNameOrStringParameterList:
    symbolicNameOrStringParameter (COMMA symbolicNameOrStringParameter)*;
 
 symbolicNameOrStringParameter:
-   (symbolicNameString | parameter);
+   (symbolicNameString | parameter["STRING"]);
 
 glob:
    (escapedSymbolicNameString | escapedSymbolicNameString globRecursive | globRecursive);
@@ -901,10 +908,10 @@ stringLiteral:
    (STRING_LITERAL1 | STRING_LITERAL2);
 
 stringOrParameter:
-   (stringLiteral | parameter);
+   (stringLiteral | parameter["STRING"]);
 
 mapOrParameter:
-   (map | parameter);
+   (map | parameter["MAP"]);
 
 map: LCURLY (propertyKeyName COLON expression)? (COMMA propertyKeyName COLON expression)* RCURLY;
 

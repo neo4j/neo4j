@@ -17,9 +17,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ExtractScope
+import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -29,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 /**
@@ -595,119 +600,162 @@ class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with Legac
   }
 
   test("[x IN [1,2,3] WHERE n:A | x]") {
-    givesIncludingPositions[Expression] {
-      listComprehension(
-        varFor("x"),
-        listOfInt(1, 2, 3),
-        Some(labelExpressionPredicate(varFor("n", position = (1, 21, 20)), labelOrRelTypeLeaf("A", (1, 23, 22)))),
-        Some(varFor("x"))
-      )
+    parses[Expression].toAsts {
+      case JavaCc => listComprehension(
+          varFor("x"),
+          listOfInt(1, 2, 3),
+          Some(labelExpressionPredicate(varFor("n", position = (1, 21, 20)), labelOrRelTypeLeaf("A", (1, 23, 22)))),
+          Some(varFor("x"))
+        )
+      case Antlr => ListComprehension(
+          ExtractScope(varFor("x"), Some(LabelExpressionPredicate(varFor("n"), null)(pos)), None)(pos),
+          null
+        )(pos)
     }
   }
 
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("[x IN [1,2,3] WHERE (n:A|B)--() | x]") {
-    givesIncludingPositions[Expression] {
-      listComprehension(
-        varFor("x"),
-        listOfInt(1, 2, 3),
-        Some(PatternExpression(RelationshipsPattern(RelationshipChain(
-          NodePattern(
-            Some(varFor("n", position = (1, 22, 21))),
-            Some(labelDisjunction(
-              labelLeaf("A", (1, 24, 23)),
-              labelLeaf("B", (1, 26, 25)),
-              (1, 25, 24)
-            )),
-            None,
-            None
-          )(pos),
-          RelationshipPattern(None, None, None, None, None, BOTH)(pos),
-          NodePattern(None, None, None, None)(pos)
-        )(pos))(pos))(None, None)),
-        Some(varFor("x"))
-      )
+    parses[Expression].toAsts {
+      case JavaCc => listComprehension(
+          varFor("x"),
+          listOfInt(1, 2, 3),
+          Some(PatternExpression(RelationshipsPattern(RelationshipChain(
+            NodePattern(
+              Some(varFor("n", position = (1, 22, 21))),
+              Some(labelDisjunction(
+                labelLeaf("A", (1, 24, 23)),
+                labelLeaf("B", (1, 26, 25)),
+                (1, 25, 24)
+              )),
+              None,
+              None
+            )(pos),
+            RelationshipPattern(None, None, None, None, None, BOTH)(pos),
+            NodePattern(None, None, None, None)(pos)
+          )(pos))(pos))(None, None)),
+          Some(varFor("x"))
+        )
+      case Antlr => listComprehension(
+          varFor("x"),
+          null,
+          Some(null),
+          Some(varFor("x"))
+        )
     }
   }
 
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("[x IN [1,2,3] WHERE (n:A | B) | x]") {
-    givesIncludingPositions[Expression] {
-      listComprehension(
-        varFor("x"),
-        listOfInt(1, 2, 3),
-        Some(labelExpressionPredicate(
-          varFor("n", position = (1, 22, 21)),
-          labelDisjunction(
-            labelOrRelTypeLeaf("A", (1, 24, 23)),
-            labelOrRelTypeLeaf("B", (1, 28, 27)),
-            (1, 26, 25)
-          )
-        )),
-        Some(varFor("x"))
-      )
+    parses[Expression].toAsts {
+      case JavaCc => listComprehension(
+          varFor("x"),
+          listOfInt(1, 2, 3),
+          Some(labelExpressionPredicate(
+            varFor("n", position = (1, 22, 21)),
+            labelDisjunction(
+              labelOrRelTypeLeaf("A", (1, 24, 23)),
+              labelOrRelTypeLeaf("B", (1, 28, 27)),
+              (1, 26, 25)
+            )
+          )),
+          Some(varFor("x"))
+        )
+      case Antlr => listComprehension(
+          varFor("x"),
+          null,
+          Some(labelExpressionPredicate("n", null)),
+          Some(varFor("x"))
+        )
     }
   }
 
   test("[x IN [1,2,3] WHERE n:(A | x)]") {
-    givesIncludingPositions[Expression] {
-      listComprehension(
-        varFor("x"),
-        listOfInt(1, 2, 3),
-        Some(
-          labelExpressionPredicate(
-            varFor("n", position = (1, 21, 20)),
-            labelDisjunction(
-              labelOrRelTypeLeaf("A", (1, 24, 23)),
-              labelOrRelTypeLeaf("x", (1, 28, 27)),
-              (1, 26, 25)
+    parses[Expression].toAsts {
+      case JavaCc => listComprehension(
+          varFor("x"),
+          listOfInt(1, 2, 3),
+          Some(
+            labelExpressionPredicate(
+              varFor("n", position = (1, 21, 20)),
+              labelDisjunction(
+                labelOrRelTypeLeaf("A", (1, 24, 23)),
+                labelOrRelTypeLeaf("x", (1, 28, 27)),
+                (1, 26, 25)
+              )
             )
-          )
-        ),
-        None
-      )
+          ),
+          None
+        )
+      case Antlr => listComprehension(
+          varFor("x"),
+          null,
+          Some(labelExpressionPredicate(varFor("n"), null)),
+          None
+        )
     }
   }
 
   test("[x IN [1,2,3] WHERE n:A&x]") {
-    givesIncludingPositions[Expression] {
-      listComprehension(
-        varFor("x"),
-        listOfInt(1, 2, 3),
-        Some(
-          labelExpressionPredicate(
-            varFor("n", position = (1, 21, 20)),
-            labelConjunction(
-              labelOrRelTypeLeaf("A", (1, 23, 22)),
-              labelOrRelTypeLeaf("x", (1, 25, 24))
+    parses[Expression].toAsts {
+      case JavaCc => listComprehension(
+          varFor("x"),
+          listOfInt(1, 2, 3),
+          Some(
+            labelExpressionPredicate(
+              varFor("n", position = (1, 21, 20)),
+              labelConjunction(
+                labelOrRelTypeLeaf("A", (1, 23, 22)),
+                labelOrRelTypeLeaf("x", (1, 25, 24))
+              )
             )
-          )
-        ),
-        None
-      )
+          ),
+          None
+        )
+      case Antlr =>
+        listComprehension(
+          varFor("x"),
+          null,
+          Some(
+            labelExpressionPredicate(
+              varFor("n", position = (1, 21, 20)),
+              null
+            )
+          ),
+          None
+        )
     }
   }
 
   test("[x IN [1,2,3] WHERE n:A & (b | x)]") {
-    givesIncludingPositions[Expression] {
-      listComprehension(
-        varFor("x"),
-        listOfInt(1, 2, 3),
-        Some(labelExpressionPredicate(
-          varFor("n", position = (1, 21, 20)),
-          labelConjunction(
-            labelOrRelTypeLeaf("A", (1, 23, 22)),
-            labelDisjunction(
-              labelOrRelTypeLeaf("b", (1, 28, 27)),
-              labelOrRelTypeLeaf("x", (1, 32, 31)),
-              (1, 30, 29)
+    parses[Expression].toAsts {
+      case JavaCc => listComprehension(
+          varFor("x"),
+          listOfInt(1, 2, 3),
+          Some(labelExpressionPredicate(
+            varFor("n", position = (1, 21, 20)),
+            labelConjunction(
+              labelOrRelTypeLeaf("A", (1, 23, 22)),
+              labelDisjunction(
+                labelOrRelTypeLeaf("b", (1, 28, 27)),
+                labelOrRelTypeLeaf("x", (1, 32, 31)),
+                (1, 30, 29)
+              )
             )
-          )
-        )),
-        None
-      )
+          )),
+          None
+        )
+      case Antlr => listComprehension(
+          varFor("x"),
+          null,
+          Some(labelExpressionPredicate(
+            varFor("n", position = (1, 21, 20)),
+            null
+          )),
+          None
+        )
     }
   }
 
@@ -720,80 +768,92 @@ class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with Legac
   }
 
   test("[x IN [1,2,3] WHERE n:(A | x) | x]") {
-    givesIncludingPositions[Expression] {
-      listComprehension(
-        varFor("x"),
-        listOfInt(1, 2, 3),
-        Some(
-          labelExpressionPredicate(
-            varFor("n", position = (1, 21, 20)),
-            labelDisjunction(
-              labelOrRelTypeLeaf("A", (1, 24, 23)),
-              labelOrRelTypeLeaf("x", (1, 28, 27)),
-              (1, 26, 25)
+    parses[Expression].toAsts {
+      case JavaCc => listComprehension(
+          varFor("x"),
+          listOfInt(1, 2, 3),
+          Some(
+            labelExpressionPredicate(
+              varFor("n", position = (1, 21, 20)),
+              labelDisjunction(
+                labelOrRelTypeLeaf("A", (1, 24, 23)),
+                labelOrRelTypeLeaf("x", (1, 28, 27)),
+                (1, 26, 25)
+              )
             )
-          )
-        ),
-        Some(varFor("x"))
-      )
+          ),
+          Some(varFor("x"))
+        )
+      case Antlr => ListComprehension(
+          ExtractScope(varFor("x"), Some(LabelExpressionPredicate(varFor("n"), null)(pos)), None)(pos),
+          null
+        )(pos)
     }
   }
 
   test("[x IN [1,2,3] WHERE n:A | x | x]") {
-    givesIncludingPositions[Expression] {
-      listComprehension(
-        varFor("x"),
-        listOfInt(1, 2, 3),
-        Some(labelExpressionPredicate(
-          varFor("n", position = (1, 21, 20)),
-          labelDisjunction(
-            labelOrRelTypeLeaf("A", (1, 23, 22)),
-            labelOrRelTypeLeaf("x", (1, 27, 26)),
-            (1, 25, 24)
-          )
-        )),
-        Some(varFor("x"))
-      )
+    parses[Expression].toAsts {
+      case JavaCc => listComprehension(
+          varFor("x"),
+          listOfInt(1, 2, 3),
+          Some(labelExpressionPredicate(
+            varFor("n", position = (1, 21, 20)),
+            labelDisjunction(
+              labelOrRelTypeLeaf("A", (1, 23, 22)),
+              labelOrRelTypeLeaf("x", (1, 27, 26)),
+              (1, 25, 24)
+            )
+          )),
+          Some(varFor("x"))
+        )
+      case Antlr => ListComprehension(
+          ExtractScope(varFor("x"), Some(LabelExpressionPredicate(varFor("n"), null)(pos)), None)(pos),
+          null
+        )(pos)
     }
   }
 
   test("[x IN [1,2,3] WHERE n:A|:B:C|:!D&E|!F | x]") {
-    givesIncludingPositions[Expression] {
-      listComprehension(
-        varFor("x"),
-        listOfInt(1, 2, 3),
-        Some(labelExpressionPredicate(
-          varFor("n"),
-          labelDisjunction(
-            labelColonDisjunction(
+    parses[Expression].toAsts {
+      case JavaCc => listComprehension(
+          varFor("x"),
+          listOfInt(1, 2, 3),
+          Some(labelExpressionPredicate(
+            varFor("n"),
+            labelDisjunction(
               labelColonDisjunction(
-                labelOrRelTypeLeaf("A", (1, 23, 22)),
-                labelColonConjunction(
-                  labelOrRelTypeLeaf("B", (1, 26, 25)),
-                  labelOrRelTypeLeaf("C", (1, 28, 27)),
-                  (1, 27, 26)
+                labelColonDisjunction(
+                  labelOrRelTypeLeaf("A", (1, 23, 22)),
+                  labelColonConjunction(
+                    labelOrRelTypeLeaf("B", (1, 26, 25)),
+                    labelOrRelTypeLeaf("C", (1, 28, 27)),
+                    (1, 27, 26)
+                  ),
+                  (1, 24, 23)
                 ),
-                (1, 24, 23)
-              ),
-              labelConjunction(
-                labelNegation(
-                  labelOrRelTypeLeaf("D", (1, 32, 31)),
-                  (1, 31, 30)
+                labelConjunction(
+                  labelNegation(
+                    labelOrRelTypeLeaf("D", (1, 32, 31)),
+                    (1, 31, 30)
+                  ),
+                  labelOrRelTypeLeaf("E", (1, 34, 33)),
+                  (1, 33, 32)
                 ),
-                labelOrRelTypeLeaf("E", (1, 34, 33)),
-                (1, 33, 32)
+                (1, 29, 28)
               ),
-              (1, 29, 28)
-            ),
-            labelNegation(
-              labelOrRelTypeLeaf("F", (1, 37, 36)),
-              (1, 36, 35)
-            ),
-            (1, 35, 34)
-          )
-        )),
-        Some(varFor("x"))
-      )
+              labelNegation(
+                labelOrRelTypeLeaf("F", (1, 37, 36)),
+                (1, 36, 35)
+              ),
+              (1, 35, 34)
+            )
+          )),
+          Some(varFor("x"))
+        )
+      case Antlr => ListComprehension(
+          ExtractScope(varFor("x"), Some(LabelExpressionPredicate(varFor("n"), null)(pos)), None)(pos),
+          null
+        )(pos)
     }
   }
 }

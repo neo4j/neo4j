@@ -29,10 +29,6 @@ trait LabelExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.NodeLabelsIsContext
   ): Unit = {}
 
-  final override def exitLabelExpressionPredicate(
-    ctx: CypherParser.LabelExpressionPredicateContext
-  ): Unit = {}
-
   final override def exitLabelOrRelType(
     ctx: CypherParser.LabelOrRelTypeContext
   ): Unit = {}

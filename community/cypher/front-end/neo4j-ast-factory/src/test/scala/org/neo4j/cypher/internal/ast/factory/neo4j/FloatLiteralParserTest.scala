@@ -36,7 +36,7 @@ class FloatLiteralParserTest extends AstParsingTestBase with LegacyAstParsingTes
     "-inf" should parseTo[Expression](unarySubtract(InfinityLiteral))
     "1 - infinity" should parseTo[Expression](subtract(literalInt(1), InfinityLiteral))
     "infinity > 0" should parseTo[Expression](greaterThan(InfinityLiteral, literalInt(0)))
-    "CASE WHEN NaN THEN infinity END" should parseTo[Expression](NotAntlr)(caseExpression(
+    "CASE WHEN NaN THEN infinity END" should parseTo[Expression](caseExpression(
       None,
       None,
       (NaNLiteral, InfinityLiteral)

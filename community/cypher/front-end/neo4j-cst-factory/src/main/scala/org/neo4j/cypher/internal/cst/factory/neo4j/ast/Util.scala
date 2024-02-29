@@ -28,19 +28,44 @@ import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.reflect.ClassTag
 
 object Util {
   @inline def cast[T](o: Any): T = o.asInstanceOf[T]
 
   @inline def child[T <: ParseTree](ctx: AstRuleCtx, index: Int): T = ctx.getChild(index).asInstanceOf[T]
 
+  @inline def astOpt[T <: ASTNode](ctx: AstRuleCtx): Option[T] = if (ctx == null) None else Some(ctx.ast[T]())
+  @inline def astOpt[T](ctx: AstRuleCtx, default: => T): T = if (ctx == null) default else ctx.ast[T]()
   @inline def ctxChild(ctx: AstRuleCtx, index: Int): AstRuleCtx = ctx.getChild(index).asInstanceOf[AstRuleCtx]
 
   @inline def astChild[T <: ASTNode](ctx: AstRuleCtx, index: Int): T =
     ctx.getChild(index).asInstanceOf[AstRuleCtx].ast()
 
+  def astSeq[T: ClassTag](list: java.util.List[_ <: AstRuleCtx]): ArraySeq[T] = {
+    val size = list.size()
+    val result = new Array[T](size)
+    var i = 0
+    while (i < size) {
+      result(i) = list.get(i).ast[T]()
+      i += 1
+    }
+    ArraySeq.unsafeWrapArray(result)
+  }
+
   def astChildListSet[T <: ASTNode](ctx: AstRuleCtx): ListSet[T] = {
     ListSet.from(collectAst(ctx))
+  }
+
+  def astCtxReduce[T <: ASTNode, C <: AstRuleCtx](ctx: AstRuleCtx, f: (T, C) => T): T = {
+    val children = ctx.children; val size = children.size()
+    var result = children.get(0).asInstanceOf[AstRuleCtx].ast[T]()
+    var i = 1
+    while (i < size) {
+      result = f(result, children.get(i).asInstanceOf[C])
+      i += 1
+    }
+    result
   }
 
   def astBinaryFold[T <: ASTNode](ctx: AstRuleCtx, f: (T, TerminalNode, T) => T): T = {
@@ -62,6 +87,9 @@ object Util {
     }
   }
   @inline def nodeChild(ctx: AstRuleCtx, index: Int): TerminalNode = ctx.getChild(index).asInstanceOf[TerminalNode]
+
+  @inline def nodeChildType(ctx: AstRuleCtx, index: Int): Int =
+    ctx.getChild(index).asInstanceOf[TerminalNode].getSymbol.getType
 
   @inline def lastChild[T <: ParseTree](ctx: AstRuleCtx): T =
     ctx.children.get(ctx.children.size() - 1).asInstanceOf[T]

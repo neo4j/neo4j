@@ -17,20 +17,21 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
 
-class ListComprehensionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class ListComprehensionParserTest extends AstParsingTestBase {
   private val t = DummyPosition(0)
 
   test("tests") {
-    parsing("[ a in p WHERE a.foo > 123 ]") shouldGive
-      expressions.ListComprehension(
+    "[ a in p WHERE a.foo > 123 ]" should parseTo[Expression] {
+      ListComprehension(
         ExtractScope(
           expressions.Variable("a")(t),
           Some(GreaterThan(
@@ -41,9 +42,10 @@ class ListComprehensionParserTest extends AstParsingTestBase with LegacyAstParsi
         )(t),
         expressions.Variable("p")(t)
       )(t)
+    }
 
-    parsing("[ a in p | a.foo ]") shouldGive
-      expressions.ListComprehension(
+    "[ a in p | a.foo ]" should parseTo[Expression] {
+      ListComprehension(
         ExtractScope(
           expressions.Variable("a")(t),
           None,
@@ -51,9 +53,10 @@ class ListComprehensionParserTest extends AstParsingTestBase with LegacyAstParsi
         )(t),
         expressions.Variable("p")(t)
       )(t)
+    }
 
-    parsing("[ a in p WHERE a.foo > 123 | a.foo ]") shouldGive
-      expressions.ListComprehension(
+    "[ a in p WHERE a.foo > 123 | a.foo ]" should parseTo[Expression] {
+      ListComprehension(
         ExtractScope(
           expressions.Variable("a")(t),
           Some(GreaterThan(
@@ -64,5 +67,6 @@ class ListComprehensionParserTest extends AstParsingTestBase with LegacyAstParsi
         )(t),
         expressions.Variable("p")(t)
       )(t)
+    }
   }
 }
