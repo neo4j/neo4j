@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 class EscapedSymbolicNameParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("escaped label name") {
-    parsing[NodePattern]("(n:`Label`)") shouldGive nodePat(Some("n"), Some(labelLeaf("Label")))
-    parsing[NodePattern]("(n:`Label``123`)") shouldGive nodePat(Some("n"), Some(labelLeaf("Label`123")))
-    parsing[NodePattern]("(n:`````Label```)") shouldGive nodePat(Some("n"), Some(labelLeaf("``Label`")))
+    "(n:`Label`)" should parseTo[NodePattern](nodePat(Some("n"), Some(labelLeaf("Label"))))
+    "(n:`Label``123`)" should parseTo[NodePattern](nodePat(Some("n"), Some(labelLeaf("Label`123"))))
+    "(n:`````Label```)" should parseTo[NodePattern](nodePat(Some("n"), Some(labelLeaf("``Label`"))))
 
-    assertFails[NodePattern]("(n:`L`abel`)")
+    "(n:`L`abel`)" should notParse[NodePattern]
   }
 }

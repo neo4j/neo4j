@@ -30,27 +30,27 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 class ExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("[true IN [1, 2]]") {
-    gives[Expression](listComprehension(varFor("true"), listOf(literalInt(1), literalInt(2)), None, None))
+    parsesTo[Expression](listComprehension(varFor("true"), listOf(literalInt(1), literalInt(2)), None, None))
   }
 
   test("[(true IN [1, 2])]") {
-    gives[Expression](listOf(in(trueLiteral, listOf(literalInt(1), literalInt(2)))))
+    parsesTo[Expression](listOf(in(trueLiteral, listOf(literalInt(1), literalInt(2)))))
   }
 
   test("[create IN [1, 2]]") {
-    gives[Expression](listComprehension(varFor("create"), listOf(literalInt(1), literalInt(2)), None, None))
+    parsesTo[Expression](listComprehension(varFor("create"), listOf(literalInt(1), literalInt(2)), None, None))
   }
 
   test("[not IN [1, 2]]") {
-    gives[Expression](listComprehension(varFor("not"), listOf(literalInt(1), literalInt(2)), None, None))
+    parsesTo[Expression](listComprehension(varFor("not"), listOf(literalInt(1), literalInt(2)), None, None))
   }
 
   test("[starts IN [1, 2]]") {
-    gives[Expression](listComprehension(varFor("starts"), listOf(literalInt(1), literalInt(2)), None, None))
+    parsesTo[Expression](listComprehension(varFor("starts"), listOf(literalInt(1), literalInt(2)), None, None))
   }
 
   test("[true IN [ true, false ], false]") {
-    gives[Expression](listOf(in(trueLiteral, listOf(trueLiteral, falseLiteral)), falseLiteral))
+    parsesTo[Expression](listOf(in(trueLiteral, listOf(trueLiteral, falseLiteral)), falseLiteral))
   }
 
   test("thing CONTAINS 'a' + 'b'") {

@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.Expression
 
 class FloatLiteralParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
@@ -45,6 +44,6 @@ class FloatLiteralParserTest extends AstParsingTestBase with LegacyAstParsingTes
       ("inf", InfinityLiteral),
       ("nan", NaNLiteral)
     ))
-    "[inf, Infinity, NaN]" should parseTo[Expression](NotAntlr)(listOf(InfinityLiteral, InfinityLiteral, NaNLiteral))
+    "[inf, Infinity, NaN]" should parseTo[Expression](listOf(InfinityLiteral, InfinityLiteral, NaNLiteral))
   }
 }

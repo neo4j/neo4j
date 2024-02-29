@@ -19,11 +19,14 @@ package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.LiteralBuilder.cypherStringToString
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.Infinity
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -51,10 +54,6 @@ trait LiteralBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitPathLengthLiteral(
-    ctx: CypherParser.PathLengthLiteralContext
-  ): Unit = {}
-
   final override def exitNumberLiteral(ctx: CypherParser.NumberLiteralContext): Unit = {
     ctx.ast = lastChild[TerminalNode](ctx).getSymbol.getType match {
       case CypherParser.UNSIGNED_DECIMAL_INTEGER => SignedDecimalIntegerLiteral(ctx.getText)(pos(ctx))
@@ -70,7 +69,9 @@ trait LiteralBuilder extends CypherParserListener {
 
   final override def exitListLiteral(
     ctx: CypherParser.ListLiteralContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ListLiteral(astSeq[Expression](ctx.expression()))(pos(ctx))
+  }
 
   override def exitStringLiteral(ctx: CypherParser.StringLiteralContext): Unit = {
     val text = ctx.start.getInputStream.getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1))

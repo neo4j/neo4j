@@ -195,9 +195,8 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
         isNotTyped(add(varFor("x"), varFor("y")), typeExpr)
       }
 
-      s"['a', 'b', 'c'] IS NOT TYPED $typeString" should parseAs[Expression].toAsts {
-        case JavaCc => isNotTyped(listOfString("a", "b", "c"), typeExpr)
-        case Antlr  => isNotTyped(null, typeExpr)
+      s"['a', 'b', 'c'] IS NOT TYPED $typeString" should parseAs[Expression].toAstIgnorePos {
+        isNotTyped(listOfString("a", "b", "c"), typeExpr)
       }
 
       // This should not be supported according to CIP-87

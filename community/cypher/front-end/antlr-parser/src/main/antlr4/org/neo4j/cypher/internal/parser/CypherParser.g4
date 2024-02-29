@@ -216,7 +216,7 @@ labelOrRelTypes:
    COLON symbolicNameString (BAR symbolicNameString)*;
 
 properties:
-   (map | parameter["MAP"]);
+   (map | parameter["ANY"]);
 
 relationshipPattern:
    leftArrow? arrowLine (
@@ -240,31 +240,28 @@ rightArrow:
    (GT | ARROW_RIGHT_HEAD);
 
 pathLength:
-   TIMES pathLengthLiteral?;
-
-pathLengthLiteral:
-   (UNSIGNED_DECIMAL_INTEGER? DOTDOT UNSIGNED_DECIMAL_INTEGER? | UNSIGNED_DECIMAL_INTEGER);
+   TIMES (from=UNSIGNED_DECIMAL_INTEGER? DOTDOT to=UNSIGNED_DECIMAL_INTEGER? | single=UNSIGNED_DECIMAL_INTEGER)?;
 
 labelExpression:
    (COLON labelExpression4 | IS labelExpression4Is);
 
 labelExpression4:
-   labelExpression3 (BAR (COLON labelExpression3 | labelExpression3))*;
+   labelExpression3 (BAR COLON? labelExpression3)*;
 
 labelExpression4Is:
-   labelExpression3Is (BAR (COLON labelExpression3Is | labelExpression3Is))*;
+   labelExpression3Is (BAR COLON? labelExpression3Is)*;
 
 labelExpression3:
-   labelExpression2 (AMPERSAND labelExpression2 | COLON labelExpression2)*;
+   labelExpression2 ((AMPERSAND | COLON) labelExpression2)*;
 
 labelExpression3Is:
-   labelExpression2Is (AMPERSAND labelExpression2Is | COLON labelExpression2Is)*;
+   labelExpression2Is ((AMPERSAND | COLON) labelExpression2Is)*;
 
 labelExpression2:
-   (EXCLAMATION_MARK labelExpression2 | labelExpression1);
+   EXCLAMATION_MARK* labelExpression1;
 
 labelExpression2Is:
-   (EXCLAMATION_MARK labelExpression2Is | labelExpression1Is);
+   EXCLAMATION_MARK* labelExpression1Is;
 
 labelExpression1:
    (LPAREN labelExpression4 RPAREN | PERCENT | symbolicNameString);
@@ -350,6 +347,7 @@ expression1
    | collectExpression
    | mapProjection
    | listComprehension
+   | listLiteral
    | patternComprehension
    | reduceExpression
    | listItemsPredicate
@@ -365,7 +363,6 @@ literal:
    numberLiteral      #NummericLiteral
    | stringLiteral    #StringsLiteral
    | map              #OtherLiteral
-   | listLiteral      #OtherLiteral
    | TRUE             #BooleanLiteral
    | FALSE            #BooleanLiteral
    | INFINITY         #KeywordLiteral
@@ -399,7 +396,8 @@ extendedWhen
    ;
 
 listComprehension:
-   LBRACKET variable IN expression (WHERE whereExp=expression)? (BAR barExp=expression)? RBRACKET;
+   LBRACKET variable IN expression
+   ((WHERE whereExp=expression)? BAR barExp=expression RBRACKET | (WHERE whereExp=expression)? RBRACKET);
 
 patternComprehension:
    LBRACKET (variable EQ)? pathPatternNonEmpty (WHERE expression)? BAR expression RBRACKET;
@@ -457,12 +455,6 @@ parameter[String paramType]:
 
 functionInvocation:
    namespace symbolicNameString LPAREN (DISTINCT | ALL)? expression? (COMMA expression)* RPAREN;
-
-functionName:
-   namespace symbolicNameString;
-
-functionArgument:
-   expression;
 
 namespace:
    (symbolicNameString DOT)*;

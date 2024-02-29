@@ -32,14 +32,14 @@ class IsWhereRelationshipPatternParserTest extends AstParsingTestBase with Legac
       Seq(("", None), ("IS", Some("IS")), ("WHERE", Some("WHERE")))
   } yield {
     test(s"-[$maybeVariable]->") {
-      gives[RelationshipPattern](relPat(maybeVariableName))
+      parsesTo[RelationshipPattern](relPat(maybeVariableName))
     }
 
     for {
       isOrWhere <- Seq("IS", "WHERE")
     } yield {
       test(s"-[$maybeVariable IS $isOrWhere]->") {
-        gives[RelationshipPattern](
+        parsesTo[RelationshipPattern](
           relPat(
             maybeVariableName,
             labelExpression = Some(labelRelTypeLeaf(isOrWhere, containsIs = true))
@@ -48,7 +48,7 @@ class IsWhereRelationshipPatternParserTest extends AstParsingTestBase with Legac
       }
 
       test(s"-[$maybeVariable WHERE $isOrWhere]->") {
-        gives[RelationshipPattern](
+        parsesTo[RelationshipPattern](
           relPat(
             maybeVariableName,
             predicates = Some(varFor(isOrWhere))
@@ -60,7 +60,7 @@ class IsWhereRelationshipPatternParserTest extends AstParsingTestBase with Legac
         isOrWhere2 <- Seq("IS", "WHERE")
       } yield {
         test(s"-[$maybeVariable IS $isOrWhere WHERE $isOrWhere2]->") {
-          gives[RelationshipPattern](
+          parsesTo[RelationshipPattern](
             relPat(
               maybeVariableName,
               labelExpression = Some(labelRelTypeLeaf(isOrWhere, containsIs = true)),
@@ -70,7 +70,7 @@ class IsWhereRelationshipPatternParserTest extends AstParsingTestBase with Legac
         }
 
         test(s"-[$maybeVariable WHERE $isOrWhere IS $isOrWhere2]->") {
-          gives[RelationshipPattern](
+          parsesTo[RelationshipPattern](
             relPat(
               maybeVariableName,
               predicates = Some(LabelExpressionPredicate(
@@ -82,18 +82,18 @@ class IsWhereRelationshipPatternParserTest extends AstParsingTestBase with Legac
         }
 
         test(s"-[$maybeVariable WHERE $isOrWhere WHERE $isOrWhere2]->") {
-          failsToParse[RelationshipPattern]()
+          failsParsing[RelationshipPattern]
         }
 
         test(s"-[$maybeVariable IS $isOrWhere IS $isOrWhere2]->") {
-          failsToParse[RelationshipPattern]()
+          failsParsing[RelationshipPattern]
         }
 
         for {
           isOrWhere3 <- Seq("IS", "WHERE")
         } yield {
           test(s"-[$maybeVariable IS $isOrWhere WHERE $isOrWhere2 IS $isOrWhere3]->") {
-            gives[RelationshipPattern](
+            parsesTo[RelationshipPattern](
               relPat(
                 maybeVariableName,
                 labelExpression = Some(labelRelTypeLeaf(isOrWhere, containsIs = true)),

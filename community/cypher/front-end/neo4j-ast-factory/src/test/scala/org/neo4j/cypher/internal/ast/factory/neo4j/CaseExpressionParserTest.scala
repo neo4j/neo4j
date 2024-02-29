@@ -16,8 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.Expression
@@ -73,17 +71,12 @@ class CaseExpressionParserTest extends AstParsingTestBase {
   }
 
   test("CASE when(e) WHEN (e) THEN e ELSE null END") {
-    parses[Expression].toAsts {
-      case JavaCc => CaseExpression(
-          Some(function("when", varFor("e"))),
-          List(equals(function("when", varFor("e")), varFor("e")) -> varFor("e")),
-          Some(nullLiteral)
-        )(pos)
-      case Antlr => CaseExpression(
-          Some(null),
-          List(equals(null, varFor("e")) -> varFor("e")),
-          Some(nullLiteral)
-        )(pos)
+    parsesTo[Expression] {
+      CaseExpression(
+        Some(function("when", varFor("e"))),
+        List(equals(function("when", varFor("e")), varFor("e")) -> varFor("e")),
+        Some(nullLiteral)
+      )(pos)
     }
   }
 

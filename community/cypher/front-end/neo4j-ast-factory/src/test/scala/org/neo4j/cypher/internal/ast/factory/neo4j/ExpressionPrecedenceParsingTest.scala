@@ -204,7 +204,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
       case JavaCc =>
         in(add(literalInt(2), literalInt(3)), listOf(subtract(literalInt(2), literalInt(1))))
       case Antlr =>
-        in(add(literalInt(2), literalInt(3)), null)
+        in(add(literalInt(2), literalInt(3)), listOf(subtract(literalInt(2), literalInt(1))))
     }
     // (1 + 2) IS NOT NULL
     "1 + 2 IS NOT NULL" should parseTo[Expression](isNotNull(add(literalInt(1), literalInt(2))))
@@ -213,11 +213,8 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
     "1 - 2 IS NULL" should parseTo[Expression](isNull(subtract(literalInt(1), literalInt(2))))
 
     //  ([true] + n.p) :: STRING
-    " [true] + n.p :: STRING" should parseAs[Expression].toAsts {
-      case JavaCc =>
-        isTyped(add(listOf(trueLiteral), prop("n", "p")), StringType(isNullable = true)(pos))
-      case Antlr =>
-        isTyped(add(null, prop("n", "p")), StringType(isNullable = true)(pos))
+    " [true] + n.p :: STRING" should parseTo[Expression] {
+      isTyped(add(listOf(trueLiteral), prop("n", "p")), StringType(isNullable = true)(pos))
     }
 
     // (3 - 4) IS NOT TYPED BOOLEAN
@@ -271,14 +268,11 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
 
   test("precedence 3 vs 2") {
     // -(list[+(expr:Label)])
-    "-list[+expr:Label]" should parseAs[Expression].toAsts {
-      case JavaCc =>
-        unarySubtract(containerIndex(
-          varFor("list"),
-          unaryAdd(labelExpressionPredicate(varFor("expr"), labelOrRelTypeLeaf("Label")))
-        ))
-      case Antlr =>
-        unarySubtract(containerIndex(varFor("list"), unaryAdd(labelExpressionPredicate(varFor("expr"), null))))
+    "-list[+expr:Label]" should parseTo[Expression] {
+      unarySubtract(containerIndex(
+        varFor("list"),
+        unaryAdd(labelExpressionPredicate(varFor("expr"), labelOrRelTypeLeaf("Label")))
+      ))
     }
 
     // +(list[-(x.y)..+(5)])
@@ -302,15 +296,11 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
     }
 
     // (all(x IN y WHERE null)):Label
-    "all(x IN y WHERE null):Label" should parse[Expression].toAsts {
-      case JavaCc => labelExpressionPredicate(
-          allInList(varFor("x"), varFor("y"), nullLiteral),
-          labelOrRelTypeLeaf("Label")
-        )
-      case Antlr => labelExpressionPredicate(
-          allInList(varFor("x"), varFor("y"), nullLiteral),
-          null
-        )
+    "all(x IN y WHERE null):Label" should parseTo[Expression] {
+      labelExpressionPredicate(
+        allInList(varFor("x"), varFor("y"), nullLiteral),
+        labelOrRelTypeLeaf("Label")
+      )
     }
 
     // (none(x IN y WHERE true)).prop
@@ -320,6 +310,9 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
         "prop"
       )
     }
+
+//    ParseSuccess(ListSlice(CollectExpression(null),Some(AnyIterablePredicate(FilterScope(Variable(x),Some(Property(FunctionInvocation(Namespace(List()),FunctionName(Dummy),false,Vector(),null),PropertyKeyName(prop)))),Variable(y))),Some(null))) was not equal to
+    // ParseSuccess(ListSlice(CollectExpression(null),Some(AnyIterablePredicate(FilterScope(Variable(x),Some(Property(FunctionInvocation(Namespace(List()),FunctionName(Dummy),false,Vector(),ArgumentUnordered),PropertyKeyName(prop)))),Variable(y))),Some(null)))
 
     // (COLLECT {RETURN 42})[(any(x IN y WHERE (size('str')).prop))..(reduce(x=true, y IN list | x AND y))]
     "COLLECT {RETURN 42}[any(x IN y WHERE size('str').prop)..reduce(x=true, y IN list | x AND y)]" should
@@ -334,8 +327,8 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
             Some(reduce(varFor("x"), trueLiteral, varFor("y"), varFor("list"), and(varFor("x"), varFor("y"))))
           )(pos)
         case Antlr => ListSlice(
-            null,
-            Some(anyInList(varFor("x"), varFor("y"), prop(null, "prop"))),
+            CollectExpression(null)(pos, None, None),
+            Some(anyInList(varFor("x"), varFor("y"), prop(function("size", literalString("str")), "prop"))),
             Some(null)
           )(pos)
 
@@ -370,6 +363,9 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
         )(pos)
     }
 
+//    ParseSuccess(ContainerIndex(ShortestPathExpression(ShortestPathsPatternPart(null,true)),CaseExpression(Some(Variable(x)),ArraySeq((True(),SignedDecimalIntegerLiteral(1))),Some(SignedDecimalIntegerLiteral(2)))))
+    // ParseSuccess(ContainerIndex(null,CaseExpression(Some(Variable(x)),ArraySeq((True(),SignedDecimalIntegerLiteral(1))),Some(SignedDecimalIntegerLiteral(2)))))
+
     // (shortestPath((a)-->(b)))[(CASE x WHEN true THEN 1 ELSE 2 END)]
     "shortestPath((a)-->(b))[CASE x WHEN true THEN 1 ELSE 2 END]" should parse[Expression].toAsts {
       case JavaCc => containerIndex(
@@ -380,7 +376,10 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
           caseExpression(Some(varFor("x")), Some(literalInt(2)), (equals(varFor("x"), trueLiteral), literalInt(1)))
         )
       case Antlr => containerIndex(
-          null,
+          ShortestPathExpression(ShortestPathsPatternPart(
+            null,
+            single = true
+          )(pos)),
           caseExpression(Some(varFor("x")), Some(literalInt(2)), (equals(varFor("x"), trueLiteral), literalInt(1)))
         )
     }

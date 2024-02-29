@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
@@ -35,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListLiteral
-import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
@@ -166,15 +164,15 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   }
 
   test("should allow True and False as label name") {
-    parsing[NodePattern]("(:True)") shouldGive NodePattern(None, Some(labelLeaf("True")), None, None) _
-    parsing[NodePattern]("(:False)") shouldGive NodePattern(None, Some(labelLeaf("False")), None, None) _
+    "(:True)" should parseTo[NodePattern](NodePattern(None, Some(labelLeaf("True")), None, None)(pos))
+    "(:False)" should parseTo[NodePattern](NodePattern(None, Some(labelLeaf("False")), None, None)(pos))
 
-    parsing[NodePattern]("(t:True)") shouldGive nodePat(name = Some("t"), labelExpression = Some(labelLeaf("True")))
-    parsing[NodePattern]("(f:False)") shouldGive nodePat(name = Some("f"), labelExpression = Some(labelLeaf("False")))
+    "(t:True)" should parseTo[NodePattern](nodePat(name = Some("t"), labelExpression = Some(labelLeaf("True"))))
+    "(f:False)" should parseTo[NodePattern](nodePat(name = Some("f"), labelExpression = Some(labelLeaf("False"))))
   }
 
   test("-[:Person*1..2]-") {
-    yields {
+    parsesTo[RelationshipPattern] {
       RelationshipPattern(
         None,
         Some(labelRelTypeLeaf("Person")),
@@ -187,7 +185,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
         None,
         None,
         SemanticDirection.BOTH
-      )
+      )(pos)
     }
   }
 
@@ -198,7 +196,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
       "[x = ()--()--()--()--()--()--()--()--()--()--()]"
     )
     for (l <- listLiterals) withClue(l) {
-      parsing[Expression](l) shouldVerify (_ shouldBe a[ListLiteral])
+      l should parseAs[Expression].withAstLike(_ shouldBe a[ListLiteral])
     }
   }
 
@@ -250,13 +248,17 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   }
 
   test("map expression") {
-    "{a:1}" should parseTo[MapExpression](mapOf("a" -> literal(1)))
-    "{a:1,b:2,c:3}" should parseTo[MapExpression](mapOf("a" -> literal(1), "b" -> literal(2), "c" -> literal(3)))
+    "{a:1}" should parseTo[Expression] {
+      mapOf("a" -> literal(1))
+    }
+    "{a:1,b:2,c:3}" should parseTo[Expression] {
+      mapOf("a" -> literal(1), "b" -> literal(2), "c" -> literal(3))
+    }
     "{}" should parseTo[Expression](mapOf())
     // Not sure if should be allowed, but behaves as before at least
-    "{,a:1}" should parseTo[MapExpression](mapOf("a" -> literal(1)))
-    "{ name: 'Andres' }" should parseTo[Expression](mapOf("name" -> literal("Andres")))
-    "{ meta : { name: 'Andres' } }" should parseTo[Expression](mapOf("meta" -> mapOf("name" -> literal("Andres"))))
+    "{,a:1}" should parseTo[Expression] {
+      mapOf("a" -> literal(1))
+    }
   }
 
   test("all(item IN list WHERE predicate)") {
@@ -300,24 +302,18 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   }
 
   test("[1,2,3,4][1..2]") {
-    parses[Expression].toAsts {
-      case JavaCc => sliceFull(listOf(literal(1), literal(2), literal(3), literal(4)), literal(1), literal(2))
-      case Antlr  => sliceFull(null, literal(1), literal(2))
+    parsesTo[Expression] {
+      sliceFull(listOf(literal(1), literal(2), literal(3), literal(4)), literal(1), literal(2))
     }
   }
 
   test("[1,2,3,4][1..2][2..3]") {
-    parses[Expression].toAsts {
-      case JavaCc => sliceFull(
-          sliceFull(listOf(literal(1), literal(2), literal(3), literal(4)), literal(1), literal(2)),
-          literal(2),
-          literal(3)
-        )
-      case Antlr => sliceFull(
-          sliceFull(null, literal(1), literal(2)),
-          literal(2),
-          literal(3)
-        )
+    parsesTo[Expression] {
+      sliceFull(
+        sliceFull(listOf(literal(1), literal(2), literal(3), literal(4)), literal(1), literal(2)),
+        literal(2),
+        literal(3)
+      )
     }
   }
 
@@ -326,16 +322,14 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   }
 
   test("[1,2,3,4][2]") {
-    parses[Expression].toAsts {
-      case JavaCc => containerIndex(listOf(literal(1), literal(2), literal(3), literal(4)), 2)
-      case Antlr  => containerIndex(null, 2)
+    parsesTo[Expression] {
+      containerIndex(listOf(literal(1), literal(2), literal(3), literal(4)), 2)
     }
   }
 
   test("[[1,2]][0][6]") {
-    parses[Expression].toAsts {
-      case JavaCc => containerIndex(containerIndex(listOf(listOf(literal(1), literal(2))), 0), 6)
-      case Antlr  => containerIndex(containerIndex(null, 0), 6)
+    parsesTo[Expression] {
+      containerIndex(containerIndex(listOf(listOf(literal(1), literal(2))), 0), 6)
     }
   }
 

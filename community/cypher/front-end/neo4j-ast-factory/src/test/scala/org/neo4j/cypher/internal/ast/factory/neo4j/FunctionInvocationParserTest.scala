@@ -23,19 +23,19 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 class FunctionInvocationParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("foo()") {
-    gives[FunctionInvocation](function("foo"))
+    parsesTo[FunctionInvocation](function("foo"))
   }
 
   test("foo('test', 1 + 2)") {
-    gives[FunctionInvocation](function("foo", literalString("test"), add(literalInt(1), literalInt(2))))
+    parsesTo[FunctionInvocation](function("foo", literalString("test"), add(literalInt(1), literalInt(2))))
   }
 
   test("my.namespace.foo()") {
-    gives[FunctionInvocation](function(List("my", "namespace"), "foo"))
+    parsesTo[FunctionInvocation](function(List("my", "namespace"), "foo"))
   }
 
   test("my.namespace.foo('test', 1 + 2)") {
-    gives[FunctionInvocation](function(
+    parsesTo[FunctionInvocation](function(
       List("my", "namespace"),
       "foo",
       literalString("test"),
@@ -44,10 +44,10 @@ class FunctionInvocationParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   test("sum(DISTINCT foo)") {
-    gives[FunctionInvocation](distinctFunction("sum", varFor("foo")))
+    parsesTo[FunctionInvocation](distinctFunction("sum", varFor("foo")))
   }
 
   test("sum(ALL foo)") {
-    gives[FunctionInvocation](function("sum", varFor("foo")))
+    parsesTo[FunctionInvocation](function("sum", varFor("foo")))
   }
 }

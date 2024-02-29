@@ -32,14 +32,14 @@ class IsWhereNodePatternParserTest extends AstParsingTestBase with LegacyAstPars
       Seq(("", None), ("IS", Some("IS")), ("WHERE", Some("WHERE")))
   } yield {
     test(s"($maybeVariable)") {
-      gives[NodePattern](nodePat(maybeVariableName))
+      parsesTo[NodePattern](nodePat(maybeVariableName))
     }
 
     for {
       isOrWhere <- Seq("IS", "WHERE")
     } yield {
       test(s"($maybeVariable IS $isOrWhere)") {
-        gives[NodePattern](
+        parsesTo[NodePattern](
           nodePat(
             maybeVariableName,
             labelExpression = Some(labelLeaf(isOrWhere, containsIs = true))
@@ -48,7 +48,7 @@ class IsWhereNodePatternParserTest extends AstParsingTestBase with LegacyAstPars
       }
 
       test(s"($maybeVariable WHERE $isOrWhere)") {
-        gives[NodePattern](
+        parsesTo[NodePattern](
           nodePat(
             maybeVariableName,
             predicates = Some(varFor(isOrWhere))
@@ -60,7 +60,7 @@ class IsWhereNodePatternParserTest extends AstParsingTestBase with LegacyAstPars
         isOrWhere2 <- Seq("IS", "WHERE")
       } yield {
         test(s"($maybeVariable IS $isOrWhere WHERE $isOrWhere2)") {
-          gives[NodePattern](
+          parsesTo[NodePattern](
             nodePat(
               maybeVariableName,
               labelExpression = Some(labelLeaf(isOrWhere, containsIs = true)),
@@ -70,7 +70,7 @@ class IsWhereNodePatternParserTest extends AstParsingTestBase with LegacyAstPars
         }
 
         test(s"($maybeVariable WHERE $isOrWhere IS $isOrWhere2)") {
-          gives[NodePattern](
+          parsesTo[NodePattern](
             nodePat(
               maybeVariableName,
               predicates = Some(LabelExpressionPredicate(
@@ -82,17 +82,17 @@ class IsWhereNodePatternParserTest extends AstParsingTestBase with LegacyAstPars
         }
 
         test(s"($maybeVariable WHERE $isOrWhere WHERE $isOrWhere2)") {
-          failsToParse[NodePattern]
+          failsParsing[NodePattern]
         }
 
         test(s"($maybeVariable IS $isOrWhere IS $isOrWhere2)") {
-          failsToParse[NodePattern]
+          failsParsing[NodePattern]
         }
         for {
           isOrWhere3 <- Seq("IS", "WHERE")
         } yield {
           test(s"($maybeVariable IS $isOrWhere WHERE $isOrWhere2 IS $isOrWhere3)") {
-            gives[NodePattern](
+            parsesTo[NodePattern](
               nodePat(
                 maybeVariableName,
                 labelExpression = Some(labelLeaf(isOrWhere, containsIs = true)),
