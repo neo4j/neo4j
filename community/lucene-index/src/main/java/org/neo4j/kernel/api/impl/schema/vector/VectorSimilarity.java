@@ -25,11 +25,10 @@ public enum VectorSimilarity {
     EUCLIDEAN,
     COSINE;
 
-    // public final String name;
     private final VectorSimilarityFunction latestImplementation;
 
     VectorSimilarity() {
-        this.latestImplementation = VectorIndexVersion.V1_0.similarityFunction(name());
+        this.latestImplementation = VectorIndexVersion.V2_0.similarityFunction(name());
     }
 
     public VectorSimilarityFunction latestImplementation() {
