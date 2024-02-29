@@ -29,6 +29,7 @@ import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
 import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.Values;
 
 /**
  * Data generator as {@link InputIterator}, parallelizable
@@ -60,9 +61,14 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
                                     visitor.property(entry.name(), id);
                                 }
                             }
-                            case PROPERTY -> visitor.property(
-                                    entry.name(),
-                                    dataDistribution.propertyValueGenerator().apply(entry, randoms));
+                            case PROPERTY -> {
+                                Object value = dataDistribution
+                                        .propertyValueGenerator()
+                                        .apply(entry, randoms);
+                                if (value != Values.NO_VALUE && value != null) {
+                                    visitor.property(entry.name(), value);
+                                }
+                            }
                             case LABEL -> visitor.labels(
                                     dataDistribution.labelsGenerator().apply(randoms));
                             case START_ID, END_ID -> {
