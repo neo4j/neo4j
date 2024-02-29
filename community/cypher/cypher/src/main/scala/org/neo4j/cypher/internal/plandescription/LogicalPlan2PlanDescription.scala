@@ -289,6 +289,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
+import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.getPrettyStringName
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.prettyOptions
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
@@ -338,6 +339,9 @@ object LogicalPlan2PlanDescription {
           case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}"
         }).mkPrettyString("{", ", ", "}")}"
   }
+
+  def getPrettyStringName(nameOption: Option[Either[String, Parameter]]): PrettyString =
+    nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
 }
 
 case class LogicalPlan2PlanDescription(
@@ -3438,7 +3442,6 @@ case class LogicalPlan2PlanDescription(
     properties: Seq[PropertyKeyName],
     options: Options
   ): PrettyString = {
-    val name = nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
     val pattern = entityName match {
       case label: LabelName =>
@@ -3448,7 +3451,7 @@ case class LogicalPlan2PlanDescription(
         val prettyType = asPrettyString(relType.name)
         pretty"()-[:$prettyType]-()"
     }
-    pretty"${asPrettyString.raw(indexType)} INDEX$name FOR $pattern ON $propertyString${prettyOptions(options)}"
+    indexInfoString(indexType, nameOption, pattern, propertyString, options)
   }
 
   private def fulltextIndexInfo(
@@ -3457,7 +3460,6 @@ case class LogicalPlan2PlanDescription(
     properties: Seq[PropertyKeyName],
     options: Options
   ): PrettyString = {
-    val name = nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("[", SEPARATOR, "]")
     val pattern = entityNames match {
       case Left(labels) =>
@@ -3467,7 +3469,7 @@ case class LogicalPlan2PlanDescription(
         val innerPattern = relTypes.map(r => asPrettyString(r.name)).mkPrettyString(":", "|", "")
         pretty"()-[$innerPattern]-()"
     }
-    pretty"FULLTEXT INDEX$name FOR $pattern ON EACH $propertyString${prettyOptions(options)}"
+    indexInfoString("FULLTEXT", nameOption, pattern, pretty"EACH $propertyString", options)
   }
 
   private def lookupIndexInfo(
@@ -3475,12 +3477,22 @@ case class LogicalPlan2PlanDescription(
     entityType: EntityType,
     options: Options
   ): PrettyString = {
-    val name = nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
     val (pattern, function) = entityType match {
       case EntityType.NODE         => (pretty"(n)", pretty"${asPrettyString.raw(Labels.name)}(n)")
       case EntityType.RELATIONSHIP => (pretty"()-[r]-()", pretty"${asPrettyString.raw(Type.name)}(r)")
     }
-    pretty"LOOKUP INDEX$name FOR $pattern ON EACH $function${prettyOptions(options)}"
+    indexInfoString("LOOKUP", nameOption, pattern, pretty"EACH $function", options)
+  }
+
+  private def indexInfoString(
+    indexType: String,
+    nameOption: Option[Either[String, Parameter]],
+    nodeOrRelPattern: PrettyString,
+    onDefinition: PrettyString,
+    options: Options
+  ) = {
+    val name = getPrettyStringName(nameOption)
+    pretty"${asPrettyString.raw(indexType)} INDEX$name FOR $nodeOrRelPattern ON $onDefinition${prettyOptions(options)}"
   }
 
   private def constraintInfo(
@@ -3492,7 +3504,7 @@ case class LogicalPlan2PlanDescription(
     options: Options = NoOptions,
     useForAndRequire: Boolean = true
   ): PrettyString = {
-    val name = nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
+    val name = getPrettyStringName(nameOption)
     val assertion = constraintType match {
       case NodePropertyExistence | RelationshipPropertyExistence => "IS NOT NULL"
       case NodeKey                                               => "IS NODE KEY"

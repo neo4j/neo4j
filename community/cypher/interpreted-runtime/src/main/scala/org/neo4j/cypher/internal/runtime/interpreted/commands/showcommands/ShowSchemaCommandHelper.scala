@@ -34,6 +34,86 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 object ShowSchemaCommandHelper {
   def escapeBackticks(str: String): String = str.replace("`", "``")
 
+  def createNodeIndexCommand(
+    indexType: String,
+    name: String,
+    labelsOrTypes: List[String],
+    properties: List[String],
+    maybeOptionsMapString: Option[String] = None
+  ): String = {
+    val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+    val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
+    createIndexCommand(
+      indexType,
+      name,
+      s"(n$labelsOrTypesWithColons)",
+      s"($escapedNodeProperties)",
+      maybeOptionsMapString
+    )
+  }
+
+  def createRelIndexCommand(
+    indexType: String,
+    name: String,
+    labelsOrTypes: List[String],
+    properties: List[String],
+    maybeOptionsMapString: Option[String] = None
+  ): String = {
+    val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+    val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+    createIndexCommand(
+      indexType,
+      name,
+      s"()-[r$labelsOrTypesWithColons]-()",
+      s"($escapedRelProperties)",
+      maybeOptionsMapString
+    )
+  }
+
+  def createIndexCommand(
+    indexType: String,
+    name: String,
+    nodeOrRelPattern: String,
+    onDefinition: String,
+    maybeOptionsMapString: Option[String] = None
+  ): String = {
+    val escapedName = s"`${escapeBackticks(name)}`"
+    val optionsString = maybeOptionsMapString.map(o => s" OPTIONS $o").getOrElse("")
+    s"CREATE $indexType INDEX $escapedName FOR $nodeOrRelPattern ON $onDefinition$optionsString"
+  }
+
+  def createNodeConstraintCommand(
+    name: String,
+    labelsOrTypes: List[String],
+    properties: List[String],
+    predicate: String
+  ): String = {
+    val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+    createConstraintCommand(name, s"(n$labelsOrTypesWithColons)", properties, propStringJoiner, predicate)
+  }
+
+  def createRelConstraintCommand(
+    name: String,
+    labelsOrTypes: List[String],
+    properties: List[String],
+    predicate: String
+  ): String = {
+    val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+    createConstraintCommand(name, s"()-[r$labelsOrTypesWithColons]-()", properties, relPropStringJoiner, predicate)
+  }
+
+  private def createConstraintCommand(
+    name: String,
+    nodeOrRelPattern: String,
+    properties: List[String],
+    propJoiner: StringJoiner,
+    predicate: String
+  ): String = {
+    val escapedName = s"`${escapeBackticks(name)}`"
+    val escapedProperties = asEscapedString(properties, propJoiner)
+    s"CREATE CONSTRAINT $escapedName FOR $nodeOrRelPattern REQUIRE ($escapedProperties) $predicate"
+  }
+
   def extractOptionsMap(providerName: String, indexConfig: IndexConfig): MapValue = {
     val (configKeys, configValues) = indexConfig.asMap().asScala.toSeq.unzip
     val optionKeys = Array("indexConfig", "indexProvider")
@@ -71,7 +151,7 @@ object ShowSchemaCommandHelper {
     }
   }
 
-  def colonStringJoiner = new StringJoiner(":", ":", "")
+  private def colonStringJoiner = new StringJoiner(":", ":", "")
   def barStringJoiner = new StringJoiner("|", ":", "")
   def propStringJoiner = new StringJoiner(", n.", "n.", "")
   def relPropStringJoiner = new StringJoiner(", r.", "r.", "")

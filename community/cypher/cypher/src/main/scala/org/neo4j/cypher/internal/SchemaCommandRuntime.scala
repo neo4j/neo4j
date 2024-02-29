@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
 import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.getPrettyStringName
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.prettyOptions
 import org.neo4j.cypher.internal.plandescription.PrettyString
 import org.neo4j.cypher.internal.plandescription.asPrettyString
@@ -792,7 +793,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   }
 
   private def getPrettyName(nameOption: Option[String]): PrettyString =
-    nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(Left(n)))}").getOrElse(pretty"")
+    getPrettyStringName(nameOption.map(Left(_)))
 
   private def getPrettyEntityPattern(entityName: ElementTypeName): PrettyString = entityName match {
     case label: LabelName     => pretty"(e:${asPrettyString(label)})"

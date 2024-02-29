@@ -82,7 +82,6 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     Array("indexProvider", "indexConfig"),
     Array(Values.stringValue(RangeIndexProvider.DESCRIPTOR.name()), VirtualValues.EMPTY_MAP)
   )
-  private val optionsString = s"OPTIONS {indexConfig: {}, indexProvider: '${RangeIndexProvider.DESCRIPTOR.name()}'}"
 
   private val nodeUniquenessIndexDescriptor =
     IndexPrototype.uniqueForSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR)
@@ -331,7 +330,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       index = "constraint0",
       propType = Some(null),
       options = optionsMap,
-      createStatement = s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
+      createStatement = s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
     )
     checkResult(
       result.last,
@@ -384,7 +383,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
     )
     checkResult(
       result(1),
@@ -432,7 +431,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE $optionsString"
+        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE"
     )
     checkResult(
       result(5),
@@ -443,7 +442,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY $optionsString"
+        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY"
     )
     checkResult(
       result(6),
@@ -454,7 +453,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY $optionsString"
+        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY"
     )
     checkResult(
       result(7),
@@ -488,7 +487,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
     )
     checkResult(
       result.last,
@@ -499,7 +498,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE $optionsString"
+        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE"
     )
   }
 
@@ -522,7 +521,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
     )
   }
 
@@ -547,7 +546,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE $optionsString"
+        s"CREATE CONSTRAINT `constraint2` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS UNIQUE"
     )
   }
 
@@ -570,7 +569,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY $optionsString"
+        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY"
     )
     checkResult(
       result.last,
@@ -581,7 +580,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY $optionsString"
+        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY"
     )
   }
 
@@ -604,7 +603,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY $optionsString"
+        s"CREATE CONSTRAINT `constraint3` FOR (n:`$label`) REQUIRE (n.`$prop`) IS NODE KEY"
     )
   }
 
@@ -627,7 +626,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       propType = Some(null),
       options = optionsMap,
       createStatement =
-        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY $optionsString"
+        s"CREATE CONSTRAINT `constraint4` FOR ()-[r:`$relType`]-() REQUIRE (r.`$prop`) IS RELATIONSHIP KEY"
     )
   }
 
@@ -994,7 +993,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       "constraint" -> Values.stringValue("constraint0"),
       ShowConstraintsClause.labelsOrTypesColumn -> VirtualValues.list(Values.stringValue(label)),
       "create" -> Values.stringValue(
-        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE"
       ),
       ShowConstraintsClause.typeColumn -> Values.stringValue("UNIQUENESS")
     ))

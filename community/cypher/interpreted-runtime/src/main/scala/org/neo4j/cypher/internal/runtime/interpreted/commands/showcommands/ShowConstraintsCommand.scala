@@ -51,22 +51,14 @@ import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand.createConstraintStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand.getConstraintType
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.colonStringJoiner
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.configAsString
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.escapeBackticks
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.createNodeConstraintCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.createRelConstraintCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.extractOptionsMap
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.optionsAsString
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.pointConfigValueAsString
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.propStringJoiner
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.relPropStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
-import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.immutable.ListMap
@@ -142,9 +134,6 @@ case class ShowConstraintsCommand(
         val entityType = constraintDescriptor.schema.entityType
         val constraintType = getConstraintType(constraintDescriptor.`type`, entityType)
 
-        val (options, createString) =
-          getOptionsAndCreateString(constraintDescriptor, constraintInfo, propertyType, constraintType)
-
         requestedColumnsNames.map {
           // The id of the constraint
           case `idColumn` => idColumn -> Values.longValue(constraintDescriptor.getId)
@@ -175,10 +164,18 @@ case class ShowConstraintsCommand(
           case `propertyTypeColumn` =>
             propertyTypeColumn -> propertyType.map(Values.stringValue).getOrElse(Values.NO_VALUE)
           // The options for this constraint, shows index provider and config of the backing index
-          case `optionsColumn` => optionsColumn -> options
+          case `optionsColumn` => optionsColumn -> getOptions(constraintDescriptor, constraintInfo)
           // The statement to recreate the constraint
-          case `createStatementColumn` => createStatementColumn -> createString
-          case unknown                 =>
+          case `createStatementColumn` =>
+            val createString = createConstraintStatement(
+              constraintDescriptor.getName,
+              constraintType,
+              constraintInfo.labelsOrTypes,
+              constraintInfo.properties,
+              propertyType
+            )
+            createStatementColumn -> Values.stringValue(createString)
+          case unknown =>
             // This match should cover all existing columns but we get scala warnings
             // on non-exhaustive match due to it being string values
             throw new IllegalStateException(s"Missing case for column: $unknown")
@@ -188,46 +185,20 @@ case class ShowConstraintsCommand(
     ClosingIterator.apply(updatedRows.iterator)
   }
 
-  private def getOptionsAndCreateString(
+  private def getOptions(
     constraintDescriptor: ConstraintDescriptor,
-    constraintInfo: ConstraintInfo,
-    propertyType: Option[String],
-    constraintType: ShowConstraintType
+    constraintInfo: ConstraintInfo
   ) = {
-    // Options and create statement share lot of their values
-    // let's fetch both together if at least one is used
-    if (requestedColumnsNames.contains(optionsColumn) || requestedColumnsNames.contains(createStatementColumn)) {
-      val name = constraintDescriptor.getName
-      val (options, createString) = {
-        if (constraintDescriptor.isIndexBackedConstraint) {
-          val index = constraintInfo.maybeIndex.getOrElse(
-            throw new IllegalStateException(s"Expected to find an index for index backed constraint $name")
-          )
-          val providerName = index.getIndexProvider.name
-          val indexConfig = index.getIndexConfig
-          val options: MapValue = extractOptionsMap(providerName, indexConfig)
-          val createWithOptions = createConstraintStatement(
-            name,
-            constraintType,
-            constraintInfo.labelsOrTypes,
-            constraintInfo.properties,
-            Some(providerName),
-            Some(indexConfig)
-          )
-          (options, createWithOptions)
-        } else {
-          val createWithoutOptions = createConstraintStatement(
-            name,
-            constraintType,
-            constraintInfo.labelsOrTypes,
-            constraintInfo.properties,
-            propertyType = propertyType
-          )
-          (Values.NO_VALUE, createWithoutOptions)
-        }
-      }
-      (options, Values.stringValue(createString))
-    } else (Values.NO_VALUE, Values.NO_VALUE)
+    if (constraintDescriptor.isIndexBackedConstraint) {
+      val index = constraintInfo.maybeIndex.getOrElse(
+        throw new IllegalStateException(
+          s"Expected to find an index for index backed constraint ${constraintDescriptor.getName}"
+        )
+      )
+      val providerName = index.getIndexProvider.name
+      val indexConfig = index.getIndexConfig
+      extractOptionsMap(providerName, indexConfig)
+    } else Values.NO_VALUE
   }
 }
 
@@ -238,66 +209,35 @@ object ShowConstraintsCommand {
     constraintType: ShowConstraintType,
     labelsOrTypes: List[String],
     properties: List[String],
-    providerName: Option[String] = None,
-    indexConfig: Option[IndexConfig] = None,
-    propertyType: Option[String] = None
+    propertyType: Option[String]
   ): String = {
-    val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
-    val escapedName = escapeBackticks(name)
     constraintType match {
       case NodeUniqueConstraints =>
-        val escapedProperties = asEscapedString(properties, propStringJoiner)
-        val options = extractOptionsString(providerName, indexConfig, NodeUniqueConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS UNIQUE OPTIONS $options"
+        createNodeConstraintCommand(name, labelsOrTypes, properties, "IS UNIQUE")
       case RelUniqueConstraints =>
-        val escapedProperties = asEscapedString(properties, relPropStringJoiner)
-        val options = extractOptionsString(providerName, indexConfig, RelUniqueConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS UNIQUE OPTIONS $options"
+        createRelConstraintCommand(name, labelsOrTypes, properties, "IS UNIQUE")
       case NodeKeyConstraints =>
-        val escapedProperties = asEscapedString(properties, propStringJoiner)
-        val options = extractOptionsString(providerName, indexConfig, NodeKeyConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS NODE KEY OPTIONS $options"
+        createNodeConstraintCommand(name, labelsOrTypes, properties, "IS NODE KEY")
       case RelKeyConstraints =>
-        val escapedProperties = asEscapedString(properties, relPropStringJoiner)
-        val options = extractOptionsString(providerName, indexConfig, RelKeyConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS RELATIONSHIP KEY OPTIONS $options"
+        createRelConstraintCommand(name, labelsOrTypes, properties, "IS RELATIONSHIP KEY")
       case _: NodeExistsConstraints =>
-        val escapedProperties = asEscapedString(properties, propStringJoiner)
-        s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS NOT NULL"
+        createNodeConstraintCommand(name, labelsOrTypes, properties, "IS NOT NULL")
       case _: RelExistsConstraints =>
-        val escapedProperties = asEscapedString(properties, relPropStringJoiner)
-        s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS NOT NULL"
+        createRelConstraintCommand(name, labelsOrTypes, properties, "IS NOT NULL")
       case NodePropTypeConstraints =>
-        val escapedProperties = asEscapedString(properties, propStringJoiner)
         val typeString = propertyType.getOrElse(
           throw new IllegalArgumentException(s"Expected a property type for $constraintType constraint.")
         )
-        s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS :: $typeString"
+        createNodeConstraintCommand(name, labelsOrTypes, properties, s"IS :: $typeString")
       case RelPropTypeConstraints =>
-        val escapedProperties = asEscapedString(properties, relPropStringJoiner)
         val typeString = propertyType.getOrElse(
           throw new IllegalArgumentException(s"Expected a property type for $constraintType constraint.")
         )
-        s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS :: $typeString"
+        createRelConstraintCommand(name, labelsOrTypes, properties, s"IS :: $typeString")
       case _ => throw new IllegalArgumentException(
           s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command."
         )
     }
-  }
-
-  private def extractOptionsString(
-    maybeProviderName: Option[String],
-    maybeIndexConfig: Option[IndexConfig],
-    constraintType: String
-  ): String = {
-    val providerName = maybeProviderName.getOrElse(
-      throw new IllegalArgumentException(s"Expected a provider name for $constraintType constraint.")
-    )
-    val indexConfig = maybeIndexConfig.getOrElse(
-      throw new IllegalArgumentException(s"Expected an index configuration for $constraintType constraint.")
-    )
-    val btreeOrEmptyConfig = configAsString(indexConfig, value => pointConfigValueAsString(value))
-    optionsAsString(providerName, btreeOrEmptyConfig)
   }
 
   private def getConstraintType(

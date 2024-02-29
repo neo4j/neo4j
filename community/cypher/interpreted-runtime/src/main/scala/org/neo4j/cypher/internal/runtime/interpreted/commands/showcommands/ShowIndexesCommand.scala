@@ -53,9 +53,12 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.createIndexStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.barStringJoiner
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.colonStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.configAsString
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.escapeBackticks
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.createIndexCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.createNodeConstraintCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.createNodeIndexCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.createRelConstraintCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.createRelIndexCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.extractOptionsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.optionsAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.pointConfigValueAsString
@@ -265,42 +268,17 @@ object ShowIndexesCommand {
     maybeConstraint: Option[ConstraintDescriptor]
   ): String = {
 
-    val escapedName = s"`${escapeBackticks(name)}`"
-
-    def constraintCommand(
-      nodeOrRelPattern: String,
-      escapedProperties: String,
-      predicate: String,
-      options: String
-    ): String =
-      s"CREATE CONSTRAINT $escapedName FOR $nodeOrRelPattern REQUIRE ($escapedProperties) $predicate OPTIONS $options"
-
     indexType match {
       case IndexType.RANGE =>
-        val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
-
         maybeConstraint match {
           case Some(constraint) if constraint.isNodeUniquenessConstraint =>
-            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
-            val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
-            constraintCommand(s"(n$labelsOrTypesWithColons)", escapedNodeProperties, "IS UNIQUE", optionsString)
+            createNodeConstraintCommand(name, labelsOrTypes, properties, "IS UNIQUE")
           case Some(constraint) if constraint.isRelationshipUniquenessConstraint =>
-            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-            val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
-            constraintCommand(s"()-[r$labelsOrTypesWithColons]-()", escapedRelProperties, "IS UNIQUE", optionsString)
+            createRelConstraintCommand(name, labelsOrTypes, properties, "IS UNIQUE")
           case Some(constraint) if constraint.isNodeKeyConstraint =>
-            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
-            val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
-            constraintCommand(s"(n$labelsOrTypesWithColons)", escapedNodeProperties, "IS NODE KEY", optionsString)
+            createNodeConstraintCommand(name, labelsOrTypes, properties, "IS NODE KEY")
           case Some(constraint) if constraint.isRelationshipKeyConstraint =>
-            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-            val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
-            constraintCommand(
-              s"()-[r$labelsOrTypesWithColons]-()",
-              escapedRelProperties,
-              "IS RELATIONSHIP KEY",
-              optionsString
-            )
+            createRelConstraintCommand(name, labelsOrTypes, properties, "IS RELATIONSHIP KEY")
           case Some(_) =>
             throw new IllegalArgumentException(
               "Expected an index or index backed constraint, found another constraint."
@@ -308,11 +286,9 @@ object ShowIndexesCommand {
           case None =>
             entityType match {
               case EntityType.NODE =>
-                val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
-                s"CREATE RANGE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties)"
+                createNodeIndexCommand("RANGE", name, labelsOrTypes, properties)
               case EntityType.RELATIONSHIP =>
-                val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-                s"CREATE RANGE INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties)"
+                createRelIndexCommand("RANGE", name, labelsOrTypes, properties)
               case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
             }
         }
@@ -324,59 +300,62 @@ object ShowIndexesCommand {
         entityType match {
           case EntityType.NODE =>
             val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
-            s"CREATE FULLTEXT INDEX $escapedName FOR (n$labelsOrTypesWithBars) ON EACH [$escapedNodeProperties] OPTIONS $optionsString"
+            createIndexCommand(
+              "FULLTEXT",
+              name,
+              s"(n$labelsOrTypesWithBars)",
+              s"EACH [$escapedNodeProperties]",
+              Some(optionsString)
+            )
           case EntityType.RELATIONSHIP =>
             val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-            s"CREATE FULLTEXT INDEX $escapedName FOR ()-[r$labelsOrTypesWithBars]-() ON EACH [$escapedRelProperties] OPTIONS $optionsString"
+            createIndexCommand(
+              "FULLTEXT",
+              name,
+              s"()-[r$labelsOrTypesWithBars]-()",
+              s"EACH [$escapedRelProperties]",
+              Some(optionsString)
+            )
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.TEXT =>
-        val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
         val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
 
         entityType match {
           case EntityType.NODE =>
-            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
-            s"CREATE TEXT INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
+            createNodeIndexCommand("TEXT", name, labelsOrTypes, properties, Some(optionsString))
           case EntityType.RELATIONSHIP =>
-            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-            s"CREATE TEXT INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
+            createRelIndexCommand("TEXT", name, labelsOrTypes, properties, Some(optionsString))
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.POINT =>
-        val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
         val pointConfig = configAsString(indexConfig, value => pointConfigValueAsString(value))
         val optionsString = optionsAsString(providerName, pointConfig)
 
         entityType match {
           case EntityType.NODE =>
-            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
-            s"CREATE POINT INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
+            createNodeIndexCommand("POINT", name, labelsOrTypes, properties, Some(optionsString))
           case EntityType.RELATIONSHIP =>
-            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-            s"CREATE POINT INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
+            createRelIndexCommand("POINT", name, labelsOrTypes, properties, Some(optionsString))
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.VECTOR =>
-        val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
         val vectorConfig = configAsString(indexConfig, value => vectorConfigValueAsString(value))
         val optionsString = optionsAsString(providerName, vectorConfig)
 
         entityType match {
           case EntityType.NODE =>
-            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
-            s"CREATE VECTOR INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
+            createNodeIndexCommand("VECTOR", name, labelsOrTypes, properties, Some(optionsString))
           case EntityType.RELATIONSHIP =>
-            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
-            s"CREATE VECTOR INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
+            createRelIndexCommand("VECTOR", name, labelsOrTypes, properties, Some(optionsString))
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.LOOKUP =>
         entityType match {
           case EntityType.NODE =>
-            s"CREATE LOOKUP INDEX $escapedName FOR (n) ON EACH labels(n)"
+            createIndexCommand("LOOKUP", name, "(n)", "EACH labels(n)")
           case EntityType.RELATIONSHIP =>
-            s"CREATE LOOKUP INDEX $escapedName FOR ()-[r]-() ON EACH type(r)"
+            createIndexCommand("LOOKUP", name, "()-[r]-()", "EACH type(r)")
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case _ => throw new IllegalArgumentException(s"Did not recognize index type $indexType")

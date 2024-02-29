@@ -668,6 +668,36 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE VECTOR INDEX IF NOT EXISTS FOR (n:A) ON (n.p)",
     "create VECTOR INDEX foo IF not EXISTS FOR (n:A) ON (n.p)" ->
       "CREATE VECTOR INDEX foo IF NOT EXISTS FOR (n:A) ON (n.p)",
+    "create VECTOR INDEX FOR ()-[n:R]->() ON (n.p)" ->
+      "CREATE VECTOR INDEX FOR ()-[n:R]-() ON (n.p)",
+    "create VECTOR INDEX FOR ()<-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
+      "CREATE VECTOR INDEX FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
+    "create VECTOR INDEX foo FOR ()<-[n:R]->() ON (n.p)" ->
+      "CREATE VECTOR INDEX foo FOR ()-[n:R]-() ON (n.p)",
+    "create VECTOR INDEX `foo` FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE VECTOR INDEX foo FOR ()-[n:R]-() ON (n.p)",
+    "create VECTOR INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
+      "CREATE VECTOR INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
+    "create VECTOR INDEX $foo FOR ()-[n:R]-() ON (n.p1, n.p2)" ->
+      "CREATE VECTOR INDEX $foo FOR ()-[n:R]-() ON (n.p1, n.p2)",
+    "CREATE VECTOR index FOR ()-[n:R]-() on (n.name) OPtiONS {indexProvider: 'vector-2.0'}" ->
+      """CREATE VECTOR INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "vector-2.0"}""",
+    "create vector INDEX for ()-[n:R]-() ON (n.name) OPTIONS {`indexProvider`: 'vector-2.0', indexConfig: {`vector.dimensions`:50, `vector.similarity_function`: 'cosine' }}" ->
+      """CREATE VECTOR INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "vector-2.0", indexConfig: {`vector.dimensions`: 50, `vector.similarity_function`: "cosine"}}""",
+    "create VECTOR INDEX myIndex for ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`vector.dimensions`:50, `vector.similarity_function`: 'euclidean' }}" ->
+      """CREATE VECTOR INDEX myIndex FOR ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`vector.dimensions`: 50, `vector.similarity_function`: "euclidean"}}""",
+    "CREATE VECTOR index FOR ()-[n:R]-() on (n.name) OPtiONS {`nonValidOption` : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE VECTOR INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+    "CREATE VECTOR index FOR ()-[n:R]-() on (n.name) OPtiONS {}" ->
+      """CREATE VECTOR INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {}""",
+    "create or REPLACE VECTOR INDEX FOR ()-[n:R]->() ON (n.p)" ->
+      "CREATE OR REPLACE VECTOR INDEX FOR ()-[n:R]-() ON (n.p)",
+    "create or REPLACE VECTOR INDEX foo FOR ()<-[n:R]-() ON (n.p)" ->
+      "CREATE OR REPLACE VECTOR INDEX foo FOR ()-[n:R]-() ON (n.p)",
+    "create VECTOR INDEX IF not EXISTS FOR ()<-[n:R]->() ON (n.p)" ->
+      "CREATE VECTOR INDEX IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
+    "create VECTOR INDEX foo IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE VECTOR INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
 
     // drop
 
