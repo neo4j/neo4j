@@ -412,7 +412,8 @@ public class GlobalModule {
         final OffHeapBlockAllocator sharedBlockAllocator;
         final long maxMemory = config.get(tx_state_max_off_heap_memory);
         if (maxMemory > 0) {
-            sharedBlockAllocator = new CapacityLimitingBlockAllocatorDecorator(allocator, maxMemory);
+            sharedBlockAllocator = new CapacityLimitingBlockAllocatorDecorator(
+                    allocator, maxMemory, tx_state_max_off_heap_memory.name());
         } else {
             sharedBlockAllocator = allocator;
         }

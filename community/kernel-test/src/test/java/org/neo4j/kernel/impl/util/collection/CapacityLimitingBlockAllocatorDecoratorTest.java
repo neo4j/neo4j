@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator.MemoryBlock;
+import org.neo4j.memory.MemoryLimitExceededException;
 import org.neo4j.memory.MemoryTracker;
 
 class CapacityLimitingBlockAllocatorDecoratorTest {
@@ -42,7 +43,7 @@ class CapacityLimitingBlockAllocatorDecoratorTest {
             return new MemoryBlock(0, size);
         });
         final CapacityLimitingBlockAllocatorDecorator decorator =
-                new CapacityLimitingBlockAllocatorDecorator(allocator, 1024);
+                new CapacityLimitingBlockAllocatorDecorator(allocator, 1024, null);
 
         final List<MemoryBlock> blocks = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
@@ -50,14 +51,14 @@ class CapacityLimitingBlockAllocatorDecoratorTest {
             blocks.add(block);
         }
 
-        assertThrows(MemoryAllocationLimitException.class, () -> decorator.allocate(128, tracker));
+        assertThrows(MemoryLimitExceededException.class, () -> decorator.allocate(128, tracker));
 
         decorator.free(blocks.remove(0), tracker);
         assertDoesNotThrow(() -> decorator.allocate(128, tracker));
 
-        assertThrows(MemoryAllocationLimitException.class, () -> decorator.allocate(256, tracker));
+        assertThrows(MemoryLimitExceededException.class, () -> decorator.allocate(256, tracker));
         decorator.free(blocks.remove(0), tracker);
-        assertThrows(MemoryAllocationLimitException.class, () -> decorator.allocate(256, tracker));
+        assertThrows(MemoryLimitExceededException.class, () -> decorator.allocate(256, tracker));
 
         decorator.free(blocks.remove(0), tracker);
         assertDoesNotThrow(() -> decorator.allocate(256, tracker));

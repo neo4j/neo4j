@@ -20,19 +20,23 @@
 package org.neo4j.kernel.impl.util.collection;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.kernel.api.exceptions.Status.General.TransactionMemoryLimit;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 import java.util.concurrent.atomic.AtomicLong;
+import org.neo4j.memory.MemoryLimitExceededException;
 import org.neo4j.memory.MemoryTracker;
 
 public class CapacityLimitingBlockAllocatorDecorator implements OffHeapBlockAllocator {
     private final OffHeapBlockAllocator impl;
     private final long maxMemory;
+    private final String setting;
     private final AtomicLong usedMemory = new AtomicLong();
 
-    public CapacityLimitingBlockAllocatorDecorator(OffHeapBlockAllocator impl, long maxMemory) {
+    public CapacityLimitingBlockAllocatorDecorator(OffHeapBlockAllocator impl, long maxMemory, String setting) {
         this.impl = requireNonNull(impl);
         this.maxMemory = requirePositive(maxMemory);
+        this.setting = setting;
     }
 
     @Override
@@ -41,7 +45,8 @@ public class CapacityLimitingBlockAllocatorDecorator implements OffHeapBlockAllo
             final long usedMemoryBefore = usedMemory.get();
             final long usedMemoryAfter = usedMemoryBefore + size;
             if (usedMemoryAfter > maxMemory) {
-                throw new MemoryAllocationLimitException(size, usedMemoryBefore, maxMemory);
+                throw new MemoryLimitExceededException(
+                        size, maxMemory, usedMemoryBefore, TransactionMemoryLimit, setting);
             }
             if (usedMemory.compareAndSet(usedMemoryBefore, usedMemoryAfter)) {
                 break;
