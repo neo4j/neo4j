@@ -36,6 +36,14 @@ public class MultiversionResourceLocker implements ResourceLocker {
 
     private final ResourceLocker locks;
     private final int recordsPerPage;
+    // tryExclusiveLock is used in the chain locking of relationships and if we failed to lock any of requested
+    // relationships
+    // it means that someone else already got the lock and outcome of that locking would most probably update of that
+    // locked page.
+    // That will cause validation failure during transaction validation phase, so here we remember that failed page and
+    // will return false to any
+    // further attempts of locking on that page until resource from the next page will come
+    private long lastCheckedResourceId;
 
     public MultiversionResourceLocker(ResourceLocker locks, RelationshipStore relationshipStore) {
         this.locks = locks;
@@ -47,26 +55,17 @@ public class MultiversionResourceLocker implements ResourceLocker {
         if (resourceType != ResourceType.RELATIONSHIP) {
             return locks.tryExclusiveLock(resourceType, resourceId);
         }
-        return locks.tryExclusiveLock(ResourceType.PAGE, getResourceId(resourceId));
-    }
-
-    private long getResourceId(long resourceId) {
-        return pageIdForRecord(resourceId, recordsPerPage) | ((long) StoreType.RELATIONSHIP.ordinal() << PAGE_ID_BITS);
-    }
-
-    @Override
-    public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
-        if (resourceType != ResourceType.RELATIONSHIP) {
-            locks.acquireExclusive(tracer, resourceType, resourceIds);
-        } else if (resourceIds.length == 1) {
-            locks.acquireExclusive(tracer, resourceType, getResourceId(resourceIds[0]));
-        } else {
-            long[] pageIds = new long[resourceIds.length];
-            for (int i = 0; i < resourceIds.length; i++) {
-                pageIds[i] = pageIdForRecord(resourceIds[i], recordsPerPage);
-            }
-            locks.acquireExclusive(tracer, resourceType, pageIds);
+        long newResourceId = getResourceId(resourceId);
+        if (lastCheckedResourceId == newResourceId) {
+            return false;
         }
+        var result = locks.tryExclusiveLock(ResourceType.PAGE, newResourceId);
+        if (!result) {
+            lastCheckedResourceId = newResourceId;
+        } else {
+            lastCheckedResourceId = Long.MIN_VALUE;
+        }
+        return result;
     }
 
     @Override
@@ -74,44 +73,26 @@ public class MultiversionResourceLocker implements ResourceLocker {
         if (resourceType != ResourceType.RELATIONSHIP) {
             locks.releaseExclusive(resourceType, resourceIds);
         } else if (resourceIds.length == 1) {
-            locks.releaseExclusive(resourceType, pageIdForRecord(resourceIds[0], recordsPerPage));
+            long resourceId = getResourceId(resourceIds[0]);
+            locks.releaseExclusive(ResourceType.PAGE, resourceId);
         } else {
-            long[] pageIds = new long[resourceIds.length];
-            for (int i = 0; i < resourceIds.length; i++) {
-                pageIds[i] = pageIdForRecord(resourceIds[i], recordsPerPage);
-            }
-            locks.releaseExclusive(resourceType, pageIds);
+            locks.releaseExclusive(resourceType, resourceIds);
         }
+    }
+
+    @Override
+    public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
+        locks.acquireExclusive(tracer, resourceType, resourceIds);
     }
 
     @Override
     public void acquireShared(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
-        if (resourceType != ResourceType.RELATIONSHIP) {
-            locks.acquireShared(tracer, resourceType, resourceIds);
-        } else if (resourceIds.length == 1) {
-            locks.acquireShared(tracer, resourceType, getResourceId(resourceIds[0]));
-        } else {
-            long[] pageIds = new long[resourceIds.length];
-            for (int i = 0; i < resourceIds.length; i++) {
-                pageIds[i] = pageIdForRecord(resourceIds[i], recordsPerPage);
-            }
-            locks.acquireShared(tracer, resourceType, pageIds);
-        }
+        locks.releaseShared(resourceType, resourceIds);
     }
 
     @Override
     public void releaseShared(ResourceType resourceType, long... resourceIds) {
-        if (resourceType != ResourceType.RELATIONSHIP) {
-            locks.releaseShared(resourceType, resourceIds);
-        } else if (resourceIds.length == 1) {
-            locks.releaseShared(resourceType, getResourceId(resourceIds[0]));
-        } else {
-            long[] pageIds = new long[resourceIds.length];
-            for (int i = 0; i < resourceIds.length; i++) {
-                pageIds[i] = pageIdForRecord(resourceIds[i], recordsPerPage);
-            }
-            locks.releaseShared(resourceType, pageIds);
-        }
+        locks.releaseShared(resourceType, resourceIds);
     }
 
     @Override
@@ -122,5 +103,9 @@ public class MultiversionResourceLocker implements ResourceLocker {
     @Override
     public boolean holdsLock(long id, ResourceType resource, LockType lockType) {
         return locks.holdsLock(id, resource, lockType);
+    }
+
+    private long getResourceId(long resourceId) {
+        return pageIdForRecord(resourceId, recordsPerPage) | ((long) StoreType.RELATIONSHIP.ordinal() << PAGE_ID_BITS);
     }
 }
