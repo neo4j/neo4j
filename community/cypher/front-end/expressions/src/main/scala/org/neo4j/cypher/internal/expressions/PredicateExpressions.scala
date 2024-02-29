@@ -94,9 +94,6 @@ object Ors {
 
 /**
  * Disjunction of multiple expressions.
- * The order of expressions is retained as a Seq (was previously a Set),
- * but equals and hashCode are overridden to get set semantics for comparison
- * (we assume set semantics when tracking solved expressions during planing)
  */
 case class Ors(exprs: ListSet[Expression])(val position: InputPosition) extends BooleanExpression
     with MultiOperatorExpression {
@@ -105,15 +102,6 @@ case class Ors(exprs: ListSet[Expression])(val position: InputPosition) extends 
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector.fill(exprs.size)(CTBoolean), outputType = CTBoolean)
   )
-
-  override def equals(other: Any): Boolean =
-    other match {
-      case that: Ors => (that canEqual this) && (that.exprs == exprs)
-      case _         => false
-    }
-
-  override def hashCode(): Int =
-    31 * exprs.hashCode()
 }
 
 case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression

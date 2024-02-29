@@ -60,6 +60,12 @@ class ListSet[A](underlying: java.util.LinkedHashSet[A])
   override def iterator: Iterator[A] = underlying.iterator().asScala
 
   override def iterableFactory: IterableFactory[ListSet] = ListSet
+
+  /**
+   * Eagerly compute hashCode. This will prevent StackOverflowErrors with deeply nested expressions with ListSets,
+   * e.g. Ands.
+   */
+  override val hashCode: Int = super.hashCode()
 }
 
 /**
