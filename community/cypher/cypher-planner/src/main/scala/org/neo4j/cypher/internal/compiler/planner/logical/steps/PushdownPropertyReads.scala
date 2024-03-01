@@ -95,7 +95,7 @@ case object PushdownPropertyReads {
    */
   private case class Acc(
     variableOptima: Map[String, CardinalityOptimum],
-    propertyReadOptima: Seq[(CardinalityOptimum, PushDownProperty)],
+    propertyReadOptima: Vector[(CardinalityOptimum, PushDownProperty)],
     availableProperties: Set[PushDownProperty],
     availableWholeEntities: Set[String],
     incomingCardinality: EffectiveCardinality
@@ -450,7 +450,7 @@ case object PushdownPropertyReads {
     semanticTable: SemanticTable
   ): Seq[(CardinalityOptimum, PushDownProperty)] = {
     val Acc(_, propertyReadOptima, _, _, _) =
-      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
+      LogicalPlans.foldPlan(Acc(Map.empty, Vector.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
         logicalPlan,
         foldSingleChildPlan(effectiveCardinalities, semanticTable),
         foldTwoChildPlan(effectiveCardinalities, semanticTable),
