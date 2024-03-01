@@ -39,12 +39,14 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChildType
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
+import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
@@ -62,7 +64,10 @@ import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NFCNormalForm
@@ -76,19 +81,31 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.PathFactor
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.PropertySelector
+import org.neo4j.cypher.internal.expressions.ReduceExpression
+import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StartsWith
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -202,10 +219,6 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitSelector(
     ctx: CypherParser.SelectorContext
-  ): Unit = {}
-
-  final override def exitPathPatternNonEmpty(
-    ctx: CypherParser.PathPatternNonEmptyContext
   ): Unit = {}
 
   final override def exitInsertNodePattern(
@@ -545,11 +558,54 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitPatternComprehension(
     ctx: CypherParser.PatternComprehensionContext
-  ): Unit = {}
+  ): Unit = {
+    val variable = if (ctx.variable() != null) Some(ctx.variable().ast[LogicalVariable]()) else None
+    val pathPatternNonEmpty = ctx.pathPatternNonEmpty().ast[RelationshipsPattern]()
+    val whereExp = if (ctx.whereExp != null) Some(ctx.whereExp.ast[PatternExpression]()) else None
+    val barExp = ctx.barExp.ast[Expression]()
+    ctx.ast = PatternComprehension(variable, pathPatternNonEmpty, whereExp, barExp)(pos(ctx), None, None)
+  }
+
+  final override def exitPathPatternNonEmpty(
+    ctx: CypherParser.PathPatternNonEmptyContext
+  ): Unit = {
+    val first = ctxChild(ctx, 0).ast[PathFactor]()
+    val size = ctx.children.size()
+    var part = first
+    var i = 1
+    var relPattern: RelationshipPattern = null
+    while (i < size) {
+      ctxChild(ctx, i) match {
+        case relCtx: CypherParser.RelationshipPatternContext => relPattern = relCtx.ast()
+        case nodeCtx: CypherParser.NodePatternContext =>
+          part = RelationshipChain(
+            part.asInstanceOf[SimplePattern],
+            relPattern,
+            nodeCtx.ast()
+          )(pos(nodeCtx))
+        case other => throw new IllegalStateException(s"Unexpected child $other")
+      }
+      i += 1
+    }
+    ctx.ast = RelationshipsPattern(part.asInstanceOf[RelationshipChain])(pos(ctx))
+  }
+
+  final override def exitPatternExpression(
+    ctx: CypherParser.PatternExpressionContext
+  ): Unit = {
+    ctx.ast = PatternExpression(ctxChild(ctx, 0).ast())(None, None)
+  }
 
   final override def exitReduceExpression(
     ctx: CypherParser.ReduceExpressionContext
-  ): Unit = {}
+  ): Unit = {
+    val accumulator = ctxChild(ctx, 2).ast[LogicalVariable]()
+    val variable = ctxChild(ctx, 6).ast[LogicalVariable]()
+    val expression = ctxChild(ctx, 10).ast[Expression]()
+    val init = ctxChild(ctx, 4).ast[Expression]()
+    val collection = ctxChild(ctx, 8).ast[Expression]()
+    ctx.ast = ReduceExpression(ReduceScope(accumulator, variable, expression)(pos(ctx)), init, collection)(pos(ctx))
+  }
 
   final override def exitListItemsPredicate(ctx: CypherParser.ListItemsPredicateContext): Unit = {
     val p = pos(ctx)
@@ -564,10 +620,6 @@ trait ExpressionBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitPatternExpression(
-    ctx: CypherParser.PatternExpressionContext
-  ): Unit = {}
-
   final override def exitShortestPathExpression(
     ctx: CypherParser.ShortestPathExpressionContext
   ): Unit = {
@@ -580,11 +632,35 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitMapProjection(
     ctx: CypherParser.MapProjectionContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = MapProjection(ctx.variable().ast[Variable](), astSeq(ctx.mapProjectionElement()))(pos(ctx.LCURLY()))
+  }
 
-  final override def exitMapProjectionItem(
-    ctx: CypherParser.MapProjectionItemContext
-  ): Unit = {}
+  final override def exitMapProjectionElement(
+    ctx: CypherParser.MapProjectionElementContext
+  ): Unit = {
+    val colon = ctx.COLON()
+    val variable = ctx.variable()
+    val propertyKeyName = ctx.propertyKeyName()
+    ctx.ast =
+      if (colon != null) {
+        val expr = ctx.expression().ast[Expression]()
+        LiteralEntry(propertyKeyName.ast(), expr)(expr.position)
+      } else if (variable != null) {
+        VariableSelector(variable.ast())(pos(ctx))
+      } else if (propertyKeyName != null) {
+        val prop = propertyKeyName.ast[PropertyKeyName]()
+        PropertySelector(prop)(prop.position)
+      } else {
+        AllPropertiesSelector()(pos(ctx))
+      }
+  }
+
+  final override def exitCountStar(
+    ctx: CypherParser.CountStarContext
+  ): Unit = {
+    ctx.ast = CountStar()(pos(ctx))
+  }
 
   final override def exitExistsExpression(
     ctx: CypherParser.ExistsExpressionContext
@@ -871,12 +947,30 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = ctx.getText
   }
 
-  final override def exitNormalizeExpression(
-    ctx: CypherParser.NormalizeExpressionContext
-  ): Unit = {}
+  final override def exitNormalizeFunction(
+    ctx: CypherParser.NormalizeFunctionContext
+  ): Unit = {
+    val expression = ctx.expression().ast[Expression]()
+    val normalForm = if (ctx.COMMA() != null) {
+      ctx.normalForm.ast[NormalForm]() match {
+        case NFCNormalForm  => "NFC"
+        case NFDNormalForm  => "NFD"
+        case NFKCNormalForm => "NFKC"
+        case NFKDNormalForm => "NFKD"
+      }
+    } else "NFC"
 
-  final override def exitPatternComprehensionPrefix(
-    ctx: CypherParser.PatternComprehensionPrefixContext
-  ): Unit = {}
+    ctx.ast =
+      FunctionInvocation(
+        FunctionName("normalize")(pos(ctx)),
+        distinct = false,
+        IndexedSeq(
+          expression,
+          StringLiteral(normalForm)(pos(ctx), pos(ctx))
+        )
+      )(
+        pos(ctx)
+      )
+  }
 
 }

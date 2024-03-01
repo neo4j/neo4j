@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
@@ -363,6 +364,12 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("({ key: 'value' }).key") {
     parsesTo[Expression](prop(mapOf(("key", literal("value"))), "key"))
+  }
+
+  test("COUNT(*)") {
+    parsesTo[Expression] {
+      CountStar()(pos)
+    }
   }
 
   test("({ inner1: { inner2: 'Value' } }).key") {

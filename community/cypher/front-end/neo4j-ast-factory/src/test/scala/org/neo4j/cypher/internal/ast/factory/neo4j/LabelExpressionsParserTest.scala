@@ -17,8 +17,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
@@ -540,7 +538,7 @@ class MatchNodeLabelExpressionsParserTest extends AstParsingTestBase with Legacy
 class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("[p = (n)<-[]-() WHERE ()<-[:A|B]-(n) | p]") {
-    gives[Expression] {
+    parsesTo[Expression] {
       PatternComprehension(
         Some(varFor("p")),
         RelationshipsPattern(
@@ -574,7 +572,7 @@ class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with Legac
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("[(a)-->(b:A|B) | b.prop]") {
-    parsesTo[Expression](NotAntlr) {
+    parsesTo[Expression] {
       PatternComprehension(
         namedPath = None,
         pattern = RelationshipsPattern(
@@ -611,32 +609,26 @@ class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with Legac
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("[x IN [1,2,3] WHERE (n:A|B)--() | x]") {
-    parses[Expression].toAsts {
-      case JavaCc => listComprehension(
-          varFor("x"),
-          listOfInt(1, 2, 3),
-          Some(PatternExpression(RelationshipsPattern(RelationshipChain(
-            NodePattern(
-              Some(varFor("n", position = (1, 22, 21))),
-              Some(labelDisjunction(
-                labelLeaf("A", (1, 24, 23)),
-                labelLeaf("B", (1, 26, 25)),
-                (1, 25, 24)
-              )),
-              None,
-              None
-            )(pos),
-            RelationshipPattern(None, None, None, None, None, BOTH)(pos),
-            NodePattern(None, None, None, None)(pos)
-          )(pos))(pos))(None, None)),
-          Some(varFor("x"))
-        )
-      case Antlr => listComprehension(
-          varFor("x"),
-          listOfInt(1, 2, 3),
-          Some(null),
-          Some(varFor("x"))
-        )
+    parsesTo[Expression] {
+      listComprehension(
+        varFor("x"),
+        listOfInt(1, 2, 3),
+        Some(PatternExpression(RelationshipsPattern(RelationshipChain(
+          NodePattern(
+            Some(varFor("n", position = (1, 22, 21))),
+            Some(labelDisjunction(
+              labelLeaf("A", (1, 24, 23)),
+              labelLeaf("B", (1, 26, 25)),
+              (1, 25, 24)
+            )),
+            None,
+            None
+          )(pos),
+          RelationshipPattern(None, None, None, None, None, BOTH)(pos),
+          NodePattern(None, None, None, None)(pos)
+        )(pos))(pos))(None, None)),
+        Some(varFor("x"))
+      )
     }
   }
 

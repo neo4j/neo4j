@@ -25,10 +25,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
-import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.ExtractScope
-import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.NFCNormalForm
@@ -311,9 +308,6 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
       )
     }
 
-//    ParseSuccess(ListSlice(CollectExpression(null),Some(AnyIterablePredicate(FilterScope(Variable(x),Some(Property(FunctionInvocation(Namespace(List()),FunctionName(Dummy),false,Vector(),null),PropertyKeyName(prop)))),Variable(y))),Some(null))) was not equal to
-    // ParseSuccess(ListSlice(CollectExpression(null),Some(AnyIterablePredicate(FilterScope(Variable(x),Some(Property(FunctionInvocation(Namespace(List()),FunctionName(Dummy),false,Vector(),ArgumentUnordered),PropertyKeyName(prop)))),Variable(y))),Some(null)))
-
     // (COLLECT {RETURN 42})[(any(x IN y WHERE (size('str')).prop))..(reduce(x=true, y IN list | x AND y))]
     "COLLECT {RETURN 42}[any(x IN y WHERE size('str').prop)..reduce(x=true, y IN list | x AND y)]" should
       parse[Expression].toAsts {
@@ -329,7 +323,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
         case Antlr => ListSlice(
             CollectExpression(null)(pos, None, None),
             Some(anyInList(varFor("x"), varFor("y"), prop(function("size", literalString("str")), "prop"))),
-            Some(null)
+            Some(reduce(varFor("x"), trueLiteral, varFor("y"), varFor("list"), and(varFor("x"), varFor("y"))))
           )(pos)
 
       }
@@ -357,10 +351,19 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
           ),
           patternComprehension(relationshipChain(nodePat(Some("n")), relPat(), nodePat()), varFor("n"))
         )
-      case Antlr => ContainerIndex(
-          ListComprehension(ExtractScope(varFor("x"), Some(equals(null, null)), None)(pos), null)(pos),
-          null
-        )(pos)
+      case Antlr =>
+        containerIndex(
+          listComprehension(
+            varFor("x"),
+            null,
+            Some(eq(
+              MapProjection(varFor("x"), List(AllPropertiesSelector()(pos)))(pos),
+              null
+            )),
+            None
+          ),
+          patternComprehension(relationshipChain(nodePat(Some("n")), relPat(), nodePat()), varFor("n"))
+        )
     }
 
 //    ParseSuccess(ContainerIndex(ShortestPathExpression(ShortestPathsPatternPart(null,true)),CaseExpression(Some(Variable(x)),ArraySeq((True(),SignedDecimalIntegerLiteral(1))),Some(SignedDecimalIntegerLiteral(2)))))

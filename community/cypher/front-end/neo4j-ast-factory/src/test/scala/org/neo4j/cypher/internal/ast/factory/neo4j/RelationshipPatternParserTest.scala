@@ -21,6 +21,13 @@ import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -732,4 +739,94 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   test(s"MATCH ()-[r IS NOT NULL WHERE r IS NOT NULL]->()") {
     failsToParse[Statements]()
   }
+
+  test("(n)-[r]-(m)") {
+    parsesTo[Expression](
+      PatternExpression(
+        RelationshipsPattern(
+          RelationshipChain(
+            nodePat(Some("n")),
+            relPat(
+              Some("r"),
+              None,
+              None,
+              None,
+              None,
+              SemanticDirection.BOTH
+            ),
+            nodePat(Some("m"))
+          )(pos)
+        )(pos)
+      )(None, None)
+    )
+  }
+
+  test("(n)-[r]-(m)-[r1]-(m1)") {
+    parsesTo[Expression](
+      PatternExpression(
+        RelationshipsPattern(
+          RelationshipChain(
+            RelationshipChain(
+              nodePat(Some("n")),
+              relPat(
+                Some("r"),
+                None,
+                None,
+                None,
+                None,
+                SemanticDirection.BOTH
+              ),
+              nodePat(Some("m"))
+            )(pos),
+            relPat(
+              Some("r1"),
+              None,
+              None,
+              None,
+              None,
+              SemanticDirection.BOTH
+            ),
+            nodePat(Some("m1"))
+          )(pos)
+        )(pos)
+      )(None, None)
+    )
+  }
+
+  test("[p = (n)<-[]-()<-[]-() WHERE ()<-[:A|B]-(n) | p]") {
+    parsesTo[Expression] {
+      PatternComprehension(
+        Some(varFor("p")),
+        RelationshipsPattern(
+          RelationshipChain(
+            RelationshipChain(
+              nodePat(Some("n")),
+              RelationshipPattern(None, None, None, None, None, INCOMING)(pos),
+              nodePat()
+            )(pos),
+            RelationshipPattern(None, None, None, None, None, INCOMING)(pos),
+            nodePat()
+          )(pos)
+        )(pos),
+        Some(PatternExpression(
+          RelationshipsPattern(
+            RelationshipChain(
+              nodePat(),
+              RelationshipPattern(
+                None,
+                Some(labelDisjunction(labelRelTypeLeaf("A"), labelRelTypeLeaf("B"))),
+                None,
+                None,
+                None,
+                INCOMING
+              )(pos),
+              nodePat(Some("n"))
+            )(pos)
+          )(pos)
+        )(None, None)),
+        varFor("p")
+      )(pos, None, None)
+    }
+  }
+
 }

@@ -23,6 +23,7 @@ import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.cast
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintNodePatternContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintRelPatternContext
@@ -66,6 +67,7 @@ final class SyntaxChecker extends ParseTreeListener {
       case CypherParser.RULE_globPart                         => checkGlobPart(cast(ctx))
       case CypherParser.RULE_insertPattern                    => checkInsertPattern(cast(ctx))
       case CypherParser.RULE_insertLabelConjunction           => checkInsertLabelConjunction(cast(ctx))
+      case CypherParser.RULE_functionInvocation               => checkFunctionInvocation(cast(ctx))
       case _                                                  =>
     }
   }
@@ -384,6 +386,20 @@ final class SyntaxChecker extends ParseTreeListener {
         "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead.",
         inputPosition(firstColon.get)
       )
+    }
+  }
+
+  private def checkFunctionInvocation(ctx: CypherParser.FunctionInvocationContext): Unit = {
+    val functionName = ctx.symbolicNameString().ast
+    functionName match {
+      case "normalize" =>
+        if (ctx.expression().size == 2) {
+          errors :+= exceptionFactory.syntaxException(
+            "Invalid normal form, expected NFC, NFD, NFKC, NFKD",
+            ctx.expression(1).ast[Expression]().position
+          )
+        }
+      case _ =>
     }
   }
 }

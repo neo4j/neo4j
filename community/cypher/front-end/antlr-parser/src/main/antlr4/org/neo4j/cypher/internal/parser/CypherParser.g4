@@ -341,7 +341,7 @@ expression1
    | parameter["ANY"]
    | caseExpression
    | extendedCaseExpression
-   | COUNT LPAREN TIMES RPAREN
+   | countStar
    | existsExpression
    | countExpression
    | collectExpression
@@ -351,7 +351,7 @@ expression1
    | patternComprehension
    | reduceExpression
    | listItemsPredicate
-   | normalizeExpression
+   | normalizeFunction
    | patternExpression
    | shortestPathExpression
    | parenthesizedExpression
@@ -400,10 +400,7 @@ listComprehension:
    ((WHERE whereExp=expression)? BAR barExp=expression RBRACKET | (WHERE whereExp=expression)? RBRACKET);
 
 patternComprehension:
-   LBRACKET (variable EQ)? pathPatternNonEmpty (WHERE expression)? BAR expression RBRACKET;
-
-patternComprehensionPrefix:
-   LBRACKET (variable EQ)? pathPatternNonEmpty (WHERE | BAR);
+   LBRACKET (variable EQ)? pathPatternNonEmpty (WHERE whereExp=expression)? BAR barExp=expression RBRACKET;
 
 reduceExpression:
    REDUCE LPAREN variable EQ expression COMMA variable IN expression BAR expression RPAREN;
@@ -411,7 +408,7 @@ reduceExpression:
 listItemsPredicate:
    (ALL|ANY|NONE|SINGLE) LPAREN variable IN inExp=expression (WHERE whereExp=expression)? RPAREN;
 
-normalizeExpression:
+normalizeFunction:
    NORMALIZE LPAREN expression (COMMA normalForm)? RPAREN;
 
 patternExpression:
@@ -424,10 +421,13 @@ parenthesizedExpression:
     LPAREN expression RPAREN;
 
 mapProjection:
-   variable LCURLY mapProjectionItem? (COMMA mapProjectionItem)* RCURLY;
+   variable LCURLY mapProjectionElement? (COMMA mapProjectionElement)* RCURLY;
 
-mapProjectionItem:
+mapProjectionElement:
    (propertyKeyName COLON expression | DOT propertyKeyName | variable | DOT TIMES);
+
+countStar:
+   COUNT LPAREN TIMES RPAREN;
 
 existsExpression:
    EXISTS LCURLY (regularQuery | matchMode? patternList whereClause?) RCURLY;

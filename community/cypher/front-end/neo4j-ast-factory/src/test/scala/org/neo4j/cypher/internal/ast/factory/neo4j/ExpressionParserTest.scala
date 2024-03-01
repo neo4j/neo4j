@@ -102,7 +102,7 @@ class ExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestS
   }
 
   test("[p = (n)-->() where last(nodes(p)):End | p]") {
-    gives[Expression] {
+    parsesTo[Expression] {
       PatternComprehension(
         namedPath = Some(varFor("p")),
         pattern = RelationshipsPattern(RelationshipChain(
