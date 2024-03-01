@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
@@ -64,6 +65,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
@@ -85,6 +87,7 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
@@ -110,6 +113,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.GBPTreeStructure.visitState;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.fs.FileUtils.blockSize;
@@ -1776,7 +1780,7 @@ class GBPTreeTest
     }
 
     @Test
-    void preserveChangesEvenInReadOnlyMode() throws IOException
+    void preserveChangesEvenInTemporaryReadOnlyMode() throws IOException
     {
         // given
         try ( PageCache pageCache = createPageCache( defaultPageSize ) )
@@ -1794,7 +1798,9 @@ class GBPTreeTest
             }
             byte[] before = fileContent( indexFile );
 
-            try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( readOnly() ).build() )
+            NamedDatabaseId namedDatabaseId = DatabaseIdFactory.from( "db", UUID.randomUUID() );
+            DatabaseReadOnlyChecker temporaryReadOnlyChecker = new ReadOnlyDatabases( () -> namedDatabaseId::equals ).forDatabase( namedDatabaseId );
+            try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( temporaryReadOnlyChecker ).build() )
             {
                 assertThatThrownBy( () -> tree.writer( NULL ) )
                         .isInstanceOf( UnsupportedOperationException.class )
@@ -1804,6 +1810,47 @@ class GBPTreeTest
             }
             byte[] after = fileContent( indexFile );
             assertThat( after ).isNotEqualTo( before ).describedAs( "Expected file content to be diff since even read only mode can do checkpoints." );
+        }
+    }
+
+    @Test
+    void shouldNotBumpGenerationInReadOnlyMode() throws IOException
+    {
+        // given
+        try ( var pageCache = createPageCache( defaultPageSize ) )
+        {
+            try ( var tree = index( pageCache ).build() )
+            {
+                tree.checkpoint( NULL );
+            }
+
+            // when
+            var stateBeforeOpenReadOnly = captureTreeState( pageCache );
+            index( pageCache ).with( readOnly() ).build().close();
+
+            // then
+            var stateAfterOpenReadOnly = captureTreeState( pageCache );
+            assertThat( stateAfterOpenReadOnly ).isEqualTo( stateBeforeOpenReadOnly );
+        }
+    }
+
+    @Test
+    void shouldThrowOnWritingInReadOnlyMode() throws IOException
+    {
+        // given
+        try ( var pageCache = createPageCache( defaultPageSize ) )
+        {
+            try ( var tree = index( pageCache ).build() )
+            {
+                tree.checkpoint( NULL );
+            }
+
+            // when
+            try ( var tree = index( pageCache ).with( readOnly() ).build() )
+            {
+                // then
+                assertThatThrownBy( () -> tree.writer( NULL ) ).isInstanceOf( UnsupportedOperationException.class );
+            }
         }
     }
 
@@ -2260,6 +2307,25 @@ class GBPTreeTest
             assertTrue( job.hasFailed() );
             assertThat( job.getCause().getMessage() ).contains( "File" ).contains( "unmapped" );
         }
+    }
+
+    private Pair<TreeState,TreeState> captureTreeState( PageCache pageCache ) throws IOException
+    {
+        MutableObject<Pair<TreeState,TreeState>> state = new MutableObject<>();
+        visitState(
+                pageCache,
+                indexFile,
+                new GBPTreeVisitor.Adaptor<MutableLong,MutableLong>()
+                {
+                    @Override
+                    public void treeState( Pair<TreeState,TreeState> statePair )
+                    {
+                        state.setValue( statePair );
+                    }
+                },
+                "db",
+                NULL );
+        return state.getValue();
     }
 
     private static class CheckpointControlledMonitor extends Monitor.Adaptor

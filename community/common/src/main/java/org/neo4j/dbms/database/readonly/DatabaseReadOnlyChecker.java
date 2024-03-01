@@ -24,11 +24,17 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface DatabaseReadOnlyChecker
 {
+    /**
+     * Permanently writable.
+     */
     static DatabaseReadOnlyChecker writable()
     {
         return WritableDatabaseReadOnlyChecker.INSTANCE;
     }
 
+    /**
+     * Permanently read-only.
+     */
     static DatabaseReadOnlyChecker readOnly()
     {
         return ReadOnlyDatabaseReadOnlyChecker.INSTANCE;
@@ -38,6 +44,11 @@ public interface DatabaseReadOnlyChecker
      * @return true if database is readonly, false otherwise.
      */
     boolean isReadOnly();
+
+    /**
+     * @return {@code true} if this db is permanently in read-only mode and cannot change to writable.
+     */
+    boolean isPermanentlyReadOnly();
 
     /**
      * Check if database is a read only and throw exception if its not.
@@ -78,6 +89,12 @@ public interface DatabaseReadOnlyChecker
         }
 
         @Override
+        public boolean isPermanentlyReadOnly()
+        {
+            return false;
+        }
+
+        @Override
         public void check()
         {
             if ( isReadOnly() )
@@ -102,6 +119,12 @@ public interface DatabaseReadOnlyChecker
         }
 
         @Override
+        public boolean isPermanentlyReadOnly()
+        {
+            return false;
+        }
+
+        @Override
         public void check()
         {
         }
@@ -117,6 +140,12 @@ public interface DatabaseReadOnlyChecker
 
         @Override
         public boolean isReadOnly()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean isPermanentlyReadOnly()
         {
             return true;
         }

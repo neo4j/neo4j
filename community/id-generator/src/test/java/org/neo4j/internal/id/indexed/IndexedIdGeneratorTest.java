@@ -622,7 +622,6 @@ class IndexedIdGeneratorTest
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(), Config.defaults(),
                         DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) );
-        assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
     }

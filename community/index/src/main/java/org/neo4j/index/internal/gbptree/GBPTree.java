@@ -626,10 +626,17 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
             // Prepare tree for action
             dirtyOnStartup = !clean;
-            clean = false;
-            bumpUnstableGeneration();
-            forceState( cursorContext );
-            cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup, name );
+            if ( !readOnlyChecker.isPermanentlyReadOnly() )
+            {
+                clean = false;
+                bumpUnstableGeneration();
+                forceState( cursorContext );
+                cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup, name );
+            }
+            else
+            {
+                cleaning = CleanupJob.CLEAN;
+            }
         }
         catch ( IOException e )
         {
@@ -693,13 +700,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
         catch ( NoSuchFileException e )
         {
-            try
+            if ( readOnlyChecker.isPermanentlyReadOnly() )
             {
-                readOnlyChecker.check();
-            }
-            catch ( Exception roe )
-            {
-                throw new TreeFileNotFoundException( "Can not create new tree file in read only mode.", Exceptions.chain( roe, e ) );
+                throw new TreeFileNotFoundException( "Can not create new tree file in read only mode.", new Exception( "Database is permanently read-only" ) );
             }
             return createNewIndexFile( pageCache, indexFile );
         }
@@ -1231,6 +1234,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     private void checkpoint( Header.Writer headerWriter, CursorContext cursorContext ) throws IOException
     {
+        if ( readOnlyChecker.isPermanentlyReadOnly() )
+        {
+            return;
+        }
+
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
         // blocked while we do this
         pagedFile.flushAndForce();
@@ -1296,7 +1304,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     {
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) ) )
         {
-            if ( openOptions.contains( NO_FLUSH_ON_CLOSE ) )
+            if ( openOptions.contains( NO_FLUSH_ON_CLOSE ) || readOnlyChecker.isPermanentlyReadOnly() )
             {
                 // Close without forcing state
                 doClose();
