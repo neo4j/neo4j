@@ -42,6 +42,11 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
         }
 
         @Override
+        public int getType() {
+            throw new UnsupportedOperationException("type not defined");
+        }
+
+        @Override
         public <EX extends Exception> boolean accept(RelationshipVisitor<EX> visitor) {
             return false;
         }
@@ -122,6 +127,11 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
 
     boolean isDeleted() {
         return this.deleted;
+    }
+
+    @Override
+    public int getType() {
+        return type;
     }
 
     @Override
