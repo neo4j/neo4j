@@ -1778,8 +1778,6 @@ case class DirectedRelationshipUniqueIndexSeek(
   ): RelationshipIndexSeekLeafPlan =
     copy(startNode = leftNode, endNode = rightNode)
 
-  override val distinctness: Distinctness = AtMostOneRow
-
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
@@ -2608,8 +2606,6 @@ case class MultiNodeIndexSeek(nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implic
 
   override def idNames: Set[LogicalVariable] =
     nodeIndexSeeks.map(_.idName).toSet
-
-  override val distinctness: Distinctness = AtMostOneRow
 }
 
 /**
