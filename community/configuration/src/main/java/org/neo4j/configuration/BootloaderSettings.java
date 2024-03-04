@@ -49,10 +49,7 @@ public class BootloaderSettings implements SettingsDeclaration {
             .immutable()
             .build();
 
-    @Description(
-            "Additional JVM arguments. Argument order can be significant. To use a Java commercial feature, the argument to unlock "
-                    + "commercial features must precede the argument to enable the specific feature in the config value string. For example, "
-                    + "to use Flight Recorder, `-XX:+UnlockCommercialFeatures` must come before `-XX:+FlightRecorder`.")
+    @Description("Additional JVM arguments. Please note that argument order can be significant.")
     public static final Setting<String> additional_jvm =
             newBuilder("server.jvm.additional", JVM_ADDITIONAL, null).build();
 

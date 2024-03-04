@@ -78,7 +78,6 @@ public abstract class Bootloader implements AutoCloseable {
     static final String ENV_JAVA_OPTS = "JAVA_OPTS";
     static final String PROP_JAVA_CP = "java.class.path";
     static final String PROP_VM_NAME = "java.vm.name";
-    static final String PROP_VM_VENDOR = "java.vm.vendor";
     static final String PROP_BASEDIR = "basedir";
 
     static final String ARG_EXPAND_COMMANDS = "--expand-commands";
