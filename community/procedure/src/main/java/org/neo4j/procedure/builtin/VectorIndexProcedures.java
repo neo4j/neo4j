@@ -438,11 +438,7 @@ public class VectorIndexProcedures {
 
         @Override
         default int compareTo(NEIGHBOR o) {
-            final int result = -Double.compare(this.score(), o.score()); // order switched, 0 furthest, 1 closed
-            if (result != 0) {
-                return result;
-            }
-            return Long.compare(this.entity().getId(), o.entity().getId());
+            return -Double.compare(this.score(), o.score()); // order switched, 0 furthest, 1 closed
         }
     }
 
