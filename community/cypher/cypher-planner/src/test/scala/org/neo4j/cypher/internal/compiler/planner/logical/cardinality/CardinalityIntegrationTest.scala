@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.RepetitionCardinalityModel
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
@@ -756,7 +757,7 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val hasMemberRelationships: Double = 25
 
     val config = plannerBuilder()
-      .enableLabelInference()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
       .enableMinimumGraphStatistics()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", personNodes)
@@ -782,7 +783,7 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val hasMemberRelationships: Double = 25
 
     val config = plannerBuilder()
-      .enableLabelInference()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
       .enableMinimumGraphStatistics()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", personNodes)
@@ -808,7 +809,7 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val hasMemberRelationships: Double = 25
 
     val config = plannerBuilder()
-      .enableLabelInference()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
       .enableMinimumGraphStatistics()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", personNodes)
@@ -835,7 +836,7 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val hasMemberRelationships: Double = 25
 
     val config = plannerBuilder()
-      .enableLabelInference()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
       .enableMinimumGraphStatistics()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", personNodes)
@@ -864,7 +865,7 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val hasMemberRelationships: Double = 25
 
     val config = plannerBuilder()
-      .enableLabelInference()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
       .enableMinimumGraphStatistics()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", personNodes)
@@ -892,7 +893,7 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val knowsRelationships: Double = 300
 
     val config = plannerBuilder()
-      .enableLabelInference()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
       .enableMinimumGraphStatistics()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", personNodes)
@@ -931,7 +932,7 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val knowsRelationships: Double = 300
 
     val config = plannerBuilder()
-      .enableLabelInference()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
       .enableMinimumGraphStatistics()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", personNodes)
@@ -989,7 +990,7 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val knowsRelationships: Double = 300
 
     val config = plannerBuilder()
-      .enableLabelInference()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
       .enableMinimumGraphStatistics()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", personNodes)
@@ -1051,7 +1052,7 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val allPersonToPersonRelationships: Double = knowsRelationships * 2
 
     val config = plannerBuilder()
-      .enableLabelInference()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
       .defaultRelationshipCardinalityTo0(enable = false)
       .setAllNodesCardinality(allNodes)
       .setAllRelationshipsCardinality(allRels)

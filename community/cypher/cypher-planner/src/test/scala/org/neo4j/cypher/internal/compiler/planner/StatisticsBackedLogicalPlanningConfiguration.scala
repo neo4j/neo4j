@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.common
+import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.graphcounts.Constraint
 import org.neo4j.cypher.graphcounts.GraphCountData
@@ -53,6 +54,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInde
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
@@ -63,6 +65,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.LabelInferenceOption
+import org.neo4j.cypher.internal.options.OptionReader
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -93,6 +96,8 @@ import org.neo4j.internal.schema.IndexType.VECTOR
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 
+import scala.jdk.CollectionConverters.MapHasAsJava
+
 trait StatisticsBackedLogicalPlanningSupport {
 
   /**
@@ -110,7 +115,6 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
     debug: CypherDebugOptions = CypherDebugOptions(Set(CypherDebugOption.verboseEagernessReasons)),
     connectComponentsPlanner: Boolean = true,
-    useLabelInference: LabelInferenceOption = LabelInferenceOption.default,
     executionModel: ExecutionModel = ExecutionModel.default,
     useMinimumGraphStatistics: Boolean = false,
     txStateHasChanges: Boolean = false,
@@ -529,11 +533,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
   def enableMinimumGraphStatistics(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(options = options.copy(useMinimumGraphStatistics = enable))
-  }
-
-  def enableLabelInference(option: LabelInferenceOption = LabelInferenceOption.enabled)
-    : StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    this.copy(options = options.copy(useLabelInference = option))
   }
 
   def enableDeduplicateNames(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -1041,12 +1040,19 @@ class StatisticsBackedLogicalPlanningConfiguration(
   def planState(queryString: String): LogicalPlanState = {
     val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
+    val cfg = Config.defaults(settings.asJava)
+    val cc = CypherConfiguration.fromConfig(cfg)
+    val labelInference = LabelInferenceOption.reader.read(OptionReader.Input(
+      cc,
+      Set.empty
+    )).result
+
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
     val metrics = SimpleMetricsFactory.newMetrics(
       planContext,
       simpleExpressionEvaluator,
       options.executionModel,
-      LabelInferenceStrategy.fromConfig(planContext, options.useLabelInference)
+      LabelInferenceStrategy.fromConfig(planContext, labelInference)
     )
 
     val context = ContextHelper.create(
