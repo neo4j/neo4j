@@ -63,7 +63,7 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
 
       case _ =>
         expectError(
-          Status.Transaction.TransactionStartFailed,
+          Status.Transaction.ForbiddenDueToTransactionType,
           "can only be executed in an implicit transaction, but tried to execute in an explicit transaction."
         )(code)
     }

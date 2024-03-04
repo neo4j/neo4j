@@ -179,7 +179,7 @@ class QueryState(
     if (query.getTransactionType != KernelTransaction.Type.IMPLICIT) {
       throw new TransactionFailureException(
         "A query with 'CALL { ... } IN TRANSACTIONS' can only be executed in an implicit transaction, " + "but tried to execute in an explicit transaction.",
-        Status.Transaction.TransactionStartFailed
+        Status.Transaction.ForbiddenDueToTransactionType
       )
     }
     val newQuery = query.contextWithNewTransaction()
