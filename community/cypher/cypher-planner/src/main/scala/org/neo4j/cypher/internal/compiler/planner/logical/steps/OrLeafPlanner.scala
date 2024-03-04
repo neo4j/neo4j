@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.Di
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.InlinedRelationshipTypePredicateKind
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.WhereClausePredicateKind
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions.leafPlanHeuristic
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
@@ -47,7 +48,6 @@ import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.logical
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
@@ -214,15 +214,16 @@ object OrLeafPlanner {
       // - disjunctivePredicatesPerPlan.flatten is a subset of disjunction.predicates
       //   - Either we have a rel-type disjunction, then disjunctivePredicatesPerPlan.flatten is empty
       //   - Or we have a where clause disjunction
-      // - Each plan solves exactly one predicate from the disjunction
+      // - Each plan solves exactly one part from the disjunction.
+      //   That can either be a single predicate or a conjunction or predicates.
       // - If one of the plan solves a predicate in the disjunction that is anyway solved by all other plans, then we will not get a predicate from this plan here.
-      checkOnlyWhenAssertionsAreEnabled(disjunctivePredicatesPerPlan.forall(_.size <= 1))
 
       val qgWithPredicatesSolvedByAllPlans = qg.addPredicates(predicatesSolvedByAllPlans: _*)
       // If any of the plans does not provide a predicate to this, this amounts to providing `TRUE` which in turn makes the `Ors` to be created constant `TRUE`.
       // Thus, we leave it out.
       if (disjunctivePredicatesPerPlan.forall(_.nonEmpty)) {
-        qgWithPredicatesSolvedByAllPlans.addPredicates(Ors(disjunctivePredicatesPerPlan.flatten)(InputPosition.NONE))
+        val ors = Ors(disjunctivePredicatesPerPlan.map(x => Ands.create(x.to(ListSet))))(InputPosition.NONE)
+        qgWithPredicatesSolvedByAllPlans.addPredicates(ors)
       } else {
         qgWithPredicatesSolvedByAllPlans
       }
@@ -237,7 +238,14 @@ object OrLeafPlanner {
       case _ => qg.addPredicates(e)
     }
 
-    override def containedIn(qg: QueryGraph): Boolean = qg.selections.flatPredicates.contains(e)
+    override def containedIn(qg: QueryGraph): Boolean = {
+      val flatPredicates = qg.selections.flatPredicates
+      e match {
+        case Ands(compositePredicates) =>
+          compositePredicates.forall(flatPredicates.contains)
+        case _ => flatPredicates.contains(e)
+      }
+    }
 
     override def toString: String = ExpressionStringifier(e => e.asCanonicalStringVal)(e)
   }

@@ -1271,6 +1271,30 @@ class OrLeafPlanningIntegrationTest
     )(SymmetricalLogicalPlanEquality)
   }
 
+  test("should be able to use composite index that partially solves disjunctions") {
+    val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("p1", "p2"), 0.5, 0.5)
+      .addNodeIndex("L", Seq("p3"), 0.5, 0.5)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n:L)
+        |  WHERE (n.p1 <= 10 <= n.p2) OR n.p3 > 20
+        |RETURN n""".stripMargin
+    )
+
+    plan should equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:L(p3 > 20)")
+        .filter("n.p2 >= 10")
+        .nodeIndexOperator("n:L(p1 <= 10, p2)", supportPartitionedScan = false)
+        .build()
+    )(SymmetricalLogicalPlanEquality)
+  }
+
   test("should not crash on XOR predicates that might get rewritten to Ors with a single predicate") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(100)
