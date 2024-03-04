@@ -492,6 +492,8 @@ sealed abstract class NodeIndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPla
   final override val distinctness: Distinctness = NotDistinct
 
   def indexType: IndexType
+
+  def indexOrder: IndexOrder
 }
 
 sealed abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogicalLeafPlan(idGen)
@@ -515,6 +517,8 @@ sealed abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends Relationsh
   final override val distinctness: Distinctness = NotDistinct
 
   def indexType: IndexType
+
+  def indexOrder: IndexOrder
 }
 
 sealed abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen)
@@ -1592,6 +1596,8 @@ case class PartitionedDirectedRelationshipIndexScan(
   override def rightNode: LogicalVariable = endNode
 
   override def directed: Boolean = true
+
+  override def indexOrder: IndexOrder = IndexOrderNone
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
@@ -2891,6 +2897,8 @@ case class PartitionedNodeIndexScan(
   override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
   override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def indexOrder: IndexOrder = IndexOrderNone
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedNodeIndexScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
@@ -4442,6 +4450,8 @@ case class PartitionedUndirectedRelationshipIndexScan(
     copy(properties = properties.map(f))(SameId(this.id))
 
   override def directed: Boolean = false
+
+  override def indexOrder: IndexOrder = IndexOrderNone
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))

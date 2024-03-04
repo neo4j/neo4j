@@ -69,11 +69,15 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexedPropertyProvidingPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
@@ -192,15 +196,17 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       PropertyUsages(canGetFromIndex = false, Set.empty, 0, RELATIONSHIP_TYPE, None, needsValue = false)
 
     case class Acc(
-      properties: Map[Property, PropertyUsages] = Map.empty,
-      previousNames: Map[String, String] = Map.empty,
-      protectedPropertiesByPlanId: Map[Id, ProtectedProperties] = Map.empty
+      properties: Map[Property, PropertyUsages],
+      previousNames: Map[String, String],
+      protectedPropertiesByPlanId: Map[Id, ProtectedProperties],
+      indexedEntityAliases: Map[String, Set[String]]
     ) {
 
       def ++(other: Acc): Acc = Acc(
         this.properties.fuse(other.properties)(_ ++ _),
         this.previousNames ++ other.previousNames,
-        this.protectedPropertiesByPlanId ++ other.protectedPropertiesByPlanId
+        this.protectedPropertiesByPlanId ++ other.protectedPropertiesByPlanId,
+        this.indexedEntityAliases.fuse(other.indexedEntityAliases)(_ ++ _)
       )
 
       def withProtectedProperties(plan: LogicalPlan, protectedProps: ProtectedProperties): Acc = {
@@ -211,6 +217,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         val previousUsages = properties.getOrElse(prop, NODE_NO_PROP_USAGE)
         val newProperties = properties.updated(prop, previousUsages.registerIndexUsage)
         copy(properties = newProperties)
+      }
+
+      def registerIndexedEntity(name: String): Acc = {
+        copy(indexedEntityAliases = indexedEntityAliases.updated(name, Set(name)))
       }
 
       def addIndexRelationshipProperty(prop: Property): Acc = {
@@ -260,7 +270,17 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         // Rename all properties that we found so far and that are affected by this
         val withPreviousNames = copy(previousNames = normalizedRenamings)
         val renamedProperties = properties.map { case (prop, use) => (withPreviousNames.originalProperty(prop), use) }
-        withPreviousNames.copy(properties = renamedProperties)
+
+        val newEntityAliases = mappings.foldLeft(indexedEntityAliases) {
+          case (aliases, (newName, oldName)) =>
+            aliases.map {
+              case (entityName, aliases) if aliases.contains(oldName) =>
+                (entityName, aliases + newName)
+              case a => a
+            }
+        }
+
+        withPreviousNames.copy(properties = renamedProperties, indexedEntityAliases = newEntityAliases)
       }
 
       def variableWithOriginalName(variable: Variable): Variable = {
@@ -286,6 +306,15 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       def protectedProperties(plan: LogicalPlan): ProtectedProperties = {
         protectedPropertiesByPlanId.getOrElse(plan.id, CacheAll)
       }
+    }
+
+    object Acc {
+      def empty: Acc = Acc(
+        properties = Map.empty,
+        previousNames = Map.empty,
+        protectedPropertiesByPlanId = Map.empty,
+        indexedEntityAliases = Map.empty
+      )
     }
 
     def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan, lookIn: Option[Foldable] = None): Acc = {
@@ -346,12 +375,16 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
             // Find index plans that can provide cached properties
             case indexPlan: NodeIndexLeafPlan =>
-              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(accWithProps) {
+              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(
+                accWithProps.registerIndexedEntity(indexPlan.idName.name)
+              ) {
                 (innerAcc, indexedProp) =>
                   innerAcc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
               }
             case indexPlan: RelationshipIndexLeafPlan =>
-              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(accWithProps) {
+              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(
+                accWithProps.registerIndexedEntity(indexPlan.idName.name)
+              ) {
                 (innerAcc, indexedProp) =>
                   innerAcc.addIndexRelationshipProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
               }
@@ -376,7 +409,13 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
                     usageCount = math.max(lhs.usageCount, rhs.usageCount)
                   )
               }
-              Acc(mergedProperties, mergedNames)
+
+              Acc(
+                mergedProperties,
+                mergedNames,
+                Map.empty,
+                indexedEntityAliases = lhsAcc.indexedEntityAliases.fuse(rhsAcc.indexedEntityAliases)(_ ++ _)
+              )
 
             case plan =>
               val combinedChildAcc = lhsAcc ++ rhsAcc
@@ -386,9 +425,41 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
     }
 
     // In the first step we collect all property usages and renaming while going over the tree
-    val acc = findPropertiesInTree(Acc(), logicalPlan)
+    val acc = findPropertiesInTree(Acc.empty, logicalPlan)
 
     var currentTypes = from.semanticTable().types
+
+    val returnColumns: Set[String] = logicalPlan match {
+      case pr: ProduceResult => pr.columns.map(_.name).toSet
+      case _                 => Set.empty
+    }
+
+    def rewriteIndexPlan(
+      acc: Acc,
+      indexPlan: IndexedPropertyProvidingPlan,
+      idName: LogicalVariable,
+      indexOrder: IndexOrder
+    ) = {
+      val shouldForceCache = {
+        val isReturnColumn =
+          acc.indexedEntityAliases.getOrElse(idName.name, Set.empty).intersect(returnColumns).nonEmpty
+        isReturnColumn && indexOrder != IndexOrderNone
+      }
+
+      indexPlan.withMappedProperties { indexedProp =>
+        acc.properties.get(property(idName, indexedProp.propertyKeyToken.name)) match {
+          // Get the value since we use it later
+          case Some(PropertyUsages(true, _, usageCount, _, _, _))
+            // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
+            // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
+            if (shouldForceCache || usageCount > 0) && indexedProp.getValueFromIndex != DoNotGetValue =>
+            indexedProp.copy(getValueFromIndex = GetValue)
+          // We could get the value but we don't need it later
+          case _ =>
+            indexedProp.copy(getValueFromIndex = DoNotGetValue)
+        }
+      }
+    }
 
     // In the second step we rewrite both properties and index plans
     val propertyRewriter = bottomUp(Rewriter.lift {
@@ -425,33 +496,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
       // Rewrite index plans to either GetValue or DoNotGetValue
       case indexPlan: NodeIndexLeafPlan =>
-        indexPlan.withMappedProperties { indexedProp =>
-          acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
-            // Get the value since we use it later
-            case Some(PropertyUsages(true, _, usageCount, _, _, _))
-              // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
-              // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
-              if usageCount > 0 && indexedProp.getValueFromIndex != DoNotGetValue =>
-              indexedProp.copy(getValueFromIndex = GetValue)
-            // We could get the value but we don't need it later
-            case _ =>
-              indexedProp.copy(getValueFromIndex = DoNotGetValue)
-          }
-        }
+        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, indexPlan.indexOrder)
       case indexPlan: RelationshipIndexLeafPlan =>
-        indexPlan.withMappedProperties { indexedProp =>
-          acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
-            // Get the value since we use it later
-            case Some(PropertyUsages(true, _, usageCount, _, _, _))
-              // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
-              // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
-              if usageCount > 0 && indexedProp.getValueFromIndex != DoNotGetValue =>
-              indexedProp.copy(getValueFromIndex = GetValue)
-            // We could get the value but we don't need it later
-            case _ =>
-              indexedProp.copy(getValueFromIndex = DoNotGetValue)
-          }
-        }
+        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, indexPlan.indexOrder)
     })
 
     val plan = propertyRewriter(logicalPlan).asInstanceOf[LogicalPlan]

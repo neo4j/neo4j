@@ -57,6 +57,9 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
@@ -1173,7 +1176,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
   test("should get values from index on LHS of a Union when the same property is also used on RHS") {
     val builder = new LogicalPlanBuilder()
-      .produceResults("a")
+      .produceResults("result")
+      .projection("a.x AS result")
       .union()
       .|.filter("a.prop < 321")
       .|.nodeIndexOperator("a:A(otherProp)", getValue = _ => CanGetValue)
@@ -1182,7 +1186,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults("a")
+      .produceResults("result")
+      .projection("a.x AS result")
       .union()
       .|.filter("cacheNFromStore[a.prop] < 321")
       .|.nodeIndexOperator("a:A(otherProp)", getValue = _ => DoNotGetValue)
@@ -2184,6 +2189,272 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .|.allNodeScan("n")
       .projection("cacheNFromStore[n.prop] as prop")
       .allNodeScan("n")
+      .build()
+  }
+
+  test("should cache properties of returned indexed nodes") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderAscending)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("n")
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should cache properties of returned and renamed indexed nodes") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n AS x")
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderAscending)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n AS x")
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
+      .build()
+  }
+
+  test("should cache properties of returned and renamed indexed nodes on both sides of a union") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n AS x")
+      .union()
+      .|.projection("b AS n")
+      .|.nodeIndexOperator("b:L(prop < 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderAscending)
+      .projection("a AS n")
+      .nodeIndexOperator("a:L(prop > 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderDescending)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n AS x")
+      .union()
+      .|.projection("b AS n")
+      .|.nodeIndexOperator("b:L(prop < 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
+      .projection("a AS n")
+      .nodeIndexOperator("a:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderDescending)
+      .build()
+  }
+
+  test("should cache properties of returned and renamed indexed nodes on both sides of a union under apply") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .apply()
+      .|.projection("n AS x")
+      .|.union()
+      .|.|.projection("b AS n")
+      .|.|.nodeIndexOperator(
+        "b:L(prop < ???)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderAscending,
+        argumentIds = Set("z"),
+        paramExpr = Some(prop("z", "prop"))
+      )
+      .|.projection("a AS n")
+      .|.nodeIndexOperator(
+        "a:L(prop > ???)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderDescending,
+        argumentIds = Set("z"),
+        paramExpr = Some(prop("z", "prop"))
+      )
+      .allNodeScan("z")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("x")
+      .apply()
+      .|.projection("n AS x")
+      .|.union()
+      .|.|.projection("b AS n")
+      .|.|.nodeIndexOperator(
+        "b:L(prop < ???)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderAscending,
+        argumentIds = Set("z"),
+        paramExpr = Some(prop("z", "prop"))
+      )
+      .|.projection("a AS n")
+      .|.nodeIndexOperator(
+        "a:L(prop > ???)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderDescending,
+        argumentIds = Set("z"),
+        paramExpr = Some(prop("z", "prop"))
+      )
+      .allNodeScan("z")
+      .build()
+  }
+
+  test("should NOT cache properties of returned indexed nodes if we don't rely on index ordering") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderNone)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("n")
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => DoNotGetValue)
+      .build()
+  }
+
+  test("should cache properties of returned indexed relationships") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop > 123)]->(b)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderAscending
+      )
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("r")
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop > 123)]->(b)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderAscending
+      )
+      .build()
+  }
+
+  test("should cache properties of returned and renamed indexed relationships") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("r AS x")
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop > 123)]->(b)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderAscending
+      )
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("r AS x")
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop > 123)]->(b)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderAscending
+      )
+      .build()
+  }
+
+  test("should cache properties of returned and renamed indexed relationships on both sides of a union") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("y")
+      .projection("x AS y")
+      .union()
+      .|.projection("q AS x")
+      .|.relationshipIndexOperator(
+        "(a)-[q:REL(prop > 123)]->(b)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderDescending
+      )
+      .projection("p AS x")
+      .relationshipIndexOperator(
+        "(a)-[p:REL(prop > 123)]->(b)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderAscending
+      )
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("y")
+      .projection("x AS y")
+      .union()
+      .|.projection("q AS x")
+      .|.relationshipIndexOperator(
+        "(a)-[q:REL(prop > 123)]->(b)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderDescending
+      )
+      .projection("p AS x")
+      .relationshipIndexOperator(
+        "(a)-[p:REL(prop > 123)]->(b)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderAscending
+      )
+      .build()
+  }
+
+  test("should cache properties of returned and renamed indexed relationships on both sides of a union under apply") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("y")
+      .apply()
+      .|.projection("x AS y")
+      .|.union()
+      .|.|.projection("q AS x")
+      .|.|.relationshipIndexOperator(
+        "(a)-[q:REL(prop > ???)]->(b)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderAscending,
+        argumentIds = Set("z"),
+        paramExpr = Some(prop("z", "prop"))
+      )
+      .|.projection("p AS x")
+      .|.relationshipIndexOperator(
+        "(a)-[p:REL(prop > ???)]->(b)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderDescending,
+        argumentIds = Set("z"),
+        paramExpr = Some(prop("z", "prop"))
+      )
+      .allNodeScan("z")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("y")
+      .apply()
+      .|.projection("x AS y")
+      .|.union()
+      .|.|.projection("q AS x")
+      .|.|.relationshipIndexOperator(
+        "(a)-[q:REL(prop > ???)]->(b)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderAscending,
+        argumentIds = Set("z"),
+        paramExpr = Some(prop("z", "prop"))
+      )
+      .|.projection("p AS x")
+      .|.relationshipIndexOperator(
+        "(a)-[p:REL(prop > ???)]->(b)",
+        getValue = _ => GetValue,
+        indexOrder = IndexOrderDescending,
+        argumentIds = Set("z"),
+        paramExpr = Some(prop("z", "prop"))
+      )
+      .allNodeScan("z")
+      .build()
+  }
+
+  test("should NOT cache properties of returned indexed relationships if we don't rely on index ordering") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop > 123)]->(b)",
+        getValue = _ => CanGetValue,
+        indexOrder = IndexOrderNone
+      )
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("r")
+      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]->(b)", getValue = _ => DoNotGetValue)
       .build()
   }
 

@@ -35,9 +35,12 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
@@ -2587,5 +2590,55 @@ class IndexPlanningIntegrationTest
       ).withCardinality(1.0)
 
     planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
+  }
+
+  test("should cache properties of returned indexed nodes when relying on index ordering") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("L", 800)
+      .addNodeIndex("L", Seq("x"), 1, 0.1, withValues = true, providesOrder = IndexOrderCapability.BOTH)
+      .build()
+
+    val q =
+      """
+        |MATCH (n:L)
+        |WHERE n.x IS NOT NULL
+        |RETURN n ORDER BY n.x
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .nodeIndexOperator("n:L(x)", indexOrder = IndexOrderAscending, getValue = Map("x" -> GetValue))
+      .build()
+  }
+
+  test("should cache properties of returned indexed nodes on both sides of a union when relying on index ordering") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("L", 800)
+      .addNodeIndex("L", Seq("x"), 1, 0.1, withValues = true, providesOrder = IndexOrderCapability.BOTH)
+      .build()
+
+    val q =
+      """
+        |MATCH (a:L)
+        |WHERE a.x IS NOT NULL
+        |RETURN a AS n ORDER BY n.x ASC
+        | UNION ALL
+        |MATCH (b:L)
+        |WHERE b.x IS NOT NULL
+        |RETURN b AS n ORDER BY n.x DESC
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .union()
+      .|.projection("n AS n")
+      .|.projection("b AS n")
+      .|.nodeIndexOperator("b:L(x)", indexOrder = IndexOrderDescending, getValue = Map("x" -> GetValue))
+      .projection("n AS n")
+      .projection("a AS n")
+      .nodeIndexOperator("a:L(x)", indexOrder = IndexOrderAscending, getValue = Map("x" -> GetValue))
+      .build()
   }
 }
