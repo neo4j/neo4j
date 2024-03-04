@@ -48,6 +48,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.kernel.impl.util.TransactionLogChecker;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
@@ -79,6 +80,15 @@ public class CheckCommand extends AbstractAdminCommand {
             fallbackValue = "true",
             description = "Force a consistency check to be run, despite resources, and may run a more thorough check.")
     private boolean force;
+
+    @Option(
+            names = "--check-tx-logs",
+            fallbackValue = "false",
+            hidden = true,
+            description = "Hidden option to be used by upgrade-tests. "
+                    + "Checks that the transaction log content and headers are correct in respect to version changes "
+                    + "and rotations.")
+    private boolean additionalTxLogCheck;
 
     @Mixin
     private ConsistencyCheckOptions options;
@@ -188,7 +198,7 @@ public class CheckCommand extends AbstractAdminCommand {
             try (var ignored = LockChecker.checkDatabaseLock(layout)) {
                 checkDbState(ctx.fs(), layout, config, memoryTracker);
                 try {
-                    return consistencyCheckService
+                    Result result = consistencyCheckService
                             .with(layout)
                             .with(config)
                             .with(ctx.out())
@@ -200,6 +210,11 @@ public class CheckCommand extends AbstractAdminCommand {
                             .withMaxOffHeapMemory(options.maxOffHeapMemory())
                             .withNumberOfThreads(options.numberOfThreads())
                             .runFullConsistencyCheck();
+
+                    if (result.isSuccessful() && additionalTxLogCheck) {
+                        TransactionLogChecker.verifyCorrectTransactionLogUpgrades(ctx.fs(), layout);
+                    }
+                    return result;
                 } catch (ConsistencyCheckIncompleteException e) {
                     throw new CommandFailedException(
                             "Consistency checking failed. " + e.getMessage(), e, ExitCode.SOFTWARE);
