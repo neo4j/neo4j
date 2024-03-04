@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTes
 class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("REMOVE n:A") {
-    gives[Clause](
+    parsesTo[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A")))
       )
@@ -31,7 +31,7 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("REMOVE n IS A") {
-    gives[Clause](
+    parsesTo[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A"), containsIs = true))
       )
@@ -39,7 +39,7 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("REMOVE n:A:B:C") {
-    gives[Clause](
+    parsesTo[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A", "B", "C")))
       )
@@ -47,7 +47,7 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("REMOVE n:A, n:B") {
-    gives[Clause](
+    parsesTo[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A")), removeLabelItem("n", Seq("B")))
       )
@@ -55,7 +55,7 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("REMOVE n IS A, n IS B") {
-    gives[Clause](
+    parsesTo[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A"), containsIs = true), removeLabelItem("n", Seq("B"), containsIs = true))
       )
@@ -63,7 +63,7 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("REMOVE n IS A, n:B") {
-    gives[Clause](
+    parsesTo[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A"), containsIs = true), removeLabelItem("n", Seq("B")))
       )
@@ -71,7 +71,7 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("REMOVE n:A, r.prop, m IS B") {
-    gives[Clause](
+    parsesTo[Clause](
       remove(
         Seq(
           removeLabelItem("n", Seq("A")),
@@ -85,7 +85,7 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   // Invalid mix of colon conjunction and IS, this will be disallowed in semantic checking
 
   test("REMOVE n IS A:B") {
-    gives[Clause](
+    parsesTo[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A", "B"), containsIs = true))
       )
@@ -93,7 +93,7 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("REMOVE n IS A, m:A:B") {
-    gives[Clause](
+    parsesTo[Clause](
       remove(
         Seq(
           removeLabelItem("n", Seq("A"), containsIs = true),

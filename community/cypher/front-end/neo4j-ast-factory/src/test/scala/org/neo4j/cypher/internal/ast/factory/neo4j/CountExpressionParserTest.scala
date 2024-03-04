@@ -16,28 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.ast.CountExpression
-import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.expressions.AllIterablePredicate
-import org.neo4j.cypher.internal.expressions.CaseExpression
-import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.FilterScope
-import org.neo4j.cypher.internal.expressions.MatchMode
-import org.neo4j.cypher.internal.expressions.NamedPatternPart
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
-import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -60,7 +44,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(countExpression, literal(4))))),
         return_(variableReturnItem("m"))
@@ -85,7 +69,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(lt(countExpression, literal(5))))),
         return_(variableReturnItem("m"))
@@ -106,7 +90,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(gt(countExpression, literal(7))))),
         return_(variableReturnItem("m"))
@@ -129,7 +113,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(countExpression, literal(1))))),
         return_(variableReturnItem("m"))
@@ -138,6 +122,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
   }
 
   // COUNT in a RETURN statement
+
   test(
     """MATCH (m)
       |RETURN COUNT { (m)-[]->() }""".stripMargin
@@ -154,7 +139,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(17, 2, 8), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m"))),
         return_(returnItem(countExpression, "COUNT { (m)-[]->() }", InputPosition(17, 2, 8)))
@@ -180,7 +165,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(26, 2, 17), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m"))),
         set_(Seq(setPropertyItem("m", "howMany", countExpression)))
@@ -206,7 +191,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(27, 2, 18), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m"))),
         return_(UnaliasedReturnItem(
@@ -233,7 +218,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(5, 1, 6), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         with_(AliasedReturnItem(countExpression, Variable("result")(pos))(pos)),
         return_(UnaliasedReturnItem(Variable("result")(pos), "result")(pos))
@@ -255,7 +240,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 1, 17), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("a")), where = Some(where(lt(countExpression, literal(9))))),
         return_(variableReturnItem("a"))
@@ -263,7 +248,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
     }
   }
 
-  test("MATCH (a) RETURN COUNT{ MATCH (a) }") {
+  test("MATCH (a) RETURN COUNT{ MATCH (a) } // Hello") {
     val countExpression: CountExpression = CountExpression(
       singleQuery(
         match_(
@@ -272,7 +257,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(17, 1, 18), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("a"))),
         return_(returnItem(countExpression, "COUNT{ MATCH (a) }"))
@@ -306,7 +291,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(21, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(Seq(nodePat(name = Some("a")), nodePat(name = Some("b"))), Some(where(gt(countExpression, literal(6))))),
         return_(variableReturnItem("a"), variableReturnItem("b"))
@@ -341,7 +326,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 1, 17), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("a")), where = Some(where(gte(countExpression, literal(5))))),
         return_(variableReturnItem("a"))
@@ -367,7 +352,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(lte(countExpression, literal(2))))),
         return_(variableReturnItem("m"))
@@ -393,7 +378,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )(InputPosition(43, 2, 34))
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(gte(countExpression, literal(3))))),
         return_(variableReturnItem("m"))
@@ -413,7 +398,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(greaterThan(countExpression, literal(9))))),
         return_(variableReturnItem("m"))
@@ -433,7 +418,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(greaterThan(countExpression, literal(9))))),
         return_(variableReturnItem("m"))
@@ -468,7 +453,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(countExpression, literal(1))))),
         return_(variableReturnItem("m"))
@@ -481,7 +466,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       |WHERE COUNT { MATCH (b) RETURN b WHERE true } >= 1
       |RETURN m""".stripMargin
   ) {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test(
@@ -489,6 +474,6 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       |WHERE COUNT { (a)-[r]->(b) WHERE a.prop = 1 RETURN r } > 1
       |RETURN m""".stripMargin
   ) {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 }

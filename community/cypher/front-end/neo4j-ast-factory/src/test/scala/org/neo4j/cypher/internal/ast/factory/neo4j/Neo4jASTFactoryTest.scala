@@ -16,11 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
-import org.neo4j.cypher.internal.ast.factory.ConstraintType
-import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes
-import org.neo4j.cypher.internal.ast.factory.HintIndexType
-import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
+import org.neo4j.cypher.internal.ast.factory._
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class Neo4jASTFactoryTest extends CypherFunSuite {

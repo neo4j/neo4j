@@ -17,31 +17,16 @@
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChild
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util._
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
-import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
-import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonConjunction
-import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
-import org.neo4j.cypher.internal.label_expressions.LabelExpression.Conjunctions
-import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
-import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
-import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
+import org.neo4j.cypher.internal.label_expressions.LabelExpression._
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
 
+import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait LabelExpressionBuilder extends CypherParserListener {
@@ -88,17 +73,39 @@ trait LabelExpressionBuilder extends CypherParserListener {
     ctx.ast = RelationshipPattern(variable, labelExpression, pathLength, properties, expression, direction)(pos(ctx))
   }
 
-  final override def exitNodeLabels(
-    ctx: CypherParser.NodeLabelsContext
-  ): Unit = {}
+  final override def exitNodeLabels(ctx: CypherParser.NodeLabelsContext): Unit = {
+    val size = ctx.children.size()
+    val result = new Array[LabelName](size)
+    var i = 0
+    while (i < size) {
+      result(i) = ctxChild(ctx, i).ast()
+      i += 1
+    }
+    ctx.ast = ArraySeq.unsafeWrapArray(result)
+  }
 
-  final override def exitNodeLabelsIs(
-    ctx: CypherParser.NodeLabelsIsContext
-  ): Unit = {}
+  final override def exitNodeLabelsIs(ctx: CypherParser.NodeLabelsIsContext): Unit = {
+    val size = ctx.children.size() - 1
+    val result = new Array[LabelName](size)
+    val child = ctxChild(ctx, 1)
+    result(0) = LabelName(child.ast())(pos(child))
+    var i = 1
+    while (i < size) {
+      result(i) = ctxChild(ctx, i + 1).ast()
+      i += 1
+    }
+    ctx.ast = ArraySeq.unsafeWrapArray(result)
 
-  final override def exitLabelOrRelType(
-    ctx: CypherParser.LabelOrRelTypeContext
-  ): Unit = {}
+  }
+
+  final override def exitLabelType(ctx: CypherParser.LabelTypeContext): Unit = {
+    val child = ctxChild(ctx, 1)
+    ctx.ast = LabelName(child.ast())(pos(child))
+  }
+
+  final override def exitLabelOrRelType(ctx: CypherParser.LabelOrRelTypeContext): Unit = {
+    ctx.ast = LabelOrRelTypeName(ctxChild(ctx, 1).ast())(pos(ctx))
+  }
 
   final override def exitLabelOrRelTypes(
     ctx: CypherParser.LabelOrRelTypesContext
@@ -298,15 +305,80 @@ trait LabelExpressionBuilder extends CypherParserListener {
 
   }
 
+  final override def exitInsertNodePattern(
+    ctx: CypherParser.InsertNodePatternContext
+  ): Unit = {
+    val variable =
+      if (ctx.variable() != null) Some(ctx.variable().ast[LogicalVariable]()) else None
+    val labelExpression =
+      if (ctx.insertNodeLabelExpression() != null) Some(ctx.insertNodeLabelExpression().ast[LabelExpression]())
+      else None
+    val properties =
+      if (ctx.properties() != null) Some(ctx.properties().ast[Expression]()) else None
+    ctx.ast = NodePattern(variable, labelExpression, properties, None)(pos(ctx))
+
+  }
+
   final override def exitInsertNodeLabelExpression(
     ctx: CypherParser.InsertNodeLabelExpressionContext
-  ): Unit = {}
+  ): Unit = {
+//    ctx.ast = Leaf(ctx.insertLabelConjunction().ast(), containsIs = ctx.IS != null)
+    val containsIs = ctx.IS != null
+    val children = ctx.children; val size = children.size()
+    // Left most LE2
+    val firstChild = ctxChild(ctx, 1)
+    var result: LabelExpression = Leaf(LabelName(firstChild.ast())(pos(firstChild)), containsIs)
+    if (size > 2) {
+      var colon = false
+      var i = 2
+      while (i < size) {
+        children.get(i) match {
+          case node: TerminalNode if node.getSymbol.getType == CypherParser.COLON => colon = true
+          case lblCtx: CypherParser.SymbolicNameStringContext =>
+            val rhs = Leaf(LabelName(lblCtx.ast())(pos(lblCtx)), containsIs = ctx.IS != null)
+            if (colon) {
+              result = ColonConjunction(result, rhs, containsIs)(pos(nodeChild(ctx, i - 1)))
+              colon = false
+            } else {
+              result = Conjunctions.flat(result, rhs, pos(nodeChild(ctx, i - 1)), containsIs)
+            }
+          case _ =>
+        }
+        i += 1
+      }
+
+    }
+    ctx.ast = result
+  }
+
+  final override def exitInsertRelationshipPattern(
+    ctx: CypherParser.InsertRelationshipPatternContext
+  ): Unit = {
+    val hasRightArrow = ctx.rightArrow() != null
+    val hasLeftArrow = ctx.leftArrow() != null
+    val variable =
+      if (ctx.variable() != null) Some(ctx.variable().ast[LogicalVariable]()) else None
+    val labelExpression =
+      if (ctx.insertRelationshipLabelExpression() != null)
+        Some(ctx.insertRelationshipLabelExpression().ast[LabelExpression]())
+      else None
+    val properties =
+      if (ctx.properties() != null) Some(ctx.properties().ast[Expression]()) else None
+    val direction =
+      if (hasLeftArrow && hasRightArrow) SemanticDirection.BOTH
+      else if (!hasLeftArrow && !hasRightArrow) SemanticDirection.BOTH
+      else if (hasLeftArrow) SemanticDirection.INCOMING
+      else SemanticDirection.OUTGOING
+
+    ctx.ast = RelationshipPattern(variable, labelExpression, None, properties, None, direction)(pos(ctx))
+
+  }
 
   final override def exitInsertRelationshipLabelExpression(
     ctx: CypherParser.InsertRelationshipLabelExpressionContext
-  ): Unit = {}
+  ): Unit = {
+    val symbolicNameString = ctx.symbolicNameString()
+    ctx.ast = Leaf(RelTypeName(symbolicNameString.ast())(pos(symbolicNameString)), containsIs = ctx.IS != null)
+  }
 
-  final override def exitInsertLabelConjunction(
-    ctx: CypherParser.InsertLabelConjunctionContext
-  ): Unit = {}
 }

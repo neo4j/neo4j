@@ -126,7 +126,7 @@ ASC:
    A S C;
 
 ASCENDING:
-   A S C E N D I N G;
+   A S C E N D I N G  -> type(ASC);
 
 ASSERT:
    A S S E R T;
@@ -270,7 +270,7 @@ DESC:
    D E S C;
 
 DESCENDING:
-   D E S C E N D I N G;
+   D E S C E N D I N G -> type(DESC);
 
 DESTROY:
    D E S T R O Y;
@@ -405,7 +405,7 @@ GROUP:
    G R O U P;
 
 GROUPS:
-   G R O U P S;
+   G R O U P S -> type(GROUP);
 
 GT:
    '>';
@@ -615,7 +615,7 @@ PATH:
    P A T H;
 
 PATHS:
-   P A T H S;
+   P A T H S -> type(PATH);
 
 PERIODIC:
    P E R I O D I C;

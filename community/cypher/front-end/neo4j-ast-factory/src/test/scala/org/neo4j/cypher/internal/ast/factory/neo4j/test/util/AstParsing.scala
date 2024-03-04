@@ -17,14 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.test.util
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.AstConstructionError
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseError
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResult
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResults
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseSuccess
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParserInTest
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing._
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.internal.helpers.Exceptions

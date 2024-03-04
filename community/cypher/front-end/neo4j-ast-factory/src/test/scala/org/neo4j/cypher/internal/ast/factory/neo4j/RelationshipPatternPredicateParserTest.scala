@@ -16,13 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestName with AstConstructionTestSupport {
+class RelationshipPatternPredicateParserTest extends AstParsingTestBase {
 
   for {
     (maybeLabelExpression, maybeLabelExpressionAst) <-
@@ -33,7 +31,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
       Seq(("", None), ("{prop: 'test'}", Some(mapOf("prop" -> literalString("test")))))
   } yield {
     test(s"MATCH (n)-[r$maybeLabelExpression$maybePathLength $maybeProperties WHERE r.otherProp > 123]->()") {
-      parseRelationshipPatterns(testName) shouldBe Seq(
+      parses[Statements].containing[RelationshipPattern] {
         relPat(
           Some("r"),
           maybeLabelExpressionAst,
@@ -41,11 +39,11 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
           maybePropertiesAst,
           Some(greaterThan(prop("r", "otherProp"), literalInt(123)))
         )
-      )
+      }
     }
 
     test(s"MATCH (n)-[$maybeLabelExpression$maybePathLength $maybeProperties WHERE n.prop > 123]->()") {
-      parseRelationshipPatterns(testName) shouldBe Seq(
+      parses[Statements].containing[RelationshipPattern] {
         relPat(
           None,
           maybeLabelExpressionAst,
@@ -53,12 +51,12 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
           maybePropertiesAst,
           Some(greaterThan(prop("n", "prop"), literalInt(123)))
         )
-      )
+      }
     }
   }
 
   test("MATCH ()-[WHERE]->()") {
-    parseRelationshipPatterns(testName) shouldBe Seq(relPat(Some("WHERE")))
+    parses[Statements].containing[RelationshipPattern](relPat(Some("WHERE")))
   }
 
   /* This case is ambiguous from a language standpoint, it could be either
@@ -67,66 +65,59 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
    * As the second case is not just syntactically but also semantically correct, the parser has been programmed to prefer it.
    */
   test("MATCH ()-[WHERE {prop: 123}]->()") {
-    parseRelationshipPatterns(testName) shouldBe Seq(
+    parses[Statements].containing[RelationshipPattern] {
       relPat(Some("WHERE"), properties = Some(mapOf("prop" -> literal(123))))
-    )
+    }
   }
 
   test("MATCH ()-[WHERE WHERE {prop: 123}]->()") {
-    parseRelationshipPatterns(testName) shouldBe Seq(
+    parses[Statements].containing[RelationshipPattern] {
       relPat(Some("WHERE"), predicates = Some(mapOf("prop" -> literal(123))))
-    )
+    }
   }
 
   test("MATCH ()-[WHERE {prop: 123} WHERE {prop: 123}]->()") {
-    parseRelationshipPatterns(testName) shouldBe Seq(
+    parses[Statements].containing[RelationshipPattern] {
       relPat(
         Some("WHERE"),
         properties = Some(mapOf("prop" -> literal(123))),
         predicates = Some(mapOf("prop" -> literal(123)))
       )
-    )
+    }
   }
 
   test("MATCH ()-[WHERE WHERE WHERE.prop > 123]->()") {
-    parseRelationshipPatterns(testName) shouldBe Seq(
+    parses[Statements].containing[RelationshipPattern] {
       relPat(
         Some("WHERE"),
         predicates = Some(greaterThan(prop("WHERE", "prop"), literalInt(123)))
       )
-    )
+    }
   }
 
   test("MATCH ()-[WHERE WHERE.WHERE='WHERE']->()") {
-    parseRelationshipPatterns(testName) shouldBe Seq(
+    parses[Statements].containing[RelationshipPattern] {
       relPat(predicates = Some(equals(prop("WHERE", "WHERE"), literalString("WHERE"))))
-    )
+    }
   }
 
   test("RETURN [()-[r:R WHERE r.prop > 123]->() | r]") {
-    parseRelationshipPatterns(testName) shouldBe Seq(
+    parses[Statements].containing[RelationshipPattern] {
       relPat(
         Some("r"),
         Some(labelRelTypeLeaf("R")),
         predicates = Some(greaterThan(prop("r", "prop"), literalInt(123)))
       )
-    )
+    }
   }
 
   test("RETURN exists(()-[r {prop: 'test'} WHERE r.otherProp = 123]->()) AS result") {
-    parseRelationshipPatterns(testName) shouldBe Seq(
+    parses[Statements].containing[RelationshipPattern] {
       relPat(
         Some("r"),
         properties = Some(mapOf("prop" -> literal("test"))),
         predicates = Some(equals(prop("r", "otherProp"), literalInt(123)))
       )
-    )
-  }
-
-  private val exceptionFactory = OpenCypherExceptionFactory(None)
-
-  private def parseRelationshipPatterns(query: String): Seq[RelationshipPattern] = {
-    val ast = JavaCCParser.parse(query, exceptionFactory)
-    ast.folder.findAllByClass[RelationshipPattern]
+    }
   }
 }

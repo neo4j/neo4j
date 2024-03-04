@@ -16,14 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.AscSortItem
-import org.neo4j.cypher.internal.ast.CurrentUser
-import org.neo4j.cypher.internal.ast.OrderBy
-import org.neo4j.cypher.internal.ast.ShowProceduresClause
-import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.User
-import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.StringLiteral

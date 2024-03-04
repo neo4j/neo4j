@@ -16,11 +16,7 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
-import org.antlr.v4.runtime.BailErrorStrategy
-import org.antlr.v4.runtime.CommonTokenStream
-import org.antlr.v4.runtime.ParserRuleContext
-import org.antlr.v4.runtime.Token
-import org.antlr.v4.runtime.TokenStream
+import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -70,6 +66,8 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
         // TODO hides other failures sometimes
         throwIfEofNotReached(localCtx)
       }
+    } else {
+      if (DEBUG) localCtx.exception.printStackTrace()
     }
   }
 
@@ -84,7 +82,7 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 
   // TODO Tests for this
   private def throwIfEofNotReached(ctx: ParserRuleContext): Unit = {
-    if (!matchedEOF && getTokenStream.LA(1) != Token.EOF) {
+    if (!(matchedEOF || getTokenStream.LA(1) == Token.EOF)) {
       // TODO can be null
 
       val stop = Option(ctx).flatMap(c => Option(c.stop))

@@ -157,10 +157,6 @@ trait DdlBuilder extends CypherParserListener {
     ctx: CypherParser.SymbolicAliasNameOrParameterContext
   ): Unit = {}
 
-  final override def exitSymbolicAliasName(
-    ctx: CypherParser.SymbolicAliasNameContext
-  ): Unit = {}
-
   final override def exitConstraintNodePattern(
     ctx: CypherParser.ConstraintNodePatternContext
   ): Unit = {}

@@ -17,13 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.test.util
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.VerifyAstPositionTestSupport.findPosMismatch
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseFailure
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResult
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResults
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseSuccess
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParserInTest
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.parseAst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing._
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.MatchResults.merge
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.Explicit
 import org.neo4j.cypher.internal.util.ASTNode
@@ -272,6 +266,10 @@ object ParserSupport {
   // Indicates limited support in antlr during development.
   // NOTE!! This has very special meanings in some places, see usages for details.
   case object NotAntlr extends ParserSupport {
+    override def ignore(parser: ParserInTest): Boolean = parser == Antlr
+  }
+
+  case object NotAnyAntlr extends ParserSupport {
     override def ignore(parser: ParserInTest): Boolean = parser == Antlr
   }
 }

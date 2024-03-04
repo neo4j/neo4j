@@ -16,17 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.ast.Remove
-import org.neo4j.cypher.internal.ast.RemovePropertyItem
-import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.ast.SetClause
-import org.neo4j.cypher.internal.ast.SetPropertyItem
-import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
@@ -54,7 +44,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("RETURN 1 AS x //l33t comment") {
-    gives[Statement] {
+    parsesTo[Statement] {
       singleQuery(returnLit(1 -> "x"))
     }
   }
@@ -153,15 +143,17 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   test("should allow chained map access in SET/REMOVE") {
     val chainedProperties = prop(prop(varFor("map"), "node"), "property")
 
-    parsing[Clause]("SET map.node.property = 123") shouldGive
+    "SET map.node.property = 123" should parseTo[Clause](
       SetClause(Seq(
         SetPropertyItem(chainedProperties, literal(123))(pos)
-      )) _
+      ))(pos)
+    )
 
-    parsing[Clause]("REMOVE map.node.property") shouldGive
+    "REMOVE map.node.property" should parseTo[Clause](
       Remove(Seq(
         RemovePropertyItem(chainedProperties)
-      )) _
+      ))(pos)
+    )
   }
 
   test("should allow True and False as label name") {
@@ -211,8 +203,9 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("Normal Form is only converted to strings inside functions, else treated as a variable") {
     Seq("NFC", "NFD", "NFKC", "NFKD").foreach { normalForm =>
-      parsing[Clause](s"RETURN $normalForm") shouldGive
+      s"RETURN $normalForm" should parseTo[Clause](
         return_(variableReturnItem(normalForm))
+      )
     }
   }
 

@@ -16,21 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.CountExpression
-import org.neo4j.cypher.internal.ast.ExistsExpression
-import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.expressions.MatchMode
-import org.neo4j.cypher.internal.expressions.NamedPatternPart
-import org.neo4j.cypher.internal.expressions.PathPatternPart
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
-import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
-import org.neo4j.cypher.internal.expressions.PlusQuantifier
-import org.neo4j.cypher.internal.expressions.QuantifiedPath
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.InputPosition
 
 class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
@@ -69,7 +59,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   test("MATCH $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing[Clause](s"MATCH $selector (a)-[r]->(b)") shouldGive {
+        s"MATCH $selector (a)-[r]->(b)" should parseTo[Clause] {
           Match(
             optional = false,
             matchMode = MatchMode.default(pos),
@@ -90,7 +80,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   test("MATCH path = $selector ((a)-[r]->(b) WHERE a.prop = b.prop)") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing[Clause](s"MATCH path = $selector ((a)-[r]->(b) WHERE a.prop = b.prop)") shouldGive {
+        s"MATCH path = $selector ((a)-[r]->(b) WHERE a.prop = b.prop)" should parseTo[Clause] {
           Match(
             optional = false,
             matchMode = MatchMode.default(pos),
@@ -121,7 +111,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   test("MATCH $selector ((a)-[r]->(b))+") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing[Clause](s"MATCH $selector ((a)-[r]->(b))+") shouldGive {
+        s"MATCH $selector ((a)-[r]->(b))+" should parseTo[Clause] {
           Match(
             optional = false,
             matchMode = MatchMode.default(pos),
@@ -148,7 +138,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   test("OPTIONAL MATCH $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing[Clause](s"OPTIONAL MATCH $selector (a)-[r]->(b)") shouldGive {
+        s"OPTIONAL MATCH $selector (a)-[r]->(b)" should parseTo[Clause] {
           Match(
             optional = true,
             matchMode = MatchMode.default(pos),
@@ -171,7 +161,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   test("RETURN COUNT { MATCH $selector (a)-[r]->(b) }") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing[Clause](s"RETURN COUNT { MATCH $selector (a)-[r]->(b) }") shouldGive {
+        s"RETURN COUNT { MATCH $selector (a)-[r]->(b) }" should parseTo[Clause] {
           return_(
             returnItem(
               CountExpression(
@@ -205,7 +195,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   test("RETURN EXISTS { MATCH $selector (a)-[r]->(b) }") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing[Clause](s"RETURN EXISTS { MATCH $selector (a)-[r]->(b) }") shouldGive {
+        s"RETURN EXISTS { MATCH $selector (a)-[r]->(b) }" should parseTo[Clause] {
           return_(
             returnItem(
               ExistsExpression(
@@ -239,7 +229,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   test("CALL { MATCH $selector (a)-[r]->(b) }") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing[Clause](s"CALL { MATCH $selector (a)-[r]->(b) }") shouldGive {
+        s"CALL { MATCH $selector (a)-[r]->(b) }" should parseTo[Clause](NotAnyAntlr) {
           SubqueryCall(
             singleQuery(
               Match(
@@ -267,7 +257,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"FOREACH (x in [ ${selector._1} (a)-->(b) | a ] | SET x.prop = 12 )") {
-        failsToParse[Clause]()
+        failsParsing[Clause]
       }
     }
   }
@@ -275,7 +265,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"RETURN reduce(sum=0, x IN [${selector._1} (a)-[:r]->(b) | b.prop] | sum + x)") {
-        failsToParse[Clause]()
+        failsParsing[Clause]
       }
     }
   }
@@ -283,7 +273,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"MATCH shortestPath(${selector._1} (a)-[r]->(b))") {
-        failsToParse[Clause]()
+        failsParsing[Clause]
       }
     }
   }
@@ -291,7 +281,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"MATCH allShortestPaths(${selector._1} (a)-[r]->(b))") {
-        failsToParse[Clause]()
+        failsParsing[Clause]
       }
     }
   }
@@ -299,7 +289,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"RETURN [ ${selector._1} (a)-->(b) | a ]") {
-        failsToParse[Clause]()
+        failsParsing[Clause]
       }
     }
   }
@@ -309,32 +299,27 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
 
   test("MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())") {
     selectors.foreach { case selector -> _ =>
-      withClue(s"selector = $selector") {
-        failsToParseOnlyJavaCC[Clause](s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())")
-      }
+      s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())" should notParse[Clause]
     }
   }
 
   test("CREATE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
-      failsToParseOnlyJavaCC[Clause](s"CREATE $selector (a)-[r]->(b)")
+      s"CREATE $selector (a)-[r]->(b)" should notParse[Clause]
     }
   }
 
   test("MERGE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
-      failsToParseOnlyJavaCC[Clause](s"MERGE $selector (a)-[r]->(b)")
+      s"MERGE $selector (a)-[r]->(b)" should notParse[Clause]
     }
   }
 
   test("ANY (a)-[:Rel]->(b)") {
     val clausesToTest = Seq(("CREATE", InputPosition(7, 1, 8)), ("MERGE", InputPosition(6, 1, 7)))
     for ((clause, pos) <- clausesToTest) withClue(clause) {
-      val q = s"$clause $testName"
-      assertFailsWithMessage[Clause](
-        q,
-        s"Path selectors such as `ANY 1 PATHS` cannot be used in a $clause clause, but only in a MATCH clause. ($pos)",
-        failsOnlyJavaCC = true
+      s"$clause $testName" should notParse[Clause].withMessage(
+        s"Path selectors such as `ANY 1 PATHS` cannot be used in a $clause clause, but only in a MATCH clause. ($pos)"
       )
     }
   }
@@ -344,19 +329,15 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
     Seq("+", "").foreach { quantifier =>
       test(s"MATCH ($selector (a)-[r]->(b))$quantifier") {
         val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
-        assertFailsWithMessageStart[Clause](
-          testName,
-          s"Path selectors such as `${astSelector.prettified}` are not supported within $pathPatternKind path patterns.",
-          failsOnlyJavaCC = true
+        failsParsing[Clause].withMessageStart(
+          s"Path selectors such as `${astSelector.prettified}` are not supported within $pathPatternKind path patterns."
         )
       }
 
       if (quantifier == "+") {
         test(s"MATCH (() ($selector (a)-[r]->(b))$quantifier ()--())") {
-          assertFailsWithMessageStart[Clause](
-            testName,
-            s"Path selectors such as `${astSelector.prettified}` are not supported within quantified path patterns.",
-            failsOnlyJavaCC = true
+          failsParsing[Clause](NotAnyAntlr).withMessageStart(
+            s"Path selectors such as `${astSelector.prettified}` are not supported within quantified path patterns."
           )
         }
       }
@@ -378,7 +359,8 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
     "SHORTEST -1 GROUP"
   ).foreach { selector =>
     test(s"MATCH $selector (a)-[r]->(b)") {
-      failsToParse[Clause]()
+      failsParsing[Clause]
     }
   }
+
 }

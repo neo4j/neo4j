@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   private def assertExpectedNodeAst(nodePattern: NodePattern): Unit = {
-    gives[Statement](
+    parsesTo[Statement](
       singleQuery(
         insert(
           nodePattern
@@ -45,7 +45,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     direction: SemanticDirection,
     nodePattern2: NodePattern
   ): Unit = {
-    gives[Statement](
+    parsesTo[Statement](
       singleQuery(
         insert(
           relationshipChain(
@@ -386,7 +386,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   // More advanced patterns
 
   test("INSERT ()-[:R]->(IS B)-[:S {prop:'s'}]->({prop: 42})<-[r IS T]-(n:A)") {
-    gives[Statement](
+    parsesTo[Statement](
       singleQuery(
         insert(
           relationshipChain(
@@ -411,7 +411,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("INSERT (n)-[:R]->(IS B), (n)-[:S {prop:'s'}]->({prop: 42})") {
-    gives[Statement](
+    parsesTo[Statement](
       singleQuery(
         insert(
           Seq(
@@ -484,59 +484,59 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   // The following cases will fail parsing for both CREATE and INSERT
 
   test("INSERT (:A n)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ({prop:42} :A)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()[]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[]>()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[{prop:42} :R]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[:R r]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ALL PATHS (n)-[:R]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ANY SHORTEST PATHS p = (n)-[:R]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT SHORTEST 2 PATH (n)-[:R]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT SHORTEST 2 GROUPS (n)-[:R]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   // The following cases will parse but fail in semantic checking for both CREATE and INSERT.
@@ -567,255 +567,250 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   // For INSERT, they fail in parsing.
 
   test("INSERT (n:A|B)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (n:A|:B)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (n IS A|B)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (n IS A:B)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (n IS !(A&B))") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (IS %)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (WHERE true)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (n WHERE n.prop = 1)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ({prop:2} WHERE true)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (n {prop:2} WHERE n.prop = 1)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (:A WHERE true)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (n:A WHERE true)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (:A {prop: 2} WHERE true)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (n:A {prop: 2} WHERE n.prop > 42)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()--()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<--()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[:Rel1|Rel2]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[:Rel1&Rel2]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[:!Rel]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[{prop: 2}]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[*1..3]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-[r {prop: 2}]-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-[r *1..3]-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-[*1..3 {prop:2} ]-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-[{prop:2} WHERE true]-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-[*1..3 WHERE true]-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r *1..3 {prop:2}]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r {prop:2} WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r *1..3 WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r *1..3 {prop:2} WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[:R *1..3]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[:R WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-[r :R *1..3]-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r :R WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-[:R *1..3 {prop:2} ]-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-[:R {prop:2} WHERE true]-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()<-[:R *1..3 WHERE true]-()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r :R *1..3 {prop:2}]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r :R {prop:2} WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r :R *1..3 WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ()-[r :R *1..3 {prop:2} WHERE true]->()") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT shortestPath((a)-[r]->(b))") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT allShortestPaths((a)-[r]->(b))") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (a)-[:R]->(b)(a)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ((n)-[r]->(m))*") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ((a)-->(b) WHERE a.prop > b.prop)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   // The following cases will parse and be semantically correct for CREATE.
   // For INSERT, they fail in parsing.
 
   test("INSERT (:(A&B))") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (IS (A&B)&C)") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT (:A:B)") {
-    assertFailsWithMessage[Statement](
-      testName,
+    failsParsing[Statement].withMessage(
       "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead. (line 1, column 11 (offset: 10))"
     )
   }
 
   test("INSERT (n:A&B:C)") {
-    assertFailsWithMessage[Statement](
-      testName,
+    failsParsing[Statement].withMessage(
       "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead. (line 1, column 14 (offset: 13))"
     )
   }
 
   test("INSERT (n:A)-[:R]->(:B:C)") {
-    assertFailsWithMessage[Statement](
-      testName,
+    failsParsing[Statement].withMessage(
       "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead. (line 1, column 23 (offset: 22))"
     )
   }
 
   test("INSERT p=()-[:R]->()") {
-    assertFailsWithMessage[Statement](
-      testName,
+    failsParsing[Statement].withMessage(
       "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name. (line 1, column 8 (offset: 7))"
     )
   }
 
   test("INSERT (), p=()-[:R]->()") {
-    assertFailsWithMessage[Statement](
-      testName,
+    failsParsing[Statement].withMessage(
       "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name. (line 1, column 12 (offset: 11))"
     )
   }
@@ -823,30 +818,30 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   // INSERT should not work as a synonym to CREATE for DDL
 
   test("INSERT USER foo SET PASSWORD 'password'") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ROLE role") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT DATABASE foo") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT COMPOSITE DATABASE name") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT ALIAS alias FOR DATABASE foo") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT INDEX FOR (n:Label) ON n.prop") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test("INSERT CONSTRAINT FOR (n:Label) REQUIRE n.prop IS NOT NULL") {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 }

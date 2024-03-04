@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -36,8 +36,8 @@ import java.nio.charset.StandardCharsets
 class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   protected def assertAst(expected: ast.Statement, comparePosition: Boolean = true): Unit = {
-    if (comparePosition) parses[Statements](NotAntlr).toAstPositioned(Statements(Seq(expected)))
-    else parses[Statements](NotAntlr).toAst(Statements(Seq(expected)))
+    if (comparePosition) parses[Statements](NotAnyAntlr).toAstPositioned(Statements(Seq(expected)))
+    else parses[Statements](NotAnyAntlr).toAst(Statements(Seq(expected)))
   }
 
   implicit val stringConvertor: String => Either[String, Parameter] = s => Left(s)

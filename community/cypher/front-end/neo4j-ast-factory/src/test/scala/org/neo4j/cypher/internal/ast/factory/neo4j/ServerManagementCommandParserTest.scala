@@ -17,12 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.NoOptions
-import org.neo4j.cypher.internal.ast.OptionsMap
-import org.neo4j.cypher.internal.ast.OptionsParam
-import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny

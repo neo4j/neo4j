@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 class NodePatternParserTest extends PatternParserTestBase {
 
   test("MATCH ()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat()
@@ -36,7 +36,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test("MATCH (n)") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(Some("n"))
@@ -46,7 +46,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test("MATCH ({prop : 1})") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(
@@ -58,7 +58,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test("MATCH ($props)") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(
@@ -70,7 +70,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test("MATCH (n {prop: 1})") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(
@@ -92,7 +92,7 @@ class NodePatternParserTest extends PatternParserTestBase {
     } yield {
       // MATCH
       test(s"MATCH ($maybeVariable $expr $maybeProperties $maybeWhere)") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               nodePat(
@@ -108,7 +108,7 @@ class NodePatternParserTest extends PatternParserTestBase {
 
       // OPTIONAL MATCH
       test(s"OPTIONAL MATCH ($maybeVariable $expr $maybeProperties $maybeWhere)") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             optionalMatch(
               nodePat(
@@ -137,7 +137,7 @@ class NodePatternParserTest extends PatternParserTestBase {
           )
         )(pos, None, None)
 
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               pattern = nodePat(),
@@ -162,7 +162,7 @@ class NodePatternParserTest extends PatternParserTestBase {
           )
         )(pos, None, None)
 
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               pattern = nodePat(),
@@ -201,7 +201,7 @@ class NodePatternParserTest extends PatternParserTestBase {
           )
         )(pos, None, None)
 
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               pattern = nodePat()
@@ -219,7 +219,7 @@ class NodePatternParserTest extends PatternParserTestBase {
       // CREATE + MERGE, these should parse, but all label expressions except : and & will be disallowed in semantic checking
 
       test(s"CREATE ($maybeVariable $expr $maybeProperties $maybeWhere)") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             create(
               nodePat(
@@ -234,7 +234,7 @@ class NodePatternParserTest extends PatternParserTestBase {
       }
 
       test(s"MERGE ($maybeVariable $expr $maybeProperties $maybeWhere)") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             merge(
               nodePat(
@@ -256,7 +256,7 @@ class NodePatternParserTest extends PatternParserTestBase {
       (maybeProperties, maybePropertiesAst) <- properties
     } yield {
       test(s"MATCH ($maybeVariable $maybeProperties WHERE x $expr)") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               nodePat(
@@ -271,7 +271,7 @@ class NodePatternParserTest extends PatternParserTestBase {
       }
 
       test(s"MATCH ($maybeVariable $expr $maybeProperties WHERE x $expr)") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               nodePat(
@@ -289,7 +289,7 @@ class NodePatternParserTest extends PatternParserTestBase {
     // WHERE
 
     test(s"MATCH (n) WHERE n $expr") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             nodePat(Some("n")),
@@ -300,7 +300,7 @@ class NodePatternParserTest extends PatternParserTestBase {
     }
 
     test(s"MATCH (n) WHERE n.prop = 1 AND n $expr") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             nodePat(Some("n")),
@@ -318,7 +318,7 @@ class NodePatternParserTest extends PatternParserTestBase {
     // RETURN
 
     test(s"MATCH (n) RETURN n $expr AS node") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             nodePat(Some("n"))
@@ -344,7 +344,7 @@ class NodePatternParserTest extends PatternParserTestBase {
        |AS value
        |""".stripMargin
   ) {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -388,7 +388,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (n IS IS)") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(
@@ -401,7 +401,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (IS:IS)") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(
@@ -414,7 +414,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (WHERE IS IS|WHERE WHERE WHERE.IS = IS.WHERE)") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(
@@ -436,7 +436,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (n) WHERE n IS NULL AND n.prop IS NOT NULL") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(Some("n")),
@@ -447,7 +447,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (n WHERE n IS NULL)") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(
@@ -460,7 +460,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (n: NULL WHERE n IS NULL)") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(
@@ -474,7 +474,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (n WHERE n IS NOT NULL)") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           nodePat(
@@ -495,7 +495,7 @@ class NodePatternParserTest extends PatternParserTestBase {
     label <- Seq("NOT", "NULL", "TYPED")
   } yield {
     test(s"MATCH (n:$label)") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             nodePat(
@@ -508,7 +508,7 @@ class NodePatternParserTest extends PatternParserTestBase {
     }
 
     test(s"MATCH (n:`$label`)") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             nodePat(
@@ -525,7 +525,7 @@ class NodePatternParserTest extends PatternParserTestBase {
     }
 
     test(s"MATCH (n IS `$label`)") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             nodePat(
@@ -539,7 +539,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test("WITH [1, 2, 3] AS where RETURN [is IN where] AS IS") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         with_(listOf(literalInt(1), literalInt(2), literalInt(3)).as("where")),
         return_(listComprehension(varFor("is"), varFor("where"), None, None).as("IS"))

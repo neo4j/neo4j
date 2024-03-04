@@ -21,16 +21,8 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.expressions.AllIterablePredicate
-import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.FilterScope
-import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.InputPosition
 
 class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
@@ -54,7 +46,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -82,7 +74,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -109,7 +101,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -137,7 +129,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -163,7 +155,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )(InputPosition(44, 2, 35))
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -183,7 +175,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -203,7 +195,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -238,7 +230,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -251,7 +243,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       |WHERE EXISTS { MATCH (b) RETURN b WHERE true }
       |RETURN m""".stripMargin
   ) {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 
   test(
@@ -259,6 +251,6 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       |WHERE EXISTS { (a)-[r]->(b) WHERE a.prop = 1 RETURN r }
       |RETURN m""".stripMargin
   ) {
-    failsToParse[Statement]
+    failsParsing[Statement]
   }
 }

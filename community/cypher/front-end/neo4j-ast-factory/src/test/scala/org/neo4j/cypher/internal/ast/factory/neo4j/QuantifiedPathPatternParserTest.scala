@@ -21,29 +21,13 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.expressions.FixedQuantifier
-import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
-import org.neo4j.cypher.internal.expressions.IntervalQuantifier
-import org.neo4j.cypher.internal.expressions.MatchMode
-import org.neo4j.cypher.internal.expressions.NamedPatternPart
-import org.neo4j.cypher.internal.expressions.ParenthesizedPath
-import org.neo4j.cypher.internal.expressions.PathConcatenation
-import org.neo4j.cypher.internal.expressions.PathPatternPart
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
-import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
-import org.neo4j.cypher.internal.expressions.PlusQuantifier
-import org.neo4j.cypher.internal.expressions.QuantifiedPath
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions.StarQuantifier
-import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions._
 
 class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("(n)") {
-    givesIncludingPositions[PatternPart] {
+    parses[PatternPart].toAstPositioned {
       PathPatternPart(
         nodePat(name = Some("n"), position = (1, 1, 0))
       )
@@ -51,7 +35,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("(((n)))") {
-    gives[PatternPart] {
+    parsesTo[PatternPart] {
       PatternPart(ParenthesizedPath(PatternPart(ParenthesizedPath(PatternPart(
         nodePat(Some("n"))
       ))(pos)))(pos))
@@ -59,7 +43,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("((n)-[r]->(m))*") {
-    givesIncludingPositions[PatternPart] {
+    parses[PatternPart].toAstPositioned {
       PatternPart(QuantifiedPath(
         PatternPart(
           RelationshipChain(
@@ -75,7 +59,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("(p = (n)-[r]->(m))*") {
-    gives[PatternPart] {
+    parsesTo[PatternPart] {
       PatternPart(QuantifiedPath(
         NamedPatternPart(
           Variable("p"),
@@ -94,7 +78,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("(a) ((n)-[r]->(m))*") {
-    givesIncludingPositions[PatternPart] {
+    parses[PatternPart].toAstPositioned {
       PatternPart(
         PathConcatenation(Seq(
           nodePat(name = Some("a"), position = (1, 1, 0)),
@@ -115,7 +99,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("((n)-[r]->(m))* (b)") {
-    givesIncludingPositions[PatternPart] {
+    parses[PatternPart].toAstPositioned {
       PatternPart(
         PathConcatenation(Seq(
           QuantifiedPath(
@@ -138,7 +122,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
   test(
     """(a) (p = (n)-[r]->(m)){1,3} (b)""".stripMargin
   ) {
-    gives[PatternPart] {
+    parsesTo[PatternPart] {
       PatternPart(
         PathConcatenation(Seq(
           nodePat(name = Some("a")),
@@ -169,7 +153,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
 
   // we allow arbitrary juxtaposition in the parser and only disallow it in semantic analysis
   test("(a) ((n)-[r]->(m))* (b) (c) ((p)-[q]->(s))+") {
-    givesIncludingPositions[PatternPart] {
+    parses[PatternPart].toAstPositioned {
       PatternPart(
         PathConcatenation(Seq(
           nodePat(name = Some("a"), position = (1, 1, 0)),
@@ -203,7 +187,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("p= ( (a)-->(b) )") {
-    gives[PatternPart] {
+    parsesTo[PatternPart] {
       NamedPatternPart(
         varFor("p"),
         PatternPart(ParenthesizedPath(PatternPart(RelationshipChain(
@@ -217,7 +201,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
 
   // We parse this and fail later in semantic checking
   test("(p = (q = (n)-[r]->(m))*)*") {
-    gives[PatternPart] {
+    parsesTo[PatternPart] {
       PatternPart(
         QuantifiedPath(
           NamedPatternPart(
@@ -244,7 +228,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
 
   // We parse this and fail later in semantic checking
   test("p = (n) (q = (a)-[]->(b))") {
-    gives[PatternPart] {
+    parsesTo[PatternPart] {
       NamedPatternPart(
         varFor("p"),
         PatternPart(PathConcatenation(Seq(
@@ -259,7 +243,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("((a)-->(b)) ((x)-->(y))*") {
-    gives[PatternPart] {
+    parsesTo[PatternPart] {
       PatternPart(PathConcatenation(Seq(
         ParenthesizedPath(PatternPart(RelationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b")))(pos)))(pos),
         QuantifiedPath(

@@ -23,6 +23,9 @@ import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.cast
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintNodePatternContext
@@ -66,7 +69,7 @@ final class SyntaxChecker extends ParseTreeListener {
       case CypherParser.RULE_alterAlias                       => checkAlterAlias(cast(ctx))
       case CypherParser.RULE_globPart                         => checkGlobPart(cast(ctx))
       case CypherParser.RULE_insertPattern                    => checkInsertPattern(cast(ctx))
-      case CypherParser.RULE_insertLabelConjunction           => checkInsertLabelConjunction(cast(ctx))
+      case CypherParser.RULE_insertNodeLabelExpression        => checkInsertLabelConjunction(cast(ctx))
       case CypherParser.RULE_functionInvocation               => checkFunctionInvocation(cast(ctx))
       case _                                                  =>
     }
@@ -364,33 +367,33 @@ final class SyntaxChecker extends ParseTreeListener {
   }
 
   private def checkInsertPattern(ctx: CypherParser.InsertPatternContext): Unit = {
-    val firstEquality = ctx.children.asScala.collectFirst {
-      case x: TerminalNode if x.getText.equals("=") => x.getSymbol
-    }
-
-    if (firstEquality.nonEmpty) {
+    if (ctx.EQ() != null) {
       errors :+= exceptionFactory.syntaxException(
         "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name.",
-        inputPosition(firstEquality.get)
+        pos(ctxChild(ctx, 0))
       )
     }
   }
 
-  private def checkInsertLabelConjunction(ctx: CypherParser.InsertLabelConjunctionContext): Unit = {
-    val firstColon = ctx.children.asScala.collectFirst {
-      case x: TerminalNode if x.getText.equals(":") => x.getSymbol
-    }
+  private def checkInsertLabelConjunction(ctx: CypherParser.InsertNodeLabelExpressionContext): Unit = {
+    val colons = ctx.COLON()
+    val firstIsColon = nodeChild(ctx, 0).getSymbol.getType == CypherParser.COLON
 
-    if (firstColon.nonEmpty) {
+    if (firstIsColon && colons.size > 1) {
       errors :+= exceptionFactory.syntaxException(
         "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead.",
-        inputPosition(firstColon.get)
+        inputPosition(colons.get(1).getSymbol)
+      )
+    } else if (!firstIsColon && colons.size() > 0) {
+      errors :+= exceptionFactory.syntaxException(
+        "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead.",
+        inputPosition(colons.get(0).getSymbol)
       )
     }
   }
 
   private def checkFunctionInvocation(ctx: CypherParser.FunctionInvocationContext): Unit = {
-    val functionName = ctx.symbolicNameString().ast
+    val functionName = ctx.symbolicNameString().ast[String]()
     functionName match {
       case "normalize" =>
         if (ctx.expression().size == 2) {

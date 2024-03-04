@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.util.symbols.AnyType
@@ -3118,7 +3118,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     // The test setup does 'fromParser(_.Statements().get(0)', so only the first statement is yielded.
     // The purpose of the test is to make sure the parser does not throw an error on the semicolon, which was an issue before.
     // If we want to test that both statements are parsed, the test framework needs to be extended.
-    parses[Statements](NotAntlr).withAstLike { statements =>
+    parses[Statements](NotAnyAntlr).withAstLike { statements =>
       statements.get(0) shouldBe ast.CreateNodePropertyExistenceConstraint(
         varFor("n"),
         labelName("Person"),
@@ -3695,7 +3695,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     // The test setup does 'fromParser(_.Statements().get(0)', so only the first statement is yielded.
     // The purpose of the test is to make sure the parser does not throw an error on the semicolon, which was an issue before.
     // If we want to test that both statements are parsed, the test framework needs to be extended.
-    parses[Statements](NotAntlr).withAstLike { statements =>
+    parses[Statements](NotAnyAntlr).withAstLike { statements =>
       statements.get(0) shouldBe ast.DropConstraintOnName("my_constraint", ifExists = false)(pos)
     }
   }

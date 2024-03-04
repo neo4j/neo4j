@@ -24,13 +24,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
-import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.ListSlice
-import org.neo4j.cypher.internal.expressions.MapProjection
-import org.neo4j.cypher.internal.expressions.NFCNormalForm
-import org.neo4j.cypher.internal.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.StringType
@@ -310,60 +304,39 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
 
     // (COLLECT {RETURN 42})[(any(x IN y WHERE (size('str')).prop))..(reduce(x=true, y IN list | x AND y))]
     "COLLECT {RETURN 42}[any(x IN y WHERE size('str').prop)..reduce(x=true, y IN list | x AND y)]" should
-      parse[Expression].toAsts {
-        case JavaCc => ListSlice(
-            CollectExpression(
-              singleQuery(
-                return_(returnItem(literalInt(42), "42"))
-              )
-            )(pos, None, None),
-            Some(anyInList(varFor("x"), varFor("y"), prop(function("size", literalString("str")), "prop"))),
-            Some(reduce(varFor("x"), trueLiteral, varFor("y"), varFor("list"), and(varFor("x"), varFor("y"))))
-          )(pos)
-        case Antlr => ListSlice(
-            CollectExpression(null)(pos, None, None),
-            Some(anyInList(varFor("x"), varFor("y"), prop(function("size", literalString("str")), "prop"))),
-            Some(reduce(varFor("x"), trueLiteral, varFor("y"), varFor("list"), and(varFor("x"), varFor("y"))))
-          )(pos)
-
-      }
+      parseTo[Expression](ListSlice(
+        CollectExpression(
+          singleQuery(
+            return_(returnItem(literalInt(42), "42"))
+          )
+        )(pos, None, None),
+        Some(anyInList(varFor("x"), varFor("y"), prop(function("size", literalString("str")), "prop"))),
+        Some(reduce(varFor("x"), trueLiteral, varFor("y"), varFor("list"), and(varFor("x"), varFor("y"))))
+      )(pos))
     // [(x IN (EXISTS {RETURN 42}) WHERE (x{.*}) = (COUNT {RETURN 42}))][([(n)-->() | n])]
-    "[x IN EXISTS {RETURN 42} WHERE x{.*} = COUNT {RETURN 42}][[(n)-->() | n]]" should parse[Expression].toAsts {
-      case JavaCc => containerIndex(
-          listComprehension(
-            varFor("x"),
-            ExistsExpression(
-              singleQuery(
-                return_(returnItem(literalInt(42), "42"))
-              )
-            )(pos, None, None),
-            Some(
-              eq(
-                MapProjection(varFor("x"), List(AllPropertiesSelector()(pos)))(pos),
-                CountExpression(
-                  singleQuery(
-                    return_(returnItem(literalInt(42), "42"))
-                  )
-                )(pos, None, None)
-              )
-            ),
-            None
-          ),
-          patternComprehension(relationshipChain(nodePat(Some("n")), relPat(), nodePat()), varFor("n"))
-        )
-      case Antlr =>
-        containerIndex(
-          listComprehension(
-            varFor("x"),
-            null,
-            Some(eq(
+    "[x IN EXISTS {RETURN 42} WHERE x{.*} = COUNT {RETURN 42}][[(n)-->() | n]]" should parseTo[Expression] {
+      containerIndex(
+        listComprehension(
+          varFor("x"),
+          ExistsExpression(
+            singleQuery(
+              return_(returnItem(literalInt(42), "42"))
+            )
+          )(pos, None, None),
+          Some(
+            eq(
               MapProjection(varFor("x"), List(AllPropertiesSelector()(pos)))(pos),
-              null
-            )),
-            None
+              CountExpression(
+                singleQuery(
+                  return_(returnItem(literalInt(42), "42"))
+                )
+              )(pos, None, None)
+            )
           ),
-          patternComprehension(relationshipChain(nodePat(Some("n")), relPat(), nodePat()), varFor("n"))
-        )
+          None
+        ),
+        patternComprehension(relationshipChain(nodePat(Some("n")), relPat(), nodePat()), varFor("n"))
+      )
     }
 
 //    ParseSuccess(ContainerIndex(ShortestPathExpression(ShortestPathsPatternPart(null,true)),CaseExpression(Some(Variable(x)),ArraySeq((True(),SignedDecimalIntegerLiteral(1))),Some(SignedDecimalIntegerLiteral(2)))))

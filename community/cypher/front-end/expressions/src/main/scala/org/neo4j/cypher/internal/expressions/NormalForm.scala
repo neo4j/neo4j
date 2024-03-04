@@ -17,23 +17,23 @@
 package org.neo4j.cypher.internal.expressions
 
 sealed trait NormalForm {
-  protected def formName: String
+  def formName: String
   def description: String = s"$formName"
   override def toString: String = description
 }
 
 case object NFCNormalForm extends NormalForm {
-  protected val formName: String = "NFC"
+  val formName: String = "NFC"
 }
 
 case object NFDNormalForm extends NormalForm {
-  protected val formName: String = "NFD"
+  val formName: String = "NFD"
 }
 
 case object NFKCNormalForm extends NormalForm {
-  protected val formName: String = "NFKC"
+  val formName: String = "NFKC"
 }
 
 case object NFKDNormalForm extends NormalForm {
-  protected val formName: String = "NFKD"
+  val formName: String = "NFKD"
 }

@@ -19,137 +19,136 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.PatternPart
 
 class PatternPartTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     with AstConstructionTestSupport {
 
   test("(n)-->(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("(n)-->+(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("(n)-->*(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("(n)-->*(m) ()") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("(n)-->{0,}(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("(n)-->{,2}(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("(n)-->{1,2}(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("(n)-->{1}(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("((n)-->(m))+") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("((n)-->(m))*") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("((n)-->(m))* ()") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("((n)-->(m)){0,}") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("((n)-->(m)){,2}") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("((n)-->(m)){1,2}") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("((n)-->(m)){1}") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("SHORTEST 1 (n)-->+(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("SHORTEST 4 (n)-->*(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("ALL SHORTEST (n)-->*(m) ()") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("ALL SHORTEST (n)-->{0,}(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("ANY SHORTEST (n)-->+(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("ANY 4 (n)-->*(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("ANY (n)-->*(m) ()") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("SHORTEST 5 GROUPS (n)-->{0,}(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("(n)-[r *]->(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("(n)-[r *1..]->(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("(n)-[r *..2]->(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("(n)-[r *2]->(m)") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("((a)-[r]->(b))") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("((a)-[r]->+(b))") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe false)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe false)
   }
 
   test("shortestPath((a)-[r]->+(b))") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("allShortestPaths((a)-[r*]->(b))") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 
   test("shortestPath((a)-[r]->(b))") {
-    testName should parse[PatternPart](NotAntlr).withAstLike(_.isBounded shouldBe true)
+    testName should parse[PatternPart].withAstLike(_.isBounded shouldBe true)
   }
 }

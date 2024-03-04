@@ -16,17 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
-import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
-import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
-import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
-import org.neo4j.cypher.internal.ast.DropDatabaseAlias
-import org.neo4j.cypher.internal.ast.IfExistsDoNothing
-import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
-import org.neo4j.cypher.internal.ast.IfExistsReplace
-import org.neo4j.cypher.internal.ast.IfExistsThrowError
-import org.neo4j.cypher.internal.ast.ShowAliases
-import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.CTMap
 

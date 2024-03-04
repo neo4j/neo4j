@@ -18,13 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.expressions.LiteralEntry
-import org.neo4j.cypher.internal.expressions.MapProjection
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.PropertySelector
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.VariableSelector
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.DummyPosition
 
 class MapProjectionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {

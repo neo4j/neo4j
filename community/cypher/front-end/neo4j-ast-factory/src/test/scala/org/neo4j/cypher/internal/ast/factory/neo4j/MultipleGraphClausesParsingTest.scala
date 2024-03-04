@@ -17,12 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.CatalogName
-import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.GraphDirectReference
-import org.neo4j.cypher.internal.ast.GraphFunctionReference
-import org.neo4j.cypher.internal.ast.GraphReference
-import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions

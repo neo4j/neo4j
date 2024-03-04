@@ -33,7 +33,7 @@ class DeleteParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
       forced = false
     )(InputPosition(10, 2, 1))
 
-    givesIncludingPositions[Statements] {
+    parses[Statements].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("n"))),
         deleteClause
@@ -50,7 +50,7 @@ class DeleteParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
       forced = false
     )(InputPosition(10, 2, 1))
 
-    givesIncludingPositions[Statements] {
+    parses[Statements].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("n"))),
         deleteClause
@@ -67,7 +67,7 @@ class DeleteParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
       forced = true
     )(InputPosition(10, 2, 1))
 
-    givesIncludingPositions[Statements] {
+    parses[Statements].toAstPositioned {
       singleQuery(
         match_(nodePat(name = Some("n"))),
         deleteClause
@@ -79,13 +79,13 @@ class DeleteParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     """MATCH (n)
       |DETACH NODETACH DELETE n""".stripMargin
   ) {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test(
     """MATCH (n)
       |NODETACH DETACH DELETE n""".stripMargin
   ) {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 }

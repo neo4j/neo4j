@@ -46,21 +46,21 @@ class ProjectionClauseParserTest extends AstParsingTestBase with LegacyAstParsin
   }
 
   test("RETURN *") {
-    yields[Clause](ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))
+    parsesTo[Clause](ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos))(pos))
   }
 
   test("RETURN 1 AS a") {
-    yields[Clause](ast.Return(ast.ReturnItems(
+    parsesTo[Clause](ast.Return(ast.ReturnItems(
       includeExisting = false,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
-    )(pos)))
+    )(pos))(pos))
   }
 
   test("RETURN *, 1 AS a") {
-    yields[Clause](ast.Return(ast.ReturnItems(
+    parsesTo[Clause](ast.Return(ast.ReturnItems(
       includeExisting = true,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
-    )(pos)))
+    )(pos))(pos))
   }
 
   test("RETURN ") {

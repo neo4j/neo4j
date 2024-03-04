@@ -19,17 +19,10 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 /**
@@ -459,7 +452,7 @@ class MatchNodeLabelExpressionsParserTest extends AstParsingTestBase with Legacy
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("MATCH (n) WHERE n:A&B") {
-    parsesTo[Clause](NotAntlr) {
+    parsesTo[Clause] {
       match_(
         nodePat(name = Some("n")),
         where = Some(where(
@@ -478,7 +471,7 @@ class MatchNodeLabelExpressionsParserTest extends AstParsingTestBase with Legacy
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("MATCH (n:A|B) WHERE n:A&C") {
-    parsesTo[Clause](NotAntlr) {
+    parsesTo[Clause] {
       match_(
         nodePat(
           name = Some("n"),
@@ -505,7 +498,7 @@ class MatchNodeLabelExpressionsParserTest extends AstParsingTestBase with Legacy
   }
 
   test("MATCH (n) WHERE n:A") {
-    parsesTo[Clause](NotAntlr) {
+    parsesTo[Clause] {
       match_(
         nodePat(name = Some("n")),
         where = Some(
@@ -518,7 +511,7 @@ class MatchNodeLabelExpressionsParserTest extends AstParsingTestBase with Legacy
   }
 
   test("MATCH ()-[r]-() WHERE r:A|B") {
-    parsesTo[Clause](NotAntlr) {
+    parsesTo[Clause] {
       match_(
         RelationshipChain(
           NodePattern(None, None, None, None)(pos),

@@ -42,13 +42,26 @@ object Util {
   @inline def astChild[T <: ASTNode](ctx: AstRuleCtx, index: Int): T =
     ctx.getChild(index).asInstanceOf[AstRuleCtx].ast()
 
-  def astSeq[T: ClassTag](list: java.util.List[_ <: AstRuleCtx]): ArraySeq[T] = {
+  def astSeq[T: ClassTag](list: java.util.List[_ <: ParseTree], from: Int = 0): ArraySeq[T] = {
     val size = list.size()
-    val result = new Array[T](size)
-    var i = 0
+    val result = new Array[T]((size - from))
+    var i = from; var dest = 0
     while (i < size) {
-      result(i) = list.get(i).ast[T]()
+      result(dest) = list.get(i).asInstanceOf[AstRuleCtx].ast[T]()
       i += 1
+      dest += 1
+    }
+    ArraySeq.unsafeWrapArray(result)
+  }
+
+  def astSeq[T: ClassTag](list: java.util.List[_ <: ParseTree], offset: Int, step: Int): ArraySeq[T] = {
+    val size = list.size()
+    val result = new Array[T](size / step)
+    var i = offset; var dest = 0
+    while (i < size) {
+      result(dest) = list.get(i).asInstanceOf[AstRuleCtx].ast[T]()
+      i += step
+      dest += 1
     }
     ArraySeq.unsafeWrapArray(result)
   }

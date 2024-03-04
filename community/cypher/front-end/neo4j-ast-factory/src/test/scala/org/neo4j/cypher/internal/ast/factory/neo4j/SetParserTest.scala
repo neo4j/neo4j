@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTes
 class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("SET n:A") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A")))
       )
@@ -31,7 +31,7 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("SET n IS A") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A"), containsIs = true))
       )
@@ -39,7 +39,7 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("SET n:A:B:C") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A", "B", "C")))
       )
@@ -47,7 +47,7 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("SET n:A, n:B") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A")), setLabelItem("n", Seq("B")))
       )
@@ -55,7 +55,7 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("SET n IS A, n IS B") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A"), containsIs = true), setLabelItem("n", Seq("B"), containsIs = true))
       )
@@ -63,7 +63,7 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("SET n IS A, n:B") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A"), containsIs = true), setLabelItem("n", Seq("B")))
       )
@@ -71,7 +71,7 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("SET n:A, r.prop = 1, m IS B") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(
           setLabelItem("n", Seq("A")),
@@ -83,7 +83,7 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("SET n._1 = 1") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(
           setPropertyItem("n", "_1", literalInt(1))
@@ -95,7 +95,7 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   // Invalid mix of colon conjunction and IS, this will be disallowed in semantic checking
 
   test("SET n IS A:B") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A", "B"), containsIs = true))
       )
@@ -103,7 +103,7 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("SET n IS A, m:A:B") {
-    gives[Clause](
+    parsesTo[Clause](
       set_(
         Seq(
           setLabelItem("n", Seq("A"), containsIs = true),

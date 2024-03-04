@@ -16,25 +16,10 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.ExistsExpression
-import org.neo4j.cypher.internal.ast.LoadCSV
-import org.neo4j.cypher.internal.ast.RemovePropertyItem
-import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
-import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
-import org.neo4j.cypher.internal.ast.SetPropertyItem
-import org.neo4j.cypher.internal.ast.ShowDatabase
-import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.UseGraph
-import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
-import org.neo4j.cypher.internal.expressions.ContainerIndex
-import org.neo4j.cypher.internal.expressions.ListSlice
-import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.util.InputPosition
 import org.scalatest.LoneElement
@@ -42,47 +27,47 @@ import org.scalatest.LoneElement
 class ParserPositionTest extends AstParsingTestBase with LoneElement {
 
   test("MATCH (n) RETURN n.prop") {
-    parses[Statements](NotAntlr).withPositionOf[Property](InputPosition(17, 1, 18))
+    parses[Statements].withPositionOf[Property](InputPosition(17, 1, 18))
   }
 
   test("MATCH (n) SET n.prop = 1") {
-    parses[Statements](NotAntlr).withPositionOf[SetPropertyItem](InputPosition(14, 1, 15))
+    parses[Statements].withPositionOf[SetPropertyItem](InputPosition(14, 1, 15))
   }
 
   test("MATCH (n) REMOVE n.prop") {
-    parses[Statements](NotAntlr).withPositionOf[RemovePropertyItem](InputPosition(17, 1, 18))
+    parses[Statements].withPositionOf[RemovePropertyItem](InputPosition(17, 1, 18))
   }
 
   test("LOAD CSV FROM 'url' AS line") {
-    parses[Statements](NotAntlr).withPositionOf[LoadCSV](InputPosition(0, 1, 1))
+    parses[Statements](NotAnyAntlr).withPositionOf[LoadCSV](InputPosition(0, 1, 1))
   }
 
   test("USE GRAPH(x) RETURN 1 as y ") {
-    parses[Statements](NotAntlr).withPositionOf[UseGraph](InputPosition(0, 1, 1))
+    parses[Statements](NotAnyAntlr).withPositionOf[UseGraph](InputPosition(0, 1, 1))
   }
 
   test("CREATE (a)-[:X]->(b)") {
-    parses[Statements](NotAntlr).withPositionOf[NonPrefixedPatternPart](InputPosition(7, 1, 8))
+    parses[Statements].withPositionOf[NonPrefixedPatternPart](InputPosition(7, 1, 8))
   }
 
   test("SHOW ALL ROLES YIELD role") {
-    parses[Statements](NotAntlr).withPositionOf[Yield](InputPosition(15, 1, 16))
+    parses[Statements](NotAnyAntlr).withPositionOf[Yield](InputPosition(15, 1, 16))
   }
 
   test("RETURN 3 IN list[0] AS r") {
-    parses[Statements](NotAntlr).withPositionOf[ContainerIndex](InputPosition(17, 1, 18))
+    parses[Statements].withPositionOf[ContainerIndex](InputPosition(17, 1, 18))
   }
 
   test("RETURN 3 IN [1, 2, 3][0..1] AS r") {
-    parses[Statements](NotAntlr).withPositionOf[ListSlice](InputPosition(21, 1, 22))
+    parses[Statements].withPositionOf[ListSlice](InputPosition(21, 1, 22))
   }
 
   test("MATCH (a) WHERE NOT (a:A)") {
-    parses[Statements](NotAntlr).withPositionOf[LabelExpressionPredicate](InputPosition(21, 1, 22))
+    parses[Statements].withPositionOf[LabelExpressionPredicate](InputPosition(21, 1, 22))
   }
 
   test("MATCH (n) WHERE exists { (n) --> () }") {
-    parses[Statements](NotAntlr).withAstLike { ast =>
+    parses[Statements].withAstLike { ast =>
       val exists = ast.folder.treeFindByClass[ExistsExpression].get
       exists.position shouldBe InputPosition(16, 1, 17)
       exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(25, 1, 26)
@@ -90,7 +75,7 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
   }
 
   test("MATCH (n) WHERE exists { MATCH (n)-[r]->(m) }") {
-    parses[Statements](NotAntlr).withAstLike { ast =>
+    parses[Statements].withAstLike { ast =>
       val exists = ast.folder.treeFindByClass[ExistsExpression].get
       exists.position shouldBe InputPosition(16, 1, 17)
       exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(31, 1, 32)
@@ -98,7 +83,7 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
   }
 
   test("MATCH (n) WHERE exists { MATCH (m) WHERE exists { (n)-[]->(m) } }") {
-    parses[Statements](NotAntlr).withAstLike { ast: Statements =>
+    parses[Statements].withAstLike { ast: Statements =>
       ast.folder.findAllByClass[ExistsExpression] match {
         case Seq(exists, existsNested) =>
           exists.position shouldBe InputPosition(16, 1, 17)
@@ -111,11 +96,11 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
   }
 
   test("MATCH (n) SET n += {name: null}") {
-    parses[Statements](NotAntlr).withPositionOf[SetIncludingPropertiesFromMapItem](InputPosition(14, 1, 15))
+    parses[Statements].withPositionOf[SetIncludingPropertiesFromMapItem](InputPosition(14, 1, 15))
   }
 
   test("MATCH (n) SET n = {name: null}") {
-    parses[Statements](NotAntlr).withPositionOf[SetExactPropertiesFromMapItem](InputPosition(14, 1, 15))
+    parses[Statements].withPositionOf[SetExactPropertiesFromMapItem](InputPosition(14, 1, 15))
   }
 
   Seq(
@@ -126,7 +111,7 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
     ("DATABASE neo4j YIELD name", 26)
   ).foreach { case (name, variableOffset) =>
     test(s"SHOW $name") {
-      parses[Statements](NotAntlr)
+      parses[Statements](NotAnyAntlr)
         .withPositionOf[ShowDatabase](InputPosition(0, 1, 1))
         .withAstLike { ast =>
           ast.folder.treeFind[Variable](_.name == "name").map(_.position) shouldBe
@@ -136,6 +121,6 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
   }
 
   test("DROP INDEX ON :Person(name)") {
-    parses[Statements](NotAntlr).withPositionOf[PropertyKeyName](InputPosition(22, 1, 23))
+    parses[Statements](NotAnyAntlr).withPositionOf[PropertyKeyName](InputPosition(22, 1, 23))
   }
 }

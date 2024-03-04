@@ -20,38 +20,46 @@ options {
    tokenVocab = CypherLexer;
 }
 
-statements:
-   statement (SEMICOLON statement)* SEMICOLON? EOF;
+statements
+   : statement (SEMICOLON statement)* SEMICOLON? EOF
+   ;
 
-statement:
-   periodicCommitQueryHintFailure? (useClause singleQueryOrCommandWithUseClause | singleQueryOrCommand);
+statement
+   : periodicCommitQueryHintFailure? (command | regularQuery)
+   ;
 
-singleQueryOrCommand:
-   (createCommand | command | singleQuery union*);
+periodicCommitQueryHintFailure
+   : USING PERIODIC COMMIT UNSIGNED_DECIMAL_INTEGER?
+   ;
 
-singleQueryOrCommandWithUseClause:
-   (createCommand | command | singleQueryWithUseClause union*);
+regularQuery
+   : singleQuery (UNION ALL? singleQuery)*
+   ;
 
-periodicCommitQueryHintFailure:
-   USING PERIODIC COMMIT UNSIGNED_DECIMAL_INTEGER?;
+singleQuery
+   : clause+
+   ;
 
-regularQuery:
-   singleQuery union*;
-
-union:
-   UNION ALL? singleQuery;
-
-singleQuery:
-   clause+;
-
-singleQueryWithUseClause:
-   clause*;
-
-clause:
-   (useClause | returnClause | createClause | insertClause | deleteClause | setClause | removeClause | matchClause | mergeClause | withClause | unwindClause | callClause | subqueryClause | loadCSVClause | foreachClause);
+clause
+   : useClause
+   | returnClause
+   | createClause
+   | insertClause
+   | deleteClause
+   | setClause
+   | removeClause
+   | matchClause
+   | mergeClause
+   | withClause
+   | unwindClause
+   | callClause
+   | subqueryClause
+   | loadCSVClause
+   | foreachClause
+   ;
 
 useClause:
-   USE (GRAPH graphReference | graphReference);
+   USE GRAPH? graphReference;
 
 graphReference:
     LPAREN graphReference RPAREN | functionInvocation | symbolicAliasName;
@@ -66,10 +74,10 @@ returnItem:
    expression (AS variable)?;
 
 returnItems:
-   (TIMES (COMMA returnItem)* | returnItem (COMMA returnItem)*);
+   (TIMES | returnItem) (COMMA returnItem)*;
 
 orderItem:
-   expression (DESC | DESCENDING | ASC | ASCENDING ?);
+   expression (ASC | DESC)?;
 
 skip:
    SKIPROWS expression;
@@ -92,32 +100,56 @@ insertClause:
 setClause:
    SET setItem (COMMA setItem)*;
 
-setItem:
-   (propertyExpression EQ expression | variable EQ expression | variable PLUSEQUAL expression | variable nodeLabels | variable nodeLabelsIs);
+setItem
+   : propertyExpression EQ expression #SetProp
+   | variable EQ expression           #SetProps
+   | variable PLUSEQUAL expression    #AddProp
+   | variable nodeLabels              #SetLabels
+   | variable nodeLabelsIs            #SetLabelsIs
+   ;
 
 removeClause:
    REMOVE removeItem (COMMA removeItem)*;
 
-removeItem:
-   (propertyExpression | variable nodeLabels | variable nodeLabelsIs);
+removeItem
+   : propertyExpression    #RemoveProp
+   | variable nodeLabels   #RemoveLabels
+   | variable nodeLabelsIs #RemoveLabelsIs
+   ;
 
 deleteClause:
    (DETACH | NODETACH)? DELETE expression (COMMA expression)*;
 
-matchClause:
-   ((OPTIONAL MATCH) | MATCH) matchMode? patternList hints* whereClause?;
+matchClause
+   : OPTIONAL? MATCH matchMode? patternList hint* whereClause?;
 
-matchMode:
-    REPEATABLE (ELEMENT BINDINGS | ELEMENTS | ELEMENT) | DIFFERENT (RELATIONSHIP BINDINGS? | RELATIONSHIPS);
+matchMode
+   : REPEATABLE (ELEMENT BINDINGS? | ELEMENTS)
+   | DIFFERENT (RELATIONSHIP BINDINGS? | RELATIONSHIPS)
+   ;
 
-hints:
-   USING (INDEX indexHintBody | BTREE INDEX indexHintBody | TEXT INDEX indexHintBody | RANGE INDEX indexHintBody | POINT INDEX indexHintBody | JOIN ON variableList1 | SCAN variable labelOrRelType);
+hint
+   : USING
+      (
+         (
+            (INDEX | (BTREE INDEX) | (TEXT INDEX) | (RANGE INDEX) | (POINT INDEX))
+            SEEK? variable labelOrRelType LPAREN nonEmptyNameList RPAREN
+         )
+         | JOIN ON nonEmptyNameList
+         | SCAN variable labelOrRelType
+      )
+   ;
 
 indexHintBody:
-   SEEK? variable labelOrRelType LPAREN symbolicNameList1 RPAREN;
+   SEEK? variable labelOrRelType LPAREN nonEmptyNameList RPAREN;
 
-mergeClause:
-   MERGE pattern (ON (MATCH setClause | CREATE setClause))*;
+mergeClause
+   : MERGE pattern mergeAction*
+   ;
+
+mergeAction
+   : ON (MATCH|CREATE) setClause
+   ;
 
 unwindClause:
    UNWIND expression AS variable;
@@ -162,34 +194,37 @@ insertPatternList:
    insertPattern (COMMA insertPattern)*;
 
 pattern:
-   (variable EQ selector? | selector?) anonymousPattern;
+   (variable EQ)? selector? anonymousPattern;
 
 insertPattern:
-   (symbolicNameString EQ)? insertPathPatternAtoms;
+   (symbolicNameString EQ)? insertNodePattern (insertRelationshipPattern insertNodePattern)*;
 
-quantifier:
-   (LCURLY UNSIGNED_DECIMAL_INTEGER RCURLY | LCURLY UNSIGNED_DECIMAL_INTEGER? COMMA UNSIGNED_DECIMAL_INTEGER? RCURLY | PLUS | TIMES);
+quantifier
+   : LCURLY UNSIGNED_DECIMAL_INTEGER RCURLY
+   | LCURLY from=UNSIGNED_DECIMAL_INTEGER? COMMA to=UNSIGNED_DECIMAL_INTEGER? RCURLY
+   | PLUS
+   | TIMES
+   ;
 
 anonymousPattern:
    (shortestPathPattern | patternElement);
 
-shortestPathPattern:
-   (SHORTEST_PATH LPAREN patternElement RPAREN | ALL_SHORTEST_PATH LPAREN patternElement RPAREN);
+shortestPathPattern
+   : (SHORTEST_PATH|ALL_SHORTEST_PATH) LPAREN patternElement RPAREN
+   ;
 
-maybeQuantifiedRelationshipPattern:
-   relationshipPattern quantifier?;
+patternElement
+   : (nodePattern (relationshipPattern quantifier? nodePattern)* | parenthesizedPath)+
+   ;
 
-patternElement:
-   pathPatternAtoms;
-
-pathPatternAtoms:
-   (nodePattern (maybeQuantifiedRelationshipPattern nodePattern)* | parenthesizedPath)+;
-
-insertPathPatternAtoms:
-   insertNodePattern (insertRelationshipPattern insertNodePattern)*;
-
-selector:
-   (ANY SHORTEST (PATH | PATHS)? | ALL SHORTEST (PATH | PATHS)? | ANY UNSIGNED_DECIMAL_INTEGER? (PATH | PATHS)? | ALL (PATH | PATHS)? | SHORTEST UNSIGNED_DECIMAL_INTEGER? (PATH | PATHS)? (GROUP | GROUPS) | SHORTEST UNSIGNED_DECIMAL_INTEGER (PATH | PATHS)?);
+selector
+   : ANY SHORTEST PATH?                               #AnyShortestPath
+   | ALL SHORTEST PATH?                               #AllShortestPath
+   | ANY UNSIGNED_DECIMAL_INTEGER? PATH?              #AnyPath
+   | ALL PATH?                                        #AllPath
+   | SHORTEST UNSIGNED_DECIMAL_INTEGER? PATH? GROUP   #ShortestGroup
+   | SHORTEST UNSIGNED_DECIMAL_INTEGER PATH?          #AnyShortestPath
+   ;
 
 pathPatternNonEmpty:
    nodePattern (relationshipPattern nodePattern)+;
@@ -204,10 +239,13 @@ parenthesizedPath:
    LPAREN pattern (WHERE expression)? RPAREN quantifier?;
 
 nodeLabels:
-   labelOrRelType+;
+   labelType+;
 
 nodeLabelsIs:
-   IS symbolicNameString labelOrRelType*;
+   IS symbolicNameString labelType*;
+
+labelType:
+   COLON symbolicNameString;
 
 labelOrRelType:
    COLON symbolicNameString;
@@ -270,13 +308,10 @@ labelExpression1Is:
    (LPAREN labelExpression4Is RPAREN | PERCENT | symbolicLabelNameString);
 
 insertNodeLabelExpression:
-   (COLON|IS) insertLabelConjunction;
+   (COLON|IS) symbolicNameString ((AMPERSAND|COLON) symbolicNameString)*;
 
 insertRelationshipLabelExpression:
    (COLON|IS) symbolicNameString;
-
-insertLabelConjunction:
-   symbolicNameString ((AMPERSAND|COLON) symbolicNameString)*;
 
 expression:
    expression11 (OR expression11)*;
@@ -334,7 +369,7 @@ property:
    DOT propertyKeyName;
 
 propertyExpression:
-   expression1 property+;
+   expression1 (DOT propertyKeyName)+;
 
 expression1
    : literal
@@ -459,20 +494,18 @@ functionInvocation:
 namespace:
    (symbolicNameString DOT)*;
 
-variableList1:
-   symbolicNameString (COMMA symbolicNameString)*;
-
 variable:
    symbolicNameString;
 
-symbolicNameList1:
-   symbolicNameString (COMMA symbolicNameString)*;
+nonEmptyNameList
+   : symbolicNameString (COMMA symbolicNameString)*
+   ;
 
 createCommand:
    CREATE (OR REPLACE)? (createRole | createUser | createDatabase | createConstraint | createIndex | createAlias | createCompositeDatabase);
 
 command:
-   (commandWithUseGraph | showCommand | terminateCommand);
+   useClause? (createCommand | commandWithUseGraph | showCommand | terminateCommand);
 
 commandWithUseGraph:
    (dropCommand | alterCommand | renameCommand | denyPrivilege | revokeCommand | grantCommand | startDatabase | stopDatabase | enableServerCommand | allocationCommand);
@@ -613,7 +646,7 @@ createIndex:
    (BTREE INDEX createIndex_ | RANGE INDEX createIndex_ | FULLTEXT INDEX createFulltextIndex | TEXT INDEX createIndex_ | POINT INDEX createIndex_ | VECTOR INDEX createIndex_ | LOOKUP INDEX createLookupIndex | INDEX (ON oldCreateIndex | createIndex_));
 
 oldCreateIndex:
-   labelOrRelType LPAREN symbolicNamePositions RPAREN;
+   labelOrRelType LPAREN nonEmptyNameList RPAREN;
 
 createIndex_:
    (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameOrStringParameter (IF NOT EXISTS)? FOR LPAREN) (variable labelOrRelType RPAREN | RPAREN leftArrow? arrowLine LBRACKET variable labelOrRelType RBRACKET arrowLine rightArrow? LPAREN RPAREN) ON propertyList (OPTIONS mapOrParameter)?;
@@ -633,7 +666,7 @@ lookupIndexFunctionName:
    symbolicNameString;
 
 dropIndex:
-   INDEX (ON labelOrRelType LPAREN symbolicNamePositions RPAREN | symbolicNameOrStringParameter (IF EXISTS)?);
+   INDEX (ON labelOrRelType LPAREN nonEmptyNameList RPAREN | symbolicNameOrStringParameter (IF EXISTS)?);
 
 propertyList:
    (variable property | LPAREN variable property (COMMA variable property)* RPAREN);
@@ -816,10 +849,10 @@ qualifiedGraphPrivileges:
    (DELETE | MERGE propertyResource) ON graphScope graphQualifier;
 
 labelResource:
-   (TIMES | symbolicNameList1);
+   (TIMES | nonEmptyNameList);
 
 propertyResource:
-   LCURLY (TIMES | symbolicNameList1) RCURLY;
+   LCURLY (TIMES | nonEmptyNameList) RCURLY;
 
 graphQualifier:
    ((RELATIONSHIP | RELATIONSHIPS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (NODE | NODES) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (ELEMENT | ELEMENTS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | map RPAREN))?;
@@ -907,9 +940,6 @@ mapOrParameter:
 
 map: LCURLY (propertyKeyName COLON expression)? (COMMA propertyKeyName COLON expression)* RCURLY;
 
-symbolicNamePositions:
-   symbolicNameString (COMMA symbolicNameString)*;
-
 symbolicNameString:
    (escapedSymbolicNameString | unescapedSymbolicNameString);
 
@@ -923,7 +953,7 @@ symbolicLabelNameString:
    (escapedSymbolicNameString | unescapedLabelSymbolicNameString);
 
 unescapedLabelSymbolicNameString:
-   (IDENTIFIER | ACCESS | ACTIVE | ADMIN | ADMINISTRATOR | ALIAS | ALIASES | ALL_SHORTEST_PATH | ALL | ALTER | AND | ANY | ARRAY | AS | ASC | ASCENDING | ASSERT | ASSIGN | AT | BINDINGS | BOOLEAN | BOOSTED | BREAK | BRIEF | BTREE | BUILT | BY | CALL | CASE | CHANGE | CIDR | COLLECT | COMMAND | COMMANDS | COMMIT | COMPOSITE | CONCURRENT | CONSTRAINT | CONSTRAINTS | CONTAINS | CONTINUE | COPY | COUNT | CREATE | CSV | CURRENT | DATA | DATABASE | DATABASES | DATE | DATETIME | DBMS | DEALLOCATE | DEFAULT_TOKEN | DEFINED | DELETE | DENY | DESC | DESCENDING | DESTROY | DETACH | DIFFERENT | DISTINCT | DRIVER | DROP | DRYRUN | DUMP | DURATION | EACH | EDGE | ELEMENT | ELEMENTS | ELSE | ENABLE | ENCRYPTED | END | ENDS | ERROR | EXECUTABLE | EXECUTE | EXIST | EXISTENCE | EXISTS | FAIL | FALSE | FIELDTERMINATOR | FLOAT | FOREACH | FOR | FROM | FULLTEXT | FUNCTION | FUNCTIONS | GRANT | GRAPH | GRAPHS | GROUP | GROUPS | HEADERS | HOME | IF | IMMUTABLE | IN | INDEX | INDEXES | INFINITY | INT | INTEGER | IS | JOIN | KEY | LABEL | LABELS | LIMITROWS | LIST | LOAD | LOCAL | LOOKUP | MATCH | MANAGEMENT | MAP | MERGE | NAME | NAMES | NAN | NEW | NODE | NODETACH | NODES | NONE | NORMALIZE | NOTHING | NOWAIT | OF | ON | ONLY | OPTIONAL | OPTIONS | OPTION | OR | ORDER | OUTPUT | PASSWORD | PASSWORDS | PATH | PATHS | PERIODIC | PLAINTEXT | POINT | POPULATED | PRIMARY | PRIMARIES | PRIVILEGE | PRIVILEGES | PROCEDURE | PROCEDURES | PROPERTIES | PROPERTY | RANGE | READ | REALLOCATE | REDUCE | REL | RELATIONSHIP | RELATIONSHIPS | REMOVE | RENAME | REPEATABLE | REPLACE | REPORT | REQUIRE | REQUIRED | RETURN | REVOKE | ROLE | ROLES | ROW | ROWS | SCAN | SEC | SECOND | SECONDARY | SECONDARIES | SECONDS | SEEK | SERVER | SERVERS | SET | SETTING | SETTINGS | SHORTEST | SHORTEST_PATH | SHOW | SIGNED | SINGLE | SKIPROWS | START | STARTS | STATUS | STOP | STRING | SUPPORTED | SUSPENDED | TARGET | TERMINATE | TEXT | THEN | TIME | TIMESTAMP | TIMEZONE | TO | TOPOLOGY | TRANSACTION | TRANSACTIONS | TRAVERSE | TRUE | TYPE | TYPES | UNION | UNIQUE | UNIQUENESS | UNWIND | URL | USE | USER | USERS | USING | VALUE |  VECTOR | VERBOSE | VERTEX | WAIT | WHEN | WHERE | WITH | WITHOUT | WRITE | XOR | YIELD | ZONED);
+   (IDENTIFIER | ACCESS | ACTIVE | ADMIN | ADMINISTRATOR | ALIAS | ALIASES | ALL_SHORTEST_PATH | ALL | ALTER | AND | ANY | ARRAY | AS | ASC | ASSERT | ASSIGN | AT | BINDINGS | BOOLEAN | BOOSTED | BREAK | BRIEF | BTREE | BUILT | BY | CALL | CASE | CHANGE | CIDR | COLLECT | COMMAND | COMMANDS | COMMIT | COMPOSITE | CONCURRENT | CONSTRAINT | CONSTRAINTS | CONTAINS | CONTINUE | COPY | COUNT | CREATE | CSV | CURRENT | DATA | DATABASE | DATABASES | DATE | DATETIME | DBMS | DEALLOCATE | DEFAULT_TOKEN | DEFINED | DELETE | DENY | DESC | DESCENDING | DESTROY | DETACH | DIFFERENT | DISTINCT | DRIVER | DROP | DRYRUN | DUMP | DURATION | EACH | EDGE | ELEMENT | ELEMENTS | ELSE | ENABLE | ENCRYPTED | END | ENDS | ERROR | EXECUTABLE | EXECUTE | EXIST | EXISTENCE | EXISTS | FAIL | FALSE | FIELDTERMINATOR | FLOAT | FOREACH | FOR | FROM | FULLTEXT | FUNCTION | FUNCTIONS | GRANT | GRAPH | GRAPHS | GROUP | GROUPS | HEADERS | HOME | IF | IMMUTABLE | IN | INDEX | INDEXES | INFINITY | INT | INTEGER | IS | JOIN | KEY | LABEL | LABELS | LIMITROWS | LIST | LOAD | LOCAL | LOOKUP | MATCH | MANAGEMENT | MAP | MERGE | NAME | NAMES | NAN | NEW | NODE | NODETACH | NODES | NONE | NORMALIZE | NOTHING | NOWAIT | OF | ON | ONLY | OPTIONAL | OPTIONS | OPTION | OR | ORDER | OUTPUT | PASSWORD | PASSWORDS | PATH | PATHS | PERIODIC | PLAINTEXT | POINT | POPULATED | PRIMARY | PRIMARIES | PRIVILEGE | PRIVILEGES | PROCEDURE | PROCEDURES | PROPERTIES | PROPERTY | RANGE | READ | REALLOCATE | REDUCE | REL | RELATIONSHIP | RELATIONSHIPS | REMOVE | RENAME | REPEATABLE | REPLACE | REPORT | REQUIRE | REQUIRED | RETURN | REVOKE | ROLE | ROLES | ROW | ROWS | SCAN | SEC | SECOND | SECONDARY | SECONDARIES | SECONDS | SEEK | SERVER | SERVERS | SET | SETTING | SETTINGS | SHORTEST | SHORTEST_PATH | SHOW | SIGNED | SINGLE | SKIPROWS | START | STARTS | STATUS | STOP | STRING | SUPPORTED | SUSPENDED | TARGET | TERMINATE | TEXT | THEN | TIME | TIMESTAMP | TIMEZONE | TO | TOPOLOGY | TRANSACTION | TRANSACTIONS | TRAVERSE | TRUE | TYPE | TYPES | UNION | UNIQUE | UNIQUENESS | UNWIND | URL | USE | USER | USERS | USING | VALUE |  VECTOR | VERBOSE | VERTEX | WAIT | WHEN | WHERE | WITH | WITHOUT | WRITE | XOR | YIELD | ZONED);
 
 endOfFile:
    EOF;

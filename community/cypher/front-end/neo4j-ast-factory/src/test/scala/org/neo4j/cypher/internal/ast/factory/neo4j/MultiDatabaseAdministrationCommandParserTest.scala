@@ -17,12 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.NamespacedName
-import org.neo4j.cypher.internal.ast.NoOptions
-import org.neo4j.cypher.internal.ast.OptionsMap
-import org.neo4j.cypher.internal.ast.ReadOnlyAccess
-import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.Topology
+import org.neo4j.cypher.internal.ast._
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.Explicit
 import org.neo4j.cypher.internal.expressions.ExplicitParameter

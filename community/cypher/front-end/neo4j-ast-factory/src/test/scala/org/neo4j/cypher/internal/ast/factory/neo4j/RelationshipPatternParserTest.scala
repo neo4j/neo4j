@@ -20,24 +20,17 @@ import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.expressions.ExplicitParameter
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.RelationshipsPattern
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions._
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class RelationshipPatternParserTest extends PatternParserTestBase {
   private val pathLength = Seq(("", None), ("*1..5", Some(Some(range(Some(1), Some(5))))))
 
   test("MATCH ()--()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -51,7 +44,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test("MATCH ()-->()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -65,7 +58,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test("MATCH ()<--()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -79,7 +72,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test("MATCH ()<-->()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -93,7 +86,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test("MATCH ()-[$props]->()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -114,7 +107,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     (maybeProperties, maybePropertiesAst) <- properties
   } yield {
     test(s"MATCH ()-[$maybeVariable$maybePathLength$maybeProperties]-()") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             relationshipChain(
@@ -133,7 +126,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     }
 
     test(s"MATCH ()-[$maybeVariable$maybePathLength$maybeProperties]->()") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             relationshipChain(
@@ -152,7 +145,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     }
 
     test(s"MATCH ()<-[$maybeVariable$maybePathLength$maybeProperties]-()") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             relationshipChain(
@@ -172,27 +165,27 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test("MATCH ()-()") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("MATCH ()->()") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("MATCH ()[]->()") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("MATCH ()-[]>()") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("MATCH ()-]->()") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("MATCH ()-[->()") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   for {
@@ -206,7 +199,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     } yield {
       // MATCH
       test(s"MATCH ()-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               relationshipChain(
@@ -229,7 +222,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
       test(
         s"OPTIONAL MATCH ()-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()"
       ) {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             optionalMatch(
               relationshipChain(
@@ -268,7 +261,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
           )
         )(pos, None, None)
 
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               pattern = nodePat(Some("n")),
@@ -300,7 +293,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
           )
         )(pos, None, None)
 
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               pattern = nodePat(Some("n")),
@@ -344,7 +337,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
           )
         )(pos, None, None)
 
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               pattern = nodePat(Some("n"))
@@ -362,7 +355,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
       // CREATE + MERGE, these should parse, but all label expressions except : and & will be disallowed in semantic checking
 
       test(s"CREATE ()-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             create(
               relationshipChain(
@@ -382,7 +375,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
       }
 
       test(s"MERGE ()-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             merge(
               relationshipChain(
@@ -410,7 +403,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
       (maybeProperties, maybePropertiesAst) <- properties
     } yield {
       test(s"MATCH ()-[$maybeVariable $maybePathLength $maybeProperties WHERE x $expr]->()") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               relationshipChain(
@@ -430,7 +423,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
       }
 
       test(s"MATCH ()-[$maybeVariable $expr $maybePathLength $maybeProperties WHERE x $expr]->()") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             match_(
               relationshipChain(
@@ -453,7 +446,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     // WHERE
 
     test(s"MATCH ()-[r]->()  WHERE r $expr") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             relationshipChain(
@@ -468,7 +461,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     }
 
     test(s"MATCH ()-[r]->() WHERE r.prop = 1 AND r $expr") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             relationshipChain(
@@ -490,7 +483,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     // RETURN
 
     test(s"MATCH ()-[r]->() RETURN r $expr AS rel") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             relationshipChain(
@@ -522,7 +515,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
        |AS value
        |""".stripMargin
   ) {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -569,7 +562,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   // Edge cases
 
   test(s"MATCH ()-[r IS IS]->()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -586,7 +579,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH ()-[IS:IS]->()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -603,7 +596,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH ()-[WHERE IS IS|WHERE WHERE WHERE.IS = IS.WHERE]->()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -625,7 +618,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH ()-[r WHERE r IS NULL]->()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -642,7 +635,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH ()-[r IS `NULL` WHERE r IS NULL]->()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -660,7 +653,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH ()-[r WHERE r IS NOT NULL]->()") {
-    gives[Statements](
+    parsesTo[Statements](
       singleQuery(
         match_(
           relationshipChain(
@@ -681,7 +674,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     label <- Seq("NOT", "NULL", "TYPED")
   } yield {
     test(s"MATCH ()-[r:$label]->()") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             relationshipChain(
@@ -698,7 +691,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     }
 
     test(s"MATCH ()-[r:`$label`]->()") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             relationshipChain(
@@ -715,11 +708,11 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     }
 
     test(s"MATCH ()-[r IS $label]->()") {
-      failsToParse[Statements]()
+      failsParsing[Statements]
     }
 
     test(s"MATCH ()-[r IS `$label`]->()") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           match_(
             relationshipChain(
@@ -737,7 +730,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH ()-[r IS NOT NULL WHERE r IS NOT NULL]->()") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("(n)-[r]-(m)") {
@@ -828,5 +821,4 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
       )(pos, None, None)
     }
   }
-
 }

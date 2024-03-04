@@ -129,15 +129,12 @@ class WhitespaceParserTest extends AstParsingTestBase with LegacyAstParsingTestS
         f"Accept the whitespace unicode character in defined set: \\u${Integer.valueOf(whitespace)}%04X"
     ) {
       assert(Character.isWhitespace(whitespace) || nonJavaWhitespace.contains(whitespace))
-      givesIncludingPositions[Statement](
-        {
-          singleQuery(
-            match_(nodePat(name = Some("m"))),
-            return_(variableReturnItem("m"))
-          )
-        },
-        s"MATCH$whitespace(m) RETURN m"
-      )
+      s"MATCH$whitespace(m) RETURN m" should parse[Statement].toAstPositioned {
+        singleQuery(
+          match_(nodePat(name = Some("m"))),
+          return_(variableReturnItem("m"))
+        )
+      }
     }
   }
 
@@ -146,15 +143,12 @@ class WhitespaceParserTest extends AstParsingTestBase with LegacyAstParsingTestS
       testName =
         s"Accept the escaped whitespace unicode character in defined set: $whitespace"
     ) {
-      givesIncludingPositions[Statement](
-        {
-          singleQuery(
-            match_(nodePat(name = Some("m"))),
-            return_(variableReturnItem("m"))
-          )
-        },
-        s"MATCH$whitespace(m) RETURN m"
-      )
+      s"MATCH$whitespace(m) RETURN m" should parse[Statement].toAstPositioned {
+        singleQuery(
+          match_(nodePat(name = Some("m"))),
+          return_(variableReturnItem("m"))
+        )
+      }
     }
   }
 
@@ -170,15 +164,12 @@ class WhitespaceParserTest extends AstParsingTestBase with LegacyAstParsingTestS
       test(
         testName = f"Accept the whitespace character included in Character.isWhitespace: \\u$i%04X"
       ) {
-        givesIncludingPositions[Statement](
-          {
-            singleQuery(
-              match_(nodePat(name = Some("m"))),
-              return_(variableReturnItem("m"))
-            )
-          },
-          s"MATCH${i.toChar}(m) RETURN m"
-        )
+        s"MATCH${i.toChar}(m) RETURN m" should parse[Statement].toAstPositioned {
+          singleQuery(
+            match_(nodePat(name = Some("m"))),
+            return_(variableReturnItem("m"))
+          )
+        }
       }
     }
   }
@@ -187,22 +178,18 @@ class WhitespaceParserTest extends AstParsingTestBase with LegacyAstParsingTestS
    * test whitespaces in different locations
    */
   test("  MATCH ( m    ) RETURN m  ") {
-    givesIncludingPositions[Statement](
-      {
-        singleQuery(
-          match_(nodePat(name = Some("m"))),
-          return_(variableReturnItem("m"))
-        )
-      }
-    )
+    parses[Statement].toAstPositioned {
+      singleQuery(
+        match_(nodePat(name = Some("m"))),
+        return_(variableReturnItem("m"))
+      )
+    }
   }
 
   /**
    * \u0085 is not supported as whitespace until 6.0
    */
   test("u0085 is nt allowed as whitespace") {
-    failsToParse[Statement](
-      s"MATCHs\\0085(m) RETURN m"
-    )
+    s"MATCHs\\0085(m) RETURN m" should notParse[Statement]
   }
 }

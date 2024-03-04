@@ -18,16 +18,23 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.expressions.MatchMode
-import org.neo4j.cypher.internal.expressions.NamedPatternPart
-import org.neo4j.cypher.internal.expressions.PathPatternPart
+import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
+import org.neo4j.cypher.internal.expressions.MatchMode.RepeatableElements
+import org.neo4j.cypher.internal.expressions.Pattern.ForMatch
+import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions._
+
+import scala.collection.immutable.ArraySeq
 
 class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("MATCH DIFFERENT RELATIONSHIPS (n)-->(m)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.DifferentRelationships()(pos)
@@ -36,7 +43,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH DIFFERENT RELATIONSHIP BINDINGS (n)-->(m)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.DifferentRelationships()(pos)
@@ -45,7 +52,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH DIFFERENT RELATIONSHIP (n)-->(m)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.DifferentRelationships()(pos)
@@ -54,11 +61,11 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH DIFFERENT RELATIONSHIPS BINDINGS (n)-->(m)") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("MATCH REPEATABLE ELEMENTS (n)-->(m)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.RepeatableElements()(pos)
@@ -67,7 +74,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH REPEATABLE ELEMENT BINDINGS (n)-->(m)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.RepeatableElements()(pos)
@@ -76,7 +83,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH REPEATABLE ELEMENT (n)-->(m)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.RepeatableElements()(pos)
@@ -85,16 +92,16 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH REPEATABLE ELEMENTS BINDINGS (n)-->(m)") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("MATCH REPEATABLE ELEMENT ELEMENTS (n)-->(m)") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("MATCH () WHERE EXISTS {REPEATABLE ELEMENTS (n)-->(m)}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleExistsExpression(pattern, None, matchMode = MatchMode.RepeatableElements()(pos))))
@@ -104,7 +111,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
 
   test("MATCH () WHERE EXISTS {MATCH REPEATABLE ELEMENTS (n)-->(m)}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleExistsExpression(pattern, None, matchMode = MatchMode.RepeatableElements()(pos))))
@@ -114,7 +121,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
 
   test("MATCH () WHERE EXISTS {(n)-->(m)}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleExistsExpression(
@@ -128,7 +135,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
 
   test("MATCH () WHERE COUNT {REPEATABLE ELEMENTS (n)-->(m)}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleCountExpression(pattern, None, matchMode = MatchMode.RepeatableElements()(pos))))
@@ -138,7 +145,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
 
   test("MATCH () WHERE COLLECT {MATCH DIFFERENT RELATIONSHIPS (n)-->(m) RETURN *}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleCollectExpression(
@@ -153,7 +160,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
 
   test("MATCH () WHERE COLLECT {MATCH REPEATABLE ELEMENTS (n)-->(m) RETURN *}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleCollectExpression(
@@ -167,7 +174,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH REPEATABLE ELEMENTS path = (a)-[r]->(b)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.RepeatableElements()(pos),
@@ -184,7 +191,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH REPEATABLE = (a)-[r]->(b)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
@@ -201,7 +208,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH DIFFERENT RELATIONSHIPS path = (x)-[p]->(y)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.DifferentRelationships()(pos),
@@ -218,7 +225,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH DIFFERENT = (x)-[p]->(y)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
@@ -235,14 +242,54 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
   }
 
   test("MATCH () WHERE COLLECT {REPEATABLE ELEMENTS (n)-->(m) RETURN *}") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
+  // Antlr parser is able to successfully find a valid clause within the input which is correct, whilst ambiguous,
+  // which JavaCc is unable to do.
   test("MATCH REPEATABLE ELEMENT BINDINGS = ()-->()") {
-    failsToParseOnlyJavaCC[Clause]
+    whenParsing[Clause].parseIn(JavaCc)(_.withAnyFailure).parseIn(Antlr)(_.toAst(
+      Match(
+        false,
+        RepeatableElements()(pos),
+        ForMatch(ArraySeq(PatternPartWithSelector(
+          AllPaths()(pos),
+          NamedPatternPart(
+            Variable("BINDINGS")(pos),
+            PathPatternPart(RelationshipChain(
+              NodePattern(None, None, None, None)(pos),
+              RelationshipPattern(None, None, None, None, None, OUTGOING)(pos),
+              NodePattern(None, None, None, None)(pos)
+            )(pos))
+          )(pos)
+        )))(pos),
+        List(),
+        None
+      )(pos)
+    ))
   }
 
+  // Antlr parser is able to successfully find a valid clause within the input which is correct, whilst ambiguous,
+  // which JavaCc is unable to do.
   test("MATCH DIFFERENT RELATIONSHIP BINDINGS = ()-->()") {
-    failsToParseOnlyJavaCC[Clause]
+    whenParsing[Clause].parseIn(JavaCc)(_.withAnyFailure).parseIn(Antlr)(_.toAst(
+      Match(
+        false,
+        DifferentRelationships()(pos),
+        ForMatch(ArraySeq(PatternPartWithSelector(
+          AllPaths()(pos),
+          NamedPatternPart(
+            Variable("BINDINGS")(pos),
+            PathPatternPart(RelationshipChain(
+              NodePattern(None, None, None, None)(pos),
+              RelationshipPattern(None, None, None, None, None, OUTGOING)(pos),
+              NodePattern(None, None, None, None)(pos)
+            )(pos))
+          )(pos)
+        )))(pos),
+        List(),
+        None
+      )(pos)
+    ))
   }
 }
