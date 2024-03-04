@@ -98,9 +98,6 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
   }
 
   test("Should order correctly using an index despite concurrent updates") {
-    // We need fewer Threads to reproduce the problem
-    val THREADS = 10
-
     // Given
     execute(
       """
@@ -132,9 +129,57 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
         |RETURN prev, index
         |""".stripMargin
 
+    def testToRun(res: List[Long]): Unit = {
+      res.sliding(2).foreach {
+        case List(a, b) =>
+          a should be <= b
+        case _ =>
+      }
+    }
+    runTestConcurrently(query, scrambler)(testToRun)
+  }
+
+  test("Should return correctly deduplicated results despite concurrent updates") {
+    // Given
+    execute(
+      """
+        |UNWIND range(0,1000) AS i
+        |CREATE (:L {x: i})
+        |""".stripMargin
+    )
+    graph.createNodeIndex("L", "x")
+
+    // This query used to not plan a Distinct. But it needs to.
+    // We test whether concurrent updates to the properties can
+    // lead to results that are not distinct
+    val query =
+      """CYPHER
+        |MATCH (n:L) WHERE n.x IS NOT NULL
+        |WITH DISTINCT n
+        |RETURN id(n) AS x
+        |""".stripMargin
+
+    // This query assigns new property values to each node.
+    val scrambler =
+      """
+        |MATCH (n:L)
+        |WITH n ORDER BY rand()
+        |WITH collect(n) AS items
+        |UNWIND range(0, 1000) AS index
+        |WITH index, items[index] as n
+        |WITH *, n.x as prev
+        |SET n.x = index
+        |RETURN prev, index
+        |""".stripMargin
+    def testToRun(res: List[Long]): Unit = res.distinct should equal(res)
+    runTestConcurrently(query, scrambler)(testToRun)
+  }
+
+  private def runTestConcurrently(query: String, scrambler: String)(testToRun: List[Long] => Unit): Unit = {
+    // We need fewer Threads to reproduce the problem
+    val THREADS = 10
     // When
     val executor = Executors.newFixedThreadPool(THREADS)
-
     // Run the scrambler concurrently
     val futures = (1 to THREADS) map { _ =>
       executor.submit(new Callable[Unit] {
@@ -157,18 +202,14 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     }
 
     // And while waiting for all scrambler futures threads to be done,
-    // execute the read query and assert that results are in ascending order.
+    // execute the read query and assert that results are distinct
     try {
       while (futures.exists(!_.isDone)) {
         var retry = true
         while (retry) {
           try {
             val res = execute(query).columnAs[Long]("x").toList
-            res.sliding(2).foreach {
-              case List(a, b) =>
-                a should be <= b
-              case _ =>
-            }
+            testToRun(res)
             retry = false
           } catch {
             case _: DeadlockDetectedException =>
@@ -176,7 +217,9 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
           }
         }
       }
-    } finally executor.shutdown()
+    } finally {
+      executor.shutdown()
+    }
   }
 
   private def race(query: String): Unit = {

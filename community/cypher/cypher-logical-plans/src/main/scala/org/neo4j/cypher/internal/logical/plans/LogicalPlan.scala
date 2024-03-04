@@ -432,7 +432,7 @@ sealed abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 
 sealed abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
   def idName: LogicalVariable
-  final override val distinctness: Distinctness = DistinctColumns(idName)
+  override val distinctness: Distinctness = DistinctColumns(idName)
 }
 
 sealed abstract class RelationshipLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
@@ -481,6 +481,16 @@ sealed abstract class NodeIndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPla
 
   override def copyWithoutGettingValues: NodeIndexLeafPlan
 
+  /**
+   * Index leaf plans usually provide distinct entities.
+   * Unfortunately, the "duplicate and missing read" anomaly that can occur in concurrent workloads under
+   * read-commited isolation level can lead to missing and duplicated entities being returned from an index.
+   *
+   * When MVCC is enabled, this can be reverted, since with the higher serializable isolation level
+   * these anomalies cannot occur anymore.
+   */
+  final override val distinctness: Distinctness = NotDistinct
+
   def indexType: IndexType
 }
 
@@ -494,12 +504,33 @@ sealed abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends Relationsh
 
   override def copyWithoutGettingValues: RelationshipIndexLeafPlan
 
+  /**
+   * Index leaf plans usually provide distinct entities.
+   * Unfortunately, the "duplicate and missing read" anomaly that can occur in concurrent workloads under
+   * read-commited isolation level can lead to missing and duplicated entities being returned from an index.
+   *
+   * When MVCC is enabled, this can be reverted, since with the higher serializable isolation level
+   * these anomalies cannot occur anymore.
+   */
+  final override val distinctness: Distinctness = NotDistinct
+
   def indexType: IndexType
 }
 
 sealed abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen)
     with MultiEntityLogicalLeafPlan
-    with IndexedPropertyProvidingPlan {}
+    with IndexedPropertyProvidingPlan {
+
+  /**
+   * Index leaf plans usually provide distinct entities.
+   * Unfortunately, the "duplicate and missing read" anomaly that can occur in concurrent workloads under
+   * read-commited isolation level can lead to missing and duplicated entities being returned from an index.
+   *
+   * When MVCC is enabled, this can be reverted, since with the higher serializable isolation level
+   * these anomalies cannot occur anymore.
+   */
+  override val distinctness: Distinctness = NotDistinct
+}
 
 sealed abstract class NodeIndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
 
@@ -1731,7 +1762,7 @@ case class PartitionedDirectedRelationshipTypeScan(
 }
 
 /**
- * Produces one or zero rows containing relationship with the given type and property values.
+ * Produces one or zero rows containing relationship per given type and property value combination.
  *
  * This operator is used on type/property combinations under uniqueness constraint.
  *
@@ -2566,7 +2597,7 @@ case class Merge(
 }
 
 /**
- * Produces one or zero rows containing the nodes with the given labels and property values.
+ * Produces one or zero rows containing the nodes per given labels and property value combination.
  *
  * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
  * node is guaranteed per seek.
@@ -2943,7 +2974,7 @@ object NodeIndexSeek extends IndexSeekNames {
 }
 
 /**
- * Produces one or zero rows containing the node with the given label and property values.
+ * Produces one or zero rows containing the node per given label and property value combination.
  *
  * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
  * node is guaranteed.

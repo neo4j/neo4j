@@ -1591,6 +1591,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .expandAll("(a)-[r1]->(b)")
       .sort("`a.prop` ASC")
       .projection("cacheN[a.prop] AS `a.prop`")
+      .distinct("a AS a")
       .eager()
       .create(createNode("newNode"))
       .filter("cacheNFromStore[a.prop] IS NOT NULL")
