@@ -14,7 +14,7 @@
     <properties>
         <moduleName>org.neo4j.arrow.bom</moduleName>
         <arrow.version>15.0.0</arrow.version>
-        <grpc.version>1.61.1</grpc.version>
+        <grpc.version>1.62.2</grpc.version>
     </properties>
 
     <artifactId>arrow-bom</artifactId>
