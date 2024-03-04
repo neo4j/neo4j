@@ -348,6 +348,9 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     @Override
     public void closedCursors(long closedCursors) {}
 
+    @Override
+    public void failedUnmap(String reason) {}
+
     private void evicted(long filePageId, PageSwapper swapper) {
         record(new Evict(swapper, filePageId));
     }

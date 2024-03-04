@@ -330,4 +330,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
 
     @Override
     public void closedCursors(long closedCursors) {}
+
+    @Override
+    public void failedUnmap(String reason) {}
 }

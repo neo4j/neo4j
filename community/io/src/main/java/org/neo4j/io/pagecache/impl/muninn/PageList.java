@@ -504,4 +504,11 @@ class PageList implements PageReferenceTranslator {
         PageList.getAndResetPageHorizon(pageRef);
         UnsafeUtil.putLong(offPageBinding(pageRef), UNBOUND_PAGE_BINDING);
     }
+
+    static String pageMetadata(long pageRef) {
+        return "Lock word: " + Long.toHexString(UnsafeUtil.getLong(offLock(pageRef))) + "\nAddress: "
+                + Long.toHexString(UnsafeUtil.getLong(offAddress(pageRef))) + "\nPrevious/Last TxId: "
+                + Long.toHexString(UnsafeUtil.getLong(offPageHorizon(pageRef))) + "\nBinding: "
+                + Long.toHexString(UnsafeUtil.getLong(offPageBinding(pageRef)));
+    }
 }

@@ -23,6 +23,7 @@ import static java.util.Arrays.fill;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
+import static org.neo4j.util.FeatureToggles.getLong;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -30,6 +31,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
@@ -48,9 +50,12 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.VectoredPageFaultEvent;
 import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
+import org.neo4j.time.Stopwatch;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     static final int UNMAPPED_TTE = -1;
+    private static final long TIME_LIMIT_ON_FILE_UNMAP_SECONDS =
+            getLong(MuninnPagedFile.class, "TIME_LIMIT_ON_FILE_UNMAP_SECONDS", 0L);
     private static final boolean TRACE_FILE_CLOSE = flag(MuninnPagedFile.class, "TRACE_FILE_CLOSE", true);
 
     @SuppressWarnings("ThrowableInstanceNeverThrown")
@@ -402,6 +407,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
     private void markAllDirtyPagesAsClean(int[][] tt) {
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
+        Stopwatch stopwatch = Stopwatch.start();
         for (int[] chunk : tt) {
             chunkLoop:
             for (int i = 0; i < chunk.length; i++) {
@@ -421,6 +427,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                         }
 
                         if (!tryExclusiveLock(pageRef)) {
+                            if (TIME_LIMIT_ON_FILE_UNMAP_SECONDS != 0L) {
+                                if (stopwatch.hasTimedOut(TIME_LIMIT_ON_FILE_UNMAP_SECONDS, TimeUnit.SECONDS)) {
+                                    String message = unmapTimeoutMessage("markAllDirtyPagesAsClean", pageId, pageRef);
+                                    pageCacheTracer.failedUnmap(message);
+                                    throw new RuntimeException(message);
+                                }
+                            }
                             continue;
                         }
                         if (isBoundTo(pageRef, swapperId, filePageId) && isModified(pageRef)) {
@@ -436,6 +449,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 }
             }
         }
+    }
+
+    private String unmapTimeoutMessage(String method, int pageId, long pageRef) {
+        String message = "Timeout on file unmap in " + method + ". " + "file: "
+                + swapper.path() + " swapperId: " + swapperId + " pageId: " + pageId
+                + " page metadata:\n" + pageMetadata(pageRef);
+        return message;
     }
 
     private void markPagesAsFree(int[][] table, int initialChunkIndex, int initialChunkOffset, long initialFilePageId) {
@@ -513,7 +533,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         boolean useTemporaryBuffer = ioBuffer.isEnabled();
 
         flushes.startFlush(tt);
-
+        Stopwatch stopwatch = Stopwatch.start();
         for (int[] chunk : tt) {
             var chunkEvent = flushes.startChunk(chunk);
             long notModifiedPages = 0;
@@ -557,6 +577,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
                         long flushStamp = 0;
                         if (!(forClosing ? tryExclusiveLock(pageRef) : ((flushStamp = tryFlushLock(pageRef)) != 0))) {
+                            if (TIME_LIMIT_ON_FILE_UNMAP_SECONDS != 0L) {
+                                if (stopwatch.hasTimedOut(TIME_LIMIT_ON_FILE_UNMAP_SECONDS, TimeUnit.SECONDS)) {
+                                    String message = unmapTimeoutMessage("doFlushAndForceInternal", pageId, pageRef);
+                                    pageCacheTracer.failedUnmap(message);
+                                    throw new RuntimeException(message);
+                                }
+                            }
                             continue; // retry lock
                         }
                         if (isBoundTo(pageRef, swapperId, filePageId) && (isModified(pageRef) || fillingDirtyBuffer)) {

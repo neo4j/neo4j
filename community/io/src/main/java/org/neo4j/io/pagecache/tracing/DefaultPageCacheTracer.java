@@ -325,6 +325,9 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public void failedUnmap(String reason) {}
+
+    @Override
     public void pins(long pins) {
         this.pins.add(pins);
     }

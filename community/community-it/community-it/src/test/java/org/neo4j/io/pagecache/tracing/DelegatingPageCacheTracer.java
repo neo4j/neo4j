@@ -305,6 +305,11 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public void failedUnmap(String reason) {
+        delegate.failedUnmap(reason);
+    }
+
+    @Override
     public long filesMapped() {
         return delegate.filesMapped();
     }

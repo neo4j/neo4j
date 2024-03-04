@@ -314,6 +314,9 @@ public interface PageCacheTracer extends PageCacheCounters {
         public void closedCursors(long closedCursors) {}
 
         @Override
+        public void failedUnmap(String reason) {}
+
+        @Override
         public String toString() {
             return PageCacheTracer.class.getName() + ".NULL";
         }
@@ -522,4 +525,9 @@ public interface PageCacheTracer extends PageCacheCounters {
      * report number of closed page cache cursors.
      */
     void closedCursors(long closedCursors);
+
+    /**
+     * report failed file unmap
+     */
+    void failedUnmap(String reason);
 }
