@@ -103,12 +103,31 @@ object CachedFunction {
     }
   }
 
-  def apply[A, B, C, D, E, F, G, H](f: (A, B, C, D, E, F, G) => H): (A, B, C, D, E, F, G) => H = {
-    untupled(apply(f.tupled))
+  def apply[A, B, C, D, E, F, G, H](f: (A, B, C, D, E, F, G) => H): ((A, B, C, D, E, F, G) => H) with CachedFunction = {
+    {
+      val tupledCachedFunction = apply(f.tupled)
+      val untupledCachedFunction = untupled(tupledCachedFunction)
+      new ((A, B, C, D, E, F, G) => H) with CachedFunction {
+        override def apply(v1: A, v2: B, v3: C, v4: D, v5: E, v6: F, v7: G): H =
+          untupledCachedFunction(v1, v2, v3, v4, v5, v6, v7)
+
+        override def cacheSize: Long = tupledCachedFunction.cacheSize
+      }
+    }
   }
 
-  def apply[A, B, C, D, E, F, G, H, I](f: (A, B, C, D, E, F, G, H) => I): (A, B, C, D, E, F, G, H) => I = {
-    untupled(apply(f.tupled))
+  def apply[A, B, C, D, E, F, G, H, I](f: (A, B, C, D, E, F, G, H) => I)
+    : ((A, B, C, D, E, F, G, H) => I) with CachedFunction = {
+    {
+      val tupledCachedFunction = apply(f.tupled)
+      val untupledCachedFunction = untupled(tupledCachedFunction)
+      new ((A, B, C, D, E, F, G, H) => I) with CachedFunction {
+        override def apply(v1: A, v2: B, v3: C, v4: D, v5: E, v6: F, v7: G, v8: H): I =
+          untupledCachedFunction(v1, v2, v3, v4, v5, v6, v7, v8)
+
+        override def cacheSize: Long = tupledCachedFunction.cacheSize
+      }
+    }
   }
 
   /** Un-tupling for functions of arity 6. This transforms a function taking

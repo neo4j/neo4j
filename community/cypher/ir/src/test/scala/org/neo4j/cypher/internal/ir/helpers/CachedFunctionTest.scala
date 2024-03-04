@@ -132,6 +132,42 @@ class CachedFunctionTest extends CypherFunSuite {
     cachedF.cacheSize shouldBe i
   }
 
+  test("7 arguments") {
+    var i = 0
+    val f = (_: Int, _: Int, _: Int, _: Int, _: Int, _: Int, _: Int) => {
+      i += 1
+      5
+    }
+    val cachedF = CachedFunction(f)
+
+    cachedF(1, 2, 3, 4, 5, 6, 7)
+    cachedF(1, 2, 3, 4, 5, 6, 7)
+    cachedF(1, 1, 1, 1, 1, 1, 1)
+    cachedF(4, 5, 1, 1, 1, 1, 1)
+    cachedF(4, 5, 1, 1, 1, 1, 1)
+
+    i should be(3)
+    cachedF.cacheSize shouldBe i
+  }
+
+  test("8 arguments") {
+    var i = 0
+    val f = (_: Int, _: Int, _: Int, _: Int, _: Int, _: Int, _: Int, _: Int) => {
+      i += 1
+      5
+    }
+    val cachedF = CachedFunction(f)
+
+    cachedF(1, 2, 3, 4, 5, 6, 7, 8)
+    cachedF(1, 2, 3, 4, 5, 6, 7, 8)
+    cachedF(1, 1, 1, 1, 1, 1, 1, 1)
+    cachedF(4, 5, 1, 1, 1, 1, 1, 1)
+    cachedF(4, 5, 1, 1, 1, 1, 1, 1)
+
+    i should be(3)
+    cachedF.cacheSize shouldBe i
+  }
+
   test("should cache calls with different values that evaluate to the same cache key") {
     var i = 0
     def f(s: String): Int = {
