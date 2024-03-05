@@ -1093,7 +1093,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
                 |[n.vector, NULL],
                 |[NULL, n.vector],
                 |[NULL, NULL]
-                |] AS args""".stripMargin.replace(System.lineSeparator(), ""))
+                |] AS args""".stripMargin.replace("\n", ""))
       .allNodeScan("n")
       .build()
 
@@ -1138,7 +1138,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
                 |[n.vector, NULL],
                 |[NULL, n.vector],
                 |[NULL, NULL]
-                |] AS args""".stripMargin.replace(System.lineSeparator(), ""))
+                |] AS args""".stripMargin.replace("\n", ""))
       .allNodeScan("n")
       .build()
 
