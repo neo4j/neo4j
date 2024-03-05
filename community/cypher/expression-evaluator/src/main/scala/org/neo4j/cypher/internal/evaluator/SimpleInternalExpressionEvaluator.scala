@@ -142,12 +142,15 @@ object SimpleInternalExpressionEvaluator {
   }
 
   private val CONVERTERS =
-    new ExpressionConverters(CommunityExpressionConverter(
-      ReadTokenContext.EMPTY,
-      new AnonymousVariableNameGenerator(),
-      noopSelectivityTrackerRegistrator,
-      CypherRuntimeConfiguration.defaultConfiguration
-    ))
+    new ExpressionConverters(
+      None,
+      CommunityExpressionConverter(
+        ReadTokenContext.EMPTY,
+        new AnonymousVariableNameGenerator(),
+        noopSelectivityTrackerRegistrator,
+        CypherRuntimeConfiguration.defaultConfiguration
+      )
+    )
 
   object ExpressionParser {
 

@@ -144,6 +144,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       anonymousVariableNameGenerator
     )
     val converters = new ExpressionConverters(
+      None,
       SlottedExpressionConverters(physicalPlan),
       CommunityExpressionConverter(
         ReadTokenContext.EMPTY,

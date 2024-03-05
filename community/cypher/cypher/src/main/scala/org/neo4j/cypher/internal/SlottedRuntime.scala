@@ -67,8 +67,8 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
     physicalPlan: PhysicalPlan,
     query: LogicalQuery,
     selectivityTrackerRegistrator: SelectivityTrackerRegistrator
-  ): (List[ExpressionConverter], () => Seq[Argument], () => Set[InternalNotification]) = {
-    (baseConverters, NO_METADATA, NO_WARNINGS)
+  ): (Option[ExpressionConverter], List[ExpressionConverter], () => Seq[Argument], () => Set[InternalNotification]) = {
+    (None, baseConverters, NO_METADATA, NO_WARNINGS)
   }
 
   @throws[CantCompileQueryException]
@@ -102,16 +102,17 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
         )
       )
 
-      val (allConverters, metadataGen, warningsGen) =
+      val (mainConverter, fallbackConverters, metadataGen, warningsGen) =
         if (context.materializedEntitiesMode) {
-          (MaterializedEntitiesExpressionConverter(context.tokenContext) +: baseConverters, NO_METADATA, NO_WARNINGS)
+          val converters = MaterializedEntitiesExpressionConverter(context.tokenContext) +: baseConverters
+          (None, converters, NO_METADATA, NO_WARNINGS)
         } else if (context.compileExpressions) {
           compileExpressions(baseConverters, context, physicalPlan, query, selectivityTrackerRegistrator)
         } else {
-          (baseConverters, NO_METADATA, NO_WARNINGS)
+          (None, baseConverters, NO_METADATA, NO_WARNINGS)
         }
 
-      val converters = new ExpressionConverters(allConverters: _*)
+      val converters = new ExpressionConverters(mainConverter, fallbackConverters: _*)
 
       val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
       val fallback = InterpretedPipeMapper(

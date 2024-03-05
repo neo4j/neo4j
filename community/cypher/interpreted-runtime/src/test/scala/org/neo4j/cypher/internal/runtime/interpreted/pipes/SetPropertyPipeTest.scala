@@ -80,12 +80,15 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   when(emptyExpression.children).thenReturn(Seq.empty)
 
   private val expressionConverter =
-    new ExpressionConverters(CommunityExpressionConverter(
-      ReadTokenContext.EMPTY,
-      new AnonymousVariableNameGenerator(),
-      new SelectivityTrackerRegistrator(),
-      CypherRuntimeConfiguration.defaultConfiguration
-    ))
+    new ExpressionConverters(
+      None,
+      CommunityExpressionConverter(
+        ReadTokenContext.EMPTY,
+        new AnonymousVariableNameGenerator(),
+        new SelectivityTrackerRegistrator(),
+        CypherRuntimeConfiguration.defaultConfiguration
+      )
+    )
 
   private def convertExpression(astExpression: internal.expressions.Expression): Expression = {
     def resolveTokens(expr: Expression, ctx: ReadTokenContext): Expression = expr match {

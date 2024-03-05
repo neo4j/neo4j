@@ -61,8 +61,6 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Direction
 
-import scala.annotation.nowarn
-
 trait ExpressionConverter {
 
   def toCommandExpression(
@@ -98,51 +96,44 @@ object NullExpressionConversionLogger extends ExpressionConversionLogger {
 
 }
 
-class ExpressionConverters(converters: ExpressionConverter*) {
+class ExpressionConverters(
+  maybeMainConverter: Option[ExpressionConverter],
+  fallbackExpressionConverters: ExpressionConverter*
+) {
 
   self =>
 
-  @nowarn("msg=return statement")
-  def toCommandExpression(id: Id, expression: internal.expressions.Expression): commands.expressions.Expression = {
-    converters foreach { (c: ExpressionConverter) =>
-      c.toCommandExpression(id, expression, this) match {
-        case Some(x) => return x
-        case None    =>
-      }
-    }
-
-    throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
+  private val fallbackConverters = maybeMainConverter match {
+    case Some(_) => new ExpressionConverters(None, fallbackExpressionConverters: _*)
+    case _       => this
   }
 
-  @nowarn("msg=return statement")
+  def toCommandExpression(id: Id, expression: internal.expressions.Expression): commands.expressions.Expression = {
+    compile(
+      (c, cs) => c.toCommandExpression(id, expression, cs),
+      s"Unknown expression type during transformation (${expression.getClass})"
+    )
+  }
+
   def toCommandProjection(
     id: Id,
     projections: Map[LogicalVariable, internal.expressions.Expression]
   ): CommandProjection = {
-    converters foreach { (c: ExpressionConverter) =>
-      c.toCommandProjection(id, projections, this) match {
-        case Some(x) => return x
-        case None    =>
-      }
-    }
-
-    throw new InternalException(s"Unknown projection type during transformation ($projections)")
+    compile(
+      (c, cs) => c.toCommandProjection(id, projections, cs),
+      s"Unknown projection type during transformation ($projections)"
+    )
   }
 
-  @nowarn("msg=return statement")
   def toGroupingExpression(
     id: Id,
     groupings: Map[LogicalVariable, internal.expressions.Expression],
     orderToLeverage: Seq[internal.expressions.Expression]
   ): GroupingExpression = {
-    converters foreach { (c: ExpressionConverter) =>
-      c.toGroupingExpression(id, groupings, orderToLeverage, this) match {
-        case Some(x) => return x
-        case None    =>
-      }
-    }
-
-    throw new InternalException(s"Unknown grouping type during transformation ($groupings)")
+    compile(
+      (c, cs) => c.toGroupingExpression(id, groupings, orderToLeverage, cs),
+      s"Unknown grouping type during transformation ($groupings)"
+    )
   }
 
   def toCommandPredicate(id: Id, in: internal.expressions.Expression): Predicate = in match {
@@ -276,6 +267,28 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     }
 
     ProjectedPath(project(e.step))
+  }
+
+  private def compile[T](call: (ExpressionConverter, ExpressionConverters) => Option[T], errorMsg: => String): T = {
+    maybeMainConverter match {
+      case Some(converter) => call(converter, self) match {
+          case Some(value) => value
+          case None        => fallback(call, errorMsg)
+        }
+      case None => fallback(call, errorMsg)
+    }
+  }
+
+  private def fallback[T](call: (ExpressionConverter, ExpressionConverters) => Option[T], errorMsg: => String): T = {
+    var i = 0
+    while (i < fallbackExpressionConverters.length) {
+      call(fallbackExpressionConverters(i), fallbackConverters) match {
+        case Some(x) => return x
+        case None    =>
+      }
+      i += 1
+    }
+    throw new InternalException(errorMsg)
   }
 }
 

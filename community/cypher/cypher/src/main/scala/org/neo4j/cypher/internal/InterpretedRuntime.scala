@@ -62,12 +62,15 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
 
     val selectivityTrackerRegistrator = new SelectivityTrackerRegistrator()
 
-    val converters = new ExpressionConverters(CommunityExpressionConverter(
-      context.tokenContext,
-      context.anonymousVariableNameGenerator,
-      selectivityTrackerRegistrator,
-      context.config
-    ))
+    val converters = new ExpressionConverters(
+      None,
+      CommunityExpressionConverter(
+        context.tokenContext,
+        context.anonymousVariableNameGenerator,
+        selectivityTrackerRegistrator,
+        context.config
+      )
+    )
     val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
     val pipeMapper = InterpretedPipeMapper(
       query.readOnly,

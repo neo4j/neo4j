@@ -48,12 +48,15 @@ import scala.language.implicitConversions
 class PathExpressionConversionTest extends CypherFunSuite {
 
   val converters =
-    new ExpressionConverters(CommunityExpressionConverter(
-      ReadTokenContext.EMPTY,
-      new AnonymousVariableNameGenerator(),
-      new SelectivityTrackerRegistrator(),
-      CypherRuntimeConfiguration.defaultConfiguration
-    ))
+    new ExpressionConverters(
+      None,
+      CommunityExpressionConverter(
+        ReadTokenContext.EMPTY,
+        new AnonymousVariableNameGenerator(),
+        new SelectivityTrackerRegistrator(),
+        CypherRuntimeConfiguration.defaultConfiguration
+      )
+    )
 
   val pos = DummyPosition(0)
 
