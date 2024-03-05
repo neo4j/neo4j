@@ -2756,8 +2756,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -3149,5 +3148,140 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .|.nodeByLabelScan("end", "B")
       .nodeIndexOperator("u:User(prop = 5)")
       .build())
+  }
+
+  private val plannerBaseAB = plannerBuilder()
+    .setAllNodesCardinality(100)
+    .setAllRelationshipsCardinality(500)
+    .setLabelCardinality("A", 10)
+    .setLabelCardinality("B", 30)
+    .setRelationshipCardinality("(:A)-[]->()", 500)
+    .setRelationshipCardinality("(:A)-[]->(:B)", 500)
+    .setRelationshipCardinality("()-[]->(:B)", 500)
+    .addSemanticFeature(SemanticFeature.GpmShortestPath)
+
+  test("may plan post-filter on boundary node as pre-filter") {
+    val query =
+      """MATCH ANY SHORTEST (a:A)((n)-[r]->(m))+(b:B)
+        |  WHERE b.prop > 0 // post-filter
+        |RETURN *""".stripMargin
+
+    val planner = plannerBaseAB
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+      .build()
+
+    val nfa = new TestNFABuilder(0, "a")
+      .addTransition(0, 1, "(a) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (b WHERE b:B AND b.prop > 0)")
+      .setFinalState(3)
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "m", "n", "r")
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b.prop > 0 AND b:B AND unique(`r`))",
+          None,
+          Set(("n", "n"), ("m", "m")),
+          Set(("r", "r")),
+          Set(("b", "b")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .nodeByLabelScan("a", "A")
+        .build()
+    )
+  }
+
+  test("should plan post-filter as such") {
+    val query =
+      """MATCH ANY SHORTEST (a:A)((n)-[r]->(m))+(b:B)((o)-[s]->(p))+(c)
+        |  WHERE b.prop > 0 // post-filter
+        |RETURN *""".stripMargin
+
+    val planner = plannerBaseAB
+      .build()
+
+    val nfa = new TestNFABuilder(0, "a")
+      .addTransition(0, 1, "(a) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (b WHERE b:B)")
+      .addTransition(3, 4, "(b) (o)")
+      .addTransition(4, 5, "(o)-[s]->(p)")
+      .addTransition(5, 4, "(p) (o)")
+      .addTransition(5, 6, "(p) (c)")
+      .setFinalState(6)
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "c", "m", "n", "o", "p", "r", "s")
+        .filter("b.prop > 0")
+        .statefulShortestPath(
+          "a",
+          "c",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) ((`o`)-[`s`]->(`p`)){1, } (c) WHERE b:B AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          None,
+          Set(("n", "n"), ("m", "m"), ("o", "o"), ("p", "p")),
+          Set(("r", "r"), ("s", "s")),
+          Set(("b", "b")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.allNodeScan("c")
+        .nodeByLabelScan("a", "A")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
+  }
+
+  test("should plan post-filter on quantified part as such") {
+    val query =
+      """MATCH ANY SHORTEST (a:A)((n)-[r]->(m))+(b:B)
+        |  WHERE size(r) > 5 // post-filter
+        |RETURN *""".stripMargin
+
+    val planner = plannerBaseAB
+      .build()
+
+    val nfa = new TestNFABuilder(0, "a")
+      .addTransition(0, 1, "(a) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (b)")
+      .setFinalState(3)
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "m", "n", "r")
+        .filter("size(r) > 5")
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE unique(`r`))",
+          None,
+          Set(("n", "n"), ("m", "m")),
+          Set(("r", "r")),
+          Set(),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.nodeByLabelScan("b", "B")
+        .nodeByLabelScan("a", "A")
+        .build()
+    )(SymmetricalLogicalPlanEquality)
   }
 }
