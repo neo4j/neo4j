@@ -59,8 +59,8 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     private boolean shouldReturnSingleNodePath;
 
     /**
-     *  The PathTracer is designed to be reused, but its state is reset in two places ({@link #setSourceNode} and
-     *  {@link #resetWithNewTargetNodeAndDGLength}); this variable tracks whether we are in a valid state to iterate.
+     *  The PathTracer is designed to be reused, but its state is reset in two places ({@link #reset} and
+     *  {@link #initialize}); this variable tracks whether we are in a valid state to iterate.
      */
     private boolean ready = false;
 
@@ -72,25 +72,30 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     }
 
     /**
-     * Prepares the PathTracer for reuse with a new source node; {@link #resetWithNewTargetNodeAndDGLength} must be
-     * called after this to correctly set up the PathTracer.
+     * Clears the PathTracer and SignpostStack, allowing references to be garbage collected.
+     * {@link #initialize} must be called after this to correctly set up the PathTracer.
      */
-    public void setSourceNode(NodeData sourceNode) {
-        this.ready = false; // until resetWithNewTargetNodeAndDGLength, consider the iterator invalid
-        this.sourceNode = sourceNode;
+    @Override
+    public void reset() {
+        super.reset();
+        this.ready = false; // until initialize is called, consider the iterator invalid
+        this.sourceNode = null;
+        this.stack.reset();
     }
 
     /**
      * Finish setting up the PathTracer; this method should be called every time a target node is to be traced at
      * a given length.
+     * {@link #reset} must be called prior to this if the SignpostStack has been used previously.
      */
-    public void resetWithNewTargetNodeAndDGLength(NodeData targetNode, int dgLength) {
+    public void initialize(NodeData sourceNode, NodeData targetNode, int dgLength) {
         Preconditions.checkArgument(
                 targetNode.remainingTargetCount() >= 0, "remainingTargetCount should not be decremented beyond 0");
-
+        Preconditions.checkState(!ready, "PathTracer was not reset before initializing");
         this.ready = true;
+        this.sourceNode = sourceNode;
 
-        this.stack.reset(targetNode, dgLength);
+        this.stack.initialize(targetNode, dgLength);
 
         this.pgTrailToTarget.clear();
         this.pgTrailToTarget.set(0);
@@ -99,12 +104,11 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
 
         this.dgLength = dgLength;
         this.shouldReturnSingleNodePath = targetNode == sourceNode && dgLength == 0;
-        super.reset();
     }
 
     /**
-     * The PathTracer is designed to be reused, but its state is reset in two places ({@link #setSourceNode} and
-     * {@link #resetWithNewTargetNodeAndDGLength}); this function returns true if the tracer has been correctly set up/reset
+     * The PathTracer is designed to be reused, but its state is reset in two places ({@link #reset} and
+     * {@link #initialize}); this function returns true if the tracer has been correctly set up/reset
      */
     public boolean ready() {
         return this.ready;
@@ -125,7 +129,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     @Override
     protected TracedPath fetchNextOrNull() {
         if (!ready) {
-            throw new IllegalStateException("PathTracer attempted to iterate without fully configuring.");
+            throw new IllegalStateException("PathTracer attempted to iterate without initializing.");
         }
 
         if (shouldReturnSingleNodePath && !isSaturated()) {

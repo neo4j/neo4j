@@ -47,9 +47,9 @@ public class SignpostStack {
 
     private final PPBFSHooks hooks;
 
-    private NodeData targetNode;
-    private int dgLength;
-    private int dgLengthToTarget;
+    private NodeData targetNode = null;
+    private int dgLength = -1;
+    private int dgLengthToTarget = -1;
 
     SignpostStack(MemoryTracker memoryTracker, PPBFSHooks hooks) {
         this.activeSignposts = HeapTrackingArrayList.newArrayList(memoryTracker);
@@ -62,9 +62,12 @@ public class SignpostStack {
         return nodeSourceSignpostIndices.notEmpty();
     }
 
-    public void reset(NodeData targetNode, int dgLength) {
-        this.targetNode = targetNode;
-        this.dgLength = dgLength;
+    /**
+     * Remove NodeData/TwoWaySignpost references, allowing them to be garbage collected.
+     * {@link #initialize} must be called after this to correctly set up the SignpostStack.
+     */
+    public void reset() {
+        this.targetNode = null;
 
         for (var sp : this.activeSignposts) {
             sp.deactivate();
@@ -72,6 +75,17 @@ public class SignpostStack {
         this.activeSignposts.clear();
 
         this.nodeSourceSignpostIndices.clear();
+        this.dgLength = -1;
+        this.dgLengthToTarget = -1;
+    }
+
+    /**
+     * Set up the SignpostStack ready for tracing.
+     * {@link #reset} must be called prior to this if the SignpostStack has been used previously.
+     */
+    public void initialize(NodeData targetNode, int dgLength) {
+        this.targetNode = targetNode;
+        this.dgLength = dgLength;
         this.nodeSourceSignpostIndices.add(-1);
         this.dgLengthToTarget = 0;
     }

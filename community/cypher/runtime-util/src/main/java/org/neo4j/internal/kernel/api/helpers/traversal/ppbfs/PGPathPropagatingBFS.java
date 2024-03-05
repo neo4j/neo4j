@@ -96,7 +96,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         this.sourceData = new NodeData(mt, source, startState, 0, dataManager, intoTarget);
 
         dataManager.addToNextLevel(sourceData);
-        pathTracer.setSourceNode(sourceData);
+        pathTracer.reset();
 
         this.hooks.newRow(source);
     }
@@ -178,7 +178,8 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
                 }
             }
 
-            pathTracer.resetWithNewTargetNodeAndDGLength(currentTargets.next(), nextDepth);
+            pathTracer.reset();
+            pathTracer.initialize(sourceData, currentTargets.next(), nextDepth);
         }
     }
 
