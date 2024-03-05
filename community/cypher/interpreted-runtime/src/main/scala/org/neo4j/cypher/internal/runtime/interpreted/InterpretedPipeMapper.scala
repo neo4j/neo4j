@@ -1538,12 +1538,14 @@ case class InterpretedPipeMapper(
           call.callResultIndices
         )(id = id)
 
-      case RunQueryAt(_, query, graph, parameters, columns) =>
+      // `parameterMapping` already contains the parameters defined in `RunQueryAt`, we can ignore them here.
+      // `importsAsParameters` need to be created here, to forward value imported in sub-queries to the component DB.
+      case RunQueryAt(_, query, graph, _, importsAsParameters, columns) =>
         RunQueryAtPipe(
           source,
           query,
           expressionConverters.toCommandExpression(id, graph),
-          parameters.view.mapValues(expressionConverters.toCommandExpression(id, _)).toMap,
+          importsAsParameters.view.mapValues(expressionConverters.toCommandExpression(id, _)).toMap,
           columns,
           parameterMapping
         )(id = id)

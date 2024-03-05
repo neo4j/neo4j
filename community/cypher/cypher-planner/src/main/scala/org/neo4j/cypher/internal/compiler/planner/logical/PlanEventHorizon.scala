@@ -268,12 +268,12 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         val commandPlan = context.staticComponents.logicalPlanProducer.planCommand(plan, clause, context)
         SortPlanner.ensureSortedPlanWithSolved(commandPlan, interestingOrderConfig, context, updateSolvedOrdering)
 
-      case RunQueryAtProjection(graphReference, queryString, parameters, columns) =>
+      case RunQueryAtProjection(graphReference, queryString, parameters, importsAsParameters, columns) =>
         val runQueryAt =
           context
             .staticComponents
             .logicalPlanProducer
-            .planRunQueryAt(plan, graphReference, queryString, parameters, columns, context)
+            .planRunQueryAt(plan, graphReference, queryString, parameters, importsAsParameters, columns, context)
         SortPlanner.ensureSortedPlanWithSolved(runQueryAt, interestingOrderConfig, context, updateSolvedOrdering)
     }
 

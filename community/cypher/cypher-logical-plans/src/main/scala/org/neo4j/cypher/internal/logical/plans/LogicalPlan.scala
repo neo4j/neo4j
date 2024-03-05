@@ -3498,11 +3498,21 @@ case class RollUpApply(
   override val distinctness: Distinctness = left.distinctness
 }
 
+/**
+ * Fragment of a composite query to be executed on a component.
+ *
+ * @param query a standalone Cypher query to execute on the component
+ * @param graphReference the component on which to execute the query fragment
+ * @param parameters query parameters used inside of the query fragment
+ * @param importsAsParameters variables imported from the outer query inside of the query fragment are passed via additional parameters; mapping from the parameters to the original variables
+ * @param columns values returned by the query fragment
+ */
 case class RunQueryAt(
   override val source: LogicalPlan,
   query: String,
   graphReference: GraphReference,
-  parameters: Map[Parameter, LogicalVariable],
+  parameters: Set[Parameter],
+  importsAsParameters: Map[Parameter, LogicalVariable],
   columns: Set[LogicalVariable]
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)

@@ -54,13 +54,14 @@ object CompositeQueryConverter {
     semanticTable: SemanticTable,
     foreign: CompositeQuery.Single.Foreign
   ): ir.SinglePlannerQuery = {
-    val argumentIds = foreign.parameters.view.values.toSet.union(foreign.graphReference.dependencies)
+    val argumentIds = foreign.importsAsParameters.view.values.toSet.union(foreign.graphReference.dependencies)
     val builder = PlannerQueryBuilder(semanticTable, argumentIds)
     builder
       .withHorizon(ir.RunQueryAtProjection(
         graphReference = foreign.graphReference,
         queryString = QueryRenderer.render(foreign.clauses),
         parameters = foreign.parameters,
+        importsAsParameters = foreign.importsAsParameters,
         columns = foreign.clauses.last.returnVariables.explicitVariables.toSet
       ))
       .build()

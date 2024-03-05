@@ -329,13 +329,15 @@ final case class DistinctQueryProjection(
  *
  * @param graphReference the graph on which to execute the query fragment
  * @param queryString the query to execute, serialised as a standalone Cypher query string
- * @param parameters a mapping from the parameters in the inner query to the variables in the outer query
+ * @param parameters query parameters used inside of the query fragment
+ * @param importsAsParameters variables imported from the outer query inside of the query fragment are passed via additional parameters; mapping from the parameters to the original variables
  * @param columns the variables returned by the query fragment
  */
 case class RunQueryAtProjection(
   graphReference: GraphReference,
   queryString: String,
-  parameters: Map[Parameter, LogicalVariable],
+  parameters: Set[Parameter],
+  importsAsParameters: Map[Parameter, LogicalVariable],
   columns: Set[LogicalVariable]
 ) extends QueryProjection {
   override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds ++ columns

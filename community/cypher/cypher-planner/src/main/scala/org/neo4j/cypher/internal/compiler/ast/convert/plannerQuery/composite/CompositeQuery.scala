@@ -40,13 +40,15 @@ object CompositeQuery {
      * This construct is bound to become a Fragment once we implement "USE anywhere" (CIP-69).
      *
      * @param graphReference the graph on which to run
-     * @param clauses the clauses making up the query, with the USE clause removed, and the importing WITH rewritten to use parameters
-     * @param parameters a mapping from the parameters used in the clauses to the variables in the outer query
+     * @param clauses the clauses making up the query fragment, with the USE clause removed, and the importing WITH rewritten to use parameters
+     * @param parameters query parameters used inside of the query fragment
+     * @param importsAsParameters variables imported from the outer query inside of the query fragment are passed via additional parameters; mapping from the parameters to the original variables
      */
     final case class Foreign(
       graphReference: ast.GraphReference,
       clauses: Seq[ast.Clause],
-      parameters: Map[Parameter, LogicalVariable]
+      parameters: Set[Parameter],
+      importsAsParameters: Map[Parameter, LogicalVariable]
     ) extends Single
 
     /**

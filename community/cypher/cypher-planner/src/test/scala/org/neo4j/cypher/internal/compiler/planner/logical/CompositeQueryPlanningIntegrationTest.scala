@@ -211,7 +211,8 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
           "RETURN `customer` AS `customer`"
         ).mkString(NL),
         graphReference = "db.customers",
-        parameters = Map("$pId" -> "pId"),
+        parameters = Set.empty,
+        importsAsParameters = Map("$pId" -> "pId"),
         columns = Set("customer")
       )
       .|.argument("pId")
@@ -227,7 +228,8 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
           "RETURN `product` AS `product`"
         ).mkString(NL),
         graphReference = "db.products",
-        parameters = Map("$i" -> "i"),
+        parameters = Set.empty,
+        importsAsParameters = Map("$i" -> "i"),
         columns = Set("product")
       )
       .|.argument("i")
@@ -282,7 +284,8 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
           "RETURN `customer` AS `customer`"
         ).mkString(NL),
         graphReference = "db.customerEU",
-        parameters = Map("$pId" -> "pId"),
+        parameters = Set.empty,
+        importsAsParameters = Map("$pId" -> "pId"),
         columns = Set("customer")
       )
       .|.|.argument("pId")
@@ -301,7 +304,8 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
           "RETURN `customer` AS `customer`"
         ).mkString(NL),
         graphReference = "db.customerAME",
-        parameters = Map("$pId" -> "pId"),
+        parameters = Set.empty,
+        importsAsParameters = Map("$pId" -> "pId"),
         columns = Set("customer")
       )
       .|.argument("pId")
@@ -317,7 +321,8 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
           "RETURN `product` AS `product`"
         ).mkString(NL),
         graphReference = "db.products",
-        parameters = Map("$i" -> "i"),
+        parameters = Set.empty,
+        importsAsParameters = Map("$i" -> "i"),
         columns = Set("product")
       )
       .|.argument("i")
@@ -353,7 +358,8 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
           "  ORDER BY (`product`).`name` ASCENDING"
         ).mkString(NL),
         graphReference = "db.products",
-        parameters = Map("$anon_0" -> "i"),
+        parameters = Set("$i"),
+        importsAsParameters = Map("$anon_0" -> "i"),
         columns = Set("product")
       )
       .|.argument("i")
@@ -389,6 +395,44 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
       )
       .|.argument("component")
       .unwind("['db.customerAME', 'db.customerEU'] AS component")
+      .argument()
+      .build()
+  }
+
+  test("should surface query parameters used in composite query fragment") {
+    val query =
+      """UNWIND [1,2,3] AS i
+        |CALL {
+        |  WITH i
+        |  USE db.products
+        |  MATCH (product:Product {id: $pId, version: i})
+        |  RETURN product
+        |}
+        |RETURN product ORDER BY product.name
+        |""".stripMargin
+
+    val plan = planner.plan(query)
+
+    plan shouldEqual planner
+      .planBuilder()
+      .produceResults("product")
+      .sort("`product.name` ASC")
+      .projection("product.name AS `product.name`")
+      .apply()
+      .|.runQueryAt(
+        query = List(
+          "WITH $`i` AS `i`",
+          "MATCH (`product`)",
+          "  WHERE (((`product`).`id`) IN ([$`pId`])) AND (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)",
+          "RETURN `product` AS `product`"
+        ).mkString(NL),
+        graphReference = "db.products",
+        parameters = Set("$pId"), // `$pId` needs to be forwarded to the component DB,
+        importsAsParameters = Map("$i" -> "i"), // `$i` also needs to be provided, its value being set to `i`.
+        columns = Set("product")
+      )
+      .|.argument("i")
+      .unwind("[1, 2, 3] AS i")
       .argument()
       .build()
   }

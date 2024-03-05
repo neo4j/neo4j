@@ -1377,22 +1377,30 @@ object LogicalPlanToPlanBuilderString {
         callInTxParams(batchSize, concurrency, onErrorBehaviour, maybeReportAs)
       case TransactionApply(_, _, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
         callInTxParams(batchSize, concurrency, onErrorBehaviour, maybeReportAs)
-      case RunQueryAt(_, query, graphReference, parameters, columns) =>
+      case RunQueryAt(_, query, graphReference, parameters, importsAsParameters, columns) =>
         val escapedQuery = StringEscapeUtils.escapeJava(query)
         val parametersString =
           Option
             .when(parameters.nonEmpty) {
-              parameters.map { case (parameter, variable) =>
+              parameters
+                .iterator
+                .map(parameter => wrapInQuotations(parameter.asCanonicalStringVal))
+                .mkString(", parameters = Set(", ", ", ")")
+            }.getOrElse("")
+        val importsAsParametersString =
+          Option
+            .when(importsAsParameters.nonEmpty) {
+              importsAsParameters.map { case (parameter, variable) =>
                 val parameterName = wrapInQuotations(parameter.asCanonicalStringVal)
                 val variableName = wrapInQuotations(variable)
                 s"$parameterName -> $variableName"
-              }.mkString(", parameters = Map(", ", ", ")")
+              }.mkString(", importsAsParameters = Map(", ", ", ")")
             }.getOrElse("")
         val columnsString =
           Option
             .when(columns.nonEmpty)(s", columns = Set(${wrapInQuotationsAndMkString(columns.map(_.name))})")
             .getOrElse("")
-        s"query = \"$escapedQuery\", graphReference = \"${graphReference.print}\"$parametersString$columnsString"
+        s"query = \"$escapedQuery\", graphReference = \"${graphReference.print}\"$parametersString$importsAsParametersString$columnsString"
       case SimulatedNodeScan(idName, numberOfRows) =>
         s"${wrapInQuotations(idName)}, $numberOfRows"
       case SimulatedExpand(_, from, rel, to, factor) =>

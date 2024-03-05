@@ -59,7 +59,7 @@ case object slottedParameters {
     // for stand-alone procedures, e.g `CALL my.proc` with `{input1: 'foo', input2: 1337}`
     val mapping: ParameterMapping = input.folder.treeFold(ParameterFoldState.empty) {
       // RunQueryAt parameters are passed to the subquery executor so should not be considered valid for the outer executor
-      case p: RunQueryAt => acc => TraverseChildren(acc.exclude(p.parameters.keys))
+      case p: RunQueryAt => acc => TraverseChildren(acc.exclude(p.importsAsParameters.keys))
       case p: Parameter  => acc => TraverseChildren(acc.withParameter(p))
       case ImplicitProcedureArgument(name, _, defaultValue) =>
         acc => TraverseChildren(acc.withProcArgument(name, ValueUtils.of(defaultValue)))

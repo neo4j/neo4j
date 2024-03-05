@@ -7839,6 +7839,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           "inner query",
           GraphDirectReference(CatalogName("composite", "remote"))(pos),
+          Set.empty,
           Map.empty,
           Set(Variable("col")(pos))
         ),

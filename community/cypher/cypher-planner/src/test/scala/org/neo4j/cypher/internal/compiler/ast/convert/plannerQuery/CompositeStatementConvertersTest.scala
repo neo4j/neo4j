@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.GraphDirectReference
+import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
@@ -88,7 +89,36 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
             "  WHERE (`product`):`Product`",
             "RETURN `product` AS `product`"
           ).mkString(NL),
-          parameters = Map.empty,
+          parameters = Set.empty,
+          importsAsParameters = Map.empty,
+          columns = Set(varFor("product"))
+        ))
+
+    query shouldEqual expected
+  }
+
+  test("simple top-level composite query with parameters in graph reference and in query body") {
+    val query =
+      buildPlannerQuery(
+        """USE graph.byName($graphName)
+          |MATCH (product: Product {id: $pId})
+          |RETURN product""".stripMargin
+      )
+
+    val expected =
+      SinglePlannerQuery
+        .empty
+        .withHorizon(RunQueryAtProjection(
+          graphReference = GraphFunctionReference(
+            function(List("graph"), "byName", parameter("graphName", CTAny)).copy(calledFromUseClause = true)(pos)
+          )(pos),
+          queryString = List(
+            "MATCH (`product`)",
+            "  WHERE (((`product`).`id`) IN ([$`pId`])) AND ((`product`):`Product`)",
+            "RETURN `product` AS `product`"
+          ).mkString(NL),
+          parameters = Set(parameter("pId", CTAny)), // We need to forward $pId to the component DB but not $graphName.
+          importsAsParameters = Map.empty,
           columns = Set(varFor("product"))
         ))
 
@@ -118,7 +148,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
             "  SKIP 5",
             "  LIMIT 10"
           ).mkString(NL),
-          parameters = Map.empty,
+          parameters = Set.empty,
+          importsAsParameters = Map.empty,
           columns = Set(varFor("code"))
         ))
 
@@ -198,7 +229,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
             "  WHERE (`product`):`Product`",
             "RETURN `product` AS `product`"
           ).mkString(NL),
-          parameters = Map.empty,
+          parameters = Set.empty,
+          importsAsParameters = Map.empty,
           columns = Set(varFor("product"))
         ))
 
@@ -228,7 +260,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
             "  WHERE (((`product`).`deleted`) IN ([false])) AND ((`product`):`Product`)",
             "RETURN `product` AS `product`"
           ).mkString(NL),
-          parameters = Map.empty,
+          parameters = Set.empty,
+          importsAsParameters = Map.empty,
           columns = Set(varFor("product"))
         ))
 
@@ -357,7 +390,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                       "  WHERE (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)",
                       "RETURN `product` AS `product`"
                     ).mkString(NL),
-                    parameters = Map(parameter("i", CTAny) -> varFor("i")),
+                    parameters = Set.empty,
+                    importsAsParameters = Map(parameter("i", CTAny) -> varFor("i")),
                     columns = Set(varFor("product"))
                   )),
               correlated = true,
@@ -414,7 +448,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                                         "  WHERE ((`product`).`id`) IN ([`pId`])",
                                         "RETURN `customer` AS `customer`"
                                       ).mkString(NL),
-                                      parameters = Map(parameter("pId", CTAny) -> varFor("pId")),
+                                      parameters = Set.empty,
+                                      importsAsParameters = Map(parameter("pId", CTAny) -> varFor("pId")),
                                       columns = Set(varFor("customer"))
                                     )),
                                 rhs =
@@ -463,7 +498,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                                       "  WHERE ((`product`).`id`) IN ([`pId`])",
                                       "RETURN `customer` AS `customer`"
                                     ).mkString(NL),
-                                    parameters = Map(parameter("pId", CTAny) -> varFor("pId")),
+                                    parameters = Set.empty,
+                                    importsAsParameters = Map(parameter("pId", CTAny) -> varFor("pId")),
                                     columns = Set(varFor("customer"))
                                   )),
                               distinct = true,
@@ -489,6 +525,75 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                         )
                     )
                 )
+            )
+        )
+
+    query shouldEqual expected
+  }
+
+  test("query containing a simple composite sub-query using a query parameter") {
+    val query =
+      buildPlannerQuery(
+        """UNWIND [1,2,3] AS i
+          |CALL {
+          |  WITH i
+          |  USE db.products
+          |  MATCH (product:Product {id: $pId, version: i})
+          |  RETURN product
+          |}
+          |RETURN product ORDER BY product.name
+          |""".stripMargin
+      )
+
+    val expected =
+      SinglePlannerQuery
+        .empty
+        .withHorizon(UnwindProjection(varFor("i"), listOfInt(1, 2, 3)))
+        .withTail(
+          SinglePlannerQuery
+            .empty
+            .withQueryGraph(
+              QueryGraph
+                .empty
+                .addArgumentIds(List(varFor("i")))
+            ).withHorizon(CallSubqueryHorizon(
+              callSubquery = RegularSinglePlannerQuery(
+                queryGraph =
+                  QueryGraph
+                    .empty
+                    .addArgumentId(varFor("i")),
+                horizon =
+                  RunQueryAtProjection(
+                    graphReference = GraphDirectReference(CatalogName(List("db", "products")))(pos),
+                    queryString = List(
+                      "WITH $`i` AS `i`",
+                      "MATCH (`product`)",
+                      "  WHERE (((`product`).`id`) IN ([$`pId`])) AND (((`product`).`version`) IN ([`i`])) AND ((`product`):`Product`)",
+                      "RETURN `product` AS `product`"
+                    ).mkString(NL),
+                    parameters = Set(parameter("pId", CTAny)),
+                    importsAsParameters = Map(parameter("i", CTAny) -> varFor("i")),
+                    columns = Set(varFor("product"))
+                  )
+              ),
+              correlated = true,
+              yielding = true,
+              inTransactionsParameters = None
+            )).withTail(
+              SinglePlannerQuery
+                .empty
+                .withQueryGraph(
+                  QueryGraph
+                    .empty
+                    .addArgumentIds(List(varFor("product"), varFor("i")))
+                ).withInterestingOrder(
+                  InterestingOrder.required(RequiredOrderCandidate(List(
+                    ColumnOrder.Asc(prop("product", "name"), Map(varFor("product") -> varFor("product")))
+                  )))
+                ).withHorizon(RegularQueryProjection(
+                  projections = Map(varFor("product") -> varFor("product")),
+                  position = QueryProjection.Position.Final
+                ))
             )
         )
 
@@ -528,7 +633,8 @@ class CompositeStatementConvertersTest extends CypherFunSuite with LogicalPlanni
                     "  WHERE ((`product`).`id`) IN ([`pId`])",
                     "RETURN `customer` AS `customer`"
                   ).mkString(NL),
-                  parameters = Map(parameter("pId", CTAny) -> varFor("pId")),
+                  parameters = Set.empty,
+                  importsAsParameters = Map(parameter("pId", CTAny) -> varFor("pId")),
                   columns = Set(varFor("customer"))
                 )
             ),

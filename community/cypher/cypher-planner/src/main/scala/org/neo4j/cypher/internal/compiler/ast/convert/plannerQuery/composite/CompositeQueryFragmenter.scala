@@ -87,6 +87,15 @@ object CompositeQueryFragmenter {
   ): CompositeQuery.Single =
     extractForeignClauses(singleQuery) match {
       case Some(foreignClauses) =>
+        // Parameters used in the body of the query need to be forwarded to the component DB.
+        // Importing WITH clauses may not contain parameters.
+        // Graph selection may, but those parameters are only needed on the composite DB, not the component one.
+        val parameters =
+          (foreignClauses.intermediateClauses ++ foreignClauses.returnClause)
+            .folder(cancellationChecker)
+            .findAllByClass[Parameter]
+            .toSet
+
         // If the clauses start with an import WITH clause, replace its import items with parameters.
         val rewrittenImportWith = foreignClauses.importingWith.map { importWith =>
           parameteriseImportItems(nameGenerator, existingParameterNames, importWith)
@@ -99,7 +108,8 @@ object CompositeQueryFragmenter {
             foreignClauses.intermediateClauses,
             foreignClauses.returnClause
           ).flatten,
-          parameters = rewrittenImportWith.map(_.parameters).getOrElse(Map.empty)
+          parameters = parameters,
+          importsAsParameters = rewrittenImportWith.map(_.parameters).getOrElse(Map.empty)
         )
 
       case None =>

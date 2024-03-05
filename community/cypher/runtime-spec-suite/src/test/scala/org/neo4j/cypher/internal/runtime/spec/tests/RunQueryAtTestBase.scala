@@ -34,7 +34,7 @@ abstract class RunQueryAtTestBase[CONTEXT <: RuntimeContext](
   ignore("should forward results from the constituent") {
     val plan = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .runQueryAt("MATCH (n) RETURN n", "remote", Map.empty, Set.empty)
+      .runQueryAt("MATCH (n) RETURN n", "remote", Set.empty, Map.empty, Set.empty)
       .argument()
       .build()
 

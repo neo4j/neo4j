@@ -1064,17 +1064,28 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def runQueryAt(
     query: String,
     graphReference: String,
-    parameters: Map[String, String] = Map.empty,
+    parameters: Set[String] = Set.empty,
+    importsAsParameters: Map[String, String] = Map.empty,
     columns: Set[String] = Set.empty
   ): IMPL = {
-    val properParameters = parameters.map[Parameter, LogicalVariable] {
-      case (parameterName, variableName) =>
-        ExplicitParameter(parameterName.stripPrefix("$"), CTAny)(pos) -> varFor(variableName)
+    val properParameters = parameters.map(asParameter)
+    val properImports = importsAsParameters.map[Parameter, LogicalVariable] {
+      case (parameterName, variableName) => asParameter(parameterName) -> varFor(variableName)
     }
     appendAtCurrentIndent(UnaryOperator(source =>
-      RunQueryAt(source, query, Parser.parseGraphReference(graphReference), properParameters, columns.map(varFor))(_)
+      RunQueryAt(
+        source,
+        query,
+        Parser.parseGraphReference(graphReference),
+        properParameters,
+        properImports,
+        columns.map(varFor)
+      )(_)
     ))
   }
+
+  private def asParameter(parameterName: String): Parameter =
+    ExplicitParameter(parameterName.stripPrefix("$"), CTAny)(pos)
 
   def projection(projectionStrings: String*): IMPL = {
     doProjection(parseProjections(projectionStrings: _*))

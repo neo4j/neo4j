@@ -3224,17 +3224,18 @@ case class LogicalPlanProducer(
     inner: LogicalPlan,
     graphReference: GraphReference,
     queryString: String,
-    parameters: Map[Parameter, LogicalVariable],
+    parameters: Set[Parameter],
+    importsAsParameters: Map[Parameter, LogicalVariable],
     columns: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val horizon = RunQueryAtProjection(graphReference, queryString, parameters, columns)
+    val horizon = RunQueryAtProjection(graphReference, queryString, parameters, importsAsParameters, columns)
     val solved =
       solveds
         .get(inner.id)
         .asSinglePlannerQuery
         .updateTailOrSelf(_.withHorizon(horizon))
-    val runQueryAt = RunQueryAt(inner, queryString, graphReference, parameters, columns)
+    val runQueryAt = RunQueryAt(inner, queryString, graphReference, parameters, importsAsParameters, columns)
     annotate(runQueryAt, solved, ProvidedOrder.empty, context)
   }
 

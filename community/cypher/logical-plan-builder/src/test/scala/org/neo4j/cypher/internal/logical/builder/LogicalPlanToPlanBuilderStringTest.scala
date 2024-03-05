@@ -2645,14 +2645,20 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
     "runQueryAt",
     new TestPlanBuilder()
       .produceResults("article")
-      .runQueryAt(
+      .apply()
+      .|.runQueryAt(
         query =
-          """MATCH (`article`)
-            |  WHERE (`article`):`Article`
+          """WITH $`i` AS `i`
+            |MATCH (`article`)
+            |  WHERE (((`article`).`id`) IN ([$`articleID`])) AND (((`article`).`version`) IN ([`i`])) AND ((`article`):`Article`)
             |RETURN `article` AS `article`""".stripMargin,
         graphReference = "db.articles",
+        parameters = Set("$articleID"),
+        importsAsParameters = Map("$i" -> "i"),
         columns = Set("article")
       )
+      .|.argument("i")
+      .projection("1 AS i")
       .argument()
       .build()
   )
