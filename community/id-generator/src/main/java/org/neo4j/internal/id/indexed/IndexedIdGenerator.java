@@ -122,6 +122,8 @@ public class IndexedIdGenerator implements IdGenerator {
 
         void skippedIdsAtHighId(long firstSkippedId, int numberOfIds);
 
+        void skippedIdsAtAllocation(long firstWastedId, int numberOfIds);
+
         class Adapter implements Monitor {
             @Override
             public void opened(long highestWrittenId, long highId) {}
@@ -170,6 +172,9 @@ public class IndexedIdGenerator implements IdGenerator {
 
             @Override
             public void skippedIdsAtHighId(long firstSkippedId, int numberOfIds) {}
+
+            @Override
+            public void skippedIdsAtAllocation(long firstWastedId, int numberOfIds) {}
 
             @Override
             public void close() {}
