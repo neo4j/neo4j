@@ -216,9 +216,10 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
 
     for {
       labelProperties <- Seq(":A:B", "{prop: 42}")
+      onFirstNode <- Seq("", labelProperties)
     } {
       val query =
-        s"""CREATE (a)-[:REL]->(a $labelProperties)""".stripMargin
+        s"""CREATE (a $onFirstNode)-[:REL]->(a $labelProperties)""".stripMargin
       withClue(
         s"""Query:
            |$query
