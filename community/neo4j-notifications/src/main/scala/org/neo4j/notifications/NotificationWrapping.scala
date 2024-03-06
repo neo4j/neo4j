@@ -19,10 +19,10 @@
  */
 package org.neo4j.notifications
 
-import org.neo4j.cypher.internal.ast.UsingAnyIndexType
-import org.neo4j.cypher.internal.ast.UsingPointIndexType
-import org.neo4j.cypher.internal.ast.UsingRangeIndexType
-import org.neo4j.cypher.internal.ast.UsingTextIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingPointIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.util.AssignPrivilegeCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.CordonedServersExistedDuringAllocation

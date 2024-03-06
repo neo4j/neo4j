@@ -20,7 +20,7 @@
 package org.neo4j.notifications
 
 import org.neo4j.common.EntityType
-import org.neo4j.cypher.internal.ast.UsingIndexHintType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingIndexHintType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 

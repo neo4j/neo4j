@@ -148,6 +148,7 @@ import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.GraphPrivilegeQualifier
+import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
@@ -244,8 +245,6 @@ import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SchemaCommand
-import org.neo4j.cypher.internal.ast.SeekOnly
-import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
@@ -331,14 +330,15 @@ import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
-import org.neo4j.cypher.internal.ast.UsingAnyIndexType
-import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOnly
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOrScan
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingPointIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
-import org.neo4j.cypher.internal.ast.UsingPointIndexType
-import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingScanHint
-import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
@@ -1479,7 +1479,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     labelOrRelType <- _labelOrTypeName
   } yield UsingScanHint(variable, labelOrRelType)(pos)
 
-  def _hint: Gen[UsingHint] = oneOf(
+  def _hint: Gen[Hint] = oneOf(
     _usingIndexHint,
     _usingJoinHint,
     _usingScanHint

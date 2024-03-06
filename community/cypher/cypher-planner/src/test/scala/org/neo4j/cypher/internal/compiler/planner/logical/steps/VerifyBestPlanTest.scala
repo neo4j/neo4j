@@ -25,12 +25,12 @@ import org.mockito.Mockito.when
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.Hint
-import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
-import org.neo4j.cypher.internal.ast.UsingIndexHintType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingIndexHintType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
-import org.neo4j.cypher.internal.ast.UsingRangeIndexType
-import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext

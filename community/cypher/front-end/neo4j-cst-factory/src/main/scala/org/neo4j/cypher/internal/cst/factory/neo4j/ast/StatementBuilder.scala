@@ -44,8 +44,6 @@ import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.ast.SeekOnly
-import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
@@ -65,14 +63,16 @@ import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
-import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
-import org.neo4j.cypher.internal.ast.UsingIndexHintType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOnly
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOrScan
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingIndexHintType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingPointIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
-import org.neo4j.cypher.internal.ast.UsingPointIndexType
-import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingScanHint
-import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChild
@@ -337,7 +337,7 @@ trait StatementBuilder extends CypherParserListener {
   }
   final override def exitNonEmptyNameList(ctx: CypherParser.NonEmptyNameListContext): Unit = {}
 
-  private def nonEmptyPropetyKeyName(list: CypherParser.NonEmptyNameListContext): ArraySeq[PropertyKeyName] = {
+  private def nonEmptyPropertyKeyName(list: CypherParser.NonEmptyNameListContext): ArraySeq[PropertyKeyName] = {
     ArraySeq.from(list.symbolicNameString().asScala.collect {
       case s: CypherParser.SymbolicNameStringContext => PropertyKeyName(s.ast())(pos(s))
     })
@@ -359,7 +359,7 @@ trait StatementBuilder extends CypherParserListener {
     UsingIndexHint(
       ctx.variable().ast(),
       ctx.labelOrRelType().ast(),
-      nonEmptyPropetyKeyName(ctx.nonEmptyNameList()),
+      nonEmptyPropertyKeyName(ctx.nonEmptyNameList()),
       spec,
       hintType
     )(pos(ctx))

@@ -16,14 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.SeekOnly
-import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
-import org.neo4j.cypher.internal.ast.UsingPointIndexType
-import org.neo4j.cypher.internal.ast.UsingRangeIndexType
-import org.neo4j.cypher.internal.ast.UsingTextIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOnly
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOrScan
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingPointIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 

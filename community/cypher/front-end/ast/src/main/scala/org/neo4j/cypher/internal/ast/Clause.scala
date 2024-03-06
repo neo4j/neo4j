@@ -557,7 +557,7 @@ trait SingleRelTypeCheck {
     }
   }
 
-  protected def checkRelTypes(rel: RelationshipPattern): SemanticCheck =
+  private def checkRelTypes(rel: RelationshipPattern): SemanticCheck =
     rel.labelExpression match {
       case None => SemanticError(
           s"Exactly one relationship type must be specified for ${self.name}. Did you forget to prefix your relationship type with a ':'?",
@@ -584,7 +584,7 @@ case class Match(
   optional: Boolean,
   matchMode: MatchMode,
   pattern: Pattern.ForMatch,
-  hints: Seq[UsingHint],
+  hints: Seq[Hint],
   where: Option[Where]
 )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name = "MATCH"
@@ -602,7 +602,7 @@ case class Match(
 
   /**
    * Ensure that the node and relationship variables defined inside the quantified path patterns contained in this MATCH clause do not form any implicit joins.
-   * It must run before checking the pattern itself – as it relies on variables defined in previous clauses to pre-empt some of the errors.
+   * It must run before checking the pattern itself – as it relies on variables defined in previous clauses to preempt some of the errors.
    * It checks for three scenarios:
    *   - a variable is defined in two or more quantified path patterns inside this MATCH clause
    *   - a variable is defined in a quantified path pattern and in a non-quantified node or relationship pattern inside this MATCH clause
@@ -763,7 +763,7 @@ case class Match(
   }
 
   private def checkHints: SemanticCheck = SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
-    def getMissingEntityKindError(variable: String, labelOrRelTypeName: String, hint: NodeHint): String = {
+    def getMissingEntityKindError(variable: String, labelOrRelTypeName: String, hint: UserHint): String = {
       val isNode = semanticState.isNode(variable)
       val typeName = if (isNode) "label" else "relationship type"
       val functionName = if (isNode) "labels" else "type"
@@ -817,7 +817,7 @@ case class Match(
 
     def getHintErrorForVariable(
       operatorDescription: String,
-      hint: NodeHint,
+      hint: UserHint,
       missingThingDescription: String,
       foundThingsDescription: String,
       variable: String,
@@ -839,7 +839,7 @@ case class Match(
 
     def getHintError(
       operatorDescription: String,
-      hint: NodeHint,
+      hint: UserHint,
       missingThingDescription: String,
       foundThingsDescription: String,
       entityDescription: String,
@@ -1674,7 +1674,7 @@ case class SubqueryCall(innerQuery: Query, inTransactionsParameters: Option[Subq
   def reportParams: Option[SubqueryCall.InTransactionsReportParameters] =
     inTransactionsParameters.flatMap(_.reportParams)
 
-  def checkSubquery: SemanticCheck = {
+  private def checkSubquery: SemanticCheck = {
     for {
       outerStateWithImports <- innerQuery.checkImportingWith
       // Create empty scope under root

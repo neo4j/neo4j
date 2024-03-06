@@ -163,7 +163,6 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SchemaCommand
-import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
@@ -219,16 +218,16 @@ import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
-import org.neo4j.cypher.internal.ast.UsingAnyIndexType
-import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOnly
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingPointIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
-import org.neo4j.cypher.internal.ast.UsingPointIndexType
-import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.UsingStatefulShortestPathAll
 import org.neo4j.cypher.internal.ast.UsingStatefulShortestPathInto
-import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
@@ -279,10 +278,7 @@ case class Prettifier(
     case _                        => throw new IllegalStateException(s"Unknown statement: $statement")
   }
 
-  def asString(hint: Hint): String = hint match {
-    case usingHint: UsingHint => base.asString(usingHint)
-    case _                    => hint.toString
-  }
+  def asString(hint: Hint): String = base.asString(hint)
 
   def backtick(s: String): String = expr.backtick(s)
 
@@ -1122,7 +1118,7 @@ case class Prettifier(
     def asString(w: Where): String =
       s"${INDENT}WHERE ${expr(w.expression)}"
 
-    def asString(m: UsingHint): String = {
+    def asString(m: Hint): String = {
       m match {
         case UsingIndexHint(v, l, ps, s, t) => Seq(
             s"${INDENT}USING ",

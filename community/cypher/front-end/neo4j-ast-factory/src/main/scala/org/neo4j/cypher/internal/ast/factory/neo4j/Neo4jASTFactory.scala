@@ -157,6 +157,7 @@ import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphScope
+import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
@@ -251,8 +252,6 @@ import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SchemaCommand
-import org.neo4j.cypher.internal.ast.SeekOnly
-import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.ServerManagementAction
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
@@ -332,14 +331,15 @@ import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
-import org.neo4j.cypher.internal.ast.UsingAnyIndexType
-import org.neo4j.cypher.internal.ast.UsingHint
-import org.neo4j.cypher.internal.ast.UsingIndexHintType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOnly
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOrScan
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingIndexHintType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingPointIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
-import org.neo4j.cypher.internal.ast.UsingPointIndexType
-import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingScanHint
-import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
@@ -563,7 +563,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       SetItem,
       RemoveItem,
       ProcedureResultItem,
-      UsingHint,
+      Hint,
       Expression,
       LabelExpression,
       FunctionInvocation,
@@ -704,7 +704,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     matchMode: MatchMode,
     patterns: util.List[PatternPart],
     patternPos: InputPosition,
-    hints: util.List[UsingHint],
+    hints: util.List[Hint],
     where: Where
   ): Clause = {
     val patternList: Seq[PatternPartWithSelector] = patterns.asScala.toList.map {
@@ -730,7 +730,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     properties: util.List[String],
     seekOnly: Boolean,
     indexType: HintIndexType
-  ): UsingHint =
+  ): Hint =
     ast.UsingIndexHint(
       v,
       LabelOrRelTypeName(labelOrRelType)(p),
@@ -748,10 +748,10 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     case HintIndexType.POINT => UsingPointIndexType
   }
 
-  override def usingJoin(p: InputPosition, joinVariables: util.List[Variable]): UsingHint =
+  override def usingJoin(p: InputPosition, joinVariables: util.List[Variable]): Hint =
     UsingJoinHint(joinVariables.asScala.toList)(p)
 
-  override def usingScan(p: InputPosition, v: Variable, labelOrRelType: String): UsingHint =
+  override def usingScan(p: InputPosition, v: Variable, labelOrRelType: String): Hint =
     UsingScanHint(v, LabelOrRelTypeName(labelOrRelType)(p))(p)
 
   override def withClause(p: InputPosition, r: Return, where: Where): Clause =

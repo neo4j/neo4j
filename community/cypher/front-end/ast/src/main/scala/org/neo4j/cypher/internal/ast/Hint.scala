@@ -16,13 +16,16 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.UsingIndexHint.SeekOrScan
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingIndexHintSpec
+import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
+import org.neo4j.cypher.internal.ast.semantics.iterableOnceSemanticChecking
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.UnsignedIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
@@ -35,36 +38,26 @@ sealed trait Hint extends ASTNode with SemanticCheckable with SemanticAnalysisTo
   def variables: NonEmptyList[Variable]
 }
 
-sealed trait NodeHint extends Hint
-
 object Hint {
 
   implicit val byVariable: Ordering[Hint] =
     Ordering.by { (hint: Hint) => hint.variables.head }(Variable.byName)
 }
-// allowed on match
 
-sealed trait UsingHint extends Hint
+/**
+ * A hint as specified by the user in the query. See [[StatefulShortestPlanningHintsInserter]] for non-user hints.
+ */
+sealed trait UserHint extends Hint
 
-// allowed on start item
+sealed trait LeafPlanHint extends UserHint {
+  def variable: Variable
 
-sealed trait UsingIndexHintSpec {
-  def fulfilledByScan: Boolean
+  override def variables: NonEmptyList[Variable] = NonEmptyList(variable)
+
+  override def semanticCheck: SemanticCheck =
+    ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
+
 }
-
-case object SeekOnly extends UsingIndexHintSpec {
-  override def fulfilledByScan: Boolean = false
-}
-
-case object SeekOrScan extends UsingIndexHintSpec {
-  override def fulfilledByScan: Boolean = true
-}
-
-sealed trait UsingIndexHintType
-case object UsingAnyIndexType extends UsingIndexHintType
-case object UsingRangeIndexType extends UsingIndexHintType
-case object UsingTextIndexType extends UsingIndexHintType
-case object UsingPointIndexType extends UsingIndexHintType
 
 case class UsingIndexHint(
   variable: Variable,
@@ -72,42 +65,50 @@ case class UsingIndexHint(
   properties: Seq[PropertyKeyName],
   spec: UsingIndexHintSpec = SeekOrScan,
   indexType: UsingIndexHintType = UsingAnyIndexType
-)(val position: InputPosition) extends UsingHint with NodeHint {
-  override def variables: NonEmptyList[Variable] = NonEmptyList(variable)
+)(val position: InputPosition) extends LeafPlanHint
 
-  override def semanticCheck: SemanticCheck =
-    ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
+object UsingIndexHint {
+
+  sealed trait UsingIndexHintSpec {
+    def fulfilledByScan: Boolean
+  }
+
+  case object SeekOnly extends UsingIndexHintSpec {
+    override def fulfilledByScan: Boolean = false
+  }
+
+  case object SeekOrScan extends UsingIndexHintSpec {
+    override def fulfilledByScan: Boolean = true
+  }
+
+  sealed trait UsingIndexHintType
+  case object UsingAnyIndexType extends UsingIndexHintType
+  case object UsingRangeIndexType extends UsingIndexHintType
+  case object UsingTextIndexType extends UsingIndexHintType
+  case object UsingPointIndexType extends UsingIndexHintType
 }
 
 case class UsingScanHint(variable: Variable, labelOrRelType: LabelOrRelTypeName)(val position: InputPosition)
-    extends UsingHint with NodeHint {
-  override def variables: NonEmptyList[Variable] = NonEmptyList(variable)
-
-  override def semanticCheck: SemanticCheck =
-    ensureDefined(variable) chain expectType(CTNode.covariant | CTRelationship.covariant, variable)
-}
+    extends LeafPlanHint
 
 object UsingJoinHint {
 
-  def apply(elts: Seq[Variable])(pos: InputPosition): UsingJoinHint =
-    UsingJoinHint(
-      elts.toNonEmptyListOption.getOrElse(throw new IllegalStateException("Expected non-empty sequence of variables"))
-    )(pos)
+  def apply(variables: Seq[Variable])(pos: InputPosition): UsingJoinHint =
+    UsingJoinHint(variables.toNonEmptyList)(pos)
 }
 
-case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint
-    with NodeHint {
+case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UserHint {
 
   override def semanticCheck: SemanticCheck =
-    variables.map { variable => ensureDefined(variable) chain expectType(CTNode.covariant, variable) }.reduceLeft(
-      _ chain _
-    )
+    variables.foldSemanticCheck {
+      variable => ensureDefined(variable) chain expectType(CTNode.covariant, variable)
+    }
 }
 
 /**
  * These are never introduced from the parser currently. Thus no need for semantic checks or input positions.
  */
-sealed trait UsingStatefulShortestPathHint extends UsingHint {
+sealed trait UsingStatefulShortestPathHint extends Hint {
   override def semanticCheck: SemanticCheck = SemanticCheck.success
 
   override def position: InputPosition = InputPosition.NONE
@@ -118,33 +119,3 @@ case class UsingStatefulShortestPathInto(override val variables: NonEmptyList[Va
 
 case class UsingStatefulShortestPathAll(override val variables: NonEmptyList[Variable])
     extends UsingStatefulShortestPathHint
-
-// start items
-
-sealed trait StartItem extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
-  def variable: Variable
-  def name: String = variable.name
-}
-
-sealed trait NodeStartItem extends StartItem {
-  def semanticCheck: SemanticCheck = declareVariable(variable, CTNode)
-}
-
-case class NodeByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
-case class AllNodes(variable: Variable)(val position: InputPosition) extends NodeStartItem
-
-sealed trait RelationshipStartItem extends StartItem {
-  def semanticCheck: SemanticCheck = declareVariable(variable, CTRelationship)
-}
-
-case class RelationshipByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition)
-    extends RelationshipStartItem
-
-case class RelationshipByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition)
-    extends RelationshipStartItem
-case class AllRelationships(variable: Variable)(val position: InputPosition) extends RelationshipStartItem
-
-// no longer supported non-hint legacy start items
-
-case class NodeByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition)
-    extends NodeStartItem
