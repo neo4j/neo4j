@@ -20,12 +20,15 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsEagerIfNeeded
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties.PropertyUsages
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties.PropertyUsagesAndRenamings
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.CacheAll
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.ProtectedProperties
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
@@ -138,331 +141,145 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
         from.logicalPlan
       }
 
-    def isNode(variable: Variable) = from.semanticTable().typeFor(variable.name).is(CTNode)
-    def isRel(variable: Variable) = from.semanticTable().typeFor(variable.name).is(CTRelationship)
-
-    /**
-     * A summary of all usages of a property
-     *
-     * @param canGetFromIndex      if the property can be read from an index.
-     * @param usages               references to all usages of this property
-     * @param usageCount           effective count of usages of property. Note this is not usages.size() since
-     *                             we don't want to count LHS and RHS of unions simultaneously.
-     * @param entityType           the type of property
-     * @param firstWritingAccesses if there can be determined a first logical plan that writes the property,
-     *                             this contains that plan and all accesses that happen to this property from that plan.
-     */
-    case class PropertyUsages(
-      canGetFromIndex: Boolean,
-      usages: Set[Ref[Property]],
-      usageCount: Int,
-      entityType: EntityType,
-      firstWritingAccesses: Option[(LogicalPlan, Set[Ref[Property]])],
-      needsValue: Boolean
-    ) {
-      // always prefer reading from index
-      def registerIndexUsage: PropertyUsages =
-        copy(canGetFromIndex = true, firstWritingAccesses = None, needsValue = true)
-
-      def addUsage(prop: Property, accessingPlan: LogicalPlan, newNeedsValue: Boolean): PropertyUsages = {
-        val fWA =
-          if (canGetFromIndex) None
-          else firstWritingAccesses match {
-            case None                                 => Some((accessingPlan, Set(Ref(prop))))
-            case Some((`accessingPlan`, otherUsages)) => Some((accessingPlan, otherUsages + Ref(prop)))
-            case x                                    => x
-          }
-
-        copy(
-          usages = usages + Ref(prop),
-          usageCount = usageCount + 1,
-          firstWritingAccesses = fWA,
-          needsValue = needsValue || newNeedsValue
-        )
-      }
-
-      def ++(other: PropertyUsages): PropertyUsages = PropertyUsages(
-        this.canGetFromIndex || other.canGetFromIndex,
-        this.usages ++ other.usages,
-        this.usageCount + other.usageCount,
-        this.entityType,
-        this.firstWritingAccesses.orElse(other.firstWritingAccesses),
-        this.needsValue || other.needsValue
-      )
-    }
-
-    val NODE_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, Set.empty, 0, NODE_TYPE, None, needsValue = false)
-    val REL_NO_PROP_USAGE =
-      PropertyUsages(canGetFromIndex = false, Set.empty, 0, RELATIONSHIP_TYPE, None, needsValue = false)
-
-    case class Acc(
-      properties: Map[Property, PropertyUsages],
-      previousNames: Map[String, String],
-      protectedPropertiesByPlanId: Map[Id, ProtectedProperties],
-      indexedEntityAliases: Map[String, Set[String]]
-    ) {
-
-      def ++(other: Acc): Acc = Acc(
-        this.properties.fuse(other.properties)(_ ++ _),
-        this.previousNames ++ other.previousNames,
-        this.protectedPropertiesByPlanId ++ other.protectedPropertiesByPlanId,
-        this.indexedEntityAliases.fuse(other.indexedEntityAliases)(_ ++ _)
-      )
-
-      def withProtectedProperties(plan: LogicalPlan, protectedProps: ProtectedProperties): Acc = {
-        copy(protectedPropertiesByPlanId = protectedPropertiesByPlanId.updated(plan.id, protectedProps))
-      }
-
-      def addIndexNodeProperty(prop: Property): Acc = {
-        val previousUsages = properties.getOrElse(prop, NODE_NO_PROP_USAGE)
-        val newProperties = properties.updated(prop, previousUsages.registerIndexUsage)
-        copy(properties = newProperties)
-      }
-
-      def registerIndexedEntity(name: String): Acc = {
-        copy(indexedEntityAliases = indexedEntityAliases.updated(name, Set(name)))
-      }
-
-      def addIndexRelationshipProperty(prop: Property): Acc = {
-        val previousUsages = properties.getOrElse(prop, REL_NO_PROP_USAGE)
-        val newProperties = properties.updated(prop, previousUsages.registerIndexUsage)
-        copy(properties = newProperties)
-      }
-
-      def addNodeProperty(prop: Property, accessingPlan: LogicalPlan, needsValue: Boolean): Acc = {
-        ifShouldCache(accessingPlan, prop) {
-          val originalProp = originalProperty(prop)
-          val previousUsages: PropertyUsages = properties.getOrElse(originalProp, NODE_NO_PROP_USAGE)
-          val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan, needsValue))
-          copy(properties = newProperties)
-        }
-      }
-
-      def addRelProperty(prop: Property, accessingPlan: LogicalPlan, needsValue: Boolean): Acc = {
-        ifShouldCache(accessingPlan, prop) {
-          val originalProp = originalProperty(prop)
-          val previousUsages = properties.getOrElse(originalProp, REL_NO_PROP_USAGE)
-          val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan, needsValue))
-          copy(properties = newProperties)
-        }
-      }
-
-      def addPreviousNames(mappings: Map[String, String]): Acc = {
-        val newRenamings = previousNames ++ mappings
-
-        // Find the original name of all variables so far, and fail if we have a cycle
-        val normalizedRenamings = newRenamings.map {
-          case (currentName, prevName) =>
-            var name = prevName
-            val seenNames = mutable.Set(currentName, prevName)
-            while (newRenamings.contains(name)) {
-              name = newRenamings(name)
-              if (!seenNames.add(name)) {
-                // We have a cycle
-                throw new IllegalStateException(
-                  s"There was a cycle in names: $seenNames. This is likely a namespacing bug."
-                )
-              }
-            }
-            (currentName, name)
-        }
-
-        // Rename all properties that we found so far and that are affected by this
-        val withPreviousNames = copy(previousNames = normalizedRenamings)
-        val renamedProperties = properties.map { case (prop, use) => (withPreviousNames.originalProperty(prop), use) }
-
-        val newEntityAliases = mappings.foldLeft(indexedEntityAliases) {
-          case (aliases, (newName, oldName)) =>
-            aliases.map {
-              case (entityName, aliases) if aliases.contains(oldName) =>
-                (entityName, aliases + newName)
-              case a => a
-            }
-        }
-
-        withPreviousNames.copy(properties = renamedProperties, indexedEntityAliases = newEntityAliases)
-      }
-
-      def variableWithOriginalName(variable: Variable): Variable = {
-        var name = variable.name
-        while (previousNames.contains(name)) {
-          name = previousNames(name)
-        }
-        variable.copy(name)(variable.position)
-      }
-
-      private def ifShouldCache(plan: LogicalPlan, prop: Property)(f: => Acc): Acc = {
-        if (protectedProperties(plan).shouldCache(prop)) f else this
-      }
-
-      def originalProperty(prop: Property): Property = {
-        val v = prop.map.asInstanceOf[Variable]
-        prop.copy(variableWithOriginalName(v))(prop.position)
-      }
-
-      def resetUsagesCount(): Acc =
-        copy(properties = properties.view.mapValues(_.copy(usages = Set.empty, usageCount = 0)).toMap)
-
-      def protectedProperties(plan: LogicalPlan): ProtectedProperties = {
-        protectedPropertiesByPlanId.getOrElse(plan.id, CacheAll)
-      }
-    }
-
-    object Acc {
-      def empty: Acc = Acc(
-        properties = Map.empty,
-        previousNames = Map.empty,
-        protectedPropertiesByPlanId = Map.empty,
-        indexedEntityAliases = Map.empty
-      )
-    }
-
-    def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan, lookIn: Option[Foldable] = None): Acc = {
-      lookIn.getOrElse(logicalPlan).folder.treeFold(acc) {
-        // Don't traverse into other logical plans
-        case lp: LogicalPlan if !(lp eq logicalPlan) => acc => SkipChildren(acc)
-
-        case RestrictedCaching(plan, restrictedCaching) =>
-          acc => TraverseChildren(acc.withProtectedProperties(plan, restrictedCaching))
-
-        // Find properties
-        case IsNotNull(prop @ Property(v: Variable, _)) if isNode(v) =>
-          acc =>
-            SkipChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = false))
-        case IsNotNull(prop @ Property(v: Variable, _)) if isRel(v) =>
-          acc =>
-            SkipChildren(acc.addRelProperty(prop, logicalPlan, needsValue = false))
-        case prop @ Property(v: Variable, _) if isNode(v) =>
-          acc =>
-            TraverseChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = true))
-        case prop @ Property(v: Variable, _) if isRel(v) =>
-          acc =>
-            TraverseChildren(acc.addRelProperty(prop, logicalPlan, needsValue = true))
-
-        // New fold for nested plan expression
-        case nested: NestedPlanExpression => acc =>
-            val accWithNested = findPropertiesInTree(acc, nested.plan)
-            TraverseChildren(accWithNested)
-
-        // We don't cache all properties in case expressions to avoid the risk of reading properties that are not used.
-        // Potential optimisation: Figure out properties that are shared between all case branches and cache them.
-        case caseExp: CaseExpression => acc =>
-            val whenExprs = caseExp.alternatives.map { case (when, _) => when }
-            val accWithCase = whenExprs.foldLeft(acc) {
-              case (acc, expr) => findPropertiesInPlan(acc, logicalPlan, Some(expr))
-            }
-            SkipChildren(accWithCase)
-      }
-    }
-
-    def findPropertiesInTree(initialAcc: Acc, logicalPlan: LogicalPlan): Acc = {
-      // Traverses the plan tree in plan execution order
-      LogicalPlans.foldPlan(initialAcc)(
-        logicalPlan,
-        (acc, p) => {
-          val accWithProps = {
-            val initialAcc = if (!p.isLeaf) acc else acc.resetUsagesCount()
-            findPropertiesInPlan(initialAcc, p)
-          }
-
-          p match {
-            // Make sure to register any renaming of variables
-            case plan: ProjectingPlan =>
-              val newRenamings = plan.projectExpressions.collect {
-                case (key, v: Variable) if key.name != v.name => key.name -> v.name
-              }
-              accWithProps.addPreviousNames(newRenamings)
-
-            // Find index plans that can provide cached properties
-            case indexPlan: NodeIndexLeafPlan =>
-              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(
-                accWithProps.registerIndexedEntity(indexPlan.idName.name)
-              ) {
-                (innerAcc, indexedProp) =>
-                  innerAcc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
-              }
-            case indexPlan: RelationshipIndexLeafPlan =>
-              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(
-                accWithProps.registerIndexedEntity(indexPlan.idName.name)
-              ) {
-                (innerAcc, indexedProp) =>
-                  innerAcc.addIndexRelationshipProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
-              }
-
-            case _ => accWithProps
-          }
-        },
-        (lhsAcc, rhsAcc, plan) =>
-          plan match {
-            case _: Union =>
-              // Take on only consistent renaming across both unions and remember properties from both subtrees
-              val mergedNames = lhsAcc.previousNames.filter(entry =>
-                rhsAcc.previousNames.get(entry._1) match {
-                  case None        => false
-                  case Some(value) => value.equals(entry._2)
-                }
-              )
-              val mergedProperties = lhsAcc.properties.fuse(rhsAcc.properties) {
-                (lhs, rhs) =>
-                  (lhs ++ rhs).copy(
-                    usages = lhs.usages ++ rhs.usages,
-                    usageCount = math.max(lhs.usageCount, rhs.usageCount)
-                  )
-              }
-
-              Acc(
-                mergedProperties,
-                mergedNames,
-                Map.empty,
-                indexedEntityAliases = lhsAcc.indexedEntityAliases.fuse(rhsAcc.indexedEntityAliases)(_ ++ _)
-              )
-
-            case plan =>
-              val combinedChildAcc = lhsAcc ++ rhsAcc
-              findPropertiesInPlan(combinedChildAcc, plan)
-          }
-      )
-    }
-
     // In the first step we collect all property usages and renaming while going over the tree
-    val acc = findPropertiesInTree(Acc.empty, logicalPlan)
-
-    var currentTypes = from.semanticTable().types
-
-    val returnColumns: Set[String] = logicalPlan match {
-      case pr: ProduceResult => pr.columns.map(_.name).toSet
-      case _                 => Set.empty
-    }
-
-    def rewriteIndexPlan(
-      acc: Acc,
-      indexPlan: IndexedPropertyProvidingPlan,
-      idName: LogicalVariable,
-      indexOrder: IndexOrder
-    ) = {
-      val shouldForceCache = {
-        val isReturnColumn =
-          acc.indexedEntityAliases.getOrElse(idName.name, Set.empty).intersect(returnColumns).nonEmpty
-        isReturnColumn && indexOrder != IndexOrderNone
-      }
-
-      indexPlan.withMappedProperties { indexedProp =>
-        acc.properties.get(property(idName, indexedProp.propertyKeyToken.name)) match {
-          // Get the value since we use it later
-          case Some(PropertyUsages(true, _, usageCount, _, _, _))
-            // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
-            // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
-            if (shouldForceCache || usageCount > 0) && indexedProp.getValueFromIndex != DoNotGetValue =>
-            indexedProp.copy(getValueFromIndex = GetValue)
-          // We could get the value but we don't need it later
-          case _ =>
-            indexedProp.copy(getValueFromIndex = DoNotGetValue)
-        }
-      }
-    }
+    val propertyUsagesAndRenamings =
+      findPropertiesInTree(PropertyUsagesAndRenamings.empty, logicalPlan, from.semanticTable())
 
     // In the second step we rewrite both properties and index plans
-    val propertyRewriter = bottomUp(Rewriter.lift {
+    val (rewrittenPlan, newSemanticTable) = rewrite(logicalPlan, propertyUsagesAndRenamings, from.semanticTable())
+
+    from
+      .withMaybeLogicalPlan(Some(rewrittenPlan))
+      .withSemanticTable(newSemanticTable)
+  }
+
+  override def name: String = "insertCachedProperties"
+
+  private def findPropertiesInTree(
+    initialAcc: PropertyUsagesAndRenamings,
+    logicalPlan: LogicalPlan,
+    semanticTable: SemanticTable
+  ): PropertyUsagesAndRenamings = {
+    // Traverses the plan tree in plan execution order
+    LogicalPlans.foldPlan(initialAcc)(
+      logicalPlan,
+      (acc, p) => {
+        val accWithProps = {
+          val initialAcc = if (!p.isLeaf) acc else acc.resetUsagesCount()
+          findPropertiesInPlan(initialAcc, p, semanticTable)
+        }
+
+        p match {
+          // Make sure to register any renaming of variables
+          case plan: ProjectingPlan =>
+            val newRenamings = plan.projectExpressions.collect {
+              case (key, v: Variable) if key.name != v.name => key.name -> v.name
+            }
+            accWithProps.addPreviousNames(newRenamings)
+
+          // Find index plans that can provide cached properties
+          case indexPlan: NodeIndexLeafPlan =>
+            indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(
+              accWithProps.registerIndexedEntity(indexPlan.idName.name)
+            ) {
+              (innerAcc, indexedProp) =>
+                innerAcc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
+            }
+          case indexPlan: RelationshipIndexLeafPlan =>
+            indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(
+              accWithProps.registerIndexedEntity(indexPlan.idName.name)
+            ) {
+              (innerAcc, indexedProp) =>
+                innerAcc.addIndexRelationshipProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
+            }
+
+          case _ => accWithProps
+        }
+      },
+      (lhsAcc, rhsAcc, plan) =>
+        plan match {
+          case _: Union =>
+            // Take on only consistent renaming across both unions and remember properties from both subtrees
+            val mergedNames = lhsAcc.previousNames.filter(entry =>
+              rhsAcc.previousNames.get(entry._1) match {
+                case None        => false
+                case Some(value) => value.equals(entry._2)
+              }
+            )
+            val mergedProperties = lhsAcc.properties.fuse(rhsAcc.properties) {
+              (lhs, rhs) =>
+                (lhs ++ rhs).copy(
+                  usages = lhs.usages ++ rhs.usages,
+                  usageCount = math.max(lhs.usageCount, rhs.usageCount)
+                )
+            }
+
+            PropertyUsagesAndRenamings(
+              mergedProperties,
+              mergedNames,
+              Map.empty,
+              indexedEntityAliases = lhsAcc.indexedEntityAliases.fuse(rhsAcc.indexedEntityAliases)(_ ++ _)
+            )
+
+          case plan =>
+            val combinedChildAcc = lhsAcc ++ rhsAcc
+            findPropertiesInPlan(combinedChildAcc, plan, semanticTable)
+        }
+    )
+  }
+
+  private def findPropertiesInPlan(
+    acc: PropertyUsagesAndRenamings,
+    logicalPlan: LogicalPlan,
+    semanticTable: SemanticTable,
+    lookIn: Option[Foldable] = None
+  ): PropertyUsagesAndRenamings = {
+    lookIn.getOrElse(logicalPlan).folder.treeFold(acc) {
+      // Don't traverse into other logical plans
+      case lp: LogicalPlan if !(lp eq logicalPlan) => acc => SkipChildren(acc)
+
+      case RestrictedCaching(plan, restrictedCaching) =>
+        acc => TraverseChildren(acc.withProtectedProperties(plan, restrictedCaching))
+
+      // Find properties
+      case IsNotNull(prop @ Property(v: Variable, _)) if isNode(semanticTable, v) =>
+        acc =>
+          SkipChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = false))
+      case IsNotNull(prop @ Property(v: Variable, _)) if isRel(semanticTable, v) =>
+        acc =>
+          SkipChildren(acc.addRelProperty(prop, logicalPlan, needsValue = false))
+      case prop @ Property(v: Variable, _) if isNode(semanticTable, v) =>
+        acc =>
+          TraverseChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = true))
+      case prop @ Property(v: Variable, _) if isRel(semanticTable, v) =>
+        acc =>
+          TraverseChildren(acc.addRelProperty(prop, logicalPlan, needsValue = true))
+
+      // New fold for nested plan expression
+      case nested: NestedPlanExpression => acc =>
+          val accWithNested = findPropertiesInTree(acc, nested.plan, semanticTable)
+          TraverseChildren(accWithNested)
+
+      // We don't cache all properties in case expressions to avoid the risk of reading properties that are not used.
+      // Potential optimisation: Figure out properties that are shared between all case branches and cache them.
+      case caseExp: CaseExpression => acc =>
+          val whenExprs = caseExp.alternatives.map { case (when, _) => when }
+          val accWithCase = whenExprs.foldLeft(acc) {
+            case (acc, expr) => findPropertiesInPlan(acc, logicalPlan, semanticTable, Some(expr))
+          }
+          SkipChildren(accWithCase)
+    }
+  }
+
+  private def rewrite(
+    logicalPlan: LogicalPlan,
+    acc: PropertyUsagesAndRenamings,
+    semanticTable: SemanticTable
+  ): (LogicalPlan, SemanticTable) = {
+    val returnColumns = returnColumnsForPlan(logicalPlan)
+    var currentTypes = semanticTable.types
+
+    val rewriter = bottomUp(Rewriter.lift {
       // Rewrite properties to be cached if they are used more than once, or can be fetched from an index
       case prop @ Property(v: Variable, propertyKeyName) =>
         val originalVar = acc.variableWithOriginalName(v)
@@ -496,22 +313,62 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
       // Rewrite index plans to either GetValue or DoNotGetValue
       case indexPlan: NodeIndexLeafPlan =>
-        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, indexPlan.indexOrder)
+        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, indexPlan.indexOrder, returnColumns)
       case indexPlan: RelationshipIndexLeafPlan =>
-        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, indexPlan.indexOrder)
+        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, indexPlan.indexOrder, returnColumns)
     })
 
-    val plan = propertyRewriter(logicalPlan).asInstanceOf[LogicalPlan]
+    val newPlan = logicalPlan.endoRewrite(rewriter)
     val newSemanticTable =
-      if (currentTypes == from.semanticTable().types) from.semanticTable()
-      else from.semanticTable().copy(types = currentTypes)
-    from.withMaybeLogicalPlan(Some(plan)).withSemanticTable(newSemanticTable)
+      if (currentTypes == semanticTable.types) semanticTable
+      else semanticTable.copy(types = currentTypes)
+
+    (newPlan, newSemanticTable)
   }
 
-  override def name: String = "insertCachedProperties"
+  private def rewriteIndexPlan(
+    acc: PropertyUsagesAndRenamings,
+    indexPlan: IndexedPropertyProvidingPlan,
+    idName: LogicalVariable,
+    indexOrder: IndexOrder,
+    returnColumns: Set[String]
+  ) = {
+    val shouldForceCache = {
+      val isReturnColumn =
+        acc.indexedEntityAliases.getOrElse(idName.name, Set.empty).intersect(returnColumns).nonEmpty
+      isReturnColumn && indexOrder != IndexOrderNone
+    }
 
-  def property(entity: LogicalVariable, propName: String): Property =
+    indexPlan.withMappedProperties { indexedProp =>
+      acc.properties.get(property(idName, indexedProp.propertyKeyToken.name)) match {
+        // Get the value since we use it later
+        case Some(PropertyUsages(true, _, usageCount, _, _, _))
+          // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
+          // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
+          if (shouldForceCache || usageCount > 0) && indexedProp.getValueFromIndex != DoNotGetValue =>
+          indexedProp.copy(getValueFromIndex = GetValue)
+        // We could get the value but we don't need it later
+        case _ =>
+          indexedProp.copy(getValueFromIndex = DoNotGetValue)
+      }
+    }
+  }
+
+  private def property(entity: LogicalVariable, propName: String): Property =
     Property(entity, PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
+
+  private def isNode(semanticTable: SemanticTable, variable: Variable) =
+    semanticTable.typeFor(variable.name).is(CTNode)
+
+  private def isRel(semanticTable: SemanticTable, variable: Variable) =
+    semanticTable.typeFor(variable.name).is(CTRelationship)
+
+  private def returnColumnsForPlan(logicalPlan: LogicalPlan): Set[String] = {
+    logicalPlan match {
+      case pr: ProduceResult => pr.columns.map(_.name).toSet
+      case _                 => Set.empty
+    }
+  }
 }
 
 case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCondition
@@ -541,6 +398,192 @@ case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCo
     pushdownPropertyReads: Boolean,
     semanticFeatures: Seq[SemanticFeature]
   ): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = InsertCachedProperties(pushdownPropertyReads)
+
+  /**
+   * A summary of all usages of a property
+   *
+   * @param canGetFromIndex      if the property can be read from an index.
+   * @param usages               references to all usages of this property
+   * @param usageCount           effective count of usages of property. Note this is not usages.size() since
+   *                             we don't want to count LHS and RHS of unions simultaneously.
+   * @param entityType           the type of property
+   * @param firstWritingAccesses if there can be determined a first logical plan that writes the property,
+   *                             this contains that plan and all accesses that happen to this property from that plan.
+   */
+  private case class PropertyUsages(
+    canGetFromIndex: Boolean,
+    usages: Set[Ref[Property]],
+    usageCount: Int,
+    entityType: EntityType,
+    firstWritingAccesses: Option[(LogicalPlan, Set[Ref[Property]])],
+    needsValue: Boolean
+  ) {
+
+    // always prefer reading from index
+    def registerIndexUsage: PropertyUsages =
+      copy(canGetFromIndex = true, firstWritingAccesses = None, needsValue = true)
+
+    def addUsage(prop: Property, accessingPlan: LogicalPlan, newNeedsValue: Boolean): PropertyUsages = {
+      val fWA =
+        if (canGetFromIndex) None
+        else firstWritingAccesses match {
+          case None                                 => Some((accessingPlan, Set(Ref(prop))))
+          case Some((`accessingPlan`, otherUsages)) => Some((accessingPlan, otherUsages + Ref(prop)))
+          case x                                    => x
+        }
+
+      copy(
+        usages = usages + Ref(prop),
+        usageCount = usageCount + 1,
+        firstWritingAccesses = fWA,
+        needsValue = needsValue || newNeedsValue
+      )
+    }
+
+    def ++(other: PropertyUsages): PropertyUsages = PropertyUsages(
+      this.canGetFromIndex || other.canGetFromIndex,
+      this.usages ++ other.usages,
+      this.usageCount + other.usageCount,
+      this.entityType,
+      this.firstWritingAccesses.orElse(other.firstWritingAccesses),
+      this.needsValue || other.needsValue
+    )
+  }
+
+  private object PropertyUsages {
+
+    val NODE_NO_PROP_USAGE: PropertyUsages =
+      PropertyUsages(canGetFromIndex = false, Set.empty, 0, NODE_TYPE, None, needsValue = false)
+
+    val REL_NO_PROP_USAGE: PropertyUsages =
+      PropertyUsages(canGetFromIndex = false, Set.empty, 0, RELATIONSHIP_TYPE, None, needsValue = false)
+  }
+
+  private case class PropertyUsagesAndRenamings(
+    properties: Map[Property, PropertyUsages],
+    previousNames: Map[String, String],
+    protectedPropertiesByPlanId: Map[Id, ProtectedProperties],
+    indexedEntityAliases: Map[String, Set[String]]
+  ) {
+
+    def ++(other: PropertyUsagesAndRenamings): PropertyUsagesAndRenamings = PropertyUsagesAndRenamings(
+      this.properties.fuse(other.properties)(_ ++ _),
+      this.previousNames ++ other.previousNames,
+      this.protectedPropertiesByPlanId ++ other.protectedPropertiesByPlanId,
+      this.indexedEntityAliases.fuse(other.indexedEntityAliases)(_ ++ _)
+    )
+
+    def withProtectedProperties(plan: LogicalPlan, protectedProps: ProtectedProperties): PropertyUsagesAndRenamings = {
+      copy(protectedPropertiesByPlanId = protectedPropertiesByPlanId.updated(plan.id, protectedProps))
+    }
+
+    def addIndexNodeProperty(prop: Property): PropertyUsagesAndRenamings = {
+      val previousUsages = properties.getOrElse(prop, PropertyUsages.NODE_NO_PROP_USAGE)
+      val newProperties = properties.updated(prop, previousUsages.registerIndexUsage)
+      copy(properties = newProperties)
+    }
+
+    def registerIndexedEntity(name: String): PropertyUsagesAndRenamings = {
+      copy(indexedEntityAliases = indexedEntityAliases.updated(name, Set(name)))
+    }
+
+    def addIndexRelationshipProperty(prop: Property): PropertyUsagesAndRenamings = {
+      val previousUsages = properties.getOrElse(prop, PropertyUsages.REL_NO_PROP_USAGE)
+      val newProperties = properties.updated(prop, previousUsages.registerIndexUsage)
+      copy(properties = newProperties)
+    }
+
+    def addNodeProperty(prop: Property, accessingPlan: LogicalPlan, needsValue: Boolean): PropertyUsagesAndRenamings = {
+      ifShouldCache(accessingPlan, prop) {
+        val originalProp = originalProperty(prop)
+        val previousUsages: PropertyUsages = properties.getOrElse(originalProp, PropertyUsages.NODE_NO_PROP_USAGE)
+        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan, needsValue))
+        copy(properties = newProperties)
+      }
+    }
+
+    def addRelProperty(prop: Property, accessingPlan: LogicalPlan, needsValue: Boolean): PropertyUsagesAndRenamings = {
+      ifShouldCache(accessingPlan, prop) {
+        val originalProp = originalProperty(prop)
+        val previousUsages = properties.getOrElse(originalProp, PropertyUsages.REL_NO_PROP_USAGE)
+        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan, needsValue))
+        copy(properties = newProperties)
+      }
+    }
+
+    def addPreviousNames(mappings: Map[String, String]): PropertyUsagesAndRenamings = {
+      val newRenamings = previousNames ++ mappings
+
+      // Find the original name of all variables so far, and fail if we have a cycle
+      val normalizedRenamings = newRenamings.map {
+        case (currentName, prevName) =>
+          var name = prevName
+          val seenNames = mutable.Set(currentName, prevName)
+          while (newRenamings.contains(name)) {
+            name = newRenamings(name)
+            if (!seenNames.add(name)) {
+              // We have a cycle
+              throw new IllegalStateException(
+                s"There was a cycle in names: $seenNames. This is likely a namespacing bug."
+              )
+            }
+          }
+          (currentName, name)
+      }
+
+      // Rename all properties that we found so far and that are affected by this
+      val withPreviousNames = copy(previousNames = normalizedRenamings)
+      val renamedProperties = properties.map { case (prop, use) => (withPreviousNames.originalProperty(prop), use) }
+
+      val newEntityAliases = mappings.foldLeft(indexedEntityAliases) {
+        case (aliases, (newName, oldName)) =>
+          aliases.map {
+            case (entityName, aliases) if aliases.contains(oldName) =>
+              (entityName, aliases + newName)
+            case a => a
+          }
+      }
+
+      withPreviousNames.copy(properties = renamedProperties, indexedEntityAliases = newEntityAliases)
+    }
+
+    def variableWithOriginalName(variable: Variable): Variable = {
+      var name = variable.name
+      while (previousNames.contains(name)) {
+        name = previousNames(name)
+      }
+      variable.copy(name)(variable.position)
+    }
+
+    private def ifShouldCache(
+      plan: LogicalPlan,
+      prop: Property
+    )(f: => PropertyUsagesAndRenamings): PropertyUsagesAndRenamings = {
+      if (protectedProperties(plan).shouldCache(prop)) f else this
+    }
+
+    def originalProperty(prop: Property): Property = {
+      val v = prop.map.asInstanceOf[Variable]
+      prop.copy(variableWithOriginalName(v))(prop.position)
+    }
+
+    def resetUsagesCount(): PropertyUsagesAndRenamings =
+      copy(properties = properties.view.mapValues(_.copy(usages = Set.empty, usageCount = 0)).toMap)
+
+    def protectedProperties(plan: LogicalPlan): ProtectedProperties = {
+      protectedPropertiesByPlanId.getOrElse(plan.id, CacheAll)
+    }
+  }
+
+  private object PropertyUsagesAndRenamings {
+
+    def empty: PropertyUsagesAndRenamings = PropertyUsagesAndRenamings(
+      properties = Map.empty,
+      previousNames = Map.empty,
+      protectedPropertiesByPlanId = Map.empty,
+      indexedEntityAliases = Map.empty
+    )
+  }
 }
 
 object RestrictedCaching {
