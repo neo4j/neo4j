@@ -218,6 +218,22 @@ public class VectorIndexCreationTest {
             assertUnsupportedDimensions(() -> createVectorIndex(settings, PROP_KEYS.get(1)));
         }
 
+        @ParameterizedTest
+        @MethodSource("validVersions")
+        @EnabledIf("hasValidVersions")
+        void shouldRequireDimensions(VectorIndexVersion version) {
+            final var config = defaultConfigWithout(IndexSetting.vector_Dimensions());
+            assertMissingExpectedSetting(
+                    IndexSetting.vector_Dimensions(), () -> createVectorIndex(version, config, propKeyIds[0]));
+        }
+
+        @Test
+        void shouldRequireDimensionsCoreAPI() {
+            final var settings = defaultSettingsWithout(IndexSetting.vector_Dimensions());
+            assertMissingExpectedSetting(
+                    IndexSetting.vector_Dimensions(), () -> createVectorIndex(settings, PROP_KEYS.get(1)));
+        }
+
         // config: similarity functions
 
         @ParameterizedTest
@@ -268,6 +284,22 @@ public class VectorIndexCreationTest {
             final var settings = defaultSettingsWith(IndexSetting.vector_Similarity_Function(), similarityFunctionName);
             assertIllegalSimilarityFunction(
                     latestSupportedVersion, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
+        }
+
+        @ParameterizedTest
+        @MethodSource("validVersions")
+        @EnabledIf("hasValidVersions")
+        void shouldRequireSimilarityFunction(VectorIndexVersion version) {
+            final var config = defaultConfigWithout(IndexSetting.vector_Similarity_Function());
+            assertMissingExpectedSetting(
+                    IndexSetting.vector_Similarity_Function(), () -> createVectorIndex(version, config, propKeyIds[0]));
+        }
+
+        @Test
+        void shouldRequireSimilarityFunctionCoreAPI() {
+            final var settings = defaultSettingsWithout(IndexSetting.vector_Similarity_Function());
+            assertMissingExpectedSetting(
+                    IndexSetting.vector_Similarity_Function(), () -> createVectorIndex(settings, PROP_KEYS.get(1)));
         }
 
         private boolean hasValidVersions() {
@@ -331,6 +363,10 @@ public class VectorIndexCreationTest {
             return configFrom(defaultSettingsWith(setting, value));
         }
 
+        private static IndexConfig defaultConfigWithout(IndexSetting setting) {
+            return configFrom(defaultSettingsWithout(setting));
+        }
+
         private static IndexConfig configFrom(Map<IndexSetting, Object> settings) {
             return IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap(settings);
         }
@@ -342,6 +378,12 @@ public class VectorIndexCreationTest {
         private static Map<IndexSetting, Object> defaultSettingsWith(IndexSetting setting, Object value) {
             final var settings = new HashMap<>(defaultSettings());
             settings.put(setting, value);
+            return Collections.unmodifiableMap(settings);
+        }
+
+        private static Map<IndexSetting, Object> defaultSettingsWithout(IndexSetting setting) {
+            final var settings = new HashMap<>(defaultSettings());
+            settings.remove(setting);
             return Collections.unmodifiableMap(settings);
         }
 
@@ -387,6 +429,13 @@ public class VectorIndexCreationTest {
                     .isInstanceOf(UnsupportedOperationException.class)
                     .hasMessageContainingAll(
                             "Composite indexes are not supported for", IndexType.VECTOR.name(), "index type");
+        }
+
+        private static void assertMissingExpectedSetting(IndexSetting setting, ThrowingCallable callable) {
+            assertThatThrownBy(callable)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .rootCause()
+                    .hasMessageContainingAll(setting.getSettingName(), "is expected to have been set");
         }
     }
 
