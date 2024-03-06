@@ -711,10 +711,7 @@ public final class SettingValueParsers {
             checkArgument(dependencyValue.isAbsolute(), "Dependency must be absolute path");
 
             if (value != null) {
-                if (value.isAbsolute()) {
-                    return value;
-                }
-                return dependencyValue.resolve(value);
+                return value.isAbsolute() ? value : dependencyValue.resolve(value);
             }
             return dependencyValue;
         }

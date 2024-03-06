@@ -88,7 +88,12 @@ class LoadCommandTest {
     @Test
     void printUsageHelp() {
         var baos = new ByteArrayOutputStream();
-        var command = new LoadCommand(new ExecutionContext(Path.of("."), Path.of(".")), loader);
+        var command = new LoadCommand(new ExecutionContext(Path.of("."), Path.of("."))) {
+            @Override
+            protected Loader createLoader(FileSystemAbstraction fs) {
+                return loader;
+            }
+        };
         try (var out = new PrintStream(baos)) {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
@@ -200,8 +205,13 @@ class LoadCommandTest {
         when(loader.getMetaData(any())).thenReturn(new Loader.DumpMetaData("ZSTD", "42", "1337"));
         var baos = new ByteArrayOutputStream();
         try (PrintStream out = new PrintStream(baos)) {
-            var command = new LoadCommand(
-                    new ExecutionContext(homeDir, homeDir, out, out, testDirectory.getFileSystem()), loader);
+            var command =
+                    new LoadCommand(new ExecutionContext(homeDir, homeDir, out, out, testDirectory.getFileSystem())) {
+                        @Override
+                        protected Loader createLoader(FileSystemAbstraction fs) {
+                            return loader;
+                        }
+                    };
             CommandLine.populateCommand(
                     command,
                     "foo",
@@ -233,7 +243,12 @@ class LoadCommandTest {
         PrintStream out = mock(PrintStream.class);
         PrintStream err = new PrintStream(output);
         FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
-        return new LoadCommand(new ExecutionContext(homeDir, configDir, out, err, fileSystem), loader);
+        return new LoadCommand(new ExecutionContext(homeDir, configDir, out, err, fileSystem)) {
+            @Override
+            protected Loader createLoader(FileSystemAbstraction fs) {
+                return loader;
+            }
+        };
     }
 
     private static void createDummyDump(String databaseName, Path destinationPath) throws IOException {

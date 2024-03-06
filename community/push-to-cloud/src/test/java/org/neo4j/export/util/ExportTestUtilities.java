@@ -24,7 +24,6 @@ import static wiremock.org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.file.Path;
 import org.neo4j.commandline.dbms.DumpCommand;
-import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -35,7 +34,7 @@ public class ExportTestUtilities {
 
     public static void createDump(Path homeDir, Path confDir, Path dump, FileSystemAbstraction fs, String dbName) {
         withSuppressedOutput(homeDir, confDir, fs, ctx -> {
-            final var dumpCommand = new DumpCommand(ctx, new Dumper(ctx.out()));
+            final var dumpCommand = new DumpCommand(ctx);
             picocli.CommandLine.populateCommand(dumpCommand, "--to-path=" + dump, dbName);
             assertThatCode(dumpCommand::execute).doesNotThrowAnyException();
         });

@@ -28,13 +28,19 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.archive.Dumper;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import picocli.CommandLine;
 
 class DumpCommandTest {
     @Test
     void printUsageHelp() {
         final var baos = new ByteArrayOutputStream();
-        final var command = new DumpCommand(new ExecutionContext(Path.of("."), Path.of(".")), mock(Dumper.class));
+        final var command = new DumpCommand(new ExecutionContext(Path.of("."), Path.of("."))) {
+            @Override
+            protected Dumper createDumper(FileSystemAbstraction fs) {
+                return mock(Dumper.class);
+            }
+        };
         try (var out = new PrintStream(baos)) {
             CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }

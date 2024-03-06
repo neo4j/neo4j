@@ -355,7 +355,12 @@ class DumpCommandIT {
     void shouldDumpTheDatabaseToTheStdOut() throws Exception {
         var out = mock(PrintStream.class);
         var ctx = new ExecutionContext(homeDir, configDir, out, mock(PrintStream.class), testDirectory.getFileSystem());
-        var command = new DumpCommand(ctx, dumper);
+        var command = new DumpCommand(ctx) {
+            @Override
+            protected Dumper createDumper(FileSystemAbstraction fs) {
+                return dumper;
+            }
+        };
         CommandLine.populateCommand(command, "foo", "--to-stdout");
         command.execute();
 
@@ -373,7 +378,12 @@ class DumpCommandIT {
     void shouldNotAllowDatabaseNameGlobbingWithStdOut() {
         var ctx = new ExecutionContext(
                 homeDir, configDir, mock(PrintStream.class), mock(PrintStream.class), testDirectory.getFileSystem());
-        var command = new DumpCommand(ctx, dumper);
+        var command = new DumpCommand(ctx) {
+            @Override
+            protected Dumper createDumper(FileSystemAbstraction fs) {
+                return dumper;
+            }
+        };
         CommandLine.populateCommand(command, "foo*", "--to-stdout");
         CommandFailedException commandFailed = assertThrows(CommandFailedException.class, command::execute);
         assertThat(commandFailed.getMessage())
@@ -408,7 +418,12 @@ class DumpCommandIT {
     private void execute(String database, Path to) {
         final ExecutionContext ctx = new ExecutionContext(
                 homeDir, configDir, mock(PrintStream.class), mock(PrintStream.class), testDirectory.getFileSystem());
-        final var command = new DumpCommand(ctx, dumper);
+        final var command = new DumpCommand(ctx) {
+            @Override
+            protected Dumper createDumper(FileSystemAbstraction fs) {
+                return dumper;
+            }
+        };
 
         CommandLine.populateCommand(command, database, "--to-path=" + to.toAbsolutePath());
 

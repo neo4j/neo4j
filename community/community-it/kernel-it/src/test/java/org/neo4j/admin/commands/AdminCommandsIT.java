@@ -49,8 +49,6 @@ import org.neo4j.commandline.dbms.StoreInfoCommand;
 import org.neo4j.commandline.dbms.UnbindCommand;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.consistency.CheckCommand;
-import org.neo4j.dbms.archive.Dumper;
-import org.neo4j.dbms.archive.Loader;
 import org.neo4j.importer.ImportCommand;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -111,17 +109,13 @@ class AdminCommandsIT {
                 StandardOpenOption.CREATE_NEW,
                 StandardOpenOption.WRITE);
         assertExpansionSuccess(
-                new LoadCommand(context, new Loader(fs)),
+                new LoadCommand(context),
                 "--expand-commands",
                 "--from-path=" + testDirectory.directory("dump").toAbsolutePath(),
                 testDb);
         assertExpansionSuccess(new MemoryRecommendationsCommand(context), "--expand-commands");
         assertExpansionSuccess(
-                new DumpCommand(context, new Dumper(context.err())),
-                "--expand-commands",
-                testDb,
-                "--to-path",
-                dumpFolder.toString());
+                new DumpCommand(context), "--expand-commands", testDb, "--to-path", dumpFolder.toString());
 
         // actual create the directory rather than rely on the load command to create it by accident
         fs.mkdirs(Neo4jLayout.of(testDirectory.homePath()).databasesDirectory());
@@ -136,7 +130,7 @@ class AdminCommandsIT {
         assertExpansionError(new CheckCommand(context), "neo4j");
         assertExpansionError(new DiagnosticsReportCommand(context));
         assertExpansionError(
-                new LoadCommand(context, new Loader(fs)),
+                new LoadCommand(context),
                 "--from-path=" + testDirectory.directory("dump").toAbsolutePath(),
                 "test");
         assertExpansionError(new MemoryRecommendationsCommand(context));
@@ -147,8 +141,7 @@ class AdminCommandsIT {
                 new ImportCommand.Incremental(context),
                 "--force",
                 "--nodes=" + testDirectory.createFile("foo.csv").toAbsolutePath());
-        assertExpansionError(
-                new DumpCommand(context, new Dumper(context.err())), "test", "--to-path", dumpFolder.toString());
+        assertExpansionError(new DumpCommand(context), "test", "--to-path", dumpFolder.toString());
         assertExpansionError(new UnbindCommand(context));
     }
 

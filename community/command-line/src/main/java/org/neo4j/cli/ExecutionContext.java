@@ -37,7 +37,12 @@ public class ExecutionContext {
     private final FileSystemAbstraction fs;
 
     public ExecutionContext(Path homeDir, Path confDir) {
-        this(homeDir, confDir, System.out, System.err, new DefaultFileSystemAbstraction());
+        this(homeDir, confDir, new DefaultFileSystemAbstraction());
+    }
+
+    @VisibleForTesting
+    public ExecutionContext(Path homeDir, Path confDir, FileSystemAbstraction fs) {
+        this(homeDir, confDir, System.out, System.err, fs);
     }
 
     @VisibleForTesting

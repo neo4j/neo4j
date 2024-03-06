@@ -19,8 +19,6 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.archive.Dumper.DUMP_EXTENSION;
 import static picocli.CommandLine.Command;
@@ -41,6 +39,8 @@ import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
+import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
@@ -102,15 +102,13 @@ public class LoadCommand extends AbstractAdminCommand {
                     "Print meta-data information about the archive file, instead of loading the contained database.")
     private boolean info;
 
-    private final Loader loader;
     static final String SYSTEM_ERR_MESSAGE =
             String.format("WARNING! You are loading a dump of Neo4j's internal system database.%n"
                     + "This system database dump may contain unwanted metadata for the DBMS it was taken from;%n"
                     + "Loading it should only be done after consulting the Neo4j Operations Manual.%n");
 
-    public LoadCommand(ExecutionContext ctx, Loader loader) {
+    public LoadCommand(ExecutionContext ctx) {
         super(ctx);
-        this.loader = requireNonNull(loader);
     }
 
     @Override
@@ -118,43 +116,55 @@ public class LoadCommand extends AbstractAdminCommand {
         return Optional.of("database-load");
     }
 
+    protected Loader createLoader(FileSystemAbstraction fs) {
+        return new Loader(fs, ctx.err());
+    }
+
     @Override
     public void execute() {
-        if (source.path != null && !ctx.fs().isDirectory(Path.of(source.path))) {
-            throw new CommandFailedException(source.path + " is not an existing directory");
-        }
-
-        if (database.containsPattern() && source.stdIn) {
-            throw new CommandFailedException(
-                    "Globbing in database name can not be used in combination with standard input. "
-                            + "Specify a directory as source or a single target database");
-        }
-
         Config config = buildConfig();
-        if (source.path == null && !source.stdIn) {
-            Path defaultDumpsPath = config.get(GraphDatabaseSettings.database_dumps_root_path);
-            if (!ctx.fs().isDirectory(defaultDumpsPath)) {
-                throw new CommandFailedException("The root location for storing dumps ('"
-                        + GraphDatabaseSettings.database_dumps_root_path.name() + "'=" + defaultDumpsPath
-                        + ") doesn't contain any dumps yet. Specify another directory with --from-path.");
-            }
-            source.path = defaultDumpsPath.toString();
-        }
 
-        Set<DumpInfo> dbNames = getDbNames(ctx.fs());
+        try (var logProvider = Util.configuredLogProvider(ctx.out(), verbose);
+                var fs = new SchemeFileSystemAbstraction(ctx.fs(), config, logProvider)) {
+            final var loader = createLoader(fs);
 
-        if (info) {
-            inspectDump(dbNames);
-        } else {
-            try {
-                loadDump(dbNames, config);
-            } catch (IOException e) {
-                wrapIOException(e);
+            Path sourcePath = null;
+            if (source.path != null) {
+                sourcePath = fs.resolve(source.path);
+                if (!fs.isDirectory(sourcePath)) {
+                    throw new CommandFailedException(source.path + " is not an existing directory");
+                }
             }
+
+            if (database.containsPattern() && source.stdIn) {
+                throw new CommandFailedException(
+                        "Globbing in database name can not be used in combination with standard input. "
+                                + "Specify a directory as source or a single target database");
+            }
+
+            if (sourcePath == null && !source.stdIn) {
+                Path defaultDumpsPath = config.get(GraphDatabaseSettings.database_dumps_root_path);
+                if (!ctx.fs().isDirectory(defaultDumpsPath)) {
+                    throw new CommandFailedException("The root location for storing dumps ('"
+                            + GraphDatabaseSettings.database_dumps_root_path.name() + "'=" + defaultDumpsPath
+                            + ") doesn't contain any dumps yet. Specify another directory with --from-path.");
+                }
+                sourcePath = fs.resolve(defaultDumpsPath.toString());
+            }
+
+            Set<DumpInfo> dbNames = getDbNames(fs, sourcePath);
+
+            if (info) {
+                inspectDump(loader, dbNames);
+            } else {
+                loadDump(loader, dbNames, config);
+            }
+        } catch (IOException e) {
+            Util.wrapIOException(e);
         }
     }
 
-    private void inspectDump(Set<DumpInfo> dbNames) {
+    private void inspectDump(Loader loader, Set<DumpInfo> dbNames) {
         List<FailedLoad> failedLoads = new ArrayList<>();
 
         for (DumpInfo dbName : dbNames) {
@@ -166,7 +176,7 @@ public class LoadCommand extends AbstractAdminCommand {
                 ctx.out().println("Bytes: " + metaData.byteCount());
                 ctx.out().println();
             } catch (Exception e) {
-                ctx.err().printf("Failed to get metadata for dump '%s': %s", dbName.dumpPath, e.getMessage());
+                ctx.err().printf("Failed to get metadata for dump '%s': %s%n", dbName.dumpPath, e.getMessage());
                 failedLoads.add(new FailedLoad(dbName.dbName, e));
             }
         }
@@ -181,8 +191,9 @@ public class LoadCommand extends AbstractAdminCommand {
         return ctx::in;
     }
 
-    protected void loadDump(Set<DumpInfo> dbNames, Config config) throws IOException {
-        LoadDumpExecutor loadDumpExecutor = new LoadDumpExecutor(config, ctx.fs(), ctx.err(), loader);
+    protected void loadDump(Loader loader, Set<DumpInfo> dbNames, Config config) throws IOException {
+        final var fs = ctx.fs();
+        LoadDumpExecutor loadDumpExecutor = new LoadDumpExecutor(config, fs, ctx.err(), loader);
 
         List<FailedLoad> failedLoads = new ArrayList<>();
         for (DumpInfo dbName : dbNames) {
@@ -194,7 +205,7 @@ public class LoadCommand extends AbstractAdminCommand {
                 var dumpInputDescription = dbName.dumpPath == null ? "reading from stdin" : dbName.dumpPath.toString();
                 var dumpInputStreamSupplier = getArchiveInputStreamSupplier(dbName.dumpPath);
 
-                if (dbName.dumpPath != null && !ctx.fs().fileExists(dbName.dumpPath.toAbsolutePath())) {
+                if (dbName.dumpPath != null && !fs.fileExists(dbName.dumpPath)) {
                     // fail early as loadDumpExecutor.execute will create directories
                     throw new CommandFailedException("Archive does not exist: " + dbName.dumpPath);
                 }
@@ -205,7 +216,7 @@ public class LoadCommand extends AbstractAdminCommand {
                         dbName.dbName,
                         force);
             } catch (Exception e) {
-                ctx.err().printf("Failed to load database '%s': %s", dbName.dbName, e.getMessage());
+                ctx.err().printf("Failed to load database '%s': %s%n", dbName.dbName, e.getMessage());
                 failedLoads.add(new FailedLoad(dbName.dbName, e));
             }
         }
@@ -229,18 +240,17 @@ public class LoadCommand extends AbstractAdminCommand {
 
     protected record DumpInfo(String dbName, Path dumpPath) {}
 
-    private Set<DumpInfo> getDbNames(FileSystemAbstraction fs) {
+    private Set<DumpInfo> getDbNames(FileSystemAbstraction fs, Path sourcePath) {
         if (source.stdIn) {
             return Set.of(new DumpInfo(database.getDatabaseName(), null));
         }
-        Path dumpDir = Path.of(source.path);
         if (!database.containsPattern()) {
             return Set.of(new DumpInfo(
-                    database.getDatabaseName(), dumpDir.resolve(database.getDatabaseName() + DUMP_EXTENSION)));
+                    database.getDatabaseName(), sourcePath.resolve(database.getDatabaseName() + DUMP_EXTENSION)));
         } else {
             Set<DumpInfo> dbNames = MutableSetFactoryImpl.INSTANCE.empty();
             try {
-                for (Path path : fs.listFiles(dumpDir)) {
+                for (Path path : fs.listFiles(sourcePath)) {
                     String fileName = path.getFileName().toString();
                     if (!fs.isDirectory(path) && fileName.endsWith(DUMP_EXTENSION)) {
                         String dbName = fileName.substring(0, fileName.length() - DUMP_EXTENSION.length());
@@ -253,8 +263,8 @@ public class LoadCommand extends AbstractAdminCommand {
                 throw new CommandFailedException("Failed to list dump files", e);
             }
             if (dbNames.isEmpty()) {
-                throw new CommandFailedException("Pattern '" + database.getDatabaseName()
-                        + "' did not match any dump file in " + dumpDir.toAbsolutePath());
+                throw new CommandFailedException(
+                        "Pattern '" + database.getDatabaseName() + "' did not match any dump file in " + sourcePath);
             }
             return dbNames;
         }

@@ -20,7 +20,6 @@
 package org.neo4j.commandline.dbms;
 
 import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
 import static org.neo4j.dbms.archive.Dumper.DUMP_EXTENSION;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -32,19 +31,18 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.StringJoiner;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
 import org.neo4j.commandline.Util;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -53,7 +51,6 @@ import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -61,7 +58,6 @@ import org.neo4j.io.locker.FileLockException;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import picocli.CommandLine.ArgGroup;
@@ -105,11 +101,8 @@ public class DumpCommand extends AbstractAdminCommand {
             description = "Overwrite any existing dump file in the destination folder.")
     private boolean overwriteDestination;
 
-    private final Dumper dumper;
-
-    public DumpCommand(ExecutionContext ctx, Dumper dumper) {
+    public DumpCommand(ExecutionContext ctx) {
         super(ctx);
-        this.dumper = requireNonNull(dumper);
     }
 
     @Override
@@ -119,69 +112,69 @@ public class DumpCommand extends AbstractAdminCommand {
 
     @Override
     public void execute() {
-        if (target.toDir != null && !Files.isDirectory(Path.of(target.toDir))) {
-            throw new CommandFailedException(target.toDir + " is not an existing directory");
-        }
+        final var config = createConfig();
 
-        boolean toStdOut = target.toStdout;
-        if (toStdOut && database.containsPattern()) {
-            throw new CommandFailedException("Globbing in database name can not be used in combination with standard "
-                    + "output. Specify a directory as destination or a single target database");
-        }
+        try (var logProvider = Util.configuredLogProvider(ctx.out(), verbose);
+                var fs = new SchemeFileSystemAbstraction(ctx.fs(), config, logProvider)) {
+            final var dumper = createDumper(fs);
 
-        Config config = createConfig();
+            Path storagePath = null;
+            if (target.toDir != null) {
+                storagePath = fs.resolve(target.toDir);
+                if (!fs.isDirectory(storagePath)) {
+                    throw new CommandFailedException(target.toDir + " is not an existing directory");
+                }
+            }
 
-        if (target.toDir == null && !toStdOut) {
-            target.toDir = createDefaultDumpsDir(config);
-        }
+            boolean toStdOut = target.toStdout;
+            if (toStdOut && database.containsPattern()) {
+                throw new CommandFailedException(
+                        "Globbing in database name can not be used in combination with standard "
+                                + "output. Specify a directory as destination or a single target database");
+            }
 
-        InternalLog log;
-        try (Log4jLogProvider logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
-            log = logProvider.getLog(getClass());
-            Set<String> dbNames;
+            if (storagePath == null && !toStdOut) {
+                storagePath = createDefaultDumpsDir(fs, config);
+            }
+
+            InternalLog log = logProvider.getLog(getClass());
+
             List<FailedDump> failedDumps = new ArrayList<>();
 
-            try (DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction()) {
-                dbNames = getDbNames(config, fs, database);
+            var memoryTracker = EmptyMemoryTracker.INSTANCE;
 
-                var memoryTracker = EmptyMemoryTracker.INSTANCE;
-
-                for (String databaseName : dbNames) {
-                    try {
-                        if (!toStdOut) {
-                            log.info(format("Starting dump of database '%s'", databaseName));
-                        }
-
-                        DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(databaseName);
-
-                        try {
-                            Validators.CONTAINS_EXISTING_DATABASE.validate(databaseLayout.databaseDirectory());
-                        } catch (IllegalArgumentException e) {
-                            throw new CommandFailedException("Database does not exist: " + databaseName, e);
-                        }
-
-                        if (fs.fileExists(databaseLayout.file(StoreMigrator.MIGRATION_DIRECTORY))) {
-                            throw new CommandFailedException(
-                                    "Store migration folder detected - A dump can not be taken during a store migration. Make sure "
-                                            + "store migration is completed before trying again.");
-                        }
-
-                        try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
-                            checkDbState(ctx.fs(), databaseLayout, config, memoryTracker, databaseName, log);
-                            dump(databaseLayout, databaseName);
-                        } catch (FileLockException e) {
-                            throw new CommandFailedException(
-                                    "The database is in use. Stop database '" + databaseName + "' and try again.", e);
-                        } catch (IOException e) {
-                            wrapIOException(e);
-                        } catch (CannotWriteException e) {
-                            throw new CommandFailedException("You do not have permission to dump the database.", e);
-                        }
-
-                    } catch (Exception e) {
-                        log.error("Failed to dump database '" + databaseName + "': " + e.getMessage());
-                        failedDumps.add(new FailedDump(databaseName, e));
+            for (String databaseName : getDbNames(config, fs, database)) {
+                try {
+                    if (!toStdOut) {
+                        log.info(format("Starting dump of database '%s'", databaseName));
                     }
+
+                    DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(databaseName);
+
+                    try {
+                        Validators.CONTAINS_EXISTING_DATABASE.validate(databaseLayout.databaseDirectory());
+                    } catch (IllegalArgumentException e) {
+                        throw new CommandFailedException("Database does not exist: " + databaseName, e);
+                    }
+
+                    if (fs.fileExists(databaseLayout.file(StoreMigrator.MIGRATION_DIRECTORY))) {
+                        throw new CommandFailedException(
+                                "Store migration folder detected - A dump can not be taken during a store migration. Make sure "
+                                        + "store migration is completed before trying again.");
+                    }
+
+                    try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
+                        checkDbState(ctx.fs(), databaseLayout, config, memoryTracker, databaseName, log);
+                        dump(dumper, databaseLayout, databaseName, storagePath);
+                    } catch (FileLockException e) {
+                        throw new CommandFailedException(
+                                "The database is in use. Stop database '" + databaseName + "' and try again.", e);
+                    } catch (CannotWriteException e) {
+                        throw new CommandFailedException("You do not have permission to dump the database.", e);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to dump database '" + databaseName + "': " + e.getMessage());
+                    failedDumps.add(new FailedDump(databaseName, e));
                 }
             }
 
@@ -199,13 +192,19 @@ public class DumpCommand extends AbstractAdminCommand {
                 log.error(failedDbs.toString());
                 throw new CommandFailedException(failedDbs.toString(), exceptions);
             }
+        } catch (IOException e) {
+            wrapIOException(e);
         }
     }
 
-    private String createDefaultDumpsDir(Config config) {
-        Path defaultDumpPath = config.get(GraphDatabaseSettings.database_dumps_root_path);
+    protected Dumper createDumper(FileSystemAbstraction fs) {
+        return new Dumper(fs, ctx.out());
+    }
+
+    private Path createDefaultDumpsDir(SchemeFileSystemAbstraction fs, Config config) {
+        final var defaultDumpPath = config.get(GraphDatabaseSettings.database_dumps_root_path);
         try {
-            ctx.fs().mkdirs(defaultDumpPath);
+            fs.mkdirs(defaultDumpPath);
         } catch (IOException e) {
             throw new CommandFailedException(
                     format(
@@ -213,7 +212,7 @@ public class DumpCommand extends AbstractAdminCommand {
                             defaultDumpPath, e.getClass().getSimpleName(), e.getMessage()),
                     e);
         }
-        return defaultDumpPath.toString();
+        return defaultDumpPath;
     }
 
     private Config createConfig() {
@@ -228,22 +227,23 @@ public class DumpCommand extends AbstractAdminCommand {
         return to.resolve(database + DUMP_EXTENSION);
     }
 
-    private OutputStream openDumpStream(String databaseName, TargetOption destination) throws IOException {
-        if (destination.toStdout) {
+    private OutputStream openDumpStream(Dumper dumper, String databaseName, Path storagePath) throws IOException {
+        if (storagePath == null) {
             return ctx.out();
         }
-        var archive = buildArchivePath(databaseName, Path.of(destination.toDir).toAbsolutePath());
+        var archive = buildArchivePath(databaseName, storagePath);
         return dumper.openForDump(archive, overwriteDestination);
     }
 
-    private void dump(DatabaseLayout databaseLayout, String databaseName) {
+    private void dump(Dumper dumper, DatabaseLayout databaseLayout, String databaseName, Path storagePath) {
         Path databasePath = databaseLayout.databaseDirectory();
         try {
             var format = DumpFormatSelector.selectFormat(ctx.err());
             var lockFile = databaseLayout.databaseLockFile().getFileName().toString();
             var quarantineMarkerFile =
                     databaseLayout.quarantineFile().getFileName().toString();
-            var out = openDumpStream(databaseName, target);
+            // this is closed inside the dump call
+            var out = openDumpStream(dumper, databaseName, storagePath);
             dumper.dump(
                     databasePath,
                     databaseLayout.getTransactionLogsDirectory(),

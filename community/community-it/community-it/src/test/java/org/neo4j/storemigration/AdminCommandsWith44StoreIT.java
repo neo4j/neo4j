@@ -35,14 +35,11 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.dbms.LoadCommand;
 import org.neo4j.commandline.dbms.StoreInfoCommand;
-import org.neo4j.dbms.archive.Loader;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.utils.TestDirectory;
 import picocli.CommandLine;
 
 /**
@@ -54,8 +51,6 @@ import picocli.CommandLine;
  */
 @Neo4jLayoutExtension
 class AdminCommandsWith44StoreIT {
-    @Inject
-    private TestDirectory directory;
 
     @Inject
     private Neo4jLayout neo4jLayout;
@@ -86,7 +81,7 @@ class AdminCommandsWith44StoreIT {
         Files.copy(source, dumpFile);
 
         var result = runCommandFromSameJvm(
-                ctx -> new LoadCommand(ctx, new Loader(fileSystemAbstraction, ctx.err())),
+                LoadCommand::new,
                 "test-db",
                 "--from-path",
                 neo4jLayout.homeDirectory().toString());
@@ -100,8 +95,7 @@ class AdminCommandsWith44StoreIT {
         var out = new Output();
         var err = new Output();
 
-        var ctx = new ExecutionContext(
-                homeDir, configDir, out.printStream, err.printStream, new DefaultFileSystemAbstraction());
+        var ctx = new ExecutionContext(homeDir, configDir, out.printStream, err.printStream, fileSystemAbstraction);
 
         var command = CommandLine.populateCommand(commandFactory.apply(ctx), args);
 

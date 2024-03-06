@@ -59,6 +59,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -196,7 +197,7 @@ public final class FileUtils {
             throw new NotDirectoryException(targetDirectory.toString());
         }
 
-        Path target = targetDirectory.resolve(toMove.getFileName());
+        Path target = resolve(targetDirectory, toMove.getFileName());
         moveFile(toMove, target);
         return target;
     }
@@ -217,7 +218,7 @@ public final class FileUtils {
             throw new NotDirectoryException(targetDirectory.toString());
         }
 
-        Path target = targetDirectory.resolve(file.getFileName());
+        Path target = resolve(targetDirectory, file.getFileName());
         copyFile(file, target);
     }
 
@@ -294,7 +295,7 @@ public final class FileUtils {
             throw new IllegalArgumentException("File " + fileToMove + " is not a sub path to dir " + fromDir);
         }
 
-        return toDir.resolve(fromDir.relativize(fileToMove));
+        return resolve(toDir, fromDir.relativize(fileToMove));
     }
 
     public interface Operation {
@@ -456,6 +457,16 @@ public final class FileUtils {
         return new BufferedOutputStream(new NativeByteBufferOutputStream(fileChannel));
     }
 
+    private static Path resolve(Path source, Path other) {
+        if (Objects.equals(
+                source.getFileSystem().provider(), other.getFileSystem().provider())) {
+            return source.resolve(other);
+        }
+
+        // cannot resolve across file system providers so fallback to the string form
+        return source.resolve(other.toString());
+    }
+
     private static class DeletingFileVisitor extends SimpleFileVisitor<Path> {
         private final Predicate<Path> removeFilePredicate;
         private int skippedFiles;
@@ -524,7 +535,7 @@ public final class FileUtils {
                 return SKIP_SUBTREE;
             }
 
-            Path target = to.resolve(from.relativize(dir));
+            Path target = resolve(to, from.relativize(dir));
             if (!exists(target)) {
                 createDirectory(target);
                 if (isInDestination(target)) {
@@ -540,7 +551,7 @@ public final class FileUtils {
                 return CONTINUE;
             }
             if (!copiedPathsInDestination.contains(file)) {
-                Path target = to.resolve(from.relativize(file));
+                Path target = resolve(to, from.relativize(file));
                 Files.copy(file, target, copyOption);
                 if (isInDestination(target)) {
                     copiedPathsInDestination.add(target);

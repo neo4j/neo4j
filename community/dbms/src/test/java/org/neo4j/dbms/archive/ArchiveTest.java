@@ -134,7 +134,7 @@ class ArchiveTest {
         touch(directory.resolve("another-file"));
 
         Path archive = testDirectory.file("the-archive.dump");
-        Dumper dumper = new Dumper();
+        Dumper dumper = new Dumper(filesystem);
         dumper.dump(directory, directory, dumper.openForDump(archive), compressionFormat, path -> path.getFileName()
                 .toString()
                 .equals("another-file"));
@@ -159,7 +159,7 @@ class ArchiveTest {
         touch(subdir.resolve("a-file"));
 
         Path archive = testDirectory.file("the-archive.dump");
-        Dumper dumper = new Dumper();
+        Dumper dumper = new Dumper(filesystem);
         dumper.dump(directory, directory, dumper.openForDump(archive), compressionFormat, path -> path.getFileName()
                 .toString()
                 .equals("subdir"));
@@ -187,7 +187,7 @@ class ArchiveTest {
         touch(txLogsDirectory.resolve(TransactionLogFilesHelper.DEFAULT_NAME + ".0"));
 
         Path archive = testDirectory.file("the-archive.dump");
-        Dumper dumper = new Dumper();
+        Dumper dumper = new Dumper(filesystem);
         dumper.dump(
                 testDatabaseLayout.databaseDirectory(),
                 txLogsDirectory,
@@ -236,7 +236,7 @@ class ArchiveTest {
     private void assertRoundTrips(Path oldDirectory, StandardCompressionFormat compressionFormat)
             throws IOException, IncorrectFormat {
         Path archive = testDirectory.file("the-archive.dump");
-        Dumper dumper = new Dumper();
+        Dumper dumper = new Dumper(filesystem);
         dumper.dump(oldDirectory, oldDirectory, dumper.openForDump(archive), compressionFormat, alwaysFalse());
         Path newDirectory = testDirectory.file("the-new-directory");
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(newDirectory);

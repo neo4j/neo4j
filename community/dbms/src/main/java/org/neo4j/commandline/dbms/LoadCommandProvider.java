@@ -25,13 +25,12 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.cli.CommandProvider;
 import org.neo4j.cli.CommandType;
 import org.neo4j.cli.ExecutionContext;
-import org.neo4j.dbms.archive.Loader;
 
 @ServiceProvider
 public class LoadCommandProvider implements CommandProvider {
     @Override
     public LoadCommand createCommand(ExecutionContext ctx) {
-        return new LoadCommand(ctx, new Loader(ctx.fs(), ctx.err()));
+        return new LoadCommand(ctx);
     }
 
     @Override

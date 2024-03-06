@@ -169,7 +169,7 @@ public class ProfileCommand extends AbstractAdminCommand {
                         if (!skipCompression) {
                             Path archive = output.resolve(String.format("profile-%s.gzip", clock.instant()));
                             ctx.out().printf("%nCompressing result into %s", archive.getFileName());
-                            Dumper dumper = new Dumper(ctx.out());
+                            Dumper dumper = new Dumper(ctx.fs(), ctx.out());
                             dumper.dump(
                                     output, output, dumper.openForDump(archive), GZIP, path -> path.equals(archive));
                             for (Path path : fs.listFiles(output, fs::isDirectory)) {

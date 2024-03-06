@@ -119,7 +119,7 @@ public class Loader {
 
         checkDatabasePresence(filesystem, databaseLayout);
 
-        try (ArchiveInputStream stream = openArchiveIn(selector, streamSupplier, inputName);
+        try (var stream = openArchiveIn(selector, streamSupplier, inputName);
                 Resource ignore = progressPrinter.startPrinting()) {
             ArchiveEntry entry;
             while ((entry = nextEntry(stream, inputName)) != null) {
@@ -189,7 +189,7 @@ public class Loader {
         }
     }
 
-    private static ArchiveEntry nextEntry(ArchiveInputStream stream, String inputName) throws IncorrectFormat {
+    private static ArchiveEntry nextEntry(ArchiveInputStream<?> stream, String inputName) throws IncorrectFormat {
         try {
             return stream.getNextEntry();
         } catch (IOException e) {
@@ -197,7 +197,7 @@ public class Loader {
         }
     }
 
-    private void loadEntry(Path destination, ArchiveInputStream stream, ArchiveEntry entry) throws IOException {
+    private void loadEntry(Path destination, ArchiveInputStream<?> stream, ArchiveEntry entry) throws IOException {
         Path file = destination.resolve(entry.getName().replace('\\', '/'));
         var normalizedFile = file.normalize();
         if (!normalizedFile.startsWith(destination)) {
@@ -214,7 +214,7 @@ public class Loader {
         }
     }
 
-    private ArchiveInputStream openArchiveIn(
+    private ArchiveInputStream<?> openArchiveIn(
             DecompressionSelector selector, ThrowingSupplier<InputStream, IOException> streamSupplier, String inputName)
             throws IOException, IncorrectFormat {
         try {

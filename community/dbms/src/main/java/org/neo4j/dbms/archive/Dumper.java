@@ -49,31 +49,33 @@ import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.InternalLogProvider;
 
 public class Dumper {
     public static final String DUMP_EXTENSION = ".dump";
     public static final String TAR_EXTENSION = ".tar";
-    private final List<ArchiveOperation> operations;
+
+    private final List<ArchiveOperation> operations = new ArrayList<>();
+
+    private final FileSystemAbstraction fs;
     private final ArchiveProgressPrinter progressPrinter;
 
-    public Dumper() {
-        this(ProgressPrinters.emptyPrinter());
+    public Dumper(FileSystemAbstraction fs) {
+        this(fs, ProgressPrinters.emptyPrinter());
     }
 
-    public Dumper(PrintStream output) {
-        this(ProgressPrinters.printStreamPrinter(output));
+    public Dumper(FileSystemAbstraction fs, PrintStream output) {
+        this(fs, ProgressPrinters.printStreamPrinter(output));
     }
 
-    public Dumper(InternalLogProvider logProvider) {
-        this(ProgressPrinters.logProviderPrinter(logProvider.getLog(Dumper.class)));
+    public Dumper(FileSystemAbstraction fs, InternalLogProvider logProvider) {
+        this(fs, ProgressPrinters.logProviderPrinter(logProvider.getLog(Dumper.class)));
     }
 
-    private Dumper(OutputProgressPrinter progressPrinter) {
-        requireNonNull(progressPrinter);
-        this.operations = new ArrayList<>();
-        this.progressPrinter = new ArchiveProgressPrinter(progressPrinter, Instant::now);
+    private Dumper(FileSystemAbstraction fs, OutputProgressPrinter progressPrinter) {
+        this.fs = requireNonNull(fs);
+        this.progressPrinter = new ArchiveProgressPrinter(requireNonNull(progressPrinter), Instant::now);
     }
 
     public void dump(Path path, Path archive, CompressionFormat format) throws IOException {
@@ -88,7 +90,7 @@ public class Dumper {
         checkWritableDirectory(archive.getParent());
 
         if (overwriteDestination) {
-            return Files.newOutputStream(archive);
+            return fs.openAsOutputStream(archive, false);
         }
 
         // StandardOpenOption.CREATE_NEW is important here because it atomically asserts that the file doesn't
@@ -118,7 +120,7 @@ public class Dumper {
             progressPrinter.maxFiles(progressPrinter.maxFiles() + (operation.isFile ? 1 : 0));
         }
 
-        try (ArchiveOutputStream stream = wrapArchiveOut(out, format);
+        try (var stream = wrapArchiveOut(out, format);
                 Resource ignore = progressPrinter.startPrinting()) {
             for (ArchiveOperation operation : operations) {
                 operation.addToArchive(stream);
@@ -174,8 +176,7 @@ public class Dumper {
     }
 
     private void writeFile(Path file, ArchiveOutputStream archiveStream) throws IOException {
-        try (var fs = new DefaultFileSystemAbstraction();
-                var in = fs.openAsInputStream(file)) {
+        try (var in = fs.openAsInputStream(file)) {
             copy(in, archiveStream, progressPrinter);
         }
     }

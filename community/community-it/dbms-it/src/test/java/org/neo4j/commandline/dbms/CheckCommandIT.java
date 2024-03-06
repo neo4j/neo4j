@@ -53,7 +53,6 @@ import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.archive.CheckDatabase;
 import org.neo4j.dbms.archive.CheckDump;
-import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -518,7 +517,7 @@ class CheckCommandIT {
 
     private void createDump(Path dump) {
         withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
-            final var dumpCommand = new DumpCommand(ctx, new Dumper(ctx.out()));
+            final var dumpCommand = new DumpCommand(ctx);
             CommandLine.populateCommand(dumpCommand, "--to-path=" + dump, dbName);
             assertThatCode(dumpCommand::execute).doesNotThrowAnyException();
         });
