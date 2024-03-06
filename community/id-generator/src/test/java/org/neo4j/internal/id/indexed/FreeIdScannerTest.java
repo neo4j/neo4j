@@ -819,6 +819,74 @@ class FreeIdScannerTest {
                 .isEqualTo(id);
     }
 
+    @Test
+    void shouldKeepCorrectQueuedIdsCountForSkippedHighIdsAfterLoad() {
+        // given
+        var scanner = scanner(IDS_PER_ENTRY, 8, 1, true);
+        for (int i = 0; i < 1_000; i++) {
+            scanner.queueSkippedHighId(i, 1);
+        }
+
+        // when
+        scanner.tryLoadFreeIdsIntoCache(true, false, NULL_CONTEXT);
+
+        // then
+        assertThat(scanner.hasMoreFreeIds(false)).isFalse();
+        assertThat(scanner.hasMoreFreeIds(true)).isFalse();
+    }
+
+    @Test
+    void shouldKeepCorrectQueuedIdsCountForSkippedHighIdsAfterClear() {
+        // given
+        var scanner = scanner(IDS_PER_ENTRY, 8, 1, true);
+        scanner.clearCache(false, NULL_CONTEXT);
+        for (int i = 0; i < 1_000; i++) {
+            scanner.queueSkippedHighId(i, 1);
+        }
+
+        // when
+        scanner.clearCache(true, NULL_CONTEXT);
+        scanner.tryLoadFreeIdsIntoCache(true, false, NULL_CONTEXT);
+
+        // then
+        assertThat(scanner.hasMoreFreeIds(false)).isFalse();
+        assertThat(scanner.hasMoreFreeIds(true)).isFalse();
+    }
+
+    @Test
+    void shouldKeepCorrectQueuedIdsCountForWastedIdsAfterLoad() {
+        // given
+        var scanner = scanner(IDS_PER_ENTRY, 8, 1, true);
+        for (int i = 0; i < 1_000; i++) {
+            scanner.queueWastedCachedId(i, 1);
+        }
+
+        // when
+        scanner.tryLoadFreeIdsIntoCache(true, false, NULL_CONTEXT);
+
+        // then
+        assertThat(scanner.hasMoreFreeIds(false)).isFalse();
+        assertThat(scanner.hasMoreFreeIds(true)).isFalse();
+    }
+
+    @Test
+    void shouldKeepCorrectQueuedIdsCountForWastedIdsAfterClear() {
+        // given
+        var scanner = scanner(IDS_PER_ENTRY, 8, 1, true);
+        scanner.clearCache(false, NULL_CONTEXT);
+        for (int i = 0; i < 1_000; i++) {
+            scanner.queueWastedCachedId(i, 1);
+        }
+
+        // when
+        scanner.clearCache(true, NULL_CONTEXT);
+        scanner.tryLoadFreeIdsIntoCache(true, false, NULL_CONTEXT);
+
+        // then
+        assertThat(scanner.hasMoreFreeIds(false)).isFalse();
+        assertThat(scanner.hasMoreFreeIds(true)).isFalse();
+    }
+
     private FreeIdScanner scanner(int idsPerEntry, int cacheSize, long generation, boolean strict) {
         return scanner(idsPerEntry, new IdCache(new Slot(cacheSize, 1)), generation, strict);
     }

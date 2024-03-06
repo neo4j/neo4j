@@ -81,7 +81,7 @@ class FreeIdScanner {
      */
     private volatile Long ongoingScanRangeIndex;
 
-    private final AtomicLong numBufferedIds = new AtomicLong();
+    private final AtomicLong numQueuedIds = new AtomicLong();
     /**
      * Keeps the state of {@link IdGenerator#allocationEnabled()}. It lives in here because this is the class that mutates it under lock.
      */
@@ -154,46 +154,42 @@ class FreeIdScanner {
     private void handleQueuedIds(CursorContext cursorContext) {
         if (!queuedSkippedHighIds.isEmpty() || !queuedWastedCachedIds.isEmpty()) {
             try (var marker = markerProvider.getMarker(cursorContext)) {
-                handleQueuedIds(marker, cursorContext);
+                handleQueuedIds(marker);
             }
         }
     }
 
-    private void handleQueuedIds(IdGenerator.ContextualMarker marker, CursorContext cursorContext) {
-        consumeQueuedIds(queuedSkippedHighIds, marker, IdGenerator.ContextualMarker::markFree, cursorContext);
-        consumeQueuedIds(
-                queuedWastedCachedIds,
-                marker,
-                (mark, id, size) -> {
-                    int accepted = cache.offer(id, size, monitor);
-                    if (accepted < size) {
-                        // A part of or the whole ID will not make it to the cache. Take the long route and
-                        // insert marks so that they may enter the cache via a scan later on.
-                        // Mark as free and unreserved because an ID in cache can have two free/reserved states:
-                        // - free:1, reserved:1 (if it couldn't take the short-cut into cache when freed)
-                        // - free:0, reserved:0 (if it took the short-cut into cache when freed)
-                        mark.markUncached(id + accepted, size - accepted);
-                    }
-                },
-                cursorContext);
+    private void handleQueuedIds(IdGenerator.ContextualMarker marker) {
+        consumeQueuedIds(queuedSkippedHighIds, marker, IdGenerator.ContextualMarker::markFree);
+        consumeQueuedIds(queuedWastedCachedIds, marker, (mark, id, size) -> {
+            int accepted = cache.offer(id, size, monitor);
+            if (accepted < size) {
+                // A part of or the whole ID will not make it to the cache. Take the long route and
+                // insert marks so that they may enter the cache via a scan later on.
+                // Mark as free and unreserved because an ID in cache can have two free/reserved states:
+                // - free:1, reserved:1 (if it couldn't take the short-cut into cache when freed)
+                // - free:0, reserved:0 (if it took the short-cut into cache when freed)
+                mark.markUncached(id + accepted, size - accepted);
+            }
+        });
     }
 
     private void consumeQueuedIds(
-            ConcurrentLinkedQueue<Long> queue,
-            IdGenerator.ContextualMarker marker,
-            QueueConsumer consumer,
-            CursorContext cursorContext) {
+            ConcurrentLinkedQueue<Long> queue, IdGenerator.ContextualMarker marker, QueueConsumer consumer) {
         if (!queue.isEmpty()) {
             // There may be a race here which will result in ids that gets queued right when we flip missed here, but
             // they will be picked
             // up on the next restart. It should be rare. And to introduce locking or synchronization to prevent it may
             // not be worth it.
             Long idAndSize;
+            int numConsumedIds = 0;
             while ((idAndSize = queue.poll()) != null) {
                 long id = idFromCombinedId(idAndSize);
                 int size = numberOfIdsFromCombinedId(idAndSize);
                 consumer.accept(marker, id, size);
+                numConsumedIds++;
             }
+            numQueuedIds.addAndGet(-numConsumedIds);
         }
     }
 
@@ -205,8 +201,8 @@ class FreeIdScanner {
         // For the case when this is a tx allocating IDs we don't want to force a scan for every little added ID,
         // so add a little lee-way so that there has to be a at least a bunch of these "skipped" IDs to make it worth
         // wile.
-        int numBufferedIdsThreshold = maintenance ? 1 : 1_000;
-        return shouldFindFreeIdsByScan() || numBufferedIds.get() >= numBufferedIdsThreshold;
+        int numQueuedIdsThreshold = maintenance ? 1 : 1_000;
+        return shouldFindFreeIdsByScan() || numQueuedIds.get() >= numQueuedIdsThreshold;
     }
 
     private boolean shouldFindFreeIdsByScan() {
@@ -231,13 +227,12 @@ class FreeIdScanner {
                 // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache
                 // revert that by marking them as unreserved
                 try (var marker = markerProvider.getMarker(cursorContext)) {
-                    handleQueuedIds(marker, cursorContext);
+                    handleQueuedIds(marker);
                     cache.drain(marker::markUncached);
                 }
                 atLeastOneIdOnFreelist.set(true);
             } else {
-                queuedSkippedHighIds.clear();
-                queuedWastedCachedIds.clear();
+                handleQueuedIds(IndexedIdGenerator.NOOP_MARKER);
                 cache.drain((id, size) -> {});
             }
             allocationEnabled = allocationWillBeEnabled;
@@ -248,12 +243,12 @@ class FreeIdScanner {
 
     void queueSkippedHighId(long id, int numberOfIds) {
         queuedSkippedHighIds.offer(combinedIdAndNumberOfIds(id, numberOfIds, false));
-        numBufferedIds.incrementAndGet();
+        numQueuedIds.incrementAndGet();
     }
 
     void queueWastedCachedId(long id, int numberOfIds) {
         queuedWastedCachedIds.offer(combinedIdAndNumberOfIds(id, numberOfIds, false));
-        numBufferedIds.incrementAndGet();
+        numQueuedIds.incrementAndGet();
     }
 
     private void reserveAndOfferToCache(MutableLongList pendingIdQueue, CursorContext cursorContext) {
