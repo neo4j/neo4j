@@ -1589,6 +1589,110 @@ class IndexedIdGeneratorTest {
         }
     }
 
+    @Test
+    void shouldNotLetWastedIdsSurviveClearCache() throws IOException {
+        // ID generator w/ slots [4,2,1]
+        int[] slotSizes = {1, 2, 4};
+        open(Config.defaults(), NO_MONITOR, false, IdSlotDistribution.evenSlotDistribution(slotSizes));
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+
+        // Allocate lots of IDs and delete them (enough to fill the cache completely)
+        for (int slotSize : slotSizes) {
+            long[] ids = new long[150];
+            for (int i = 0; i < ids.length; i++) {
+                ids[i] = idGenerator.nextConsecutiveIdRange(slotSize, true, NULL_CONTEXT);
+            }
+            try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
+                for (long id : ids) {
+                    marker.markUsed(id, slotSize);
+                }
+                for (long id : ids) {
+                    marker.markDeleted(id, slotSize);
+                }
+            }
+            try (var marker = idGenerator.contextualMarker(NULL_CONTEXT)) {
+                for (long id : ids) {
+                    marker.markFree(id, slotSize);
+                }
+            }
+        }
+
+        // Allocate an ID X of size 3, its "waste" Y will not fit in cache so will be registered in the "waste" list
+        long x = idGenerator.nextConsecutiveIdRange(3, true, NULL_CONTEXT);
+
+        // Pretend that another member gets leader -> Call clearCache(false)
+        idGenerator.clearCache(false, NULL_CONTEXT);
+
+        // Pretend that the new leader now allocates Y -> this results in Y marked as inUse
+        long y = x + 3;
+        markUsed(y);
+
+        // Pretend that this member gets leader again -> Call clearCache(true)
+        idGenerator.clearCache(true, NULL_CONTEXT);
+
+        // Allocate lots of IDs; none of them should be Y
+        for (int i = 0; i < 1_000; i++) {
+            long id = idGenerator.nextConsecutiveIdRange(1, true, NULL_CONTEXT);
+            assertThat(id).isNotEqualTo(y);
+        }
+    }
+
+    @Test
+    void shouldNotLetSkippedHighIdsSurviveClearCache() throws IOException {
+        // ID generator w/ slots [4,2,1]
+        int[] slotSizes = {1, 2, 4};
+        open(Config.defaults(), NO_MONITOR, false, IdSlotDistribution.evenSlotDistribution(slotSizes));
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+
+        // Allocate lots of IDs and delete them (enough to fill the cache completely)
+        long lastAllocatedId = -1;
+        for (int slotSize : slotSizes) {
+            long[] ids = new long[150];
+            for (int i = 0; i < ids.length; i++) {
+                ids[i] = idGenerator.nextConsecutiveIdRange(slotSize, true, NULL_CONTEXT);
+            }
+            try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
+                for (long id : ids) {
+                    marker.markUsed(id, slotSize);
+                }
+                for (long id : ids) {
+                    marker.markDeleted(id, slotSize);
+                }
+            }
+            try (var marker = idGenerator.contextualMarker(NULL_CONTEXT)) {
+                for (long id : ids) {
+                    marker.markFree(id, slotSize);
+                }
+            }
+            lastAllocatedId = ids[ids.length - 1] + slotSize;
+        }
+
+        // Allocate a large ID which should result in at least some skipped IDs,
+        // they will be registed in the "skipped high IDs" list.
+        long x = idGenerator.nextConsecutiveIdRange(IDS_PER_ENTRY, true, NULL_CONTEXT);
+
+        // Verify that there have been some skipped high IDs as part of this allocation
+        assertThat(x).isGreaterThan(lastAllocatedId + 1);
+        long yFirst = lastAllocatedId + 1;
+        long yLast = x - 1;
+
+        // Pretend that another member gets leader -> Call clearCache(false)
+        idGenerator.clearCache(false, NULL_CONTEXT);
+
+        // Pretend that the new leader now allocates Y -> this results in Y marked as inUse
+        markUsed(yFirst, (int) (yLast - yFirst + 1));
+
+        // Pretend that this member gets leader again -> Call clearCache(true)
+        idGenerator.clearCache(true, NULL_CONTEXT);
+
+        // Allocate lots of IDs; none of them should be within Y
+        for (int i = 0; i < 1_000; i++) {
+            long id = idGenerator.nextConsecutiveIdRange(1, true, NULL_CONTEXT);
+            assertThat(id).satisfiesAnyOf(_id -> assertThat(_id).isLessThan(yFirst), _id -> assertThat(_id)
+                    .isGreaterThan(yLast));
+        }
+    }
+
     private void verifyReallocationDoesNotIncreaseHighId(
             ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse) {
         // then after all remaining allocations have been freed, allocating that many ids again should not need to
