@@ -68,6 +68,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.ProviderMismatchException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -859,6 +860,7 @@ class ImportCommandTest {
                         nodeData(true, Configuration.COMMAS, nodeIds, TRUE)
                                 .toAbsolutePath()
                                 .toString(),
+                        "--", // force the parser to pick up the end of the nodes
                         "__incorrect_db__"));
         assertThat(e).hasMessageContaining("Invalid database name '__incorrect_db__'.");
     }
@@ -876,6 +878,7 @@ class ImportCommandTest {
                 nodeData(true, Configuration.COMMAS, nodeIds, TRUE)
                         .toAbsolutePath()
                         .toString(),
+                "--", // force the parser to pick up the end of the nodes
                 mixedCaseDatabaseName);
 
         var db = getDatabaseApi(mixedCaseDatabaseName.toLowerCase());
@@ -2290,6 +2293,13 @@ class ImportCommandTest {
         }
     }
 
+    @Test
+    void cloudStorageUrisShouldReportSchemeError() {
+        assertThatThrownBy(() -> runImport("--nodes=s3://boom/time.csv"))
+                .isInstanceOf(ProviderMismatchException.class)
+                .hasMessageContaining("No storage system found for scheme: s3");
+    }
+
     private static void assertContains(String linesType, List<String> lines, String string) {
         for (String line : lines) {
             if (line.contains(string)) {
@@ -2812,10 +2822,11 @@ class ImportCommandTest {
         final var cmd = new ImportCommand.Full(ctx);
 
         var list = new ArrayList<>(Arrays.asList(arguments));
-        if (!list.contains("--report-file")) // make sure we write in test directory if not specified
-        {
-            list.add("--report-file");
-            list.add(testDirectory.file("import.report").toAbsolutePath().toString());
+        // make sure we write in test directory if not specified
+        if (!list.contains("--report-file")) {
+            // prepend to not break the use of terminal positional arguments, ex. DB name
+            list.add(0, "--report-file");
+            list.add(1, testDirectory.file("import.report").toAbsolutePath().toString());
         }
 
         new CommandLine(cmd).setUseSimplifiedAtFiles(true).parseArgs(list.toArray(new String[0]));

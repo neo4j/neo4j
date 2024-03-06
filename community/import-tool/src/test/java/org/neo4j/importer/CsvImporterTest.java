@@ -79,6 +79,7 @@ class CsvImporterTest {
                 .withFileSystem(testDir.getFileSystem())
                 .withStdOut(NullPrintStream.INSTANCE)
                 .withStdErr(NullPrintStream.INSTANCE)
+                .withLogProvider(CsvImporter.createLogProvider(testDir.getFileSystem(), config))
                 .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
                 .build();
 

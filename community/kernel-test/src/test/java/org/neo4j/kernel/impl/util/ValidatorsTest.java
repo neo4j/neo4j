@@ -23,8 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -35,7 +36,7 @@ class ValidatorsTest {
     private TestDirectory directory;
 
     @Test
-    void shouldFindFilesByRegex() throws Exception {
+    void shouldFindLocalFilesByRegex() throws Exception {
         // GIVEN
         existenceOfFile("abc");
         existenceOfFile("bcd");
@@ -49,6 +50,27 @@ class ValidatorsTest {
         assertNotValid(".*de.*");
     }
 
+    @Test
+    void shouldFindStoragePathsByRegex() throws Exception {
+        // GIVEN
+        existenceOfFile("abc");
+        existenceOfFile("bcd");
+
+        final var base = directory.homePath().toUri().toString();
+        assert base.endsWith("/");
+
+        // the file scheme resolver is always present so will be able to handle the file URIs below
+        final var fs = new SchemeFileSystemAbstraction(directory.getFileSystem());
+
+        // WHEN/THEN
+        assertValid(fs, base + "abc");
+        assertValid(fs, base + "bcd");
+        assertValid(fs, base + "ab.");
+        assertValid(fs, base + ".*bc");
+        assertNotValid(fs, base + "abcd");
+        assertNotValid(fs, base + ".*de.*");
+    }
+
     private void assertNotValid(String string) {
         assertThrows(IllegalArgumentException.class, () -> validate(string));
     }
@@ -57,9 +79,21 @@ class ValidatorsTest {
         validate(fileByName);
     }
 
+    private void assertNotValid(FileSystemAbstraction fs, String string) {
+        assertThrows(IllegalArgumentException.class, () -> validate(fs, string));
+    }
+
+    private void assertValid(FileSystemAbstraction fs, String fileByName) {
+        validate(fs, fileByName);
+    }
+
     private void validate(String fileByName) {
-        Path home = directory.homePath();
-        Validators.REGEX_FILE_EXISTS.validate(home + home.getFileSystem().getSeparator() + fileByName);
+        final var home = directory.homePath();
+        validate(directory.getFileSystem(), home + home.getFileSystem().getSeparator() + fileByName);
+    }
+
+    private void validate(FileSystemAbstraction fs, String fileByName) {
+        Validators.matchingFiles(fs, fileByName);
     }
 
     private void existenceOfFile(String name) throws IOException {

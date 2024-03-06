@@ -81,11 +81,11 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.PrefixedLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.logging.log4j.Neo4jLoggerContext;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -121,6 +121,7 @@ class CsvImporter implements Importer {
     private final boolean force;
     private final IncrementalStage incrementalStage;
     private final boolean incremental;
+    private final InternalLogProvider logProvider;
 
     private CsvImporter(Builder b) {
         this.databaseLayout = requireNonNull(b.databaseLayout);
@@ -146,6 +147,7 @@ class CsvImporter implements Importer {
         this.memoryTracker = requireNonNull(b.memoryTracker);
         this.stdOut = requireNonNull(b.stdOut);
         this.stdErr = requireNonNull(b.stdErr);
+        this.logProvider = requireNonNull(b.logProvider);
         this.force = b.force;
         this.incremental = b.incremental;
         this.incrementalStage = b.incrementalStage;
@@ -188,13 +190,7 @@ class CsvImporter implements Importer {
 
         printOverview();
 
-        Neo4jLoggerContext loggerContext = createLoggerFromXmlConfig(
-                fileSystem,
-                databaseConfig.get(server_logging_config_path),
-                !databaseConfig.isExplicitlySet(server_logging_config_path),
-                databaseConfig::configStringLookup);
-        try (JobScheduler jobScheduler = createInitialisedScheduler();
-                Log4jLogProvider logProvider = new Log4jLogProvider(loggerContext)) {
+        try (JobScheduler jobScheduler = createInitialisedScheduler()) {
             // Let the storage engine factory be configurable in the tool later on...
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(databaseConfig);
             var logService = new SimpleLogService(
@@ -433,6 +429,14 @@ class CsvImporter implements Importer {
                         badOutput, badTolerance, collect(skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns));
     }
 
+    static InternalLogProvider createLogProvider(FileSystemAbstraction fileSystem, Config databaseConfig) {
+        return new Log4jLogProvider(createLoggerFromXmlConfig(
+                fileSystem,
+                databaseConfig.get(server_logging_config_path),
+                !databaseConfig.isExplicitlySet(server_logging_config_path),
+                databaseConfig::configStringLookup));
+    }
+
     static Builder builder() {
         return new Builder();
     }
@@ -465,6 +469,7 @@ class CsvImporter implements Importer {
         private boolean force;
         private boolean incremental = false;
         private IncrementalStage incrementalStage = null;
+        private InternalLogProvider logProvider = NullLogProvider.getInstance();
 
         Builder withDatabaseLayout(DatabaseLayout databaseLayout) {
             this.databaseLayout = databaseLayout;
@@ -595,6 +600,11 @@ class CsvImporter implements Importer {
 
         Builder withIncrementalStage(IncrementalStage mode) {
             this.incrementalStage = mode;
+            return this;
+        }
+
+        Builder withLogProvider(InternalLogProvider logProvider) {
+            this.logProvider = logProvider;
             return this;
         }
 

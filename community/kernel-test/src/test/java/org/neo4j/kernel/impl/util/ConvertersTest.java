@@ -51,8 +51,8 @@ class ConvertersTest {
         Path file32 = existenceOfFile("file32");
 
         // WHEN
-        Path[] files =
-                regexFiles(true).apply(directory.file("file").toAbsolutePath().toString() + ".*");
+        Path[] files = regexFiles(directory.getFileSystem(), true)
+                .apply(directory.file("file").toAbsolutePath() + ".*");
 
         // THEN
         assertThat(files).containsExactly(file1, file2, file12, file32, file123);
@@ -64,7 +64,7 @@ class ConvertersTest {
         Path file = existenceOfFile("file");
 
         // when
-        Path[] files = regexFiles(true).apply(file.toString());
+        Path[] files = regexFiles(directory.getFileSystem(), true).apply(file.toString());
 
         // then
         assertThat(files).containsExactly(file);
@@ -79,8 +79,10 @@ class ConvertersTest {
         Path file12 = existenceOfFile("file_12");
 
         // when
-        Path[] files = regexFiles(true).apply(file1.getParent() + File.separator + "file_\\d+");
-        Path[] files2 = regexFiles(true).apply(file1.getParent() + File.separator + "file_\\d{1,5}");
+        Path[] files =
+                regexFiles(directory.getFileSystem(), true).apply(file1.getParent() + File.separator + "file_\\d+");
+        Path[] files2 =
+                regexFiles(directory.getFileSystem(), true).apply(file1.getParent() + File.separator + "file_\\d{1,5}");
 
         // then
         assertThat(files).containsExactly(file1, file3, file12);
@@ -95,8 +97,10 @@ class ConvertersTest {
         Path file12 = existenceOfFile("file_12");
 
         // when
-        Path[] files = regexFiles(true).apply(file1.getParent() + File.separator + "file_\\\\d+");
-        Path[] files2 = regexFiles(true).apply(file1.getParent() + File.separator + "file_\\\\d{1,5}");
+        Path[] files =
+                regexFiles(directory.getFileSystem(), true).apply(file1.getParent() + File.separator + "file_\\\\d+");
+        Path[] files2 = regexFiles(directory.getFileSystem(), true)
+                .apply(file1.getParent() + File.separator + "file_\\\\d{1,5}");
 
         // then
         assertThat(files).containsExactly(file1, file3, file12);
@@ -112,7 +116,7 @@ class ConvertersTest {
         Path file12 = existenceOfFile("file_12.csv");
 
         // when
-        Function<String, Path[]> regexMatcher = regexFiles(true);
+        Function<String, Path[]> regexMatcher = regexFiles(directory.getFileSystem(), true);
         Function<String, Path[]> converter = toFiles(",", regexMatcher);
         Path[] files = converter.apply(header + ",'" + header.getParent() + File.separator + "file_\\\\d{1,5}.csv'");
 

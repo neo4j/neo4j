@@ -57,6 +57,7 @@ import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.Converters.MaxOffHeapMemoryConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.cli.ExitCode;
+import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
@@ -77,7 +78,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -403,14 +403,16 @@ public class ImportCommand {
                 final var databaseConfig = loadNeo4jConfig(format);
                 DatabaseLayout databaseLayout = Neo4jLayout.of(databaseConfig).databaseLayout(database.name());
 
-                try (Closeable maybeLock = maybeLockChecker.maybeCheckLock(databaseLayout)) {
+                try (var ignore = maybeLockChecker.maybeCheckLock(databaseLayout);
+                        var logProvider = CsvImporter.createLogProvider(ctx.fs(), databaseConfig);
+                        var fileSystem = new SchemeFileSystemAbstraction(ctx.fs(), databaseConfig, logProvider)) {
                     final var csvConfig = csvConfiguration();
                     final var importConfig = importConfiguration();
 
                     final var importerBuilder = CsvImporter.builder()
                             .withDatabaseLayout(databaseLayout)
                             .withDatabaseConfig(databaseConfig)
-                            .withFileSystem(ctx.fs())
+                            .withFileSystem(fileSystem)
                             .withStdOut(ctx.out())
                             .withStdErr(ctx.err())
                             .withCsvConfig(csvConfig)
@@ -428,13 +430,14 @@ public class ImportCommand {
                             .withVerbose(verbose)
                             .withAutoSkipHeaders(autoSkipHeaders)
                             .withForce(overwriteDestination)
-                            .withIncremental(incremental);
+                            .withIncremental(incremental)
+                            .withLogProvider(logProvider);
                     CursorContextFactory cursorContextFactory;
                     if (incremental) {
                         importerBuilder.withIncrementalStage(mode);
                         cursorContextFactory = new CursorContextFactory(
                                 PageCacheTracer.NULL,
-                                new FixedVersionContextSupplier(getLogTail(databaseLayout, databaseConfig)
+                                new FixedVersionContextSupplier(getLogTail(fileSystem, databaseLayout, databaseConfig)
                                         .getLastCommittedTransaction()
                                         .transactionId()));
                     } else {
@@ -443,12 +446,15 @@ public class ImportCommand {
                     }
                     importerBuilder.withCursorContextFactory(cursorContextFactory);
 
-                    nodes.forEach(n -> importerBuilder.addNodeFiles(n.key, n.files));
+                    for (var n : nodes) {
+                        importerBuilder.addNodeFiles(n.key, n.toPaths(fileSystem));
+                    }
 
-                    relationships.forEach(n -> importerBuilder.addRelationshipFiles(n.key, n.files));
+                    for (var r : relationships) {
+                        importerBuilder.addRelationshipFiles(r.key, r.toPaths(fileSystem));
+                    }
 
-                    final var importer = importerBuilder.build();
-                    importer.doImport();
+                    importerBuilder.build().doImport();
                 } catch (FileLockException e) {
                     throw new CommandFailedException(
                             "The database is in use. Stop database '%s' and try again."
@@ -465,14 +471,13 @@ public class ImportCommand {
             }
         }
 
-        private LogTailMetadata getLogTail(DatabaseLayout databaseLayout, Config databaseConfig) throws IOException {
-            try (var fs = ctx.fs();
-                    var jobScheduler = createInitialisedScheduler();
+        private LogTailMetadata getLogTail(
+                FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config databaseConfig) throws IOException {
+            try (var jobScheduler = createInitialisedScheduler();
                     var pageCache =
                             StandalonePageCacheFactory.createPageCache(fs, jobScheduler, PageCacheTracer.NULL)) {
-                Optional<StorageEngineFactory> storageEngineFactory =
-                        SELECTOR.selectStorageEngine(ctx.fs(), databaseLayout);
-                return getLogTail(ctx.fs(), databaseLayout, pageCache, databaseConfig, storageEngineFactory.get());
+                Optional<StorageEngineFactory> storageEngineFactory = SELECTOR.selectStorageEngine(fs, databaseLayout);
+                return getLogTail(fs, databaseLayout, pageCache, databaseConfig, storageEngineFactory.orElseThrow());
             } catch (Exception e) {
                 throw new RuntimeException("Fail to create temporary page cache.", e);
             }
@@ -672,24 +677,28 @@ public class ImportCommand {
     private static final String MULTI_FILE_DELIMITER = ",";
 
     static class NodeFilesGroup extends InputFilesGroup<Set<String>> {
-        NodeFilesGroup(Set<String> key, Path[] files) {
+        NodeFilesGroup(Set<String> key, String files) {
             super(key, files);
         }
     }
 
     static class RelationshipFilesGroup extends InputFilesGroup<String> {
-        RelationshipFilesGroup(String key, Path[] files) {
+        RelationshipFilesGroup(String key, String files) {
             super(key, files);
         }
     }
 
     abstract static class InputFilesGroup<T> {
         final T key;
-        final Path[] files;
+        final String files;
 
-        InputFilesGroup(T key, Path[] files) {
+        InputFilesGroup(T key, String files) {
             this.key = key;
             this.files = files;
+        }
+
+        Path[] toPaths(FileSystemAbstraction fs) {
+            return parseFilesList(fs, files);
         }
     }
 
@@ -708,27 +717,20 @@ public class ImportCommand {
         return new NodeFilesGroup(p.getOne(), p.getTwo());
     }
 
-    private static <T> Pair<T, Path[]> parseInputFilesGroup(String str, Function<String, ? extends T> keyParser) {
+    private static <T> Pair<T, String> parseInputFilesGroup(String str, Function<String, ? extends T> keyParser) {
         final var i = str.indexOf('=');
         if (i < 0) {
-            return pair(keyParser.apply(""), parseFilesList(str));
+            return pair(keyParser.apply(""), str);
         }
         if (i == 0 || i == str.length() - 1) {
             throw new IllegalArgumentException("illegal `=` position: " + str);
         }
         final var keyStr = str.substring(0, i);
-        final var filesStr = str.substring(i + 1);
-        final var key = keyParser.apply(keyStr);
-        final var files = parseFilesList(filesStr);
-        return pair(key, files);
+        return pair(keyParser.apply(keyStr), str.substring(i + 1));
     }
 
-    private static Path[] parseFilesList(String str) {
-        final var converter = Converters.regexFiles(true);
-        return Converters.toFiles(MULTI_FILE_DELIMITER, s -> {
-                    Validators.REGEX_FILE_EXISTS.validate(s);
-                    return converter.apply(s);
-                })
+    private static Path[] parseFilesList(FileSystemAbstraction fs, String str) {
+        return Converters.toFiles(MULTI_FILE_DELIMITER, Converters.regexFiles(fs, true))
                 .apply(str);
     }
 
