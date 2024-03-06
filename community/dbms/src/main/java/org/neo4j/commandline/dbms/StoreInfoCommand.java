@@ -203,7 +203,7 @@ public class StoreInfoCommand extends AbstractAdminCommand {
             }
             var versionInformation =
                     storageEngineFactory.versionInformation(storeId).orElseThrow();
-            var logTail = getLogTail(fs, databaseLayout, pageCache, config, memoryTracker, storageEngineFactory);
+            var logTail = getLogTail(fs, databaseLayout, config, memoryTracker, storageEngineFactory);
             var recoveryRequired =
                     checkRecoveryState(fs, pageCache, databaseLayout, config, memoryTracker, storageEngineFactory);
             var txIdStore = new ReadOnlyTransactionIdStore(logTail);
@@ -237,12 +237,11 @@ public class StoreInfoCommand extends AbstractAdminCommand {
     private LogTailMetadata getLogTail(
             FileSystemAbstraction fs,
             DatabaseLayout databaseLayout,
-            PageCache pageCache,
             Config config,
             MemoryTracker memoryTracker,
             StorageEngineFactory storageEngineFactory)
             throws IOException {
-        LogTailExtractor logTailExtractor = new LogTailExtractor(fs, pageCache, config, storageEngineFactory, EMPTY);
+        LogTailExtractor logTailExtractor = new LogTailExtractor(fs, config, storageEngineFactory, EMPTY);
         return logTailExtractor.getTailMetadata(databaseLayout, memoryTracker);
     }
 

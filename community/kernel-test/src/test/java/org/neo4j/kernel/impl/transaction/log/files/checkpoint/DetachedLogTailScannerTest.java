@@ -52,7 +52,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -76,16 +75,11 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
-@EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
 class DetachedLogTailScannerTest {
     @Inject
     protected FileSystemAbstraction fs;
-
-    @Inject
-    protected PageCache pageCache;
 
     @Inject
     protected DatabaseLayout databaseLayout;
@@ -109,8 +103,7 @@ class DetachedLogTailScannerTest {
 
     LogFiles createLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        return LogFilesBuilder.activeFilesBuilder(
-                        databaseLayout, fs, pageCache, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
@@ -135,7 +128,7 @@ class DetachedLogTailScannerTest {
     void includeWrongPositionInException() throws Exception {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         var testTogFiles = LogFilesBuilder.activeFilesBuilder(
-                        databaseLayout, fs, pageCache, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+                        databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)

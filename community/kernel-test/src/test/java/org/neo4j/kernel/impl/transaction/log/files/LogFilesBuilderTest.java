@@ -44,7 +44,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -59,10 +58,8 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
-@PageCacheExtension
 @Neo4jLayoutExtension
 class LogFilesBuilderTest {
     @Inject
@@ -70,9 +67,6 @@ class LogFilesBuilderTest {
 
     @Inject
     private FileSystemAbstraction fileSystem;
-
-    @Inject
-    private PageCache pageCache;
 
     @Inject
     private DatabaseLayout databaseLayout;
@@ -87,7 +81,7 @@ class LogFilesBuilderTest {
     @Test
     void buildActiveFilesOnlyContext() {
         TransactionLogFilesContext context = activeFilesBuilder(
-                        databaseLayout, fileSystem, pageCache, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())

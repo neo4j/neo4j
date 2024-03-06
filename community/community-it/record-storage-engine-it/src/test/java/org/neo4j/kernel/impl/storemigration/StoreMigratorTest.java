@@ -116,7 +116,7 @@ class StoreMigratorTest {
     }
 
     @AfterEach
-    void tearDown() throws Exception {
+    void tearDown() {
         jobScheduler.close();
     }
 
@@ -546,7 +546,7 @@ class StoreMigratorTest {
     private StoreMigrator createMigrator(LogService logService, Config config) throws IOException {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
 
-        var logTail = new LogTailExtractor(fs, pageCache, config, storageEngineFactory, DatabaseTracers.EMPTY)
+        var logTail = new LogTailExtractor(fs, config, storageEngineFactory, DatabaseTracers.EMPTY)
                 .getTailMetadata(databaseLayout, INSTANCE);
         var supplier = Suppliers.lazySingleton(() -> logTail);
 

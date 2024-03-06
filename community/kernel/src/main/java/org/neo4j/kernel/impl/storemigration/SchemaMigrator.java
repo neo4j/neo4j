@@ -77,8 +77,7 @@ public class SchemaMigrator {
             boolean forceBtreeIndexesToRange)
             throws IOException, KernelException {
         // Need to start the stores with the correct logTail since some stores depend on tx-id.
-        LogTailExtractor logTailExtractor =
-                new LogTailExtractor(fs, pageCache, config, toStorage, DatabaseTracers.EMPTY);
+        LogTailExtractor logTailExtractor = new LogTailExtractor(fs, config, toStorage, DatabaseTracers.EMPTY);
         LogTailMetadata logTail = logTailExtractor.getTailMetadata(toLayout, EmptyMemoryTracker.INSTANCE);
 
         var tokenHolders =

@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -34,7 +33,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public class LogTailExtractor {
     private final FileSystemAbstraction fs;
-    private final PageCache pageCache;
     private final Config config;
     private final StorageEngineFactory storageEngineFactory;
     private final DatabaseTracers databaseTracers;
@@ -42,22 +40,19 @@ public class LogTailExtractor {
 
     public LogTailExtractor(
             FileSystemAbstraction fs,
-            PageCache pageCache,
             Config config,
             StorageEngineFactory storageEngineFactory,
             DatabaseTracers databaseTracers) {
-        this(fs, pageCache, config, storageEngineFactory, databaseTracers, true);
+        this(fs, config, storageEngineFactory, databaseTracers, true);
     }
 
     public LogTailExtractor(
             FileSystemAbstraction fs,
-            PageCache pageCache,
             Config config,
             StorageEngineFactory storageEngineFactory,
             DatabaseTracers databaseTracers,
             boolean readOnly) {
         this.fs = fs;
-        this.pageCache = pageCache;
         this.config = config;
         this.storageEngineFactory = storageEngineFactory;
         this.databaseTracers = databaseTracers;
@@ -86,8 +81,8 @@ public class LogTailExtractor {
             DatabaseLayout databaseLayout, MemoryTracker memoryTracker, KernelVersionProvider kernelVersionProvider)
             throws IOException {
         var builder = readOnly
-                ? LogFilesBuilder.readOnlyBuilder(databaseLayout, fs, pageCache, kernelVersionProvider)
-                : LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache, kernelVersionProvider);
+                ? LogFilesBuilder.readOnlyBuilder(databaseLayout, fs, kernelVersionProvider)
+                : LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, kernelVersionProvider);
         return builder.withConfig(config)
                 .withMemoryTracker(memoryTracker)
                 .withDatabaseTracers(databaseTracers)

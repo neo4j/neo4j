@@ -109,7 +109,7 @@ public class StoreVersionLoader implements AutoCloseable {
         // Let's check if we can read TX logs metadata tail.
         // We are not interested in the metadata, just check if it blows up or not.
         try {
-            new LogTailExtractor(fs, pageCache, config, engineFactory, DatabaseTracers.EMPTY)
+            new LogTailExtractor(fs, config, engineFactory, DatabaseTracers.EMPTY)
                     // We don't really care about the situation when there are no TX logs,
                     // so the latest kernel version as a fallback is fine. We just don't want this check to blow up when
                     // there are no TX logs.

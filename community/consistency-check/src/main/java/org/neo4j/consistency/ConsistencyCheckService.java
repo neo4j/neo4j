@@ -560,7 +560,7 @@ public class ConsistencyCheckService {
             }
 
             final var logTailExtractor =
-                    new LogTailExtractor(fileSystem, pageCache, config, storageEngineFactory, DatabaseTracers.EMPTY);
+                    new LogTailExtractor(fileSystem, config, storageEngineFactory, DatabaseTracers.EMPTY);
 
             storageEngineFactory.consistencyCheck(
                     fileSystem,

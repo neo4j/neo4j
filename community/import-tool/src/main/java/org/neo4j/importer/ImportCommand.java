@@ -29,7 +29,6 @@ import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.importer.CsvImporter.DEFAULT_REPORT_FILE_NAME;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
-import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.storageengine.api.StorageEngineFactory.SELECTOR;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static picocli.CommandLine.Command;
@@ -70,10 +69,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.FileLockException;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.FixedVersionContextSupplier;
-import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -473,25 +470,17 @@ public class ImportCommand {
 
         private LogTailMetadata getLogTail(
                 FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config databaseConfig) throws IOException {
-            try (var jobScheduler = createInitialisedScheduler();
-                    var pageCache =
-                            StandalonePageCacheFactory.createPageCache(fs, jobScheduler, PageCacheTracer.NULL)) {
-                Optional<StorageEngineFactory> storageEngineFactory = SELECTOR.selectStorageEngine(fs, databaseLayout);
-                return getLogTail(fs, databaseLayout, pageCache, databaseConfig, storageEngineFactory.orElseThrow());
-            } catch (Exception e) {
-                throw new RuntimeException("Fail to create temporary page cache.", e);
-            }
+            Optional<StorageEngineFactory> storageEngineFactory = SELECTOR.selectStorageEngine(fs, databaseLayout);
+            return getLogTail(fs, databaseLayout, databaseConfig, storageEngineFactory.orElseThrow());
         }
 
         private LogTailMetadata getLogTail(
                 FileSystemAbstraction fs,
                 DatabaseLayout databaseLayout,
-                PageCache pageCache,
                 Config config,
                 StorageEngineFactory storageEngineFactory)
                 throws IOException {
-            LogTailExtractor logTailExtractor =
-                    new LogTailExtractor(fs, pageCache, config, storageEngineFactory, EMPTY);
+            LogTailExtractor logTailExtractor = new LogTailExtractor(fs, config, storageEngineFactory, EMPTY);
             return logTailExtractor.getTailMetadata(databaseLayout, EmptyMemoryTracker.INSTANCE);
         }
 

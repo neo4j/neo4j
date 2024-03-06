@@ -31,7 +31,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -44,16 +43,11 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
-@PageCacheExtension
 @Neo4jLayoutExtension
 class CheckpointInfoFactoryTest {
     @Inject
     private FileSystemAbstraction fs;
-
-    @Inject
-    private PageCache pageCache;
 
     @Inject
     private DatabaseLayout databaseLayout;
@@ -65,17 +59,12 @@ class CheckpointInfoFactoryTest {
         LogPosition position = new LogPosition(0, 448);
         LogPosition positionAfterCheckpoint = new LogPosition(0, 640);
         LogPosition postReaderPosition = new LogPosition(0, 640);
-        var transactionId = new TransactionId(73, 614900954, 1645458411645L, 17);
         var restoredTransactionId = new TransactionId(73, 614900954, 1645458411645L, UNKNOWN_CONSENSUS_INDEX);
 
         prepareTestResources();
 
         LogTailMetadata tailMetadata = new LogTailExtractor(
-                        fs,
-                        pageCache,
-                        Config.defaults(),
-                        StorageEngineFactory.defaultStorageEngine(),
-                        DatabaseTracers.EMPTY)
+                        fs, Config.defaults(), StorageEngineFactory.defaultStorageEngine(), DatabaseTracers.EMPTY)
                 .getTailMetadata(databaseLayout, EmptyMemoryTracker.INSTANCE);
 
         var checkpointInfo = tailMetadata.getLastCheckPoint().get();

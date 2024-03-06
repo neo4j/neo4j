@@ -758,7 +758,7 @@ public class Database extends AbstractDatabase {
         IndexProviderMap indexProviderMap = databaseDependencies.resolveDependency(IndexProviderMap.class);
         var logTailSupplier = Suppliers.lazySingleton(() -> {
             try {
-                return new LogTailExtractor(fs, databasePageCache, databaseConfig, storageEngineFactory, tracers)
+                return new LogTailExtractor(fs, databaseConfig, storageEngineFactory, tracers)
                         .getTailMetadata(
                                 databaseLayout,
                                 memoryTracker,

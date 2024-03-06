@@ -42,7 +42,6 @@ import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -78,7 +77,6 @@ import org.neo4j.storageengine.api.TransactionIdStore;
  */
 public class LogFilesBuilder {
     private boolean readOnlyStores;
-    private PageCache pageCache;
     private StorageEngineFactory storageEngineFactory;
     private CommandReaderFactory commandReaderFactory;
     private DatabaseLayout databaseLayout;
@@ -144,7 +142,6 @@ public class LogFilesBuilder {
      *
      * @param databaseLayout store directory
      * @param fileSystem log file system
-     * @param pageCache page cache for read only store info access
      * @param kernelVersionProvider provider of the kernel version to use for transactions and checkpoints.
      *                              Make sure that this is a provider that will listen to upgrade transactions
      *                              so the version is updated when needed.
@@ -152,10 +149,8 @@ public class LogFilesBuilder {
     public static LogFilesBuilder activeFilesBuilder(
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fileSystem,
-            PageCache pageCache,
             KernelVersionProvider kernelVersionProvider) {
         LogFilesBuilder builder = builder(databaseLayout, fileSystem, kernelVersionProvider);
-        builder.pageCache = pageCache;
         builder.readOnlyStores = true;
         return builder;
     }
@@ -163,12 +158,10 @@ public class LogFilesBuilder {
     public static LogFilesBuilder readOnlyBuilder(
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fileSystem,
-            PageCache pageCache,
             KernelVersionProvider kernelVersionProvider) {
         LogFilesBuilder builder = new LogFilesBuilder();
         builder.databaseLayout = databaseLayout;
         builder.fileSystem = fileSystem;
-        builder.pageCache = pageCache;
         builder.kernelVersionProvider = kernelVersionProvider;
         builder.readOnlyStores = true;
         builder.readOnlyLogs = true;
@@ -492,7 +485,6 @@ public class LogFilesBuilder {
             };
         }
         if (readOnlyStores) {
-            requireNonNull(pageCache, "Read only log files require page cache to be able to read current log version.");
             requireNonNull(databaseLayout, "Store directory is required.");
             return new ReadOnlyLogVersionRepositoryProvider();
         } else {
@@ -532,10 +524,6 @@ public class LogFilesBuilder {
             };
         }
         if (readOnlyStores) {
-            requireNonNull(
-                    pageCache,
-                    "Read only log files require page cache to be able to read committed "
-                            + "transaction info from store store.");
             requireNonNull(databaseLayout, "Store directory is required.");
             return new ReadOnlyLastCommittedTransactionIdProvider();
         } else {
@@ -563,10 +551,6 @@ public class LogFilesBuilder {
             };
         }
         if (readOnlyStores) {
-            requireNonNull(
-                    pageCache,
-                    "Read only log files require page cache to be able to read committed "
-                            + "transaction info from store store.");
             requireNonNull(databaseLayout, "Store directory is required.");
             return logFiles -> logFiles.getTailMetadata().getLastTransactionLogPosition();
         } else {
@@ -592,10 +576,6 @@ public class LogFilesBuilder {
             };
         }
         if (readOnlyStores) {
-            requireNonNull(
-                    pageCache,
-                    "Read only log files require page cache to be able to read committed "
-                            + "transaction info from store store.");
             requireNonNull(databaseLayout, "Store directory is required.");
             return () -> {
                 throw new UnsupportedOperationException(

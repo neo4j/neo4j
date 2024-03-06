@@ -144,7 +144,7 @@ class RecordStorageMigratorIT {
     }
 
     @AfterEach
-    void tearDown() throws Exception {
+    void tearDown() {
         jobScheduler.close();
     }
 
@@ -661,7 +661,7 @@ class RecordStorageMigratorIT {
 
     private LogTailMetadata loadLogTail(DatabaseLayout layout, Config config, StorageEngineFactory engineFactory)
             throws IOException {
-        return new LogTailExtractor(fileSystem, pageCache, config, engineFactory, DatabaseTracers.EMPTY)
+        return new LogTailExtractor(fileSystem, config, engineFactory, DatabaseTracers.EMPTY)
                 .getTailMetadata(layout, INSTANCE);
     }
 

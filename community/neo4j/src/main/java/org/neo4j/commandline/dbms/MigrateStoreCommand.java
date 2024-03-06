@@ -247,7 +247,6 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
                                 memoryTracker,
                                 Suppliers.lazySingleton(() -> loadLogTail(
                                         fs,
-                                        pageCache,
                                         config,
                                         currentStorageEngineFactory,
                                         DatabaseTracers.EMPTY,
@@ -322,7 +321,6 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
 
     private LogTailMetadata loadLogTail(
             FileSystemAbstraction fs,
-            PageCache pageCache,
             Config config,
             StorageEngineFactory engineFactory,
             DatabaseTracers databaseTracers,
@@ -331,7 +329,7 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
         try {
             // If empty tx logs are allowed, and we don't have tx logs we fall back to the latest kernel version.
             // That should be safe since we are trying to migrate to that version anyway.
-            return new LogTailExtractor(fs, pageCache, config, engineFactory, databaseTracers)
+            return new LogTailExtractor(fs, config, engineFactory, databaseTracers)
                     .getTailMetadata(layout, memoryTracker, () -> KernelVersion.getLatestVersion(config));
         } catch (IOException e) {
             throw new UncheckedIOException(e);

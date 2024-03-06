@@ -570,7 +570,6 @@ public final class Recovery {
 
         LogTailMetadata logTailMetadata = providedLogTail.orElseGet(() -> loadLogTail(
                 fs,
-                pageCache,
                 tracers,
                 config,
                 databaseLayout,
@@ -770,7 +769,6 @@ public final class Recovery {
 
     private static LogTailMetadata loadLogTail(
             FileSystemAbstraction fs,
-            PageCache pageCache,
             DatabaseTracers tracers,
             Config config,
             DatabaseLayout databaseLayout,
@@ -778,7 +776,7 @@ public final class Recovery {
             MemoryTracker memoryTracker,
             KernelVersionProvider emptyLogsFallbackKernelVersion) {
         try {
-            return new LogTailExtractor(fs, pageCache, config, storageEngineFactory, tracers, false)
+            return new LogTailExtractor(fs, config, storageEngineFactory, tracers, false)
                     .getTailMetadata(databaseLayout, memoryTracker, emptyLogsFallbackKernelVersion);
         } catch (IOException ioe) {
             throw new UncheckedIOException("Fail to load log tail.", ioe);

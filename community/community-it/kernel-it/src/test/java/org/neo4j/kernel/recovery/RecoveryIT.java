@@ -2399,7 +2399,7 @@ class RecoveryIT {
 
     private LogFiles buildLogFiles(DatabaseTracers databaseTracers) throws IOException {
         return LogFilesBuilder.activeFilesBuilder(
-                        databaseLayout, fileSystem, pageCache, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withCommandReaderFactory(StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout, null)
                         .commandReaderFactory())
                 .withDatabaseTracers(databaseTracers)

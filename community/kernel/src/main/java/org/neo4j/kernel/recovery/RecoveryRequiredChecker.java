@@ -48,7 +48,7 @@ class RecoveryRequiredChecker {
             DatabaseTracers databaseTracers) {
         this.fs = fs;
         this.pageCache = pageCache;
-        this.logTailExtractor = new LogTailExtractor(fs, pageCache, config, storageEngineFactory, databaseTracers);
+        this.logTailExtractor = new LogTailExtractor(fs, config, storageEngineFactory, databaseTracers);
         this.storageEngineFactory = storageEngineFactory;
     }
 

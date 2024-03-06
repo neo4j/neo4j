@@ -45,7 +45,6 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
-import org.neo4j.kernel.impl.storemigration.LogsMigrator.CheckResult;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.InternalLog;
@@ -590,7 +589,7 @@ public class StoreMigrator {
             try {
                 // If empty tx logs are allowed, and we don't have tx logs we fall back to the latest kernel version.
                 // That should be safe since we are trying to migrate to that version anyway.
-                return new LogTailExtractor(fs, pageCache, config, storageEngineFactory, databaseTracers)
+                return new LogTailExtractor(fs, config, storageEngineFactory, databaseTracers)
                         .getTailMetadata(databaseLayout, memoryTracker, () -> KernelVersion.getLatestVersion(config));
             } catch (Exception e) {
                 throw new UnableToMigrateException("Fail to load log tail during migration.", e);
