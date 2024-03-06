@@ -147,6 +147,7 @@ class IdCache {
                     // until restart. Tell the ID scanner about the these so that it can sort those properly up
                     // the next time it does scan work.
                     wasteNotifier.accept(wastedId + accepted, wastedNumberOfIds - accepted);
+                    monitor.skippedIdsAtAllocation(wastedId + accepted, wastedNumberOfIds - accepted);
                 }
             }
         }

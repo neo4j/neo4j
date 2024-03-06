@@ -187,7 +187,14 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     }
 
     @Override
-    public void skippedIdsAtHighId(long readHighId, int numberOfIds) {}
+    public synchronized void skippedIdsAtHighId(long firstSkippedHighId, int numberOfIds) {
+        putTypeAndId(Type.SKIPPED_HIGH, firstSkippedHighId, numberOfIds);
+    }
+
+    @Override
+    public synchronized void skippedIdsAtAllocation(long firstWastedId, int numberOfIds) {
+        putTypeAndId(Type.SKIPPED_WASTED, firstWastedId, numberOfIds);
+    }
 
     @Override
     public synchronized void close() {
@@ -357,6 +364,8 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
                     case ALLOCATE_HIGH,
                             ALLOCATE_REUSED,
                             CACHED,
+                            SKIPPED_HIGH,
+                            SKIPPED_WASTED,
                             MARK_USED,
                             MARK_DELETED,
                             MARK_FREE,
@@ -473,7 +482,9 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         BRIDGED("BR"),
         CHECKPOINT("Checkpoint"),
         CLEARING_CACHE("ClearCacheStart"),
-        CLEARED_CACHE("ClearCacheEnd");
+        CLEARED_CACHE("ClearCacheEnd"),
+        SKIPPED_HIGH("SH"),
+        SKIPPED_WASTED("SW");
 
         final byte id;
         final String shortName;
