@@ -103,6 +103,7 @@ object SignatureResolver {
           name = s.name(),
           typ = asCypherType(s.neo4jType()),
           default = s.defaultValue().asScala.map(asCypherValue),
+          deprecated = s.isDeprecated,
           sensitive = s.isSensitive
         )
       ),
@@ -138,6 +139,7 @@ object SignatureResolver {
           name = s.name(),
           typ = asCypherType(s.neo4jType()),
           default = s.defaultValue().asScala.map(asCypherValue),
+          deprecated = s.isDeprecated,
           sensitive = s.isSensitive
         )
       ),

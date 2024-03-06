@@ -220,12 +220,20 @@ public class NotificationTestSupport {
         public Stream<ChangedResults> changedProc() {
             return Stream.of(new ChangedResults());
         }
+
+        @Procedure("changedProc2")
+        public void changedProc2(@Name("value") @Deprecated Long value) {}
     }
 
     public static class TestFunctions {
         @UserFunction("org.example.com.newFunc")
         public Long newFunc() {
             return 2L;
+        }
+
+        @UserFunction("org.example.com.FuncWithDepInput")
+        public Long func(@Name("value") @Deprecated Long value) {
+            return value;
         }
 
         @Deprecated

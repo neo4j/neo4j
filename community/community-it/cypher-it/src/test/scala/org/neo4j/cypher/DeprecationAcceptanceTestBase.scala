@@ -25,11 +25,13 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption
+import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionField
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionWithReplacement
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedIdentifierUnicode
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause
+import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureField
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureReturnField
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureWithReplacement
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureWithoutReplacement
@@ -100,6 +102,33 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     val queries = Seq("CALL changedProc() YIELD newField RETURN newField")
 
     assertNoDeprecations(queries)
+  }
+
+  test("functions with deprecated input fields") {
+    val queries = Seq(
+      "RETURN org.example.com.FuncWithDepInput(1)",
+      "MATCH (n) WHERE org.example.com.FuncWithDepInput(1) = 1 RETURN n"
+    )
+    val detail = NotificationDetail.deprecatedInputField("org.example.com.FuncWithDepInput", "value")
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      detail,
+      (pos, detail) => deprecatedFunctionField(pos, detail, "org.example.com.FuncWithDepInput", "value")
+    )
+  }
+
+  test("procedures with deprecated input fields") {
+    val queries = Seq(
+      "CALL changedProc2(1)"
+    )
+    val detail = NotificationDetail.deprecatedInputField("changedProc2", "value")
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      detail,
+      (pos, detail) => deprecatedProcedureField(pos, detail, "changedProc2", "value")
+    )
   }
 
   test("deprecated function calls without replacement") {

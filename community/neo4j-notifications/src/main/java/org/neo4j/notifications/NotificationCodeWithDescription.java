@@ -89,6 +89,14 @@ public enum NotificationCodeWithDescription {
             Status.Statement.FeatureDeprecationWarning,
             "The query used a deprecated field from a procedure. (%s)",
             "`%s` returned by procedure `%s` is deprecated."),
+    DEPRECATED_PROCEDURE_FIELD(
+            Status.Statement.FeatureDeprecationWarning,
+            "The procedure has a deprecated field. (%s)",
+            "`%s` used by the procedure `%s` is deprecated."),
+    DEPRECATED_FUNCTION_FIELD(
+            Status.Statement.FeatureDeprecationWarning,
+            "The function has a deprecated field. (%s)",
+            "`%s` used by the function `%s` is deprecated."),
     DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
             Status.Statement.FeatureDeprecationWarning,
             "The semantics of using colon in the separation of alternative relationship types will change in a future version. (%s)",
@@ -381,6 +389,18 @@ public enum NotificationCodeWithDescription {
             InputPosition position, String param, String procedure, String field) {
         return DEPRECATED_PROCEDURE_RETURN_FIELD.notificationWithParameters(
                 position, new String[] {param}, new String[] {field, procedure});
+    }
+
+    public static NotificationImplementation deprecatedProcedureField(
+            InputPosition position, String param, String procedure, String field) {
+        return DEPRECATED_PROCEDURE_FIELD.notificationWithParameters(
+                position, new String[] {param}, new String[] {field, procedure});
+    }
+
+    public static NotificationImplementation deprecatedFunctionField(
+            InputPosition position, String param, String function, String field) {
+        return DEPRECATED_FUNCTION_FIELD.notificationWithParameters(
+                position, new String[] {param}, new String[] {field, function});
     }
 
     public static NotificationImplementation deprecatedRelationshipTypeSeparator(

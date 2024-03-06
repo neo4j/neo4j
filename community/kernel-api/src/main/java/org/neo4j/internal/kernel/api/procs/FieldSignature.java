@@ -41,8 +41,22 @@ public final class FieldSignature {
     }
 
     public static FieldSignature inputField(
+            String name, Neo4jTypes.AnyType type, boolean isDeprecated, boolean sensitive) {
+        return new FieldSignature(name, type, null, isDeprecated, sensitive);
+    }
+
+    public static FieldSignature inputField(
             String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue, boolean sensitive) {
         return new FieldSignature(name, type, requireNonNull(defaultValue, "defaultValue"), false, sensitive);
+    }
+
+    public static FieldSignature inputField(
+            String name,
+            Neo4jTypes.AnyType type,
+            DefaultParameterValue defaultValue,
+            boolean isDeprecated,
+            boolean sensitive) {
+        return new FieldSignature(name, type, requireNonNull(defaultValue, "defaultValue"), isDeprecated, sensitive);
     }
 
     public static FieldSignature outputField(String name, Neo4jTypes.AnyType type) {

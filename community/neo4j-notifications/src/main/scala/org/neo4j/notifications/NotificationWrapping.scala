@@ -172,11 +172,25 @@ object NotificationWrapping {
           oldName,
           newName
         )
-    case DeprecatedFieldNotification(pos, procedure, field) =>
+    case DeprecatedProcedureReturnFieldNotification(pos, procedure, field) =>
       NotificationCodeWithDescription.deprecatedProcedureReturnField(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.deprecatedField(procedure, field),
         procedure,
+        field
+      )
+    case DeprecatedProcedureFieldNotification(pos, procedure, field) =>
+      NotificationCodeWithDescription.deprecatedProcedureField(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.deprecatedInputField(procedure, field),
+        procedure,
+        field
+      )
+    case DeprecatedFunctionFieldNotification(pos, function, field) =>
+      NotificationCodeWithDescription.deprecatedFunctionField(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.deprecatedInputField(function, field),
+        function,
         field
       )
     case DeprecatedRelTypeSeparatorNotification(pos, oldExpression, rewrittenExpression) =>

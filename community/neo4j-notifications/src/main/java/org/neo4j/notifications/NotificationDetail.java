@@ -134,6 +134,10 @@ public class NotificationDetail {
         return "'" + field + "' returned by '" + procedure + "' is deprecated.";
     }
 
+    public static String deprecatedInputField(final String procedureOrFunction, final String field) {
+        return "'" + field + "' used by '" + procedureOrFunction + "' is deprecated.";
+    }
+
     private static String createNotificationDetail(Set<String> elements, String singularTerm, String pluralTerm) {
         StringBuilder builder = new StringBuilder();
         builder.append('(');

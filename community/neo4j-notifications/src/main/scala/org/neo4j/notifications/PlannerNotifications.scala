@@ -63,7 +63,13 @@ case class DeprecatedProcedureNotification(position: InputPosition, oldName: Str
 case class ProcedureWarningNotification(position: InputPosition, procedure: String, warning: String)
     extends InternalNotification
 
-case class DeprecatedFieldNotification(position: InputPosition, procedure: String, field: String)
+case class DeprecatedProcedureReturnFieldNotification(position: InputPosition, procedure: String, field: String)
+    extends InternalNotification
+
+case class DeprecatedProcedureFieldNotification(position: InputPosition, procedure: String, field: String)
+    extends InternalNotification
+
+case class DeprecatedFunctionFieldNotification(position: InputPosition, procedure: String, field: String)
     extends InternalNotification
 
 case class MissingParametersNotification(parameters: Seq[String]) extends InternalNotification

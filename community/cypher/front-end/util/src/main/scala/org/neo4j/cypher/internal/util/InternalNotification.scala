@@ -71,12 +71,14 @@ object InternalNotification {
     "ExhaustiveShortestPathForbiddenNotification",
     "DeprecatedProcedureNotification",
     "ProcedureWarningNotification",
-    "DeprecatedFieldNotification",
+    "DeprecatedProcedureReturnFieldNotification",
     "MissingParametersNotification",
     "CodeGenerationFailedNotification",
     "RequestedTopologyMatchedCurrentTopology",
     "IndexOrConstraintAlreadyExistsNotification",
-    "IndexOrConstraintDoesNotExistNotification"
+    "IndexOrConstraintDoesNotExistNotification",
+    "DeprecatedFunctionFieldNotification",
+    "DeprecatedProcedureFieldNotification"
   )
 
   def allNotificationsAsJavaIterable(): lang.Iterable[String] = allNotifications.asJava

@@ -94,10 +94,12 @@ class MethodSignatureCompiler {
                 seenDefault = defaultValue.isPresent();
 
                 boolean isSensitive = param.isAnnotationPresent(Sensitive.class);
+                boolean isDeprecated = param.isAnnotationPresent(Deprecated.class);
 
                 signature.add(defaultValue
-                        .map(neo4jValue -> inputField(name, valueConverter.type(), neo4jValue, isSensitive))
-                        .orElseGet(() -> inputField(name, valueConverter.type(), isSensitive)));
+                        .map(neo4jValue ->
+                                inputField(name, valueConverter.type(), neo4jValue, isDeprecated, isSensitive))
+                        .orElseGet(() -> inputField(name, valueConverter.type(), isDeprecated, isSensitive)));
             } catch (ProcedureException e) {
                 throw new ProcedureException(
                         e.status(),
