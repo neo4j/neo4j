@@ -1229,6 +1229,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.query_router.new_stack", BOOL, true).build();
 
     @Internal
+    @Description("A feature toggle behind which sharded property database is developed")
+    public static final Setting<Boolean> sharded_property_database_enabled = newBuilder(
+                    "internal.dbms.sharded_property_database.enabled", BOOL, false)
+            .build();
+
+    @Internal
     @Description("A feature toggle behind which CALL IN TRANSACTIONS for composite databases is developed")
     public static final Setting<Boolean> composite_call_in_transactions = newBuilder(
                     "internal.dbms.composite.call_in_transactions", BOOL, true)
