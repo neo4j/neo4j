@@ -49,6 +49,8 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.id.IdGenerator;
@@ -560,6 +562,84 @@ class FreeIdScannerTest {
         assertThat(cache.size()).isZero();
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldLetClearCacheFromAllocationEnabledFreeQueuedSkippedHighIds(boolean setAllocationEnabled) {
+        // given
+        int id = 0;
+        var scanner = scanner(IDS_PER_ENTRY, 8, 1, true);
+        scanner.queueSkippedHighId(id, 1);
+
+        // when
+        scanner.clearCache(setAllocationEnabled, NULL_CONTEXT);
+
+        // then
+        assertThat(reuser.freedIds.contains(id)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldLetClearCacheToAllocationEnabledClearQueuedSkippedHighIds(boolean setAllocationEnabled) {
+        // given
+        int id = 0;
+        var scanner = scanner(IDS_PER_ENTRY, 8, 1, true);
+        scanner.clearCache(false, NULL_CONTEXT);
+        scanner.queueSkippedHighId(id, 1);
+
+        // when moving to allocationEnabled=true this skipped high ID should just be cleared
+        scanner.clearCache(true, NULL_CONTEXT);
+        assertThat(reuser.freedIds.contains(id)).isFalse();
+
+        // and when later clearing cache when in allocationEnabled=true
+        scanner.clearCache(setAllocationEnabled, NULL_CONTEXT);
+
+        // then this skipped high ID should not be there to be freed
+        assertThat(reuser.freedIds.contains(id)).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldLetClearCacheFromAllocationEnabledUncacheQueuedWastedIds(boolean setAllocationEnabled) {
+        // given
+        int id = 0;
+        long generation = 1;
+        int cacheSize = 8;
+        var scanner = scanner(IDS_PER_ENTRY, cacheSize, generation, true);
+        // fill the cache so that the wasted ID won't have room to be placed into cache
+        forEachId(generation, range(0, cacheSize)).accept((marker, idToMark) -> {
+            marker.markDeleted(idToMark);
+            marker.markFree(idToMark);
+        });
+        scanner.tryLoadFreeIdsIntoCache(true, true, NULL_CONTEXT);
+        scanner.queueWastedCachedId(id, 1);
+
+        // when
+        scanner.clearCache(setAllocationEnabled, NULL_CONTEXT);
+
+        // then
+        assertThat(reuser.unreservedIds.contains(id)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldLetClearCacheToAllocationEnabledClearWastedIds(boolean setAllocationEnabled) {
+        // given
+        int id = 0;
+        var scanner = scanner(IDS_PER_ENTRY, 8, 1, true);
+        scanner.clearCache(false, NULL_CONTEXT);
+        scanner.queueWastedCachedId(id, 1);
+
+        // when moving to allocationEnabled=true this skipped high ID should just be cleared
+        scanner.clearCache(true, NULL_CONTEXT);
+        assertThat(reuser.unreservedIds.contains(id)).isFalse();
+
+        // and when later clearing cache when in allocationEnabled=true
+        scanner.clearCache(setAllocationEnabled, NULL_CONTEXT);
+
+        // then this skipped high ID should not be there to be freed
+        assertThat(reuser.unreservedIds.contains(id)).isFalse();
+    }
+
     @Test
     void shouldNotSkipRangeThatIsFoundButNoCacheSpaceLeft() {
         // given
@@ -791,6 +871,7 @@ class FreeIdScannerTest {
     private class RecordingReservedMarkerProvider implements MarkerProvider {
         private final MutableLongList reservedIds = LongLists.mutable.empty();
         private final MutableLongList unreservedIds = LongLists.mutable.empty();
+        private final MutableLongList freedIds = LongLists.mutable.empty();
         private final GBPTree<IdRangeKey, IdRange> tree;
         private final long generation;
         private final AtomicLong highestWrittenId;
@@ -834,8 +915,10 @@ class FreeIdScannerTest {
 
                 @Override
                 public void markFree(long id, int numberOfIds) {
-                    // TODO implement tracking of these too
                     actual.markFree(id, numberOfIds);
+                    for (int i = 0; i < numberOfIds; i++) {
+                        freedIds.add(id + i);
+                    }
                 }
 
                 @Override

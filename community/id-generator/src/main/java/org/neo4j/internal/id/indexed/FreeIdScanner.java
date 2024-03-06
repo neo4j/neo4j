@@ -154,24 +154,28 @@ class FreeIdScanner {
     private void handleQueuedIds(CursorContext cursorContext) {
         if (!queuedSkippedHighIds.isEmpty() || !queuedWastedCachedIds.isEmpty()) {
             try (var marker = markerProvider.getMarker(cursorContext)) {
-                consumeQueuedIds(queuedSkippedHighIds, marker, IdGenerator.ContextualMarker::markFree, cursorContext);
-                consumeQueuedIds(
-                        queuedWastedCachedIds,
-                        marker,
-                        (mark, id, size) -> {
-                            int accepted = cache.offer(id, size, monitor);
-                            if (accepted < size) {
-                                // A part of or the whole ID will not make it to the cache. Take the long route and
-                                // insert marks so that they may enter the cache via a scan later on.
-                                // Mark as free and unreserved because an ID in cache can have two free/reserved states:
-                                // - free:1, reserved:1 (if it couldn't take the short-cut into cache when freed)
-                                // - free:0, reserved:0 (if it took the short-cut into cache when freed)
-                                mark.markUncached(id + accepted, size - accepted);
-                            }
-                        },
-                        cursorContext);
+                handleQueuedIds(marker, cursorContext);
             }
         }
+    }
+
+    private void handleQueuedIds(IdGenerator.ContextualMarker marker, CursorContext cursorContext) {
+        consumeQueuedIds(queuedSkippedHighIds, marker, IdGenerator.ContextualMarker::markFree, cursorContext);
+        consumeQueuedIds(
+                queuedWastedCachedIds,
+                marker,
+                (mark, id, size) -> {
+                    int accepted = cache.offer(id, size, monitor);
+                    if (accepted < size) {
+                        // A part of or the whole ID will not make it to the cache. Take the long route and
+                        // insert marks so that they may enter the cache via a scan later on.
+                        // Mark as free and unreserved because an ID in cache can have two free/reserved states:
+                        // - free:1, reserved:1 (if it couldn't take the short-cut into cache when freed)
+                        // - free:0, reserved:0 (if it took the short-cut into cache when freed)
+                        mark.markUncached(id + accepted, size - accepted);
+                    }
+                },
+                cursorContext);
     }
 
     private void consumeQueuedIds(
@@ -227,10 +231,13 @@ class FreeIdScanner {
                 // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache
                 // revert that by marking them as unreserved
                 try (var marker = markerProvider.getMarker(cursorContext)) {
+                    handleQueuedIds(marker, cursorContext);
                     cache.drain(marker::markUncached);
                 }
                 atLeastOneIdOnFreelist.set(true);
             } else {
+                queuedSkippedHighIds.clear();
+                queuedWastedCachedIds.clear();
                 cache.drain((id, size) -> {});
             }
             allocationEnabled = allocationWillBeEnabled;
