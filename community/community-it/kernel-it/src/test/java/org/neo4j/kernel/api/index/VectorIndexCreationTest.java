@@ -120,7 +120,6 @@ public class VectorIndexCreationTest {
         }
 
         @Test
-        @EnabledIf("isLatestValid")
         void shouldAcceptTestDefaultsCoreAPI() {
             assertDoesNotThrow(() -> createVectorIndex(defaultSettings(), PROP_KEYS.get(1)));
         }
@@ -144,7 +143,6 @@ public class VectorIndexCreationTest {
         }
 
         @Test
-        @EnabledIf("isLatestValid")
         void shouldRejectCompositeKeysCoreAPI() {
             assertUnsupportedComposite(() -> createVectorIndex(defaultSettings(), PROP_KEYS));
         }
@@ -168,7 +166,6 @@ public class VectorIndexCreationTest {
 
         @ParameterizedTest
         @MethodSource
-        @EnabledIf("isLatestValid")
         void shouldAcceptValidDimensionsCoreAPI(int dimensions) {
             final var settings = defaultSettingsWith(IndexSetting.vector_Dimensions(), dimensions);
             assertDoesNotThrow(() -> createVectorIndex(settings, PROP_KEYS.get(1)));
@@ -200,7 +197,6 @@ public class VectorIndexCreationTest {
 
         @ParameterizedTest
         @ValueSource(ints = {-1, 0})
-        @EnabledIf("isLatestValid")
         void shouldRejectIllegalDimensionsCoreAPI(int dimensions) {
             final var settings = defaultSettingsWith(IndexSetting.vector_Dimensions(), dimensions);
             assertIllegalDimensions(() -> createVectorIndex(settings, PROP_KEYS.get(1)));
@@ -216,7 +212,6 @@ public class VectorIndexCreationTest {
         }
 
         @Test
-        @EnabledIf("isLatestValid")
         void shouldRejectUnsupportedDimensionsCoreAPI() {
             final var dimensions = latestSupportedVersion.maxDimensions() + 1;
             final var settings = defaultSettingsWith(IndexSetting.vector_Dimensions(), dimensions);
@@ -273,10 +268,6 @@ public class VectorIndexCreationTest {
             final var settings = defaultSettingsWith(IndexSetting.vector_Similarity_Function(), similarityFunctionName);
             assertIllegalSimilarityFunction(
                     latestSupportedVersion, () -> createVectorIndex(settings, PROP_KEYS.get(1)));
-        }
-
-        private boolean isLatestValid() {
-            return validVersions.contains(latestSupportedVersion);
         }
 
         private boolean hasValidVersions() {
