@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSol
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
@@ -81,6 +82,13 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTDate
+import org.neo4j.cypher.internal.util.symbols.CTDateTime
+import org.neo4j.cypher.internal.util.symbols.CTDuration
+import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
+import org.neo4j.cypher.internal.util.symbols.CTLocalTime
+import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.schema.ConstraintType
@@ -95,6 +103,7 @@ import org.neo4j.internal.schema.IndexType.TEXT
 import org.neo4j.internal.schema.IndexType.VECTOR
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.database.DatabaseReferenceRepository
+import org.neo4j.values.storable.Values.stringValue
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
@@ -556,6 +565,67 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       .enableMinimumGraphStatistics()
       // Graph counts may lack relationship counts if they are 0
       .defaultRelationshipCardinalityTo0()
+      // Temporal functions are registered as UDFs. Adding them here to make it easier to reproduce support cases.
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "datetime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDateTime,
+        None,
+        Some("Create a DateTime instant"),
+        isAggregate = false,
+        id = 2,
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "date"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDate,
+        None,
+        Some("Creates a `DATE` instant"),
+        isAggregate = false,
+        id = 3,
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "time"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTTime,
+        None,
+        Some("Creates a `ZONED TIME` instant"),
+        isAggregate = false,
+        id = 4,
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "localdatetime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalDateTime,
+        None,
+        Some("Creates a `LOCAL DATETIME` instant"),
+        isAggregate = false,
+        id = 5,
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "localtime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalTime,
+        None,
+        Some("Creates a `LOCAL TIME` instant"),
+        isAggregate = false,
+        id = 6,
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "duration"),
+        IndexedSeq(FieldSignature("Input", CTAny)),
+        CTDuration,
+        None,
+        Some("Creates a `DURATION` value"),
+        isAggregate = false,
+        id = 7,
+        builtIn = true
+      ))
 
     val withNodes = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
       graphCountData.nodes.foldLeft(builder) {
