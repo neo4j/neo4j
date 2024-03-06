@@ -16,65 +16,71 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.SeekOnly
+import org.neo4j.cypher.internal.ast.SeekOrScan
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.UsingAnyIndexType
+import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.UsingPointIndexType
+import org.neo4j.cypher.internal.ast.UsingRangeIndexType
+import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 
 class HintsParserTest extends AstParsingTestBase {
 
   test("MATCH (n) USING INDEX n:N(p)") {
-    parses[Statements](NotAnyAntlr).containing[UsingIndexHint](
+    parses[Statements].containing[UsingIndexHint](
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingAnyIndexType)(pos)
     )
   }
 
   test("MATCH (n) USING INDEX SEEK n:N(p)") {
-    parses[Statements](NotAnyAntlr).containing[UsingIndexHint](
+    parses[Statements].containing[UsingIndexHint](
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOnly, UsingAnyIndexType)(pos)
     )
   }
 
   test("MATCH (n) USING BTREE INDEX n:N(p)") {
-    whenParsing[Statements](NotAnyAntlr).parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+    whenParsing[Statements].parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
   }
 
   test("MATCH (n) USING BTREE INDEX SEEK n:N(p)") {
-    whenParsing[Statements](NotAnyAntlr).parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+    whenParsing[Statements].parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
   }
 
   test("MATCH (n) USING RANGE INDEX n:N(p)") {
-    parses[Statements](NotAnyAntlr).containing[UsingIndexHint](
+    parses[Statements].containing[UsingIndexHint](
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingRangeIndexType)(pos)
     )
   }
 
   test("MATCH (n) USING RANGE INDEX SEEK n:N(p)") {
-    parses[Statements](NotAnyAntlr).containing[UsingIndexHint](
+    parses[Statements].containing[UsingIndexHint](
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOnly, UsingRangeIndexType)(pos)
     )
   }
 
   test("MATCH (n) USING POINT INDEX n:N(p)") {
-    parses[Statements](NotAnyAntlr).containing[UsingIndexHint](
+    parses[Statements].containing[UsingIndexHint](
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingPointIndexType)(pos)
     )
   }
 
   test("MATCH (n) USING POINT INDEX SEEK n:N(p)") {
-    parses[Statements](NotAnyAntlr).containing[UsingIndexHint](
+    parses[Statements].containing[UsingIndexHint](
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOnly, UsingPointIndexType)(pos)
     )
   }
 
   test("MATCH (n) USING TEXT INDEX n:N(p)") {
-    parses[Statements](NotAnyAntlr).containing[UsingIndexHint](
+    parses[Statements].containing[UsingIndexHint](
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingTextIndexType)(pos)
     )
   }
 
   test("MATCH (n) USING TEXT INDEX SEEK n:N(p)") {
-    parses[Statements](NotAnyAntlr).containing[UsingIndexHint](
+    parses[Statements].containing[UsingIndexHint](
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOnly, UsingTextIndexType)(pos)
     )
   }
@@ -90,7 +96,7 @@ class HintsParserTest extends AstParsingTestBase {
       |USING POINT INDEX n:N(p)
       |USING POINT INDEX SEEK n:N(p)
       |""".stripMargin should
-      parse[Statements](NotAnyAntlr).containing[UsingIndexHint](
+      parse[Statements].containing[UsingIndexHint](
         UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingAnyIndexType)(pos),
         UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOnly, UsingAnyIndexType)(pos),
         UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingTextIndexType)(pos),

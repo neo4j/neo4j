@@ -16,10 +16,25 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.RemovePropertyItem
+import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
+import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
+import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.util.InputPosition
 import org.scalatest.LoneElement
@@ -39,11 +54,11 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
   }
 
   test("LOAD CSV FROM 'url' AS line") {
-    parses[Statements](NotAnyAntlr).withPositionOf[LoadCSV](InputPosition(0, 1, 1))
+    parses[Statements].withPositionOf[LoadCSV](InputPosition(0, 1, 1))
   }
 
   test("USE GRAPH(x) RETURN 1 as y ") {
-    parses[Statements](NotAnyAntlr).withPositionOf[UseGraph](InputPosition(0, 1, 1))
+    parses[Statements].withPositionOf[UseGraph](InputPosition(0, 1, 1))
   }
 
   test("CREATE (a)-[:X]->(b)") {

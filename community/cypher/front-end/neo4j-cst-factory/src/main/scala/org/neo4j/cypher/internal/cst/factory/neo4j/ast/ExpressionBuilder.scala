@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentUnordered
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
@@ -167,34 +168,6 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 
 trait ExpressionBuilder extends CypherParserListener {
 
-  final override def exitProcedureName(
-    ctx: CypherParser.ProcedureNameContext
-  ): Unit = {}
-
-  final override def exitProcedureArgument(
-    ctx: CypherParser.ProcedureArgumentContext
-  ): Unit = {}
-
-  final override def exitProcedureResultItem(
-    ctx: CypherParser.ProcedureResultItemContext
-  ): Unit = {}
-
-  final override def exitSubqueryInTransactionsParameters(
-    ctx: CypherParser.SubqueryInTransactionsParametersContext
-  ): Unit = {}
-
-  final override def exitSubqueryInTransactionsBatchParameters(
-    ctx: CypherParser.SubqueryInTransactionsBatchParametersContext
-  ): Unit = {}
-
-  final override def exitSubqueryInTransactionsErrorParameters(
-    ctx: CypherParser.SubqueryInTransactionsErrorParametersContext
-  ): Unit = {}
-
-  final override def exitSubqueryInTransactionsReportParameters(
-    ctx: CypherParser.SubqueryInTransactionsReportParametersContext
-  ): Unit = {}
-
   final override def exitQuantifier(ctx: CypherParser.QuantifierContext): Unit = {
     val firstToken = nodeChild(ctx, 0).getSymbol
     ctx.ast = firstToken.getType match {
@@ -254,9 +227,10 @@ trait ExpressionBuilder extends CypherParserListener {
           case relCtx: CypherParser.RelationshipPatternContext =>
             relPattern = relCtx.ast[RelationshipPattern]()
           case qCtx: CypherParser.QuantifierContext =>
-            val emptyNodePattern = NodePattern(None, None, None, None)(p)
-            val part = PathPatternPart(RelationshipChain(emptyNodePattern, relPattern, emptyNodePattern)(p))
-            parts.addOne(QuantifiedPath(part, qCtx.ast(), None)(p))
+            val emptyNodePattern = NodePattern(None, None, None, None)(relPattern.position)
+            val part =
+              PathPatternPart(RelationshipChain(emptyNodePattern, relPattern, emptyNodePattern)(relPattern.position))
+            parts.addOne(QuantifiedPath(part, qCtx.ast(), None)(relPattern.position))
             relPattern = null
           case parenCtx: CypherParser.ParenthesizedPathContext =>
             parts.addOne(parenCtx.ast[ParenthesizedPath]())
@@ -829,7 +803,9 @@ trait ExpressionBuilder extends CypherParserListener {
       nameSpace.ast(),
       FunctionName(symbolicNameString.ast())(pos(symbolicNameString)),
       distinct,
-      expressions
+      expressions,
+      ArgumentUnordered,
+      ctx.parent.isInstanceOf[CypherParser.GraphReferenceContext]
     )(pos(ctx))
   }
 
@@ -1080,5 +1056,4 @@ trait ExpressionBuilder extends CypherParserListener {
       )
   }
 
-  final override def exitNonEmptyNameList(ctx: CypherParser.NonEmptyNameListContext): Unit = {}
 }

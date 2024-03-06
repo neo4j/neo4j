@@ -31,25 +31,20 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase with LegacyAstPa
         (UnicodeHelper.isIdentifierStart(c) && Character.getType(c) != Character.CURRENCY_SYMBOL) ||
         (c >= 0x31 && c <= 0x39) // Start with a a digit 1-9
       ) {
-        givesIncludingPositions[Statement](
-          {
-            singleQuery(
-              return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))
-            )
-          },
-          s"RETURN $$${c}abc AS `$paramWithCharName`"
+        s"RETURN $$${c}abc AS `$paramWithCharName`" should parse[Statement].toAstPositioned(
+          singleQuery(
+            return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))
+          )
         )
       } else if (Character.isWhitespace(c) || Character.isSpaceChar(c)) {
-        givesIncludingPositions[Statement](
-          {
-            singleQuery(
-              return_(aliasedReturnItem(parameter(s"abc", CTAny), paramWithCharName))
-            )
-          },
-          s"RETURN $$${c}abc AS `$paramWithCharName`" // Whitespace gets ignored
+        // Whitespace gets ignored
+        s"RETURN $$${c}abc AS `$paramWithCharName`" should parse[Statement].toAstPositioned(
+          singleQuery(
+            return_(aliasedReturnItem(parameter(s"abc", CTAny), paramWithCharName))
+          )
         )
       } else if (Character.getType(c) != Character.SURROGATE) { // Surrogate characters fail completely so can't test
-        failsToParse[Statement](s"RETURN $$${c}abc AS `$paramWithCharName`")
+        s"RETURN $$${c}abc AS `$paramWithCharName`" should notParse[Statement]
       }
     }
   }
@@ -58,13 +53,10 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase with LegacyAstPa
     for (c <- Character.MIN_VALUE to Character.MAX_VALUE) {
       val paramWithCharName = f"paramWithChar_${Integer.valueOf(c)}%04X"
       if (UnicodeHelper.isIdentifierPart(c)) {
-        givesIncludingPositions[Statement](
-          {
-            singleQuery(
-              return_(aliasedReturnItem(parameter(s"a${c}abc", CTAny), paramWithCharName))
-            )
-          },
-          s"RETURN $$a${c}abc AS `$paramWithCharName`"
+        s"RETURN $$a${c}abc AS `$paramWithCharName`" should parse[Statement].toAstPositioned(
+          singleQuery(
+            return_(aliasedReturnItem(parameter(s"a${c}abc", CTAny), paramWithCharName))
+          )
         )
       } else if (
         Character.isWhitespace(c) ||
@@ -72,7 +64,7 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase with LegacyAstPa
         Character.getType(c) != Character.SURROGATE &&
         !List('"', '\'', '/', '*', '%', '+', '-', ',', '.', ':', '<', '>', '=', '^', '`').contains(c)
       ) {
-        failsToParse[Statement](s"RETURN $$a${c}abc AS `$paramWithCharName`")
+        s"RETURN $$a${c}abc AS `$paramWithCharName`" should notParse[Statement]
       }
     }
   }

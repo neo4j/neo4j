@@ -16,7 +16,11 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
-import org.antlr.v4.runtime._
+import org.antlr.v4.runtime.BailErrorStrategy
+import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.ParserRuleContext
+import org.antlr.v4.runtime.Token
+import org.antlr.v4.runtime.TokenStream
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode

@@ -23,25 +23,25 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTes
 class SubqueryCallParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("CALL { RETURN 1 }") {
-    gives(subqueryCall(return_(literalInt(1).unaliased)))
+    parsesTo(subqueryCall(return_(literalInt(1).unaliased)))
   }
 
   test("CALL { CALL { RETURN 1 as a } }") {
-    gives(subqueryCall(subqueryCall(return_(literalInt(1).as("a")))))
+    parsesTo(subqueryCall(subqueryCall(return_(literalInt(1).as("a")))))
   }
 
   test("CALL { RETURN 1 AS a UNION RETURN 2 AS a }") {
-    gives(subqueryCall(unionDistinct(
+    parsesTo(subqueryCall(unionDistinct(
       singleQuery(return_(literalInt(1).as("a"))),
       singleQuery(return_(literalInt(2).as("a")))
     )))
   }
 
   test("CALL { }") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("CALL { CREATE (n:N) }") {
-    gives(subqueryCall(create(nodePat(Some("n"), Some(labelLeaf("N"))))))
+    parsesTo(subqueryCall(create(nodePat(Some("n"), Some(labelLeaf("N"))))))
   }
 }

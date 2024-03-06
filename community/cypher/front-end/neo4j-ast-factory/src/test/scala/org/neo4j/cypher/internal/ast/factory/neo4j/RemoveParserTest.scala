@@ -106,30 +106,30 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   //  Invalid use of other label expression symbols than :
 
   test("REMOVE n:A|B") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("REMOVE n:!A") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("REMOVE n:%") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("REMOVE n:A&B") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("REMOVE n IS A&B") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("REMOVE :A") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("REMOVE IS A") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 }

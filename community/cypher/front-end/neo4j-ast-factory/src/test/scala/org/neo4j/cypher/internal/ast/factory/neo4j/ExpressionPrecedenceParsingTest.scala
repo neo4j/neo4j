@@ -23,8 +23,13 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.MapProjection
+import org.neo4j.cypher.internal.expressions.NFCNormalForm
+import org.neo4j.cypher.internal.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.StringType
@@ -96,7 +101,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
     // = (1 IS NOT TYPED BOOLEAN) = ('string' IS NORMALIZED) = ('string' IS NOT NORMALIZED)
     "'string' STARTS WITH 's' = 'string' =~ 's?' > 'string' ENDS WITH 's' < 'string' IS NULL >= 'string' " +
       "CONTAINS 's' <> 'string' IS NOT NULL <= 'string' IN list = y IS TYPED BOOLEAN = 1 IS NOT TYPED BOOLEAN" +
-      " = 'string' IS NORMALIZED = 'string' IS NOT NORMALIZED" should parseAs[Expression](NotAntlr).toAst(
+      " = 'string' IS NORMALIZED = 'string' IS NOT NORMALIZED" should parseAs[Expression].toAst(
         ands(
           eq(
             startsWith(literalString("string"), literalString("s")),

@@ -38,7 +38,7 @@ class PatternComprehensionParserTest extends AstParsingTestBase with LegacyAstPa
   } yield {
     val nodeReturnText = s"[($maybeVariable $maybeLabelExpr $maybeProperties $maybeWhere)-->() | 1]"
     test(s"RETURN $nodeReturnText") {
-      gives[Statements](
+      parsesTo[Statements](
         singleQuery(
           return_(
             returnItem(
@@ -69,7 +69,7 @@ class PatternComprehensionParserTest extends AstParsingTestBase with LegacyAstPa
     } yield {
       val relReturnText = s"[()-[$maybeVariable $maybeLabelExpr $maybePathLength $maybeProperties $maybeWhere]->() | 1]"
       test(s"RETURN $relReturnText") {
-        gives[Statements](
+        parsesTo[Statements](
           singleQuery(
             return_(
               returnItem(

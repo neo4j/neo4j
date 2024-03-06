@@ -24,25 +24,25 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTes
 class ProjectionClauseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("WITH *") {
-    yields[Clause](ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))
+    parsesTo[Clause](ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos))(pos))
   }
 
   test("WITH 1 AS a") {
-    yields[Clause](ast.With(ast.ReturnItems(
+    parsesTo[Clause](ast.With(ast.ReturnItems(
       includeExisting = false,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
-    )(pos)))
+    )(pos))(pos))
   }
 
   test("WITH *, 1 AS a") {
-    yields[Clause](ast.With(ast.ReturnItems(
+    parsesTo[Clause](ast.With(ast.ReturnItems(
       includeExisting = true,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
-    )(pos)))
+    )(pos))(pos))
   }
 
   test("WITH ") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("RETURN *") {

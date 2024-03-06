@@ -16,11 +16,22 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast._
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.MatchMode
+import org.neo4j.cypher.internal.expressions.NamedPatternPart
+import org.neo4j.cypher.internal.expressions.PathPatternPart
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
+import org.neo4j.cypher.internal.expressions.PlusQuantifier
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.util.InputPosition
 
 class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
@@ -229,7 +240,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   test("CALL { MATCH $selector (a)-[r]->(b) }") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        s"CALL { MATCH $selector (a)-[r]->(b) }" should parseTo[Clause](NotAnyAntlr) {
+        s"CALL { MATCH $selector (a)-[r]->(b) }" should parseTo[Clause] {
           SubqueryCall(
             singleQuery(
               Match(
@@ -329,7 +340,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
     Seq("+", "").foreach { quantifier =>
       test(s"MATCH ($selector (a)-[r]->(b))$quantifier") {
         val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
-        failsParsing[Clause].withMessageStart(
+        failsParsing[Clause](NotAnyAntlr).withMessageStart(
           s"Path selectors such as `${astSelector.prettified}` are not supported within $pathPatternKind path patterns."
         )
       }

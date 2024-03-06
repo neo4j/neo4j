@@ -25,15 +25,19 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.Limit
+import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.ProcedureResult
+import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
@@ -50,9 +54,16 @@ import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsConcurrencyParameters
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
@@ -72,14 +83,19 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
+import org.neo4j.cypher.internal.expressions.ProcedureName
+import org.neo4j.cypher.internal.expressions.ProcedureOutput
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SimplePattern
@@ -279,10 +295,9 @@ trait StatementBuilder extends CypherParserListener {
 
   final override def exitMatchClause(ctx: CypherParser.MatchClauseContext): Unit = {
     val patternParts = ctx.patternList()
-    val patternPartsPos = pos(patternParts)
     val patternPartsWithSelector = patternParts.ast[ArraySeq[PatternPart]]().map {
       case part: PatternPartWithSelector => part
-      case part: NonPrefixedPatternPart  => PatternPartWithSelector(PatternPart.AllPaths()(patternPartsPos), part)
+      case part: NonPrefixedPatternPart  => PatternPartWithSelector(PatternPart.AllPaths()(part.position), part)
       case other                         => throw new RuntimeException() // TODO Error handling
     }
 
@@ -320,6 +335,13 @@ trait StatementBuilder extends CypherParserListener {
       case CypherParser.SCAN  => UsingScanHint(ctx.variable().ast(), ctx.labelOrRelType().ast())(pos(ctx))
     }
   }
+  final override def exitNonEmptyNameList(ctx: CypherParser.NonEmptyNameListContext): Unit = {}
+
+  private def nonEmptyPropetyKeyName(list: CypherParser.NonEmptyNameListContext): ArraySeq[PropertyKeyName] = {
+    ArraySeq.from(list.symbolicNameString().asScala.collect {
+      case s: CypherParser.SymbolicNameStringContext => PropertyKeyName(s.ast())(pos(s))
+    })
+  }
 
   private def nonEmptyVariables(list: CypherParser.NonEmptyNameListContext): NonEmptyList[Variable] = {
     NonEmptyList.from(
@@ -334,12 +356,14 @@ trait StatementBuilder extends CypherParserListener {
       ctx.INDEX() != null && ctx.LPAREN() != null && ctx.LPAREN() != null && ctx.getChildCount <= 9
     )
     val spec = if (ctx.SEEK() != null) SeekOnly else SeekOrScan
-    UsingIndexHint(ctx.variable().ast(), ctx.labelOrRelType().ast(), ctx.nonEmptyNameList().ast(), spec)(pos(ctx))
+    UsingIndexHint(
+      ctx.variable().ast(),
+      ctx.labelOrRelType().ast(),
+      nonEmptyPropetyKeyName(ctx.nonEmptyNameList()),
+      spec,
+      hintType
+    )(pos(ctx))
   }
-
-  final override def exitIndexHintBody(
-    ctx: CypherParser.IndexHintBodyContext
-  ): Unit = {}
 
   final override def exitMergeClause(ctx: CypherParser.MergeClauseContext): Unit = {
     val patternPart = ctxChild(ctx, 1)
@@ -363,23 +387,107 @@ trait StatementBuilder extends CypherParserListener {
 
   final override def exitUnwindClause(
     ctx: CypherParser.UnwindClauseContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = Unwind(ctxChild(ctx, 1).ast(), ctxChild(ctx, 3).ast())(pos(ctx))
+  }
 
   final override def exitCallClause(
     ctx: CypherParser.CallClauseContext
-  ): Unit = {}
+  ): Unit = {
+    val namespace = ctx.namespace().ast[Namespace]()
+    val procedureName = ProcedureName(ctx.symbolicNameString().ast())(pos(ctx.symbolicNameString()))
+    val procedureArguments =
+      if (ctx.RPAREN() == null) None
+      else
+        Some(astSeq[Expression](ctx.procedureArgument()))
+    val yieldAll = ctx.TIMES() != null
+    val procedureResults = {
+      if (ctx.YIELD() == null || yieldAll) None
+      else {
+        val procRes = astSeq[ProcedureResultItem](ctx.procedureResultItem())
+        Some(ProcedureResult(procRes, astOpt(ctx.whereClause()))(pos(ctx.YIELD().getSymbol)))
+      }
+    }
+    ctx.ast = UnresolvedCall(namespace, procedureName, procedureArguments, procedureResults, yieldAll)(pos(ctx))
+  }
+
+  final override def exitProcedureArgument(
+    ctx: CypherParser.ProcedureArgumentContext
+  ): Unit = {
+    ctx.ast = ctxChild(ctx, 0).ast
+  }
+
+  final override def exitProcedureResultItem(
+    ctx: CypherParser.ProcedureResultItemContext
+  ): Unit = {
+    val str = ctx.symbolicNameString().ast[String]()
+    ctx.ast = if (ctx.variable() == null) ProcedureResultItem(Variable(str)(pos(ctx)))(pos(ctx))
+    else {
+      val v = ctx.variable().ast[Variable]()
+      ProcedureResultItem(ProcedureOutput(str)(v.position), v)(pos(ctx))
+    }
+  }
 
   final override def exitLoadCSVClause(
     ctx: CypherParser.LoadCSVClauseContext
-  ): Unit = {}
+  ): Unit = {
+    val withHeaders = ctx.HEADERS() != null
+    ctx.ast = LoadCSV(withHeaders, ctx.expression().ast(), ctx.variable().ast(), astOpt(ctx.stringLiteral()))(pos(ctx))
+  }
 
   final override def exitForeachClause(
     ctx: CypherParser.ForeachClauseContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = Foreach(ctxChild(ctx, 2).ast(), ctxChild(ctx, 4).ast(), astSeq(ctx.clause()))(pos(ctx))
+  }
 
   final override def exitSubqueryClause(
     ctx: CypherParser.SubqueryClauseContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = SubqueryCall(ctxChild(ctx, 2).ast(), astOpt(ctx.subqueryInTransactionsParameters()))(pos(ctx))
+  }
+
+  final override def exitSubqueryInTransactionsParameters(
+    ctx: CypherParser.SubqueryInTransactionsParametersContext
+  ): Unit = {
+    val batch = ctx.subqueryInTransactionsBatchParameters()
+    val error = ctx.subqueryInTransactionsErrorParameters()
+    val report = ctx.subqueryInTransactionsReportParameters()
+    val batchParam = if (batch.isEmpty) None else Some(batch.get(0).ast[SubqueryCall.InTransactionsBatchParameters]())
+    val concurrencyParam =
+      if (ctx.CONCURRENT() != null)
+        Some(InTransactionsConcurrencyParameters(astOpt[Expression](ctx.expression()))(pos(ctx.CONCURRENT().getSymbol)))
+      else None
+    val errorParam = if (error.isEmpty) None else Some(error.get(0).ast[SubqueryCall.InTransactionsErrorParameters]())
+    val reportParam =
+      if (report.isEmpty) None else Some(report.get(0).ast[SubqueryCall.InTransactionsReportParameters]())
+    ctx.ast = SubqueryCall.InTransactionsParameters(batchParam, concurrencyParam, errorParam, reportParam)(
+      pos(ctx.TRANSACTIONS().getSymbol)
+    )
+  }
+
+  final override def exitSubqueryInTransactionsBatchParameters(
+    ctx: CypherParser.SubqueryInTransactionsBatchParametersContext
+  ): Unit = {
+    ctx.ast = SubqueryCall.InTransactionsBatchParameters(ctxChild(ctx, 1).ast())(pos(ctx))
+  }
+
+  final override def exitSubqueryInTransactionsErrorParameters(
+    ctx: CypherParser.SubqueryInTransactionsErrorParametersContext
+  ): Unit = {
+    val behaviour = nodeChild(ctx, 2).getSymbol.getType match {
+      case CypherParser.CONTINUE => OnErrorContinue
+      case CypherParser.BREAK    => OnErrorBreak
+      case CypherParser.FAIL     => OnErrorFail
+    }
+    ctx.ast = SubqueryCall.InTransactionsErrorParameters(behaviour)(pos(ctx))
+  }
+
+  final override def exitSubqueryInTransactionsReportParameters(
+    ctx: CypherParser.SubqueryInTransactionsReportParametersContext
+  ): Unit = {
+    ctx.ast = SubqueryCall.InTransactionsReportParameters(ctxChild(ctx, 3).ast())(pos(ctx))
+  }
 
   final override def exitPeriodicCommitQueryHintFailure(
     ctx: CypherParser.PeriodicCommitQueryHintFailureContext

@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.scalatest.LoneElement
 
 class StatementReturnColumnsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
@@ -39,8 +38,8 @@ class StatementReturnColumnsParserTest extends AstParsingTestBase with LegacyAst
   }
 
   test("CALL ... YIELD ...") {
-    "CALL foo YIELD x, y" should parse[Statement](NotAnyAntlr).withAstLike(columns("x", "y"))
-    "CALL foo YIELD x, y AS z" should parse[Statement](NotAnyAntlr).withAstLike(columns("x", "z"))
+    "CALL foo YIELD x, y" should parse[Statement].withAstLike(columns("x", "y"))
+    "CALL foo YIELD x, y AS z" should parse[Statement].withAstLike(columns("x", "z"))
   }
 
   test("Updates") {
@@ -50,6 +49,6 @@ class StatementReturnColumnsParserTest extends AstParsingTestBase with LegacyAst
     "MATCH (n) DELETE (m)" should parse[Statement].withAstLike(columns())
     "MATCH (n) MERGE (m:Person {name: 'Stefan'}) ON MATCH SET n.happy = 100" should
       parse[Statement].withAstLike(columns())
-    "MATCH (n) FOREACH (m IN [1,2,3] | CREATE())" should parse[Statement](NotAnyAntlr).withAstLike(columns())
+    "MATCH (n) FOREACH (m IN [1,2,3] | CREATE())" should parse[Statement].withAstLike(columns())
   }
 }

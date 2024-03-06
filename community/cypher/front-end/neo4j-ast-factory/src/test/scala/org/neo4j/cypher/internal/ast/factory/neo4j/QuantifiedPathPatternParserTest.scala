@@ -21,8 +21,24 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.expressions.FixedQuantifier
+import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
+import org.neo4j.cypher.internal.expressions.IntervalQuantifier
+import org.neo4j.cypher.internal.expressions.MatchMode
+import org.neo4j.cypher.internal.expressions.NamedPatternPart
+import org.neo4j.cypher.internal.expressions.ParenthesizedPath
+import org.neo4j.cypher.internal.expressions.PathConcatenation
+import org.neo4j.cypher.internal.expressions.PathPatternPart
+import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
+import org.neo4j.cypher.internal.expressions.PlusQuantifier
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.StarQuantifier
+import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 
 class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -259,7 +275,7 @@ class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstP
 class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("MATCH p= ( (a)-->(b) ) WHERE a.prop") {
-    gives[Clause] {
+    parsesTo[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
@@ -283,7 +299,7 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   }
 
   test("MATCH (a), (b)--(c) ((d)--(e))* (f)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
@@ -314,7 +330,7 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   }
 
   test("MATCH (a)-->+(b)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(pathConcatenation(
         nodePat(Some("a")),
         quantifiedPath(relationshipChain(nodePat(), relPat(), nodePat()), plusQuantifier),
@@ -324,7 +340,7 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   }
 
   test("MATCH (a)<-[r]-*(b)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(pathConcatenation(
         nodePat(Some("a")),
         quantifiedPath(
@@ -337,7 +353,7 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   }
 
   test("MATCH (a)-[r]-+(b)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(pathConcatenation(
         nodePat(Some("a")),
         quantifiedPath(
@@ -350,7 +366,7 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   }
 
   test("MATCH (n)-[r:!REL WHERE r.prop > 123]->{2,}(m)") {
-    gives[Clause] {
+    parsesTo[Clause] {
       match_(pathConcatenation(
         nodePat(Some("n")),
         quantifiedPath(
@@ -389,7 +405,7 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
 class QuantifiedPathParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("((n)-[r]->(m))*") {
-    gives[QuantifiedPath] {
+    parsesTo[QuantifiedPath] {
       QuantifiedPath(
         PatternPart(
           RelationshipChain(
@@ -405,7 +421,7 @@ class QuantifiedPathParserTest extends AstParsingTestBase with LegacyAstParsingT
   }
 
   test("(p = (n)-[r]->(m))*") {
-    gives[QuantifiedPath] {
+    parsesTo[QuantifiedPath] {
       QuantifiedPath(
         NamedPatternPart(
           Variable("p"),
@@ -424,7 +440,7 @@ class QuantifiedPathParserTest extends AstParsingTestBase with LegacyAstParsingT
   }
 
   test("((n)-[r]->(m) WHERE n.prop = m.prop)*") {
-    gives[QuantifiedPath] {
+    parsesTo[QuantifiedPath] {
       QuantifiedPath(
         PatternPart(
           RelationshipChain(
@@ -440,7 +456,7 @@ class QuantifiedPathParserTest extends AstParsingTestBase with LegacyAstParsingT
   }
 
   test("((a)-->(b) WHERE a.prop > b.prop)") {
-    gives[ParenthesizedPath] {
+    parsesTo[ParenthesizedPath] {
       ParenthesizedPath(
         PatternPart(
           RelationshipChain(
@@ -456,7 +472,7 @@ class QuantifiedPathParserTest extends AstParsingTestBase with LegacyAstParsingT
 
   // combining all previous GPM features
   test("((n:A|B)-[r:REL|LER WHERE r.prop > 0]->(m:% WHERE m.prop IS NOT NULL))*") {
-    gives[QuantifiedPath] {
+    parsesTo[QuantifiedPath] {
       QuantifiedPath(
         PatternPart(
           RelationshipChain(
@@ -486,49 +502,49 @@ class QuantifiedPathParserTest extends AstParsingTestBase with LegacyAstParsingT
 class QuantifiedPathPatternsQuantifierParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("+") {
-    givesIncludingPositions[GraphPatternQuantifier] {
+    parses[GraphPatternQuantifier].toAstPositioned {
       PlusQuantifier()((1, 1, 0))
     }
   }
 
   test("*") {
-    givesIncludingPositions[GraphPatternQuantifier] {
+    parses[GraphPatternQuantifier].toAstPositioned {
       StarQuantifier()((1, 1, 0))
     }
   }
 
   test("{0,3}") {
-    givesIncludingPositions[GraphPatternQuantifier] {
+    parses[GraphPatternQuantifier].toAstPositioned {
       IntervalQuantifier(Some(literalUnsignedInt(0)), Some(literalUnsignedInt(3)))((1, 1, 0))
     }
   }
 
   test("{1,}") {
-    givesIncludingPositions[GraphPatternQuantifier] {
+    parses[GraphPatternQuantifier].toAstPositioned {
       IntervalQuantifier(Some(literalUnsignedInt(1)), None)((1, 1, 0))
     }
   }
 
   test("{,3}") {
-    givesIncludingPositions[GraphPatternQuantifier] {
+    parses[GraphPatternQuantifier].toAstPositioned {
       IntervalQuantifier(None, Some(literalUnsignedInt(3)))((1, 1, 0))
     }
   }
 
   test("{,}") {
-    givesIncludingPositions[GraphPatternQuantifier] {
+    parses[GraphPatternQuantifier].toAstPositioned {
       IntervalQuantifier(None, None)((1, 1, 0))
     }
   }
 
   test("{2}") {
-    givesIncludingPositions[GraphPatternQuantifier] {
+    parses[GraphPatternQuantifier].toAstPositioned {
       FixedQuantifier(literalUnsignedInt(2))((1, 1, 0))
     }
   }
 
   test("{1_000, 1_000_000}") {
-    givesIncludingPositions[GraphPatternQuantifier] {
+    parses[GraphPatternQuantifier].toAstPositioned {
       IntervalQuantifier(
         Some(UnsignedDecimalIntegerLiteral("1_000")((1, 2, 1))),
         Some(UnsignedDecimalIntegerLiteral("1_000_000")((1, 9, 8)))

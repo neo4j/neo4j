@@ -140,9 +140,6 @@ hint
       )
    ;
 
-indexHintBody:
-   SEEK? variable labelOrRelType LPAREN nonEmptyNameList RPAREN;
-
 mergeClause
    : MERGE pattern mergeAction*
    ;
@@ -155,10 +152,8 @@ unwindClause:
    UNWIND expression AS variable;
 
 callClause:
-   CALL procedureName (LPAREN procedureArgument? (COMMA procedureArgument)* RPAREN)? (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?;
-
-procedureName:
-   namespace symbolicNameString;
+   CALL namespace symbolicNameString (LPAREN procedureArgument? (COMMA procedureArgument)* RPAREN)?
+   (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?;
 
 procedureArgument:
    expression;

@@ -23,31 +23,31 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTes
 class UseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("USING PERIODIC COMMIT USE db LOAD CSV FROM 'url' AS line RETURN line") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("USE GRAPH db USING PERIODIC COMMIT LOAD CSV FROM 'url' AS line RETURN line") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("USE 1 RETURN 1") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("USE 'a' RETURN 1") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("USE [x] RETURN 1") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("USE 1 + 2 RETURN 1") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("CALL { USE neo4j RETURN 1 AS y } RETURN y") {
-    gives[Statements] {
+    parsesTo[Statements] {
       singleQuery(
         subqueryCall(
           use(List("neo4j")),
@@ -59,7 +59,7 @@ class UseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("WITH 1 AS x CALL { WITH x USE neo4j RETURN x AS y } RETURN x, y") {
-    gives[Statements] {
+    parsesTo[Statements] {
       singleQuery(
         with_(literal(1) as "x"),
         subqueryCall(
@@ -73,7 +73,7 @@ class UseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   }
 
   test("USE foo UNION ALL RETURN 1") {
-    gives[Statements] {
+    parsesTo[Statements] {
       union(
         singleQuery(use(List("foo"))),
         singleQuery(return_(returnItem(literal(1), "1")))

@@ -166,7 +166,7 @@ final class SyntaxChecker extends ParseTreeListener {
   private def checkSubqueryInTransactionsParameters(ctx: CypherParser.SubqueryInTransactionsParametersContext): Unit = {
     errorOnDuplicatedRule(ctx.subqueryInTransactionsBatchParameters(), "OF ROWS")
     errorOnDuplicatedRule(ctx.subqueryInTransactionsErrorParameters(), "ON ERROR")
-    errorOnDuplicatedRule(ctx.subqueryInTransactionsReportParameters(), "ON ERROR")
+    errorOnDuplicatedRule(ctx.subqueryInTransactionsReportParameters(), "REPORT STATUS AS")
   }
 
   private def checkCreateAlias(ctx: CypherParser.CreateAliasContext): Unit = {

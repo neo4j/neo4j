@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 
 class LoadCsvParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -27,38 +28,39 @@ class LoadCsvParserTest extends AstParsingTestBase with LegacyAstParsingTestSupp
     "Failed to parse the file expression. Please remember to use quotes for string literals."
 
   test("LOAD CSV WITH HEADERS FROM 'file:///ALL_PLANT_RMs_2.csv' AS l") {
-    yields[Clause](LoadCSV(withHeaders = true, literalString("file:///ALL_PLANT_RMs_2.csv"), varFor("l"), None))
+    parsesTo[Clause](LoadCSV(withHeaders = true, literalString("file:///ALL_PLANT_RMs_2.csv"), varFor("l"), None)(pos))
   }
 
   test("""LOAD CSV WITH HEADERS FROM "file:///ALL_PLANT_RMs_2.csv" AS l""") {
-    yields[Clause](LoadCSV(withHeaders = true, literalString("file:///ALL_PLANT_RMs_2.csv"), varFor("l"), None))
+    parsesTo[Clause](LoadCSV(withHeaders = true, literalString("file:///ALL_PLANT_RMs_2.csv"), varFor("l"), None)(pos))
   }
 
   test("LOAD CSV WITH HEADERS FROM `var` AS l") {
-    yields[Clause](LoadCSV(withHeaders = true, varFor("var"), varFor("l"), None))
+    parsesTo[Clause](LoadCSV(withHeaders = true, varFor("var"), varFor("l"), None)(pos))
   }
 
   test("LOAD CSV WITH HEADERS FROM '1' + '2' AS l") {
-    yields[Clause](LoadCSV(withHeaders = true, add(literalString("1"), literalString("2")), varFor("l"), None))
+    parsesTo[Clause](LoadCSV(withHeaders = true, add(literalString("1"), literalString("2")), varFor("l"), None)(pos))
   }
 
   test("LOAD CSV WITH HEADERS FROM 1+2 AS l") {
-    yields[Clause](LoadCSV(withHeaders = true, add(literalInt(1), literalInt(2)), varFor("l"), None))
+    parsesTo[Clause](LoadCSV(withHeaders = true, add(literalInt(1), literalInt(2)), varFor("l"), None)(pos))
   }
 
+  // TODO ANTLR ERRORS
   test("LOAD CSV WITH HEADERS FROM file:///ALL_PLANT_RMs_2.csv AS l") {
-    assertFailsWithMessageStart[Clause](testName, fileExpressionFailed)
+    failsParsing[Clause](NotAnyAntlr).withMessageStart(fileExpressionFailed)
   }
 
   test("LOAD CSV WITH HEADERS FROM 'file:///ALL_PLANT_RMs_2.csv AS l") {
-    assertFailsWithMessageStart[Clause](testName, fileExpressionFailed)
+    failsParsing[Clause](NotAnyAntlr).withMessageStart(fileExpressionFailed)
   }
 
   test("""LOAD CSV WITH HEADERS FROM "file:///ALL_PLANT_RMs_2.csv AS l""") {
-    assertFailsWithMessageStart[Clause](testName, fileExpressionFailed)
+    failsParsing[Clause](NotAnyAntlr).withMessageStart(fileExpressionFailed)
   }
 
   test("LOAD CSV WITH HEADERS FROM `var AS l") {
-    assertFailsWithMessageStart[Clause](testName, fileExpressionFailed)
+    failsParsing[Clause](NotAnyAntlr).withMessageStart(fileExpressionFailed)
   }
 }

@@ -23,19 +23,19 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTes
 class ProcedureCallParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("CALL foo") {
-    gives[Clause](call(Seq.empty, "foo", None))
+    parsesTo[Clause](call(Seq.empty, "foo", None))
   }
 
   test("CALL foo()") {
-    gives[Clause](call(Seq.empty, "foo", Some(Seq.empty)))
+    parsesTo[Clause](call(Seq.empty, "foo", Some(Seq.empty)))
   }
 
   test("CALL foo('Test', 1+2)") {
-    gives[Clause](call(Seq.empty, "foo", Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))))
+    parsesTo[Clause](call(Seq.empty, "foo", Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))))
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
-    gives[Clause](call(
+    parsesTo[Clause](call(
       List("foo", "bar"),
       "baz",
       Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))
@@ -43,18 +43,18 @@ class ProcedureCallParserTest extends AstParsingTestBase with LegacyAstParsingTe
   }
 
   test("CALL foo YIELD bar") {
-    gives[Clause](call(Seq.empty, "foo", None, Some(Seq(varFor("bar")))))
+    parsesTo[Clause](call(Seq.empty, "foo", None, Some(Seq(varFor("bar")))))
   }
 
   test("CALL foo YIELD bar, baz") {
-    gives[Clause](call(Seq.empty, "foo", None, Some(Seq(varFor("bar"), varFor("baz")))))
+    parsesTo[Clause](call(Seq.empty, "foo", None, Some(Seq(varFor("bar"), varFor("baz")))))
   }
 
   test("CALL foo() YIELD bar") {
-    gives[Clause](call(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar")))))
+    parsesTo[Clause](call(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar")))))
   }
 
   test("CALL foo() YIELD bar, baz") {
-    gives[Clause](call(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar"), varFor("baz")))))
+    parsesTo[Clause](call(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar"), varFor("baz")))))
   }
 }

@@ -28,14 +28,14 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("CALL { CREATE (n) } IN TRANSACTIONS") {
-    parses[SubqueryCall](NotAntlr).toAstPositioned {
+    parses[SubqueryCall].toAstPositioned {
       SubqueryCall(
         SingleQuery(
           Seq(create(
@@ -49,7 +49,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 1 ROW") {
-    parses[SubqueryCall](NotAntlr).toAst {
+    parses[SubqueryCall].toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(1))(pos)),
@@ -63,7 +63,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 1 ROWS") {
-    parses[SubqueryCall](NotAntlr).toAst {
+    parses[SubqueryCall].toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(1))(pos)),
@@ -77,7 +77,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROW") {
-    parses[SubqueryCall](NotAntlr).toAst {
+    parses[SubqueryCall].toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(42))(pos)),
@@ -91,7 +91,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROWS") {
-    parses[SubqueryCall](NotAntlr).toAst {
+    parses[SubqueryCall].toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(42))(pos)),
@@ -105,7 +105,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF $param ROWS") {
-    parses[SubqueryCall](NotAntlr).toAst {
+    parses[SubqueryCall].toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(parameter("param", CTAny))(pos)),
@@ -119,7 +119,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF NULL ROWS") {
-    parses[SubqueryCall](NotAntlr).toAst {
+    parses[SubqueryCall].toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(nullLiteral)(pos)),
@@ -198,7 +198,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         ),
         create(nodePat(Some("n")))
       )
-    gives[SubqueryCall](expected)
+    testName should parseTo[SubqueryCall](expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 50 ROWS REPORT STATUS AS status") {
@@ -212,7 +212,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         ),
         create(nodePat(Some("n")))
       )
-    gives[SubqueryCall](expected)
+    testName should parseTo[SubqueryCall](expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status OF 50 ROWS") {
@@ -226,7 +226,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         ),
         create(nodePat(Some("n")))
       )
-    gives[SubqueryCall](expected)
+    testName should parseTo[SubqueryCall](expected)
   }
 
   // For each error behaviour, allow all possible orders of OF ROWS, ON ERROR and REPORT STATUS
@@ -262,7 +262,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
             ),
             create(nodePat(Some("n")))
           )
-        gives[SubqueryCall](expected)
+        testName should parseTo[SubqueryCall](expected)
       }
 
       errorRowPermutations.foreach(permutation => {
@@ -277,7 +277,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
               ),
               create(nodePat(Some("n")))
             )
-          gives[SubqueryCall](expected)
+          testName should parseTo[SubqueryCall](expected)
         }
         test(s"CALL { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)}") {
           val expected =
@@ -306,7 +306,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
               ),
               create(nodePat(Some("n")))
             )
-          gives[SubqueryCall](expected)
+          testName should parseTo[SubqueryCall](expected)
         }
         test(s"CALL { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)}") {
           val expected =
@@ -335,7 +335,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
               ),
               create(nodePat(Some("n")))
             )
-          gives[SubqueryCall](expected)
+          testName should parseTo[SubqueryCall](expected)
         }
         test(
           s"CALL { CREATE (n) } IN $concurrencyString TRANSACTIONS ${permutation.head} ${permutation(1)} ${permutation(2)}"
@@ -356,38 +356,34 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   // Negative tests
-
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK ON ERROR CONTINUE") {
-    assertFailsWithMessageStart[SubqueryCall](
-      testName,
+    failsParsing[SubqueryCall].withMessageStart(
       "Duplicated ON ERROR parameter"
     )
   }
 
+  // TODO ERROR HANDLING
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK CONTINUE") {
-    assertFailsWithMessageContains[SubqueryCall](
-      testName,
+    failsParsing[SubqueryCall](NotAnyAntlr).withMessageContaining(
       "Encountered \" \"CONTINUE\" \"CONTINUE\"\" at line 1, column 52.\n\nWas expecting one of:\n\n<EOF> \n    \"OF\" ...\n    \"ON\" ...\n    \"REPORT\" ..."
     )
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK REPORT STATUS AS status ON ERROR CONTINUE") {
-    assertFailsWithMessageStart[SubqueryCall](
-      testName,
+    failsParsing[SubqueryCall].withMessageStart(
       "Duplicated ON ERROR parameter"
     )
   }
 
+  // TODO ERROR HANDLING
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status REPORT STATUS AS other") {
-    assertFailsWithMessageStart[SubqueryCall](
-      testName,
+    failsParsing[SubqueryCall](NotAnyAntlr).withMessageStart(
       "Duplicated REPORT STATUS parameter"
     )
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 5 ROWS ON ERROR BREAK REPORT STATUS AS status OF 42 ROWS") {
-    assertFailsWithMessageStart[SubqueryCall](
-      testName,
+    failsParsing[SubqueryCall].withMessageStart(
       "Duplicated OF ROWS parameter"
     )
   }

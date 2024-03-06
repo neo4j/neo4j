@@ -23,15 +23,24 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.toCypherHe
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.expressions._
+import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.Infinity
+import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.expressions.NaN
+import org.neo4j.cypher.internal.expressions.Null
+import org.neo4j.cypher.internal.expressions.NumberLiteral
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
 
-class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
+class LiteralsParserTest extends AstParsingTestBase
     with CypherScalaCheckDrivenPropertyChecks {
   implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny // 🤯
 
@@ -78,7 +87,7 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
 
     val invalid = Seq("NaN", "Infinity", "Ox", "0_.0", "1_._1", "._2", "1_.0001", "1._0001")
     for (i <- invalid) {
-      assertFails[NumberLiteral](i)
+      i should notParse[NumberLiteral]
     }
   }
 
