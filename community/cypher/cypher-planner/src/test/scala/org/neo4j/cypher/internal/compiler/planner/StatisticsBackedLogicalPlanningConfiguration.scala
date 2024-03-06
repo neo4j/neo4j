@@ -136,7 +136,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     allNodes: Option[Double] = None,
     labels: Map[String, Double] = Map[String, Double](),
     relationships: Map[RelDef, Double] = Map[RelDef, Double](),
-    defaultRelationshipCardinalityTo0: Boolean = true
+    defaultRelationshipCardinalityTo0: Boolean = false
   ) {
 
     def getRelCount(relDef: RelDef): Double = {

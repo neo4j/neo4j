@@ -269,13 +269,13 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
   ) {
     val query =
       s"""
-         |MATCH ANY SHORTEST ((a)-[r:User]->*(b) WHERE all(x IN r WHERE x.prop > 5))
+         |MATCH ANY SHORTEST ((a)-[r:R]->*(b) WHERE all(x IN r WHERE x.prop > 5))
          |RETURN *
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
+    plan should equal(planner.subPlanBuilder()
       .shortestPath(
-        "(a)-[r:User*0..]->(b)",
+        "(a)-[r:R*0..]->(b)",
         pathName = Some("anon_0"),
         nodePredicates = Seq(),
         relationshipPredicates = Seq(Predicate("x", "x.prop > 5")),
@@ -284,7 +284,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .cartesianProduct()
       .|.allNodeScan("a")
       .allNodeScan("b")
-      .build()
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test(

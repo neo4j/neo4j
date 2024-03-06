@@ -163,6 +163,9 @@ class ProjectEndpointsPlanningIntegrationTest extends CypherFunSuite
       .setAllRelationshipsCardinality(10000)
       .setLabelCardinality("A", 1000)
       .setLabelCardinality("AA", 5000)
+      .setRelationshipCardinality("(:A)-[]->()", 100)
+      .setRelationshipCardinality("(:AA)-[]->()", 100)
+      .setRelationshipCardinality("()-[]->(:AA)", 100)
       .build()
 
     val plan = planner.plan(query).stripProduceResults

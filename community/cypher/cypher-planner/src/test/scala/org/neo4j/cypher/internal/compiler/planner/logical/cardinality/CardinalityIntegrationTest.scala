@@ -844,10 +844,13 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
       .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("(:Forum)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Forum)", 0)
       .setRelationshipCardinality("()-[:HAS_MEMBER]->()", hasMemberRelationships)
       .setRelationshipCardinality("(:Forum)-[:HAS_MEMBER]->()", hasMemberRelationships)
       .setRelationshipCardinality("(:Person)-[:HAS_MEMBER]->()", hasMemberRelationships)
       .setRelationshipCardinality("()-[:HAS_MEMBER]->(:Person)", hasMemberRelationships)
+      .setRelationshipCardinality("()-[:HAS_MEMBER]->(:Forum)", hasMemberRelationships)
       .build()
 
     queryShouldHaveCardinality(
@@ -873,10 +876,13 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
       .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("(:Forum)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Forum)", 0)
       .setRelationshipCardinality("()-[:HAS_MEMBER]->()", hasMemberRelationships)
       .setRelationshipCardinality("(:Forum)-[:HAS_MEMBER]->()", hasMemberRelationships)
       .setRelationshipCardinality("(:Person)-[:HAS_MEMBER]->()", hasMemberRelationships)
       .setRelationshipCardinality("()-[:HAS_MEMBER]->(:Person)", hasMemberRelationships)
+      .setRelationshipCardinality("()-[:HAS_MEMBER]->(:Forum)", hasMemberRelationships)
       .build()
 
     queryShouldHaveCardinality(
@@ -901,6 +907,8 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
       .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("(:Entity)-[:KNOWS]->()", 0)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Entity)", 0)
       .build()
 
     val queries = Seq(
@@ -940,6 +948,8 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
       .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("(:Entity)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Entity)", knowsRelationships)
       .build()
 
     val queries = Seq(
@@ -999,6 +1009,9 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
       .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
       .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("(:Entity)-[:KNOWS]->()", 0)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Entity)", 0)
+      .setRelationshipCardinality("(:Last)-[:KNOWS]->()", 0)
       .setRelationshipCardinality("()-[:KNOWS]->(:Last)", lastNodes)
       .build()
 

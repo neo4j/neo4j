@@ -80,6 +80,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setRelationshipCardinality("(:User)-[:R]->()", 10)
     .setRelationshipCardinality("(:User)-[:R]->(:B)", 10)
     .setRelationshipCardinality("(:B)-[:R]->(:B)", 10)
+    .setRelationshipCardinality("(:B)-[:R]->(:User)", 10)
+    .setRelationshipCardinality("(:B)-[:R]->()", 10)
+    .setRelationshipCardinality("(:B)-[]->()", 10)
+    .setRelationshipCardinality("(:User)-[]->(:B)", 10)
+    .setRelationshipCardinality("()-[]->(:B)", 10)
     .setRelationshipCardinality("()-[:R]->(:B)", 10)
     .setRelationshipCardinality("()-[]->(:N)", 10)
     .setRelationshipCardinality("()-[]->(:NN)", 10)
@@ -89,6 +94,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setRelationshipCardinality("(:User)-[]->(:NN)", 10)
     .setRelationshipCardinality("(:B)-[]->(:N)", 10)
     .setRelationshipCardinality("()-[:T]->()", 10)
+    .setRelationshipCardinality("(:N)-[]->()", 10)
     .addSemanticFeature(SemanticFeature.GpmShortestPath)
     // This makes it deterministic which plans ends up on what side of a CartesianProduct.
     .setExecutionModel(Volcano)
@@ -3231,6 +3237,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setRelationshipCardinality("(:A)-[]->()", 500)
     .setRelationshipCardinality("(:A)-[]->(:B)", 500)
     .setRelationshipCardinality("()-[]->(:B)", 500)
+    .setRelationshipCardinality("(:B)-[]->()", 500)
     .addSemanticFeature(SemanticFeature.GpmShortestPath)
 
   test("may plan post-filter on boundary node as pre-filter") {

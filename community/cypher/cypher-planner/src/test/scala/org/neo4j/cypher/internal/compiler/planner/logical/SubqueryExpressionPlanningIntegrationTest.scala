@@ -3990,6 +3990,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 10)
       .setRelationshipCardinality("()-[:R]-()", 10)
+      .setRelationshipCardinality("(:A)-[:R]->()", 10)
       .setExecutionModel(BatchedParallel(1, 2))
       .build()
 
@@ -4026,6 +4027,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 10)
+      .setRelationshipCardinality("(:A)-[:R]->()", 10)
       .setRelationshipCardinality("()-[:R]-()", 10)
       .setExecutionModel(BatchedParallel(1, 2))
       .build()
