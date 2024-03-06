@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
@@ -47,7 +48,9 @@ case object normalizePredicates extends StepSequencer.Step with DefaultPostCondi
     // unnamed pattern cannot be rewritten, so they need to be handled first
     noUnnamedNodesAndRelationships,
     // Pattern comprehensions must have been rewritten to COLLECT
-    containsNoNodesOfType[PatternComprehension]()
+    containsNoNodesOfType[PatternComprehension](),
+    // Pattern expressions must have been rewritten to EXISTS
+    containsNoNodesOfType[PatternExpression]()
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable + AndRewrittenToAnds

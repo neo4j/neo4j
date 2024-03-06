@@ -25,7 +25,6 @@ package object conditions {
   case object CharLengthFunctionRewrittenToCharacterLength extends Condition
   case object FunctionInvocationsResolved extends Condition
   case object PatternExpressionsHaveSemanticInfo extends Condition
-  case object PatternExpressionAreWrappedInExists extends Condition
   case object SizeOfCollectRewrittenToCount extends Condition
   case object SubqueryExpressionsHaveDependenciesInWithClauses extends Condition
   case object SensitiveLiteralsExtracted extends StepSequencer.Condition

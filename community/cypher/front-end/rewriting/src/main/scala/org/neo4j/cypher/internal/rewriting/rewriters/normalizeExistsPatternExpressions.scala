@@ -36,10 +36,10 @@ import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionAreWrappedInExists
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.PredicatesSimplified
 import org.neo4j.cypher.internal.rewriting.conditions.SizeOfCollectRewrittenToCount
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -114,7 +114,9 @@ case object normalizeExistsPatternExpressions extends StepSequencer.Step with AS
     SizeOfCollectRewrittenToCount // Needed so that the COUNT { } > 0 => EXISTS { } rewrite can kick in
   )
 
-  override def postConditions: Set[Condition] = Set(PatternExpressionAreWrappedInExists)
+  override def postConditions: Set[Condition] = Set(
+    containsNoNodesOfType[PatternExpression]()
+  )
 
   override def invalidatedConditions: Set[Condition] = Set(
     // It can invalidate this condition by rewriting things inside WITH/RETURN.

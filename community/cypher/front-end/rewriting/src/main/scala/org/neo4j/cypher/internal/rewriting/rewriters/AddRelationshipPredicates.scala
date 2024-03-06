@@ -22,8 +22,11 @@ import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathPatternPart
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.ASTNode
@@ -40,7 +43,11 @@ trait AddRelationshipPredicates[NC] extends Step with DefaultPostCondition with 
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     noUnnamedNodesAndRelationships,
-    AddQuantifiedPathAnonymousVariableGroupings.completed
+    AddQuantifiedPathAnonymousVariableGroupings.completed,
+    // We cannot add such predicates in PatternExpression/PatternComprehension,
+    // so they should have been rewritten at this point
+    containsNoNodesOfType[PatternExpression](),
+    containsNoNodesOfType[PatternComprehension]()
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable

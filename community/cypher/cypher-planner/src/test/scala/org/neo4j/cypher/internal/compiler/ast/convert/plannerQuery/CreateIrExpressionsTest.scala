@@ -32,13 +32,12 @@ import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.MatchMode
-import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -65,6 +64,7 @@ import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -95,16 +95,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     relPat(Some("r"), direction = BOTH),
     nodePat(Some("m"))
   )
-
   private val n_r_m = RelationshipsPattern(n_r_m_chain)(pos)
 
-  private val n_r_m_withLabelDisjunction = RelationshipsPattern(relationshipChain(
-    nodePat(Some("n")),
-    relPat(Some("r"), direction = BOTH),
-    nodePat(Some("m"), Some(labelDisjunction(labelLeaf("M"), labelLeaf("MM"))))
-  ))(pos)
-
-  private val n_r25_m = RelationshipsPattern(relationshipChain(
+  private val n_r25_m_chain: RelationshipChain = relationshipChain(
     nodePat(Some("n")),
     relPat(
       name = Some("r"),
@@ -112,7 +105,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       direction = BOTH
     ),
     nodePat(Some("m"))
-  ))(pos)
+  )
 
   private val n_r_m_withPreds = RelationshipsPattern(relationshipChain(
     nodePat(Some("n")),
@@ -152,6 +145,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val anonymousVariableNameGenerator = makeAnonymousVariableNameGenerator()
     val rewriter = inSequence(
       AddUniquenessPredicates.rewriter,
+      AddVarLengthPredicates.rewriter,
       normalizePredicates(PredicateNormalizer.normalizeInlinedWhereClauses),
       normalizePredicates(PredicateNormalizer.normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator)),
       flattenBooleanOperators.instance(CancellationChecker.NeverCancelled),
@@ -172,137 +166,6 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       horizon = horizon.getOrElse(RegularQueryProjection()),
       tail = tail
     )
-  }
-
-  test("Rewrites PatternExpression") {
-    val pe = PatternExpression(n_r_m)(Some(Set(m, r)), Some(Set(n)))
-    val pathExpression = PathExpressionBuilder.node(n.name).bothTo(r.name, m.name).build()
-
-    val nameGenerator = makeAnonymousVariableNameGenerator()
-    val variableToCollect = varFor(nameGenerator.nextName)
-    val collection = varFor(nameGenerator.nextName)
-
-    val rewritten = rewrite(pe)
-
-    rewritten should equal(
-      ListIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n, m),
-            argumentIds = Set(n),
-            patternRelationships =
-              Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength))
-          ),
-          Some(RegularQueryProjection(Map(variableToCollect -> pathExpression)))
-        ),
-        variableToCollect,
-        collection,
-        v"(${n})-[${r}]-(${m})".name
-      )(pos, Some(Set(m, r)), Some(Set(n)))
-    )
-  }
-
-  test("Rewrites PatternExpression with varlength relationship") {
-    val pe = PatternExpression(n_r25_m)(Some(Set(m, r)), Some(Set(n)))
-    val pathExpression = PathExpressionBuilder.node(n.name).bothToVarLength(r.name, m.name).build()
-
-    val nameGenerator = makeAnonymousVariableNameGenerator()
-    val variableToCollect = varFor(nameGenerator.nextName)
-    val collection = varFor(nameGenerator.nextName)
-
-    val rewritten = rewrite(pe)
-
-    rewritten should equal(
-      ListIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n, m),
-            argumentIds = Set(n),
-            patternRelationships =
-              Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, VarPatternLength(2, Some(5)))),
-            selections = Selections.from(Seq(
-              unique(v"r"),
-              varLengthLowerLimitPredicate("r", 2),
-              varLengthUpperLimitPredicate("r", 5)
-            ))
-          ),
-          Some(RegularQueryProjection(Map(variableToCollect -> pathExpression)))
-        ),
-        variableToCollect,
-        collection,
-        v"(${n})-[${r}*2..5]-(${m})".name
-      )(pos, Some(Set(m, r)), Some(Set(n)))
-    )
-  }
-
-  test("Rewrites PatternExpression with longer pattern and inlined predicates") {
-    val pe = PatternExpression(n_r_m_withPreds)(Some(Set(m, r)), Some(Set(n)))
-    val pathExpression = PathExpressionBuilder.node(n.name).outTo(r.name, m.name).inTo(r2.name, o.name).build()
-
-    val nameGenerator = makeAnonymousVariableNameGenerator()
-    val variableToCollect = varFor(nameGenerator.nextName)
-    val collection = varFor(nameGenerator.nextName)
-
-    val rewritten = rewrite(pe)
-
-    rewritten should equal(
-      ListIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n, m, o),
-            argumentIds = Set(n),
-            patternRelationships = Set(
-              PatternRelationship(
-                r,
-                (n, m),
-                OUTGOING,
-                Seq(relTypeName("R"), relTypeName("P")),
-                SimplePatternLength
-              ),
-              PatternRelationship(r2, (m, o), INCOMING, Seq.empty, SimplePatternLength)
-            ),
-            selections = Selections.from(Seq(
-              differentRelationships(r2, r),
-              andedPropertyInequalities(rPred),
-              andedPropertyInequalities(oPred),
-              equals(prop(r, "prop"), literalInt(5)),
-              equals(prop(o, "prop"), literalInt(5)),
-              not(hasALabel(o.name))
-            ))
-          ),
-          Some(RegularQueryProjection(Map(variableToCollect -> pathExpression)))
-        ),
-        variableToCollect,
-        collection,
-        v"(${n})-[${r}:R|P {prop: 5} WHERE ${r}.foo > 5]->(${m})<-[${r2}]-(${o}:!% {prop: 5} WHERE ${o}.foo > 5)".name
-      )(pos, Some(Set(m, r)), Some(Set(n)))
-    )
-  }
-
-  test("Rewrites exists(PatternExpression) with Node label disjunction") {
-    val pe = PatternExpression(n_r_m_withLabelDisjunction)(Some(Set(m, r)), Some(Set(n)))
-
-    val nameGenerator = makeAnonymousVariableNameGenerator()
-    val existsVariable = varFor(nameGenerator.nextName)
-
-    val rewritten = rewrite(Exists(pe)(pos))
-    val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
-
-    existsIRExpression.query should equal(
-      queryWith(
-        QueryGraph(
-          patternNodes = Set(n, m),
-          argumentIds = Set(n),
-          patternRelationships =
-            Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength)),
-          selections = Selections.from(ors(hasLabels(m, "M"), hasLabels(m, "MM")))
-        ),
-        None
-      )
-    )
-
-    existsIRExpression.existsVariable shouldBe existsVariable
-    existsIRExpression.solvedExpressionAsString shouldBe v"exists((${n})-[${r}]-(${m}:M|MM))".name
   }
 
   test("Rewrites Simple ExistsExpression") {
@@ -383,7 +246,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullExistsExpression with where clause") {
+  test("Rewrites ExistsExpression with where clause") {
     val simpleMatchQuery = singleQuery(
       match_(Seq(n_r_m_chain, o_r2_m_r3_q_chain), None),
       return_(
@@ -428,7 +291,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullExistsExpression") {
+  test("Rewrites ExistsExpression") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -463,7 +326,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.solvedExpressionAsString should equal("EXISTS { MATCH (n)-[r]-(m)\nRETURN n AS n }")
   }
 
-  test("Rewrites FullExistsExpression with ORDER BY") {
+  test("Rewrites ExistsExpression with ORDER BY") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -505,7 +368,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullExistsExpression with SKIP") {
+  test("Rewrites ExistsExpression with SKIP") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -547,7 +410,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.solvedExpressionAsString should equal("EXISTS { MATCH (n)-[r]-(m)\nRETURN n AS n\n  SKIP 2 }")
   }
 
-  test("Rewrites FullExistsExpression with LIMIT") {
+  test("Rewrites ExistsExpression with LIMIT") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -589,7 +452,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.solvedExpressionAsString should equal("EXISTS { MATCH (n)-[r]-(m)\nRETURN n AS n\n  LIMIT 42 }")
   }
 
-  test("Rewrites FullExistsExpression with ORDER BY, SKIP and LIMIT") {
+  test("Rewrites ExistsExpression with ORDER BY, SKIP and LIMIT") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -637,7 +500,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullExistsExpression with Union") {
+  test("Rewrites ExistsExpression with Union") {
     val unionQuery = union(
       singleQuery(
         match_(n_r_m_chain),
@@ -697,7 +560,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullExistsExpression with DISTINCT") {
+  test("Rewrites ExistsExpression with DISTINCT") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       returnDistinct(
@@ -737,7 +600,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.solvedExpressionAsString should equal("EXISTS { MATCH (n)-[r]-(m)\nRETURN DISTINCT n AS n }")
   }
 
-  test("Rewrites FullCountExpression with where clause") {
+  test("Rewrites CountExpression with where clause") {
     val simpleMatchQuery = singleQuery(
       match_(Seq(n_r_m_chain, o_r2_m_r3_q_chain), None),
       return_(
@@ -784,7 +647,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullCountExpression") {
+  test("Rewrites CountExpression") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -822,7 +685,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.solvedExpressionAsString should equal("COUNT { MATCH (n)-[r]-(m)\nRETURN n AS n }")
   }
 
-  test("Rewrites FullCountExpression with ORDER BY") {
+  test("Rewrites CountExpression with ORDER BY") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -863,7 +726,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullCountExpression with SKIP") {
+  test("Rewrites CountExpression with SKIP") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -909,7 +772,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.solvedExpressionAsString should equal("COUNT { MATCH (n)-[r]-(m)\nRETURN n AS n\n  SKIP 2 }")
   }
 
-  test("Rewrites FullCountExpression with LIMIT") {
+  test("Rewrites CountExpression with LIMIT") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -955,7 +818,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.solvedExpressionAsString should equal("COUNT { MATCH (n)-[r]-(m)\nRETURN n AS n\n  LIMIT 42 }")
   }
 
-  test("Rewrites FullCountExpression with ORDER BY, SKIP and LIMIT") {
+  test("Rewrites CountExpression with ORDER BY, SKIP and LIMIT") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -1007,7 +870,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullCountExpression with DISTINCT") {
+  test("Rewrites CountExpression with DISTINCT") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       returnDistinct(
@@ -1051,7 +914,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.solvedExpressionAsString should equal("COUNT { MATCH (n)-[r]-(m)\nRETURN DISTINCT n AS n }")
   }
 
-  test("Rewrites FullCountExpression with Union") {
+  test("Rewrites CountExpression with Union") {
     val unionQuery = union(
       singleQuery(
         match_(n_r_m_chain),
@@ -1329,7 +1192,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites Collect Expression") {
+  test("Rewrites CollectExpression") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -1366,7 +1229,49 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.solvedExpressionAsString should equal("COLLECT { MATCH (n)-[r]-(m)\nRETURN n AS n }")
   }
 
-  test("Rewrites Ordered Collect Expression") {
+  test("Rewrites CollectExpression with varlength relationship") {
+    val simpleMatchQuery = singleQuery(
+      match_(n_r25_m_chain),
+      return_(
+        aliasedReturnItem(n)
+      )
+    )
+
+    val ce = CollectExpression(simpleMatchQuery)(pos, Some(Set(r, m)), Some(Set(n)))
+
+    val collectVariable = varFor(makeAnonymousVariableNameGenerator().nextName)
+    val semanticTable = new SemanticTable().addNode(n)
+
+    val rewritten = rewrite(ce, semanticTable)
+    val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]
+
+    collectIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
+          patternRelationships =
+            Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, VarPatternLength(2, Some(5)))),
+          selections = Selections.from(Seq(
+            unique(v"r"),
+            varLengthLowerLimitPredicate("r", 2),
+            varLengthUpperLimitPredicate("r", 5)
+          ))
+        ),
+        horizon =
+          Some(RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)),
+        None
+      )
+    )
+
+    collectIRExpression.collection shouldBe collectVariable
+    collectIRExpression.variableToCollect shouldBe n
+    collectIRExpression.solvedExpressionAsString should equal(
+      "COLLECT { MATCH (n)-[r*2..5]-(m)\n  WHERE unique(r) AND size(r) >= 2 AND size(r) <= 5\nRETURN n AS n }"
+    )
+  }
+
+  test("Rewrites Ordered CollectExpression") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -1407,7 +1312,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites Collect Expression with WHERE") {
+  test("Rewrites CollectExpression with WHERE") {
     val ce = simpleCollectExpression(
       n_r_m_r2_o_r3_q,
       Some(where(rPred)),
@@ -1457,7 +1362,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullCollectExpression with ORDER BY") {
+  test("Rewrites CollectExpression with ORDER BY") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -1498,7 +1403,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullCollectExpression with SKIP") {
+  test("Rewrites CollectExpression with SKIP") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -1539,7 +1444,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.solvedExpressionAsString should equal("COLLECT { MATCH (n)-[r]-(m)\nRETURN n AS n\n  SKIP 2 }")
   }
 
-  test("Rewrites FullCollectExpression with LIMIT") {
+  test("Rewrites CollectExpression with LIMIT") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -1582,7 +1487,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullCollectExpression with ORDER BY, SKIP and LIMIT") {
+  test("Rewrites CollectExpression with ORDER BY, SKIP and LIMIT") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
@@ -1629,7 +1534,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
   }
 
-  test("Rewrites FullCollectExpression with DISTINCT") {
+  test("Rewrites CollectExpression with DISTINCT") {
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       returnDistinct(
