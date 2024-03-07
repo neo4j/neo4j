@@ -79,10 +79,15 @@ case class CypherRuntimeConfiguration(
 object SchedulerTracingConfiguration {
 
   def fromCypherConfiguration(config: CypherConfiguration): SchedulerTracingConfiguration =
-    if (config.doSchedulerTracing)
-      if (config.schedulerTracingFile.getName == "stdOut") StdOutSchedulerTracing
-      else FileSchedulerTracing(config.schedulerTracingFile)
-    else NoSchedulerTracing
+    if (config.doSchedulerTracing) {
+      if (config.schedulerTracingFile.getName == "stdOut") {
+        StdOutSchedulerTracing
+      } else {
+        FileSchedulerTracing(config.schedulerTracingFile)
+      }
+    } else {
+      NoSchedulerTracing
+    }
 }
 
 sealed trait SchedulerTracingConfiguration
