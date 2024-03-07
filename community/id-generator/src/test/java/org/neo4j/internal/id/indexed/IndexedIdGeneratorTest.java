@@ -70,7 +70,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.factory.primitive.LongLists;
@@ -86,17 +89,27 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
+import org.neo4j.function.ThrowingAction;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.id.TestIdType;
+import org.neo4j.internal.id.range.PageIdRange;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -111,6 +124,7 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
+import org.neo4j.time.Clocks;
 
 @PageCacheExtension
 @ExtendWith({RandomExtension.class, LifeExtension.class})
@@ -148,7 +162,16 @@ class IndexedIdGeneratorTest {
 
     void open(
             Config config, IndexedIdGenerator.Monitor monitor, boolean readOnly, IdSlotDistribution slotDistribution) {
-        idGenerator = new IndexedIdGenerator(
+        idGenerator = openIdGenerator(config, monitor, readOnly, slotDistribution, file);
+    }
+
+    private IndexedIdGenerator openIdGenerator(
+            Config config,
+            IndexedIdGenerator.Monitor monitor,
+            boolean readOnly,
+            IdSlotDistribution slotDistribution,
+            Path file) {
+        return new IndexedIdGenerator(
                 pageCache,
                 fileSystem,
                 file,
@@ -259,7 +282,7 @@ class IndexedIdGeneratorTest {
         Race race = new Race().withMaxDuration(1, TimeUnit.SECONDS);
         ConcurrentLinkedQueue<Allocation> allocations = new ConcurrentLinkedQueue<>();
         ConcurrentSparseLongBitSet expectedInUse = new ConcurrentSparseLongBitSet(IDS_PER_ENTRY);
-        race.addContestants(6, allocator(500, allocations, expectedInUse, maxSlotSize));
+        race.addContestants(6, allocator(500, allocations, expectedInUse, maxSlotSize, idGenerator, () -> 0));
         race.addContestants(2, deleter(allocations));
         race.addContestants(2, freer(allocations, expectedInUse));
 
@@ -286,7 +309,7 @@ class IndexedIdGeneratorTest {
         Race race = new Race().withMaxDuration(3, TimeUnit.SECONDS);
         ConcurrentLinkedQueue<Allocation> allocations = new ConcurrentLinkedQueue<>();
         ConcurrentSparseLongBitSet expectedInUse = new ConcurrentSparseLongBitSet(IDS_PER_ENTRY);
-        race.addContestants(6, allocator(500, allocations, expectedInUse, maxSlotSize));
+        race.addContestants(6, allocator(500, allocations, expectedInUse, maxSlotSize, idGenerator, () -> 0));
         race.addContestants(2, deleter(allocations));
         race.addContestants(2, freer(allocations, expectedInUse));
         race.addContestant(throwing(() -> {
@@ -714,74 +737,20 @@ class IndexedIdGeneratorTest {
         Path file = directory.file("non-existing");
         final IllegalStateException e = assertThrows(
                 IllegalStateException.class,
-                () -> new IndexedIdGenerator(
-                        pageCache,
-                        fileSystem,
-                        file,
-                        immediate(),
-                        TestIdType.TEST,
-                        false,
-                        () -> 0,
-                        MAX_ID,
-                        true,
-                        Config.defaults(),
-                        DEFAULT_DATABASE_NAME,
-                        CONTEXT_FACTORY,
-                        NO_MONITOR,
-                        getOpenOptions(),
-                        SINGLE_IDS,
-                        PageCacheTracer.NULL,
-                        true,
-                        true));
+                () -> openIdGenerator(Config.defaults(), NO_MONITOR, true, SINGLE_IDS, file));
         assertTrue(Exceptions.contains(e, t -> t instanceof TreeFileNotFoundException));
     }
 
     @Test
     void shouldStartInReadOnlyModeIfEmpty() throws IOException {
         Path file = directory.file("existing");
-        try (var indexedIdGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                false,
-                Config.defaults(),
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL,
-                true,
-                true)) {
+        try (var indexedIdGenerator = openIdGenerator(Config.defaults(), NO_MONITOR, false, SINGLE_IDS, file)) {
             indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // Start in readOnly mode should not throw
-        try (var readOnlyGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                true,
-                Config.defaults(),
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL,
-                true,
-                true)) {
+        try (var readOnlyGenerator = openIdGenerator(Config.defaults(), NO_MONITOR, true, SINGLE_IDS, file)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         }
     }
@@ -1018,46 +987,10 @@ class IndexedIdGeneratorTest {
 
     @Test
     void tracePageCacheOnIdGeneratorStartWithoutRebuild() throws IOException {
-        try (var prepareIndexWithoutRebuild = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                false,
-                Config.defaults(),
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL,
-                true,
-                true)) {
+        try (var prepareIndexWithoutRebuild = openIdGenerator(Config.defaults(), NO_MONITOR, false, SINGLE_IDS, file)) {
             prepareIndexWithoutRebuild.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
-        try (var idGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                false,
-                Config.defaults(),
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL,
-                true,
-                true)) {
+        try (var idGenerator = openIdGenerator(Config.defaults(), NO_MONITOR, false, SINGLE_IDS, file)) {
             var pageCacheTracer = new DefaultPageCacheTracer();
             try (var cursorContext = CONTEXT_FACTORY.create(
                     pageCacheTracer.createPageCursorTracer("tracePageCacheOnIdGeneratorStartWithoutRebuild"))) {
@@ -1279,52 +1212,327 @@ class IndexedIdGeneratorTest {
         assertThat(postId).isEqualTo(64 + 32 + 16);
     }
 
+    @Test
+    void shouldHandleClusterLikeStressfullLoad() throws IOException {
+        // given
+        int maxSlotSize = 16;
+        try (var clusteredIdGenerator =
+                new ClusteredIdGenerator(3, evenSlotDistribution(powerTwoSlotSizesDownwards(maxSlotSize)))) {
+            clusteredIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+
+            Race race = new Race().withMaxDuration(5, TimeUnit.SECONDS);
+            ConcurrentLinkedQueue<Allocation> allocations = new ConcurrentLinkedQueue<>();
+            ConcurrentSparseLongBitSet expectedInUse = new ConcurrentSparseLongBitSet(IDS_PER_ENTRY);
+            race.addContestants(
+                    4,
+                    allocator(
+                            500,
+                            allocations,
+                            expectedInUse,
+                            maxSlotSize,
+                            clusteredIdGenerator,
+                            clusteredIdGenerator::currentLeaseId));
+            race.addContestants(2, deleter(allocations));
+            race.addContestants(2, freer(allocations, expectedInUse));
+            race.addContestant(throwing(() -> {
+                Thread.sleep(ThreadLocalRandom.current().nextInt(500));
+                clusteredIdGenerator.maintenance(NULL_CONTEXT);
+            }));
+            race.addContestant(throwing(() -> {
+                Thread.sleep(ThreadLocalRandom.current().nextInt(500));
+                clusteredIdGenerator.switchLeader();
+            }));
+            race.goUnchecked();
+        }
+    }
+
+    /**
+     * A contrived view of how a cluster interacts with an ID generator.
+     * There's some notion of lease and leader switches. This should make it possible to trigger
+     * cases that other single-instance tests could not.
+     */
+    private class ClusteredIdGenerator implements IdGenerator {
+        private final IdGenerator[] members;
+        private final AtomicInteger leaderIndex = new AtomicInteger();
+        private final AtomicInteger leaseId = new AtomicInteger();
+        private final ReadWriteLock leaderSwitchLock = new ReentrantReadWriteLock();
+
+        ClusteredIdGenerator(int size, IdSlotDistribution slotDistribution) {
+            var config = Config.defaults();
+            members = new IdGenerator[size];
+            for (int i = 0; i < size; i++) {
+                var file = directory.file("id-generator-" + i);
+                var monitor = new LoggingIndexedIdGeneratorMonitor(
+                        fileSystem,
+                        file.resolveSibling(file.getFileName().toString() + ".log"),
+                        Clocks.nanoClock(),
+                        100,
+                        ByteUnit.MebiByte,
+                        1,
+                        TimeUnit.HOURS);
+                members[i] = openIdGenerator(config, monitor, false, slotDistribution, file);
+            }
+        }
+
+        private IdGenerator leader() {
+            return members[leaderIndex.get()];
+        }
+
+        private <T, E extends Exception> T withReadLock(ThrowingSupplier<T, E> action) throws E {
+            leaderSwitchLock.readLock().lock();
+            try {
+                return action.get();
+            } finally {
+                leaderSwitchLock.readLock().unlock();
+            }
+        }
+
+        private <E extends Exception> void withReadLockNoResult(ThrowingAction<E> action) throws E {
+            withReadLock(() -> {
+                action.apply();
+                return null;
+            });
+        }
+
+        @Override
+        public long nextId(CursorContext cursorContext) {
+            return withReadLock(() -> leader().nextId(cursorContext));
+        }
+
+        @Override
+        public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
+            return withReadLock(() -> leader().nextConsecutiveIdRange(numberOfIds, favorSamePage, cursorContext));
+        }
+
+        @Override
+        public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
+            return withReadLock(() -> leader().nextPageRange(cursorContext, idsPerPage));
+        }
+
+        @Override
+        public void releasePageRange(PageIdRange range, CursorContext cursorContext) {
+            withReadLockNoResult(() -> leader().releasePageRange(range, cursorContext));
+        }
+
+        @Override
+        public void setHighId(long id) {
+            withReadLockNoResult(() -> leader().setHighId(id));
+        }
+
+        @Override
+        public void markHighestWrittenAtHighId() {
+            withReadLockNoResult(() -> leader().markHighestWrittenAtHighId());
+        }
+
+        @Override
+        public long getHighestWritten() {
+            return withReadLock(() -> leader().getHighestWritten());
+        }
+
+        @Override
+        public long getHighId() {
+            return withReadLock(() -> leader().getHighId());
+        }
+
+        @Override
+        public long getHighestPossibleIdInUse() {
+            return withReadLock(() -> leader().getHighestPossibleIdInUse());
+        }
+
+        @Override
+        public long getUnusedIdCount() throws IOException {
+            return withReadLock(() -> leader().getUnusedIdCount());
+        }
+
+        @Override
+        public TransactionalMarker transactionalMarker(CursorContext cursorContext) {
+            leaderSwitchLock.readLock().lock();
+            var markers = new TransactionalMarker[members.length];
+            for (int i = 0; i < markers.length; i++) {
+                markers[i] = members[i].transactionalMarker(cursorContext);
+            }
+            return new TransactionalMarker() {
+                private long highestUsedId = -1;
+
+                @Override
+                public void markUsed(long id, int numberOfIds) {
+                    for (var marker : markers) {
+                        marker.markUsed(id, numberOfIds);
+                    }
+                    highestUsedId = Math.max(highestUsedId, id + numberOfIds);
+                }
+
+                @Override
+                public void markDeleted(long id, int numberOfIds) {
+                    for (var marker : markers) {
+                        marker.markDeleted(id, numberOfIds);
+                    }
+                }
+
+                @Override
+                public void markDeletedAndFree(long id, int numberOfIds) {
+                    for (var marker : markers) {
+                        marker.markDeletedAndFree(id, numberOfIds);
+                    }
+                }
+
+                @Override
+                public void markUnallocated(long id, int numberOfIds) {
+                    for (var marker : markers) {
+                        marker.markUnallocated(id, numberOfIds);
+                    }
+                }
+
+                @Override
+                public void close() {
+                    try {
+                        IOUtils.closeAllUnchecked(markers);
+                        // Update high ID (this is what followers do when replicating transactions from leader)
+                        if (highestUsedId != -1) {
+                            for (int i = 0; i < members.length; i++) {
+                                if (i != leaderIndex.get()) {
+                                    members[i].setHighestPossibleIdInUse(highestUsedId);
+                                }
+                            }
+                        }
+                    } finally {
+                        leaderSwitchLock.readLock().unlock();
+                    }
+                }
+            };
+        }
+
+        @Override
+        public ContextualMarker contextualMarker(CursorContext cursorContext) {
+            leaderSwitchLock.readLock().lock();
+            var marker = leader().contextualMarker(cursorContext);
+            return new ContextualMarker() {
+                @Override
+                public void markFree(long id, int numberOfIds) {
+                    marker.markFree(id, numberOfIds);
+                }
+
+                @Override
+                public void markReserved(long id, int numberOfIds) {
+                    marker.markReserved(id, numberOfIds);
+                }
+
+                @Override
+                public void markUnreserved(long id, int numberOfIds) {
+                    marker.markUnreserved(id, numberOfIds);
+                }
+
+                @Override
+                public void markUncached(long id, int numberOfIds) {
+                    marker.markUncached(id, numberOfIds);
+                }
+
+                @Override
+                public void close() {
+                    try {
+                        marker.close();
+                    } finally {
+                        leaderSwitchLock.readLock().unlock();
+                    }
+                }
+            };
+        }
+
+        @Override
+        public void close() {
+            IOUtils.closeAllUnchecked(members);
+        }
+
+        @Override
+        public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) {
+            for (var member : members) {
+                member.checkpoint(flushEvent, cursorContext);
+            }
+        }
+
+        @Override
+        public void maintenance(CursorContext cursorContext) {
+            for (var member : members) {
+                member.maintenance(cursorContext);
+            }
+        }
+
+        @Override
+        public void start(FreeIds freeIdsForRebuild, CursorContext cursorContext) throws IOException {
+            for (var member : members) {
+                member.start(freeIdsForRebuild, cursorContext);
+            }
+        }
+
+        @Override
+        public void clearCache(boolean allocationEnabled, CursorContext cursorContext) {
+            throw new UnsupportedOperationException(
+                    "Don't call this directly for this class, instead call switchLeader");
+        }
+
+        int currentLeaseId() {
+            return leaseId.get();
+        }
+
+        void switchLeader() {
+            leaderSwitchLock.writeLock().lock();
+            try {
+                int newLeaderIndex;
+                do {
+                    newLeaderIndex = random.nextInt(members.length);
+                } while (newLeaderIndex == leaderIndex.get());
+
+                for (int i = 0; i < members.length; i++) {
+                    boolean allocationEnabled = i == newLeaderIndex;
+                    members[i].clearCache(allocationEnabled, NULL_CONTEXT);
+                }
+                leaderIndex.set(newLeaderIndex);
+                leaseId.incrementAndGet();
+            } finally {
+                leaderSwitchLock.writeLock().unlock();
+            }
+        }
+
+        @Override
+        public boolean allocationEnabled() {
+            return leader().allocationEnabled();
+        }
+
+        @Override
+        public IdType idType() {
+            return leader().idType();
+        }
+
+        @Override
+        public boolean hasOnlySingleIds() {
+            return leader().hasOnlySingleIds();
+        }
+
+        @Override
+        public boolean consistencyCheck(
+                ReporterFactory reporterFactory,
+                CursorContextFactory contextFactory,
+                int numThreads,
+                ProgressMonitorFactory progressMonitorFactory) {
+            boolean consistent = true;
+            for (var member : members) {
+                consistent &=
+                        member.consistencyCheck(reporterFactory, contextFactory, numThreads, progressMonitorFactory);
+            }
+            return consistent;
+        }
+    }
+
     private void assertOperationPermittedInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
             throws IOException {
         Path file = directory.file("existing");
-        try (var indexedIdGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                false,
-                Config.defaults(),
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL,
-                true,
-                true)) {
+        try (var indexedIdGenerator = openIdGenerator(Config.defaults(), NO_MONITOR, false, SINGLE_IDS, file)) {
             indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // Start in readOnly mode
-        try (var readOnlyGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                true,
-                Config.defaults(),
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL,
-                true,
-                true)) {
+        try (var readOnlyGenerator = openIdGenerator(Config.defaults(), NO_MONITOR, true, SINGLE_IDS, file)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             assertDoesNotThrow(() -> operation.apply(readOnlyGenerator));
         }
@@ -1461,7 +1669,7 @@ class IndexedIdGeneratorTest {
         // given
         var monitor = mock(IndexedIdGenerator.Monitor.class);
         var slotSizes = new int[] {1, 2, 4, 8};
-        open(Config.defaults(), monitor, false, IdSlotDistribution.evenSlotDistribution(IDS_PER_ENTRY, slotSizes));
+        open(Config.defaults(), monitor, false, evenSlotDistribution(IDS_PER_ENTRY, slotSizes));
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         for (var size : slotSizes) {
             var id = idGenerator.nextConsecutiveIdRange(size, true, NULL_CONTEXT);
@@ -1483,7 +1691,7 @@ class IndexedIdGeneratorTest {
         // given
         var monitor = mock(IndexedIdGenerator.Monitor.class);
         var slotSizes = new int[] {1, 2, 4, 8};
-        open(Config.defaults(), monitor, false, IdSlotDistribution.evenSlotDistribution(IDS_PER_ENTRY, slotSizes));
+        open(Config.defaults(), monitor, false, evenSlotDistribution(IDS_PER_ENTRY, slotSizes));
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         long[] initialCacheFillingIds = new long[10_000];
         for (int i = 0; i < initialCacheFillingIds.length; i++) {
@@ -1540,49 +1748,13 @@ class IndexedIdGeneratorTest {
     private void assertOperationThrowInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
             throws IOException {
         Path file = directory.file("existing");
-        try (var indexedIdGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                false,
-                Config.defaults(),
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL,
-                true,
-                true)) {
+        try (var indexedIdGenerator = openIdGenerator(Config.defaults(), NO_MONITOR, false, SINGLE_IDS, file)) {
             indexedIdGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             indexedIdGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         // Start in readOnly mode
-        try (var readOnlyGenerator = new IndexedIdGenerator(
-                pageCache,
-                fileSystem,
-                file,
-                immediate(),
-                TestIdType.TEST,
-                false,
-                () -> 0,
-                MAX_ID,
-                true,
-                Config.defaults(),
-                DEFAULT_DATABASE_NAME,
-                CONTEXT_FACTORY,
-                NO_MONITOR,
-                getOpenOptions(),
-                SINGLE_IDS,
-                PageCacheTracer.NULL,
-                true,
-                true)) {
+        try (var readOnlyGenerator = openIdGenerator(Config.defaults(), NO_MONITOR, true, SINGLE_IDS, file)) {
             readOnlyGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
             var e = assertThrows(Exception.class, operation.apply(readOnlyGenerator));
             assertThat(e).isInstanceOf(IllegalStateException.class);
@@ -1593,7 +1765,7 @@ class IndexedIdGeneratorTest {
     void shouldNotLetWastedIdsSurviveClearCache() throws IOException {
         // ID generator w/ slots [4,2,1]
         int[] slotSizes = {1, 2, 4};
-        open(Config.defaults(), NO_MONITOR, false, IdSlotDistribution.evenSlotDistribution(slotSizes));
+        open(Config.defaults(), NO_MONITOR, false, evenSlotDistribution(slotSizes));
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
 
         // Allocate lots of IDs and delete them (enough to fill the cache completely)
@@ -1641,7 +1813,7 @@ class IndexedIdGeneratorTest {
     void shouldNotLetSkippedHighIdsSurviveClearCache() throws IOException {
         // ID generator w/ slots [4,2,1]
         int[] slotSizes = {1, 2, 4};
-        open(Config.defaults(), NO_MONITOR, false, IdSlotDistribution.evenSlotDistribution(slotSizes));
+        open(Config.defaults(), NO_MONITOR, false, evenSlotDistribution(slotSizes));
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
 
         // Allocate lots of IDs and delete them (enough to fill the cache completely)
@@ -1704,7 +1876,7 @@ class IndexedIdGeneratorTest {
         ConcurrentSparseLongBitSet reallocationIds = new ConcurrentSparseLongBitSet(IDS_PER_ENTRY);
         while (numberOfIdsOutThere > 0) {
             long id = idGenerator.nextId(NULL_CONTEXT);
-            Allocation allocation = new Allocation(id, 1);
+            Allocation allocation = new Allocation(idGenerator, id, 1, 0, () -> 0);
             numberOfIdsOutThere -= 1;
             reallocationIds.set(allocation.id, 1, true);
         }
@@ -1780,7 +1952,9 @@ class IndexedIdGeneratorTest {
             int maxAllocationsAhead,
             ConcurrentLinkedQueue<Allocation> allocations,
             ConcurrentSparseLongBitSet expectedInUse,
-            int maxSlotSize) {
+            int maxSlotSize,
+            IdGenerator idGenerator,
+            IntSupplier leaseIdSupplier) {
         return new Runnable() {
             private final Random rng = new Random(random.nextLong());
 
@@ -1789,8 +1963,9 @@ class IndexedIdGeneratorTest {
                 // Allocate ids
                 if (allocations.size() < maxAllocationsAhead) {
                     int size = rng.nextInt(maxSlotSize) + 1;
+                    int leaseId = leaseIdSupplier.getAsInt();
                     long id = idGenerator.nextConsecutiveIdRange(size, true, NULL_CONTEXT);
-                    Allocation allocation = new Allocation(id, size);
+                    Allocation allocation = new Allocation(idGenerator, id, size, leaseId, leaseIdSupplier);
                     allocation.markAsInUse(expectedInUse);
                     allocations.add(allocation);
                 }
@@ -1869,21 +2044,33 @@ class IndexedIdGeneratorTest {
         return list;
     }
 
-    private class Allocation {
+    private static class Allocation {
+        private final IdGenerator idGenerator;
         private final long id;
         private final int size;
         private final AtomicBoolean deleting = new AtomicBoolean();
         private volatile boolean deleted;
         private final AtomicBoolean freeing = new AtomicBoolean();
 
-        Allocation(long id, int size) {
+        // State for being able to mimic cluster load and interaction
+        private final int leaseId;
+        private final IntSupplier leaseIdSupplier;
+        private volatile int deletedInLeaseId;
+
+        Allocation(IdGenerator idGenerator, long id, int size, int leaseId, IntSupplier leaseIdSupplier) {
+            this.idGenerator = idGenerator;
             this.id = id;
             this.size = size;
+            this.leaseId = leaseId;
+            this.leaseIdSupplier = leaseIdSupplier;
         }
 
         void delete() {
             if (deleting.compareAndSet(false, true)) {
-                markDeleted(id, size);
+                try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
+                    marker.markDeleted(id, size);
+                    deletedInLeaseId = leaseIdSupplier.getAsInt();
+                }
                 deleted = true;
             }
         }
@@ -1895,19 +2082,37 @@ class IndexedIdGeneratorTest {
 
             if (freeing.compareAndSet(false, true)) {
                 expectedInUse.set(id, size, false);
-                markFree(id, size);
+                try (var marker = idGenerator.contextualMarker(NULL_CONTEXT)) {
+                    if (leaseIdSupplier.getAsInt() == deletedInLeaseId) {
+                        marker.markFree(id, size);
+                    }
+                    // else there has been a leader switch and as such this ID is already free,
+                    // and freeing it here is breaking this contract and could cause this ID to
+                    // be placed into cache multiple times. I.e. we're adhering to rules of interaction
+                    // between clustering and ID generators.
+                }
                 return true;
             }
             return false;
         }
 
         void markAsInUse(ConcurrentSparseLongBitSet expectedInUse) {
-            expectedInUse.set(id, size, true);
             // Simulate that actual commit comes very close after allocation, in reality they are slightly more apart
             // Also this test marks all ids, regardless if they come from highId or the free-list. This to simulate more
-            // real-world
-            // scenario and to exercise the idempotent clearing feature.
-            markUsed(id, size);
+            // real-world scenario and to exercise the idempotent clearing feature.
+            try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
+                if (leaseIdSupplier.getAsInt() == leaseId) {
+                    expectedInUse.set(id, size, true);
+                    marker.markUsed(id, size);
+                } else {
+                    // there has been a leader switch since this ID was allocated, which makes this
+                    // allocation void. I.e. we're adhering to rules of interaction between clustering and ID
+                    // generators.
+                    deleting.set(true);
+                    deleted = true;
+                    freeing.set(true);
+                }
+            }
         }
 
         @Override
