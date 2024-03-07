@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodeRelPair
@@ -2006,25 +2007,21 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
   test("Should handle path assignment for shortest path containing qpp with two juxtaposed nodes") {
     val query = "MATCH p = ANY SHORTEST (a:User) ((b)-[r]->(c))+ (d) RETURN p"
-    val plan = planner.plan(query).stripProduceResults
+    val plan = shortest_without_legacy.plan(query).stripProduceResults
 
     val path = PathExpression(NodePathStep(
       v"a",
-      RepeatPathStep(
-        List(NodeRelPair(v"b", v"r")),
-        v"d",
-        NilPathStep()(pos)
-      )(pos)
+      MultiRelationshipPathStep(v"r", OUTGOING, Some(v"d"), NilPathStep()(pos))(pos)
     )(pos))(pos)
 
-    plan shouldEqual planner.subPlanBuilder()
+    plan shouldEqual shortest_without_legacy.subPlanBuilder()
       .projection(Map("p" -> path))
       .statefulShortestPath(
         "a",
         "d",
         "SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){1, } (d) WHERE unique(`r`))",
         None,
-        Set(("b", "b")),
+        Set.empty,
         Set(("r", "r")),
         Set(),
         Set.empty,
@@ -2055,9 +2052,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           v"anon_0",
           BOTH,
           Some(v"b"),
-          RepeatPathStep(
-            List(NodeRelPair(v"c", v"r")),
-            v"e",
+          MultiRelationshipPathStep(
+            v"r",
+            OUTGOING,
+            Some(v"e"),
             SingleRelationshipPathStep(
               v"anon_1",
               BOTH,
@@ -2076,7 +2074,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         "f",
         "SHORTEST 1 ((a)-[`anon_0`]-(b) ((`c`)-[`r`]->(`d`)){1, } (e)-[`anon_1`]-(f) WHERE NOT `anon_0` = `anon_1` AND NOT `anon_0` IN `r` AND NOT `anon_1` IN `r` AND unique(`r`))",
         None,
-        Set(("c", "c")),
+        Set.empty,
         Set(("r", "r")),
         Set("e" -> "e", "b" -> "b"),
         Set("anon_2" -> "anon_0", "anon_3" -> "anon_1"),
@@ -2225,14 +2223,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val path = PathExpression(NodePathStep(
       v"a",
-      RepeatPathStep(
-        List(NodeRelPair(v"b", v"r")),
-        v"d",
-        RepeatPathStep(
-          List(NodeRelPair(v"e", v"s")),
-          v"g",
-          NilPathStep()(pos)
-        )(pos)
+      MultiRelationshipPathStep(
+        v"r",
+        OUTGOING,
+        Some(v"d"),
+        MultiRelationshipPathStep(v"s", OUTGOING, Some(v"g"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos))(pos)
 
@@ -2243,7 +2238,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         "g",
         s"SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){1, } (d) ((`e`)<-[`s`]-(`f`)){1, } (g) WHERE disjoint(`r`, `s`) AND length((a) ((b)-[r]-())* (d) ((e)-[s]-())* (g)) > 3 AND unique(`r`) AND unique(`s`))",
         Some(greaterThan(length(path), literalInt(3))),
-        Set(("b", "b"), ("e", "e")),
+        Set.empty,
         Set(("r", "r"), ("s", "s")),
         Set("d" -> "d"),
         Set(),
@@ -2275,14 +2270,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val path = PathExpression(NodePathStep(
       v"a",
-      RepeatPathStep(
-        List(NodeRelPair(v"b", v"r")),
-        v"d",
-        RepeatPathStep(
-          List(NodeRelPair(v"e", v"s")),
-          v"g",
-          NilPathStep()(pos)
-        )(pos)
+      MultiRelationshipPathStep(
+        v"r",
+        OUTGOING,
+        Some(v"d"),
+        MultiRelationshipPathStep(v"s", OUTGOING, Some(v"g"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos))(pos)
 
@@ -2306,7 +2298,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           "g",
           s"SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){1, } (d) ((`e`)<-[`s`]-(`f`)){1, } (g) WHERE disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
           None,
-          Set(("b", "b"), ("e", "e")),
+          Set.empty,
           Set(("r", "r"), ("s", "s")),
           Set("d" -> "d"),
           Set(),
@@ -2329,14 +2321,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val path = PathExpression(NodePathStep(
       v"a",
-      RepeatPathStep(
-        List(NodeRelPair(v"b", v"r")),
-        v"d",
-        RepeatPathStep(
-          List(NodeRelPair(v"e", v"s")),
-          v"g",
-          NilPathStep()(pos)
-        )(pos)
+      MultiRelationshipPathStep(
+        v"r",
+        OUTGOING,
+        Some(v"d"),
+        MultiRelationshipPathStep(v"s", OUTGOING, Some(v"g"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos))(pos)
 
@@ -2347,7 +2336,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         "g",
         s"SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){1, } (d) ((`e`)<-[`s`]-(`f`)){1, } (g) WHERE disjoint(`r`, `s`) AND length((a) ((b)-[r]-())* (d) ((e)-[s]-())* (g)) > 3 AND unique(`r`) AND unique(`s`))",
         Some(greaterThan(length(path), literalInt(3))),
-        Set(("b", "b"), ("e", "e")),
+        Set.empty,
         Set(("r", "r"), ("s", "s")),
         Set("d" -> "d"),
         Set(),

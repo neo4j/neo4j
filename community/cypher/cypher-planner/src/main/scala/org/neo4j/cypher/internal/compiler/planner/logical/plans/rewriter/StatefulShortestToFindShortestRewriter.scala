@@ -103,10 +103,12 @@ case class StatefulShortestToFindShortestRewriter(
           selector.k == 1 && statefulShortest.nodeVariableGroupings.isEmpty =>
         exactlyOne(
           solveds.get(statefulShortest.id).asSinglePlannerQuery.queryGraph.selectivePathPatterns.toSeq.distinct
-        ).flatMap(selectivePathPattern =>
-          findShortestFromVarLengthShortest(selectivePathPattern, statefulShortest) orElse
-            findShortestFromQppShortest(selectivePathPattern, statefulShortest)
-        ).getOrElse(statefulShortest)
+        )
+          .filter(_.relationships.size == 1)
+          .flatMap(selectivePathPattern =>
+            findShortestFromVarLengthShortest(selectivePathPattern, statefulShortest) orElse
+              findShortestFromQppShortest(selectivePathPattern, statefulShortest)
+          ).getOrElse(statefulShortest)
     }
   }
 

@@ -30,9 +30,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
-import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.PathExpression
-import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
@@ -557,34 +555,17 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
     val plan = planner.plan(query)
     val pathExpression = PathExpression(NodePathStep(
       v"a",
-      RepeatPathStep(
-        List(NodeRelPair(v"c", v"r")),
-        v"b",
-        NilPathStep()(pos)
-      )(pos)
+      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("b")), NilPathStep()(pos))(pos)
     )(pos))(pos)
-    val nfa = new TestNFABuilder(0, "a")
-      .addTransition(0, 1, "(a) (c)")
-      .addTransition(1, 2, "(c)-[r]->(d)")
-      .addTransition(2, 1, "(d) (c)")
-      .addTransition(2, 3, "(d) (b)")
-      .setFinalState(3)
-      .build()
     val expected = planner.planBuilder()
       .produceResults("p")
       .projection(Map("p" -> pathExpression))
-      .statefulShortestPath(
-        "a",
-        "b",
-        "SHORTEST 1 ((a) ((`c`)-[`r`]->(`d`)){1, } (b) WHERE unique(`r`))",
-        None,
-        Set(("c", "c")),
-        Set(("r", "r")),
-        Set(),
-        Set(),
-        StatefulShortestPath.Selector.Shortest(1),
-        nfa,
-        ExpandInto
+      .shortestPath(
+        "(a)-[r*1..]->(b)",
+        pathName = Some("anon_0"),
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(),
+        sameNodeMode = AllowSameNode
       )
       .cartesianProduct()
       .|.allNodeScan("a")

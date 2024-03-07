@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
-import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.PathExpression
-import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
@@ -2113,40 +2113,18 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
-  test("Should not plan VarExpand for named path if named path variable is used") {
+  test("Should plan VarExpand for named path if named path variable is used") {
     val query = "MATCH p=(a) ((b)-[r]->(c))+ (d) RETURN p"
     val plan = planner.plan(query).stripProduceResults
 
-    val `(a) ((b)-[r]->(c))+ (d)` =
-      TrailParameters(
-        min = 1,
-        max = UpperBound.Unlimited,
-        start = "a",
-        end = "d",
-        innerStart = "b",
-        innerEnd = "c",
-        groupNodes = Set(("b", "b")),
-        groupRelationships = Set(("r", "r")),
-        innerRelationships = Set("r"),
-        previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty,
-        reverseGroupVariableProjections = false
-      )
     val path = PathExpression(NodePathStep(
       v"a",
-      RepeatPathStep(
-        List(NodeRelPair(v"b", v"r")),
-        v"d",
-        NilPathStep()(pos)
-      )(pos)
+      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("d")), NilPathStep()(pos))(pos)
     )(pos))(pos)
 
     plan shouldEqual planner.subPlanBuilder()
       .projection(Map("p" -> path))
-      .trail(`(a) ((b)-[r]->(c))+ (d)`)
-      .|.filterExpression(isRepeatTrailUnique("r"))
-      .|.expandAll("(b)-[r]->(c)")
-      .|.argument("b")
+      .expand("(a)-[r*1..]->(d)")
       .allNodeScan("a")
       .build()
   }
@@ -2163,7 +2141,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should plan Trail with unique group variable names after group variable optimisation"
+    "Should plan Expand with unique group variable names after group variable optimisation"
   ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
@@ -2175,43 +2153,20 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
     val query = "MATCH p=(()-[y]->(z))+ RETURN p"
     val plan = planner.plan(query).stripProduceResults
-    val `(()-[y]->(z))+` = {
-      TrailParameters(
-        min = 1,
-        max = Unlimited,
-        start = "  UNNAMED0",
-        end = "  UNNAMED1",
-        innerStart = "  UNNAMED2",
-        innerEnd = "  z@1",
-        groupNodes = Set(("  UNNAMED2", "  UNNAMED3")),
-        groupRelationships = Set(("  y@0", "  y@2")),
-        innerRelationships = Set("  y@0"),
-        previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty,
-        reverseGroupVariableProjections = false
-      )
-    }
     val path = PathExpression(NodePathStep(
       v"  UNNAMED0",
-      RepeatPathStep(
-        List(NodeRelPair(v"  UNNAMED3", v"  y@2")),
-        v"  UNNAMED1",
-        NilPathStep()(pos)
-      )(pos)
+      MultiRelationshipPathStep(v"  y@0", OUTGOING, Some(v"  UNNAMED1"), NilPathStep()(pos))(pos)
     )(pos))(pos)
 
     plan shouldEqual planner.subPlanBuilder()
       .projection(Map("p" -> path))
-      .trail(`(()-[y]->(z))+`)
-      .|.filterExpression(isRepeatTrailUnique("  y@0"))
-      .|.expandAll("(`  UNNAMED2`)-[`  y@0`]->(`  z@1`)")
-      .|.argument("  UNNAMED2")
+      .expand("(`  UNNAMED0`)-[`  y@0`*1..]->(`  UNNAMED1`)")
       .allNodeScan("`  UNNAMED0`")
       .build()
   }
 
   test(
-    "Should plan Trail with unique group variable names after group variable optimisation with anonymous relationship"
+    "Should plan Expand with unique group variable names after group variable optimisation with anonymous relationship"
   ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
@@ -2223,37 +2178,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
     val query = "MATCH p=(()-[]->(z))+ RETURN p"
     val plan = planner.plan(query).stripProduceResults
-    val `(()-[y]->(z))+` = {
-      TrailParameters(
-        min = 1,
-        max = Unlimited,
-        start = "  UNNAMED0",
-        end = "  UNNAMED1",
-        innerStart = "  UNNAMED2",
-        innerEnd = "  z@0",
-        groupNodes = Set(("  UNNAMED2", "  UNNAMED4")),
-        groupRelationships = Set(("  UNNAMED3", "  UNNAMED5")),
-        innerRelationships = Set("  UNNAMED3"),
-        previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty,
-        reverseGroupVariableProjections = false
-      )
-    }
     val path = PathExpression(NodePathStep(
       v"  UNNAMED0",
-      RepeatPathStep(
-        List(NodeRelPair(v"  UNNAMED4", v"  UNNAMED5")),
-        v"  UNNAMED1",
-        NilPathStep()(pos)
-      )(pos)
+      MultiRelationshipPathStep(v"  UNNAMED2", OUTGOING, Some(v"  UNNAMED1"), NilPathStep()(pos))(pos)
     )(pos))(pos)
 
     plan shouldEqual planner.subPlanBuilder()
       .projection(Map("p" -> path))
-      .trail(`(()-[y]->(z))+`)
-      .|.filterExpression(isRepeatTrailUnique("  UNNAMED3"))
-      .|.expandAll("(`  UNNAMED2`)-[`  UNNAMED3`]->(`  z@0`)")
-      .|.argument("  UNNAMED2")
+      .expand("(`  UNNAMED0`)-[`  UNNAMED2`*1..]->(`  UNNAMED1`)")
       .allNodeScan("`  UNNAMED0`")
       .build()
   }
