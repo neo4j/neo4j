@@ -6825,7 +6825,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           privLhsLP,
           CreateNodeLabelAction,
           AllScope,
-          UserQualifier(util.Left("user1"))(pos),
+          UserQualifier(literalString("user1"))(pos),
           util.Left("role1"),
           immutable = false,
           "DENY ..."
@@ -6841,7 +6841,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           privLhsLP,
           CreateNodeLabelAction,
           AllScope,
-          UserQualifier(util.Left("user1"))(pos),
+          UserQualifier(literalString("user1"))(pos),
           util.Left("role1"),
           "GRANTED",
           immutableOnly = false,
@@ -6973,7 +6973,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         ShowPrivileges(
           Some(privLhsLP),
-          ShowUsersPrivileges(List(util.Left("user1"), util.Right(parameter("user2", CTString))))(pos),
+          ShowUsersPrivileges(List(literalString("user1"), literalString("user2")))(pos),
           List(),
           None,
           None
@@ -6987,7 +6987,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         ShowPrivilegeCommands(
           Some(privLhsLP),
-          ShowUsersPrivileges(List(util.Left("user1"), util.Right(parameter("user2", CTString))))(pos),
+          ShowUsersPrivileges(List(literalString("user1"), literalString("user2")))(pos),
           asRevoke = false,
           List(),
           None,

@@ -1736,7 +1736,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     constraintType: ConstraintType,
     replace: Boolean,
     ifNotExists: Boolean,
-    constraintName: SimpleEither[String, Parameter],
+    constraintName: SimpleEither[StringPos[InputPosition], Parameter],
     variable: Variable,
     label: StringPos[InputPosition],
     javaProperties: util.List[Property],
@@ -1752,7 +1752,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       case ConstraintVersion.CONSTRAINT_VERSION_2 => ConstraintVersion2
     }
 
-    val name = Option(constraintName).map(_.asScala)
+    val name = Option(constraintName).map(_.asScala.left.map(_.string))
     val properties = javaProperties.asScala.toSeq
     constraintType match {
       case ConstraintType.NODE_UNIQUE => ast.CreateNodePropertyUniquenessConstraint(
@@ -1852,10 +1852,10 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   override def dropConstraint(
     p: InputPosition,
-    name: SimpleEither[String, Parameter],
+    name: SimpleEither[StringPos[InputPosition], Parameter],
     ifExists: Boolean
   ): DropConstraintOnName =
-    DropConstraintOnName(name.asScala, ifExists)(p)
+    DropConstraintOnName(name.asScala.left.map(_.string), ifExists)(p)
 
   override def dropConstraint(
     p: InputPosition,
@@ -1994,7 +1994,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     replace: Boolean,
     ifNotExists: Boolean,
     isNode: Boolean,
-    indexName: SimpleEither[String, Parameter],
+    indexName: SimpleEither[StringPos[InputPosition], Parameter],
     variable: Variable,
     functionName: StringPos[InputPosition],
     functionParameter: Variable,
@@ -2005,7 +2005,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       distinct = false,
       IndexedSeq(functionParameter)
     )(functionName.pos)
-    val name = Option(indexName).map(_.asScala)
+    val name = Option(indexName).map(_.asScala.left.map(_.string))
     CreateLookupIndex(
       variable,
       isNode,
@@ -2032,7 +2032,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     replace: Boolean,
     ifNotExists: Boolean,
     isNode: Boolean,
-    indexName: SimpleEither[String, Parameter],
+    indexName: SimpleEither[StringPos[InputPosition], Parameter],
     variable: Variable,
     label: StringPos[InputPosition],
     javaProperties: util.List[Property],
@@ -2040,7 +2040,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     indexType: CreateIndexTypes
   ): CreateIndex = {
     val properties = javaProperties.asScala.toList
-    val name = Option(indexName).map(_.asScala)
+    val name = Option(indexName).map(_.asScala.left.map(_.string))
     (indexType, isNode) match {
       case (CreateIndexTypes.DEFAULT, true) =>
         CreateRangeNodeIndex(
@@ -2164,14 +2164,14 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     replace: Boolean,
     ifNotExists: Boolean,
     isNode: Boolean,
-    indexName: SimpleEither[String, Parameter],
+    indexName: SimpleEither[StringPos[InputPosition], Parameter],
     variable: Variable,
     labels: util.List[StringPos[InputPosition]],
     javaProperties: util.List[Property],
     options: SimpleEither[util.Map[String, Expression], Parameter]
   ): CreateIndex = {
     val properties = javaProperties.asScala.toList
-    val name = Option(indexName).map(_.asScala)
+    val name = Option(indexName).map(_.asScala.left.map(_.string))
     if (isNode) {
       val labelNames = labels.asScala.toList.map(stringPos => LabelName(stringPos.string)(stringPos.pos))
       CreateFulltextNodeIndex(
@@ -2195,8 +2195,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     }
   }
 
-  override def dropIndex(p: InputPosition, name: SimpleEither[String, Parameter], ifExists: Boolean): DropIndexOnName =
-    DropIndexOnName(name.asScala, ifExists)(p)
+  override def dropIndex(
+    p: InputPosition,
+    name: SimpleEither[StringPos[InputPosition], Parameter],
+    ifExists: Boolean
+  ): DropIndexOnName =
+    DropIndexOnName(name.asScala.left.map(_.string), ifExists)(p)
 
   override def dropIndex(
     p: InputPosition,
@@ -2213,24 +2217,36 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def createRole(
     p: InputPosition,
     replace: Boolean,
-    roleName: SimpleEither[String, Parameter],
-    from: SimpleEither[String, Parameter],
+    roleName: SimpleEither[StringPos[InputPosition], Parameter],
+    from: SimpleEither[StringPos[InputPosition], Parameter],
     ifNotExists: Boolean
   ): CreateRole = {
-    CreateRole(roleName.asScala, Option(from).map(_.asScala), ifExistsDo(replace, ifNotExists))(p)
+    CreateRole(
+      stringLiteralOrParameterExpression(roleName.asScala),
+      Option(from).map(roleName => stringLiteralOrParameterExpression(roleName.asScala)),
+      ifExistsDo(replace, ifNotExists)
+    )(p)
   }
 
-  override def dropRole(p: InputPosition, roleName: SimpleEither[String, Parameter], ifExists: Boolean): DropRole = {
-    DropRole(roleName.asScala, ifExists)(p)
+  override def dropRole(
+    p: InputPosition,
+    roleName: SimpleEither[StringPos[InputPosition], Parameter],
+    ifExists: Boolean
+  ): DropRole = {
+    DropRole(stringLiteralOrParameterExpression(roleName.asScala), ifExists)(p)
   }
 
   override def renameRole(
     p: InputPosition,
-    fromRoleName: SimpleEither[String, Parameter],
-    toRoleName: SimpleEither[String, Parameter],
+    fromRoleName: SimpleEither[StringPos[InputPosition], Parameter],
+    toRoleName: SimpleEither[StringPos[InputPosition], Parameter],
     ifExists: Boolean
   ): RenameRole = {
-    RenameRole(fromRoleName.asScala, toRoleName.asScala, ifExists)(p)
+    RenameRole(
+      stringLiteralOrParameterExpression(fromRoleName.asScala),
+      stringLiteralOrParameterExpression(toRoleName.asScala),
+      ifExists
+    )(p)
   }
 
   override def showRoles(
@@ -2246,18 +2262,24 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   override def grantRoles(
     p: InputPosition,
-    roles: util.List[SimpleEither[String, Parameter]],
-    users: util.List[SimpleEither[String, Parameter]]
+    roles: util.List[SimpleEither[StringPos[InputPosition], Parameter]],
+    users: util.List[SimpleEither[StringPos[InputPosition], Parameter]]
   ): GrantRolesToUsers = {
-    GrantRolesToUsers(roles.asScala.map(_.asScala).toSeq, users.asScala.map(_.asScala).toSeq)(p)
+    GrantRolesToUsers(
+      roles.asScala.map(roleName => stringLiteralOrParameterExpression(roleName.asScala)).toSeq,
+      users.asScala.map(userName => stringLiteralOrParameterExpression(userName.asScala)).toSeq
+    )(p)
   }
 
   override def revokeRoles(
     p: InputPosition,
-    roles: util.List[SimpleEither[String, Parameter]],
-    users: util.List[SimpleEither[String, Parameter]]
+    roles: util.List[SimpleEither[StringPos[InputPosition], Parameter]],
+    users: util.List[SimpleEither[StringPos[InputPosition], Parameter]]
   ): RevokeRolesFromUsers = {
-    RevokeRolesFromUsers(roles.asScala.map(_.asScala).toSeq, users.asScala.map(_.asScala).toSeq)(p)
+    RevokeRolesFromUsers(
+      roles.asScala.map(roleName => stringLiteralOrParameterExpression(roleName.asScala)).toSeq,
+      users.asScala.map(userName => stringLiteralOrParameterExpression(userName.asScala)).toSeq
+    )(p)
   }
 
   // User commands
@@ -2266,7 +2288,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     p: InputPosition,
     replace: Boolean,
     ifNotExists: Boolean,
-    username: SimpleEither[String, Parameter],
+    username: SimpleEither[StringPos[InputPosition], Parameter],
     password: Expression,
     encrypted: Boolean,
     changeRequired: Boolean,
@@ -2275,20 +2297,34 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   ): AdministrationCommand = {
     val homeAction = if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase))
     val userOptions = UserOptions(Some(changeRequired), asBooleanOption(suspended), homeAction)
-    CreateUser(username.asScala, encrypted, password, userOptions, ifExistsDo(replace, ifNotExists))(p)
+    CreateUser(
+      stringLiteralOrParameterExpression(username.asScala),
+      encrypted,
+      password,
+      userOptions,
+      ifExistsDo(replace, ifNotExists)
+    )(p)
   }
 
-  override def dropUser(p: InputPosition, ifExists: Boolean, username: SimpleEither[String, Parameter]): DropUser = {
-    DropUser(username.asScala, ifExists)(p)
+  override def dropUser(
+    p: InputPosition,
+    ifExists: Boolean,
+    username: SimpleEither[StringPos[InputPosition], Parameter]
+  ): DropUser = {
+    DropUser(stringLiteralOrParameterExpression(username.asScala), ifExists)(p)
   }
 
   override def renameUser(
     p: InputPosition,
-    fromUserName: SimpleEither[String, Parameter],
-    toUserName: SimpleEither[String, Parameter],
+    fromUserName: SimpleEither[StringPos[InputPosition], Parameter],
+    toUserName: SimpleEither[StringPos[InputPosition], Parameter],
     ifExists: Boolean
   ): RenameUser = {
-    RenameUser(fromUserName.asScala, toUserName.asScala, ifExists)(p)
+    RenameUser(
+      stringLiteralOrParameterExpression(fromUserName.asScala),
+      stringLiteralOrParameterExpression(toUserName.asScala),
+      ifExists
+    )(p)
   }
 
   override def setOwnPassword(
@@ -2302,7 +2338,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def alterUser(
     p: InputPosition,
     ifExists: Boolean,
-    username: SimpleEither[String, Parameter],
+    username: SimpleEither[StringPos[InputPosition], Parameter],
     password: Expression,
     encrypted: Boolean,
     changeRequired: lang.Boolean,
@@ -2317,7 +2353,9 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       else if (homeDatabase == null) None
       else Some(SetHomeDatabaseAction(homeDatabase))
     val userOptions = UserOptions(asBooleanOption(changeRequired), asBooleanOption(suspended), homeAction)
-    AlterUser(username.asScala, isEncrypted, maybePassword, userOptions, ifExists)(p)
+    AlterUser(stringLiteralOrParameterExpression(username.asScala), isEncrypted, maybePassword, userOptions, ifExists)(
+      p
+    )
   }
 
   override def passwordExpression(password: Parameter): Expression =
@@ -2365,7 +2403,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   override def showRolePrivileges(
     p: InputPosition,
-    roles: util.List[SimpleEither[String, Parameter]],
+    roles: util.List[SimpleEither[StringPos[InputPosition], Parameter]],
     asCommand: Boolean,
     asRevoke: Boolean,
     yieldExpr: Yield,
@@ -2374,13 +2412,17 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   ): ReadAdministrationCommand = {
     if (asCommand) {
       ShowPrivilegeCommands(
-        ShowRolesPrivileges(roles.asScala.map(_.asScala).toList)(p),
+        ShowRolesPrivileges(roles.asScala.map(roleName => stringLiteralOrParameterExpression(roleName.asScala)).toList)(
+          p
+        ),
         asRevoke,
         yieldOrWhere(yieldExpr, returnWithoutGraph, where)
       )(p)
     } else {
       ShowPrivileges(
-        ShowRolesPrivileges(roles.asScala.map(_.asScala).toList)(p),
+        ShowRolesPrivileges(roles.asScala.map(roleName => stringLiteralOrParameterExpression(roleName.asScala)).toList)(
+          p
+        ),
         yieldOrWhere(yieldExpr, returnWithoutGraph, where)
       )(p)
     }
@@ -2388,7 +2430,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   override def showUserPrivileges(
     p: InputPosition,
-    users: util.List[SimpleEither[String, Parameter]],
+    users: util.List[SimpleEither[StringPos[InputPosition], Parameter]],
     asCommand: Boolean,
     asRevoke: Boolean,
     yieldExpr: Yield,
@@ -2406,10 +2448,10 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   private def userPrivilegeScope(
     p: InputPosition,
-    users: util.List[SimpleEither[String, Parameter]]
+    users: util.List[SimpleEither[StringPos[InputPosition], Parameter]]
   ): ShowPrivilegeScope = {
     if (Option(users).isDefined) {
-      ShowUsersPrivileges(users.asScala.map(_.asScala).toList)(p)
+      ShowUsersPrivileges(users.asScala.map(userName => stringLiteralOrParameterExpression(userName.asScala)).toList)(p)
     } else {
       ShowUserPrivileges(None)(p)
     }
@@ -2417,7 +2459,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   override def grantPrivilege(
     p: InputPosition,
-    roles: util.List[SimpleEither[String, Parameter]],
+    roles: util.List[SimpleEither[StringPos[InputPosition], Parameter]],
     privilege: Privilege
   ): AdministrationCommand =
     GrantPrivilege(
@@ -2425,12 +2467,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       privilege.immutable,
       Option(privilege.resource),
       privilege.qualifier.asScala.toList,
-      roles.asScala.map(_.asScala).toSeq
+      roles.asScala.map(roleName => stringLiteralOrParameterExpression(roleName.asScala)).toSeq
     )(p)
 
   override def denyPrivilege(
     p: InputPosition,
-    roles: util.List[SimpleEither[String, Parameter]],
+    roles: util.List[SimpleEither[StringPos[InputPosition], Parameter]],
     privilege: Privilege
   ): AdministrationCommand =
     DenyPrivilege(
@@ -2438,12 +2480,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       privilege.immutable,
       Option(privilege.resource),
       privilege.qualifier.asScala.toList,
-      roles.asScala.map(_.asScala).toSeq
+      roles.asScala.map(roleName => stringLiteralOrParameterExpression(roleName.asScala)).toSeq
     )(p)
 
   override def revokePrivilege(
     p: InputPosition,
-    roles: util.List[SimpleEither[String, Parameter]],
+    roles: util.List[SimpleEither[StringPos[InputPosition], Parameter]],
     privilege: Privilege,
     revokeGrant: Boolean,
     revokeDeny: Boolean
@@ -2453,7 +2495,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
         privilege.immutable,
         Option(privilege.resource),
         privilege.qualifier.asScala.toList,
-        roles.asScala.map(_.asScala).toSeq,
+        roles.asScala.map(roleName => stringLiteralOrParameterExpression(roleName.asScala)).toSeq,
         RevokeGrantType()(p)
       )(p)
     case (false, true) => RevokePrivilege(
@@ -2461,7 +2503,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
         privilege.immutable,
         Option(privilege.resource),
         privilege.qualifier.asScala.toList,
-        roles.asScala.map(_.asScala).toSeq,
+        roles.asScala.map(roleName => stringLiteralOrParameterExpression(roleName.asScala)).toSeq,
         RevokeDenyType()(p)
       )(p)
     case _ => RevokePrivilege(
@@ -2469,7 +2511,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
         privilege.immutable,
         Option(privilege.resource),
         privilege.qualifier.asScala.toList,
-        roles.asScala.map(_.asScala).toSeq,
+        roles.asScala.map(roleName => stringLiteralOrParameterExpression(roleName.asScala)).toSeq,
         RevokeBothType()(p)
       )(p)
   }
@@ -2657,9 +2699,17 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     list
   }
 
-  override def userQualifier(users: util.List[SimpleEither[String, Parameter]]): util.List[PrivilegeQualifier] = {
+  override def userQualifier(users: util.List[SimpleEither[StringPos[InputPosition], Parameter]])
+    : util.List[PrivilegeQualifier] = {
     val list = new util.ArrayList[PrivilegeQualifier]()
-    users.forEach(u => list.add(UserQualifier(u.asScala)(InputPosition.NONE)))
+    users.forEach { u =>
+      val username = u.asScala
+      val pos: InputPosition = username match {
+        case Left(sp)     => sp.pos
+        case Right(param) => param.position
+      }
+      list.add(UserQualifier(stringLiteralOrParameterExpression(username))(pos))
+    }
     list
   }
 
@@ -2926,7 +2976,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     targetName: DatabaseName,
     ifNotExists: Boolean,
     url: SimpleEither[String, Parameter],
-    username: SimpleEither[String, Parameter],
+    username: SimpleEither[StringPos[InputPosition], Parameter],
     password: Expression,
     driverSettings: SimpleEither[util.Map[String, Expression], Parameter],
     properties: SimpleEither[util.Map[String, Expression], Parameter]
@@ -2936,7 +2986,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       targetName,
       ifExistsDo(replace, ifNotExists),
       url.asScala,
-      username.asScala,
+      stringLiteralOrParameterExpression(username.asScala),
       password,
       Option(driverSettings).map(asExpressionMapAst),
       Option(properties).map(asExpressionMapAst)
@@ -2964,7 +3014,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     targetName: DatabaseName,
     ifExists: Boolean,
     url: SimpleEither[String, Parameter],
-    username: SimpleEither[String, Parameter],
+    username: SimpleEither[StringPos[InputPosition], Parameter],
     password: Expression,
     driverSettings: SimpleEither[util.Map[String, Expression], Parameter],
     properties: SimpleEither[util.Map[String, Expression], Parameter]
@@ -2974,7 +3024,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       Option(targetName),
       ifExists,
       Option(url).map(_.asScala),
-      Option(username).map(_.asScala),
+      Option(username).map(u => stringLiteralOrParameterExpression(u.asScala)),
       Option(password),
       Option(driverSettings).map(asExpressionMapAst),
       Option(properties).map(asExpressionMapAst)
@@ -3044,6 +3094,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   private def pretty[T <: AnyRef](ts: util.List[T]): String = {
     ts.stream().map[String](t => t.toString).collect(Collectors.joining(","))
   }
+
+  private def stringLiteralOrParameterExpression(name: Either[StringPos[InputPosition], Parameter]): Expression =
+    name match {
+      case Left(literal) => StringLiteral(literal.string)(literal.pos, literal.endPos)
+      case Right(param)  => param
+    }
 
   override def labelConjunction(
     p: InputPosition,

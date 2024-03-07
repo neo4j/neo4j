@@ -320,7 +320,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE INDEX $$my_index FOR $pattern ON (n.name)") {
         yields[Statements](createIndex(
           List(prop("n", "name")),
-          Some(stringParam("my_index")),
+          Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
@@ -602,7 +602,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE RANGE INDEX $$my_index FOR $pattern ON (n2.name)") {
         yields[Statements](createIndex(
           List(prop("n2", "name")),
-          Some(stringParam("my_index")),
+          Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
@@ -871,7 +871,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE BTREE INDEX $$my_index FOR $pattern ON (n2.name)") {
         yields[Statements](createIndex(
           List(prop("n2", "name")),
-          Some(stringParam("my_index")),
+          Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -993,7 +993,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
       test(s"CREATE LOOKUP INDEX $$my_index FOR $pattern ON EACH $function") {
         yields[Statements](createIndex(
-          Some(stringParam("my_index")),
+          Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1267,7 +1267,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
-          Some(stringParam("my_index")),
+          Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1534,7 +1534,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE TEXT INDEX $$my_index FOR $pattern ON (n2.name)") {
         yields[Statements](createIndex(
           List(prop("n2", "name")),
-          Some(stringParam("my_index")),
+          Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1804,7 +1804,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE POINT INDEX $$my_index FOR $pattern ON (n.name)") {
         yields[Statements](createIndex(
           List(prop("n", "name")),
-          Some(stringParam("my_index")),
+          Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -2073,7 +2073,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE VECTOR INDEX $$my_index FOR $pattern ON (n.name)") {
         yields[Statements](createIndex(
           List(prop("n", "name")),
-          Some(stringParam("my_index")),
+          Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -2674,7 +2674,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX $my_index") {
-    yields[Statements](ast.DropIndexOnName(stringParam("my_index"), ifExists = false))
+    yields[Statements](ast.DropIndexOnName(Right(stringParam("my_index")), ifExists = false))
   }
 
   test("DROP INDEX my_index ON :Person(name)") {

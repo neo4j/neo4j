@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
-import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Expression
 
 class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   // Show supported privileges
@@ -474,12 +474,12 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
     type privilegeFunc = List[String] => ast.ShowPrivilegeScope
 
     def userPrivilegeFunc(users: List[String]): ast.ShowPrivilegeScope = {
-      val literalUsers: List[Either[String, Parameter]] = users.map(u => literal(u))
+      val literalUsers: List[Expression] = users.map(u => literal(u))
       ast.ShowUsersPrivileges(literalUsers)(pos)
     }
 
     def rolePrivilegeFunc(roles: List[String]): ast.ShowPrivilegeScope = {
-      val literalRoles: List[Either[String, Parameter]] = roles.map(r => literal(r))
+      val literalRoles: List[Expression] = roles.map(r => literal(r))
       ast.ShowRolesPrivileges(literalRoles)(pos)
     }
 

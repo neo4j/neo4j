@@ -565,7 +565,7 @@ public class LiteralInterpreter
             ConstraintType constraintType,
             boolean replace,
             boolean ifNotExists,
-            SimpleEither<String, Object> name,
+            SimpleEither<StringPos<NULL>, Object> name,
             Object o,
             StringPos<NULL> label,
             List<Object> objects,
@@ -577,7 +577,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL dropConstraint(NULL p, SimpleEither<String, Object> name, boolean ifExists) {
+    public NULL dropConstraint(NULL p, SimpleEither<StringPos<NULL>, Object> name, boolean ifExists) {
         throw new UnsupportedOperationException("dropConstraint is not a literal");
     }
 
@@ -598,7 +598,7 @@ public class LiteralInterpreter
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            SimpleEither<String, Object> indexName,
+            SimpleEither<StringPos<NULL>, Object> indexName,
             Object o,
             StringPos<NULL> functionName,
             Object functionParameter,
@@ -612,7 +612,7 @@ public class LiteralInterpreter
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            SimpleEither<String, Object> indexName,
+            SimpleEither<StringPos<NULL>, Object> indexName,
             Object o,
             StringPos<NULL> label,
             List<Object> objects,
@@ -627,7 +627,7 @@ public class LiteralInterpreter
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            SimpleEither<String, Object> indexName,
+            SimpleEither<StringPos<NULL>, Object> indexName,
             Object o,
             List<StringPos<NULL>> labels,
             List<Object> objects,
@@ -636,7 +636,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL dropIndex(NULL p, SimpleEither<String, Object> name, boolean ifExists) {
+    public NULL dropIndex(NULL p, SimpleEither<StringPos<NULL>, Object> name, boolean ifExists) {
         throw new UnsupportedOperationException("dropIndex is not a literal");
     }
 
@@ -658,22 +658,22 @@ public class LiteralInterpreter
     public NULL createRole(
             NULL p,
             boolean replace,
-            SimpleEither<String, Object> roleName,
-            SimpleEither<String, Object> from,
+            SimpleEither<StringPos<NULL>, Object> roleName,
+            SimpleEither<StringPos<NULL>, Object> from,
             boolean ifNotExists) {
         throw new UnsupportedOperationException("createRole is not a literal");
     }
 
     @Override
-    public NULL dropRole(NULL p, SimpleEither<String, Object> roleName, boolean ifExists) {
+    public NULL dropRole(NULL p, SimpleEither<StringPos<NULL>, Object> roleName, boolean ifExists) {
         throw new UnsupportedOperationException("dropRole is not a literal");
     }
 
     @Override
     public NULL renameRole(
             NULL p,
-            SimpleEither<String, Object> fromRoleName,
-            SimpleEither<String, Object> toRoleName,
+            SimpleEither<StringPos<NULL>, Object> fromRoleName,
+            SimpleEither<StringPos<NULL>, Object> toRoleName,
             boolean ifExists) {
         throw new UnsupportedOperationException("renameRole is not a literal");
     }
@@ -685,13 +685,18 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL grantRoles(NULL p, List<SimpleEither<String, Object>> roles, List<SimpleEither<String, Object>> users) {
+    public NULL grantRoles(
+            NULL p,
+            List<SimpleEither<StringPos<NULL>, Object>> roles,
+            List<SimpleEither<StringPos<NULL>, Object>> users) {
         throw new UnsupportedOperationException("grantRoles is not a literal");
     }
 
     @Override
     public NULL revokeRoles(
-            NULL p, List<SimpleEither<String, Object>> roles, List<SimpleEither<String, Object>> users) {
+            NULL p,
+            List<SimpleEither<StringPos<NULL>, Object>> roles,
+            List<SimpleEither<StringPos<NULL>, Object>> users) {
         throw new UnsupportedOperationException("revokeRoles is not a literal");
     }
 
@@ -702,7 +707,7 @@ public class LiteralInterpreter
             NULL p,
             boolean replace,
             boolean ifNotExists,
-            SimpleEither<String, Object> username,
+            SimpleEither<StringPos<NULL>, Object> username,
             Object password,
             boolean encrypted,
             boolean changeRequired,
@@ -712,15 +717,15 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL dropUser(NULL p, boolean ifExists, SimpleEither<String, Object> username) {
+    public NULL dropUser(NULL p, boolean ifExists, SimpleEither<StringPos<NULL>, Object> username) {
         throw new UnsupportedOperationException("dropUser is not a literal");
     }
 
     @Override
     public NULL renameUser(
             NULL p,
-            SimpleEither<String, Object> fromUserName,
-            SimpleEither<String, Object> toUserName,
+            SimpleEither<StringPos<NULL>, Object> fromUserName,
+            SimpleEither<StringPos<NULL>, Object> toUserName,
             boolean ifExists) {
         throw new UnsupportedOperationException("renameUser is not a literal");
     }
@@ -734,7 +739,7 @@ public class LiteralInterpreter
     public NULL alterUser(
             NULL p,
             boolean ifExists,
-            SimpleEither<String, Object> username,
+            SimpleEither<StringPos<NULL>, Object> username,
             Object password,
             boolean encrypted,
             Boolean changeRequired,
@@ -780,7 +785,7 @@ public class LiteralInterpreter
     @Override
     public NULL showRolePrivileges(
             NULL p,
-            List<SimpleEither<String, Object>> roles,
+            List<SimpleEither<StringPos<NULL>, Object>> roles,
             boolean asCommand,
             boolean asRevoke,
             NULL yieldExpr,
@@ -792,7 +797,7 @@ public class LiteralInterpreter
     @Override
     public NULL showUserPrivileges(
             NULL p,
-            List<SimpleEither<String, Object>> users,
+            List<SimpleEither<StringPos<NULL>, Object>> users,
             boolean asCommand,
             boolean asRevoke,
             NULL yieldExpr,
@@ -802,18 +807,22 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL grantPrivilege(NULL p, List<SimpleEither<String, Object>> roles, NULL privilege) {
+    public NULL grantPrivilege(NULL p, List<SimpleEither<StringPos<NULL>, Object>> roles, NULL privilege) {
         throw new UnsupportedOperationException("grantPrivilege is not a literal");
     }
 
     @Override
-    public NULL denyPrivilege(NULL p, List<SimpleEither<String, Object>> roles, NULL privilege) {
+    public NULL denyPrivilege(NULL p, List<SimpleEither<StringPos<NULL>, Object>> roles, NULL privilege) {
         throw new UnsupportedOperationException("denyPrivilege is not a literal");
     }
 
     @Override
     public NULL revokePrivilege(
-            NULL p, List<SimpleEither<String, Object>> roles, NULL privilege, boolean revokeGrant, boolean revokeDeny) {
+            NULL p,
+            List<SimpleEither<StringPos<NULL>, Object>> roles,
+            NULL privilege,
+            boolean revokeGrant,
+            boolean revokeDeny) {
         throw new UnsupportedOperationException("revokePrivilege is not a literal");
     }
 
@@ -920,7 +929,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public List<NULL> userQualifier(List<SimpleEither<String, Object>> users) {
+    public List<NULL> userQualifier(List<SimpleEither<StringPos<NULL>, Object>> users) {
         throw new UnsupportedOperationException("userQualifier is not a literal");
     }
 
@@ -1083,7 +1092,7 @@ public class LiteralInterpreter
             NULL targetName,
             boolean ifNotExists,
             SimpleEither<String, Object> url,
-            SimpleEither<String, Object> username,
+            SimpleEither<StringPos<NULL>, Object> username,
             Object password,
             SimpleEither<Map<String, Object>, Object> driverSettings,
             SimpleEither<Map<String, Object>, Object> properties) {
@@ -1107,7 +1116,7 @@ public class LiteralInterpreter
             NULL targetName,
             boolean ifExists,
             SimpleEither<String, Object> url,
-            SimpleEither<String, Object> username,
+            SimpleEither<StringPos<NULL>, Object> username,
             Object password,
             SimpleEither<Map<String, Object>, Object> driverSettings,
             SimpleEither<Map<String, Object>, Object> properties) {

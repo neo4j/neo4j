@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
@@ -90,6 +91,13 @@ sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnaly
 
   override def dup(children: Seq[AnyRef]): this.type =
     super.dup(children).withGraph(useGraph).asInstanceOf[this.type]
+
+  private[ast] def checkIsStringLiteralOrParameter(value: String, expression: Expression): SemanticCheck =
+    expression match {
+      case _: StringLiteral                            => success
+      case p: Parameter if p.parameterType == CTString => success
+      case exp => error(s"$value must be a String, or a String parameter.", exp.position)
+    }
 }
 
 sealed trait ReadAdministrationCommand extends AdministrationCommand {
@@ -197,14 +205,6 @@ sealed trait WriteAdministrationCommand extends AdministrationCommand {
   }
 }
 
-trait EitherAsString {
-
-  def eitherAsString(either: Either[String, Parameter]): String = either match {
-    case Left(u)  => u
-    case Right(p) => s"$$${p.name}"
-  }
-}
-
 // User commands
 
 final case class ShowUsers(override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(
@@ -266,12 +266,12 @@ object ShowCurrentUser {
 }
 
 final case class CreateUser(
-  userName: Either[String, Parameter],
+  userName: Expression,
   isEncryptedPassword: Boolean,
   initialPassword: Expression,
   userOptions: UserOptions,
   ifExistsDo: IfExistsDo
-)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
+)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name: String = ifExistsDo match {
     case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE USER"
@@ -285,25 +285,27 @@ final case class CreateUser(
       )
     case _ =>
       super.semanticCheck chain
+        super.checkIsStringLiteralOrParameter("username", userName) chain
         SemanticState.recordCurrentScope(this)
   }
 
-  private val userAsString: String = eitherAsString(userName)
+  private val userAsString: String = Prettifier.escapeName(userName)
 }
 
-final case class DropUser(userName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition)
+final case class DropUser(userName: Expression, ifExists: Boolean)(val position: InputPosition)
     extends WriteAdministrationCommand {
 
   override def name = "DROP USER"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      super.checkIsStringLiteralOrParameter("username", userName) chain
       SemanticState.recordCurrentScope(this)
 }
 
 final case class RenameUser(
-  fromUserName: Either[String, Parameter],
-  toUserName: Either[String, Parameter],
+  fromUserName: Expression,
+  toUserName: Expression,
   ifExists: Boolean
 )(val position: InputPosition) extends WriteAdministrationCommand {
 
@@ -311,11 +313,13 @@ final case class RenameUser(
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      super.checkIsStringLiteralOrParameter("from username", fromUserName) chain
+      super.checkIsStringLiteralOrParameter("to username", toUserName) chain
       SemanticState.recordCurrentScope(this)
 }
 
 final case class AlterUser(
-  userName: Either[String, Parameter],
+  userName: Expression,
   isEncryptedPassword: Option[Boolean],
   initialPassword: Option[Expression],
   userOptions: UserOptions,
@@ -334,6 +338,7 @@ final case class AlterUser(
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      super.checkIsStringLiteralOrParameter("username", userName) chain
       SemanticState.recordCurrentScope(this)
 }
 
@@ -390,8 +395,8 @@ object ShowRoles {
 }
 
 final case class CreateRole(
-  roleName: Either[String, Parameter],
-  from: Option[Either[String, Parameter]],
+  roleName: Expression,
+  from: Option[Expression],
   ifExistsDo: IfExistsDo
 )(val position: InputPosition) extends WriteAdministrationCommand {
 
@@ -410,23 +415,26 @@ final case class CreateRole(
         )
       case _ =>
         super.semanticCheck chain
+          super.checkIsStringLiteralOrParameter("rolename", roleName) chain
+          semanticCheckFold(from)(roleName => checkIsStringLiteralOrParameter("from rolename", roleName)) chain
           SemanticState.recordCurrentScope(this)
     }
 }
 
-final case class DropRole(roleName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition)
+final case class DropRole(roleName: Expression, ifExists: Boolean)(val position: InputPosition)
     extends WriteAdministrationCommand {
 
   override def name = "DROP ROLE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      super.checkIsStringLiteralOrParameter("rolename", roleName) chain
       SemanticState.recordCurrentScope(this)
 }
 
 final case class RenameRole(
-  fromRoleName: Either[String, Parameter],
-  toRoleName: Either[String, Parameter],
+  fromRoleName: Expression,
+  toRoleName: Expression,
   ifExists: Boolean
 )(val position: InputPosition) extends WriteAdministrationCommand {
 
@@ -434,31 +442,37 @@ final case class RenameRole(
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      super.checkIsStringLiteralOrParameter("from rolename", fromRoleName) chain
+      super.checkIsStringLiteralOrParameter("to rolename", toRoleName) chain
       SemanticState.recordCurrentScope(this)
 }
 
 final case class GrantRolesToUsers(
-  roleNames: Seq[Either[String, Parameter]],
-  userNames: Seq[Either[String, Parameter]]
+  roleNames: Seq[Expression],
+  userNames: Seq[Expression]
 )(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "GRANT ROLE"
 
   override def semanticCheck: SemanticCheck = {
     super.semanticCheck chain
+      semanticCheckFold(roleNames)(roleName => checkIsStringLiteralOrParameter("rolename", roleName)) chain
+      semanticCheckFold(userNames)(roleName => checkIsStringLiteralOrParameter("username", roleName)) chain
       SemanticState.recordCurrentScope(this)
   }
 }
 
 final case class RevokeRolesFromUsers(
-  roleNames: Seq[Either[String, Parameter]],
-  userNames: Seq[Either[String, Parameter]]
+  roleNames: Seq[Expression],
+  userNames: Seq[Expression]
 )(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "REVOKE ROLE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+      semanticCheckFold(roleNames)(roleName => checkIsStringLiteralOrParameter("rolename", roleName)) chain
+      semanticCheckFold(userNames)(roleName => checkIsStringLiteralOrParameter("username", roleName)) chain
       SemanticState.recordCurrentScope(this)
 }
 
@@ -745,9 +759,13 @@ final case class GrantPrivilege(
   immutable: Boolean,
   resource: Option[ActionResource],
   qualifier: List[PrivilegeQualifier],
-  roleNames: Seq[Either[String, Parameter]]
+  roleNames: Seq[Expression]
 )(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
   override def name = s"GRANT${immutableKeywordOrEmptyString(immutable)} ${privilege.name}"
+
+  override def semanticCheck: SemanticCheck = super.semanticCheck chain semanticCheckFold(roleNames)(roleName =>
+    checkIsStringLiteralOrParameter("rolename", roleName)
+  )
 }
 
 object GrantPrivilege {
@@ -755,7 +773,7 @@ object GrantPrivilege {
   def dbmsAction(
     action: DbmsAction,
     immutable: Boolean,
-    roleNames: Seq[Either[String, Parameter]],
+    roleNames: Seq[Expression],
     qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
   ): InputPosition => GrantPrivilege =
     GrantPrivilege(DbmsPrivilege(action)(InputPosition.NONE), immutable, None, qualifier, roleNames)
@@ -764,7 +782,7 @@ object GrantPrivilege {
     action: DatabaseAction,
     immutable: Boolean,
     scope: DatabaseScope,
-    roleNames: Seq[Either[String, Parameter]],
+    roleNames: Seq[Expression],
     qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))
   ): InputPosition => GrantPrivilege =
     GrantPrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), immutable, None, qualifier, roleNames)
@@ -775,7 +793,7 @@ object GrantPrivilege {
     resource: Option[ActionResource],
     scope: GraphScope,
     qualifier: List[T],
-    roleNames: Seq[Either[String, Parameter]]
+    roleNames: Seq[Expression]
   ): InputPosition => GrantPrivilege =
     GrantPrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), immutable, resource, qualifier, roleNames)
 }
@@ -785,7 +803,7 @@ final case class DenyPrivilege(
   immutable: Boolean,
   resource: Option[ActionResource],
   qualifier: List[PrivilegeQualifier],
-  roleNames: Seq[Either[String, Parameter]]
+  roleNames: Seq[Expression]
 )(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
   override def name = s"DENY${immutableKeywordOrEmptyString(immutable)} ${privilege.name}"
@@ -804,7 +822,7 @@ object DenyPrivilege {
   def dbmsAction(
     action: DbmsAction,
     immutable: Boolean,
-    roleNames: Seq[Either[String, Parameter]],
+    roleNames: Seq[Expression],
     qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
   ): InputPosition => DenyPrivilege =
     DenyPrivilege(DbmsPrivilege(action)(InputPosition.NONE), immutable, None, qualifier, roleNames)
@@ -813,7 +831,7 @@ object DenyPrivilege {
     action: DatabaseAction,
     immutable: Boolean,
     scope: DatabaseScope,
-    roleNames: Seq[Either[String, Parameter]],
+    roleNames: Seq[Expression],
     qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))
   ): InputPosition => DenyPrivilege =
     DenyPrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), immutable, None, qualifier, roleNames)
@@ -824,7 +842,7 @@ object DenyPrivilege {
     resource: Option[ActionResource],
     scope: GraphScope,
     qualifier: List[T],
-    roleNames: Seq[Either[String, Parameter]]
+    roleNames: Seq[Expression]
   ): InputPosition => DenyPrivilege =
     DenyPrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), immutable, resource, qualifier, roleNames)
 }
@@ -834,7 +852,7 @@ final case class RevokePrivilege(
   immutableOnly: Boolean,
   resource: Option[ActionResource],
   qualifier: List[PrivilegeQualifier],
-  roleNames: Seq[Either[String, Parameter]],
+  roleNames: Seq[Expression],
   revokeType: RevokeType
 )(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
 
@@ -847,7 +865,9 @@ final case class RevokePrivilege(
     (privilege, revokeType) match {
       case (GraphPrivilege(MergeAdminAction, _), RevokeDenyType()) =>
         error(s"`DENY MERGE` is not supported. Use `DENY SET PROPERTY` and `DENY CREATE` instead.", position)
-      case _ => super.semanticCheck
+      case _ => super.semanticCheck chain semanticCheckFold(roleNames)(roleName =>
+          checkIsStringLiteralOrParameter("rolename", roleName)
+        )
     }
   }
 
@@ -858,7 +878,7 @@ object RevokePrivilege {
   def dbmsAction(
     action: DbmsAction,
     immutable: Boolean,
-    roleNames: Seq[Either[String, Parameter]],
+    roleNames: Seq[Expression],
     revokeType: RevokeType,
     qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
   ): InputPosition => RevokePrivilege =
@@ -868,7 +888,7 @@ object RevokePrivilege {
     action: DatabaseAction,
     immutable: Boolean,
     scope: DatabaseScope,
-    roleNames: Seq[Either[String, Parameter]],
+    roleNames: Seq[Expression],
     revokeType: RevokeType,
     qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))
   ): InputPosition => RevokePrivilege =
@@ -887,7 +907,7 @@ object RevokePrivilege {
     resource: Option[ActionResource],
     scope: GraphScope,
     qualifier: List[T],
-    roleNames: Seq[Either[String, Parameter]],
+    roleNames: Seq[Expression],
     revokeType: RevokeType
   ): InputPosition => RevokePrivilege =
     RevokePrivilege(
@@ -1394,7 +1414,7 @@ final case class CreateRemoteDatabaseAlias(
   targetName: DatabaseName,
   ifExistsDo: IfExistsDo,
   url: Either[String, Parameter],
-  username: Either[String, Parameter],
+  username: Expression,
   password: Expression,
   driverSettings: Option[Either[Map[String, Expression], Parameter]] = None,
   properties: Option[Either[Map[String, Expression], Parameter]] = None
@@ -1419,7 +1439,10 @@ final case class CreateRemoteDatabaseAlias(
           error(AliasDriverSettingsCheck.collectErrorMessage, expr.position)
         case Some(expr) =>
           error(AliasDriverSettingsCheck.genericErrorMessage, expr.position)
-        case _ => super.semanticCheck chain SemanticState.recordCurrentScope(this)
+        case _ => super.semanticCheck chain checkIsStringLiteralOrParameter(
+            "username",
+            username
+          ) chain SemanticState.recordCurrentScope(this)
       }
   }
 }
@@ -1441,7 +1464,7 @@ final case class AlterRemoteDatabaseAlias(
   targetName: Option[DatabaseName] = None,
   ifExists: Boolean = false,
   url: Option[Either[String, Parameter]] = None,
-  username: Option[Either[String, Parameter]] = None,
+  username: Option[Expression] = None,
   password: Option[Expression] = None,
   driverSettings: Option[Either[Map[String, Expression], Parameter]] = None,
   properties: Option[Either[Map[String, Expression], Parameter]] = None
@@ -1471,7 +1494,9 @@ final case class AlterRemoteDatabaseAlias(
             position
           )
         } else {
-          super.semanticCheck chain SemanticState.recordCurrentScope(this)
+          super.semanticCheck chain semanticCheckFold(username)(un =>
+            checkIsStringLiteralOrParameter("username", un)
+          ) chain SemanticState.recordCurrentScope(this)
         }
     }
 }

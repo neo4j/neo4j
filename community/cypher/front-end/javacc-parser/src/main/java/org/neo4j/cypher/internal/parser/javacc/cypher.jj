@@ -5037,7 +5037,7 @@ SimpleEither<List<String>, EXPRESSION> stringsOrExpression() throws Exception:
 
 SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception:
 {
-    SimpleEither<String, PARAMETER> name = null;
+    SimpleEither<StringPos<POS>, PARAMETER> name = null;
     boolean ifNotExists = false;
     Token label;
     VARIABLE variable = null;
@@ -5268,7 +5268,7 @@ ParserCypherTypeName cypherTypeNamePart() throws Exception:
 
 SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
 {
-        SimpleEither<String, PARAMETER> name = null;
+        SimpleEither<StringPos<POS>, PARAMETER> name = null;
         boolean ifExists = false;
         VARIABLE variable = null;
         Token label = null;
@@ -5380,7 +5380,7 @@ SCHEMA_COMMAND createIndex( Token start, boolean replace, CreateIndexTypes index
 {
     boolean ifNotExists = false;
     boolean isNode = false;
-    SimpleEither<String, PARAMETER> indexName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> indexName = null;
     VARIABLE variable = null;
     Token label = null;
     List<PROPERTY> properties= new ArrayList<>();
@@ -5414,7 +5414,7 @@ SCHEMA_COMMAND createFulltextIndex( Token start, boolean replace) throws Excepti
 {
     boolean ifNotExists = false;
     boolean isNode = false;
-    SimpleEither<String, PARAMETER> indexName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> indexName = null;
     VARIABLE variable = null;
     VARIABLE propName = null;
     PROPERTY p = null;
@@ -5453,7 +5453,7 @@ SCHEMA_COMMAND createLookupIndex( Token start, boolean replace ) throws Exceptio
 {
     boolean ifNotExists = false;
     boolean isNode = false;
-    SimpleEither<String, PARAMETER> indexName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> indexName = null;
     VARIABLE variable = null;
     StringPos<POS> funcName = null;
     VARIABLE funcParam = variable;
@@ -5486,7 +5486,7 @@ SCHEMA_COMMAND DropIndex( Token start ):
 {
     Token nodeLabel;
     List<StringPos<POS>> properties;
-    SimpleEither<String, PARAMETER> name;
+    SimpleEither<StringPos<POS>, PARAMETER> name;
     boolean ifExists = false;
 }
 {
@@ -5703,8 +5703,8 @@ ADMINISTRATION_COMMAND ReallocateDatabases(boolean dryRun):
 
 ADMINISTRATION_COMMAND CreateRole( Token start, boolean replace ):
 {
-    SimpleEither<String, PARAMETER> roleName = null;
-    SimpleEither<String, PARAMETER> sourceRoleName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> roleName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> sourceRoleName = null;
     boolean ifNotExists = false;
 }
 {
@@ -5719,7 +5719,7 @@ ADMINISTRATION_COMMAND CreateRole( Token start, boolean replace ):
 
 ADMINISTRATION_COMMAND DropRole( Token start ):
 {
-    SimpleEither<String, PARAMETER> roleName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> roleName = null;
     boolean ifExists = false;
 }
 {
@@ -5733,8 +5733,8 @@ ADMINISTRATION_COMMAND DropRole( Token start ):
 
 ADMINISTRATION_COMMAND RenameRole( Token start ):
 {
-    SimpleEither<String, PARAMETER> fromRoleName = null;
-    SimpleEither<String, PARAMETER> toRoleName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> fromRoleName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> toRoleName = null;
     boolean ifExists = false;
 }
 {
@@ -5768,8 +5768,8 @@ STATEMENT_WITH_GRAPH ShowRoles( Token start, USE_CLAUSE useClause, boolean showA
 
 ADMINISTRATION_COMMAND GrantRole( Token start ):
 {
-    List<SimpleEither<String, PARAMETER>> roles;
-    List<SimpleEither<String, PARAMETER>> users;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> users;
 }
 {
     roles=SymbolicNameOrStringParameterList() <TO> users=SymbolicNameOrStringParameterList()
@@ -5780,8 +5780,8 @@ ADMINISTRATION_COMMAND GrantRole( Token start ):
 
 ADMINISTRATION_COMMAND RevokeRole(Token start):
 {
-    List<SimpleEither<String, PARAMETER>> roles;
-    List<SimpleEither<String, PARAMETER>> users;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> users;
 }
 {
     roles=SymbolicNameOrStringParameterList() <FROM> users=SymbolicNameOrStringParameterList()
@@ -5795,7 +5795,7 @@ ADMINISTRATION_COMMAND RevokeRole(Token start):
 ADMINISTRATION_COMMAND CreateUser( Token start, boolean replace ) throws Exception:
 {
     Token set = null;
-    SimpleEither<String, PARAMETER> username = null;
+    SimpleEither<StringPos<POS>, PARAMETER> username = null;
     EXPRESSION password = null;
     boolean ifNotExists = false;
     boolean encrypted = false;
@@ -5827,7 +5827,7 @@ ADMINISTRATION_COMMAND CreateUser( Token start, boolean replace ) throws Excepti
 
 ADMINISTRATION_COMMAND DropUser( Token start ) :
 {
-    SimpleEither<String, PARAMETER> username = null;
+    SimpleEither<StringPos<POS>, PARAMETER> username = null;
     boolean ifExists = false;
 }
 {
@@ -5841,8 +5841,8 @@ ADMINISTRATION_COMMAND DropUser( Token start ) :
 
 ADMINISTRATION_COMMAND RenameUser(Token start):
 {
-    SimpleEither<String, PARAMETER> fromUserName = null;
-    SimpleEither<String, PARAMETER> toUserName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> fromUserName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> toUserName = null;
     boolean ifExists = false;
 }
 {
@@ -5871,7 +5871,7 @@ ADMINISTRATION_COMMAND AlterCurrentUser( Token start ) throws Exception:
 ADMINISTRATION_COMMAND AlterUser( Token start ) throws Exception:
 {
     Token set = null;
-    SimpleEither<String, PARAMETER> username = null;
+    SimpleEither<StringPos<POS>, PARAMETER> username = null;
     EXPRESSION password = null;
     boolean ifExists = false;
     boolean encrypted = false;
@@ -6064,7 +6064,7 @@ STATEMENT_WITH_GRAPH ShowPrivileges( Token start, USE_CLAUSE useClause ) throws 
 
 STATEMENT_WITH_GRAPH ShowRolePrivileges( Token start, USE_CLAUSE useClause ) throws Exception:
 {
-    List<SimpleEither<String, PARAMETER>> roles = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     boolean asCommand = false;
     boolean asRevoke = false;
     YIELD yield = null;
@@ -6091,7 +6091,7 @@ STATEMENT_WITH_GRAPH ShowRolePrivileges( Token start, USE_CLAUSE useClause ) thr
 
 STATEMENT_WITH_GRAPH ShowUserPrivileges( Token start, USE_CLAUSE useClause ) throws Exception:
 {
-    List<SimpleEither<String, PARAMETER>> users = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> users = null;
     boolean asCommand = false;
     boolean asRevoke = false;
     YIELD yield = null;
@@ -6123,7 +6123,7 @@ STATEMENT_WITH_GRAPH ShowUserPrivileges( Token start, USE_CLAUSE useClause ) thr
 ADMINISTRATION_COMMAND grantRoleManagement(Token start, boolean immutable):
 {
     PRIVILEGE_TYPE privilege = null;
-    List<SimpleEither<String, PARAMETER>> roles = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
 }
 {
     privilege=roleManagementPrivilege(start, immutable) <TO> roles=SymbolicNameOrStringParameterList()
@@ -6135,7 +6135,7 @@ ADMINISTRATION_COMMAND grantRoleManagement(Token start, boolean immutable):
 ADMINISTRATION_COMMAND revokeRoleManagement(Token start, boolean revokeGrant, boolean revokeDeny, boolean immutable):
 {
     PRIVILEGE_TYPE privilege = null;
-    List<SimpleEither<String, PARAMETER>> roles = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
 }
 {
     privilege=roleManagementPrivilege(start, immutable) <FROM> roles=SymbolicNameOrStringParameterList()
@@ -6157,7 +6157,7 @@ PRIVILEGE_TYPE roleManagementPrivilege(Token start, boolean immutable):
 
 ADMINISTRATION_COMMAND grantPrivilege(Token start, boolean immutable) throws Exception:
 {
-    List<SimpleEither<String, PARAMETER>> roles = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     PRIVILEGE_TYPE privilege = null;
 }
 {
@@ -6170,7 +6170,7 @@ ADMINISTRATION_COMMAND grantPrivilege(Token start, boolean immutable) throws Exc
 ADMINISTRATION_COMMAND DenyPrivilege() throws Exception:
 {
     Token start;
-    List<SimpleEither<String, PARAMETER>> roles = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     PRIVILEGE_TYPE privilege = null;
     boolean immutable = false;
 }
@@ -6189,7 +6189,7 @@ ADMINISTRATION_COMMAND DenyPrivilege() throws Exception:
 
 ADMINISTRATION_COMMAND RevokePrivilege(Token start, boolean revokeGrant, boolean revokeDeny, boolean immutable) throws Exception:
 {
-    List<SimpleEither<String, PARAMETER>> roles = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     PRIVILEGE_TYPE privilege = null;
 }
 {
@@ -6351,7 +6351,7 @@ PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable):
     DATABASE_SCOPE database = null;
     List<PRIVILEGE_QUALIFIER> databaseQualifier = astFactory.allDatabasesQualifier();
     List<PRIVILEGE_QUALIFIER> dbmsQualifier = astFactory.allQualifier();
-    List<SimpleEither<String, PARAMETER>>qualifiers = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>>qualifiers = null;
 }
 {
     <SHOW>
@@ -6439,7 +6439,7 @@ PRIVILEGE_TYPE databasePrivilege(Token start, boolean immutable):
     ADMINISTRATION_ACTION action = null;
     DATABASE_SCOPE database = null;
     List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allDatabasesQualifier();
-    List<SimpleEither<String, PARAMETER>>qualifiers = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>>qualifiers = null;
 }
 {
     (
@@ -6462,7 +6462,7 @@ PRIVILEGE_TYPE dbmsPrivilege(Token start, boolean immutable):
 {
     ADMINISTRATION_ACTION action = null;
     List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allQualifier();
-    List<SimpleEither<String, PARAMETER>> qualifiers = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> qualifiers = null;
 }
 {
     (
@@ -6937,7 +6937,7 @@ ADMINISTRATION_COMMAND CreateAlias( Token start, boolean replace ) throws Except
     AliasName<DATABASE_NAME, PARAMETER> targetName = null;
     boolean ifNotExists = false;
     SimpleEither<String, PARAMETER> url = null;
-    SimpleEither<String, PARAMETER> username = null;
+    SimpleEither<StringPos<POS>, PARAMETER> username = null;
     EXPRESSION password = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties = null;
@@ -6987,7 +6987,7 @@ ADMINISTRATION_COMMAND AlterAlias( Token start ) throws Exception:
     AliasName<DATABASE_NAME, PARAMETER> targetName = null;
     boolean ifExists = false;
     SimpleEither<String, PARAMETER> url = null;
-    SimpleEither<String, PARAMETER> username = null;
+    SimpleEither<StringPos<POS>, PARAMETER> username = null;
     EXPRESSION password = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties = null;
@@ -7075,10 +7075,10 @@ AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasName():
         }
 }
 
-List<SimpleEither<String, PARAMETER>> SymbolicNameOrStringParameterList() :
+List<SimpleEither<StringPos<POS>, PARAMETER>> SymbolicNameOrStringParameterList() :
 {
-    SimpleEither<String, PARAMETER> entry;
-    List<SimpleEither<String, PARAMETER>> list = new ArrayList<>();
+    SimpleEither<StringPos<POS>, PARAMETER> entry;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> list = new ArrayList<>();
 }
 {
     entry=SymbolicNameOrStringParameter() { list.add( entry ); }
@@ -7088,14 +7088,14 @@ List<SimpleEither<String, PARAMETER>> SymbolicNameOrStringParameterList() :
     }
 }
 
-SimpleEither<String, PARAMETER> SymbolicNameOrStringParameter():
+SimpleEither<StringPos<POS>, PARAMETER> SymbolicNameOrStringParameter():
 {
     Token name;
     PARAMETER parameter;
 }
 {
-    name=SymbolicNameString() { return SimpleEither.<String, PARAMETER>left( name.image ); }
-    | parameter=Parameter(ParameterType.STRING) { return SimpleEither.<String, PARAMETER>right( parameter ); }
+    name=SymbolicNameString() { return SimpleEither.<StringPos<POS>, PARAMETER>left( new StringPos<POS>( token.image, pos( token ), endPos( token ) )); }
+    | parameter=Parameter(ParameterType.STRING) { return SimpleEither.<StringPos<POS>, PARAMETER>right( parameter ); }
 }
 
 String Glob() :

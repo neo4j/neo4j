@@ -139,7 +139,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
 
               test(s"$verb$immutableString $execute a b ON DBMS $preposition role") {
                 assertAst(
-                  func(action, List(FunctionQualifier("ab")(defaultPos)), Seq(Left("role")), immutable)(defaultPos)
+                  func(action, List(FunctionQualifier("ab")(defaultPos)), Seq(literal("role")), immutable)(defaultPos)
                 )
               }
 

@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
@@ -572,6 +574,11 @@ object AdministrationCommandRuntime {
     case Left(s)  => s
     case Right(p) => runtimeStringValue(p.name, params)
   }
+
+  private[internal] def runtimeStringValue(field: Expression, params: MapValue): String = ({
+    case StringLiteral(s) => s
+    case p: Parameter     => runtimeStringValue(p.name, params)
+  }: PartialFunction[Expression, String]).apply(field)
 
   private[internal] def runtimeStringValue(parameter: String, params: MapValue): String = {
     val value: AnyValue =

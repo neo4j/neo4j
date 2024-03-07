@@ -73,7 +73,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
         false,
         Some(DatabaseResource()(p)),
         List(AllQualifier()(p)),
-        Seq(Left("role1"))
+        Seq(literalString("role1"))
       )(p)
 
     val deny = (pma: PrivilegeManagementAction) =>
@@ -82,7 +82,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
         false,
         Some(DatabaseResource()(p)),
         List(AllQualifier()(p)),
-        Seq(Left("role1"))
+        Seq(literalString("role1"))
       )(p)
 
     val revoke = (pma: PrivilegeManagementAction, rt: RevokeType) =>
@@ -91,7 +91,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
         false,
         Some(DatabaseResource()(p)),
         List(AllQualifier()(p)),
-        Seq(Left("role1")),
+        Seq(literalString("role1")),
         rt
       )(p)
 
@@ -115,7 +115,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       false,
       Some(DatabaseResource()(p)),
       List(AllQualifier()(p)),
-      Seq(Left("role1"))
+      Seq(literalString("role1"))
     )(p)
 
     privilege.semanticCheck.run(initialState, SemanticCheckContext.default) shouldBe SemanticCheckResult
@@ -128,7 +128,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
       false,
       Some(DatabaseResource()(p)),
       List(AllQualifier()(p)),
-      Seq(Left("role1"))
+      Seq(literalString("role1"))
     )(p)
 
     privilege.semanticCheck.run(initialState, SemanticCheckContext.default) shouldBe SemanticCheckResult
@@ -166,7 +166,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               (PropertyKeyName("prop2")(p), StringLiteral("val2")(p, p))
             ))(p)
           ),
-          Seq(Left("role1"))
+          Seq(literalString("role1"))
         )(p)
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -204,7 +204,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 )
               )(p)
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -234,7 +234,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 )
               )(p)
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -253,7 +253,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               Some(Variable("n")(p)),
               op(Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p), Null.NULL)
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -272,7 +272,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               Some(Variable("n")(p)),
               op(Null.NULL, Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p))
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -293,7 +293,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               Some(Variable("n")(p)),
               Not(op(Property(Variable("n")(p), PropertyKeyName("prop")(p))(p), Null.NULL))(p)
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -314,7 +314,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               Some(Variable("n")(p)),
               Not(op(Null.NULL, Property(Variable("n")(p), PropertyKeyName("prop")(p))(p)))(p)
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -335,7 +335,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               Some(Variable("n")(p)),
               op(Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p), NaN()(p))
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -356,7 +356,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               Some(Variable("n")(p)),
               op(NaN()(p), Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p))
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -380,7 +380,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 Add(SignedDecimalIntegerLiteral("1")(p), SignedDecimalIntegerLiteral("2")(p))(p)
               )
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -425,7 +425,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                   Some(Variable("n")(p)),
                   expression
                 ),
-                Seq(Left("role1"))
+                Seq(literalString("role1"))
               )(p)
 
               val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -470,7 +470,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                   Some(Variable("n")(p)),
                   expression
                 ),
-                Seq(Left("role1"))
+                Seq(literalString("role1"))
               )(p)
 
               val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -497,7 +497,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 SignedDecimalIntegerLiteral("1")(p)
               ))(p))(p)
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -519,7 +519,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               Some(Variable("n")(p)),
               op(SignedDecimalIntegerLiteral("1")(p), Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p))
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -536,7 +536,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           false,
           None,
           qualifierFn(None, MapExpression(Seq((PropertyKeyName("prop1")(p), Null.NULL)))(p)),
-          Seq(Left("role1"))
+          Seq(literalString("role1"))
         )(p)
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -560,7 +560,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               Add(SignedDecimalIntegerLiteral("1")(p), SignedDecimalIntegerLiteral("2")(p))(p)
             )))(p)
           ),
-          Seq(Left("role1"))
+          Seq(literalString("role1"))
         )(p)
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -608,7 +608,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 Some(Variable("n")(p)),
                 expression
               ),
-              Seq(Left("role1"))
+              Seq(literalString("role1"))
             )(p)
 
             val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -655,7 +655,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 Some(Variable("n")(p)),
                 expression
               ),
-              Seq(Left("role1"))
+              Seq(literalString("role1"))
             )(p)
 
             val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -708,7 +708,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 Some(Variable("n")(p)),
                 expression
               ),
-              Seq(Left("role1"))
+              Seq(literalString("role1"))
             )(p)
 
             val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -771,7 +771,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 Some(Variable("n")(p)),
                 expression
               ),
-              Seq(Left("role1"))
+              Seq(literalString("role1"))
             )(p)
 
             val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -806,7 +806,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           false,
           None,
           qualifierFn(Some(Variable("n")(p)), expression),
-          Seq(Left("role1"))
+          Seq(literalString("role1"))
         )(p)
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -830,7 +830,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               SignedDecimalIntegerLiteral("1")(p)
             )(p)
           ),
-          Seq(Left("role1"))
+          Seq(literalString("role1"))
         )(p)
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -854,7 +854,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               SignedDecimalIntegerLiteral("1")(p)
             )(p)
           ),
-          Seq(Left("role1"))
+          Seq(literalString("role1"))
         )(p)
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -883,7 +883,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               )(p)
             )(p)
           ),
-          Seq(Left("role1"))
+          Seq(literalString("role1"))
         )(p)
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -921,7 +921,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               )(p)
             )(p, None, None)
           ),
-          Seq(Left("role1"))
+          Seq(literalString("role1"))
         )(p)
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
@@ -953,7 +953,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
                 (PropertyKeyName("prop1")(p), StringLiteral("val1")(p, p))
               ))(p)
             ),
-            Seq(Left("role1"))
+            Seq(literalString("role1"))
           )(p)
 
           val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)

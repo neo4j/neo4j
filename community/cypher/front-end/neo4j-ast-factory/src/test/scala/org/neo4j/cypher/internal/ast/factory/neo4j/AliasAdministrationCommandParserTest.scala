@@ -272,7 +272,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password")
     )(defaultPos))
   }
@@ -285,7 +285,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password")
     )(defaultPos))
   }
@@ -307,7 +307,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password")
     )(defaultPos))
   }
@@ -318,7 +318,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password")
     )(defaultPos))
   }
@@ -329,7 +329,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left(""),
-      Left(""),
+      literalString(""),
       sensitiveLiteral("")
     )(defaultPos))
   }
@@ -346,7 +346,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       stringParamName("name"),
       stringParamName("target"),
       IfExistsThrowError,
-      stringParam("url"),
+      Right(stringParam("url")),
       stringParam("user"),
       pwParam("password")
     )(defaultPos))
@@ -360,7 +360,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsDoNothing,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password")
     )(defaultPos))
   }
@@ -374,7 +374,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsDoNothing,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password"),
       None,
       Some(Left(Map("key" -> literalString("value"), "anotherkey" -> literalString("anotherValue"))))
@@ -399,7 +399,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         namespacedName("target"),
         IfExistsThrowError,
         Left("neo4j://serverA:7687"),
-        Left("user"),
+        literalString("user"),
         sensitiveLiteral("password"),
         None,
         properties =
@@ -421,7 +421,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         namespacedName("target"),
         IfExistsThrowError,
         Left("neo4j://serverA:7687"),
-        Left("user"),
+        literalString("user"),
         sensitiveLiteral("password"),
         None,
         properties =
@@ -439,7 +439,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         namespacedName("target"),
         IfExistsThrowError,
         Left("neo4j://serverA:7687"),
-        Left("user"),
+        literalString("user"),
         sensitiveLiteral("password"),
         None,
         properties =
@@ -454,7 +454,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsReplace,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password")
     )(defaultPos))
   }
@@ -467,7 +467,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsInvalidSyntax,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password")
     )(defaultPos))
   }
@@ -480,7 +480,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password"),
       Some(Left(Map(
         "ssl_enforced" -> trueLiteral
@@ -496,7 +496,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsDoNothing,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password"),
       Some(Left(Map(
         "ssl_enforced" -> trueLiteral
@@ -526,7 +526,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left("neo4j://serverA:7687"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password"),
       Some(Left(Map(
         "ssl_enforced" -> trueLiteral,
@@ -546,7 +546,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left("bar"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password"),
       Some(Left(Map(
         "foo" -> literalFloat(1.0)
@@ -562,7 +562,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left("bar"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password"),
       Some(Left(Map(
         "foo" -> literalFloat(1.0)
@@ -598,7 +598,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("target"),
       IfExistsThrowError,
       Left("bar"),
-      Left("user"),
+      literalString("user"),
       sensitiveLiteral("password"),
       Some(Left(Map.empty))
     )(defaultPos))
@@ -609,7 +609,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       stringParamName("name"),
       stringParamName("target"),
       IfExistsThrowError,
-      stringParam("url"),
+      Right(stringParam("url")),
       stringParam("user"),
       pwParam("password"),
       Some(Right(parameter("driver", CTMap)))
@@ -622,7 +622,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       namespacedName("at"),
       IfExistsThrowError,
       Left("driver"),
-      Left("driver"),
+      literalString("driver"),
       sensitiveLiteral("driver"),
       Some(Left(Map.empty))
     )(defaultPos))
@@ -803,7 +803,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       Some(namespacedName("target")),
       ifExists = false,
       Some(Left("neo4j://serverA:7687")),
-      Some(Left("user")),
+      Some(literalString("user")),
       Some(sensitiveLiteral("password")),
       Some(Left(Map(
         "ssl_enforced" -> trueLiteral
@@ -825,7 +825,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       stringParamName("name"),
       Some(stringParamName("target")),
       ifExists = true,
-      Some(stringParam("url")),
+      Some(Right(stringParam("url"))),
       Some(stringParam("user")),
       Some(pwParam("password")),
       Some(Right(parameter("driver", CTMap)))
@@ -837,7 +837,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       stringParamName("name"),
       Some(stringParamName("target")),
       ifExists = false,
-      Some(stringParam("url")),
+      Some(Right(stringParam("url"))),
       Some(stringParam("user")),
       Some(pwParam("password"))
     )(defaultPos))
@@ -858,7 +858,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
           namespacedName("name"),
           Some(namespacedName("db")),
           url = Some(Left("url")),
-          username = Some(Left("user")),
+          username = Some(literalString("user")),
           password = Some(sensitiveLiteral("password")),
           driverSettings = Some(Left(Map("ssl_enforced" -> trueLiteral))),
           properties =
@@ -957,7 +957,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     assertAst(
       AlterRemoteDatabaseAlias(
         namespacedName("name"),
-        username = Some(Left("foo")),
+        username = Some(literalString("foo")),
         properties =
           Some(Left(Map("key" -> literalString("value"), "anotherkey" -> literalString("anothervalue"))))
       )(defaultPos)
@@ -970,7 +970,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     assertAst(
       AlterRemoteDatabaseAlias(
         namespacedName("name"),
-        username = Some(Left("foo")),
+        username = Some(literalString("foo")),
         properties =
           Some(Left(Map(
             "key" -> literalFloat(12.5),
@@ -985,7 +985,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     assertAst(
       AlterRemoteDatabaseAlias(
         namespacedName("name"),
-        username = Some(Left("foo")),
+        username = Some(literalString("foo")),
         properties =
           Some(Left(Map()))
       )(defaultPos)
@@ -996,7 +996,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     assertAst(
       AlterRemoteDatabaseAlias(
         namespacedName("name"),
-        username = Some(Left("foo")),
+        username = Some(literalString("foo")),
         properties =
           Some(Right(parameter("props", CTMap)))
       )(defaultPos)
@@ -1014,7 +1014,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   // set user
   test("ALTER ALIAS name SET DATABASE USER user") {
-    assertAst(AlterRemoteDatabaseAlias(namespacedName("name"), username = Some(Left("user")))(defaultPos))
+    assertAst(AlterRemoteDatabaseAlias(namespacedName("name"), username = Some(literalString("user")))(defaultPos))
   }
 
   test("ALTER ALIAS name IF EXISTS SET DATABASE USER $user") {

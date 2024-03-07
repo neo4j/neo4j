@@ -141,9 +141,11 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -182,6 +184,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
   override def phase: CompilationPhase = PIPE_BUILDING
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
+
+  // Automatically convert AST form into Planner form
+  implicit private val expressionToEitherStringParam: PartialFunction[Expression, Either[String, Parameter]] = {
+    case StringLiteral(str) => Left(str)
+    case p: Parameter       => Right(p)
+  }
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
@@ -1200,7 +1208,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             aliasName,
             targetName,
             url,
-            username,
+            username.map(expressionToEitherStringParam),
             password,
             driverSettings,
             properties

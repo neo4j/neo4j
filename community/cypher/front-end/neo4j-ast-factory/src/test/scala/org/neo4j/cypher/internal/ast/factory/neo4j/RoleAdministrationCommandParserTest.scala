@@ -524,10 +524,16 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   private type grantOrRevokeRoleFunc = (Seq[String], Seq[String]) => InputPosition => ast.AdministrationCommand
 
   private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand =
-    ast.GrantRolesToUsers(r.map(Left(_)), u.map(Left(_)))
+    ast.GrantRolesToUsers(
+      r.map(roleName => literalString(roleName)),
+      u.map(userName => literalString(userName))
+    )
 
   private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand =
-    ast.RevokeRolesFromUsers(r.map(Left(_)), u.map(Left(_)))
+    ast.RevokeRolesFromUsers(
+      r.map(roleName => literalString(roleName)),
+      u.map(userName => literalString(userName))
+    )
 
   Seq("ROLE", "ROLES").foreach {
     roleKeyword =>

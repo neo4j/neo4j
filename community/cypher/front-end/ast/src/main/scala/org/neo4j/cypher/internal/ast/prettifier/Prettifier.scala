@@ -257,6 +257,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 
 //noinspection DuplicatedCode
@@ -1405,8 +1406,8 @@ object Prettifier {
 
   def prettifyRename(
     commandName: String,
-    fromName: Either[String, Parameter],
-    toName: Either[String, Parameter],
+    fromName: Expression,
+    toName: Expression,
     ifExists: Boolean
   ): String = {
     val maybeIfExists = if (ifExists) " IF EXISTS" else ""
@@ -1442,7 +1443,7 @@ object Prettifier {
     dbScope: DatabaseScope,
     qualifier: List[PrivilegeQualifier],
     preposition: String,
-    roleNames: Seq[Either[String, Parameter]]
+    roleNames: Seq[Expression]
   ): String = {
     val (dbName, default, multiple) = Prettifier.extractDbScope(dbScope)
     val db =
@@ -1462,7 +1463,7 @@ object Prettifier {
     qualifierString: String,
     resource: Option[ActionResource],
     preposition: String,
-    roleNames: Seq[Either[String, Parameter]]
+    roleNames: Seq[Expression]
   ): String = {
 
     val resourceName = resource match {
@@ -1644,10 +1645,15 @@ object Prettifier {
     case ParameterName(p)            => "$" + ExpressionStringifier.backtick(p.name)
   }
 
-  def escapeNames(names: Seq[Either[String, Parameter]]): String = names.map(escapeName).mkString(", ")
+  val escapeName: PartialFunction[Expression, String] = {
+    case StringLiteral(s) => ExpressionStringifier.backtick(s)
+    case p: Parameter     => s"$$${ExpressionStringifier.backtick(p.name)}"
+  }
+
+  def escapeNames(names: Seq[Expression]): String = names.map(escapeName).mkString(", ")
 
   def escapeNames(names: Seq[DatabaseName])(implicit d: DummyImplicit): String =
-    names.map(escapeName).mkString(", ")
+    names.map(databaseName => escapeName(databaseName)).mkString(", ")
 
   def extractTopology(topology: Topology): String = {
     val primariesString = topology.primaries.flatMap {

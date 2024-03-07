@@ -106,11 +106,11 @@ final case class UserAllQualifier()(val position: InputPosition) extends Databas
   override def dup(children: Seq[AnyRef]): UserAllQualifier.this.type = this
 }
 
-final case class UserQualifier(username: Either[String, Parameter])(val position: InputPosition)
+final case class UserQualifier(username: Expression)(val position: InputPosition)
     extends DatabasePrivilegeQualifier {
 
   override def dup(children: Seq[AnyRef]): UserQualifier.this.type =
-    this.copy(children.head.asInstanceOf[Either[String, Parameter]])(position).asInstanceOf[this.type]
+    this.copy(children.head.asInstanceOf[Expression])(position).asInstanceOf[this.type]
 }
 
 // Dbms qualifiers

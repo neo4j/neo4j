@@ -233,7 +233,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         }
 
         test(s"$command$immutableString ALIAS MANAGEMENT ON DBMS $preposition role") {
-          yields[Statements](privilegeFunc(AllAliasManagementActions, Seq(Left("role")), immutable))
+          yields[Statements](privilegeFunc(AllAliasManagementActions, Seq(literal("role")), immutable))
         }
 
         test(s"$command$immutableString DATABASE ALIAS MANAGEMENT ON DBMS $preposition role") {
@@ -244,7 +244,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         }
 
         test(s"$command$immutableString CREATE ALIAS ON DBMS $preposition role") {
-          yields[Statements](privilegeFunc(CreateAliasAction, Seq(Left("role")), immutable))
+          yields[Statements](privilegeFunc(CreateAliasAction, Seq(literal("role")), immutable))
         }
 
         test(s"$command$immutableString CREATE DATABASE ALIAS ON DBMS $preposition role") {
@@ -255,7 +255,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         }
 
         test(s"$command$immutableString DROP ALIAS ON DBMS $preposition role") {
-          yields[Statements](privilegeFunc(DropAliasAction, Seq(Left("role")), immutable))
+          yields[Statements](privilegeFunc(DropAliasAction, Seq(literal("role")), immutable))
         }
 
         test(s"$command$immutableString DROP DATABASE ALIAS ON DBMS $preposition role") {
@@ -266,7 +266,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         }
 
         test(s"$command$immutableString ALTER ALIAS ON DBMS $preposition role") {
-          yields[Statements](privilegeFunc(AlterAliasAction, Seq(Left("role")), immutable))
+          yields[Statements](privilegeFunc(AlterAliasAction, Seq(literal("role")), immutable))
         }
 
         test(s"$command$immutableString ALTER DATABASE ALIAS ON DBMS $preposition role") {
@@ -277,7 +277,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         }
 
         test(s"$command$immutableString SHOW ALIAS ON DBMS $preposition role") {
-          yields[Statements](privilegeFunc(ShowAliasAction, Seq(Left("role")), immutable))
+          yields[Statements](privilegeFunc(ShowAliasAction, Seq(literal("role")), immutable))
         }
 
         test(s"$command$immutableString SHOW DATABASE ALIAS ON DBMS $preposition role") {

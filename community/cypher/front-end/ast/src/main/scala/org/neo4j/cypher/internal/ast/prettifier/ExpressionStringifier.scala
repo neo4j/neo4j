@@ -130,6 +130,7 @@ import org.neo4j.internal.helpers.Strings
 
 trait ExpressionStringifier {
   def apply(ast: Expression): String
+  def apply(expressions: Seq[Expression], separator: String): String = expressions.map(apply).mkString(separator)
   def apply(s: SymbolicName): String
   def apply(ns: Namespace): String
   def patterns: PatternStringifier

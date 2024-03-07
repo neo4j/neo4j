@@ -2267,6 +2267,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     finalName <- oneOf(Left(name), Right(param))
   } yield finalName
 
+  def _stringLiteralOrParameter: Gen[Expression] = for {
+    name <- _stringLit
+    param <- _stringParameter
+    finalName <- oneOf(name, param)
+  } yield finalName
+
   def _databaseName: Gen[DatabaseName] = for {
     namespacedName <- _namespacedName
     param <- _stringParameter
@@ -2317,6 +2323,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     names <- oneOrMore(_nameAsEither)
   } yield names
 
+  def _listOfStringLiteralOrParam: Gen[List[Expression]] = for {
+    names <- oneOrMore(_stringLiteralOrParameter)
+  } yield names
+
   def _password: Gen[Expression] =
     oneOf(_sensitiveStringParameter, _sensitiveAutoStringParameter, _sensitiveStringLiteral)
 
@@ -2357,7 +2367,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield oeyw
 
   def _createUser: Gen[CreateUser] = for {
-    userName <- _nameAsEither
+    userName <- _stringLiteralOrParameter
     isEncryptedPassword <- boolean
     password <- _password
     requirePasswordChange <- boolean
@@ -2370,18 +2380,18 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield CreateUser(userName, isEncryptedPassword, password, UserOptions(Some(requirePasswordChange), suspended, homeDatabase), ifExistsDo)(pos)
 
   def _renameUser: Gen[RenameUser] = for {
-    fromUserName <- _nameAsEither
-    toUserName <- _nameAsEither
+    fromUserName <- _stringLiteralOrParameter
+    toUserName <- _stringLiteralOrParameter
     ifExists <- boolean
   } yield RenameUser(fromUserName, toUserName, ifExists)(pos)
 
   def _dropUser: Gen[DropUser] = for {
-    userName <- _nameAsEither
+    userName <- _stringLiteralOrParameter
     ifExists <- boolean
   } yield DropUser(userName, ifExists)(pos)
 
   def _alterUser: Gen[AlterUser] = for {
-    userName <- _nameAsEither
+    userName <- _stringLiteralOrParameter
     ifExists <- boolean
     password <- option(_password)
     requirePasswordChange <- option(boolean)
@@ -2420,30 +2430,30 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield ShowRoles(withUsers, showAll, yields)(pos)
 
   def _createRole: Gen[CreateRole] = for {
-    roleName <- _nameAsEither
-    fromRoleName <- option(_nameAsEither)
+    roleName <- _stringLiteralOrParameter
+    fromRoleName <- option(_stringLiteralOrParameter)
     ifExistsDo <- _ifExistsDo
   } yield CreateRole(roleName, fromRoleName, ifExistsDo)(pos)
 
   def _renameRole: Gen[RenameRole] = for {
-    fromRoleName <- _nameAsEither
-    toRoleName <- _nameAsEither
+    fromRoleName <- _stringLiteralOrParameter
+    toRoleName <- _stringLiteralOrParameter
     ifExists <- boolean
   } yield RenameRole(fromRoleName, toRoleName, ifExists)(pos)
 
   def _dropRole: Gen[DropRole] = for {
-    roleName <- _nameAsEither
+    roleName <- _stringLiteralOrParameter
     ifExists <- boolean
   } yield DropRole(roleName, ifExists)(pos)
 
   def _grantRole: Gen[GrantRolesToUsers] = for {
-    roleNames <- _listOfNameOfEither
-    userNames <- _listOfNameOfEither
+    roleNames <- _listOfStringLiteralOrParam
+    userNames <- _listOfStringLiteralOrParam
   } yield GrantRolesToUsers(roleNames, userNames)(pos)
 
   def _revokeRole: Gen[RevokeRolesFromUsers] = for {
-    roleNames <- _listOfNameOfEither
-    userNames <- _listOfNameOfEither
+    roleNames <- _listOfStringLiteralOrParam
+    userNames <- _listOfStringLiteralOrParam
   } yield RevokeRolesFromUsers(roleNames, userNames)(pos)
 
   def _roleCommand: Gen[AdministrationCommand] = oneOf(
@@ -2567,7 +2577,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     } else if (dbmsAction == ImpersonateUserAction) {
       // impersonation
       for {
-        userNames <- _listOfNameOfEither
+        userNames <- _listOfStringLiteralOrParam
         qualifier <- frequency(7 -> userNames.map(UserQualifier(_)(pos)), 3 -> List(UserAllQualifier()(pos)))
       } yield qualifier
     } else {
@@ -2578,7 +2588,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _databaseQualifier(haveUserQualifier: Boolean): Gen[List[DatabasePrivilegeQualifier]] =
     if (haveUserQualifier) {
       for {
-        userNames <- _listOfNameOfEither
+        userNames <- _listOfStringLiteralOrParam
         qualifier <- frequency(7 -> userNames.map(UserQualifier(_)(pos)), 3 -> List(UserAllQualifier()(pos)))
       } yield qualifier
     } else {
@@ -2725,7 +2735,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield ShowSupportedPrivilegeCommand(yields)(pos)
 
   def _showPrivileges: Gen[ShowPrivileges] = for {
-    names <- _listOfNameOfEither
+    names <- _listOfStringLiteralOrParam
     showRole = ShowRolesPrivileges(names)(pos)
     showUser1 = ShowUsersPrivileges(names)(pos)
     showUser2 = ShowUserPrivileges(None)(pos)
@@ -2735,7 +2745,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield ShowPrivileges(scope, yields)(pos)
 
   def _showPrivilegeCommands: Gen[ShowPrivilegeCommands] = for {
-    names <- _listOfNameOfEither
+    names <- _listOfStringLiteralOrParam
     showRole = ShowRolesPrivileges(names)(pos)
     showUser1 = ShowUsersPrivileges(names)(pos)
     showUser2 = ShowUserPrivileges(None)(pos)
@@ -2748,7 +2758,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _dbmsPrivilege: Gen[PrivilegeCommand] = for {
     dbmsAction <- _dbmsAction
     qualifier <- _dbmsQualifier(dbmsAction)
-    roleNames <- _listOfNameOfEither
+    roleNames <- _listOfStringLiteralOrParam
     revokeType <- _revokeType
     immutable <- boolean
     dbmsGrant = GrantPrivilege.dbmsAction(dbmsAction, immutable, roleNames, qualifier)(pos)
@@ -2767,7 +2777,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       HomeDatabaseScope()(pos)
     )
     databaseQualifier <- _databaseQualifier(databaseAction.isInstanceOf[TransactionManagementAction])
-    roleNames <- _listOfNameOfEither
+    roleNames <- _listOfStringLiteralOrParam
     revokeType <- _revokeType
     immutable <- boolean
     databaseGrant =
@@ -2792,7 +2802,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     graphScope <-
       oneOf(NamedGraphsScope(graphNames)(pos), AllGraphsScope()(pos), DefaultGraphScope()(pos), HomeGraphScope()(pos))
     (qualifier, maybeResource) <- _graphQualifierAndResource(graphAction)
-    roleNames <- _listOfNameOfEither
+    roleNames <- _listOfStringLiteralOrParam
     revokeType <- _revokeType
     immutable <- boolean
     graphGrant =
@@ -2807,7 +2817,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _loadPrivilege: Gen[PrivilegeCommand] = for {
     (qualifier, action) <- _loadQualifierAndAction
-    roleNames <- _listOfNameOfEither
+    roleNames <- _listOfStringLiteralOrParam
     revokeType <- _revokeType
     immutable <- boolean
     resource <- some(FileResource()(pos))
@@ -2917,7 +2927,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     targetName <- _databaseName
     ifExistsDo <- _ifExistsDo
     url <- _nameAsEither
-    username <- _nameAsEither
+    username <- _stringLiteralOrParameter
     password <- _password
     driverSettings <- option(_optionalMapAsEither)
     properties <- option(_optionalMapAsEither)
@@ -2942,7 +2952,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     targetName <- option(_databaseName)
     ifExists <- boolean
     url <- if (targetName.nonEmpty) some(_nameAsEither) else const(None)
-    username <- option(_nameAsEither)
+    username <- option(_stringLiteralOrParameter)
     password <- option(_password)
     // All four are not allowed to be None
     driverSettings <-

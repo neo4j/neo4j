@@ -947,7 +947,7 @@ public class NullAstFactory
             ConstraintType constraintType,
             boolean replace,
             boolean ifNotExists,
-            SimpleEither<String, NULL> constraintName,
+            SimpleEither<StringPos<NULL>, NULL> constraintName,
             NULL aNull,
             StringPos<NULL> label,
             List<NULL> nulls,
@@ -959,7 +959,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL dropConstraint(NULL p, SimpleEither<String, NULL> name, boolean ifExists) {
+    public NULL dropConstraint(NULL p, SimpleEither<StringPos<NULL>, NULL> name, boolean ifExists) {
         return null;
     }
 
@@ -980,7 +980,7 @@ public class NullAstFactory
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            SimpleEither<String, NULL> indexName,
+            SimpleEither<StringPos<NULL>, NULL> indexName,
             NULL aNull,
             StringPos<NULL> functionName,
             NULL functionParameter,
@@ -994,7 +994,7 @@ public class NullAstFactory
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            SimpleEither<String, NULL> indexName,
+            SimpleEither<StringPos<NULL>, NULL> indexName,
             NULL aNull,
             StringPos<NULL> label,
             List<NULL> nulls,
@@ -1009,7 +1009,7 @@ public class NullAstFactory
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            SimpleEither<String, NULL> indexName,
+            SimpleEither<StringPos<NULL>, NULL> indexName,
             NULL aNull,
             List<StringPos<NULL>> labels,
             List<NULL> nulls,
@@ -1018,7 +1018,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL dropIndex(NULL p, SimpleEither<String, NULL> name, boolean ifExists) {
+    public NULL dropIndex(NULL p, SimpleEither<StringPos<NULL>, NULL> name, boolean ifExists) {
         return null;
     }
 
@@ -1031,20 +1031,23 @@ public class NullAstFactory
     public NULL createRole(
             NULL p,
             boolean replace,
-            SimpleEither<String, NULL> roleName,
-            SimpleEither<String, NULL> fromRole,
+            SimpleEither<StringPos<NULL>, NULL> roleName,
+            SimpleEither<StringPos<NULL>, NULL> fromRole,
             boolean ifNotExists) {
         return null;
     }
 
     @Override
-    public NULL dropRole(NULL p, SimpleEither<String, NULL> roleName, boolean ifExists) {
+    public NULL dropRole(NULL p, SimpleEither<StringPos<NULL>, NULL> roleName, boolean ifExists) {
         return null;
     }
 
     @Override
     public NULL renameRole(
-            NULL p, SimpleEither<String, NULL> fromRoleName, SimpleEither<String, NULL> toRoleName, boolean ifExists) {
+            NULL p,
+            SimpleEither<StringPos<NULL>, NULL> fromRoleName,
+            SimpleEither<StringPos<NULL>, NULL> toRoleName,
+            boolean ifExists) {
         return null;
     }
 
@@ -1055,12 +1058,14 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL grantRoles(NULL p, List<SimpleEither<String, NULL>> roles, List<SimpleEither<String, NULL>> users) {
+    public NULL grantRoles(
+            NULL p, List<SimpleEither<StringPos<NULL>, NULL>> roles, List<SimpleEither<StringPos<NULL>, NULL>> users) {
         return null;
     }
 
     @Override
-    public NULL revokeRoles(NULL p, List<SimpleEither<String, NULL>> roles, List<SimpleEither<String, NULL>> users) {
+    public NULL revokeRoles(
+            NULL p, List<SimpleEither<StringPos<NULL>, NULL>> roles, List<SimpleEither<StringPos<NULL>, NULL>> users) {
         return null;
     }
 
@@ -1069,7 +1074,7 @@ public class NullAstFactory
             NULL p,
             boolean replace,
             boolean ifNotExists,
-            SimpleEither<String, NULL> username,
+            SimpleEither<StringPos<NULL>, NULL> username,
             NULL password,
             boolean encrypted,
             boolean changeRequired,
@@ -1079,13 +1084,16 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL dropUser(NULL p, boolean ifExists, SimpleEither<String, NULL> username) {
+    public NULL dropUser(NULL p, boolean ifExists, SimpleEither<StringPos<NULL>, NULL> username) {
         return null;
     }
 
     @Override
     public NULL renameUser(
-            NULL p, SimpleEither<String, NULL> fromUserName, SimpleEither<String, NULL> toUserName, boolean ifExists) {
+            NULL p,
+            SimpleEither<StringPos<NULL>, NULL> fromUserName,
+            SimpleEither<StringPos<NULL>, NULL> toUserName,
+            boolean ifExists) {
         return null;
     }
 
@@ -1098,7 +1106,7 @@ public class NullAstFactory
     public NULL alterUser(
             NULL p,
             boolean ifExists,
-            SimpleEither<String, NULL> username,
+            SimpleEither<StringPos<NULL>, NULL> username,
             NULL password,
             boolean encrypted,
             Boolean changeRequired,
@@ -1142,7 +1150,7 @@ public class NullAstFactory
     @Override
     public NULL showRolePrivileges(
             NULL p,
-            List<SimpleEither<String, NULL>> roles,
+            List<SimpleEither<StringPos<NULL>, NULL>> roles,
             boolean asCommand,
             boolean asRevoke,
             NULL yieldExpr,
@@ -1154,7 +1162,7 @@ public class NullAstFactory
     @Override
     public NULL showUserPrivileges(
             NULL p,
-            List<SimpleEither<String, NULL>> users,
+            List<SimpleEither<StringPos<NULL>, NULL>> users,
             boolean asCommand,
             boolean asRevoke,
             NULL yieldExpr,
@@ -1164,18 +1172,22 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL grantPrivilege(NULL p, List<SimpleEither<String, NULL>> roles, NULL privilege) {
+    public NULL grantPrivilege(NULL p, List<SimpleEither<StringPos<NULL>, NULL>> roles, NULL privilege) {
         return null;
     }
 
     @Override
-    public NULL denyPrivilege(NULL p, List<SimpleEither<String, NULL>> roles, NULL privilege) {
+    public NULL denyPrivilege(NULL p, List<SimpleEither<StringPos<NULL>, NULL>> roles, NULL privilege) {
         return null;
     }
 
     @Override
     public NULL revokePrivilege(
-            NULL p, List<SimpleEither<String, NULL>> roles, NULL privilege, boolean revokeGrant, boolean revokeDeny) {
+            NULL p,
+            List<SimpleEither<StringPos<NULL>, NULL>> roles,
+            NULL privilege,
+            boolean revokeGrant,
+            boolean revokeDeny) {
         return null;
     }
 
@@ -1281,7 +1293,7 @@ public class NullAstFactory
     }
 
     @Override
-    public List<NULL> userQualifier(List<SimpleEither<String, NULL>> users) {
+    public List<NULL> userQualifier(List<SimpleEither<StringPos<NULL>, NULL>> users) {
         return null;
     }
 
@@ -1440,7 +1452,7 @@ public class NullAstFactory
             NULL targetName,
             boolean ifNotExists,
             SimpleEither<String, NULL> url,
-            SimpleEither<String, NULL> username,
+            SimpleEither<StringPos<NULL>, NULL> username,
             NULL password,
             SimpleEither<Map<String, NULL>, NULL> driverSettings,
             SimpleEither<Map<String, NULL>, NULL> properties) {
@@ -1464,7 +1476,7 @@ public class NullAstFactory
             NULL targetName,
             boolean ifExists,
             SimpleEither<String, NULL> url,
-            SimpleEither<String, NULL> username,
+            SimpleEither<StringPos<NULL>, NULL> username,
             NULL password,
             SimpleEither<Map<String, NULL>, NULL> driverSettings,
             SimpleEither<Map<String, NULL>, NULL> properties) {

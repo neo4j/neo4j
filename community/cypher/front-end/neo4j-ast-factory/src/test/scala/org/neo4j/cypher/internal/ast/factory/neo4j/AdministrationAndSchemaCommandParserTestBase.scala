@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -41,6 +42,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   }
 
   implicit val stringConvertor: String => Either[String, Parameter] = s => Left(s)
+  implicit val rolenameConvertor: String => Expression = s => literalString(s)
   implicit val namespacedNameConvertor: String => DatabaseName = s => NamespacedName(s)(pos)
 
   val propSeq: Seq[String] = Seq("prop")
@@ -48,22 +50,22 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   val actionString = "action"
   val grantedString: StringLiteral = literalString("GRANTED")
   val noneString: StringLiteral = literalString("none")
-  val literalEmpty: Either[String, Parameter] = literal("")
-  val literalUser: Either[String, Parameter] = literal("user")
-  val literalUser1: Either[String, Parameter] = literal("user1")
+  def literalEmpty[T](implicit convertor: String => T): T = literal("")
+  val literalUser: StringLiteral = literalString("user")
+  val literalUser1: StringLiteral = literalString("user1")
   def literalFoo[T](implicit convertor: String => T): T = literal("foo")
-  val literalFColonOo: Either[String, Parameter] = literal("f:oo")
-  val literalBar: Either[String, Parameter] = literal("bar")
-  val literalRole: Either[String, Parameter] = literal("role")
-  val literalRColonOle: Either[String, Parameter] = literal("r:ole")
-  val literalRole1: Either[String, Parameter] = literal("role1")
-  val literalRole2: Either[String, Parameter] = literal("role2")
-  val paramUser: Either[String, Parameter] = stringParam("user")
-  val paramFoo: Either[String, Parameter] = stringParam("foo")
+  def literalFColonOo[T](implicit convertor: String => T): T = literal("f:oo")
+  def literalBar[T](implicit convertor: String => T): T = literal("bar")
+  val literalRole: Expression = literal("role")
+  val literalRColonOle: Expression = literal("r:ole")
+  val literalRole1: Expression = literal("role1")
+  val literalRole2: Expression = literal("role2")
+  val paramUser: Parameter = stringParam("user")
+  val paramFoo: Parameter = stringParam("foo")
   val namespacedParamFoo: ParameterName = stringParamName("foo")
-  val paramRole: Either[String, Parameter] = stringParam("role")
-  val paramRole1: Either[String, Parameter] = stringParam("role1")
-  val paramRole2: Either[String, Parameter] = stringParam("role2")
+  val paramRole: Expression = stringParam("role")
+  val paramRole1: Expression = stringParam("role1")
+  val paramRole2: Expression = stringParam("role2")
   val accessVar: Variable = varFor(accessString)
   val labelQualifierA: InputPosition => ast.LabelQualifier = ast.LabelQualifier("A")(_)
   val labelQualifierB: InputPosition => ast.LabelQualifier = ast.LabelQualifier("B")(_)
@@ -77,7 +79,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
 
   def literal[T](name: String)(implicit convertor: String => T): T = convertor(name)
 
-  def stringParam(name: String): Either[String, Parameter] = Right(parameter(name, CTString))
+  def stringParam(name: String): Parameter = parameter(name, CTString)
   def stringParamName(name: String): ParameterName = ParameterName(parameter(name, CTString))(pos)
 
   def namespacedName(nameParts: String*): NamespacedName =
@@ -111,7 +113,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     ast.PrivilegeType,
     ast.ActionResource,
     List[ast.GraphPrivilegeQualifier],
-    Seq[Either[String, Parameter]],
+    Seq[Expression],
     Immutable
   ) => InputPosition => ast.Statement
 
@@ -119,7 +121,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     (
       ast.PrivilegeType,
       List[ast.GraphPrivilegeQualifier],
-      Seq[Either[String, Parameter]],
+      Seq[Expression],
       Immutable
     ) => InputPosition => ast.Statement
 
@@ -127,7 +129,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     (
       ast.DatabaseAction,
       ast.DatabaseScope,
-      Seq[Either[String, Parameter]],
+      Seq[Expression],
       Immutable
     ) => InputPosition => ast.Statement
 
@@ -135,7 +137,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     (
       ast.LoadActions,
       ast.LoadPrivilegeQualifier,
-      Seq[Either[String, Parameter]],
+      Seq[Expression],
       Immutable
     ) => InputPosition => ast.Statement
 
@@ -143,17 +145,17 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     ast.DatabaseAction,
     ast.DatabaseScope,
     List[ast.DatabasePrivilegeQualifier],
-    Seq[Either[String, Parameter]],
+    Seq[Expression],
     Immutable
   ) => InputPosition => ast.Statement
 
-  type dbmsPrivilegeFunc = (ast.DbmsAction, Seq[Either[String, Parameter]], Immutable) => InputPosition => ast.Statement
+  type dbmsPrivilegeFunc = (ast.DbmsAction, Seq[Expression], Immutable) => InputPosition => ast.Statement
 
   type executeProcedurePrivilegeFunc =
     (
       ast.DbmsAction,
       List[ast.ProcedurePrivilegeQualifier],
-      Seq[Either[String, Parameter]],
+      Seq[Expression],
       Immutable
     ) => InputPosition => ast.Statement
 
@@ -161,7 +163,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     (
       ast.DbmsAction,
       List[ast.FunctionPrivilegeQualifier],
-      Seq[Either[String, Parameter]],
+      Seq[Expression],
       Immutable
     ) => InputPosition => ast.Statement
 
@@ -169,7 +171,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     (
       ast.DbmsAction,
       List[ast.SettingPrivilegeQualifier],
-      Seq[Either[String, Parameter]],
+      Seq[Expression],
       Immutable
     ) => InputPosition => ast.Statement
 
@@ -177,7 +179,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     p: ast.PrivilegeType,
     a: ast.ActionResource,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege(p, i, Some(a), q, r)
@@ -185,7 +187,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def grantGraphPrivilege(
     p: ast.PrivilegeType,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege(p, i, None, q, r)
@@ -193,7 +195,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def grantDatabasePrivilege(
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege.databaseAction(d, i, s, r)
@@ -202,14 +204,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege.databaseAction(d, i, s, r, q)
 
   def grantDbmsPrivilege(
     a: ast.DbmsAction,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(a, i, r)
@@ -217,7 +219,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def grantExecuteProcedurePrivilege(
     a: ast.DbmsAction,
     q: List[ast.ProcedurePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(a, i, r, q)
@@ -225,7 +227,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def grantExecuteFunctionPrivilege(
     a: ast.DbmsAction,
     q: List[ast.FunctionPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(a, i, r, q)
@@ -233,7 +235,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def grantShowSettingPrivilege(
     a: ast.DbmsAction,
     q: List[ast.SettingPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(a, i, r, q)
@@ -242,7 +244,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     p: ast.PrivilegeType,
     a: ast.ActionResource,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege(p, i, Some(a), q, r)
@@ -250,7 +252,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def denyGraphPrivilege(
     p: ast.PrivilegeType,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege(p, i, None, q, r)
@@ -258,7 +260,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def denyDatabasePrivilege(
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege.databaseAction(d, i, s, r)
@@ -267,14 +269,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege.databaseAction(d, i, s, r, q)
 
   def denyDbmsPrivilege(
     a: ast.DbmsAction,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(a, i, r)
@@ -282,7 +284,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def denyExecuteProcedurePrivilege(
     a: ast.DbmsAction,
     q: List[ast.ProcedurePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(a, i, r, q)
@@ -290,7 +292,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def denyExecuteFunctionPrivilege(
     a: ast.DbmsAction,
     q: List[ast.FunctionPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(a, i, r, q)
@@ -298,7 +300,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def denyShowSettingPrivilege(
     a: ast.DbmsAction,
     q: List[ast.SettingPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(a, i, r, q)
@@ -307,7 +309,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     p: ast.PrivilegeType,
     a: ast.ActionResource,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, i, Some(a), q, r, ast.RevokeGrantType()(pos))
@@ -315,7 +317,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeGrantGraphPrivilege(
     p: ast.PrivilegeType,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, i, None, q, r, ast.RevokeGrantType()(pos))
@@ -323,7 +325,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeGrantDatabasePrivilege(
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, i, s, r, ast.RevokeGrantType()(pos))
@@ -332,14 +334,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, i, s, r, ast.RevokeGrantType()(pos), q)
 
   def revokeGrantDbmsPrivilege(
     a: ast.DbmsAction,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeGrantType()(pos))
@@ -347,7 +349,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeGrantExecuteProcedurePrivilege(
     a: ast.DbmsAction,
     q: List[ast.ProcedurePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeGrantType()(pos), q)
@@ -355,7 +357,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeGrantExecuteFunctionPrivilege(
     a: ast.DbmsAction,
     q: List[ast.FunctionPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeGrantType()(pos), q)
@@ -363,7 +365,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeGrantShowSettingPrivilege(
     a: ast.DbmsAction,
     q: List[ast.SettingPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeGrantType()(pos), q)
@@ -372,7 +374,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     p: ast.PrivilegeType,
     a: ast.ActionResource,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, i, Some(a), q, r, ast.RevokeDenyType()(pos))
@@ -380,7 +382,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeDenyGraphPrivilege(
     p: ast.PrivilegeType,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, i, None, q, r, ast.RevokeDenyType()(pos))
@@ -388,7 +390,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeDenyDatabasePrivilege(
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, i, s, r, ast.RevokeDenyType()(pos))
@@ -397,14 +399,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, i, s, r, ast.RevokeDenyType()(pos), q)
 
   def revokeDenyDbmsPrivilege(
     a: ast.DbmsAction,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeDenyType()(pos))
@@ -412,7 +414,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeDenyExecuteProcedurePrivilege(
     a: ast.DbmsAction,
     q: List[ast.ProcedurePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeDenyType()(pos), q)
@@ -420,7 +422,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeDenyExecuteFunctionPrivilege(
     a: ast.DbmsAction,
     q: List[ast.FunctionPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeDenyType()(pos), q)
@@ -428,7 +430,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeDenyShowSettingPrivilege(
     a: ast.DbmsAction,
     q: List[ast.SettingPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeDenyType()(pos), q)
@@ -437,7 +439,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     p: ast.PrivilegeType,
     a: ast.ActionResource,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, i, Some(a), q, r, ast.RevokeBothType()(pos))
@@ -445,7 +447,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeGraphPrivilege(
     p: ast.PrivilegeType,
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, i, None, q, r, ast.RevokeBothType()(pos))
@@ -453,7 +455,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeDatabasePrivilege(
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, i, s, r, ast.RevokeBothType()(pos))
@@ -462,14 +464,14 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
     d: ast.DatabaseAction,
     s: ast.DatabaseScope,
     q: List[ast.DatabasePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.databaseAction(d, i, s, r, ast.RevokeBothType()(pos), q)
 
   def revokeDbmsPrivilege(
     a: ast.DbmsAction,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeBothType()(pos))
@@ -477,7 +479,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeExecuteProcedurePrivilege(
     a: ast.DbmsAction,
     q: List[ast.ProcedurePrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeBothType()(pos), q)
@@ -485,7 +487,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeExecuteFunctionPrivilege(
     a: ast.DbmsAction,
     q: List[ast.FunctionPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeBothType()(pos), q)
@@ -493,7 +495,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def revokeShowSettingPrivilege(
     a: ast.DbmsAction,
     q: List[ast.SettingPrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeBothType()(pos), q)

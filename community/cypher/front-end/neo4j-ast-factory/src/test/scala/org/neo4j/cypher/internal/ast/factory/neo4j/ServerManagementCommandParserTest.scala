@@ -122,7 +122,7 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   test("ENABLE SERVER $name OPTIONS { tags: ['snake', 'flower'] }") {
     val listLiteral = ListLiteral(List(literalString("snake"), literalString("flower")))(InputPosition(36, 1, 37))
     val optionsMap = OptionsMap(Map("tags" -> listLiteral))
-    assertAst(ast.EnableServer(stringParam("name"), optionsMap)(defaultPos))
+    assertAst(ast.EnableServer(Right(stringParam("name")), optionsMap)(defaultPos))
   }
 
   test("ENABLE SERVER 'name' OPTIONS { modeConstraint: $mode }") {
@@ -152,7 +152,7 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
 
   test("ALTER SERVER $name SET OPTIONS {}") {
     val optionsMap = OptionsMap(Map.empty)
-    assertAst(ast.AlterServer(stringParam("name"), optionsMap)(defaultPos))
+    assertAst(ast.AlterServer(Right(stringParam("name")), optionsMap)(defaultPos))
   }
 
   test("ALTER SERVER 'name' SET OPTIONS $map") {
@@ -174,7 +174,7 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("RENAME SERVER $from TO $to") {
-    assertAst(ast.RenameServer(stringParam("from"), stringParam("to"))(defaultPos))
+    assertAst(ast.RenameServer(Right(stringParam("from")), Right(stringParam("to")))(defaultPos))
   }
 
   test("RENAME SERVER `bad,ger` TO $to") {
@@ -192,7 +192,7 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("DROP SERVER $name") {
-    assertAst(ast.DropServer(stringParam("name"))(defaultPos))
+    assertAst(ast.DropServer(Right(stringParam("name")))(defaultPos))
   }
 
   test("DROP SERVER name") {
@@ -220,11 +220,11 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("DEALLOCATE DATABASES FROM SERVER $name") {
-    assertAst(ast.DeallocateServers(dryRun = false, Seq(stringParam("name")))(defaultPos))
+    assertAst(ast.DeallocateServers(dryRun = false, Seq(Right(stringParam("name"))))(defaultPos))
   }
 
   test("DEALLOCATE DATABASE FROM SERVERS $name, 'foo'") {
-    assertAst(ast.DeallocateServers(dryRun = false, Seq(stringParam("name"), literal("foo")))(defaultPos))
+    assertAst(ast.DeallocateServers(dryRun = false, Seq(Right(stringParam("name")), literal("foo")))(defaultPos))
   }
 
   test("DEALLOCATE SERVERS $name, 'foo'") {

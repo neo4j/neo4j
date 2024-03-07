@@ -108,10 +108,18 @@ public interface ASTFactory<
     class StringPos<POS> {
         public final String string;
         public final POS pos;
+        public final POS endPos;
 
         public StringPos(String string, POS pos) {
             this.string = string;
             this.pos = pos;
+            this.endPos = null;
+        }
+
+        public StringPos(String string, POS pos, POS endPos) {
+            this.string = string;
+            this.pos = pos;
+            this.endPos = endPos;
         }
     }
 
@@ -374,7 +382,7 @@ public interface ASTFactory<
             ConstraintType constraintType,
             boolean replace,
             boolean ifNotExists,
-            SimpleEither<String, PARAMETER> constraintName,
+            SimpleEither<StringPos<POS>, PARAMETER> constraintName,
             VARIABLE variable,
             StringPos<POS> label,
             List<PROPERTY> properties,
@@ -383,7 +391,7 @@ public interface ASTFactory<
             boolean containsOn,
             ConstraintVersion constraintVersion);
 
-    SCHEMA_COMMAND dropConstraint(POS p, SimpleEither<String, PARAMETER> name, boolean ifExists);
+    SCHEMA_COMMAND dropConstraint(POS p, SimpleEither<StringPos<POS>, PARAMETER> name, boolean ifExists);
 
     SCHEMA_COMMAND dropConstraint(
             POS p, ConstraintType constraintType, VARIABLE variable, StringPos<POS> label, List<PROPERTY> properties);
@@ -397,7 +405,7 @@ public interface ASTFactory<
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            SimpleEither<String, PARAMETER> indexName,
+            SimpleEither<StringPos<POS>, PARAMETER> indexName,
             VARIABLE variable,
             StringPos<POS> functionName,
             VARIABLE functionParameter,
@@ -408,7 +416,7 @@ public interface ASTFactory<
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            SimpleEither<String, PARAMETER> indexName,
+            SimpleEither<StringPos<POS>, PARAMETER> indexName,
             VARIABLE variable,
             StringPos<POS> label,
             List<PROPERTY> properties,
@@ -420,13 +428,13 @@ public interface ASTFactory<
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            SimpleEither<String, PARAMETER> indexName,
+            SimpleEither<StringPos<POS>, PARAMETER> indexName,
             VARIABLE variable,
             List<StringPos<POS>> labels,
             List<PROPERTY> properties,
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> options);
 
-    SCHEMA_COMMAND dropIndex(POS p, SimpleEither<String, PARAMETER> name, boolean ifExists);
+    SCHEMA_COMMAND dropIndex(POS p, SimpleEither<StringPos<POS>, PARAMETER> name, boolean ifExists);
 
     SCHEMA_COMMAND dropIndex(POS p, StringPos<POS> label, List<StringPos<POS>> propertyNames);
 
@@ -436,26 +444,30 @@ public interface ASTFactory<
     ADMINISTRATION_COMMAND createRole(
             POS p,
             boolean replace,
-            SimpleEither<String, PARAMETER> roleName,
-            SimpleEither<String, PARAMETER> fromRole,
+            SimpleEither<StringPos<POS>, PARAMETER> roleName,
+            SimpleEither<StringPos<POS>, PARAMETER> fromRole,
             boolean ifNotExists);
 
-    ADMINISTRATION_COMMAND dropRole(POS p, SimpleEither<String, PARAMETER> roleName, boolean ifExists);
+    ADMINISTRATION_COMMAND dropRole(POS p, SimpleEither<StringPos<POS>, PARAMETER> roleName, boolean ifExists);
 
     ADMINISTRATION_COMMAND renameRole(
             POS p,
-            SimpleEither<String, PARAMETER> fromRoleName,
-            SimpleEither<String, PARAMETER> toRoleName,
+            SimpleEither<StringPos<POS>, PARAMETER> fromRoleName,
+            SimpleEither<StringPos<POS>, PARAMETER> toRoleName,
             boolean ifExists);
 
     ADMINISTRATION_COMMAND showRoles(
             POS p, boolean withUsers, boolean showAll, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
 
     ADMINISTRATION_COMMAND grantRoles(
-            POS p, List<SimpleEither<String, PARAMETER>> roles, List<SimpleEither<String, PARAMETER>> users);
+            POS p,
+            List<SimpleEither<StringPos<POS>, PARAMETER>> roles,
+            List<SimpleEither<StringPos<POS>, PARAMETER>> users);
 
     ADMINISTRATION_COMMAND revokeRoles(
-            POS p, List<SimpleEither<String, PARAMETER>> roles, List<SimpleEither<String, PARAMETER>> users);
+            POS p,
+            List<SimpleEither<StringPos<POS>, PARAMETER>> roles,
+            List<SimpleEither<StringPos<POS>, PARAMETER>> users);
 
     // User Administration Commands
 
@@ -463,19 +475,19 @@ public interface ASTFactory<
             POS p,
             boolean replace,
             boolean ifNotExists,
-            SimpleEither<String, PARAMETER> username,
+            SimpleEither<StringPos<POS>, PARAMETER> username,
             EXPRESSION password,
             boolean encrypted,
             boolean changeRequired,
             Boolean suspended,
             DATABASE_NAME homeDatabase);
 
-    ADMINISTRATION_COMMAND dropUser(POS p, boolean ifExists, SimpleEither<String, PARAMETER> username);
+    ADMINISTRATION_COMMAND dropUser(POS p, boolean ifExists, SimpleEither<StringPos<POS>, PARAMETER> username);
 
     ADMINISTRATION_COMMAND renameUser(
             POS p,
-            SimpleEither<String, PARAMETER> fromUserName,
-            SimpleEither<String, PARAMETER> toUserName,
+            SimpleEither<StringPos<POS>, PARAMETER> fromUserName,
+            SimpleEither<StringPos<POS>, PARAMETER> toUserName,
             boolean ifExists);
 
     ADMINISTRATION_COMMAND setOwnPassword(POS p, EXPRESSION currentPassword, EXPRESSION newPassword);
@@ -483,7 +495,7 @@ public interface ASTFactory<
     ADMINISTRATION_COMMAND alterUser(
             POS p,
             boolean ifExists,
-            SimpleEither<String, PARAMETER> username,
+            SimpleEither<StringPos<POS>, PARAMETER> username,
             EXPRESSION password,
             boolean encrypted,
             Boolean changeRequired,
@@ -509,7 +521,7 @@ public interface ASTFactory<
 
     ADMINISTRATION_COMMAND showRolePrivileges(
             POS p,
-            List<SimpleEither<String, PARAMETER>> roles,
+            List<SimpleEither<StringPos<POS>, PARAMETER>> roles,
             boolean asCommand,
             boolean asRevoke,
             YIELD yieldExpr,
@@ -518,20 +530,22 @@ public interface ASTFactory<
 
     ADMINISTRATION_COMMAND showUserPrivileges(
             POS p,
-            List<SimpleEither<String, PARAMETER>> users,
+            List<SimpleEither<StringPos<POS>, PARAMETER>> users,
             boolean asCommand,
             boolean asRevoke,
             YIELD yieldExpr,
             RETURN_CLAUSE returnWithoutGraph,
             WHERE where);
 
-    ADMINISTRATION_COMMAND grantPrivilege(POS p, List<SimpleEither<String, PARAMETER>> roles, PRIVILEGE_TYPE privilege);
+    ADMINISTRATION_COMMAND grantPrivilege(
+            POS p, List<SimpleEither<StringPos<POS>, PARAMETER>> roles, PRIVILEGE_TYPE privilege);
 
-    ADMINISTRATION_COMMAND denyPrivilege(POS p, List<SimpleEither<String, PARAMETER>> roles, PRIVILEGE_TYPE privilege);
+    ADMINISTRATION_COMMAND denyPrivilege(
+            POS p, List<SimpleEither<StringPos<POS>, PARAMETER>> roles, PRIVILEGE_TYPE privilege);
 
     ADMINISTRATION_COMMAND revokePrivilege(
             POS p,
-            List<SimpleEither<String, PARAMETER>> roles,
+            List<SimpleEither<StringPos<POS>, PARAMETER>> roles,
             PRIVILEGE_TYPE privilege,
             boolean revokeGrant,
             boolean revokeDeny);
@@ -592,7 +606,7 @@ public interface ASTFactory<
 
     List<PRIVILEGE_QUALIFIER> allDatabasesQualifier();
 
-    List<PRIVILEGE_QUALIFIER> userQualifier(List<SimpleEither<String, PARAMETER>> users);
+    List<PRIVILEGE_QUALIFIER> userQualifier(List<SimpleEither<StringPos<POS>, PARAMETER>> users);
 
     List<PRIVILEGE_QUALIFIER> allUsersQualifier();
 
@@ -694,7 +708,7 @@ public interface ASTFactory<
             DATABASE_NAME targetName,
             boolean ifNotExists,
             SimpleEither<String, PARAMETER> url,
-            SimpleEither<String, PARAMETER> username,
+            SimpleEither<StringPos<POS>, PARAMETER> username,
             EXPRESSION password,
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings,
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties);
@@ -712,7 +726,7 @@ public interface ASTFactory<
             DATABASE_NAME targetName,
             boolean ifExists,
             SimpleEither<String, PARAMETER> url,
-            SimpleEither<String, PARAMETER> username,
+            SimpleEither<StringPos<POS>, PARAMETER> username,
             EXPRESSION password,
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings,
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties);

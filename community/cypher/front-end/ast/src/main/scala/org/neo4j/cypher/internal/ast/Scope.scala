@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
 
@@ -95,25 +95,25 @@ sealed trait ShowPrivilegeScope extends Rewritable {
   override def dup(children: Seq[AnyRef]): ShowPrivilegeScope.this.type = this
 }
 
-final case class ShowRolesPrivileges(roles: List[Either[String, Parameter]])(val position: InputPosition)
+final case class ShowRolesPrivileges(roles: List[Expression])(val position: InputPosition)
     extends ShowPrivilegeScope {
 
   override def dup(children: Seq[AnyRef]): ShowRolesPrivileges.this.type =
-    this.copy(children.head.asInstanceOf[List[Either[String, Parameter]]])(position).asInstanceOf[this.type]
+    this.copy(children.head.asInstanceOf[List[Expression]])(position).asInstanceOf[this.type]
 }
 
-final case class ShowUserPrivileges(user: Option[Either[String, Parameter]])(val position: InputPosition)
+final case class ShowUserPrivileges(user: Option[Expression])(val position: InputPosition)
     extends ShowPrivilegeScope {
 
   override def dup(children: Seq[AnyRef]): ShowUserPrivileges.this.type =
-    this.copy(children.head.asInstanceOf[Option[Either[String, Parameter]]])(position).asInstanceOf[this.type]
+    this.copy(children.head.asInstanceOf[Option[Expression]])(position).asInstanceOf[this.type]
 }
 
-final case class ShowUsersPrivileges(users: List[Either[String, Parameter]])(val position: InputPosition)
+final case class ShowUsersPrivileges(users: List[Expression])(val position: InputPosition)
     extends ShowPrivilegeScope {
 
   override def dup(children: Seq[AnyRef]): ShowUsersPrivileges.this.type =
-    this.copy(children.head.asInstanceOf[List[Either[String, Parameter]]])(position).asInstanceOf[this.type]
+    this.copy(children.head.asInstanceOf[List[Expression]])(position).asInstanceOf[this.type]
 }
 
 final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope

@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
-import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 
 class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -57,7 +57,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
           test(s"""$verb$immutableString LOAD ON URL $$foo $preposition role""") {
             yields[Statements](func(
               ast.LoadUrlAction,
-              ast.LoadUrlQualifier(paramFoo)(InputPosition.NONE),
+              ast.LoadUrlQualifier(Right(paramFoo))(InputPosition.NONE),
               Seq(literalRole),
               immutable
             ))
@@ -66,7 +66,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
           test(s"""$verb$immutableString LOAD ON CIDR $$foo $preposition role""") {
             yields[Statements](func(
               ast.LoadCidrAction,
-              ast.LoadCidrQualifier(paramFoo)(InputPosition.NONE),
+              ast.LoadCidrQualifier(Right(paramFoo))(InputPosition.NONE),
               Seq(literalRole),
               immutable
             ))
@@ -105,8 +105,8 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("GRANT LOAD ON CIDR $x TO `\u0885`, `x\u0885y`") {
     yields[Statements](grantLoadPrivilege(
       ast.LoadCidrAction,
-      ast.LoadCidrQualifier(stringParam("x"))(InputPosition.NONE),
-      Seq(Left("\u0885"), Left("x\u0885y")),
+      ast.LoadCidrQualifier(Right(stringParam("x")))(InputPosition.NONE),
+      Seq(literalString("\u0885"), literalString("x\u0885y")),
       i = false
     ))
   }
@@ -180,7 +180,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   def grantLoadPrivilege(
     a: ast.LoadActions,
     q: ast.LoadPrivilegeQualifier,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege(
@@ -194,7 +194,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   def denyLoadPrivilege(
     a: ast.LoadActions,
     q: ast.LoadPrivilegeQualifier,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege(
@@ -208,7 +208,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   def revokeGrantLoadPrivilege(
     a: ast.LoadActions,
     q: ast.LoadPrivilegeQualifier,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege(
@@ -223,7 +223,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   def revokeDenyLoadPrivilege(
     a: ast.LoadActions,
     q: ast.LoadPrivilegeQualifier,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege(
@@ -238,7 +238,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   def revokeLoadPrivilege(
     a: ast.LoadActions,
     q: ast.LoadPrivilegeQualifier,
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege(

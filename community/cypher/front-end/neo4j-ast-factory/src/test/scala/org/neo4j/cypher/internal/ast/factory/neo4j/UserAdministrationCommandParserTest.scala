@@ -39,7 +39,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   private val paramDb: ParameterName = stringParamName("db")
   private val pwParamString = s"$$password"
   private val paramString = s"$$param"
-  private val paramAst: Either[String, Parameter] = stringParam("param")
+  private val paramAst: Parameter = stringParam("param")
 
   //  Showing user
   test("SHOW USERS") {

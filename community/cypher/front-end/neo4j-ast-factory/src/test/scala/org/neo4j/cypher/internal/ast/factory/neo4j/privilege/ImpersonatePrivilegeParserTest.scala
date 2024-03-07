@@ -19,46 +19,46 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
-import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 class ImpersonatePrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   type impersonatePrivilegeFunc =
-    (List[ast.PrivilegeQualifier], Seq[Either[String, Parameter]], Immutable) => InputPosition => ast.Statement
+    (List[ast.PrivilegeQualifier], Seq[Expression], Immutable) => InputPosition => ast.Statement
 
   def grantImpersonatePrivilege(
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.GrantPrivilege.dbmsAction(ast.ImpersonateUserAction, i, r, q)
 
   def denyImpersonatePrivilege(
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(ast.ImpersonateUserAction, i, r, q)
 
   def revokeGrantImpersonatePrivilege(
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(ast.ImpersonateUserAction, i, r, ast.RevokeGrantType()(pos), q)
 
   def revokeDenyImpersonatePrivilege(
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(ast.ImpersonateUserAction, i, r, ast.RevokeDenyType()(pos), q)
 
   def revokeImpersonatePrivilege(
     q: List[ast.PrivilegeQualifier],
-    r: Seq[Either[String, Parameter]],
+    r: Seq[Expression],
     i: Immutable
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(ast.ImpersonateUserAction, i, r, ast.RevokeBothType()(pos), q)
@@ -76,21 +76,21 @@ class ImpersonatePrivilegeParserTest extends AdministrationAndSchemaCommandParse
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString IMPERSONATE ON DBMS $preposition role") {
             assertAst(
-              func(List(ast.UserAllQualifier()(pos)), List(Left("role")), immutable)(defaultPos),
+              func(List(ast.UserAllQualifier()(pos)), List(literalRole), immutable)(defaultPos),
               comparePosition = false
             )
           }
 
           test(s"$verb$immutableString IMPERSONATE (*) ON DBMS $preposition role") {
             assertAst(
-              func(List(ast.UserAllQualifier()(pos)), List(Left("role")), immutable)(defaultPos),
+              func(List(ast.UserAllQualifier()(pos)), List(literalRole), immutable)(defaultPos),
               comparePosition = false
             )
           }
 
           test(s"$verb$immutableString IMPERSONATE (foo) ON DBMS $preposition role") {
             assertAst(
-              func(List(ast.UserQualifier(Left("foo"))(pos)), List(Left("role")), immutable)(defaultPos),
+              func(List(ast.UserQualifier(literalFoo)(pos)), List(literalRole), immutable)(defaultPos),
               comparePosition = false
             )
           }
@@ -100,16 +100,16 @@ class ImpersonatePrivilegeParserTest extends AdministrationAndSchemaCommandParse
             val useParamColumn: Int = fooColumn + "foo $".length
             assertAst(func(
               List(
-                ast.UserQualifier(Left("foo"))((1, fooColumn + 1, fooColumn)),
-                ast.UserQualifier(Right(ExplicitParameter("userParam", CTString)((
+                ast.UserQualifier(literalFoo)((1, fooColumn + 1, fooColumn)),
+                ast.UserQualifier(ExplicitParameter("userParam", CTString)((
                   1,
                   useParamColumn + 1,
                   useParamColumn
-                ))))(
+                )))(
                   defaultPos
                 )
               ),
-              List(Left("role")),
+              List(literalRole),
               immutable
             )(defaultPos))
           }
