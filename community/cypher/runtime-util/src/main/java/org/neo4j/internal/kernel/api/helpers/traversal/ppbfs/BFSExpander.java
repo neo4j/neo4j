@@ -72,7 +72,7 @@ final class BFSExpander implements AutoCloseable {
                     }
 
                     nextNode.addSourceSignpost(
-                            TwoWaySignpost.fromNodeJuxtaposition(currentNode, nextNode, depthOfNextLevel),
+                            TwoWaySignpost.fromNodeJuxtaposition(mt, currentNode, nextNode, depthOfNextLevel),
                             depthOfNextLevel);
                 }
             }
@@ -108,6 +108,7 @@ final class BFSExpander implements AutoCloseable {
                         pgNodeDatas.get(pgCursor.currentInputState().id());
 
                 TwoWaySignpost signpost = TwoWaySignpost.fromRelExpansion(
+                        mt,
                         currentNode,
                         pgCursor.relationshipReference(),
                         nextNode,

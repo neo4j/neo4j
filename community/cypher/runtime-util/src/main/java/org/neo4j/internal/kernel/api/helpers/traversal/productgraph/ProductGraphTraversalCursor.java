@@ -144,12 +144,12 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
         void setTracer(KernelReadTracer tracer);
     }
 
-    static class DataGraphRelationshipCursorImpl implements DataGraphRelationshipCursor {
+    public static class DataGraphRelationshipCursorImpl implements DataGraphRelationshipCursor {
         private final Read read;
         private final NodeCursor node;
         private final RelationshipTraversalCursor rel;
 
-        DataGraphRelationshipCursorImpl(Read read, NodeCursor node, RelationshipTraversalCursor rel) {
+        public DataGraphRelationshipCursorImpl(Read read, NodeCursor node, RelationshipTraversalCursor rel) {
             this.read = read;
             this.node = node;
             this.rel = rel;

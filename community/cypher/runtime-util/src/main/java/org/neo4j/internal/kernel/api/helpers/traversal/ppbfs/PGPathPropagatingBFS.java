@@ -53,6 +53,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
     private final Function<PathTracer.TracedPath, Row> toRow;
     private final Predicate<Row> nonInlinedPredicate;
     private final Boolean isGroupSelector;
+    private final MemoryTracker memoryTracker;
     private final PPBFSHooks hooks;
 
     // iteration state
@@ -76,7 +77,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             long source,
             long intoTarget,
             State startState,
-            ProductGraphTraversalCursor pgCursor,
+            ProductGraphTraversalCursor.DataGraphRelationshipCursor graphCursor,
             PathTracer pathTracer,
             Function<PathTracer.TracedPath, Row> toRow,
             Predicate<Row> nonInlinedPredicate,
@@ -90,10 +91,17 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         this.toRow = toRow;
         this.nonInlinedPredicate = nonInlinedPredicate;
         this.isGroupSelector = isGroupSelector;
+        this.memoryTracker = mt.getScopedMemoryTracker();
         this.hooks = hooks;
-        this.dataManager = new DataManager(mt, hooks, initialCountForTargetNodes, numberOfNfaStates);
-        this.bfsExpander = new BFSExpander(dataManager, pgCursor, intoTarget, hooks, mt);
-        this.sourceData = new NodeData(mt, source, startState, 0, dataManager, intoTarget);
+        this.dataManager = new DataManager(this.memoryTracker, hooks, initialCountForTargetNodes, numberOfNfaStates);
+        this.bfsExpander = new BFSExpander(
+                dataManager,
+                new ProductGraphTraversalCursor(graphCursor, this.memoryTracker),
+                intoTarget,
+                hooks,
+                this.memoryTracker);
+        this.sourceData = new NodeData(this.memoryTracker, source, startState, 0, dataManager, intoTarget);
+        this.memoryTracker.allocateHeap(this.sourceData.estimatedHeapUsage());
 
         dataManager.addToNextLevel(sourceData);
         pathTracer.reset();
@@ -120,7 +128,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
                 source,
                 intoTarget,
                 startState,
-                new ProductGraphTraversalCursor(read, nodeCursor, relCursor, mt),
+                new ProductGraphTraversalCursor.DataGraphRelationshipCursorImpl(read, nodeCursor, relCursor),
                 pathTracer,
                 toRow,
                 nonInlinedPredicate,
@@ -270,8 +278,9 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
 
     @Override
     public void close() throws Exception {
-        // relCursor and nodeCursor are not owned by this class; they should be closed by the consumer
         bfsExpander.close();
         dataManager.close();
+        // the scoped memory tracker means we don't need to manually release NodeData/TwoWaySignpost memory
+        this.memoryTracker.close();
     }
 }

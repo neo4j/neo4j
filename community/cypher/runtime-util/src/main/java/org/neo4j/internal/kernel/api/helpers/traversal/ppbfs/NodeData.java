@@ -25,6 +25,8 @@ import java.util.BitSet;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
@@ -36,7 +38,7 @@ import org.neo4j.util.Preconditions;
  * assumption is relied upon in several places. This is the purpose of {@link HeapTrackingNodeDatas}: to act as a repository
  * for all product graph nodes.
  */
-public final class NodeData implements AutoCloseable {
+public final class NodeData implements AutoCloseable, Measurable {
 
     private static final int SIGNPOSTS_INIT_SIZE = 2;
 
@@ -80,6 +82,8 @@ public final class NodeData implements AutoCloseable {
             this.isTarget = true;
             dataManager.incrementLiveTargetCount();
         }
+
+        mt.allocateHeap(estimatedHeapUsage());
     }
 
     public State state() {
@@ -320,5 +324,14 @@ public final class NodeData implements AutoCloseable {
 
     public int remainingTargetCount() {
         return remainingTargetCount;
+    }
+
+    private static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(NodeData.class);
+    private static long BITSET_MIN_SIZE =
+            HeapEstimator.shallowSizeOfInstance(BitSet.class) + HeapEstimator.sizeOfLongArray(1);
+
+    @Override
+    public long estimatedHeapUsage() {
+        return SHALLOW_SIZE + BITSET_MIN_SIZE + BITSET_MIN_SIZE;
     }
 }

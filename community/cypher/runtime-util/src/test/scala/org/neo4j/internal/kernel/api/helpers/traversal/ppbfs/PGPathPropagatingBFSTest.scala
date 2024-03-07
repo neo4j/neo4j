@@ -33,10 +33,10 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.PGStateBuilder
-import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor.DataGraphRelationshipCursor
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipPredicate
 import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipDirection
 import org.neo4j.storageengine.api.RelationshipSelection
@@ -830,6 +830,47 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     events should (contain(AddTarget(c)) and not contain AddTarget(b))
   }
 
+  /*******************
+   * Memory tracking *
+   *******************/
+
+  test("memory tracking") {
+    val graph = TestGraph.builder
+    val a = graph.node()
+    val b = graph.node()
+    graph.rel(a, b)
+
+    val mt = new LocalMemoryTracker()
+
+    // ignore the memory tracker for path tracer for the purposes of this test
+    def createPathTracer(_mt: MemoryTracker, hooks: PPBFSHooks): PathTracer =
+      new PathTracer(EmptyMemoryTracker.INSTANCE, hooks)
+
+    val iter = fixture()
+      .withGraph(graph.build())
+      .from(a)
+      .withNfa(anyDirectedPath)
+      .withMemoryTracker(mt)
+      .build(createPathTracer)
+
+    val heap1 = mt.estimatedHeapMemory()
+
+    iter.next() // a
+
+    val heap2 = mt.estimatedHeapMemory()
+    heap1 should be < heap2
+
+    iter.next() // b
+
+    val heap3 = mt.estimatedHeapMemory()
+    heap2 should be < heap3
+
+    iter.close()
+
+    val heap4 = mt.estimatedHeapMemory()
+    heap4 shouldBe 0
+  }
+
   /*********************************************************
    * Examples of NFAs which currently break the algorithm! *
    *********************************************************/
@@ -979,6 +1020,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     mt: MemoryTracker,
     hooks: PPBFSHooks
   ) {
+
     def withGraph(graph: TestGraph): FixtureBuilder[A] = copy(graph = graph)
 
     def withNfa(f: PGStateBuilder => Unit): FixtureBuilder[A] = copy(nfa = {
@@ -990,26 +1032,28 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     def into(intoTarget: Long): FixtureBuilder[A] = copy(intoTarget = intoTarget)
     def grouped: FixtureBuilder[A] = copy(isGroup = true)
     def withK(k: Int): FixtureBuilder[A] = copy(k = k)
+    def withMemoryTracker(mt: MemoryTracker): FixtureBuilder[A] = copy(mt = mt)
 
     /** NB: wipes any configured filter, since the iterated item type will change */
     def project[B](projection: TracedPath => B): FixtureBuilder[B] =
       FixtureBuilder[B](graph, nfa, source, intoTarget, isGroup, k, projection, _ => true, mt, hooks)
     def filter(predicate: A => Boolean): FixtureBuilder[A] = copy(predicate = predicate)
 
-    def build() = new PGPathPropagatingBFS[A](
-      source,
-      intoTarget,
-      nfa.getStart.state(),
-      new ProductGraphTraversalCursor(new MockGraphCursor(graph), mt),
-      new PathTracer(mt, hooks),
-      projection(_),
-      predicate(_),
-      isGroup,
-      k,
-      nfa.stateCount(),
-      mt,
-      hooks
-    )
+    def build(createPathTracer: (MemoryTracker, PPBFSHooks) => PathTracer = new PathTracer(_, _)) =
+      new PGPathPropagatingBFS[A](
+        source,
+        intoTarget,
+        nfa.getStart.state(),
+        new MockGraphCursor(graph),
+        createPathTracer(mt, hooks),
+        projection(_),
+        predicate(_),
+        isGroup,
+        k,
+        nfa.stateCount(),
+        mt,
+        hooks
+      )
 
     def toList: Seq[A] = build().asScala.toList
 

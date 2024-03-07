@@ -19,13 +19,16 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
+import org.github.jamm.MemoryMeter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.PGStateBuilder
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.LocalMemoryTracker
 
 class NodeDataTest extends CypherFunSuite {
+  private val meter = MemoryMeter.builder.build
   private val mt = EmptyMemoryTracker.INSTANCE
 
   test("isTarget() returns true for a final state if there is no intoTarget") {
@@ -50,6 +53,17 @@ class NodeDataTest extends CypherFunSuite {
     val nodeData = new NodeData(mt, 1, state.state(), 0, dataManager(), 1)
 
     nodeData.isTarget shouldBe true
+  }
+
+  test("memory allocation on construction") {
+    val mt = new LocalMemoryTracker()
+    val state = new PGStateBuilder().newState().state()
+    val dm = dataManager()
+    val nd = new NodeData(mt, 0, state, 0, dm, -1)
+
+    val actual = meter.measureDeep(nd) - Seq[Object](mt, dm, state).map(meter.measureDeep).sum
+
+    mt.estimatedHeapMemory() shouldBe actual
   }
 
   private def dataManager() = new DataManager(EmptyMemoryTracker.INSTANCE, PPBFSHooks.NULL, 1, 1)

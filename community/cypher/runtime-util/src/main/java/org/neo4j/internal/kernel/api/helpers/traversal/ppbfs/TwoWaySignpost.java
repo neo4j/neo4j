@@ -23,6 +23,9 @@ import java.util.BitSet;
 import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipExpansion;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.Measurable;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -31,7 +34,7 @@ import org.neo4j.util.Preconditions;
  * <li> a set of path lengths from the source (Source Signpost)
  * <li> the minimum length to the target (Target Signpost)
  */
-public abstract sealed class TwoWaySignpost {
+public abstract sealed class TwoWaySignpost implements Measurable {
 
     public static final int NO_TARGET_DISTANCE = -1;
 
@@ -45,25 +48,28 @@ public abstract sealed class TwoWaySignpost {
     // targetSignpost
     protected int minDistToTarget = NO_TARGET_DISTANCE;
 
-    public TwoWaySignpost(NodeData prevNode, NodeData forwardNode, int lengthFromSource) {
+    public TwoWaySignpost(MemoryTracker mt, NodeData prevNode, NodeData forwardNode, int lengthFromSource) {
         this.prevNode = prevNode;
         this.forwardNode = forwardNode;
         this.lengthsFromSource = new BitSet();
         this.verifiedAtLengthFromSource = new BitSet();
         this.lengthsFromSource.set(lengthFromSource);
+        mt.allocateHeap(estimatedHeapUsage());
     }
 
     public static RelSignpost fromRelExpansion(
+            MemoryTracker mt,
             NodeData prevNode,
             long relId,
             NodeData forwardNode,
             RelationshipExpansion relationshipExpansion,
             int lengthFromSource) {
-        return new RelSignpost(prevNode, relId, forwardNode, relationshipExpansion, lengthFromSource);
+        return new RelSignpost(mt, prevNode, relId, forwardNode, relationshipExpansion, lengthFromSource);
     }
 
-    public static NodeSignpost fromNodeJuxtaposition(NodeData prevNode, NodeData forwardNode, int lengthFromSource) {
-        return new NodeSignpost(prevNode, forwardNode, lengthFromSource);
+    public static NodeSignpost fromNodeJuxtaposition(
+            MemoryTracker mt, NodeData prevNode, NodeData forwardNode, int lengthFromSource) {
+        return new NodeSignpost(mt, prevNode, forwardNode, lengthFromSource);
     }
 
     public abstract int dataGraphLength();
@@ -163,12 +169,13 @@ public abstract sealed class TwoWaySignpost {
         private int activations;
 
         private RelSignpost(
+                MemoryTracker mt,
                 NodeData prevNode,
                 long relId,
                 NodeData forwardNode,
                 RelationshipExpansion relationshipExpansion,
                 int lengthFromSource) {
-            super(prevNode, forwardNode, lengthFromSource);
+            super(mt, prevNode, forwardNode, lengthFromSource);
             this.relId = relId;
             this.relationshipExpansion = relationshipExpansion;
             this.activations = 0;
@@ -230,13 +237,20 @@ public abstract sealed class TwoWaySignpost {
 
             return sb.toString();
         }
+
+        private static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(RelSignpost.class);
+
+        @Override
+        public long estimatedHeapUsage() {
+            return SHALLOW_SIZE;
+        }
     }
 
     /** A signpost that points across a node juxtaposition */
     public static final class NodeSignpost extends TwoWaySignpost {
 
-        private NodeSignpost(NodeData prevNode, NodeData forwardNode, int lengthFromSource) {
-            super(prevNode, forwardNode, lengthFromSource);
+        private NodeSignpost(MemoryTracker mt, NodeData prevNode, NodeData forwardNode, int lengthFromSource) {
+            super(mt, prevNode, forwardNode, lengthFromSource);
         }
 
         @Override
@@ -282,6 +296,15 @@ public abstract sealed class TwoWaySignpost {
             }
 
             return sb.toString();
+        }
+
+        private static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(NodeSignpost.class);
+        private static long BITSET_MIN_SIZE =
+                HeapEstimator.shallowSizeOfInstance(BitSet.class) + HeapEstimator.sizeOfLongArray(1);
+
+        @Override
+        public long estimatedHeapUsage() {
+            return SHALLOW_SIZE + BITSET_MIN_SIZE + BITSET_MIN_SIZE;
         }
     }
 }
