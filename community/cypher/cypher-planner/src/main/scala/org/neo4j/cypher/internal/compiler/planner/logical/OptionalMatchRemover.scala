@@ -346,7 +346,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     ExistsIRExpression(
       query,
       varFor(anonymousVariableNameGenerator.nextName),
-      s"EXISTS { MATCH $pattern$whereString }"
+      s"EXISTS { MATCH ${pattern.solvedString}$whereString }"
     )(
       InputPosition.NONE,
       None, // There is no reasonable way of calculating introduced variables, so IRExpressions should not be accessing it and it can be left blank
