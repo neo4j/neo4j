@@ -132,7 +132,7 @@ case object PushdownPropertyReads {
           acc2 => TraverseChildren(p :: acc2)
         case mp: DesugaredMapProjection =>
           val mapProperties =
-            findProperties(mp, semanticTable).map(p => PushDownProperty(p.property)(p.variable, inMapProjection = true))
+            findProperties(mp, semanticTable).map(p => PushDownProperty(p.property, p.variable, inMapProjection = true))
           acc2 => SkipChildren(acc2 ++ mapProperties)
       }
 
@@ -141,7 +141,7 @@ case object PushdownPropertyReads {
         .flatMap { p =>
           acc.variableOptima.get(p.variable.name) match {
             case Some(optimum: CardinalityOptimum) =>
-              if (!acc.availableProperties.contains(p) && !acc.availableWholeEntities.contains(p.variable.name))
+              if (!acc.availableProperties.map(_.property)(p.property) && !acc.availableWholeEntities.contains(p.variable.name))
                 Some((optimum, p))
               else
                 None
@@ -468,7 +468,7 @@ case object PushdownPropertyReads {
       p
     } else {
       val variable = Variable(idName)(InputPosition.NONE)
-      PushDownProperty(Property(variable, p.property.propertyKey)(InputPosition.NONE))(variable)
+      PushDownProperty(Property(variable, p.property.propertyKey)(InputPosition.NONE), variable)
     }
   }
 
@@ -477,17 +477,21 @@ case object PushdownPropertyReads {
       case (prop, _) => PushableProperty(variable, prop)
     }
   }
-}
 
-case class PushDownProperty(property: Property)(val variable: LogicalVariable, val inMapProjection: Boolean = false)
+  private[steps] case class PushDownProperty(
+    property: Property,
+    variable: LogicalVariable,
+    inMapProjection: Boolean = false
+  )
 
-object PushableProperty {
+  private[steps] object PushableProperty {
 
-  def apply(variable: LogicalVariable, propertyKey: PropertyKeyName): PushDownProperty =
-    PushDownProperty(Property(variable, propertyKey)(InputPosition.NONE))(variable)
+    def apply(variable: LogicalVariable, propertyKey: PropertyKeyName): PushDownProperty =
+      PushDownProperty(Property(variable, propertyKey)(InputPosition.NONE), variable)
 
-  def unapply(property: Property): Option[PushDownProperty] = property match {
-    case Property(v: LogicalVariable, _) => Some(PushDownProperty(property)(v))
-    case _                               => None
+    def unapply(property: Property): Option[PushDownProperty] = property match {
+      case Property(v: LogicalVariable, _) => Some(PushDownProperty(property, v))
+      case _                               => None
+    }
   }
 }
