@@ -248,8 +248,10 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
 
         var versionContext = cursorContext.getVersionContext();
         long resourceId = pageId | ((long) position << PAGE_ID_BITS);
-        if (failFast && !validationLockClient.tryExclusiveLock(PAGE, resourceId)) {
-            throw new TransactionConflictException(storeType.getDatabaseFile(), pageId);
+        if (failFast) {
+            if (!validationLockClient.tryExclusiveLock(PAGE, resourceId)) {
+                throw new TransactionConflictException(storeType.getDatabaseFile(), pageId);
+            }
         } else {
             validationLockClient.acquireExclusive(lockTracer, PAGE, resourceId);
         }
