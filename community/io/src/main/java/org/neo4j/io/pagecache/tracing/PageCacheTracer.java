@@ -530,4 +530,9 @@ public interface PageCacheTracer extends PageCacheCounters {
      * report failed file unmap
      */
     void failedUnmap(String reason);
+
+    /**
+     * called during page file unmap for testing purposes
+     */
+    default void beforePageExclusiveLock() {}
 }

@@ -425,7 +425,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                             // We got a valid read, and the page isn't dirty, so we skip it.
                             continue chunkLoop;
                         }
-
+                        pageCacheTracer.beforePageExclusiveLock();
                         if (!tryExclusiveLock(pageRef)) {
                             if (TIME_LIMIT_ON_FILE_UNMAP_SECONDS != 0L) {
                                 if (stopwatch.hasTimedOut(TIME_LIMIT_ON_FILE_UNMAP_SECONDS, TimeUnit.SECONDS)) {
@@ -436,13 +436,16 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                             }
                             continue;
                         }
-                        if (isBoundTo(pageRef, swapperId, filePageId) && isModified(pageRef)) {
+                        if (isBoundTo(pageRef, swapperId, filePageId)) {
                             // The page is still bound to the expected file and file page id after we locked it,
-                            // so we didn't race with eviction and faulting, and the page is dirty.
+                            // so we didn't race with eviction and faulting, and the page maybe dirty.
                             explicitlyMarkPageUnmodifiedUnderExclusiveLock(pageRef);
                             unlockExclusive(pageRef);
                             continue chunkLoop;
                         }
+                        unlockExclusive(pageRef);
+                        // race with eviction, retry to make sure that pageId is unmapped
+                        continue;
                     }
                     // There was no page at this entry in the table. Continue to the next entry.
                     continue chunkLoop;
@@ -452,10 +455,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     }
 
     private String unmapTimeoutMessage(String method, int pageId, long pageRef) {
-        String message = "Timeout on file unmap in " + method + ". " + "file: "
+        return "Timeout on file unmap in " + method + ". " + "file: "
                 + swapper.path() + " swapperId: " + swapperId + " pageId: " + pageId
                 + " page metadata:\n" + pageMetadata(pageRef);
-        return message;
     }
 
     private void markPagesAsFree(int[][] table, int initialChunkIndex, int initialChunkOffset, long initialFilePageId) {
@@ -475,6 +477,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                     int pageId = translationTableGetVolatile(chunk, chunkIndex);
                     if (pageId != UNMAPPED_TTE) {
                         long pageRef = deref(pageId);
+                        pageCacheTracer.beforePageExclusiveLock();
                         if (!tryExclusiveLock(pageRef)) {
                             continue;
                         }
@@ -492,6 +495,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                             pageCache.addFreePageToFreelist(pageRef, EvictionRunEvent.NULL);
                             continue chunkLoop;
                         }
+                        unlockExclusive(pageRef);
+                        // race with eviction, retry to make sure that pageId is unmapped
+                        continue;
                     }
                     // There was no page at this entry in the table. Continue to the next entry.
                     continue chunkLoop;

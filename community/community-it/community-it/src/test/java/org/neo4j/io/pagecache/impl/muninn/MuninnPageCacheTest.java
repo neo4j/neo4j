@@ -60,6 +60,8 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -125,6 +127,7 @@ import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 import org.neo4j.memory.DefaultScopedMemoryTracker;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Race;
+import org.neo4j.util.concurrent.Runnables;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     private static final long X = 0xCAFEBABEDEADBEEFL;
@@ -2368,6 +2371,110 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 }
             }
         }
+    }
+
+    @Test
+    void deleteOnCloseDoesNotLockStolenPage() throws IOException {
+        assertTimeoutPreemptively(Duration.ofMinutes(1), () -> {
+            int pages = 1024;
+            AtomicReference<Runnable> callback = new AtomicReference<>(Runnables.EMPTY_RUNNABLE);
+            var pageCacheTracer = new DefaultPageCacheTracer() {
+                @Override
+                public void beforePageExclusiveLock() {
+                    callback.get().run();
+                }
+            };
+            try (var pageCache = getPageCache(fs, pages, pageCacheTracer)) {
+                var fileToRead = file("toRead");
+                try (var pf = map(fileToRead, pageCache.pageSize(), immutable.of(StandardOpenOption.CREATE));
+                        var pc = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    for (int i = 0; i < pages; i++) {
+                        pc.next();
+                        pc.putLong(1);
+                    }
+                }
+                var tempFile = file("tempFile");
+                var temp = map(
+                        tempFile,
+                        pageCache.pageSize(),
+                        immutable.of(StandardOpenOption.CREATE, StandardOpenOption.DELETE_ON_CLOSE));
+                try (var toRead = map(fileToRead, pageCache.pageSize())) {
+                    try (var cursor = temp.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        for (int i = 0; i < pages; i++) {
+                            cursor.next();
+                            cursor.putLong(1);
+                        }
+                    }
+
+                    // callback steals the page from the temp file right before it should be marked as clean
+                    callback.set(() -> {
+                        assertAllPagesEvicted(pageCache);
+                        try (var pc = toRead.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                            for (int i = 0; i < pages * 2; i++) {
+                                pc.next(i % pages);
+                                pc.getLong();
+                            }
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                    temp.close();
+                    // closing of the temp file should not mess with page cache pages and prevent
+                    // "toRead" file and page cache from closing, making this test fail by timeout
+                }
+            }
+        });
+    }
+
+    @Test
+    void truncateDoesNotLockStolenPage() throws IOException {
+        assertTimeoutPreemptively(Duration.ofMinutes(1), () -> {
+            int pages = 1024;
+            AtomicReference<Runnable> callback = new AtomicReference<>(Runnables.EMPTY_RUNNABLE);
+            var pageCacheTracer = new DefaultPageCacheTracer() {
+                @Override
+                public void beforePageExclusiveLock() {
+                    callback.get().run();
+                }
+            };
+            try (var pageCache = getPageCache(fs, pages, pageCacheTracer)) {
+                var fileToRead = file("toRead");
+                try (var pf = map(fileToRead, pageCache.pageSize(), immutable.of(StandardOpenOption.CREATE));
+                        var pc = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    for (int i = 0; i < pages; i++) {
+                        pc.next();
+                        pc.putLong(1);
+                    }
+                }
+                var fileToShrink = file("toShrink");
+                try (var toRead = map(fileToRead, pageCache.pageSize());
+                        var toShrink =
+                                map(fileToShrink, pageCache.pageSize(), immutable.of(StandardOpenOption.CREATE))) {
+                    try (var cursor = toShrink.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                        for (int i = 0; i < pages; i++) {
+                            cursor.next();
+                            cursor.putLong(1);
+                        }
+                    }
+
+                    // callback steals the page from the toShrink file right before it should be freed
+                    callback.set(() -> {
+                        assertAllPagesEvicted(pageCache);
+                        try (var pc = toRead.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                            for (int i = 0; i < pages * 2; i++) {
+                                pc.next(i % pages);
+                                pc.getLong();
+                            }
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                    toShrink.truncate(1, FileTruncateEvent.NULL);
+                    // truncating of the toShrink file should not mess with page cache pages and prevent
+                    // "toRead" file and page cache from closing, making this test fail by timeout
+                }
+            }
+        });
     }
 
     private static class FlushRendezvousTracer extends DefaultPageCacheTracer {
