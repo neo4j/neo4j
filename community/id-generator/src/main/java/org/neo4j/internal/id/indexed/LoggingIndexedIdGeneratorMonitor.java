@@ -187,12 +187,12 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     }
 
     @Override
-    public void skippedIdsAtHighId(long firstSkippedHighId, int numberOfIds) {
+    public synchronized void skippedIdsAtHighId(long firstSkippedHighId, int numberOfIds) {
         putTypeAndId(Type.SKIPPED_HIGH, firstSkippedHighId, numberOfIds);
     }
 
     @Override
-    public void skippedIdsAtAllocation(long firstWastedId, int numberOfIds) {
+    public synchronized void skippedIdsAtAllocation(long firstWastedId, int numberOfIds) {
         putTypeAndId(Type.SKIPPED_WASTED, firstWastedId, numberOfIds);
     }
 
