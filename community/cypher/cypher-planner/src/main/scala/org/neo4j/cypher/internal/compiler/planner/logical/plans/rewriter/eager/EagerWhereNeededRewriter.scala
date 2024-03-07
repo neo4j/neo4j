@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.BestPositionFinder.pickPlansToEagerize
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.CandidateListFinder.findCandidateLists
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.findConflictingPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.summarizeEagernessReasonsRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.collectReadsAndWrites
 import org.neo4j.cypher.internal.ir.EagernessReason
@@ -56,7 +55,7 @@ case class EagerWhereNeededRewriter(
     val readsAndWrites = collectReadsAndWrites(plan, semanticTable, anonymousVariableNameGenerator)
 
     // Step 2: Find conflicting plans
-    val conflicts = findConflictingPlans(readsAndWrites, plan)
+    val conflicts = ConflictFinder.withCaching().findConflictingPlans(readsAndWrites, plan)
 
     // Step 3: Find candidate lists where Eager can be planned
     val candidateLists = findCandidateLists(plan, conflicts)

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.ConflictingPlanPair
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.FilterExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PlanThatIntroducesVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PlanWithAccessor
@@ -43,6 +44,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.PropertiesOverlap
 import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
@@ -87,20 +89,7 @@ import scala.collection.mutable
 /**
  * Finds conflicts between plans that need Eager to solve them.
  */
-object ConflictFinder {
-
-  /**
-   * Two plans that have a read/write conflict. The plans are in no particular order.
-   *
-   * @param first   one of the two plans.
-   * @param second  the other plan.
-   * @param reasons the reasons of the conflict.
-   */
-  private[eager] case class ConflictingPlanPair(
-    first: Ref[LogicalPlan],
-    second: Ref[LogicalPlan],
-    reasons: Set[EagernessReason]
-  )
+sealed trait ConflictFinder {
 
   private def propertyConflicts(
     readsAndWrites: ReadsAndWrites,
@@ -167,11 +156,11 @@ object ConflictFinder {
     !lp.isUpdatingPlan || containsNestedPlanExpression(lp)
   }
 
-  private def containsNestedPlanExpression(lp: LogicalPlan): Boolean = {
+  protected def containsNestedPlanExpression(lp: LogicalPlan): Boolean = {
     lp.folder.treeFold(false) {
       case _: NestedPlanExpression => _ => SkipChildren(true)
       // We do not want to find NestedPlanExpressions in child plans.
-      case otherLP: LogicalPlan if otherLP ne lp => _ => SkipChildren(false)
+      case otherLP: LogicalPlan if otherLP ne lp => acc => SkipChildren(acc)
     }
   }
 
@@ -681,5 +670,38 @@ object ConflictFinder {
    */
   private[eager] def hasChildMatching(plan: LogicalPlan, pred: LogicalPlan => Boolean): Boolean = {
     pred(plan) || plan.lhs.exists(hasChildMatching(_, pred)) || plan.rhs.exists(hasChildMatching(_, pred))
+  }
+}
+
+object ConflictFinder extends ConflictFinder {
+
+  /**
+   * Two plans that have a read/write conflict. The plans are in no particular order.
+   *
+   * @param first   one of the two plans.
+   * @param second  the other plan.
+   * @param reasons the reasons of the conflict.
+   */
+  private[eager] case class ConflictingPlanPair(
+    first: Ref[LogicalPlan],
+    second: Ref[LogicalPlan],
+    reasons: Set[EagernessReason]
+  )
+
+  def withCaching(): ConflictFinder = {
+    new ConflictFinderWithCaching()
+  }
+
+  private class ConflictFinderWithCaching() extends ConflictFinder {
+
+    private val containsNestedPlanExpressionCache: Ref[LogicalPlan] => Boolean = {
+      CachedFunction {
+        lpRef => super.containsNestedPlanExpression(lpRef.value)
+      }
+    }
+
+    override protected def containsNestedPlanExpression(lp: LogicalPlan): Boolean = {
+      containsNestedPlanExpressionCache(Ref(lp))
+    }
   }
 }
