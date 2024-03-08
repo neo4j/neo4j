@@ -67,7 +67,7 @@ public class MultiVersionDatabaseSerialGuard implements DatabaseSerialGuard {
         for (KernelTransactionImplementation transaction : allTransactions) {
             if (transaction.isDataTransaction() || transaction.isSchemaTransaction()) {
                 long sequenceNumber = transaction.getTransactionSequenceNumber();
-                if (sequenceNumber != 0 && sequenceNumber <= currentValue) {
+                if (sequenceNumber != 0 && sequenceNumber < currentValue) {
                     return false;
                 }
             }
