@@ -256,6 +256,7 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
+import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -466,6 +467,24 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "PartitionedIntersectionNodeByLabelsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case SubtractionNodeByLabelsScan(idName, p, n, _, _) =>
+        // TODO what to do about multiple labels, add tests
+        val positiveLabels = List(p)
+        val negativeLabels = List(p)
+        val prettyDetails =
+          pretty"${asPrettyString(idName)}:${positiveLabels.map(l => asPrettyString(l.name)).mkPrettyString(
+              "&"
+            )}:${negativeLabels.map(l => asPrettyString(s"!${l.name}")).mkPrettyString("&")}"
+        PlanDescriptionImpl(
+          id,
+          "SubtractionNodeByLabelsScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,

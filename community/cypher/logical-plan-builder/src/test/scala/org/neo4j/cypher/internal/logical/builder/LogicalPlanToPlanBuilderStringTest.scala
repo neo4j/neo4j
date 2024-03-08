@@ -340,6 +340,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "subtractionNodeByLabelsScan",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .subtractionNodeByLabelsScan("x", "X", "Y", IndexOrderNone)
+      .build()
+  )
+
+  testPlan(
     "unionRelationshipTypesScan",
     new TestPlanBuilder()
       .produceResults("r")

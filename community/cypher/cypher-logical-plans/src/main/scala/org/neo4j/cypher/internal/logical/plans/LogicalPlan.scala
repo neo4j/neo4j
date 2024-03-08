@@ -4761,6 +4761,29 @@ case class PartitionedUnionNodeByLabelsScan(
 }
 
 /**
+ * TODO
+ */
+case class SubtractionNodeByLabelsScan(
+  idName: LogicalVariable,
+  positiveLabel: LabelName,
+  negativeLabel: LabelName,
+  argumentIds: Set[LogicalVariable],
+  indexOrder: IndexOrder
+)(implicit idGen: IdGen)
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): SubtractionNodeByLabelsScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+/**
  * For each source row, evaluate 'expression'. If 'expression' evaluates to a list, produce one row per list
  * element, containing the source row and the element assigned to 'variable'.
  * If 'expression' does evaluate to null, produce nothing.

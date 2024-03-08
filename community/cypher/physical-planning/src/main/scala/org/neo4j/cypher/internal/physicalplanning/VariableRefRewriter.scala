@@ -138,6 +138,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.SimulatedExpand
 import org.neo4j.cypher.internal.logical.plans.SimulatedNodeScan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
@@ -224,6 +225,8 @@ object VariableRefRewriter extends Rewriter {
             case s @ UnionNodeByLabelsScan(node, _, args, _) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ PartitionedUnionNodeByLabelsScan(node, _, args) =>
+              s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
+            case s @ SubtractionNodeByLabelsScan(node, _, _, args, _) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ SimulatedNodeScan(node, _) =>
               s.copy(idName = varRef(node))(SameId(s.id))

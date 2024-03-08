@@ -233,6 +233,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
+import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
@@ -1223,6 +1224,24 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       varFor(n),
       labels.map(labelName),
       args.map(a => varFor(VariableParser.unescaped(a))).toSet
+    )(_)))
+  }
+
+  def subtractionNodeByLabelsScan(
+    node: String,
+    positiveLabel: String,
+    negativeLabel: String,
+    indexOrder: IndexOrder,
+    args: String*
+  ): IMPL = {
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(SubtractionNodeByLabelsScan(
+      varFor(n),
+      labelName(positiveLabel),
+      labelName(negativeLabel),
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet,
+      indexOrder
     )(_)))
   }
 
