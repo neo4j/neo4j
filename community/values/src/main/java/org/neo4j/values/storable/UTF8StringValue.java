@@ -71,7 +71,7 @@ public final class UTF8StringValue extends StringValue {
     }
 
     @Override
-    String value() {
+    protected String value() {
         String s = value;
         if (s == null) {
             synchronized (this) {
@@ -439,7 +439,7 @@ public final class UTF8StringValue extends StringValue {
     }
 
     @Override
-    Matcher matcher(Pattern pattern) {
+    protected Matcher matcher(Pattern pattern) {
         return pattern.matcher(value());
     }
 

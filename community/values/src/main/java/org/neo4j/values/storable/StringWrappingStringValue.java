@@ -42,7 +42,7 @@ final class StringWrappingStringValue extends StringValue {
     }
 
     @Override
-    String value() {
+    protected String value() {
         return value;
     }
 
@@ -160,7 +160,7 @@ final class StringWrappingStringValue extends StringValue {
     }
 
     @Override
-    Matcher matcher(Pattern pattern) {
+    protected Matcher matcher(Pattern pattern) {
         return pattern.matcher(value);
     }
 

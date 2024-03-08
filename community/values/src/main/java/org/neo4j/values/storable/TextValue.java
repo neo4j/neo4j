@@ -108,5 +108,5 @@ public abstract class TextValue extends HashMemoizingScalarValue {
         return mapper.mapText(this);
     }
 
-    abstract Matcher matcher(Pattern pattern);
+    protected abstract Matcher matcher(Pattern pattern);
 }

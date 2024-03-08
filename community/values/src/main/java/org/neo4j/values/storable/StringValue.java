@@ -32,7 +32,7 @@ import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 public abstract class StringValue extends TextValue {
-    abstract String value();
+    protected abstract String value();
 
     @Override
     public boolean equals(Value value) {
@@ -328,12 +328,12 @@ public abstract class StringValue extends TextValue {
         }
 
         @Override
-        Matcher matcher(Pattern pattern) {
+        protected Matcher matcher(Pattern pattern) {
             return pattern.matcher("");
         }
 
         @Override
-        String value() {
+        protected String value() {
             return "";
         }
 

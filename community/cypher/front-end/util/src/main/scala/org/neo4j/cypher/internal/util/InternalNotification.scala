@@ -24,7 +24,7 @@ import scala.jdk.CollectionConverters.IterableHasAsJava
  * Describes a notification
  */
 trait InternalNotification {
-  val notificationName: String = this.getClass.getSimpleName.stripSuffix("$")
+  def notificationName: String = this.getClass.getSimpleName.stripSuffix("$")
 }
 
 object InternalNotification {

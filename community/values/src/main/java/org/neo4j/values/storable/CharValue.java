@@ -213,7 +213,7 @@ public final class CharValue extends TextValue {
     }
 
     @Override
-    Matcher matcher(Pattern pattern) {
+    protected Matcher matcher(Pattern pattern) {
         return pattern.matcher(String.valueOf(value));
     }
 
