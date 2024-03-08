@@ -91,7 +91,6 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
 
     abstract int compare(long a, long b);
 
-
     @Override
     public boolean next() {
         boolean shouldContinue = positiveCursor.next();
