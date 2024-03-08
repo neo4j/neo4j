@@ -43,13 +43,44 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <RestrictImports>
+                                    <excludedSourceRoot>src/main/java/org/neo4j/cypher/internal/parser/javacc/org/neo4j/cypher/internal/parser/javacc/*.java</excludedSourceRoot>
+                                </RestrictImports>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <configuration>
+                    <java>
+                        <excludes>
+                            <!-- JavaCC generated files -->
+                            <exclude>src/main/java/org/neo4j/cypher/internal/parser/javacc/org/neo4j/cypher/internal/parser/javacc/*.java</exclude>
+                        </excludes>
+                    </java>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>com.helger.maven</groupId>
                 <artifactId>ph-javacc-maven-plugin</artifactId>
                 <version>4.1.5</version>
                 <configuration>
                     <jdkVersion>1.8</jdkVersion>
                     <sourceDirectory>src/main/java/org/neo4j/cypher/internal/parser/javacc</sourceDirectory>
-                    <outputDirectory>${project.build.directory}/generated-sources/javacc</outputDirectory>
+                    <outputDirectory>src/main/java/org/neo4j/cypher/internal/parser/javacc</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>
