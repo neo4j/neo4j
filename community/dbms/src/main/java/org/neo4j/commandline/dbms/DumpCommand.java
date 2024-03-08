@@ -30,6 +30,7 @@ import static picocli.CommandLine.Option;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -114,9 +115,11 @@ public class DumpCommand extends AbstractAdminCommand {
     public void execute() {
         final var config = createConfig();
 
-        try (var logProvider = Util.configuredLogProvider(ctx.out(), verbose);
+        final var dumpToStdOut = target.toStdout;
+        final var logStream = dumpToStdOut ? ctx.err() : ctx.out();
+        try (var logProvider = Util.configuredLogProvider(logStream, verbose);
                 var fs = new SchemeFileSystemAbstraction(ctx.fs(), config, logProvider)) {
-            final var dumper = createDumper(fs);
+            final var dumper = createDumper(fs, logStream);
 
             Path storagePath = null;
             if (target.toDir != null) {
@@ -126,14 +129,13 @@ public class DumpCommand extends AbstractAdminCommand {
                 }
             }
 
-            boolean toStdOut = target.toStdout;
-            if (toStdOut && database.containsPattern()) {
+            if (dumpToStdOut && database.containsPattern()) {
                 throw new CommandFailedException(
                         "Globbing in database name can not be used in combination with standard "
                                 + "output. Specify a directory as destination or a single target database");
             }
 
-            if (storagePath == null && !toStdOut) {
+            if (storagePath == null && !dumpToStdOut) {
                 storagePath = createDefaultDumpsDir(fs, config);
             }
 
@@ -145,9 +147,7 @@ public class DumpCommand extends AbstractAdminCommand {
 
             for (String databaseName : getDbNames(config, fs, database)) {
                 try {
-                    if (!toStdOut) {
-                        log.info(format("Starting dump of database '%s'", databaseName));
-                    }
+                    log.info(format("Starting dump of database '%s'", databaseName));
 
                     DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(databaseName);
 
@@ -164,7 +164,7 @@ public class DumpCommand extends AbstractAdminCommand {
                     }
 
                     try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
-                        checkDbState(ctx.fs(), databaseLayout, config, memoryTracker, databaseName, log);
+                        checkDbState(fs, databaseLayout, config, memoryTracker, databaseName, log);
                         dump(dumper, databaseLayout, databaseName, storagePath);
                     } catch (FileLockException e) {
                         throw new CommandFailedException(
@@ -179,9 +179,7 @@ public class DumpCommand extends AbstractAdminCommand {
             }
 
             if (failedDumps.isEmpty()) {
-                if (!toStdOut) {
-                    log.info("Dump completed successfully");
-                }
+                log.info("Dump completed successfully");
             } else {
                 StringJoiner failedDbs = new StringJoiner("', '", "Dump failed for databases: '", "'");
                 Exception exceptions = null;
@@ -197,8 +195,8 @@ public class DumpCommand extends AbstractAdminCommand {
         }
     }
 
-    protected Dumper createDumper(FileSystemAbstraction fs) {
-        return new Dumper(fs, ctx.out());
+    protected Dumper createDumper(FileSystemAbstraction fs, PrintStream out) {
+        return new Dumper(fs, out);
     }
 
     private Path createDefaultDumpsDir(SchemeFileSystemAbstraction fs, Config config) {

@@ -41,9 +41,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -357,11 +359,11 @@ class DumpCommandIT {
         var ctx = new ExecutionContext(homeDir, configDir, out, mock(PrintStream.class), testDirectory.getFileSystem());
         var command = new DumpCommand(ctx) {
             @Override
-            protected Dumper createDumper(FileSystemAbstraction fs) {
+            protected Dumper createDumper(FileSystemAbstraction fs, PrintStream out) {
                 return dumper;
             }
         };
-        CommandLine.populateCommand(command, "foo", "--to-stdout");
+        CommandLine.populateCommand(command, "--to-stdout", "foo");
         command.execute();
 
         verify(dumper)
@@ -375,12 +377,41 @@ class DumpCommandIT {
     }
 
     @Test
+    void shouldDumpTheDatabaseToTheStdOutEvenWithVerboseEnabled() throws Exception {
+        final var databaseName = "foo";
+        final var out = new Output();
+        final var err = new Output();
+        final var ctx = new ExecutionContext(
+                homeDir, configDir, out.printStream, err.printStream, testDirectory.getFileSystem());
+        final var command = new DumpCommand(ctx) {
+            @Override
+            protected Dumper createDumper(FileSystemAbstraction fs, PrintStream out) {
+                return dumper;
+            }
+        };
+        CommandLine.populateCommand(command, "--to-stdout", "--verbose", databaseName);
+        command.execute();
+
+        verify(dumper)
+                .dump(
+                        eq(homeDir.resolve("data/databases/foo")),
+                        eq(homeDir.resolve("data/transactions/foo")),
+                        eq(out.printStream),
+                        any(),
+                        any());
+        verifyNoMoreInteractions(dumper);
+
+        assertThat(out.toString()).doesNotContain("Starting dump of database", databaseName);
+        assertThat(err.toString()).contains("Starting dump of database", databaseName);
+    }
+
+    @Test
     void shouldNotAllowDatabaseNameGlobbingWithStdOut() {
         var ctx = new ExecutionContext(
                 homeDir, configDir, mock(PrintStream.class), mock(PrintStream.class), testDirectory.getFileSystem());
         var command = new DumpCommand(ctx) {
             @Override
-            protected Dumper createDumper(FileSystemAbstraction fs) {
+            protected Dumper createDumper(FileSystemAbstraction fs, PrintStream out) {
                 return dumper;
             }
         };
@@ -420,7 +451,7 @@ class DumpCommandIT {
                 homeDir, configDir, mock(PrintStream.class), mock(PrintStream.class), testDirectory.getFileSystem());
         final var command = new DumpCommand(ctx) {
             @Override
-            protected Dumper createDumper(FileSystemAbstraction fs) {
+            protected Dumper createDumper(FileSystemAbstraction fs, PrintStream out) {
                 return dumper;
             }
         };
@@ -456,5 +487,19 @@ class DumpCommandIT {
 
     private static String formatProperty(Setting setting, Path path) {
         return format("%s=%s", setting.name(), path.toString().replace('\\', '/'));
+    }
+
+    private static class Output {
+        final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        final PrintStream printStream = new PrintStream(buffer);
+
+        public boolean containsMessage(String message) {
+            return toString().contains(message);
+        }
+
+        @Override
+        public String toString() {
+            return buffer.toString(StandardCharsets.UTF_8);
+        }
     }
 }

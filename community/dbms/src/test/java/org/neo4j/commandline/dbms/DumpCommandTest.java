@@ -37,7 +37,7 @@ class DumpCommandTest {
         final var baos = new ByteArrayOutputStream();
         final var command = new DumpCommand(new ExecutionContext(Path.of("."), Path.of("."))) {
             @Override
-            protected Dumper createDumper(FileSystemAbstraction fs) {
+            protected Dumper createDumper(FileSystemAbstraction fs, PrintStream out) {
                 return mock(Dumper.class);
             }
         };
