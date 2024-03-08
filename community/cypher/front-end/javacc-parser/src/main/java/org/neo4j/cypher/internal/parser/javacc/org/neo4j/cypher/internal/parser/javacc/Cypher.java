@@ -19804,7 +19804,7 @@ idEither=SimpleEither.right(expr);
 // Schema commands
 // Constraint commands
   final public 
-SCHEMA_COMMAND CreateConstraint(Token start, boolean replace) throws ParseException, Exception {SimpleEither<String, PARAMETER> name = null;
+SCHEMA_COMMAND CreateConstraint(Token start, boolean replace) throws ParseException, Exception {SimpleEither<StringPos<POS>, PARAMETER> name = null;
     boolean ifNotExists = false;
     Token label;
     VARIABLE variable = null;
@@ -21120,7 +21120,7 @@ t = t.next;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public SCHEMA_COMMAND DropConstraint(Token start) throws ParseException, Exception {SimpleEither<String, PARAMETER> name = null;
+  final public SCHEMA_COMMAND DropConstraint(Token start) throws ParseException, Exception {SimpleEither<StringPos<POS>, PARAMETER> name = null;
         boolean ifExists = false;
         VARIABLE variable = null;
         Token label = null;
@@ -22362,7 +22362,7 @@ if (replace) {
 
   final public SCHEMA_COMMAND createIndex(Token start, boolean replace, CreateIndexTypes indexType) throws ParseException, Exception {boolean ifNotExists = false;
     boolean isNode = false;
-    SimpleEither<String, PARAMETER> indexName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> indexName = null;
     VARIABLE variable = null;
     Token label = null;
     List<PROPERTY> properties= new ArrayList<>();
@@ -22972,7 +22972,7 @@ isNode = true;
 
   final public SCHEMA_COMMAND createFulltextIndex(Token start, boolean replace) throws ParseException, Exception {boolean ifNotExists = false;
     boolean isNode = false;
-    SimpleEither<String, PARAMETER> indexName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> indexName = null;
     VARIABLE variable = null;
     VARIABLE propName = null;
     PROPERTY p = null;
@@ -23604,7 +23604,7 @@ properties.add( p );
 
   final public SCHEMA_COMMAND createLookupIndex(Token start, boolean replace) throws ParseException, Exception {boolean ifNotExists = false;
     boolean isNode = false;
-    SimpleEither<String, PARAMETER> indexName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> indexName = null;
     VARIABLE variable = null;
     StringPos<POS> funcName = null;
     VARIABLE funcParam = variable;
@@ -24223,7 +24223,7 @@ funcName = new StringPos<POS>( token.image, pos(token) );
 
   final public SCHEMA_COMMAND DropIndex(Token start) throws ParseException {Token nodeLabel;
     List<StringPos<POS>> properties;
-    SimpleEither<String, PARAMETER> name;
+    SimpleEither<StringPos<POS>, PARAMETER> name;
     boolean ifExists = false;
     jj_consume_token(INDEX);
     if (jj_2_160(2)) {
@@ -25762,8 +25762,8 @@ serverNames.add( entry );
 
 // Role commands
   final public 
-ADMINISTRATION_COMMAND CreateRole(Token start, boolean replace) throws ParseException {SimpleEither<String, PARAMETER> roleName = null;
-    SimpleEither<String, PARAMETER> sourceRoleName = null;
+ADMINISTRATION_COMMAND CreateRole(Token start, boolean replace) throws ParseException {SimpleEither<StringPos<POS>, PARAMETER> roleName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> sourceRoleName = null;
     boolean ifNotExists = false;
     jj_consume_token(ROLE);
     roleName = SymbolicNameOrStringParameter();
@@ -25795,7 +25795,7 @@ ifNotExists = true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND DropRole(Token start) throws ParseException {SimpleEither<String, PARAMETER> roleName = null;
+  final public ADMINISTRATION_COMMAND DropRole(Token start) throws ParseException {SimpleEither<StringPos<POS>, PARAMETER> roleName = null;
     boolean ifExists = false;
     jj_consume_token(ROLE);
     roleName = SymbolicNameOrStringParameter();
@@ -25814,8 +25814,8 @@ ifExists = true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND RenameRole(Token start) throws ParseException {SimpleEither<String, PARAMETER> fromRoleName = null;
-    SimpleEither<String, PARAMETER> toRoleName = null;
+  final public ADMINISTRATION_COMMAND RenameRole(Token start) throws ParseException {SimpleEither<StringPos<POS>, PARAMETER> fromRoleName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> toRoleName = null;
     boolean ifExists = false;
     jj_consume_token(ROLE);
     fromRoleName = SymbolicNameOrStringParameter();
@@ -25900,8 +25900,8 @@ withUsers = true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND GrantRole(Token start) throws ParseException {List<SimpleEither<String, PARAMETER>> roles;
-    List<SimpleEither<String, PARAMETER>> users;
+  final public ADMINISTRATION_COMMAND GrantRole(Token start) throws ParseException {List<SimpleEither<StringPos<POS>, PARAMETER>> roles;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> users;
     roles = SymbolicNameOrStringParameterList();
     jj_consume_token(TO);
     users = SymbolicNameOrStringParameterList();
@@ -25909,8 +25909,8 @@ withUsers = true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND RevokeRole(Token start) throws ParseException {List<SimpleEither<String, PARAMETER>> roles;
-    List<SimpleEither<String, PARAMETER>> users;
+  final public ADMINISTRATION_COMMAND RevokeRole(Token start) throws ParseException {List<SimpleEither<StringPos<POS>, PARAMETER>> roles;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> users;
     roles = SymbolicNameOrStringParameterList();
     jj_consume_token(FROM);
     users = SymbolicNameOrStringParameterList();
@@ -25921,7 +25921,7 @@ withUsers = true;
 // User commands
   final public 
 ADMINISTRATION_COMMAND CreateUser(Token start, boolean replace) throws ParseException, Exception {Token set = null;
-    SimpleEither<String, PARAMETER> username = null;
+    SimpleEither<StringPos<POS>, PARAMETER> username = null;
     EXPRESSION password = null;
     boolean ifNotExists = false;
     boolean encrypted = false;
@@ -26015,7 +26015,7 @@ encrypted = true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND DropUser(Token start) throws ParseException {SimpleEither<String, PARAMETER> username = null;
+  final public ADMINISTRATION_COMMAND DropUser(Token start) throws ParseException {SimpleEither<StringPos<POS>, PARAMETER> username = null;
     boolean ifExists = false;
     jj_consume_token(USER);
     username = SymbolicNameOrStringParameter();
@@ -26034,8 +26034,8 @@ ifExists = true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND RenameUser(Token start) throws ParseException {SimpleEither<String, PARAMETER> fromUserName = null;
-    SimpleEither<String, PARAMETER> toUserName = null;
+  final public ADMINISTRATION_COMMAND RenameUser(Token start) throws ParseException {SimpleEither<StringPos<POS>, PARAMETER> fromUserName = null;
+    SimpleEither<StringPos<POS>, PARAMETER> toUserName = null;
     boolean ifExists = false;
     jj_consume_token(USER);
     fromUserName = SymbolicNameOrStringParameter();
@@ -26071,7 +26071,7 @@ ifExists = true;
 }
 
   final public ADMINISTRATION_COMMAND AlterUser(Token start) throws ParseException, Exception {Token set = null;
-    SimpleEither<String, PARAMETER> username = null;
+    SimpleEither<StringPos<POS>, PARAMETER> username = null;
     EXPRESSION password = null;
     boolean ifExists = false;
     boolean encrypted = false;
@@ -26517,7 +26517,7 @@ asCommand=true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public STATEMENT_WITH_GRAPH ShowRolePrivileges(Token start, USE_CLAUSE useClause) throws ParseException, Exception {List<SimpleEither<String, PARAMETER>> roles = null;
+  final public STATEMENT_WITH_GRAPH ShowRolePrivileges(Token start, USE_CLAUSE useClause) throws ParseException, Exception {List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     boolean asCommand = false;
     boolean asRevoke = false;
     YIELD yield = null;
@@ -26608,7 +26608,7 @@ asCommand=true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public STATEMENT_WITH_GRAPH ShowUserPrivileges(Token start, USE_CLAUSE useClause) throws ParseException, Exception {List<SimpleEither<String, PARAMETER>> users = null;
+  final public STATEMENT_WITH_GRAPH ShowUserPrivileges(Token start, USE_CLAUSE useClause) throws ParseException, Exception {List<SimpleEither<StringPos<POS>, PARAMETER>> users = null;
     boolean asCommand = false;
     boolean asRevoke = false;
     YIELD yield = null;
@@ -26996,7 +26996,7 @@ asCommand=true;
 }
 
   final public ADMINISTRATION_COMMAND grantRoleManagement(Token start, boolean immutable) throws ParseException {PRIVILEGE_TYPE privilege = null;
-    List<SimpleEither<String, PARAMETER>> roles = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     privilege = roleManagementPrivilege(start, immutable);
     jj_consume_token(TO);
     roles = SymbolicNameOrStringParameterList();
@@ -27005,7 +27005,7 @@ asCommand=true;
 }
 
   final public ADMINISTRATION_COMMAND revokeRoleManagement(Token start, boolean revokeGrant, boolean revokeDeny, boolean immutable) throws ParseException {PRIVILEGE_TYPE privilege = null;
-    List<SimpleEither<String, PARAMETER>> roles = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     privilege = roleManagementPrivilege(start, immutable);
     jj_consume_token(FROM);
     roles = SymbolicNameOrStringParameterList();
@@ -27021,7 +27021,7 @@ asCommand=true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND grantPrivilege(Token start, boolean immutable) throws ParseException, Exception {List<SimpleEither<String, PARAMETER>> roles = null;
+  final public ADMINISTRATION_COMMAND grantPrivilege(Token start, boolean immutable) throws ParseException, Exception {List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     PRIVILEGE_TYPE privilege = null;
     privilege = privilege(start, immutable);
     jj_consume_token(TO);
@@ -27031,7 +27031,7 @@ asCommand=true;
 }
 
   final public ADMINISTRATION_COMMAND DenyPrivilege() throws ParseException, Exception {Token start;
-    List<SimpleEither<String, PARAMETER>> roles = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     PRIVILEGE_TYPE privilege = null;
     boolean immutable = false;
     start = jj_consume_token(DENY);
@@ -27099,7 +27099,7 @@ immutable = true;
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public ADMINISTRATION_COMMAND RevokePrivilege(Token start, boolean revokeGrant, boolean revokeDeny, boolean immutable) throws ParseException, Exception {List<SimpleEither<String, PARAMETER>> roles = null;
+  final public ADMINISTRATION_COMMAND RevokePrivilege(Token start, boolean revokeGrant, boolean revokeDeny, boolean immutable) throws ParseException, Exception {List<SimpleEither<StringPos<POS>, PARAMETER>> roles = null;
     PRIVILEGE_TYPE privilege = null;
     privilege = privilege(start, immutable);
     jj_consume_token(FROM);
@@ -28234,7 +28234,7 @@ privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifie
     DATABASE_SCOPE database = null;
     List<PRIVILEGE_QUALIFIER> databaseQualifier = astFactory.allDatabasesQualifier();
     List<PRIVILEGE_QUALIFIER> dbmsQualifier = astFactory.allQualifier();
-    List<SimpleEither<String, PARAMETER>>qualifiers = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>>qualifiers = null;
     jj_consume_token(SHOW);
     switch (jj_ntk == -1 ? jj_ntk_f() : jj_ntk) {
     case CONSTRAINT:
@@ -28838,7 +28838,7 @@ privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( A
   final public PRIVILEGE_TYPE databasePrivilege(Token start, boolean immutable) throws ParseException {ADMINISTRATION_ACTION action = null;
     DATABASE_SCOPE database = null;
     List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allDatabasesQualifier();
-    List<SimpleEither<String, PARAMETER>>qualifiers = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>>qualifiers = null;
     switch (jj_ntk == -1 ? jj_ntk_f() : jj_ntk) {
     case ACCESS:{
       jj_consume_token(ACCESS);
@@ -29529,7 +29529,7 @@ action = astFactory.privilegeAction( ActionType.CREATE_TOKEN );
 
   final public PRIVILEGE_TYPE dbmsPrivilege(Token start, boolean immutable) throws ParseException {ADMINISTRATION_ACTION action = null;
     List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allQualifier();
-    List<SimpleEither<String, PARAMETER>> qualifiers = null;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> qualifiers = null;
     switch (jj_ntk == -1 ? jj_ntk_f() : jj_ntk) {
     case ALTER:{
       jj_consume_token(ALTER);
@@ -33802,7 +33802,7 @@ type = ScopeType.HOME;
     AliasName<DATABASE_NAME, PARAMETER> targetName = null;
     boolean ifNotExists = false;
     SimpleEither<String, PARAMETER> url = null;
-    SimpleEither<String, PARAMETER> username = null;
+    SimpleEither<StringPos<POS>, PARAMETER> username = null;
     EXPRESSION password = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties = null;
@@ -33893,7 +33893,7 @@ ifExists = true;
     AliasName<DATABASE_NAME, PARAMETER> targetName = null;
     boolean ifExists = false;
     SimpleEither<String, PARAMETER> url = null;
-    SimpleEither<String, PARAMETER> username = null;
+    SimpleEither<StringPos<POS>, PARAMETER> username = null;
     EXPRESSION password = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> driverSettings = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> properties = null;
@@ -34379,8 +34379,8 @@ name.add( token );
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public List<SimpleEither<String, PARAMETER>> SymbolicNameOrStringParameterList() throws ParseException {SimpleEither<String, PARAMETER> entry;
-    List<SimpleEither<String, PARAMETER>> list = new ArrayList<>();
+  final public List<SimpleEither<StringPos<POS>, PARAMETER>> SymbolicNameOrStringParameterList() throws ParseException {SimpleEither<StringPos<POS>, PARAMETER> entry;
+    List<SimpleEither<StringPos<POS>, PARAMETER>> list = new ArrayList<>();
     entry = SymbolicNameOrStringParameter();
 list.add( entry );
     label_74:
@@ -34401,7 +34401,7 @@ list.add( entry );
     throw new IllegalStateException ("Missing return statement in function");
 }
 
-  final public SimpleEither<String, PARAMETER> SymbolicNameOrStringParameter() throws ParseException {Token name;
+  final public SimpleEither<StringPos<POS>, PARAMETER> SymbolicNameOrStringParameter() throws ParseException {Token name;
     PARAMETER parameter;
     switch (jj_ntk == -1 ? jj_ntk_f() : jj_ntk) {
     case ESCAPED_SYMBOLIC_NAME:
@@ -34658,12 +34658,12 @@ list.add( entry );
     case ZONED:
     case IDENTIFIER:{
       name = SymbolicNameString();
-{if ("" != null) return SimpleEither.<String, PARAMETER>left( name.image );}
+{if ("" != null) return SimpleEither.<StringPos<POS>, PARAMETER>left( new StringPos<POS>( token.image, pos( token ), endPos( token ) ));}
       break;
       }
     case DOLLAR:{
       parameter = Parameter(ParameterType.STRING);
-{if ("" != null) return SimpleEither.<String, PARAMETER>right( parameter );}
+{if ("" != null) return SimpleEither.<StringPos<POS>, PARAMETER>right( parameter );}
       break;
       }
     default:
