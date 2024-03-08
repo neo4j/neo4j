@@ -115,7 +115,7 @@ public enum Group {
     PARALLEL_TOPOLOGY("PARALLEL_TOPOLOGY"),
     LIGHTHOUSE_GOSSIP("LighthouseGossip"),
     LIGHTHOUSE_RECEIVER("LighthouseReceiver", ExecutorServiceFactory.singleThread()),
-    LIGHTHOUSE_JOIN_LEAVE_JOB("LighthouseJoinLeaveManager", ExecutorServiceFactory.singleThread()),
+    LIGHTHOUSE_JOIN_LEAVE_JOB("LighthouseJoinLeaveWorker", ExecutorServiceFactory.singleThread()),
     LIGHTHOUSE_JOIN_LEAVE_MANAGER("LighthouseJoinLeaveManager", ExecutorServiceFactory.singleThread()),
     LIGHTHOUSE_MEMBER_STATE_TRANSITION_SCHEDULER(
             "LighthouseMemberStateScheduler", ExecutorServiceFactory.singleThread()),
