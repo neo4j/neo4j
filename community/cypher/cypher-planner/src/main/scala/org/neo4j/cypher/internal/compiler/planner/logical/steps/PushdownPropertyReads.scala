@@ -69,10 +69,9 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-
-import scala.collection.mutable
 
 case object PushdownPropertyReads {
 
@@ -91,87 +90,92 @@ case object PushdownPropertyReads {
   case class CardinalityOptimum(cardinality: EffectiveCardinality, logicalPlanId: Id, variableName: String)
 
   /**
-   * @param variableOptima for each variable, what plan operator would be the optimum to read its value from
+   * @param variableOptima     for each variable, what plan operator would be the optimum to read its value from
+   * @param propertyReadOptima for each plan id, the properties that should be pushed down to right on top of that plan.
    */
   private case class Acc(
     variableOptima: Map[String, CardinalityOptimum],
-    propertyReadOptima: Vector[(CardinalityOptimum, PushDownProperty)],
+    propertyReadOptima: Map[Id, Set[PushDownProperty]],
     availableProperties: Set[PushDownProperty],
     availableWholeEntities: Set[String],
     incomingCardinality: EffectiveCardinality
   )
 
   private def shouldCoRead(
-    optimumProperties: List[(CardinalityOptimum, PushDownProperty)],
+    optimumProperties: Set[PushDownProperty],
     plan: LogicalPlan
   ): Boolean = {
     optimumProperties.size > 1 &&
     plan.rhs.isEmpty &&
     plan.lhs.nonEmpty &&
     !plan.isInstanceOf[Selection] &&
-    optimumProperties.exists { case (_, p) => !p.inMapProjection } // Map projection is faster than cached properties
+    optimumProperties.exists { !_.inMapProjection } // Map projection is faster than cached properties
   }
 
-  private def findProperties(expression: Any, semanticTable: SemanticTable): Seq[PushDownProperty] =
-    expression.folder.treeFold(Seq.empty[PushDownProperty]) {
+  private def findProperties(expression: Any, semanticTable: SemanticTable): Set[PushDownProperty] =
+    expression.folder.treeFold(Set.empty[PushDownProperty]) {
       case PushableProperty(p) if isNodeOrRel(p.variable, semanticTable) =>
-        acc => TraverseChildren(acc :+ p)
+        acc => TraverseChildren(acc + p)
     }
 
   private def foldSingleChildPlan(
     effectiveCardinalities: EffectiveCardinalities,
     semanticTable: SemanticTable
   )(acc: Acc, plan: LogicalPlan): Acc = {
-    val newPropertyExpressions =
-      plan.folder.treeFold(List.empty[PushDownProperty]) {
+    val newPropertyExpressions: Set[PushDownProperty] =
+      plan.folder.treeFold(Set.empty[PushDownProperty]) {
         case lp: LogicalPlan if lp.id != plan.id =>
           acc2 => SkipChildren(acc2) // do not traverse further
         case _: CaseExpression => // we don't want to pushdown properties inside case expressions since it's not sure we will ever need to read them
           acc2 => SkipChildren(acc2)
         case PushableProperty(p) if isNodeOrRel(p.variable, semanticTable) =>
-          acc2 => TraverseChildren(p :: acc2)
+          acc2 => TraverseChildren(acc2 + p)
         case mp: DesugaredMapProjection =>
           val mapProperties =
             findProperties(mp, semanticTable).map(p => PushDownProperty(p.property, p.variable, inMapProjection = true))
           acc2 => SkipChildren(acc2 ++ mapProperties)
       }
 
-    val newPushableProperties: Map[LogicalVariable, List[(CardinalityOptimum, PushDownProperty)]] =
+    val newPushableProperties: Map[LogicalVariable, (CardinalityOptimum, Set[PushDownProperty])] =
       newPropertyExpressions
-        .flatMap { p =>
-          acc.variableOptima.get(p.variable.name) match {
-            case Some(optimum: CardinalityOptimum) =>
-              if (!acc.availableProperties.map(_.property)(p.property) && !acc.availableWholeEntities.contains(p.variable.name))
-                Some((optimum, p))
-              else
-                None
-            // this happens for variables introduced in expressions, we ignore those for now
-            case None => None
-          }
-        }
-        .groupBy { case (_, p) => p.variable }
+        .groupBy(_.variable)
+        .map {
+          case (variable, properties) =>
+            // This can return `None` for variables introduced in expressions, we ignore those for now
+            val maybeOptimum = acc.variableOptima.get(variable.name)
 
-    val newPropertyReadOptima =
-      newPushableProperties.toSeq.flatMap {
-        case (v, optimumProperties) =>
-          val (optimum, _) = optimumProperties.head
-          if (optimum.cardinality < acc.incomingCardinality) {
-            optimumProperties
-          } else if (shouldCoRead(optimumProperties, plan)) {
-            val uniqueProps = optimumProperties.map(_._2).toSet
-            if (uniqueProps.size > 1) {
-              val beforeThisPlanOptimum = CardinalityOptimum(acc.incomingCardinality, plan.lhs.get.id, v.name)
-              uniqueProps.toSeq.map(p => (beforeThisPlanOptimum, p))
-            } else {
-              Nil
+            variable -> maybeOptimum.map {
+              _ -> properties.filter { p =>
+                !acc.availableProperties.map(_.property)(p.property) && !acc.availableWholeEntities.contains(
+                  p.variable.name
+                )
+              }
             }
+        }
+        .collect {
+          case (variable, Some((cardinalityOptimum, properties))) if properties.nonEmpty =>
+            variable -> (cardinalityOptimum, properties)
+        }
+
+    val newPropertyReadOptima: Map[Id, Set[PushDownProperty]] =
+      // toSeq here is necessary, because otherwise flatMap would build a new Map directly.
+      // But we need to combine multiple optimumProperties for the same plan ID from different variables.
+      newPushableProperties.toSeq.flatMap {
+        case (v, (optimum, optimumProperties)) =>
+          if (optimum.cardinality < acc.incomingCardinality) {
+            Some(optimum.logicalPlanId -> optimumProperties.map(propertyWithName(optimum.variableName, _)))
+          } else if (shouldCoRead(optimumProperties, plan)) {
+            Some(plan.lhs.get.id -> optimumProperties.map(propertyWithName(v.name, _)))
           } else {
-            Nil
+            Seq.empty
           }
-      }
+      }.groupBy(_._1)
+        .view
+        .mapValues(tuples => tuples.view.flatMap(_._2).to(Set))
+        .toMap
 
     val outgoingCardinality = effectiveCardinalities(plan.id)
-    val outgoingReadOptima = acc.propertyReadOptima ++ newPropertyReadOptima
+    val outgoingReadOptima = acc.propertyReadOptima.fuse(newPropertyReadOptima)(_ ++ _)
 
     plan match {
       case _: Anti =>
@@ -314,7 +318,7 @@ case object PushdownPropertyReads {
           // Keep only optima of variables introduced in these plans
           outgoingVariableOptima,
           // Keep any pushdowns identified in either side
-          lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
+          lhsAcc.propertyReadOptima.fuse(rhsAcc.propertyReadOptima)(_ ++ _),
           // Keep no available properties/entities, which allows pushing down on top of these plans
           Set.empty,
           Set.empty,
@@ -384,7 +388,7 @@ case object PushdownPropertyReads {
 
         Acc(
           mergedVariableOptima,
-          lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
+          lhsAcc.propertyReadOptima.fuse(rhsAcc.propertyReadOptima)(_ ++ _),
           lhsAcc.availableProperties ++ rhsAcc.availableProperties,
           lhsAcc.availableWholeEntities ++ rhsAcc.availableWholeEntities,
           effectiveCardinalities(plan.id)
@@ -420,20 +424,12 @@ case object PushdownPropertyReads {
     attributes: Attributes[LogicalPlan],
     semanticTable: SemanticTable
   ): LogicalPlan = {
-
-    val propertyReadOptima = findPropertyReadOptima(logicalPlan, effectiveCardinalities, semanticTable)
-
-    val propertyMap = new mutable.HashMap[Id, Set[PushDownProperty]].withDefaultValue(Set.empty)
-    propertyReadOptima foreach {
-      case (CardinalityOptimum(_, id, variableNameAtOptimum), property) =>
-        propertyMap(id) += propertyWithName(variableNameAtOptimum, property)
-    }
+    val propertyMap = findPropertyReadOptima(logicalPlan, effectiveCardinalities, semanticTable)
 
     val propertyReadInsertRewriter = bottomUp(Rewriter.lift {
       case lp: LogicalPlan if propertyMap.contains(lp.id) =>
         val copiedProperties = propertyMap(lp.id).map {
-          p =>
-            p.property.copy()(p.property.position): LogicalProperty
+          p => p.property.copy()(p.property.position): LogicalProperty
         }
         CacheProperties(lp, copiedProperties)(attributes.copy(lp.id))
     })
@@ -448,9 +444,9 @@ case object PushdownPropertyReads {
     logicalPlan: LogicalPlan,
     effectiveCardinalities: EffectiveCardinalities,
     semanticTable: SemanticTable
-  ): Seq[(CardinalityOptimum, PushDownProperty)] = {
+  ): Map[Id, Set[PushDownProperty]] = {
     val Acc(_, propertyReadOptima, _, _, _) =
-      LogicalPlans.foldPlan(Acc(Map.empty, Vector.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
+      LogicalPlans.foldPlan(Acc(Map.empty, Map.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
         logicalPlan,
         foldSingleChildPlan(effectiveCardinalities, semanticTable),
         foldTwoChildPlan(effectiveCardinalities, semanticTable),
