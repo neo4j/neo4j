@@ -65,16 +65,16 @@ public class LuceneIndexValueValidator implements IndexValueValidator {
         Preconditions.checkArgument(value != null && value != Values.NO_VALUE, "Null value");
         if (Values.isTextValue(value) && ((TextValue) value).length() >= checkThreshold) {
             int length = ((TextValue) value).stringValue().getBytes().length;
-            validateActualLength(entityId, value, length);
+            validateActualLength(entityId, length);
         }
         if (Values.isArrayValue(value)) {
-            validateActualLength(entityId, value, ArrayEncoder.encode(value).getBytes().length);
+            validateActualLength(entityId, ArrayEncoder.encode(value).getBytes().length);
         }
     }
 
-    private void validateActualLength(long entityId, Value value, int length) {
+    private void validateActualLength(long entityId, int length) {
         if (length > MAX_TERM_LENGTH) {
-            IndexValueValidator.throwSizeViolationException(descriptor, tokenNameLookup, entityId, length, value);
+            IndexValueValidator.throwSizeViolationException(descriptor, tokenNameLookup, entityId, length);
         }
     }
 }

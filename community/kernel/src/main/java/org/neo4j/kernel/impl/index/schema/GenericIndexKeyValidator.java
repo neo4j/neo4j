@@ -60,7 +60,7 @@ class GenericIndexKeyValidator implements IndexValueValidator {
         if (worstCaseSize > maxLength) {
             int size = actualLength(values);
             if (size > maxLength) {
-                IndexValueValidator.throwSizeViolationException(descriptor, tokenNameLookup, entityId, size, values);
+                IndexValueValidator.throwSizeViolationException(descriptor, tokenNameLookup, entityId, size);
             }
         }
     }
