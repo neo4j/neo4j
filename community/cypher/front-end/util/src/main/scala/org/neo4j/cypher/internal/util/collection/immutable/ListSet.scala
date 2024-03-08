@@ -44,9 +44,13 @@ class ListSet[A](underlying: java.util.LinkedHashSet[A])
   override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
 
   override def incl(elem: A): ListSet[A] = {
-    val newJava = new java.util.LinkedHashSet(underlying)
-    newJava.add(elem)
-    new ListSet(newJava)
+    if (contains(elem)) {
+      this
+    } else {
+      val newJava = new java.util.LinkedHashSet(underlying)
+      newJava.add(elem)
+      new ListSet(newJava)
+    }
   }
 
   override def excl(elem: A): ListSet[A] = {
