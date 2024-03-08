@@ -369,6 +369,12 @@ public class StoreMigrator {
                     toVersion != null ? toVersion.getStoreVersionUserString() : formatToMigrateTo));
             case UNSUPPORTED_TARGET_VERSION -> throw new UnableToMigrateException(
                     "The current store version is not supported. " + "Please migrate the store to be able to continue");
+            case UNSUPPORTED_MIGRATION_LIMITS -> throw new UnableToMigrateException(
+                    String.format(
+                            "Store migration from '%s' to '%s' not supported for this store",
+                            fromVersion.getStoreVersionUserString(),
+                            toVersion != null ? toVersion.getStoreVersionUserString() : formatToMigrateTo),
+                    checkResult.cause());
         };
     }
 

@@ -26,8 +26,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.StoreFormatLimits;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -123,5 +125,10 @@ public abstract class BaseRecordFormats implements RecordFormats {
     @Override
     public RecordFormat<SchemaRecord> schema() {
         return new NoRecordFormat<>();
+    }
+
+    @Override
+    public StoreFormatLimits idLimits() {
+        return StandardFormatSettings.LIMITS;
     }
 }

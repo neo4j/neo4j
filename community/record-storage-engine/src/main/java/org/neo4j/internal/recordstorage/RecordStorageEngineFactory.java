@@ -147,6 +147,7 @@ import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageFilesState;
+import org.neo4j.storageengine.api.StoreFormatLimits;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -313,6 +314,18 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 .filter(not(RecordFormats::onlyForMigration))
                 .map(RecordFormats::name)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    @Override
+    public StoreFormatLimits limitsForFormat(String formatName, boolean includeFormatsUnderDevelopment) {
+        // Including only for migration formats
+        Optional<RecordFormats> format = Iterables.stream(RecordFormatSelector.allFormats())
+                .filter(f -> includeFormatsUnderDevelopment || !f.formatUnderDevelopment())
+                .filter(formats -> formats.name().equals(formatName))
+                .findFirst();
+
+        return format.orElseThrow(() -> new IllegalStateException("Format is not supported by engine"))
+                .idLimits();
     }
 
     @Override
@@ -925,6 +938,18 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         }
 
         return PageCacheOptionsSelector.select(recordFormats);
+    }
+
+    @Override
+    public boolean fitsWithinStoreFormatLimits(
+            StoreFormatLimits formatLimits,
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Config config) {
+        // Record format is under all limits that other storage engines enforce (except for max nodes for high-limit but
+        // it is extremely unlikely anyone has that many nodes so it is ignored).
+        return true;
     }
 
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess(

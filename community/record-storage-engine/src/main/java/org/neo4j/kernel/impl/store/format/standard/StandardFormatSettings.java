@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format.standard;
 
+import org.neo4j.storageengine.api.StoreFormatLimits;
+
 /**
  * Common low limit format settings.
  */
@@ -36,6 +38,17 @@ public final class StandardFormatSettings {
     public static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 16;
     static final int RELATIONSHIP_GROUP_MAXIMUM_ID_BITS = 35;
     public static final int SCHEMA_RECORD_ID_BITS = 32; // Should ideally be less than PROPERTY_MAXIMUM_ID_BITS.
+
+    public static final StoreFormatLimits LIMITS = new StoreFormatLimits(
+            bitsToMaxId(LABEL_TOKEN_MAXIMUM_ID_BITS),
+            bitsToMaxId(RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS),
+            bitsToMaxId(PROPERTY_TOKEN_MAXIMUM_ID_BITS),
+            bitsToMaxId(NODE_MAXIMUM_ID_BITS),
+            bitsToMaxId(RELATIONSHIP_MAXIMUM_ID_BITS));
+
+    public static long bitsToMaxId(int idBits) {
+        return (1L << idBits) - 1;
+    }
 
     private StandardFormatSettings() {}
 }

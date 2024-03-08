@@ -222,6 +222,33 @@ public interface StorageEngineFactory {
     Set<String> supportedFormats(boolean includeFormatsUnderDevelopment);
 
     /**
+     * Get the id limits supported by a format
+     * @param formatName format to check limits for
+     * @param includeFormatsUnderDevelopment true if this check should include formats under development
+     * @return The limits for the format
+     * @throws IllegalStateException on unsupported format for engine
+     */
+    StoreFormatLimits limitsForFormat(String formatName, boolean includeFormatsUnderDevelopment)
+            throws IllegalStateException;
+
+    /**
+     * Check if the database fits within the provided id limits. This is best effort and not all limits are checked.
+     * Assumes that the database exist - can return false for a non-existent/broken database even if it would fit.
+     *
+     * @param formatLimits   the limits to check against
+     * @param databaseLayout layout pointing to the db in question
+     * @param config a database config
+     * @return Whether the database should fit within the limits.
+     */
+    boolean fitsWithinStoreFormatLimits(
+            StoreFormatLimits formatLimits,
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Config config)
+            throws IOException;
+
+    /**
      * Instantiates a fully functional {@link MetadataProvider}, which is a union of {@link TransactionIdStore}
      * and {@link LogVersionRepository}.
      * @return a fully functional {@link MetadataProvider}.

@@ -69,5 +69,11 @@ public interface MigrationStoreVersionCheck {
          * The only possible step is migration to another format.
          */
         UNSUPPORTED_TARGET_VERSION,
+        /**
+         * The target migration version has been determined,
+         * and the migration path from the version the store is currently on to the determined target migration version is supported,
+         * but the target format will not fit the store because we are going to lower id limits.
+         */
+        UNSUPPORTED_MIGRATION_LIMITS
     }
 }

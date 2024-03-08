@@ -214,6 +214,23 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
+    public StoreFormatLimits limitsForFormat(String formatName, boolean includeFormatsUnderDevelopment)
+            throws IllegalStateException {
+        return delegate.limitsForFormat(formatName, includeFormatsUnderDevelopment);
+    }
+
+    @Override
+    public boolean fitsWithinStoreFormatLimits(
+            StoreFormatLimits formatLimits,
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            Config config)
+            throws IOException {
+        return delegate.fitsWithinStoreFormatLimits(formatLimits, databaseLayout, fs, pageCache, config);
+    }
+
+    @Override
     public MetadataProvider transactionMetaDataStore(
             FileSystemAbstraction fs,
             DatabaseLayout databaseLayout,

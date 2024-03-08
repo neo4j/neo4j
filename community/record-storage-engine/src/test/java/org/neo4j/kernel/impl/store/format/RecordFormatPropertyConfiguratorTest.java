@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.StoreFormatLimits;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -184,6 +185,11 @@ class RecordFormatPropertyConfiguratorTest {
         @Override
         public boolean onlyForMigration() {
             return false;
+        }
+
+        @Override
+        public StoreFormatLimits idLimits() {
+            return null;
         }
     }
 

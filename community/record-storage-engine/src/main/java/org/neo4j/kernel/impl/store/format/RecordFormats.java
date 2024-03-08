@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.service.NamedService;
+import org.neo4j.storageengine.api.StoreFormatLimits;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -141,4 +142,9 @@ public interface RecordFormats {
      * A format that is only for migration is not supported to run a database on, and does not have support in all tools.
      */
     boolean onlyForMigration();
+
+    /**
+     * Id limits for the store format.
+     */
+    StoreFormatLimits idLimits();
 }
