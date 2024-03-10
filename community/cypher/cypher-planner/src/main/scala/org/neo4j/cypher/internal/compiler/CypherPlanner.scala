@@ -85,7 +85,8 @@ case class CypherPlanner[Context <: PlannerContext](
     params: MapValue,
     cancellationChecker: CancellationChecker
   ): BaseState = {
-    parsing.parseQuery(
+    val t1 = System.nanoTime()
+    val res = parsing.parseQuery(
       queryText,
       rawQueryText,
       notificationLogger,
@@ -95,6 +96,9 @@ case class CypherPlanner[Context <: PlannerContext](
       params,
       cancellationChecker
     )
+    val t2 = System.nanoTime()
+    println("Parse Tree Generation Time - 2 : " + (t2 - t1))
+    res
   }
 
 }

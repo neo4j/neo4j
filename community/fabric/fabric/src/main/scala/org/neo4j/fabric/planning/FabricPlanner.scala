@@ -76,7 +76,10 @@ case class FabricPlanner(
     cancellationChecker: CancellationChecker
   ): PlannerInstance = {
     val notificationLogger = new RecordingNotificationLogger()
+    val t1 = System.nanoTime()
     val query = frontend.preParsing.preParse(queryString, notificationLogger)
+    val t2 = System.nanoTime()
+    println("Parse Tree Generation Time - 1 : " + (t2 - t1))
     PlannerInstance(
       signatureResolver,
       query,
@@ -124,6 +127,7 @@ case class FabricPlanner(
     }
 
     private def computePlan(): FabricPlan = trace {
+      val t1 = System.nanoTime()
       val prepared = pipeline.parseAndPrepare.process()
 
       val fragmenter =
@@ -134,6 +138,8 @@ case class FabricPlanner(
 
       val stitcher = FabricStitcher(query.statement, compositeContext, pipeline, useHelper)
       val stitchedFragments = stitcher.convert(fragments)
+      val t2 = System.nanoTime()
+      println("Parse Tree Generation Time - 2 : " + (t2 - t1))
 
       FabricPlan(
         query = stitchedFragments,

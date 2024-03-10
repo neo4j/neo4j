@@ -107,14 +107,17 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public Statement run(String statement, MapValue params) throws StatementException {
+        System.out.println("Query is : " + statement);
+        long t1 = System.nanoTime();
         var statementId = this.nextStatementId.getAndIncrement();
         this.latestStatementId = statementId;
 
         var subscriber = new StatementQuerySubscriber();
         BoltQueryExecution query;
         try {
+            long t2 = System.nanoTime();
             query = this.transaction.executeQuery(statement, params, true, subscriber);
-
+            System.out.println("Total Server Query Execution Time : " + (System.nanoTime() - t2));
             // Note: Some special queries such as pure writes will be eagerly executed by Fabric
             // thus causing errors to be surfaced prior to "actual" execution
             subscriber.assertSuccess();
@@ -134,6 +137,7 @@ public class TransactionImpl implements Transaction {
             this.statementLock.unlock();
         }
 
+        System.out.println("Total Server Query Time : " + (System.nanoTime() - t1));
         return handle;
     }
 

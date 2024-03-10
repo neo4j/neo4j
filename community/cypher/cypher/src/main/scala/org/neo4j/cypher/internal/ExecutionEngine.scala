@@ -169,7 +169,10 @@ abstract class ExecutionEngine(
     closing(context, queryTracer) {
       val couldContainSensitiveFields = isOutermostQuery && masterCompiler.supportsAdministrativeCommands()
       val notificationLogger = new RecordingNotificationLogger()
+      val t1 = System.nanoTime()
       val preParsedQuery = preParser.preParseQuery(query, notificationLogger, profile, couldContainSensitiveFields)
+      val t2 = System.nanoTime()
+      println("Parse Tree Generation Time - 1 : " + (t2 - t1))
       doExecute(
         preParsedQuery,
         params,
@@ -212,7 +215,7 @@ abstract class ExecutionEngine(
     subscriber: QuerySubscriber,
     notificationLogger: InternalNotificationLogger
   ): QueryExecution = {
-
+    val t1 = System.nanoTime()
     val executableQuery =
       try {
         getOrCompile(context, query, tracer, params, notificationLogger)
@@ -234,8 +237,10 @@ abstract class ExecutionEngine(
         executableQuery.planDescriptionSupplier()
       )
     }
-
-    executableQuery.execute(
+    val t2 = System.nanoTime()
+    println("Query Plan AST Building Time : " + (t2 - t1))
+    val t3 = System.nanoTime()
+    val execRes = executableQuery.execute(
       context,
       isOutermostQuery,
       query.options,
@@ -245,6 +250,9 @@ abstract class ExecutionEngine(
       queryMonitor,
       subscriber
     )
+    val t4 = System.nanoTime()
+    println("Query Execution Time : " + (t4 - t3))
+    execRes
   }
 
   /*
