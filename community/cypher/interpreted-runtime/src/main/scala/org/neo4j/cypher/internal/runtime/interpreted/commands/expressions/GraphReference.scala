@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.GraphFunctions
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.ElementIdMapper
+import org.neo4j.values.ElementIdDecoder
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.virtual.GraphReferenceValue
 
@@ -74,7 +74,7 @@ case class IdExpressionGraphReference(id: Expression) extends GraphReference {
 
   def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val idStr = id.apply(row, state).asInstanceOf[TextValue].stringValue()
-    val uuid = ElementIdMapper.decode(idStr).databaseId()
+    val uuid = ElementIdDecoder.database(idStr)
 
     new GraphReferenceValue(GraphFunctions.graphById(
       uuid,
