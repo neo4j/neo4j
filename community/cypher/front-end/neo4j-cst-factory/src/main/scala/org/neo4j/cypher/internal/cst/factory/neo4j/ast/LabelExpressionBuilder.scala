@@ -74,10 +74,7 @@ trait LabelExpressionBuilder extends CypherParserListener {
       if (ctx.variable() != null) Some(ctx.variable().ast[LogicalVariable]()) else None
     val labelExpression =
       if (ctx.labelExpression() != null) Some(ctx.labelExpression().ast[LabelExpression]()) else None
-    val pathLength =
-      Some(astOpt[expressions.Range](ctx.pathLength())).filter(_.isDefined).map(_.filter(r =>
-        r.lower.isDefined || r.upper.isDefined
-      ))
+    val pathLength = astOpt[Option[expressions.Range]](ctx.pathLength())
     val properties =
       if (ctx.properties() != null) Some(ctx.properties().ast[Expression]()) else None
     val expression =

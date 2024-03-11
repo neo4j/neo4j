@@ -35,7 +35,7 @@ object Util {
 
   @inline def child[T <: ParseTree](ctx: AstRuleCtx, index: Int): T = ctx.getChild(index).asInstanceOf[T]
 
-  @inline def astOpt[T <: ASTNode](ctx: AstRuleCtx): Option[T] = if (ctx == null) None else Some(ctx.ast[T]())
+  @inline def astOpt[T <: Any](ctx: AstRuleCtx): Option[T] = if (ctx == null) None else Some(ctx.ast[T]())
   @inline def astOpt[T](ctx: AstRuleCtx, default: => T): T = if (ctx == null) default else ctx.ast[T]()
   @inline def ctxChild(ctx: AstRuleCtx, index: Int): AstRuleCtx = ctx.getChild(index).asInstanceOf[AstRuleCtx]
 

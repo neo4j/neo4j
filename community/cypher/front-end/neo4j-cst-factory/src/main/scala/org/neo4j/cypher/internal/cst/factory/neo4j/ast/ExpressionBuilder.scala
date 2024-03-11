@@ -302,14 +302,15 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitPathLength(
     ctx: CypherParser.PathLengthContext
   ): Unit = {
+    // This is weird, we should refactor range to be more sensible and not use nested options
     ctx.ast = if (ctx.DOTDOT() != null) {
       val from = if (ctx.from != null) Some(UnsignedDecimalIntegerLiteral(ctx.from.getText)(pos(ctx.from))) else None
       val to = if (ctx.to != null) Some(UnsignedDecimalIntegerLiteral(ctx.to.getText)(pos(ctx.to))) else None
-      org.neo4j.cypher.internal.expressions.Range(from, to)(from.map(_.position).getOrElse(pos(ctx)))
+      Some(org.neo4j.cypher.internal.expressions.Range(from, to)(from.map(_.position).getOrElse(pos(ctx))))
     } else if (ctx.single != null) {
       val single = Some(UnsignedDecimalIntegerLiteral(ctx.single.getText)(pos(ctx.single)))
-      org.neo4j.cypher.internal.expressions.Range(single, single)(pos(ctx))
-    } else org.neo4j.cypher.internal.expressions.Range(None, None)(pos(ctx))
+      Some(org.neo4j.cypher.internal.expressions.Range(single, single)(pos(ctx)))
+    } else None
   }
 
   final override def exitExpression(ctx: CypherParser.ExpressionContext): Unit = {
