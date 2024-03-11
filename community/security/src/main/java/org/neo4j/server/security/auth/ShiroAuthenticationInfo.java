@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
-import org.apache.shiro.util.ByteSource;
+import org.apache.shiro.lang.util.ByteSource;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 
 public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {

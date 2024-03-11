@@ -24,10 +24,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SaltedAuthenticationInfo;
-import org.apache.shiro.codec.Hex;
 import org.apache.shiro.crypto.hash.SimpleHash;
+import org.apache.shiro.lang.codec.Hex;
+import org.apache.shiro.lang.util.ByteSource;
 import org.apache.shiro.subject.PrincipalCollection;
-import org.apache.shiro.util.ByteSource;
 import org.neo4j.kernel.impl.security.Credential;
 
 public class SystemGraphCredential implements Credential {
