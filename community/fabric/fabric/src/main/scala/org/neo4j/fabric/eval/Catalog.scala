@@ -30,7 +30,7 @@ import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.DatabaseReferenceImpl.External
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
-import org.neo4j.values.ElementIdMapper
+import org.neo4j.values.ElementIdDecoder
 import org.neo4j.values.storable.StringValue
 
 import java.util.UUID
@@ -147,10 +147,9 @@ object Catalog {
 
     override def eval(arg: StringValue, catalog: Catalog, sessionDb: DatabaseReference): Graph = {
       val elementIdText = arg.stringValue()
-      val elementId = ElementIdMapper.decode(elementIdText)
       val aliases = catalog.resolveNamespacedGraph(
         sessionDb.alias().name(),
-        elementId.databaseId(),
+        ElementIdDecoder.database(elementIdText),
         SecurityContext.AUTH_DISABLED
       ) // TODO: fix!
       if (aliases.isEmpty) {

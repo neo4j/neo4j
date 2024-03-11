@@ -19,78 +19,29 @@
  */
 package org.neo4j.values;
 
-import static java.lang.String.format;
+public interface ElementIdMapper {
+    /**
+     * @param id the node element id
+     * @return the node id
+     * @throws IllegalArgumentException
+     */
+    long nodeId(String id);
 
-import java.util.UUID;
-import org.neo4j.common.EntityType;
+    /**
+     * @param id the relationship element id
+     * @return the relationship id
+     * @throws IllegalArgumentException
+     */
+    long relationshipId(String id);
+    /**
+     * @param id the node id
+     * @return the encoded element id for the corresponding node id
+     */
+    String nodeElementId(long id);
 
-public abstract class ElementIdMapper {
-
-    protected static byte ELEMENT_ID_FORMAT_VERSION = 1;
-
-    public record ElementId(UUID databaseId, long entityId, EntityType entityType) {}
-
-    public static ElementId decode(String id, EntityType expectedType) {
-        var elementId = decode(id);
-        verifyEntityType(id, elementId.entityType, expectedType);
-        return elementId;
-    }
-
-    public static ElementId decode(String id) {
-        try {
-            var parts = readParts(id);
-            var header = Byte.parseByte(parts[0]);
-            verifyVersion(id, header);
-
-            var databaseId = UUID.fromString(parts[1]);
-            var entityId = Long.parseLong(parts[2]);
-            var entityType = decodeEntityType(id, header);
-            return new ElementId(databaseId, entityId, entityType);
-        } catch (IllegalArgumentException iae) {
-            throw iae;
-        } catch (Exception e) {
-            throw new IllegalArgumentException(format("Element ID %s has an unexpected format.", id), e);
-        }
-    }
-
-    private static String[] readParts(String id) {
-        String[] parts = id.split(":");
-        if (parts.length != 3) {
-            throw new IllegalArgumentException(format("Element ID %s has an unexpected format.", id));
-        }
-        return parts;
-    }
-
-    private static void verifyVersion(String id, byte header) {
-        byte version = (byte) (header >>> 2);
-        if (version != ELEMENT_ID_FORMAT_VERSION) {
-            throw new IllegalArgumentException(format("Element ID %s has an unexpected version %d", id, version));
-        }
-    }
-
-    private static EntityType decodeEntityType(String id, byte header) {
-        byte entityTypeId = (byte) (header & 0x3);
-
-        return switch (entityTypeId) {
-            case 0 -> EntityType.NODE;
-            case 1 -> EntityType.RELATIONSHIP;
-            default -> throw new IllegalArgumentException(
-                    format("Element ID %s has unknown entity type ID %s", id, entityTypeId));
-        };
-    }
-
-    private static void verifyEntityType(String id, EntityType actual, EntityType expected) {
-        if (actual != expected) {
-            throw new IllegalArgumentException(
-                    format("Element ID %s has unexpected entity type %s, was expecting %s", id, actual, expected));
-        }
-    }
-
-    public abstract String nodeElementId(long nodeId);
-
-    public abstract long nodeId(String id);
-
-    public abstract String relationshipElementId(long relationshipId);
-
-    public abstract long relationshipId(String id);
+    /**
+     * @param id the relationship id
+     * @return the encoded relationship id for the corresponding node id
+     */
+    String relationshipElementId(long id);
 }

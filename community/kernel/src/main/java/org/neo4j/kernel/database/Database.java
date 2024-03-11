@@ -84,7 +84,7 @@ import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.api.DefaultElementIdMapper;
+import org.neo4j.kernel.api.DefaultElementIdMapperV1;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.database.transaction.TransactionLogServiceImpl;
@@ -486,7 +486,7 @@ public class Database extends AbstractDatabase {
         initialiseContextFactory(
                 getTransactionIdSnapshotFactory(databaseConfig, metadataProvider),
                 getOldestTransactionIdFactory(databaseConfig, () -> kernelModule));
-        elementIdMapper = new DefaultElementIdMapper(namedDatabaseId);
+        elementIdMapper = new DefaultElementIdMapperV1(namedDatabaseId);
 
         // Recreate the logFiles after storage engine to get access to dependencies
         var logFiles = getLogFiles();

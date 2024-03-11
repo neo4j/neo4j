@@ -31,7 +31,7 @@ class DefaultElementIdMapperTest {
     @Test
     void elementIdForEntity() {
         var databaseId = DatabaseIdHelper.randomNamedDatabaseId();
-        var idMapper = new DefaultElementIdMapper(databaseId);
+        var idMapper = new DefaultElementIdMapperV1(databaseId);
         String databaseUUID = databaseId.databaseId().uuid().toString();
         assertEquals("5:" + databaseUUID + ":1", idMapper.relationshipElementId(1));
         assertEquals("5:" + databaseUUID + ":17857", idMapper.relationshipElementId(17857));
@@ -45,7 +45,7 @@ class DefaultElementIdMapperTest {
 
     @Test
     void entityIdFromElementId() {
-        var idMapper = new DefaultElementIdMapper(DatabaseIdHelper.randomNamedDatabaseId());
+        var idMapper = new DefaultElementIdMapperV1(DatabaseIdHelper.randomNamedDatabaseId());
         long relationshipId = 17857;
         long nodeId = 784512;
         var relElementId = idMapper.relationshipElementId(relationshipId);
@@ -58,7 +58,7 @@ class DefaultElementIdMapperTest {
     @Test
     void failToDecodeIdsFromAnotherDatabase() {
         NamedDatabaseId expectedId = DatabaseIdHelper.randomNamedDatabaseId();
-        var idMapper = new DefaultElementIdMapper(expectedId);
+        var idMapper = new DefaultElementIdMapperV1(expectedId);
 
         String nonExpectedDbId =
                 DatabaseIdHelper.randomNamedDatabaseId().databaseId().uuid().toString();

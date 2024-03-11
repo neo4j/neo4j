@@ -24,16 +24,19 @@ import static java.lang.String.format;
 import java.util.UUID;
 import org.neo4j.common.EntityType;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.values.ElementIdDecoderV1;
 import org.neo4j.values.ElementIdMapper;
 
 /**
  * Produces element IDs which includes version, entity type, database ID and the internal storage entity ID.
  */
-public class DefaultElementIdMapper extends ElementIdMapper {
+public class DefaultElementIdMapperV1 extends ElementIdDecoderV1 implements ElementIdMapper {
 
     private final UUID databaseId;
 
-    public DefaultElementIdMapper(NamedDatabaseId databaseId) {
+    private static final byte ELEMENT_ID_FORMAT_VERSION = 1;
+
+    public DefaultElementIdMapperV1(NamedDatabaseId databaseId) {
         this.databaseId = databaseId.databaseId().uuid();
     }
 
@@ -68,7 +71,7 @@ public class DefaultElementIdMapper extends ElementIdMapper {
     private long decodeElementId(String id, EntityType entityType) {
         try {
             var elementId = decode(id, entityType);
-            verifyDatabaseId(elementId.databaseId(), id);
+            verifyDatabaseId(elementId.database(), id);
             return elementId.entityId();
         } catch (IllegalArgumentException iae) {
             throw iae;
