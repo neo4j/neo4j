@@ -53,7 +53,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.LocalConfig;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.exceptions.KernelException;
@@ -326,7 +326,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionCommitmentFactory commitmentFactory,
             KernelTransactions kernelTransactions,
             TransactionIdGenerator transactionIdGenerator,
-            DbmsRuntimeRepository dbmsRuntimeRepository,
+            DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider,
             KernelVersionProvider kernelVersionProvider,
             LogicalTransactionStore transactionStore,
             ServerIdentity serverIdentity,
@@ -412,7 +412,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 storageReader,
                 new IndexTxStateUpdater(storageReader, allStoreHolder, indexingService),
                 commandCreationContext,
-                dbmsRuntimeRepository,
+                dbmsRuntimeVersionProvider,
                 kernelVersionProvider,
                 storageLocks,
                 this,

@@ -64,7 +64,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -169,7 +169,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     private final AllStoreHolder allStoreHolder;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
-    private final DbmsRuntimeRepository dbmsRuntimeRepository;
+    private final DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider;
     private final KernelVersionProvider kernelVersionProvider;
     private final StorageLocks storageLocks;
     private final KernelToken token;
@@ -192,7 +192,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             StorageReader storageReader,
             IndexTxStateUpdater updater,
             CommandCreationContext commandCreationContext,
-            DbmsRuntimeRepository dbmsRuntimeRepository,
+            DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider,
             KernelVersionProvider kernelVersionProvider,
             StorageLocks storageLocks,
             KernelTransactionImplementation ktx,
@@ -205,7 +205,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             MemoryTracker memoryTracker) {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
-        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
+        this.dbmsRuntimeVersionProvider = dbmsRuntimeVersionProvider;
         this.kernelVersionProvider = kernelVersionProvider;
         this.storageLocks = storageLocks;
         this.token = token;
@@ -1593,7 +1593,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                     if (version == VectorIndexVersion.V1_0) {
                         supported = false;
                         final var latestDescriptor = VectorIndexVersion.latestSupportedVersion(
-                                        dbmsRuntimeRepository.getVersion().kernelVersion())
+                                        dbmsRuntimeVersionProvider.getVersion().kernelVersion())
                                 .descriptor();
                         unsupportedMessage
                                 .append(" Relationship vector indexes with provider '")
@@ -1904,7 +1904,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
             return true;
         }
 
-        final var currentDbmsVersion = dbmsRuntimeRepository.getVersion().kernelVersion();
+        final var currentDbmsVersion = dbmsRuntimeVersionProvider.getVersion().kernelVersion();
         if (currentDbmsVersion.isAtLeast(minimumVersionForSupport)) {
             // Dbms runtime version is good, current transaction will trigger the upgrade transaction
             // we will double-check the kernel version during commit

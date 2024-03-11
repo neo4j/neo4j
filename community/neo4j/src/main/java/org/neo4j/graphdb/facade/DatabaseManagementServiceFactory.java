@@ -180,9 +180,9 @@ public class DatabaseManagementServiceFactory {
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies(securityProvider.authManager());
 
-        var dbmsRuntimeRepository = edition.createAndRegisterDbmsRuntimeRepository(
+        var dbmsRuntimeVersionProvider = edition.createAndRegisterDbmsRuntimeRepository(
                 globalModule, databaseContextProvider, globalDependencies, dbmsRuntimeSystemGraphComponent);
-        globalDependencies.satisfyDependency(dbmsRuntimeRepository);
+        globalDependencies.satisfyDependency(dbmsRuntimeVersionProvider);
 
         globalLife.add(globalModule.getGlobalExtensions());
         BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI =

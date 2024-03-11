@@ -20,22 +20,31 @@
 package org.neo4j.dbms.database;
 
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.util.List;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.util.VisibleForTesting;
 
 /**
- * A version of {@link} DbmsRuntimeRepository for standalone editions.
+ * A version of {@link DbmsRuntimeVersionProvider} for standalone editions.
  */
-public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository implements TransactionEventListener<Object> {
+public class StandaloneDbmsRuntimeVersionProvider
+        implements TransactionEventListener<Object>, DbmsRuntimeVersionProvider {
 
-    public StandaloneDbmsRuntimeRepository(
+    protected final DbmsRuntimeSystemGraphComponent component;
+    private final DatabaseContextProvider<?> databaseContextProvider;
+    private volatile DbmsRuntimeVersion currentVersion;
+
+    public StandaloneDbmsRuntimeVersionProvider(
             DatabaseContextProvider<?> databaseContextProvider, DbmsRuntimeSystemGraphComponent component) {
-        super(databaseContextProvider, component);
+        this.databaseContextProvider = databaseContextProvider;
+        this.component = component;
     }
 
     @Override
@@ -72,5 +81,38 @@ public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository imple
     @Override
     public void afterRollback(TransactionData data, Object state, GraphDatabaseService databaseService) {
         // not interested in this event
+    }
+
+    private void fetchStateFromSystemDatabase() {
+        var systemDatabase = getSystemDb();
+        currentVersion = component.fetchStateFromSystemDatabase(systemDatabase);
+    }
+
+    private GraphDatabaseService getSystemDb() {
+        return databaseContextProvider
+                .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
+                .orElseThrow(() -> new RuntimeException("Failed to get System Database"))
+                .databaseFacade();
+    }
+
+    @Override
+    public DbmsRuntimeVersion getVersion() {
+        if (currentVersion == null) {
+            synchronized (this) {
+                if (currentVersion == null) {
+                    fetchStateFromSystemDatabase();
+                }
+            }
+        }
+
+        return currentVersion;
+    }
+
+    /**
+     * This must be used only by children and tests!!!
+     */
+    @VisibleForTesting
+    void setVersion(DbmsRuntimeVersion newVersion) {
+        currentVersion = newVersion;
     }
 }

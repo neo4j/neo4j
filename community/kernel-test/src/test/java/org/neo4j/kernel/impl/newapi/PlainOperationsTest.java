@@ -59,7 +59,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -958,7 +958,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
-                mock(DbmsRuntimeRepository.class),
+                mock(DbmsRuntimeVersionProvider.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
@@ -1002,7 +1002,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
-                mock(DbmsRuntimeRepository.class),
+                mock(DbmsRuntimeVersionProvider.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
@@ -1044,7 +1044,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
-                mock(DbmsRuntimeRepository.class),
+                mock(DbmsRuntimeVersionProvider.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
@@ -1091,7 +1091,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
-                mock(DbmsRuntimeRepository.class),
+                mock(DbmsRuntimeVersionProvider.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,

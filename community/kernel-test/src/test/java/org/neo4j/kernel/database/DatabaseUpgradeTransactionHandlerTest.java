@@ -39,7 +39,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
@@ -224,8 +224,10 @@ class DatabaseUpgradeTransactionHandlerTest {
         setKernelVersion(initialKernelVersion);
         setDbmsRuntime(initialDbmsRuntimeVersion);
 
-        DbmsRuntimeRepository dbmsRuntimeRepository = mock(DbmsRuntimeRepository.class);
-        doAnswer(inv -> currentDbmsRuntimeVersion).when(dbmsRuntimeRepository).getVersion();
+        DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider = mock(DbmsRuntimeVersionProvider.class);
+        doAnswer(inv -> currentDbmsRuntimeVersion)
+                .when(dbmsRuntimeVersionProvider)
+                .getVersion();
         KernelVersionProvider kernelVersionProvider = this::getKernelVersion;
         DatabaseTransactionEventListeners databaseTransactionEventListeners =
                 mock(DatabaseTransactionEventListeners.class);
@@ -242,7 +244,7 @@ class DatabaseUpgradeTransactionHandlerTest {
         when(kernelMock.beginTransaction(KernelTransaction.Type.IMPLICIT, AUTH_DISABLED))
                 .thenReturn(txMock);
         DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler(
-                dbmsRuntimeRepository,
+                dbmsRuntimeVersionProvider,
                 kernelVersionProvider,
                 databaseTransactionEventListeners,
                 lock,

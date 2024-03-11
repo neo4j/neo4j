@@ -50,7 +50,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Write;
@@ -215,7 +215,7 @@ abstract class OperationsTest {
                 storageReader,
                 mock(IndexTxStateUpdater.class),
                 creationContext,
-                mock(DbmsRuntimeRepository.class),
+                mock(DbmsRuntimeVersionProvider.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 storageLocks,
                 transaction,

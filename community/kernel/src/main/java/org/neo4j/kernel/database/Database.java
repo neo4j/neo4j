@@ -51,8 +51,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.DatabasePageCache;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
@@ -670,7 +670,7 @@ public class Database extends AbstractDatabase {
 
     private void registerUpgradeListener() {
         DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler(
-                globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
+                globalDependencies.resolveDependency(DbmsRuntimeVersionProvider.class),
                 metadataCache,
                 databaseTransactionEventListeners,
                 UpgradeLocker.DEFAULT,
@@ -987,7 +987,7 @@ public class Database extends AbstractDatabase {
                 databaseAvailabilityGuard,
                 storageEngine,
                 globalProcedures,
-                globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
+                globalDependencies.resolveDependency(DbmsRuntimeVersionProvider.class),
                 transactionIdStore,
                 kernelVersionProvider,
                 serverIdentity,

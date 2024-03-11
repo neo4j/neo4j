@@ -23,7 +23,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -43,12 +43,13 @@ public class DbmsRuntimeFallbackKernelVersionProvider implements KernelVersionPr
         if (dependencies.containsDependency(KernelVersionProvider.class)) {
             this.kernelVersionProvider = dependencies.resolveDependency(KernelVersionProvider.class);
         } else if (SYSTEM_DATABASE_NAME.equals(databaseName)
-                || !dependencies.containsDependency(DbmsRuntimeRepository.class)) {
+                || !dependencies.containsDependency(DbmsRuntimeVersionProvider.class)) {
             this.kernelVersionProvider = DbmsRuntimeVersion.getLatestVersion(config);
         } else {
-            DbmsRuntimeRepository dbmsRuntimeRepository = dependencies.resolveDependency(DbmsRuntimeRepository.class);
+            DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider =
+                    dependencies.resolveDependency(DbmsRuntimeVersionProvider.class);
             this.kernelVersionProvider =
-                    () -> dbmsRuntimeRepository.getVersion().kernelVersion();
+                    () -> dbmsRuntimeVersionProvider.getVersion().kernelVersion();
         }
     }
 

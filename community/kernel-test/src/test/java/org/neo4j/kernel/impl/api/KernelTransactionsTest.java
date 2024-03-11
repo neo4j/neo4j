@@ -75,7 +75,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -788,7 +788,7 @@ class KernelTransactionsTest {
                 databaseAvailabilityGuard,
                 storageEngine,
                 mock(GlobalProcedures.class),
-                mock(DbmsRuntimeRepository.class),
+                mock(DbmsRuntimeVersionProvider.class),
                 transactionIdStore,
                 kernelVersionProvider,
                 mock(ServerIdentity.class),
@@ -904,7 +904,7 @@ class KernelTransactionsTest {
                     databaseAvailabilityGuard,
                     storageEngine,
                     globalProcedures,
-                    mock(DbmsRuntimeRepository.class),
+                    mock(DbmsRuntimeVersionProvider.class),
                     transactionIdStore,
                     kernelVersionProvider,
                     mock(ServerIdentity.class),

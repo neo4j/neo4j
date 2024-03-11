@@ -33,8 +33,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Entity;
@@ -341,7 +341,7 @@ class UpgradeToFutureVersionIT {
     }
 
     private DbmsRuntimeVersion dbmsRuntimeVersion() {
-        return get(systemDb, DbmsRuntimeRepository.class).getVersion();
+        return get(systemDb, DbmsRuntimeVersionProvider.class).getVersion();
     }
 
     private <T> T get(GraphDatabaseAPI db, Class<T> cls) {

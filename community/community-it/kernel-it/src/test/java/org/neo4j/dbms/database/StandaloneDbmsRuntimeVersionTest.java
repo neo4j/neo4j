@@ -38,7 +38,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
 @TestDirectoryExtension
 @DbmsExtension()
-class DbmsRuntimeVersionTest {
+class StandaloneDbmsRuntimeVersionTest {
     private static final DbmsRuntimeVersion OVERRIDDEN_INITIAL_LATEST_VERSION = DbmsRuntimeVersion.V5_0;
     private static final DbmsRuntimeVersion OLDER_VERSION = DbmsRuntimeVersion.V4_4;
 
@@ -46,7 +46,7 @@ class DbmsRuntimeVersionTest {
     private DatabaseContextProvider<DatabaseContext> databaseContextProvider;
 
     @Inject
-    private DbmsRuntimeRepository dbmsRuntimeRepository;
+    private StandaloneDbmsRuntimeVersionProvider dbmsRuntimeVersionProvider;
 
     private GraphDatabaseService systemDb;
 
@@ -61,37 +61,37 @@ class DbmsRuntimeVersionTest {
     @Test
     void testBasicVersionLifecycle() {
         // the system DB will be initialised with the default version for this binary
-        assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeVersionProvider.getVersion());
 
         // BTW this should never be manipulated directly outside tests
         setRuntimeVersion(OLDER_VERSION);
-        assertSame(OLDER_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(OLDER_VERSION, dbmsRuntimeVersionProvider.getVersion());
 
         systemDb.executeTransactionally("CALL dbms.upgrade()");
 
-        assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeVersionProvider.getVersion());
     }
 
     @Test
     void latestVersionIsRealLatestVersionByDefault() {
         // The system DB will be initialised with the default version for this binary
-        assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeVersionProvider.getVersion());
     }
 
     @Test
     @DbmsExtension(configurationCallback = "configuration")
     void latestVersionCanBeSetThroughConfigForTests() {
         // The system DB should be initialised with what we think is latest
-        assertSame(OVERRIDDEN_INITIAL_LATEST_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(OVERRIDDEN_INITIAL_LATEST_VERSION, dbmsRuntimeVersionProvider.getVersion());
 
         // And will not get upgraded past that "latest" version
         // BTW this should never be manipulated directly outside tests
         setRuntimeVersion(OLDER_VERSION);
-        assertSame(OLDER_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(OLDER_VERSION, dbmsRuntimeVersionProvider.getVersion());
 
         systemDb.executeTransactionally("CALL dbms.upgrade()");
 
-        assertSame(OVERRIDDEN_INITIAL_LATEST_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(OVERRIDDEN_INITIAL_LATEST_VERSION, dbmsRuntimeVersionProvider.getVersion());
     }
 
     @ExtensionCallback
@@ -110,6 +110,6 @@ class DbmsRuntimeVersionTest {
             tx.commit();
         }
 
-        dbmsRuntimeRepository.setVersion(runtimeVersion);
+        dbmsRuntimeVersionProvider.setVersion(runtimeVersion);
     }
 }

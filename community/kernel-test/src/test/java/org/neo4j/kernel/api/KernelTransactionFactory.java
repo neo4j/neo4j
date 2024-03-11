@@ -39,7 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
@@ -139,7 +139,7 @@ public final class KernelTransactionFactory {
                 new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore),
                 mock(KernelTransactions.class),
                 TransactionIdGenerator.EMPTY,
-                mock(DbmsRuntimeRepository.class),
+                mock(DbmsRuntimeVersionProvider.class),
                 kernelVersionProvider,
                 mock(LogicalTransactionStore.class),
                 mock(ServerIdentity.class),

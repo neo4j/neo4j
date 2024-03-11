@@ -54,7 +54,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
@@ -265,7 +265,7 @@ class KernelTransactionTestBase {
                 mock(TransactionCommitmentFactory.class),
                 mock(KernelTransactions.class),
                 TransactionIdGenerator.EMPTY,
-                mock(DbmsRuntimeRepository.class),
+                mock(DbmsRuntimeVersionProvider.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(LogicalTransactionStore.class),
                 serverIdentity,

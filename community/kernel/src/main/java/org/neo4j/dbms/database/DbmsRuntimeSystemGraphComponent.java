@@ -50,7 +50,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
     }
 
     @Override
-    DbmsRuntimeVersion getFallbackVersion() {
+    public DbmsRuntimeVersion getFallbackVersion() {
         return fallbackVersion;
     }
 

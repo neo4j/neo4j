@@ -24,7 +24,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.kernel.api.Read;
@@ -43,7 +43,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
 class DatabaseUpgradeTransactionHandler {
-    private final DbmsRuntimeRepository dbmsRuntimeRepository;
+    private final DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider;
     private final KernelVersionProvider kernelVersionProvider;
     private final DatabaseTransactionEventListeners transactionEventListeners;
     private final AtomicBoolean unregistered = new AtomicBoolean();
@@ -70,14 +70,14 @@ class DatabaseUpgradeTransactionHandler {
     private final KernelImpl kernelApi;
 
     DatabaseUpgradeTransactionHandler(
-            DbmsRuntimeRepository dbmsRuntimeRepository,
+            DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider,
             KernelVersionProvider kernelVersionProvider,
             DatabaseTransactionEventListeners transactionEventListeners,
             UpgradeLocker locker,
             InternalLogProvider logProvider,
             Config config,
             KernelImpl kernelApi) {
-        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
+        this.dbmsRuntimeVersionProvider = dbmsRuntimeVersionProvider;
         this.kernelVersionProvider = kernelVersionProvider;
         this.transactionEventListeners = transactionEventListeners;
         this.locker = locker;
@@ -119,7 +119,7 @@ class DatabaseUpgradeTransactionHandler {
         public Lock beforeCommit(TransactionData data, KernelTransaction tx, GraphDatabaseService databaseService)
                 throws Exception {
             KernelVersion checkKernelVersion = kernelVersionProvider.kernelVersion();
-            if (dbmsRuntimeRepository.getVersion().kernelVersion().isGreaterThan(checkKernelVersion)) {
+            if (dbmsRuntimeVersionProvider.getVersion().kernelVersion().isGreaterThan(checkKernelVersion)) {
                 try {
                     if (tx.getTransactionSequenceNumber() == upgradeTxSeqNbr) {
                         // Don't block the transaction we created to do the upgrade
@@ -127,7 +127,7 @@ class DatabaseUpgradeTransactionHandler {
                     }
                     try (Lock lock = locker.acquireWriteLock(tx)) {
                         KernelVersion kernelVersionToUpgradeTo =
-                                dbmsRuntimeRepository.getVersion().kernelVersion();
+                                dbmsRuntimeVersionProvider.getVersion().kernelVersion();
                         KernelVersion currentKernelVersion = kernelVersionProvider.kernelVersion();
                         if (kernelVersionToUpgradeTo.isGreaterThan(currentKernelVersion)) {
                             log.info(
@@ -154,7 +154,7 @@ class DatabaseUpgradeTransactionHandler {
                     log.info(
                             "Upgrade transaction from %s to %s not possible right now due to conflicting transaction, will retry on next write",
                             checkKernelVersion,
-                            dbmsRuntimeRepository.getVersion().kernelVersion());
+                            dbmsRuntimeVersionProvider.getVersion().kernelVersion());
                 } catch (MaximumTransactionLimitExceededException e) {
                     // This can happen even though we drain transactions because we do not drain reads.
                     // Let the "trigger tx" continue and try the upgrade again on the next write.
@@ -163,7 +163,7 @@ class DatabaseUpgradeTransactionHandler {
                                     + "executed transactions was reached, will retry on next write."
                                     + " If this persists see setting %s.",
                             checkKernelVersion,
-                            dbmsRuntimeRepository.getVersion().kernelVersion(),
+                            dbmsRuntimeVersionProvider.getVersion().kernelVersion(),
                             max_concurrent_transactions.name());
                 }
             }

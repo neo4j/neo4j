@@ -37,7 +37,7 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.function.Factory;
@@ -112,7 +112,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final AvailabilityGuard databaseAvailabilityGuard;
     private final StorageEngine storageEngine;
     private final GlobalProcedures globalProcedures;
-    private final DbmsRuntimeRepository dbmsRuntimeRepository;
+    private final DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider;
     private final TransactionIdStore transactionIdStore;
     private final KernelVersionProvider kernelVersionProvider;
     private final ServerIdentity serverIdentity;
@@ -181,7 +181,7 @@ public class KernelTransactions extends LifecycleAdapter
             AvailabilityGuard databaseAvailabilityGuard,
             StorageEngine storageEngine,
             GlobalProcedures globalProcedures,
-            DbmsRuntimeRepository dbmsRuntimeRepository,
+            DbmsRuntimeVersionProvider dbmsRuntimeVersionProvider,
             TransactionIdStore transactionIdStore,
             KernelVersionProvider kernelVersionProvider,
             ServerIdentity serverIdentity,
@@ -222,7 +222,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.storageEngine = storageEngine;
         this.globalProcedures = globalProcedures;
-        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
+        this.dbmsRuntimeVersionProvider = dbmsRuntimeVersionProvider;
         this.transactionIdStore = transactionIdStore;
         this.kernelVersionProvider = kernelVersionProvider;
         this.serverIdentity = serverIdentity;
@@ -539,7 +539,7 @@ public class KernelTransactions extends LifecycleAdapter
                     commitmentFactory,
                     KernelTransactions.this,
                     transactionIdGenerator,
-                    dbmsRuntimeRepository,
+                    dbmsRuntimeVersionProvider,
                     kernelVersionProvider,
                     transactionStore,
                     serverIdentity,

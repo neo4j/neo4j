@@ -104,9 +104,9 @@ public class SystemDbUpgrader {
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies(securityProvider.authManager());
 
-        var dbmsRuntimeRepository = edition.createAndRegisterDbmsRuntimeRepository(
+        var dbmsVerisonProvider = edition.createAndRegisterDbmsRuntimeRepository(
                 globalModule, databaseContextProvider, globalDependencies, dbmsRuntimeSystemGraphComponent);
-        globalDependencies.satisfyDependency(dbmsRuntimeRepository);
+        globalDependencies.satisfyDependency(dbmsVerisonProvider);
 
         globalLife.start();
 

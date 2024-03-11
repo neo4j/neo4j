@@ -30,13 +30,13 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
-import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
+import org.neo4j.dbms.database.StandaloneDbmsRuntimeVersionProvider;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.TopologyInfoService;
 import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
@@ -191,13 +191,13 @@ public abstract class AbstractEditionModule {
             InternalLogProvider userLogProvider,
             DbmsInfo dbmsInfo);
 
-    public DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository(
+    public DbmsRuntimeVersionProvider createAndRegisterDbmsRuntimeRepository(
             GlobalModule globalModule,
             DatabaseContextProvider<?> databaseContextProvider,
             Dependencies dependencies,
             DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent) {
         var dbmsRuntimeRepository =
-                new StandaloneDbmsRuntimeRepository(databaseContextProvider, dbmsRuntimeSystemGraphComponent);
+                new StandaloneDbmsRuntimeVersionProvider(databaseContextProvider, dbmsRuntimeSystemGraphComponent);
         globalModule
                 .getTransactionEventListeners()
                 .registerTransactionEventListener(SYSTEM_DATABASE_NAME, dbmsRuntimeRepository);

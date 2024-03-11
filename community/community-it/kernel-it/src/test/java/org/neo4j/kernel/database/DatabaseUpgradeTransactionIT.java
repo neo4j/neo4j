@@ -45,8 +45,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.DbmsRuntimeVersionProvider;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Entity;
@@ -393,7 +393,7 @@ public class DatabaseUpgradeTransactionIT {
     }
 
     private DbmsRuntimeVersion dbmsRuntimeVersion() {
-        return get(systemDb, DbmsRuntimeRepository.class).getVersion();
+        return get(systemDb, DbmsRuntimeVersionProvider.class).getVersion();
     }
 
     protected <T> T get(GraphDatabaseAPI db, Class<T> cls) {
