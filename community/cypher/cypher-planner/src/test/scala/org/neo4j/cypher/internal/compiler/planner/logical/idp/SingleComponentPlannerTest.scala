@@ -130,22 +130,6 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     .fakeLeafPlan("b")
     .build()
 
-  private val `a-r1->b = sort(b)` = planBuilder()
-    .nodeHashJoin("b")
-    .|.sort("1 ASC")
-    .|.fakeLeafPlan("b")
-    .expand("(a)-[r1]->(b)")
-    .fakeLeafPlan("a")
-    .build()
-
-  private val `b = sort(a)-r1->b` = planBuilder()
-    .nodeHashJoin("b")
-    .|.expand("(a)-[r1]->(b)")
-    .|.sort("1 ASC")
-    .|.fakeLeafPlan("a")
-    .fakeLeafPlan("b")
-    .build()
-
   private val `b<-r1-a = sort(a)` = planBuilder()
     .nodeHashJoin("a")
     .|.sort("1 ASC")
@@ -341,14 +325,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
       )
 
     logicalPlans.toSet should equal(Set(
-      `a-r1->b`,
-      `b<-r1-a`,
-      `a-r1->b = b`,
-      `b = a-r1->b`,
       `b<-r1-a = a`,
-      `a = b<-r1-a`,
-      `expandInto(a X b)`,
-      `expandInto(b X a)`
+      `a = b<-r1-a`
     ))
 
     assertPlanSolvesHints(
@@ -408,14 +386,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
       )
 
     logicalPlans.toSet should equal(Set(
-      `a-r1->b`,
-      `b<-r1-a`,
       `a-r1->b = b`,
-      `b = a-r1->b`,
-      `b<-r1-a = a`,
-      `a = b<-r1-a`,
-      `expandInto(a X b)`,
-      `expandInto(b X a)`
+      `b = a-r1->b`
     ))
 
     assertPlanSolvesHints(
@@ -430,8 +402,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   test("plans expands, hashjoins and cartesian product with generic sort only in sensible places") {
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val hint = UsingJoinHint(Seq(v"a"))(pos)
-    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint))
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
 
@@ -471,18 +442,56 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
       `sort(a)-r1->b`,
       `b<-r1-a`,
       `sort(b)<-r1-a`,
-      `a-r1->b = b`,
-      `a-r1->b = sort(b)`,
-      `b = a-r1->b`,
-      `b = sort(a)-r1->b`,
-      `b<-r1-a = a`,
-      `b<-r1-a = sort(a)`,
-      `a = b<-r1-a`,
-      `a = sort(b)<-r1-a`,
       `expandInto(a X b)`,
       `expandInto(sort(a) X b)`,
       `expandInto(b X a)`,
       `expandInto(sort(b) X a)`
+    ))
+  }
+
+  test("plans expands, hashjoins and cartesian product with generic sort only in sensible places (with hint)") {
+    val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val hint = UsingJoinHint(Seq(v"a"))(pos)
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint))
+    val context = mockContext()
+    val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
+
+    val aPlan = newMockedLogicalPlan(context.staticComponents.planningAttributes, "a")
+    val bPlan = newMockedLogicalPlan(context.staticComponents.planningAttributes, "b")
+
+    val aPlanSort = planBuilder()
+      .sort("1 ASC")
+      .fakeLeafPlan("a")
+      .build()
+    context.staticComponents.planningAttributes.solveds.copy(aPlan.id, aPlanSort.id)
+    context.staticComponents.planningAttributes.providedOrders.copy(aPlan.id, aPlanSort.id)
+
+    val bPlanSort = planBuilder()
+      .sort("1 ASC")
+      .fakeLeafPlan("b")
+      .build()
+    context.staticComponents.planningAttributes.solveds.copy(bPlan.id, bPlanSort.id)
+    context.staticComponents.planningAttributes.providedOrders.copy(bPlan.id, bPlanSort.id)
+
+    // when
+    val logicalPlans =
+      SingleComponentPlanner.planSinglePattern(
+        qg,
+        kit,
+        pattern,
+        Map(
+          aPlan.availableSymbols -> BestResults(aPlan, Some(aPlanSort)),
+          bPlan.availableSymbols -> BestResults(bPlan, Some(bPlanSort))
+        ),
+        noQPPInnerPlans,
+        context
+      )
+
+    logicalPlans.toSet should equal(Set(
+      `b<-r1-a = a`,
+      `b<-r1-a = sort(a)`,
+      `a = b<-r1-a`,
+      `a = sort(b)<-r1-a`
     ))
 
     assertPlanSolvesHints(
