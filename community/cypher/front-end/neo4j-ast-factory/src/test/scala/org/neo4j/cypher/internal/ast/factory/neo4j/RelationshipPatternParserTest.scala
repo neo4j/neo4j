@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
@@ -826,6 +827,26 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
         )(None, None)),
         varFor("p")
       )(pos, None, None)
+    }
+  }
+
+  test("MATCH (:A)-[r*]->(:B) RETURN *") {
+    parsesTo[Statements] {
+      Statements(Seq(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(labelExpression = Some(labelLeaf("A"))),
+              relPat(
+                Some("r"),
+                length = Some(None)
+              ),
+              nodePat(labelExpression = Some(labelLeaf("B")))
+            )
+          ),
+          Return(returnAllItems)(pos)
+        )
+      ))
     }
   }
 }

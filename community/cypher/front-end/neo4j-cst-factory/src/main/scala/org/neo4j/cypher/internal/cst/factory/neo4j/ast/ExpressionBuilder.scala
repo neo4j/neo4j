@@ -1022,7 +1022,15 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitUnescapedSymbolicNameString(
     ctx: CypherParser.UnescapedSymbolicNameStringContext
   ): Unit = {
-    ctx.ast = ctx.getText
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount == 1)
+    // ctx.getText is also correct
+    // This implementation is a micro optimisation to not have to create a string builder.
+    ctx.ast = ctx.children.get(0) match {
+      case childCtx: CypherParser.UnescapedLabelSymbolicNameStringContext =>
+        AssertMacros.checkOnlyWhenAssertionsAreEnabled(childCtx.getChildCount == 1)
+        childCtx.children.get(0).getText
+      case other => other.getText
+    }
   }
 
   final override def exitSymbolicLabelNameString(

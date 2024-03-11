@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChild
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
@@ -74,7 +75,9 @@ trait LabelExpressionBuilder extends CypherParserListener {
     val labelExpression =
       if (ctx.labelExpression() != null) Some(ctx.labelExpression().ast[LabelExpression]()) else None
     val pathLength =
-      if (ctx.pathLength() != null) Some(Some(ctx.pathLength().ast[expressions.Range]())) else None
+      Some(astOpt[expressions.Range](ctx.pathLength())).filter(_.isDefined).map(_.filter(r =>
+        r.lower.isDefined || r.upper.isDefined
+      ))
     val properties =
       if (ctx.properties() != null) Some(ctx.properties().ast[Expression]()) else None
     val expression =

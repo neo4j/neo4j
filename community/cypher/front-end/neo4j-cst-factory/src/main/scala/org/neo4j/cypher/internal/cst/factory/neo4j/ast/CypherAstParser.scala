@@ -21,9 +21,11 @@ import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.TokenStream
+import org.antlr.v4.runtime.atn.PredictionMode
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.ReplaceUnicodeEscapeSequences
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
@@ -60,10 +62,13 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
       astBuilder.exitEveryRule(localCtx)
       if (DEBUG) println(s"Exit ${localCtx.getClass.getSimpleName} AST=${localCtx.asInstanceOf[AstRuleCtx].ast}")
 
-      // TODO Save memory by removing the parse tree as we go.
-      // localCtx.children = null
-      // Alternatively we could use setBuildParseTree(false) which would be even more efficient,
-      // but requires changes to the listeners (work without accessing the children) and grammar (label everything).
+      // Save memory by removing the parse tree as we go.
+      // Some listeners access children of children so we only do this at certain safe points
+      // where we know the children are not needed anymore for ast building or syntax checker.
+      val ruleIndex = localCtx.getRuleIndex
+      if (ruleIndex == CypherParser.RULE_expression || ruleIndex == CypherParser.RULE_clause) {
+        localCtx.children = null
+      }
 
       // Throw exception if EOF is not reached
       if (_ctx == null) {
@@ -103,6 +108,23 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 
 object CypherAstParser {
   final val DEBUG = false
+
+  def parseStatements(query: String): Statements = {
+    // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
+    // See https://github.com/antlr/antlr4/blob/dev/doc/faq/general.md#why-is-my-expression-parser-slow
+    val tokens = preparsedTokens(query)
+    val parser = new CypherAstParser(tokens, true)
+    parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
+    try {
+      parser.statements().ast[Statements]()
+    } catch {
+      case _: Exception =>
+        tokens.seek(0)
+        parser.reset()
+        parser.getInterpreter.setPredictionMode(PredictionMode.LL)
+        parser.statements().ast[Statements]()
+    }
+  }
 
   def apply(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), true)
   def apply(input: TokenStream): CypherAstParser = new CypherAstParser(input, true)

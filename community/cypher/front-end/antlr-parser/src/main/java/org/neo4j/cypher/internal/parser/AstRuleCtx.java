@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.parser;
 
+import java.util.ArrayList;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 public class AstRuleCtx extends ParserRuleContext {
@@ -25,6 +26,17 @@ public class AstRuleCtx extends ParserRuleContext {
 
     public AstRuleCtx(ParserRuleContext parent, int invokingStateNumber) {
         super(parent, invokingStateNumber);
+
+        /*
+         * The default size of array lists are 10.
+         * But it's very common that we have fewer children.
+         * When parsing all the macro benchmark queries,
+         * 0.5% of contexts had 0 children,
+         * 90% had a single child or less,
+         * 95% had two or less,
+         * 97% had three or less.
+         */
+        this.children = new ArrayList<>(3);
     }
 
     @SuppressWarnings("unchecked")

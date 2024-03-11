@@ -104,6 +104,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 import scala.collection.immutable.ArraySeq
@@ -123,16 +124,19 @@ trait StatementBuilder extends CypherParserListener {
     var result: Query = ctxChild(ctx, 0).ast[SingleQuery]()
     val size = ctx.children.size()
     if (size != 1) {
-      var i = 2; var all = false
+      var i = 1; var all = false; var p: InputPosition = null
       while (i < size) {
         ctx.children.get(i) match {
           case sqCtx: CypherParser.SingleQueryContext =>
             val rhs = sqCtx.ast[SingleQuery]()
-            val position = pos(ctx.UNION().get(0).getSymbol)
-            result = if (all) UnionAll(result, rhs)(position) else UnionDistinct(result, rhs)(position)
+            result = if (all) UnionAll(result, rhs)(p) else UnionDistinct(result, rhs)(p)
             all = false
-          case node: TerminalNode if node.getSymbol.getType == CypherParser.ALL => all = true
-          case _                                                                =>
+          case node: TerminalNode => node.getSymbol.getType match {
+              case CypherParser.ALL   => all = true
+              case CypherParser.UNION => p = pos(node)
+              case _                  => throw new IllegalStateException(s"Unexpected token $node")
+            }
+          case _ => throw new IllegalStateException(s"Unexpected ctx $ctx")
         }
         i += 1
       }

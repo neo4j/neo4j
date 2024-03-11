@@ -114,11 +114,15 @@ object LabelExpression {
   ) extends MultiOperatorLabelExpression {
 
     def unnestDisjunctions: Disjunctions = {
-      val unnested = children.flatMap {
-        case Disjunctions(children, _) => children
-        case x                         => Vector(x)
+      if (children.exists(_.isInstanceOf[Disjunctions])) {
+        val unnested = children.flatMap {
+          case Disjunctions(children, _) => children
+          case x                         => Seq(x)
+        }
+        copy(children = unnested, containsIs)(position)
+      } else {
+        this
       }
-      copy(children = unnested, containsIs)(position)
     }
   }
 
@@ -134,11 +138,15 @@ object LabelExpression {
   ) extends MultiOperatorLabelExpression {
 
     def unnestConjunctions: Conjunctions = {
-      val unnested = children.flatMap {
-        case Conjunctions(children, _) => children
-        case x                         => Vector(x)
+      if (children.exists(_.isInstanceOf[Conjunctions])) {
+        val unnested = children.flatMap {
+          case Conjunctions(children, _) => children
+          case x                         => Seq(x)
+        }
+        copy(children = unnested, containsIs)(position)
+      } else {
+        this
       }
-      copy(children = unnested, containsIs)(position)
     }
   }
 

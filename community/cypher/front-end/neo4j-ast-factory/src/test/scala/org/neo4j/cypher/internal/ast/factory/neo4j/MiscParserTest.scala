@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
@@ -377,5 +378,22 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
 
   test("({ inner1: { inner2: 'Value' } }).key") {
     parsesTo[Expression](prop(mapOf(("inner1", mapOf(("inner2", literal("Value"))))), "key"))
+  }
+
+  test("multiple unions") {
+    val q =
+      """RETURN 1 AS x
+        |UNION
+        |RETURN 2 AS x
+        |UNION
+        |RETURN 3 AS x
+        |""".stripMargin
+    q should parseTo[Statements](
+      unionDistinct(
+        singleQuery(returnLit(1 -> "x")),
+        singleQuery(returnLit(2 -> "x")),
+        singleQuery(returnLit(3 -> "x"))
+      )
+    )
   }
 }
