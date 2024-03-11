@@ -53,70 +53,57 @@ abstract class CollectorStateMachine<DATA> {
     }
 
     public synchronized Status status() {
-        State state = this.state;
-        switch (state) {
-            case IDLE:
-                return new Status("idle");
-            case COLLECTING:
-                return new Status("collecting");
-            default:
-                throw new IllegalStateException("Unknown state " + state);
-        }
+        return switch (this.state) {
+            case IDLE -> new Status("idle");
+            case COLLECTING -> new Status("collecting");
+        };
     }
 
     public synchronized Result collect(Map<String, Object> config) throws InvalidArgumentsException {
-        switch (state) {
-            case IDLE:
+        return switch (state) {
+            case IDLE -> {
                 state = State.COLLECTING;
                 collectionId++;
-                return doCollect(config, collectionId);
-            case COLLECTING:
-                return success("Collection is already ongoing.");
-            default:
-                throw new IllegalStateException("Unknown state " + state);
-        }
+                yield doCollect(config, collectionId);
+            }
+            case COLLECTING -> success("Collection is already ongoing.");
+        };
     }
 
     public synchronized Result stop(long collectionIdToStop) {
-        switch (state) {
-            case IDLE:
-                return success("Collector is idle, no collection ongoing.");
-            case COLLECTING:
+        return switch (state) {
+            case IDLE -> success("Collector is idle, no collection ongoing.");
+
+            case COLLECTING -> {
                 if (this.collectionId <= collectionIdToStop) {
                     state = State.IDLE;
-                    return doStop();
+                    yield doStop();
                 }
-                return success(String.format(
+                yield success(String.format(
                         "Collection event %d has already been stopped, a new collection event is ongoing.",
                         collectionIdToStop));
-            default:
-                throw new IllegalStateException("Unknown state " + state);
-        }
+            }
+        };
     }
 
     public synchronized Result clear() {
-        switch (state) {
-            case IDLE:
-                return doClear();
-            case COLLECTING:
-                return error("Collected data cannot be cleared while collecting.");
-            default:
-                throw new IllegalStateException("Unknown state " + state);
-        }
+        return switch (state) {
+            case IDLE -> doClear();
+            case COLLECTING -> error("Collected data cannot be cleared while collecting.");
+        };
     }
 
     public synchronized DATA getData() {
-        switch (state) {
-            case IDLE:
-                return doGetData();
-            case COLLECTING:
+        return switch (state) {
+            case IDLE -> doGetData();
+
+            case COLLECTING -> {
                 if (canGetDataWhileCollecting) {
-                    return doGetData();
+                    yield doGetData();
                 }
                 throw new IllegalStateException("Collector is still collecting.");
-            default:
-                throw new IllegalStateException("Unknown state " + state);
-        }
+            }
+        };
     }
 
     protected abstract Result doCollect(Map<String, Object> config, long collectionId) throws InvalidArgumentsException;
