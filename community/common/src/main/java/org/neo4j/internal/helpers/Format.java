@@ -40,13 +40,10 @@ public final class Format {
     private static final String[] COUNT_SIZES = {"", "k", "M", "G", "T"};
 
     static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZ";
-    static final String SHORT_DATE_FORMAT = "yyyy-MM-dd HH-mm-ss";
     static final String TIME_FORMAT = "HH:mm:ss.SSS";
 
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern(DATE_FORMAT).withZone(DEFAULT_TIME_ZONE);
-    private static final DateTimeFormatter SHORT_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern(SHORT_DATE_FORMAT).withZone(DEFAULT_TIME_ZONE);
     private static final DateTimeFormatter LOCAL_DATE_FORMATTER =
             DateTimeFormatter.ofPattern(DATE_FORMAT).withZone(ZoneId.systemDefault());
     private static final DateTimeFormatter TIME_FORMATTER =
@@ -59,10 +56,6 @@ public final class Format {
 
     public static String date() {
         return date(Instant.now());
-    }
-
-    public static String shortDate() {
-        return SHORT_DATE_FORMATTER.format(Instant.now());
     }
 
     public static String date(long millis) {
