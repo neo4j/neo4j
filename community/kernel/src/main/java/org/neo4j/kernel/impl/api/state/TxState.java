@@ -480,13 +480,6 @@ public class TxState implements TransactionState {
     }
 
     @Override
-    public void relationshipDoAddProperty(long relationshipId, int propertyKeyId, Value value) {
-        var relationshipState = (RelationshipStateImpl) getRelationshipState(relationshipId);
-        relationshipState.addProperty(propertyKeyId, value);
-        dataChanged();
-    }
-
-    @Override
     public void relationshipDoReplaceProperty(
             long relationshipId,
             int type,

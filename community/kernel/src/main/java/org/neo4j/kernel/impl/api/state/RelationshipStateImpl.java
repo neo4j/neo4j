@@ -87,6 +87,11 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
         }
 
         @Override
+        public boolean isPropertyAdded(int propertyKey) {
+            return false;
+        }
+
+        @Override
         public Value propertyValue(int propertyKey) {
             return null;
         }

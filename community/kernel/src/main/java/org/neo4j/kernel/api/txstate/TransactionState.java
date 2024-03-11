@@ -54,8 +54,6 @@ public interface TransactionState extends ReadableTransactionState {
 
     void nodeDoChangeProperty(long nodeId, int propertyKeyId, Value newValue);
 
-    void relationshipDoAddProperty(long relationshipId, int propertyKeyId, Value value);
-
     void relationshipDoReplaceProperty(
             long relationshipId,
             int type,

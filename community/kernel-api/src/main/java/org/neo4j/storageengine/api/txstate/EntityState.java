@@ -47,6 +47,8 @@ public interface EntityState {
 
     boolean isPropertyChangedOrRemoved(int propertyKey);
 
+    boolean isPropertyAdded(int propertyKey);
+
     Value propertyValue(int propertyKey);
 
     EntityState EMPTY = new EmptyEntityState();
@@ -79,6 +81,11 @@ public interface EntityState {
 
         @Override
         public boolean isPropertyChangedOrRemoved(int propertyKey) {
+            return false;
+        }
+
+        @Override
+        public boolean isPropertyAdded(int propertyKey) {
             return false;
         }
 

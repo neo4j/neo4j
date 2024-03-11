@@ -152,6 +152,11 @@ class EntityStateImpl implements EntityState {
     }
 
     @Override
+    public boolean isPropertyAdded(int propertyKey) {
+        return addedProperties != null && addedProperties.containsKey(propertyKey);
+    }
+
+    @Override
     public Value propertyValue(int propertyKey) {
         if (removedProperties != null && removedProperties.contains(propertyKey)) {
             return Values.NO_VALUE;

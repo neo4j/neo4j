@@ -97,6 +97,11 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
         }
 
         @Override
+        public boolean isPropertyAdded(int propertyKey) {
+            return false;
+        }
+
+        @Override
         public Value propertyValue(int propertyKey) {
             return null;
         }
