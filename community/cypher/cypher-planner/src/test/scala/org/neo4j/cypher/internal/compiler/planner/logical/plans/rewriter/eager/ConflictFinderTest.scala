@@ -19,22 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.mostDownstreamPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.pathFromRoot
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.readMightNotBeInitialized
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
-class ConflictFinderTest extends CypherFunSuite {
+class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   // -------------------------
   // readMightNotBeInitialized
@@ -213,4 +217,51 @@ class ConflictFinderTest extends CypherFunSuite {
     pathFromRoot(otherPlan, wholePlan) should be(None)
   }
 
+  // ----------------------------
+  // containsNestedPlanExpression
+  // ----------------------------
+
+  private def makeNestedPlanExpression: NestedPlanExpression = {
+    val nestedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .allNodeScan("x")
+      .build()
+
+    NestedPlanExistsExpression(nestedPlan, "exists { (x) }")(pos)
+  }
+
+  test("containsNestedPlanExpression for Create without a nested plan") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .create(createNodeWithProperties("n", Seq.empty, "{prop: a.name}"))
+      .allNodeScan("a")
+      .build()
+
+    ConflictFinder.containsNestedPlanExpression(plan) shouldBe false
+  }
+
+  test("containsNestedPlanExpression for Create with a nested plan") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .create(createNodeWithProperties("n", Seq.empty, mapOf("prop" -> makeNestedPlanExpression)))
+      .allNodeScan("a")
+      .build()
+
+    ConflictFinder.containsNestedPlanExpression(plan) shouldBe true
+  }
+
+  test("containsNestedPlanExpression for Selection without a nested plan") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .filter("a.prop = 123")
+      .allNodeScan("a")
+      .build()
+
+    ConflictFinder.containsNestedPlanExpression(plan) shouldBe false
+  }
+
+  test("containsNestedPlanExpression for Selection with a nested plan") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .filterExpression(makeNestedPlanExpression)
+      .allNodeScan("a")
+      .build()
+
+    ConflictFinder.containsNestedPlanExpression(plan) shouldBe true
+  }
 }

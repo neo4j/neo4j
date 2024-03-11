@@ -156,7 +156,7 @@ sealed trait ConflictFinder {
     !lp.isUpdatingPlan || containsNestedPlanExpression(lp)
   }
 
-  protected def containsNestedPlanExpression(lp: LogicalPlan): Boolean = {
+  protected[eager] def containsNestedPlanExpression(lp: LogicalPlan): Boolean = {
     lp.folder.treeFold(false) {
       case _: NestedPlanExpression => _ => SkipChildren(true)
       // We do not want to find NestedPlanExpressions in child plans.
@@ -700,7 +700,7 @@ object ConflictFinder extends ConflictFinder {
       }
     }
 
-    override protected def containsNestedPlanExpression(lp: LogicalPlan): Boolean = {
+    override protected[eager] def containsNestedPlanExpression(lp: LogicalPlan): Boolean = {
       containsNestedPlanExpressionCache(Ref(lp))
     }
   }
