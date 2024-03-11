@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 
@@ -83,5 +84,32 @@ class VariableParserTest extends AstParsingTestBase
       s"${curr}var" should notParse[Variable]
         .parseIn(JavaCc)(_.withMessageContaining("Was expecting one of:"))
     }
+  }
+
+  test("keywords can be variables") {
+    val vocab = CypherParser.VOCABULARY
+    Range.inclusive(1, vocab.getMaxTokenType)
+      .flatMap { tokenType =>
+        Option(vocab.getSymbolicName(tokenType)) ++
+          Option(vocab.getDisplayName(tokenType)) ++
+          Option(vocab.getLiteralName(tokenType))
+      }
+      .flatMap(n => Seq(n, n.replace("_", "")))
+      .distinct
+      .foreach { name =>
+        val cypher = cleanName(name)
+        if (Character.isAlphabetic(cypher.charAt(0))) {
+          cypher should parseTo[Variable](varFor(cypher))
+        }
+        if (cypher != "``") {
+          s"`$cypher`" should parseTo[Variable](varFor(cypher))
+        }
+      }
+  }
+
+  private def cleanName(input: String): String = {
+    if (input == null) null
+    else if (input.startsWith("'") && input.endsWith("'")) input.substring(1, input.length - 1)
+    else input
   }
 }

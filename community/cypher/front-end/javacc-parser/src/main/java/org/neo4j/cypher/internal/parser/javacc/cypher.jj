@@ -7432,6 +7432,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<INSERT>
         | t=<INT>
         | t=<INTEGER>
+        | t=<IMPERSONATE>
         | t=<IS>
         | t=<JOIN>
         | t=<KEY>
