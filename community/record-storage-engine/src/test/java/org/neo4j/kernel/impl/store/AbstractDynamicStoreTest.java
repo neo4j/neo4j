@@ -39,10 +39,10 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
-import org.apache.commons.lang3.RandomUtils;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
@@ -59,10 +59,13 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
 @EphemeralPageCacheExtension
+@ExtendWith(RandomExtension.class)
 class AbstractDynamicStoreTest {
     protected static final int BLOCK_SIZE = 60;
 
@@ -71,6 +74,9 @@ class AbstractDynamicStoreTest {
 
     @Inject
     protected PageCache pageCache;
+
+    @Inject
+    RandomSupport random;
 
     protected final Path storeFile = Path.of("store");
     private final Path idFile = Path.of("idStore");
@@ -213,8 +219,8 @@ class AbstractDynamicStoreTest {
     private DynamicRecord createDynamicRecord(long id, AbstractDynamicStore store, int dataSize) {
         DynamicRecord first = new DynamicRecord(id);
         first.setInUse(true);
-        first.setData(RandomUtils.nextBytes(
-                dataSize == 0 ? BLOCK_SIZE - formats.dynamic().getRecordHeaderSize() : 10));
+        first.setData(
+                random.nextBytes(dataSize == 0 ? BLOCK_SIZE - formats.dynamic().getRecordHeaderSize() : 10));
         try (var storeCursor = store.openPageCursorForWriting(0, NULL_CONTEXT)) {
             store.updateRecord(first, storeCursor, NULL_CONTEXT, StoreCursors.NULL);
         }

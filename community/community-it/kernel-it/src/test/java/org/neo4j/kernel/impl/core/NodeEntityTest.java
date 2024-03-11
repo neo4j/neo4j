@@ -35,9 +35,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Entity;
@@ -48,8 +48,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 
+@ExtendWith(RandomExtension.class)
 public class NodeEntityTest extends EntityTest {
+
+    @Inject
+    RandomSupport random;
 
     @Override
     protected long createEntity(Transaction tx) {
@@ -96,7 +103,7 @@ public class NodeEntityTest extends EntityTest {
     void createDropNodeLongArrayProperty(TestInfo testInfo) {
         Label markerLabel = Label.label("marker_" + testInfo.getTestMethod());
         String testPropertyKey = "testProperty";
-        byte[] propertyValue = RandomUtils.nextBytes(1024);
+        byte[] propertyValue = random.nextBytes(1024);
 
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(markerLabel);

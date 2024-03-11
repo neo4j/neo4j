@@ -75,6 +75,11 @@ public class RandomSupport {
     // Methods from Random
     // ============================
 
+    public byte[] nextBytes(int numberOfBytes) {
+        final byte[] randomBytes = new byte[numberOfBytes];
+        return nextBytes(randomBytes);
+    }
+
     public byte[] nextBytes(byte[] bytes) {
         random.nextBytes(bytes);
         return bytes;

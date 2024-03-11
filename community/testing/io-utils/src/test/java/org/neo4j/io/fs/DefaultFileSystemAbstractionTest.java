@@ -37,15 +37,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DisabledForRoot;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 
+@ExtendWith(RandomExtension.class)
 public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest {
+
+    @Inject
+    RandomSupport random;
+
     @Override
     protected FileSystemAbstraction buildFileSystemAbstraction() {
         return new DefaultFileSystemAbstraction();
@@ -94,7 +102,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest 
     void readFileWithInputStream() throws IOException {
         var testFile = testDirectory.createFile("testFile");
         int size = current().nextInt((int) ByteUnit.mebiBytes(13));
-        byte[] sourceData = RandomUtils.nextBytes(size);
+        byte[] sourceData = random.nextBytes(size);
         Files.write(testFile, sourceData);
 
         byte[] contentFromDrive;
@@ -109,10 +117,10 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest 
     void readFileWithDifferentStream() throws IOException {
         var testFile = testDirectory.createFile("testFile");
         int size = current().nextInt((int) ByteUnit.mebiBytes(2));
-        byte[] sourceData = RandomUtils.nextBytes(size);
+        byte[] sourceData = random.nextBytes(size);
         Files.write(testFile, sourceData);
 
-        for (int bufferSize = 1; bufferSize < sourceData.length; bufferSize += ByteUnit.kibiBytes(1)) {
+        for (int bufferSize = 1; bufferSize < sourceData.length; bufferSize += (int) ByteUnit.kibiBytes(1)) {
             assertArrayEquals(sourceData, readContent(testFile, bufferSize, sourceData.length));
         }
     }
@@ -122,7 +130,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest 
         var testFile = testDirectory.createFile("testFile");
         int size = current().nextInt((int) ByteUnit.mebiBytes(13));
 
-        byte[] sourceData = RandomUtils.nextBytes(size);
+        byte[] sourceData = random.nextBytes(size);
         try (var stream = fsa.openAsOutputStream(testFile, false)) {
             for (byte aByte : sourceData) {
                 stream.write(aByte);
@@ -138,11 +146,11 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest 
         var testFile = testDirectory.createFile("testFile");
         int size = current().nextInt((int) ByteUnit.mebiBytes(20));
 
-        byte[] sourceData = RandomUtils.nextBytes(size);
+        byte[] sourceData = random.nextBytes(size);
         try (var channel = new DefaultFileSystemAbstraction.NativeByteBufferOutputStream(
                         (StoreFileChannel) fsa.write(testFile));
-                var buffered = new BufferedOutputStream(
-                        channel, (int) (ByteUnit.kibiBytes(8) + RandomUtils.nextInt(10, 455)))) {
+                var buffered =
+                        new BufferedOutputStream(channel, (int) (ByteUnit.kibiBytes(8) + random.nextInt(10, 455)))) {
             for (byte aByte : sourceData) {
                 buffered.write(aByte);
             }

@@ -33,9 +33,9 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Entity;
@@ -47,9 +47,17 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.test.RandomSupport;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.token.api.NamedToken;
 
+@ExtendWith(RandomExtension.class)
 public class RelationshipTest extends EntityTest {
+
+    @Inject
+    RandomSupport random;
+
     @Override
     protected long createEntity(Transaction tx) {
         return tx.createNode()
@@ -170,7 +178,7 @@ public class RelationshipTest extends EntityTest {
     void createDropRelationshipLongArrayProperty(TestInfo testInfo) {
         Label markerLabel = Label.label("marker_" + testInfo.getTestMethod());
         String testPropertyKey = "testProperty";
-        byte[] propertyValue = RandomUtils.nextBytes(1024);
+        byte[] propertyValue = random.nextBytes(1024);
 
         String relationshipId;
         try (Transaction tx = db.beginTx()) {
