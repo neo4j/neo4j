@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.ALL_IF_POSSIBLE
+import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.COST_WEIGHTED
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.INTO_ONLY
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
@@ -54,6 +55,7 @@ import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -3363,5 +3365,682 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .nodeByLabelScan("a", "A")
         .build()
     )(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities"
+  ) {
+    val query = "MATCH ANY SHORTEST (a:A)((n)-[r]->(m))+(b:B) RETURN *"
+
+    // If both endpoints have cardinality > 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 10)
+        .setLabelCardinality("B", 30)
+        .setRelationshipCardinality("(:A)-[]->()", 500)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 500)
+        .setRelationshipCardinality("()-[]->(:B)", 500)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("b" -> "b"),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]->(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b:B)")
+            .setFinalState(3)
+            .build(),
+          ExpandAll
+        )
+        .nodeByLabelScan("a", "A")
+        .build())
+    }
+
+    // If one endpoint has cardinality > 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 1)
+        .setLabelCardinality("B", 30)
+        .setRelationshipCardinality("(:A)-[]->()", 500)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 500)
+        .setRelationshipCardinality("()-[]->(:B)", 500)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("b" -> "b"),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]->(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b:B)")
+            .setFinalState(3)
+            .build(),
+          ExpandAll
+        )
+        .nodeByLabelScan("a", "A")
+        .build())
+    }
+
+    // If endpoints have cardinality <= 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 1)
+        .setLabelCardinality("B", 1)
+        .setRelationshipCardinality("(:A)-[]->()", 40)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 40)
+        .setRelationshipCardinality("()-[]->(:B)", 40)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set(),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]->(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b)")
+            .setFinalState(3)
+            .build(),
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.nodeByLabelScan("b", "B")
+        .nodeByLabelScan("a", "A")
+        .build())
+    }
+  }
+
+  test(
+    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities, using a unique index"
+  ) {
+    val query = "MATCH ANY SHORTEST (a:A {p:1})((n)-[r]->(m))+(b:B {p:1}) RETURN *"
+
+    // If both endpoints have cardinality > 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 10)
+        .addNodeIndex("A", Seq("p"), 1.0, 1 / 5d)
+        .setLabelCardinality("B", 30)
+        .addNodeIndex("B", Seq("p"), 1.0, 1 / 5d)
+        .setRelationshipCardinality("(:A)-[]->()", 500)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 500)
+        .setRelationshipCardinality("()-[]->(:B)", 500)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b.p IN [1] AND b:B AND unique(`r`))",
+          None,
+          Set(("n", "n"), ("m", "m")),
+          Set(("r", "r")),
+          Set(("b", "b")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]->(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b WHERE b.p = 1 AND b:B)")
+            .setFinalState(3)
+            .build(),
+          ExpandAll
+        )
+        .nodeIndexOperator("a:A(p = 1)")
+        .build())
+    }
+
+    // If endpoints have cardinality <= 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 10)
+        .addNodeIndex("A", Seq("p"), 1.0, 1 / 10d, isUnique = true)
+        .setLabelCardinality("B", 30)
+        .addNodeIndex("B", Seq("p"), 1.0, 1 / 30d, isUnique = true)
+        .setRelationshipCardinality("(:A)-[]->()", 40)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 40)
+        .setRelationshipCardinality("()-[]->(:B)", 40)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE unique(`r`))",
+          None,
+          Set(("n", "n"), ("m", "m")),
+          Set(("r", "r")),
+          Set(),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]->(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b)")
+            .setFinalState(3)
+            .build(),
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.nodeIndexOperator("b:B(p = 1)", unique = true)
+        .nodeIndexOperator("a:A(p = 1)", unique = true)
+        .build())(SymmetricalLogicalPlanEquality)
+    }
+  }
+
+  test(
+    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities, with SHORTEST 10 GROUPS"
+  ) {
+    val query = "MATCH SHORTEST 10 GROUPS (a:A)((n)-[r]->(m))+(b:B) RETURN *"
+
+    // If both endpoints have cardinality > 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 10)
+        .setLabelCardinality("B", 30)
+        .setRelationshipCardinality("(:A)-[]->()", 500)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 500)
+        .setRelationshipCardinality("()-[]->(:B)", 500)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 10 GROUPS ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("b" -> "b"),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.ShortestGroups(10),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]->(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b:B)")
+            .setFinalState(3)
+            .build(),
+          ExpandAll
+        )
+        .nodeByLabelScan("a", "A")
+        .build())
+    }
+
+    // If endpoints have cardinality <= 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 1)
+        .setLabelCardinality("B", 1)
+        .setRelationshipCardinality("(:A)-[]->()", 40)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 40)
+        .setRelationshipCardinality("()-[]->(:B)", 40)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 10 GROUPS ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set(),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.ShortestGroups(10),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]->(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b)")
+            .setFinalState(3)
+            .build(),
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.nodeByLabelScan("b", "B")
+        .nodeByLabelScan("a", "A")
+        .build())
+    }
+  }
+
+  test(
+    "With statefulShortestPlanningMode=cost_weighted should adhere to USING JOIN hint"
+  ) {
+    val query = "MATCH ANY SHORTEST (a:A)((n)-[r]->(m))+(b:B) USING JOIN ON a RETURN *"
+
+    // If both endpoints have cardinality > 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 10)
+        .setLabelCardinality("B", 30)
+        .setRelationshipCardinality("(:A)-[]->()", 500)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 500)
+        .setRelationshipCardinality("()-[]->(:B)", 500)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      val plan = planner.plan(query).stripProduceResults
+      plan shouldBe a[NodeHashJoin]
+      plan.folder.treeFind[StatefulShortestPath] {
+        case ssp: StatefulShortestPath if ssp.mode == ExpandInto => true
+      } should be(empty)
+    }
+
+    // If endpoints have cardinality <= 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 1)
+        .setLabelCardinality("B", 1)
+        .setRelationshipCardinality("(:A)-[]->()", 40)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 40)
+        .setRelationshipCardinality("()-[]->(:B)", 40)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      // The JOIN hint weighs stronger than the requirement to use ExpandInto,
+      // even if that would be preferable cardinality-wise.
+      val plan = planner.plan(query).stripProduceResults
+      plan shouldBe a[NodeHashJoin]
+      plan.folder.treeFind[StatefulShortestPath] {
+        case ssp: StatefulShortestPath if ssp.mode == ExpandInto => true
+      } should be(empty)
+    }
+  }
+
+  test(
+    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities, in tail query"
+  ) {
+    val query =
+      """
+        |MATCH (foo:Foo)
+        |WITH * SKIP 0
+        |MATCH ANY SHORTEST (a:A)((n)-[r]->(m))+(b:B)
+        |RETURN *
+        |""".stripMargin
+
+    // If endpoints have cardinality > 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 10)
+        .setLabelCardinality("B", 30)
+        .setLabelCardinality("Foo", 10)
+        .setRelationshipCardinality("(:A)-[]->()", 500)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 500)
+        .setRelationshipCardinality("()-[]->(:B)", 500)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("b" -> "b"),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]->(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b:B)")
+            .setFinalState(3)
+            .build(),
+          ExpandAll
+        )
+        .apply()
+        .|.nodeByLabelScan("a", "A", "foo")
+        .skip(0)
+        .nodeByLabelScan("foo", "Foo")
+        .build())
+    }
+
+    // If endpoints have cardinality <= 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 1)
+        .setLabelCardinality("B", 1)
+        .setLabelCardinality("Foo", 10)
+        .setRelationshipCardinality("(:A)-[]->()", 40)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 40)
+        .setRelationshipCardinality("()-[]->(:B)", 40)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set(),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]->(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b)")
+            .setFinalState(3)
+            .build(),
+          ExpandInto
+        )
+        .apply()
+        .|.cartesianProduct()
+        .|.|.nodeByLabelScan("b", "B", "foo")
+        .|.nodeByLabelScan("a", "A", "foo")
+        .skip(0)
+        .nodeByLabelScan("foo", "Foo")
+        .build())
+    }
+  }
+
+  test(
+    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities, if part of a larger connected component"
+  ) {
+    val query =
+      """
+        |MATCH (aa:AA)-[r1]->(a:A), (b:B)<-[r2]-(bb:BB)
+        |MATCH ANY SHORTEST (a:A)((n)-[r]-(m))+(b:B)
+        |RETURN *
+        |""".stripMargin
+
+    // If endpoints have cardinality > 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 10)
+        .setLabelCardinality("B", 10)
+        .setLabelCardinality("AA", 5)
+        .setLabelCardinality("BB", 15)
+        .setLabelCardinality("Foo", 10)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 10)
+        .setRelationshipCardinality("(:B)-[]->(:A)", 10)
+        .setRelationshipCardinality("(:A)-[]->()", 10)
+        .setRelationshipCardinality("(:B)-[]->()", 10)
+        .setRelationshipCardinality("()-[]->(:A)", 10)
+        .setRelationshipCardinality("()-[]->(:B)", 10)
+        .setRelationshipCardinality("(:BB)-[]->()", 10)
+        .setRelationshipCardinality("(:BB)-[]->(:B)", 10)
+        .setRelationshipCardinality("(:AA)-[]->()", 10)
+        .setRelationshipCardinality("(:AA)-[]->(:A)", 10)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .filter("NOT r1 = r2", "bb:BB")
+        .expand("(b)<-[r2]-(bb)")
+        .statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]-(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("b" -> "b"),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]-(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b:B)")
+            .setFinalState(3)
+            .build(),
+          ExpandAll
+        )
+        .filter("a:A")
+        .expand("(aa)-[r1]->(a)")
+        .nodeByLabelScan("aa", "AA")
+        .build())
+    }
+
+    // If endpoints have cardinality <= 1
+    {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(500)
+        .setLabelCardinality("A", 1)
+        .setLabelCardinality("B", 1)
+        .setLabelCardinality("AA", 5)
+        .setLabelCardinality("BB", 15)
+        .setLabelCardinality("Foo", 10)
+        .setRelationshipCardinality("(:A)-[]->(:B)", 10)
+        .setRelationshipCardinality("(:B)-[]->(:A)", 10)
+        .setRelationshipCardinality("(:A)-[]->()", 10)
+        .setRelationshipCardinality("(:B)-[]->()", 10)
+        .setRelationshipCardinality("()-[]->(:A)", 10)
+        .setRelationshipCardinality("()-[]->(:B)", 10)
+        .setRelationshipCardinality("(:BB)-[]->()", 10)
+        .setRelationshipCardinality("(:BB)-[]->(:B)", 10)
+        .setRelationshipCardinality("(:AA)-[]->()", 10)
+        .setRelationshipCardinality("(:AA)-[]->(:A)", 10)
+        .addSemanticFeature(SemanticFeature.GpmShortestPath)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .build()
+
+      planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+        .filter("NOT r1 = r2")
+        .nodeHashJoin("a")
+        .|.filter("bb:BB")
+        .|.expandAll("(b)<-[r2]-(bb)")
+        .|.statefulShortestPath(
+          "a",
+          "b",
+          "SHORTEST 1 ((a) ((`n`)-[`r`]-(`m`)){1, } (b) WHERE unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set(),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "a")
+            .addTransition(0, 1, "(a) (n)")
+            .addTransition(1, 2, "(n)-[r]-(m)")
+            .addTransition(2, 1, "(m) (n)")
+            .addTransition(2, 3, "(m) (b)")
+            .setFinalState(3)
+            .build(),
+          ExpandInto
+        )
+        .|.cartesianProduct()
+        .|.|.nodeByLabelScan("b", "B")
+        .|.nodeByLabelScan("a", "A")
+        .filter("aa:AA")
+        .expandAll("(a)<-[r1]-(aa)")
+        .nodeByLabelScan("a", "A")
+        .build())
+    }
+  }
+
+  test(
+    "With statefulShortestPlanningMode=cost_weighted should be able to force using INTO by using a subquery"
+  ) {
+    val queryWithSubqueryWorkaround =
+      """MATCH (a:A), (b:B)
+        |CALL {
+        |  WITH a, b
+        |  MATCH ANY SHORTEST (a)((n)-[r]->(m)){3,}(b)
+        |  RETURN r
+        |}
+        |RETURN *""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(500)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("B", 30)
+      .setRelationshipCardinality("(:A)-[]->()", 500)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 500)
+      .setRelationshipCardinality("()-[]->(:B)", 500)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+      .build()
+
+    planner.plan(queryWithSubqueryWorkaround).stripProduceResults should equal(planner.subPlanBuilder()
+      .statefulShortestPath(
+        "a",
+        "b",
+        "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){3, } (b) WHERE unique(`r`))",
+        None,
+        groupNodes = Set(),
+        groupRelationships = Set(("r", "r")),
+        singletonNodeVariables = Set(),
+        singletonRelationshipVariables = Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "a")
+          .addTransition(0, 1, "(a) (n)")
+          .addTransition(1, 2, "(n)-[r]->(m)")
+          .addTransition(2, 3, "(m) (n)")
+          .addTransition(3, 4, "(n)-[r]->(m)")
+          .addTransition(4, 5, "(m) (n)")
+          .addTransition(5, 6, "(n)-[r]->(m)")
+          .addTransition(6, 5, "(m) (n)")
+          .addTransition(6, 7, "(m) (b)")
+          .setFinalState(7)
+          .build(),
+        ExpandInto
+      )
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build())
+  }
+
+  test(
+    "With statefulShortestPlanningMode=cost_weighted, when only INTO is possible and it is not 1:1, should still find a plan and solve hint"
+  ) {
+    val query =
+      """MATCH (a:A), (b:B)
+        |WITH * SKIP 0
+        |
+        |MATCH (a)-[r:REL]->(b)
+        |USING SCAN r:REL
+        |MATCH ANY SHORTEST (a)-[q:KNOWS]->{2,}(b)
+        |
+        |RETURN *
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(7)
+      .setAllRelationshipsCardinality(5005)
+      .setLabelCardinality("A", 2)
+      .setLabelCardinality("B", 2)
+      .setRelationshipCardinality("()-[:REL]->()", 1001)
+      .setRelationshipCardinality("(:A)-[:REL]->(:B)", 1001)
+      .setRelationshipCardinality("(:A)-[:KNOWS]->(:B)", 4)
+      .setRelationshipCardinality("(:A)-[:KNOWS]->()", 4)
+      .setRelationshipCardinality("()-[:KNOWS]->()", 4)
+      .setRelationshipCardinality("()-[:KNOWS]->(:B)", 4)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+      .build()
+
+    planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
+      .statefulShortestPath(
+        "a",
+        "b",
+        "SHORTEST 1 ((a) ((`anon_0`)-[`q`:KNOWS]->(`anon_1`)){2, } (b) WHERE unique(`q`))",
+        None,
+        groupNodes = Set(),
+        groupRelationships = Set(("q", "q")),
+        singletonNodeVariables = Set(),
+        singletonRelationshipVariables = Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        new TestNFABuilder(0, "a")
+          .addTransition(0, 1, "(a) (anon_0)")
+          .addTransition(1, 2, "(anon_0)-[q:KNOWS]->(anon_1)")
+          .addTransition(2, 3, "(anon_1) (anon_0)")
+          .addTransition(3, 4, "(anon_0)-[q:KNOWS]->(anon_1)")
+          .addTransition(4, 3, "(anon_1) (anon_0)")
+          .addTransition(4, 5, "(anon_1) (b)")
+          .setFinalState(5)
+          .build(),
+        ExpandInto
+      )
+      .filter("a = anon_2", "b = anon_3")
+      .apply()
+      .|.relationshipTypeScan("(anon_2)-[r:REL]->(anon_3)", "a", "b")
+      .skip(0)
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build())
   }
 }

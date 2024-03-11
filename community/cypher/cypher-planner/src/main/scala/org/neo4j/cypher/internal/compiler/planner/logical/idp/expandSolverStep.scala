@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.logical.ConvertToNFA
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.LogicalPlanWithSSPHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.preFilterCandidatesBySSPHeuristic
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Disjoint
@@ -49,6 +51,7 @@ import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
+import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
@@ -56,13 +59,16 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
+import scala.collection.immutable.SortedMap
 import scala.collection.mutable
+import scala.language.implicitConversions
 
 case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
     extends IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext] {
@@ -73,41 +79,46 @@ case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
     table: IDPCache[LogicalPlan],
     context: LogicalPlanningContext
   ): Iterator[LogicalPlan] = {
-    val result: Iterator[Iterator[LogicalPlan]] =
-      for {
-        patternId <- goal.bitSet.iterator
-        plan <- table(Goal(goal.bitSet - patternId)).iterator
-        pattern <- registry.lookup(patternId)
-      } yield {
-        pattern match {
-          case relationship: PatternRelationship if plan.availableSymbols.contains(relationship.variable) =>
-            Iterator(
-              // we do not project endpoints for quantified path patterns
-              planSingleProjectEndpoints(relationship, plan, context)
+
+    def plansForNodeConnection(source: LogicalPlan, nodeConnection: NodeConnection): Iterator[LogicalPlan] = {
+      val candidates = nodeConnection match {
+        case relationship: PatternRelationship if source.availableSymbols.contains(relationship.variable) =>
+          Iterator[LogicalPlanWithSSPHeuristic](
+            // we do not project endpoints for quantified path patterns
+            planSingleProjectEndpoints(relationship, source, context)
+          )
+        case _ =>
+          Iterator(
+            planSinglePatternSide(
+              qg,
+              nodeConnection,
+              source,
+              nodeConnection.left,
+              qppInnerPlanner,
+              context
+            ),
+            planSinglePatternSide(
+              qg,
+              nodeConnection,
+              source,
+              nodeConnection.right,
+              qppInnerPlanner,
+              context
             )
-          case _ =>
-            Iterator(
-              planSinglePatternSide(
-                qg,
-                pattern,
-                plan,
-                pattern.left,
-                qppInnerPlanner,
-                context
-              ),
-              planSinglePatternSide(
-                qg,
-                pattern,
-                plan,
-                pattern.right,
-                qppInnerPlanner,
-                context
-              )
-            ).flatten
-        }
+          ).flatten
       }
 
-    result.flatten
+      preFilterCandidatesBySSPHeuristic(candidates.toSeq, context).iterator
+    }
+
+    for {
+      patternId <- goal.bitSet.iterator
+      source <- table(Goal(goal.bitSet - patternId)).iterator
+      nodeConnection <- registry.lookup(patternId).iterator
+      plan <- plansForNodeConnection(source, nodeConnection)
+    } yield {
+      plan
+    }
   }
 }
 
@@ -137,7 +148,7 @@ object expandSolverStep {
   }
 
   /**
-   * On top of the given source plan, plan  the given [[NodeConnection]], if `nodeId` has been solved already.
+   * On top of the given source plan, plan the given [[NodeConnection]], if `nodeId` has been solved already.
    *
    * @param qg             the [[QueryGraph]] that is currently being planned.
    * @param nodeConnection the [[NodeConnection]] to plan
@@ -152,7 +163,7 @@ object expandSolverStep {
     nodeId: LogicalVariable,
     qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext
-  ): Option[LogicalPlan] = {
+  ): Option[LogicalPlanWithSSPHeuristic] = {
     val availableSymbols = sourcePlan.availableSymbols
 
     if (availableSymbols(nodeId)) {
@@ -178,7 +189,7 @@ object expandSolverStep {
     availableSymbols: Set[LogicalVariable],
     context: LogicalPlanningContext,
     qppInnerPlanner: QPPInnerPlanner
-  ): LogicalPlan = {
+  ): LogicalPlanWithSSPHeuristic = {
     patternRel match {
       case rel: PatternRelationship =>
         produceExpandLogicalPlan(qg, rel, rel.variable, sourcePlan, nodeId, availableSymbols, context)
@@ -449,7 +460,7 @@ object expandSolverStep {
     availableSymbols: Set[LogicalVariable],
     queryGraph: QueryGraph,
     context: LogicalPlanningContext
-  ) = {
+  ): LogicalPlanWithSSPHeuristic = {
     val spp = inlineQPPPredicates(originalSpp, availableSymbols)
     val fromLeft = startNode == spp.left
     val endNode = if (fromLeft) spp.right else spp.left
@@ -535,25 +546,119 @@ object expandSolverStep {
         Ands.create(nonInlinedSelectionsWithoutUniqPreds.flatPredicates.to(ListSet))
       )
 
-    context.staticComponents.logicalPlanProducer.planStatefulShortest(
-      sourcePlan,
-      startNode,
-      endNode,
-      rewrittenNfa,
-      mode,
-      nonInlinedPreFilters,
-      nodeVariableGroupings,
-      relationshipVariableGroupings,
-      singletonNodeVariables.result(),
-      singletonRelVariables.result(),
-      selector,
-      solvedExpressionAsString,
-      originalSpp,
-      unsolvedPredicatesOnEndNode,
-      reverseGroupVariableProjections = !fromLeft,
-      matchingHints,
+    heuristicForStatefulShortestInto(
+      context.staticComponents.logicalPlanProducer.planStatefulShortest(
+        sourcePlan,
+        startNode,
+        endNode,
+        rewrittenNfa,
+        mode,
+        nonInlinedPreFilters,
+        nodeVariableGroupings,
+        relationshipVariableGroupings,
+        singletonNodeVariables.result(),
+        singletonRelVariables.result(),
+        selector,
+        solvedExpressionAsString,
+        originalSpp,
+        unsolvedPredicatesOnEndNode,
+        reverseGroupVariableProjections = !fromLeft,
+        matchingHints,
+        context
+      ),
       context
     )
+  }
+
+  /**
+   * A value that controls what StatefulShortestPath candidates should be produced.
+   */
+  sealed trait SSPHeuristic extends Ordered[SSPHeuristic] {
+    private val inOrder = Seq(SSPHeuristic.Disprefer, SSPHeuristic.Neutral, SSPHeuristic.Prefer)
+
+    override def compare(that: SSPHeuristic): Int = inOrder.indexOf(this) - inOrder.indexOf(that)
+  }
+
+  object SSPHeuristic {
+
+    /**
+     * Prefer planning this plan, if possible.
+     */
+    case object Prefer extends SSPHeuristic
+
+    /**
+     * There is no preference whether this plan should be planned or not.
+     */
+    case object Neutral extends SSPHeuristic
+
+    /**
+     * Prefer not planning this plan, if possible.
+     * (Disprefer is not a word according to oxford dictionary.)
+     */
+    case object Disprefer extends SSPHeuristic
+  }
+
+  case class LogicalPlanWithSSPHeuristic(plan: LogicalPlan, heuristic: SSPHeuristic)
+
+  object LogicalPlanWithSSPHeuristic {
+
+    implicit def neutralPlan(plan: LogicalPlan): LogicalPlanWithSSPHeuristic =
+      LogicalPlanWithSSPHeuristic(plan, SSPHeuristic.Neutral)
+  }
+
+  /**
+   * If we have `statefulShortestPlanningMode = cost_weighted`,
+   * then we want to heuristically prefer some plans over others:
+   * - Favor INTO if the input cardinality is <= 1
+   * - Do not prefer INTO if the input cardinality is > 1
+   */
+  private def heuristicForStatefulShortestInto(
+    ssp: StatefulShortestPath,
+    context: LogicalPlanningContext
+  ): LogicalPlanWithSSPHeuristic = {
+    ssp.mode match {
+      case Expand.ExpandAll =>
+        LogicalPlanWithSSPHeuristic(ssp, SSPHeuristic.Neutral)
+      case Expand.ExpandInto =>
+        val cardinalities = context.staticComponents.planningAttributes.cardinalities
+        val inCardinality = cardinalities.get(ssp.source.id)
+        val single = inCardinality <= Cardinality.SINGLE
+        LogicalPlanWithSSPHeuristic(ssp, if (single) SSPHeuristic.Prefer else SSPHeuristic.Disprefer)
+    }
+  }
+
+  /**
+   * Filter out candidates according to the SSPHeuristic.
+   * This happens as a "pre-filter", before the candidates are given the pickBest.
+   *
+   * Thus this preference weights more than the cost estimated by the cost model.
+   * This preference weights less than hints. This is why we include hints in the
+   * filtering in this method.
+   * This is necessary so that
+   * - USING JOIN/SCAN hints can be fulfilled
+   * - our internal hints when we don't use `statefulShortestPlanningMode = cost_weighted` can be fulfilled
+   */
+  private[idp] def preFilterCandidatesBySSPHeuristic(
+    candidates: Iterable[LogicalPlanWithSSPHeuristic],
+    context: LogicalPlanningContext
+  ): Iterable[LogicalPlan] = {
+    candidates
+      .map {
+        case LogicalPlanWithSSPHeuristic(plan, heuristic) =>
+          val numHints = context.staticComponents.planningAttributes.solveds.get(plan.id).numHints
+          // Create a tuple (numHints, heuristic) for each candidate.
+          (plan, (numHints, heuristic))
+      }
+      // Group by that tuple.
+      .groupBy(_._2)
+      .to(SortedMap)
+      // Only keep the last group. This is either the group solving the most hints,
+      // or if this is equal for all candidates, than this is the group with the highest
+      // SSPHeuristic.
+      .lastOption
+      .map {
+        _._2.map(_._1)
+      }.getOrElse(mutable.Iterable.empty)
   }
 
   private def selectionsWithOriginalPredicates(spp: SelectivePathPattern): Selections =

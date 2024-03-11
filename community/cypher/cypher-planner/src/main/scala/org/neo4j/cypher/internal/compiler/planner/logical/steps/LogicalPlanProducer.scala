@@ -2448,7 +2448,7 @@ case class LogicalPlanProducer(
     reverseGroupVariableProjections: Boolean,
     hints: Set[UsingStatefulShortestPathHint],
     context: LogicalPlanningContext
-  ): LogicalPlan = {
+  ): StatefulShortestPath = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
       _.addSelectivePathPattern(solvedSpp)
         .addPredicates(solvedPredicates: _*)

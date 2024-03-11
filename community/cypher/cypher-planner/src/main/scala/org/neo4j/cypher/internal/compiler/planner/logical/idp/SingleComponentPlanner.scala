@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner.planSinglePattern
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.LogicalPlanWithSSPHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.preFilterCandidatesBySSPHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
@@ -220,16 +222,18 @@ trait SingleComponentPlannerTrait {
 object SingleComponentPlanner {
 
   sealed private trait SinglePatternSolutions {
-    def getSolutions: Iterable[LogicalPlan]
+    def getSolutions: Iterable[LogicalPlanWithSSPHeuristic]
   }
 
-  private case class NonExpandSolutions(solutions: Option[LogicalPlan]) extends SinglePatternSolutions {
-    override def getSolutions: Iterable[LogicalPlan] = solutions
+  private case class NonExpandSolutions(solutions: Option[LogicalPlanWithSSPHeuristic]) extends SinglePatternSolutions {
+    override def getSolutions: Iterable[LogicalPlanWithSSPHeuristic] = solutions
   }
 
-  private case class ExpandSolutions(leftExpand: Option[LogicalPlan], rightExpand: Option[LogicalPlan])
-      extends SinglePatternSolutions {
-    override def getSolutions: Iterable[LogicalPlan] = Set(leftExpand, rightExpand).flatten
+  private case class ExpandSolutions(
+    leftExpand: Option[LogicalPlanWithSSPHeuristic],
+    rightExpand: Option[LogicalPlanWithSSPHeuristic]
+  ) extends SinglePatternSolutions {
+    override def getSolutions: Iterable[LogicalPlanWithSSPHeuristic] = Set(leftExpand, rightExpand).flatten
   }
 
   /**
@@ -275,10 +279,10 @@ object SingleComponentPlanner {
       val (start, end) = patternToSolve.boundaryNodes
       if (start == end) {
         // We are not allowed to plan CP or joins with identical LHS and RHS
-        Iterable.empty[LogicalPlan]
+        Iterable.empty[LogicalPlanWithSSPHeuristic]
       } else if (qg.argumentIds.contains(start) || qg.argumentIds.contains(end)) {
         // This kind of join for single relationship patterns is currently only supported for non-argument nodes.
-        Iterable.empty[LogicalPlan]
+        Iterable.empty[LogicalPlanWithSSPHeuristic]
       } else {
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
@@ -310,13 +314,14 @@ object SingleComponentPlanner {
           maybeEndBestPlans,
           getExpandSolutionOnTopOfLeaf,
           context
-        )
+        ).map(LogicalPlanWithSSPHeuristic.neutralPlan)
 
         cartesianProducts ++ joins
       }
     }
 
-    perLeafSolutions.values.flatMap(_.getSolutions) ++ cartesianProductsAndJoins
+    val candidates = perLeafSolutions.values.flatMap(_.getSolutions) ++ cartesianProductsAndJoins
+    preFilterCandidatesBySSPHeuristic(candidates, context)
   }
 
   private def planSinglePatternCartesianProducts(
@@ -328,7 +333,7 @@ object SingleComponentPlanner {
     maybeEndBestPlans: Option[BestPlans],
     qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext
-  ): Iterable[LogicalPlan] = (maybeStartBestPlans, maybeEndBestPlans) match {
+  ): Iterable[LogicalPlanWithSSPHeuristic] = (maybeStartBestPlans, maybeEndBestPlans) match {
     case (Some(startBestPlan), Some(endBestPlan)) =>
       // CP keeps the LHS order. Therefore we consider both the bestResult and the best sorted result
       // as LHSs of the CP.
@@ -385,7 +390,7 @@ object SingleComponentPlanner {
           .map { leftExpand =>
             context.staticComponents.logicalPlanProducer.planNodeHashJoin(
               endJoinNodes,
-              leftExpand,
+              leftExpand.plan,
               endPlan,
               endJoinHints,
               context
@@ -400,7 +405,7 @@ object SingleComponentPlanner {
           context.staticComponents.logicalPlanProducer.planNodeHashJoin(
             endJoinNodes,
             endPlan,
-            leftExpand,
+            leftExpand.plan,
             endJoinHints,
             context
           )
@@ -413,7 +418,7 @@ object SingleComponentPlanner {
           context.staticComponents.logicalPlanProducer.planNodeHashJoin(
             startJoinNodes,
             startPlan,
-            rightExpand,
+            rightExpand.plan,
             startJoinHints,
             context
           )
@@ -425,7 +430,7 @@ object SingleComponentPlanner {
           .map { rightExpand =>
             context.staticComponents.logicalPlanProducer.planNodeHashJoin(
               startJoinNodes,
-              rightExpand,
+              rightExpand.plan,
               startPlan,
               startJoinHints,
               context
