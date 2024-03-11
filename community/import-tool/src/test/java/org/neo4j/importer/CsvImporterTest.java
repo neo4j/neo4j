@@ -71,19 +71,20 @@ class CsvImporterTest {
 
         Config config = Config.defaults(GraphDatabaseSettings.logs_directory, logDir.toAbsolutePath());
 
-        CsvImporter csvImporter = CsvImporter.builder()
-                .withDatabaseLayout(databaseLayout.getNeo4jLayout().databaseLayout("foodb"))
-                .withDatabaseConfig(config)
-                .withReportFile(reportLocation.toAbsolutePath())
-                .withCsvConfig(Configuration.TABS)
-                .withFileSystem(testDir.getFileSystem())
-                .withStdOut(NullPrintStream.INSTANCE)
-                .withStdErr(NullPrintStream.INSTANCE)
-                .withLogProvider(CsvImporter.createLogProvider(testDir.getFileSystem(), config))
-                .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
-                .build();
-
-        csvImporter.doImport();
+        try (var logProvider = CsvImporter.createLogProvider(testDir.getFileSystem(), config)) {
+            final var csvImporter = CsvImporter.builder()
+                    .withDatabaseLayout(databaseLayout.getNeo4jLayout().databaseLayout("foodb"))
+                    .withDatabaseConfig(config)
+                    .withReportFile(reportLocation.toAbsolutePath())
+                    .withCsvConfig(Configuration.TABS)
+                    .withFileSystem(testDir.getFileSystem())
+                    .withStdOut(NullPrintStream.INSTANCE)
+                    .withStdErr(NullPrintStream.INSTANCE)
+                    .withLogProvider(logProvider)
+                    .addNodeFiles(emptySet(), new Path[] {inputFile.toAbsolutePath()})
+                    .build();
+            csvImporter.doImport();
+        }
 
         assertTrue(Files.exists(reportLocation));
         assertThat(Files.readString(logDir.resolve(DEBUG_LOG))).contains("[foodb] Import starting");
