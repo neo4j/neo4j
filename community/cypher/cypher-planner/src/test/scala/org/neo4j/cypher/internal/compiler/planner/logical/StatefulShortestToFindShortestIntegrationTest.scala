@@ -90,7 +90,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .nodeByLabelScan("a", "User")
       .build()
 
-    plan shouldEqual expected
+    plan should equal(expected)(SymmetricalLogicalPlanEquality)
   }
 
   test("Shortest Group should be rewritten to legacy all shortest for simple varLength pattern") {
@@ -121,7 +121,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .allNodeScan("a")
       .build()
 
-    plan shouldEqual expected
+    plan should equal(expected)(SymmetricalLogicalPlanEquality)
   }
 
   test("Shortest should be rewritten to legacy shortest for varLength pattern with outer relationship predicate") {
@@ -131,7 +131,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |RETURN *
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
+    plan should equal(planner.subPlanBuilder()
       .shortestPath(
         "(a)-[r*1..]->(b)",
         pathName = Some("anon_0"),
@@ -142,7 +142,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
-      .build()
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test("Shortest should be rewritten to legacy shortest for varLength pattern with inlined relationship predicate") {
@@ -152,7 +152,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |RETURN *
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
+    plan should equal(planner.subPlanBuilder()
       .shortestPath(
         "(a)-[r*1..]->(b)",
         pathName = Some("anon_1"),
@@ -163,7 +163,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .cartesianProduct()
       .|.allNodeScan("a")
       .allNodeScan("b")
-      .build()
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test(
@@ -175,7 +175,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |RETURN *
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
+    plan should equal(planner.subPlanBuilder()
       .projection(Map("p" -> multiOutgoingRelationshipPath("a", "r", "b")))
       .shortestPath(
         "(a)-[r*1..]->(b)",
@@ -187,7 +187,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
-      .build()
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test(
@@ -199,7 +199,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |RETURN *
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
+    plan should equal(planner.subPlanBuilder()
       .projection(Map("p" -> multiOutgoingRelationshipPath("a", "r", "b")))
       .shortestPath(
         "(a)-[r*1..]->(b)",
@@ -211,7 +211,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .cartesianProduct()
       .|.allNodeScan("a")
       .allNodeScan("b")
-      .build()
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test("Shortest should be rewritten to legacy shortest for simple QPP") {
@@ -246,7 +246,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |RETURN *
          |""".stripMargin
     val plan = all_if_possible_planner.plan(query).stripProduceResults
-    plan shouldEqual all_if_possible_planner.subPlanBuilder()
+    plan should equal(all_if_possible_planner.subPlanBuilder()
       .apply()
       .|.shortestPath(
         "(a)-[r*0..]->(b)",
@@ -261,7 +261,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
-      .build()
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test(
@@ -296,7 +296,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |RETURN *
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
+    plan should equal(planner.subPlanBuilder()
       .shortestPath(
         "(a)-[r*0..]->(b)",
         pathName = Some("anon_1"),
@@ -308,7 +308,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .|.allNodeScan("b")
       .filter("a.prop = 1")
       .allNodeScan("a")
-      .build()
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test(
@@ -486,7 +486,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .|.nodeByLabelScan("a", "User")
       .nodeByLabelScan("b", "User")
       .build()
-    plan shouldEqual expected
+    plan should equal(expected)(SymmetricalLogicalPlanEquality)
   }
 
   test(
@@ -534,7 +534,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |RETURN r
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
+    plan should equal(planner.subPlanBuilder()
       .shortestPath(
         "(a)-[r*]->(b)",
         pathName = Some("anon_0"),
@@ -545,7 +545,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .cartesianProduct()
       .|.allNodeScan("a")
       .allNodeScan("b")
-      .build()
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   test("SHORTEST should NOT be rewritten since path is referenced in return") {
@@ -601,7 +601,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |RETURN r
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
-    plan shouldEqual planner.subPlanBuilder()
+    plan should equal(planner.subPlanBuilder()
       .shortestPath(
         "(a)-[r*1..]->(b)",
         pathName = Some("anon_1"),
@@ -614,7 +614,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .|.allNodeScan("b")
       .filter("a.prop = 1")
       .allNodeScan("a")
-      .build()
+      .build())(SymmetricalLogicalPlanEquality)
   }
 
   // TODO: This currently does not get rewritten due to the quantified nodes being named. And solveds contains the original predicate a.prop <> b.prop and not
@@ -658,7 +658,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
         .|.allNodeScan("t")
         .allNodeScan("s")
         .build()
-    )
+    )(SymmetricalLogicalPlanEquality)
   }
 
   def multiOutgoingRelationshipPath(fromNode: String, relationships: String, toNode: String): PathExpression = {
