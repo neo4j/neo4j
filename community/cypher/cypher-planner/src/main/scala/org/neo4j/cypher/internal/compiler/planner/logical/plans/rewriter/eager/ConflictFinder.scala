@@ -68,7 +68,9 @@ import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
+import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -522,7 +524,12 @@ sealed trait ConflictFinder {
   ): Boolean = {
     read.accessor match {
       case Some(variable) =>
-        write.accessor.contains(variable) && isGloballyUniqueAndCursorInitialized(variable, read.plan, wholePlan)
+        write.accessor.contains(variable) && isGloballyUniqueAndCursorInitialized(
+          variable,
+          read.plan,
+          wholePlan,
+          write.plan
+        )
       case None => false
     }
   }
@@ -539,19 +546,6 @@ sealed trait ConflictFinder {
       (readPlan ne wholePlan.leftmostLeaf) ||
         !readPlan.isInstanceOf[StableLeafPlan] ||
         isInTransactionalApply(writePlan, wholePlan)
-
-    /**
-     * Tests whether a plan is a simple deleting plan that does not evaluate any expressions,
-     * apart from the variable that it is supposed to delete. This variable read can never conflict
-     * with another delete, even when the entity has already been deleted.
-     * This is because deletes are idempotent.
-     */
-    def simpleDeletingPlan(plan: LogicalPlan) = plan match {
-      case DeleteNode(_, _: LogicalVariable)         => true
-      case DetachDeleteNode(_, _: LogicalVariable)   => true
-      case DeleteRelationship(_, _: LogicalVariable) => true
-      case _                                         => false
-    }
 
     /**
      * Deleting plans can conflict, if they evaluate expressions. Otherwise not.
@@ -577,17 +571,29 @@ sealed trait ConflictFinder {
     }
   }
 
+  private def isDistinctLeafPlan(readPlan: LogicalPlan): Boolean = readPlan match {
+    case _: NodeLogicalLeafPlan           => true
+    case rlp: RelationshipLogicalLeafPlan => rlp.directed
+    case _                                => false
+  }
+
+  private def isSimpleDeleteAndDistinctLeaf(readPlan: LogicalPlan, writePlan: LogicalPlan): Boolean =
+    simpleDeletingPlan(writePlan) && isDistinctLeafPlan(readPlan)
+
   private def isGloballyUniqueAndCursorInitialized(
     variable: LogicalVariable,
-    plan: LogicalPlan,
-    wholePlan: LogicalPlan
+    readPlan: LogicalPlan,
+    wholePlan: LogicalPlan,
+    writePlan: LogicalPlan
   ): Boolean = {
     // plan.distinctness is "per argument"
     // In order to make sure a column is "globally unique", i.e. over multiple invocations,
     // we need to make sure the operator does only execute once.
     // Also, we must make sure that the cursor performing the read will be initialized at the point in
     // time the write for the same variable happens.
-    plan.distinctness.covers(Seq(variable)) && !readMightNotBeInitialized(plan, wholePlan)
+    (isSimpleDeleteAndDistinctLeaf(readPlan, writePlan) || readPlan.distinctness.covers(
+      Seq(variable)
+    )) && !readMightNotBeInitialized(readPlan, wholePlan)
   }
 
   /**
@@ -670,6 +676,19 @@ sealed trait ConflictFinder {
    */
   private[eager] def hasChildMatching(plan: LogicalPlan, pred: LogicalPlan => Boolean): Boolean = {
     pred(plan) || plan.lhs.exists(hasChildMatching(_, pred)) || plan.rhs.exists(hasChildMatching(_, pred))
+  }
+
+  /**
+   * Tests whether a plan is a simple deleting plan that does not evaluate any expressions,
+   * apart from the variable that it is supposed to delete. This variable read can never conflict
+   * with another delete, even when the entity has already been deleted.
+   * This is because deletes are idempotent.
+   */
+  private def simpleDeletingPlan(plan: LogicalPlan): Boolean = plan match {
+    case DeleteNode(_, _: LogicalVariable)         => true
+    case DetachDeleteNode(_, _: LogicalVariable)   => true
+    case DeleteRelationship(_, _: LogicalVariable) => true
+    case _                                         => false
   }
 }
 

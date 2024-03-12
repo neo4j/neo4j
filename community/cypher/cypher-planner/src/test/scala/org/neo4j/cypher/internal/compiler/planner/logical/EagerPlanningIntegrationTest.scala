@@ -233,10 +233,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .transactionForeach(1000)
         .|.detachDeleteNode("n")
         .|.argument("n")
-        .lpEager(ListSet(
-          ReadDeleteConflict("n")
-            .withConflict(Conflict(Id(3), Id(6)))
-        )) // Unnecessary eager since we can delete a node twice.
         .nodeIndexOperator("n:N(prop = 42)")
         .build()
     )
@@ -260,10 +256,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .transactionForeach(1000)
         .|.detachDeleteNode("n")
         .|.argument("n")
-        .lpEager(ListSet(
-          ReadDeleteConflict("n")
-            .withConflict(Conflict(Id(3), Id(6)))
-        )) // Unnecessary eager since we can delete a node twice.
         .nodeIndexOperator("n:N(prop > 23)")
         .build()
     )
