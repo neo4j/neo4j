@@ -286,7 +286,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
     // THEN
     exception.getMessage should equal(
       s"""Unable to create Constraint( type='NODE KEY', schema=(:$label {$prop}) ):
-         |Node Key constraint requires Neo4j Enterprise Edition""".stripMargin
+         |Node Key constraint requires Neo4j Enterprise Edition. Note that only the first found violation is shown.""".stripMargin
     )
     graph.constraintExists(constraintName) should be(false)
   }
@@ -300,7 +300,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
     // THEN
     exception.getMessage should equal(
       s"""Unable to create Constraint( type='RELATIONSHIP KEY', schema=()-[:$relType {$prop}]-() ):
-         |Relationship Key constraint requires Neo4j Enterprise Edition""".stripMargin
+         |Relationship Key constraint requires Neo4j Enterprise Edition. Note that only the first found violation is shown.""".stripMargin
     )
     graph.constraintExists(constraintName) should be(false)
   }
@@ -314,7 +314,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
     // THEN
     exception.getMessage should equal(
       s"""Unable to create Constraint( type='NODE PROPERTY EXISTENCE', schema=(:$label {$prop}) ):
-         |Property existence constraint requires Neo4j Enterprise Edition""".stripMargin
+         |Property existence constraint requires Neo4j Enterprise Edition. Note that only the first found violation is shown.""".stripMargin
     )
     graph.constraintExists(constraintName) should be(false)
   }
@@ -328,7 +328,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
     // THEN
     exception.getMessage should equal(
       s"""Unable to create Constraint( type='RELATIONSHIP PROPERTY EXISTENCE', schema=()-[:$relType {$prop}]-() ):
-         |Property existence constraint requires Neo4j Enterprise Edition""".stripMargin
+         |Property existence constraint requires Neo4j Enterprise Edition. Note that only the first found violation is shown.""".stripMargin
     )
     graph.constraintExists(constraintName) should be(false)
   }
@@ -342,7 +342,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
     // THEN
     exception.getMessage should equal(
       s"""Unable to create Constraint( name='$constraintName', type='NODE PROPERTY TYPE', schema=(:$label {$prop}), propertyType=INTEGER ):
-         |Property type constraint requires Neo4j Enterprise Edition""".stripMargin
+         |Property type constraint requires Neo4j Enterprise Edition. Note that only the first found violation is shown.""".stripMargin
     )
     graph.constraintExists(constraintName) should be(false)
   }
@@ -356,7 +356,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
     // THEN
     exception.getMessage should equal(
       s"""Unable to create Constraint( name='$constraintName', type='RELATIONSHIP PROPERTY TYPE', schema=()-[:$relType {$prop}]-(), propertyType=INTEGER ):
-         |Property type constraint requires Neo4j Enterprise Edition""".stripMargin
+         |Property type constraint requires Neo4j Enterprise Edition. Note that only the first found violation is shown.""".stripMargin
     )
     graph.constraintExists(constraintName) should be(false)
   }

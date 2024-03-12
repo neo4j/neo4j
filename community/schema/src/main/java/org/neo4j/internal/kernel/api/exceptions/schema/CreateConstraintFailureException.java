@@ -52,14 +52,12 @@ public class CreateConstraintFailureException extends SchemaKernelException {
 
     @Override
     public String getUserMessage(TokenNameLookup tokenNameLookup) {
-        String message = "Unable to create " + constraint.userDescription(tokenNameLookup);
-        if (cause != null) {
-            message = String.format("%s:%n%s", message, cause);
+        final var sb = new StringBuilder("Unable to create ").append(constraint.userDescription(tokenNameLookup));
+        if (getCause() instanceof KernelException kernelCause) {
+            sb.append(':').append(System.lineSeparator()).append(kernelCause.getUserMessage(tokenNameLookup));
+        } else if (cause != null) {
+            sb.append(':').append(System.lineSeparator()).append(cause);
         }
-        if (getCause() instanceof KernelException cause) {
-
-            return String.format("%s:%n%s", message, cause.getUserMessage(tokenNameLookup));
-        }
-        return message;
+        return sb.append(". Note that only the first found violation is shown.").toString();
     }
 }

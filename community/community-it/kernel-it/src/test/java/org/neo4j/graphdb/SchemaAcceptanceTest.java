@@ -925,11 +925,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         }
 
         // WHEN
-        ConstraintViolationException e =
-                assertThrows(ConstraintViolationException.class, () -> createUniquenessConstraint(label, propertyKey));
-        assertThat(e)
-                .hasMessageContaining(
-                        "Unable to create Constraint( name='constraint_d3208c60', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}) )");
+        assertThatThrownBy(() -> createUniquenessConstraint(label, propertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContainingAll(
+                        "Unable to create Constraint( name='constraint_d3208c60', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}) )",
+                        "Note that only the first found violation is shown.");
     }
 
     @Test
@@ -1429,8 +1429,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .on(propertyKey)
                     .withIndexType(POINT)
                     .withIndexConfiguration(Map.of(
-                            IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0},
-                            IndexSettingImpl.SPATIAL_WGS84_MIN, new double[] {-90.0, -90.0}))
+                            IndexSettingImpl.SPATIAL_CARTESIAN_MAX,
+                            new double[] {200.0, 200.0},
+                            IndexSettingImpl.SPATIAL_WGS84_MIN,
+                            new double[] {-90.0, -90.0}))
                     .create();
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
             assertArrayEquals(
@@ -1768,8 +1770,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .withName("my constraint")
                     .assertPropertyIsUnique(propertyKey)
                     .withIndexConfiguration(Map.of(
-                            IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0},
-                            IndexSettingImpl.SPATIAL_WGS84_MIN, new double[] {-90.0, -90.0}))
+                            IndexSettingImpl.SPATIAL_CARTESIAN_MAX,
+                            new double[] {200.0, 200.0},
+                            IndexSettingImpl.SPATIAL_WGS84_MIN,
+                            new double[] {-90.0, -90.0}))
                     .create();
             IndexDefinition index = getIndex(tx, constraint.getName());
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
