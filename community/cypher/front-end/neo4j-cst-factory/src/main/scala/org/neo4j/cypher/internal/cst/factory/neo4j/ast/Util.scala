@@ -20,8 +20,16 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.neo4j.cypher.internal.ast.IfExistsDo
+import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
+import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.cst.factory.neo4j.CypherToken
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.parser.AstRuleCtx
+import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
@@ -36,7 +44,12 @@ object Util {
   @inline def child[T <: ParseTree](ctx: AstRuleCtx, index: Int): T = ctx.getChild(index).asInstanceOf[T]
 
   @inline def astOpt[T <: Any](ctx: AstRuleCtx): Option[T] = if (ctx == null) None else Some(ctx.ast[T]())
-  @inline def astOpt[T](ctx: AstRuleCtx, default: => T): T = if (ctx == null) default else ctx.ast[T]()
+  @inline def astOpt[T <: Any](ctx: AstRuleCtx, default: => T): T = if (ctx == null) default else ctx.ast[T]()
+
+  def astOptFromList[T <: Any](list: java.util.List[_ <: AstRuleCtx], default: => Option[T]): Option[T] = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(list.size() < 2)
+    if (list.isEmpty) default else Some(list.get(0).ast[T]())
+  }
   @inline def ctxChild(ctx: AstRuleCtx, index: Int): AstRuleCtx = ctx.getChild(index).asInstanceOf[AstRuleCtx]
 
   @inline def astChild[T <: ASTNode](ctx: AstRuleCtx, index: Int): T =
@@ -64,6 +77,27 @@ object Util {
       dest += 1
     }
     ArraySeq.unsafeWrapArray(result)
+  }
+
+  def astSeqPositioned[T: ClassTag, C <: Any](
+    list: java.util.List[_ <: ParseTree],
+    func: C => InputPosition => T
+  ): ArraySeq[T] = {
+    val size = list.size()
+    val result = new Array[T](size)
+    var i = 0
+    while (i < size) {
+      val item = list.get(i).asInstanceOf[AstRuleCtx]
+      result(i) = func(item.ast[C]())(pos(item))
+      i += 1
+    }
+    ArraySeq.unsafeWrapArray(result)
+  }
+
+  def nonEmptyPropertyKeyName(list: CypherParser.NonEmptyNameListContext): ArraySeq[PropertyKeyName] = {
+    ArraySeq.from(list.symbolicNameString().asScala.collect {
+      case s: CypherParser.SymbolicNameStringContext => PropertyKeyName(s.ast())(pos(s))
+    })
   }
 
   def astChildListSet[T <: ASTNode](ctx: AstRuleCtx): ListSet[T] = {
@@ -104,7 +138,7 @@ object Util {
   @inline def nodeChildType(ctx: AstRuleCtx, index: Int): Int =
     ctx.getChild(index).asInstanceOf[TerminalNode].getSymbol.getType
 
-  @inline def lastChild[T <: ParseTree](ctx: AstRuleCtx): T =
+  @inline def lastChild[T <: Any](ctx: AstRuleCtx): T =
     ctx.children.get(ctx.children.size() - 1).asInstanceOf[T]
 
   def astPairs[A <: ASTNode, B <: ASTNode](
@@ -124,4 +158,13 @@ object Util {
   @inline def pos(ctx: ParserRuleContext): InputPosition = pos(ctx.start)
 
   @inline def pos(node: TerminalNode): InputPosition = pos(node.getSymbol)
+
+  def ifExistsDo(replace: Boolean, ifNotExists: Boolean): IfExistsDo = {
+    (replace, ifNotExists) match {
+      case (true, true)   => IfExistsInvalidSyntax
+      case (true, false)  => IfExistsReplace
+      case (false, true)  => IfExistsDoNothing
+      case (false, false) => IfExistsThrowError
+    }
+  }
 }

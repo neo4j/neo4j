@@ -197,7 +197,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   //  Creating user
 
   test("CREATE USER foo SET PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         literalFoo,
         isEncryptedPassword = false,
@@ -209,7 +209,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE USER $foo SET PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         paramFoo,
         isEncryptedPassword = false,
@@ -221,7 +221,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE USER foo SET PLAINTEXT PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         literalFoo,
         isEncryptedPassword = false,
@@ -233,7 +233,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"CREATE USER foo SET PLAINTEXT PASSWORD $pwParamString") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         literalFoo,
         isEncryptedPassword = false,
@@ -245,7 +245,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"CREATE USER $paramString SET PASSWORD $pwParamString") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         paramAst,
         isEncryptedPassword = false,
@@ -257,67 +257,67 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE USER `foo` SET PASSwORD 'password'") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER `!#\"~` SeT PASSWORD 'password'") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literal("!#\"~"),
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SeT PASSWORD 'pasS5Wor%d'") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       pw("pasS5Wor%d"),
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET PASSwORD ''") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       passwordEmpty,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test(s"CREATE uSER foo SET PASSWORD $pwParamString") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       paramPassword,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREaTE USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test(s"CREATE USER foo SET PASSWORD $pwParamString CHANGE REQUIRED") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         literalFoo,
         isEncryptedPassword = false,
@@ -329,47 +329,47 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE required") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' CHAngE NOT REQUIRED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(false), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(false), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test(s"CREATE USER foo SET PASSWORD $pwParamString SET  PASSWORD CHANGE NOT REQUIRED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       paramPassword,
       ast.UserOptions(Some(false), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDed") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         literalFoo,
         isEncryptedPassword = false,
@@ -381,57 +381,57 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS ACtiVE") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), Some(false), None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED SET   STATuS SUSPENDED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(false), Some(true), None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test(s"CREATE USER foo SET PASSWORD $pwParamString CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       paramPassword,
       ast.UserOptions(Some(true), Some(true), None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER `` SET PASSwORD 'password'") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalEmpty,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER `f:oo` SET PASSWORD 'password'") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFColonOo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         literalFoo,
         isEncryptedPassword = false,
@@ -443,17 +443,17 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"CREATE uSER foo IF NOT EXISTS SET PASSWORD $pwParamString") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       paramPassword,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsDoNothing
-    ))
+    )(pos))
   }
 
   test(s"CREATE USER foo IF NOT EXISTS SET PASSWORD $pwParamString CHANGE REQUIRED") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         literalFoo,
         isEncryptedPassword = false,
@@ -465,27 +465,27 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"CREATE USER foo IF NOT EXISTS SET PASSWORD $pwParamString SET STATUS SUSPENDED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       paramPassword,
       ast.UserOptions(Some(true), Some(true), None),
       ast.IfExistsDoNothing
-    ))
+    )(pos))
   }
 
   test(s"CREATE USER foo IF NOT EXISTS SET PASSWORD $pwParamString CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       paramPassword,
       ast.UserOptions(Some(true), Some(true), None),
       ast.IfExistsDoNothing
-    ))
+    )(pos))
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         literalFoo,
         isEncryptedPassword = false,
@@ -497,17 +497,17 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"CREATE OR REPLACE uSER foo SET PASSWORD $pwParamString") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       paramPassword,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsReplace
-    ))
+    )(pos))
   }
 
   test(s"CREATE OR REPLACE USER foo SET PASSWORD $pwParamString CHANGE REQUIRED") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         literalFoo,
         isEncryptedPassword = false,
@@ -519,49 +519,49 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"CREATE OR REPLACE USER foo SET PASSWORD $pwParamString SET STATUS SUSPENDED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       paramPassword,
       ast.UserOptions(Some(true), Some(true), None),
       ast.IfExistsReplace
-    ))
+    )(pos))
   }
 
   test(s"CREATE OR REPLACE USER foo SET PASSWORD $pwParamString CHANGE REQUIRED SET STATUS SUSPENDED") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       paramPassword,
       ast.UserOptions(Some(true), Some(true), None),
       ast.IfExistsReplace
-    ))
+    )(pos))
   }
 
   test("CREATE OR REPLACE USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsInvalidSyntax
-    ))
+    )(pos))
   }
 
   test(
     "CREATE USER foo SET ENCRYPTED PASSWORD '1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab'"
   ) {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = true,
       pw("1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"),
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER $foo SET encrYPTEd PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         paramFoo,
         isEncryptedPassword = true,
@@ -573,7 +573,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"CREATE USER $paramString SET ENCRYPTED Password $pwParamString") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateUser(
         paramAst,
         isEncryptedPassword = true,
@@ -585,83 +585,83 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE OR REPLACE USER foo SET encrypted password 'sha256,x1024,0x2460294fe,b3ddb287a'") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = true,
       pw("sha256,x1024,0x2460294fe,b3ddb287a"),
       ast.UserOptions(Some(true), None, None),
       ast.IfExistsReplace
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE db1") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE $db") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(paramDb))),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE OR REPLACE USER foo SET password 'password' SET HOME DATABASE db1") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ast.IfExistsReplace
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET password 'password' SET HOME DATABASE db1") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ast.IfExistsDoNothing
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET HOME DAtabase $db") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(false), None, Some(ast.SetHomeDatabaseAction(paramDb))),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE `#dfkfop!`") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("#dfkfop!")))),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE null") {
-    yields[Statements](ast.CreateUser(
+    parsesTo[Statements](ast.CreateUser(
       literalFoo,
       isEncryptedPassword = false,
       password,
       ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(namespacedName("null")))),
       ast.IfExistsThrowError
-    ))
+    )(pos))
   }
 
   Seq(
@@ -670,13 +670,13 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   ).foreach {
     case (first: String, second: String, third: String) =>
       test(s"CREATE USER foo SET password 'password' $first $second $third") {
-        yields[Statements](ast.CreateUser(
+        parsesTo[Statements](ast.CreateUser(
           literalFoo,
           isEncryptedPassword = false,
           password,
           ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
           ast.IfExistsThrowError
-        ))
+        )(pos))
       }
   }
 
@@ -684,13 +684,13 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     .permutations.foreach {
       clauses =>
         test(s"CREATE USER foo SET password 'password' ${clauses.mkString(" ")}") {
-          yields[Statements](ast.CreateUser(
+          parsesTo[Statements](ast.CreateUser(
             literalFoo,
             isEncryptedPassword = false,
             password,
             ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
             ast.IfExistsThrowError
-          ))
+          )(pos))
         }
     }
 
@@ -714,71 +714,71 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE USER foo") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER \"foo\" SET PASSwORD 'password'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER !#\"~ SeT PASSWORD 'password'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER fo,o SET PASSWORD 'password'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER f:oo SET PASSWORD 'password'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET ENCRYPTED PASSWORD 123") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET ENCRYPTED PASSWORD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PLAINTEXT PASSWORD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD 'password' ENCRYPTED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSwORD 'passwordString'+" + pwParamString + "expressions.Parameter") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD null CHANGE REQUIRED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo PASSWORD 'password'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS ACTIVE CHANGE NOT REQUIRED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET HOME DATABASE db1 CHANGE NOT REQUIRED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STAUS ACTIVE") {
@@ -789,75 +789,75 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS IMAGINARY") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD 'password' SET STATUS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD CHANGE REQUIRED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET STATUS SUSPENDED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo IF EXISTS SET PASSWORD 'bar'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo IF NOT EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE REQUIRED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo IF NOT EXISTS SET STATUS ACTIVE") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE OR REPLACE USER foo") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE NOT REQUIRED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE OR REPLACE USER foo SET STATUS SUSPENDED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE OR REPLACE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD 'bar' SET HOME DATABASE 123456") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD 'bar' SET HOME DATABASE #dfkfop!") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE USER foo SET PASSWORD $password CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {

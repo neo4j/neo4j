@@ -206,184 +206,210 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // CREATE DATABASE
 
   test("CREATE DATABASE foo") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
+    parsesTo[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("USE system CREATE DATABASE foo") {
     // can parse USE clause, but is not included in AST
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
+    parsesTo[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE DATABASE $foo") {
-    yields[Statements](ast.CreateDatabase(
+    parsesTo[Statements](ast.CreateDatabase(
       stringParamName("foo"),
       ast.IfExistsThrowError,
       ast.NoOptions,
       ast.NoWait,
       None
-    ))
+    )(pos))
   }
 
   test("CREATE DATABASE $wait") {
-    yields[Statements](ast.CreateDatabase(
+    parsesTo[Statements](ast.CreateDatabase(
       stringParamName("wait"),
       ast.IfExistsThrowError,
       ast.NoOptions,
       ast.NoWait,
       None
-    ))
+    )(pos))
   }
 
   test("CREATE DATABASE `nowait.sec`") {
-    yields[Statements](ast.CreateDatabase(
+    parsesTo[Statements](ast.CreateDatabase(
       literal("nowait.sec"),
       ast.IfExistsThrowError,
       ast.NoOptions,
       ast.NoWait,
       None
-    ))
+    )(pos))
   }
 
   test("CREATE DATABASE second WAIT") {
-    yields[Statements](ast.CreateDatabase(
+    parsesTo[Statements](ast.CreateDatabase(
       literal("second"),
       ast.IfExistsThrowError,
       ast.NoOptions,
       ast.IndefiniteWait,
       None
-    ))
+    )(pos))
   }
 
   test("CREATE DATABASE seconds WAIT 12") {
-    yields[Statements](ast.CreateDatabase(
+    parsesTo[Statements](ast.CreateDatabase(
       literal("seconds"),
       ast.IfExistsThrowError,
       ast.NoOptions,
       ast.TimeoutAfter(12),
       None
-    ))
+    )(pos))
   }
 
   test("CREATE DATABASE dump WAIT 12 SEC") {
-    yields[Statements](ast.CreateDatabase(
+    parsesTo[Statements](ast.CreateDatabase(
       literal("dump"),
       ast.IfExistsThrowError,
       ast.NoOptions,
       ast.TimeoutAfter(12),
       None
-    ))
+    )(pos))
   }
 
   test("CREATE DATABASE destroy WAIT 12 SECOND") {
-    yields[Statements](ast.CreateDatabase(
+    parsesTo[Statements](ast.CreateDatabase(
       literal("destroy"),
       ast.IfExistsThrowError,
       ast.NoOptions,
       ast.TimeoutAfter(12),
       None
-    ))
+    )(pos))
   }
 
   test("CREATE DATABASE data WAIT 12 SECONDS") {
-    yields[Statements](ast.CreateDatabase(
+    parsesTo[Statements](ast.CreateDatabase(
       literal("data"),
       ast.IfExistsThrowError,
       ast.NoOptions,
       ast.TimeoutAfter(12),
       None
-    ))
+    )(pos))
   }
 
   test("CREATE DATABASE foo NOWAIT") {
-    yields[Statements](ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
+    parsesTo[Statements](
+      ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos)
+    )
   }
 
   test("CREATE DATABASE `foo.bar`") {
-    yields[Statements](ast.CreateDatabase(literal("foo.bar"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None))
+    parsesTo[Statements](ast.CreateDatabase(
+      literal("foo.bar"),
+      ast.IfExistsThrowError,
+      ast.NoOptions,
+      ast.NoWait,
+      None
+    )(pos))
   }
 
   test("CREATE DATABASE foo.bar") {
-    yields[Statements](ast.CreateDatabase(
+    parsesTo[Statements](ast.CreateDatabase(
       namespacedName("foo", "bar"),
       ast.IfExistsThrowError,
       ast.NoOptions,
       ast.NoWait,
       None
-    ))
+    )(pos))
   }
 
   test("CREATE DATABASE `graph.db`.`db.db`") {
-    yields[Statements](_ =>
-      ast.CreateDatabase(namespacedName("graph.db", "db.db"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(
-        pos
-      )
+    parsesTo[Statements](
+      ast.CreateDatabase(
+        namespacedName("graph.db", "db.db"),
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        ast.NoWait,
+        None
+      )(pos)
     )
   }
 
   test("CREATE DATABASE `foo-bar42`") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos)
     )
   }
 
   test("CREATE DATABASE `_foo-bar42`") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos)
     )
   }
 
   test("CREATE DATABASE ``") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateDatabase(literal(""), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos)
     )
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None))
+    parsesTo[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS WAIT 10 SECONDS") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.TimeoutAfter(10), None))
+    parsesTo[Statements](ast.CreateDatabase(
+      literalFoo,
+      ast.IfExistsDoNothing,
+      ast.NoOptions,
+      ast.TimeoutAfter(10),
+      None
+    )(pos))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS WAIT") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.IndefiniteWait, None))
+    parsesTo[Statements](
+      ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.IndefiniteWait, None)(pos)
+    )
   }
 
   test("CREATE  DATABASE foo IF NOT EXISTS NOWAIT") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None))
+    parsesTo[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE DATABASE `_foo-bar42` IF NOT EXISTS") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None)(pos)
     )
   }
 
   test("CREATE OR REPLACE DATABASE foo") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait, None))
+    parsesTo[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE OR REPLACE DATABASE foo WAIT 10 SECONDS") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.TimeoutAfter(10), None))
+    parsesTo[Statements](
+      ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.TimeoutAfter(10), None)(pos)
+    )
   }
 
   test("CREATE OR REPLACE DATABASE foo WAIT") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.IndefiniteWait, None))
+    parsesTo[Statements](
+      ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.IndefiniteWait, None)(pos)
+    )
   }
 
   test("CREATE OR REPLACE DATABASE foo NOWAIT") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait, None))
+    parsesTo[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsReplace, ast.NoOptions, ast.NoWait, None)(pos))
   }
 
   test("CREATE OR REPLACE DATABASE `_foo-bar42`") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace, ast.NoOptions, ast.NoWait, None)(pos)
     )
   }
 
   test("CREATE OR REPLACE DATABASE foo IF NOT EXISTS") {
-    yields[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsInvalidSyntax, ast.NoOptions, ast.NoWait, None))
+    parsesTo[Statements](
+      ast.CreateDatabase(literalFoo, ast.IfExistsInvalidSyntax, ast.NoOptions, ast.NoWait, None)(pos)
+    )
   }
 
   test("CREATE DATABASE") {
@@ -731,13 +757,13 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE DATABASE alias") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateDatabase(literal("alias"), ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos)
     )
   }
 
   test("CREATE DATABASE alias IF NOT EXISTS") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.CreateDatabase(literal("alias"), ast.IfExistsDoNothing, ast.NoOptions, ast.NoWait, None)(pos)
     )
   }

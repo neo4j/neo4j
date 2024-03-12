@@ -33,6 +33,7 @@ final class AstBuilder extends AbstractAstBuilder
     with LiteralBuilder
     with LabelExpressionBuilder
     with DdlBuilder
+    with DdlCreateBuilder
     with ExpressionBuilder
     with StatementBuilder {
   override def visitTerminal(node: TerminalNode): Unit = {}

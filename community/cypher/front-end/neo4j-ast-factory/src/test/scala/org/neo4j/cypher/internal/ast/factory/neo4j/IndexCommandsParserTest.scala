@@ -34,19 +34,19 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   // Create node index (old syntax)
 
   test("CREATE INDEX ON :Person(name)") {
-    yields[Statements](ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name"))))
+    parsesTo[Statements](ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name")))(pos))
   }
 
   test("CREATE INDEX ON :Person(name,age)") {
-    yields[Statements](ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name"), propName("age"))))
+    parsesTo[Statements](ast.CreateIndexOldSyntax(labelName("Person"), List(propName("name"), propName("age")))(pos))
   }
 
   test("CREATE INDEX my_index ON :Person(name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX my_index ON :Person(name,age)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE OR REPLACE INDEX ON :Person(name)") {
@@ -59,14 +59,14 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   // Create index
 
   test("CrEATe INDEX FOR (n1:Person) ON (n2.name)") {
-    yields[Statements](rangeNodeIndex(
+    parsesTo[Statements](rangeNodeIndex(
       List(prop("n2", "name")),
       None,
       posN2(testName),
       ast.IfExistsThrowError,
       ast.NoOptions,
       fromDefault = true
-    ))
+    )(pos))
   }
 
   // default type loop
@@ -78,18 +78,18 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateRangeIndexFunction) =>
       test(s"CREATE INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"USE neo4j CREATE INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](_ =>
+        parsesTo[Statements](
           createIndex(
             List(prop("n2", "name")),
             None,
@@ -102,142 +102,142 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX ON FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some("ON"),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'range-1.0'}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
           true
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
       ) {
         // will fail in options converter
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -250,14 +250,14 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             )
           )),
           true
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'native-btree-1.0'}"
       ) {
         // will fail in options converter
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -270,62 +270,62 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             )
           )),
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed")))),
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsParam(parameter("options", CTMap)),
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("nonValidOption" -> literalInt(42))),
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty),
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX $$my_index FOR $pattern ON (n.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           true
-        ))
+        )(pos))
       }
 
       test(s"CREATE INDEX FOR $pattern ON n2.name") {
@@ -362,11 +362,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) {indexProvider : 'range-1.0'}") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
   }
 
@@ -379,18 +379,18 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateRangeIndexFunction) =>
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"USE neo4j CREATE RANGE INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](_ =>
+        parsesTo[Statements](
           createIndex(
             List(prop("n2", "name")),
             None,
@@ -403,130 +403,130 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE RANGE INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE RANGE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE RANGE INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'range-1.0'}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
           false
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'range-1.0', indexConfig : {someConfig: 'toShowItCanBeParsed'}}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -536,13 +536,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed"))
           )),
           false
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed'}, indexProvider : 'range-1.0'}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -552,62 +552,62 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed"))
           )),
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {}}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("indexConfig" -> mapOf())),
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsParam(parameter("options", CTMap)),
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("nonValidOption" -> literalInt(42))),
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty),
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX $$my_index FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
           false
-        ))
+        )(pos))
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON n2.name") {
@@ -643,11 +643,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) {indexProvider : 'range-1.0'}") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
   }
 
@@ -660,17 +660,17 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateIndexFunction) =>
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"USE neo4j CREATE BTREE INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](_ =>
+        parsesTo[Statements](
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
             Some(use(List("neo4j")))
           )
@@ -678,119 +678,119 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE BTREE INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE BTREE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE BTREE INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE BTREE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'native-btree-1.0'}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0")))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -802,13 +802,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
             )
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'native-btree-1.0'}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -820,13 +820,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
             )
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -835,47 +835,47 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
             "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
           )))
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsParam(parameter("options", CTMap))
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("nonValidOption" -> literalInt(42)))
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX $$my_index FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON n2.name") {
@@ -909,11 +909,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n.name) {indexProvider : 'native-btree-1.0'}") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
   }
 
@@ -926,86 +926,97 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, function, createIndex: CreateLookupIndexFunction) =>
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions))
+        parsesTo[Statements](createIndex(None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions)(pos))
       }
 
       test(s"USE neo4j CREATE LOOKUP INDEX FOR $pattern ON EACH $function") {
-        yields[Statements](_ =>
+        parsesTo[Statements](
           createIndex(None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions)
             .withGraph(Some(use(List("neo4j"))))
         )
       }
 
       test(s"CREATE LOOKUP INDEX my_index FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsThrowError, ast.NoOptions))
+        parsesTo[Statements](createIndex(
+          Some(Left("my_index")),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )(pos))
       }
 
       test(s"CREATE LOOKUP INDEX `$$my_index` FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(Some("$my_index"), posN2(testName), ast.IfExistsThrowError, ast.NoOptions))
+        parsesTo[Statements](
+          createIndex(Some("$my_index"), posN2(testName), ast.IfExistsThrowError, ast.NoOptions)(pos)
+        )
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(None, posN2(testName), ast.IfExistsReplace, ast.NoOptions))
+        parsesTo[Statements](createIndex(None, posN2(testName), ast.IfExistsReplace, ast.NoOptions)(pos))
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX my_index FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsReplace, ast.NoOptions))
+        parsesTo[Statements](
+          createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsReplace, ast.NoOptions)(pos)
+        )
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX IF NOT EXISTS FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(None, posN2(testName), ast.IfExistsInvalidSyntax, ast.NoOptions))
+        parsesTo[Statements](createIndex(None, posN2(testName), ast.IfExistsInvalidSyntax, ast.NoOptions)(pos))
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX my_index IF NOT EXISTS FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE LOOKUP INDEX IF NOT EXISTS FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(None, posN2(testName), ast.IfExistsDoNothing, ast.NoOptions))
+        parsesTo[Statements](createIndex(None, posN2(testName), ast.IfExistsDoNothing, ast.NoOptions)(pos))
       }
 
       test(s"CREATE LOOKUP INDEX my_index IF NOT EXISTS FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsDoNothing, ast.NoOptions))
+        parsesTo[Statements](
+          createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsDoNothing, ast.NoOptions)(pos)
+        )
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {anyOption : 42}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("anyOption" -> literalInt(42)))
-        ))
+        )(pos))
       }
 
       test(s"CREATE LOOKUP INDEX my_index FOR $pattern ON EACH $function OPTIONS {}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
-        ))
+        )(pos))
       }
 
       test(s"CREATE LOOKUP INDEX $$my_index FOR $pattern ON EACH $function") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function {indexProvider : 'range-1.0'}") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
   }
 
@@ -1018,7 +1029,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, isNodeIndex: Boolean, labelsOrTypes: List[String]) =>
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1026,11 +1037,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"USE neo4j CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name]") {
-        yields[Statements](_ =>
+        parsesTo[Statements](
           fulltextIndex(
             isNodeIndex,
             List(prop("n2", "name")),
@@ -1044,7 +1055,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name, n3.age]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
@@ -1052,11 +1063,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1064,11 +1075,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name, n3.age]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
@@ -1076,11 +1087,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX `$$my_index` FOR $pattern ON EACH [n2.name]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1088,11 +1099,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX FOR $pattern ON EACH [n2.name]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1100,11 +1111,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name, n3.age]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
@@ -1112,11 +1123,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX IF NOT EXISTS FOR $pattern ON EACH [n2.name]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1124,11 +1135,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE FULLTEXT INDEX my_index IF NOT EXISTS FOR $pattern ON EACH [n2.name]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1136,11 +1147,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX IF NOT EXISTS FOR $pattern ON EACH [n2.name, n3.age]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
@@ -1148,11 +1159,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index IF NOT EXISTS FOR $pattern ON EACH [n2.name]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1160,11 +1171,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexProvider : 'fulltext-1.0'}") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1172,13 +1183,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("indexProvider" -> literalString("fulltext-1.0")))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexProvider : 'fulltext-1.0', indexConfig : {`fulltext.analyzer`: 'some_analyzer'}}"
       ) {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1189,13 +1200,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "indexProvider" -> literalString("fulltext-1.0"),
             "indexConfig" -> mapOf("fulltext.analyzer" -> literalString("some_analyzer"))
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexConfig : {`fulltext.eventually_consistent`: false}, indexProvider : 'fulltext-1.0'}"
       ) {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1206,13 +1217,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "indexProvider" -> literalString("fulltext-1.0"),
             "indexConfig" -> mapOf("fulltext.eventually_consistent" -> falseLiteral)
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {indexConfig : {`fulltext.analyzer`: 'some_analyzer', `fulltext.eventually_consistent`: true}}"
       ) {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1223,11 +1234,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "fulltext.analyzer" -> literalString("some_analyzer"),
             "fulltext.eventually_consistent" -> trueLiteral
           )))
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS {nonValidOption : 42}") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1235,11 +1246,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("nonValidOption" -> literalInt(42)))
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name] OPTIONS {}") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1247,11 +1258,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n2.name] OPTIONS $$options") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1259,11 +1270,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsParam(parameter("options", CTMap))
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX $$my_index FOR $pattern ON EACH [n2.name]") {
-        yields[Statements](fulltextIndex(
+        parsesTo[Statements](fulltextIndex(
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
@@ -1271,35 +1282,35 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] {indexProvider : 'fulltext-1.0'}") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH (n2.name)") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH n2.name") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH []") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON [n2.name]") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE INDEX FOR $pattern ON EACH [n2.name]") {
@@ -1323,17 +1334,17 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateIndexFunction) =>
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"USE neo4j CREATE TEXT INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](_ =>
+        parsesTo[Statements](
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
             Some(use(List("neo4j")))
           )
@@ -1341,119 +1352,119 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE TEXT INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE TEXT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE TEXT INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE TEXT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'text-1.0'}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("indexProvider" -> literalString("text-1.0")))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'text-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1465,13 +1476,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
             )
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'text-1.0'}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1483,13 +1494,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
             )
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1498,47 +1509,47 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
             "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
           )))
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsParam(parameter("options", CTMap))
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("nonValidOption" -> literalInt(42)))
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX $$my_index FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON n2.name") {
@@ -1576,11 +1587,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n.name) {indexProvider : 'text-1.0'}") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
   }
 
@@ -1593,17 +1604,17 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateIndexFunction) =>
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"USE neo4j CREATE POINT INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](_ =>
+        parsesTo[Statements](
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
             Some(use(List("neo4j")))
           )
@@ -1611,119 +1622,119 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE POINT INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE POINT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE POINT INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'point-1.0'}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("indexProvider" -> literalString("point-1.0")))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'point-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1735,13 +1746,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
             )
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'point-1.0'}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1753,13 +1764,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
             )
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -1768,47 +1779,47 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
             "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
           )))
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsParam(parameter("options", CTMap))
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("nonValidOption" -> literalInt(42)))
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX $$my_index FOR $pattern ON (n.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON n2.name") {
@@ -1845,11 +1856,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n.name) {indexProvider : 'point-1.0'}") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
   }
 
@@ -1862,17 +1873,17 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   ).foreach {
     case (pattern, createIndex: CreateIndexFunction) =>
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"USE neo4j CREATE VECTOR INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](_ =>
+        parsesTo[Statements](
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
             Some(use(List("neo4j")))
           )
@@ -1880,119 +1891,119 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX `$$my_index` FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some("$my_index"),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE VECTOR INDEX FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE VECTOR INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE VECTOR INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE OR REPLACE VECTOR INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
           None,
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'vector-1.0'}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("indexProvider" -> literalString("vector-1.0")))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'vector-1.0', indexConfig : {`vector.dimensions`: 50, `vector.similarity_function`: 'euclidean' }}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -2004,13 +2015,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
               "vector.similarity_function" -> literalString("euclidean")
             )
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`vector.dimensions`: 50, `vector.similarity_function`: 'cosine' }, indexProvider : 'vector-1.0'}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -2022,13 +2033,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
               "vector.similarity_function" -> literalString("cosine")
             )
           ))
-        ))
+        )(pos))
       }
 
       test(
         s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`vector.dimensions`: 50, `vector.similarity_function`: 'cosine' }}"
       ) {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
@@ -2037,47 +2048,47 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "vector.dimensions" -> literalInt(50),
             "vector.similarity_function" -> literalString("cosine")
           )))
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsParam(parameter("options", CTMap))
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           None,
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map("nonValidOption" -> literalInt(42)))
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n2", "name")),
           Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX $$my_index FOR $pattern ON (n.name)") {
-        yields[Statements](createIndex(
+        parsesTo[Statements](createIndex(
           List(prop("n", "name")),
           Some(Right(stringParam("my_index"))),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
-        ))
+        )(pos))
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON n2.name") {
@@ -2115,161 +2126,161 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) {indexProvider : 'vector-1.0'}") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsToParse[Statements]
+        failsParsing[Statements]
       }
   }
 
   test("CREATE INDEX $ FOR (n1:Label) ON (n2.name)") {
     // Missing parameter name (or backticks)
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE LOOKUP INDEX FOR (x1) ON EACH labels(x2)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("x1"),
       isNodeIndex = true,
       function(Labels.name, varFor("x2")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[x1]-() ON EACH type(x2)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("x1"),
       isNodeIndex = false,
       function(Type.name, varFor("x2")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) ON EACH count(n2)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("n1"),
       isNodeIndex = true,
       function(Count.name, varFor("n2")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) ON EACH type(n2)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("n1"),
       isNodeIndex = true,
       function(Type.name, varFor("n2")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR (n) ON EACH labels(x)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("n"),
       isNodeIndex = true,
       function(Labels.name, varFor("x")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON EACH count(r2)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("r1"),
       isNodeIndex = false,
       function(Count.name, varFor("r2")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON EACH labels(r2)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("r1"),
       isNodeIndex = false,
       function(Labels.name, varFor("r2")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH type(x)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("r"),
       isNodeIndex = false,
       function(Type.name, varFor("x")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() ON type(r2)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("r1"),
       isNodeIndex = false,
       function(Type.name, varFor("r2")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR (x) ON EACH EACH(x)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("x"),
       isNodeIndex = true,
       function("EACH", varFor("x")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH EACH(x)") {
-    yields[Statements](ast.CreateLookupIndex(
+    parsesTo[Statements](ast.CreateLookupIndex(
       varFor("x"),
       isNodeIndex = false,
       function("EACH", varFor("x")),
       None,
       ast.IfExistsThrowError,
       ast.NoOptions
-    ))
+    )(pos))
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)") {
     // Thinks it is missing the function name since `EACH` is parsed as keyword
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX FOR n1:Person ON (n2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX FOR ()-[r1:R]- ON (r2.name)") {
@@ -2280,11 +2291,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX FOR [r1:R] ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
@@ -2318,21 +2329,21 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE TEXT INDEX FOR n1:Person ON (n2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE TEXT INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE TEXT INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE TEXT INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE TEXT INDEX FOR ()-[r1:R]- ON (r2.name)") {
@@ -2343,11 +2354,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE TEXT INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE TEXT INDEX FOR [r1:R] ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE TEXT INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
@@ -2381,21 +2392,21 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE POINT INDEX FOR n1:Person ON (n2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE POINT INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE POINT INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE POINT INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE POINT INDEX FOR ()-[r1:R]- ON (r2.name)") {
@@ -2406,11 +2417,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE POINT INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE POINT INDEX FOR [r1:R] ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE POINT INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
@@ -2444,21 +2455,21 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE VECTOR INDEX FOR n1:Person ON (n2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE VECTOR INDEX FOR (n1) ON (n2.name)") {
     // missing label
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE VECTOR INDEX FOR ()-[n1]-() ON (n2.name)") {
     // missing relationship type
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE VECTOR INDEX FOR -[r1:R]-() ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE VECTOR INDEX FOR ()-[r1:R]- ON (r2.name)") {
@@ -2469,11 +2480,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE VECTOR INDEX FOR -[r1:R]- ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE VECTOR INDEX FOR [r1:R] ON (r2.name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE VECTOR INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
@@ -2507,11 +2518,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR n1 ON EACH labels(n2)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE LOOKUP INDEX FOR -[r1]-() ON EACH type(r2)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]- ON EACH type(r2)") {
@@ -2522,89 +2533,89 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE LOOKUP INDEX FOR -[r1]- ON EACH type(r2)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE LOOKUP INDEX FOR [r1] ON EACH type(r2)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) EACH labels(n1)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() EACH type(r2)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE LOOKUP INDEX FOR (n1) ON labels(n2)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX FOR (n1) ON EACH labels(n2)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE INDEX FOR ()-[r1]-() ON EACH type(r2)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1) ON EACH [n2.x]") {
     // missing label
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1]-() ON EACH [n2.x]") {
     // missing relationship type
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1|:A) ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1|:R]-() ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A|:B) ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R|:S]-() ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A||B) ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R||S]-() ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A:B) ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R:S]-() ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A&B) ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R&S]-() ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR (n1:A B) ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R S]-() ON EACH [n2.x]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE FULLTEXT INDEX FOR (:A)-[n1:R]-() ON EACH [n2.name]") {

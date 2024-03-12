@@ -255,75 +255,75 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   //  Creating role
 
   test("CREATE ROLE foo") {
-    yields[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsThrowError))
+    parsesTo[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE $foo") {
-    yields[Statements](ast.CreateRole(paramFoo, None, ast.IfExistsThrowError))
+    parsesTo[Statements](ast.CreateRole(paramFoo, None, ast.IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE `fo!$o`") {
-    yields[Statements](_ => ast.CreateRole(literal("fo!$o"), None, ast.IfExistsThrowError)(pos))
+    parsesTo[Statements](ast.CreateRole(literal("fo!$o"), None, ast.IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE ``") {
-    yields[Statements](ast.CreateRole(literalEmpty, None, ast.IfExistsThrowError))
+    parsesTo[Statements](ast.CreateRole(literalEmpty, None, ast.IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE foo AS COPY OF bar") {
-    yields[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsThrowError))
+    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE foo AS COPY OF $bar") {
-    yields[Statements](ast.CreateRole(literalFoo, Some(stringParam("bar")), ast.IfExistsThrowError))
+    parsesTo[Statements](ast.CreateRole(literalFoo, Some(stringParam("bar")), ast.IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE foo AS COPY OF ``") {
-    yields[Statements](ast.CreateRole(literalFoo, Some(literalEmpty), ast.IfExistsThrowError))
+    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalEmpty), ast.IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE `` AS COPY OF bar") {
-    yields[Statements](ast.CreateRole(literalEmpty, Some(literalBar), ast.IfExistsThrowError))
+    parsesTo[Statements](ast.CreateRole(literalEmpty, Some(literalBar), ast.IfExistsThrowError)(pos))
   }
 
   test("CREATE ROLE foo IF NOT EXISTS") {
-    yields[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsDoNothing))
+    parsesTo[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsDoNothing)(pos))
   }
 
   test("CREATE ROLE foo IF NOT EXISTS AS COPY OF bar") {
-    yields[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsDoNothing))
+    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsDoNothing)(pos))
   }
 
   test("CREATE OR REPLACE ROLE foo") {
-    yields[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsReplace))
+    parsesTo[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsReplace)(pos))
   }
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF bar") {
-    yields[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsReplace))
+    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsReplace)(pos))
   }
 
   test("CREATE OR REPLACE ROLE foo IF NOT EXISTS") {
-    yields[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsInvalidSyntax))
+    parsesTo[Statements](ast.CreateRole(literalFoo, None, ast.IfExistsInvalidSyntax)(pos))
   }
 
   test("CREATE OR REPLACE ROLE foo IF NOT EXISTS AS COPY OF bar") {
-    yields[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsInvalidSyntax))
+    parsesTo[Statements](ast.CreateRole(literalFoo, Some(literalBar), ast.IfExistsInvalidSyntax)(pos))
   }
 
   test("CREATE ROLE \"foo\"") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE ROLE f%o") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE ROLE  IF NOT EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE ROLE foo IF EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE OR REPLACE ROLE ") {

@@ -242,6 +242,9 @@ nodeLabelsIs:
 labelType:
    COLON symbolicNameString;
 
+relType:
+   COLON symbolicNameString;
+
 labelOrRelType:
    COLON symbolicNameString;
 
@@ -496,14 +499,95 @@ nonEmptyNameList
    : symbolicNameString (COMMA symbolicNameString)*
    ;
 
-createCommand:
-   CREATE (OR REPLACE)? (createRole | createUser | createDatabase | createConstraint | createIndex | createAlias | createCompositeDatabase);
+command
+   : useClause?
+   (
+      createCommand
+      | dropCommand
+      | alterCommand
+      | renameCommand
+      | denyPrivilege
+      | revokeCommand
+      | grantCommand
+      | startDatabase
+      | stopDatabase
+      | enableServerCommand
+      | allocationCommand
+      | showCommand
+      | terminateCommand
+   )
+   ;
 
-command:
-   useClause? (createCommand | commandWithUseGraph | showCommand | terminateCommand);
+createCommand
+   : CREATE (OR REPLACE)?
+   (
+      createRole
+      | createUser
+      | createDatabase
+      | createConstraint
+      | createIndex
+      | createAlias
+      | createCompositeDatabase
+   )
+   ;
 
-commandWithUseGraph:
-   (dropCommand | alterCommand | renameCommand | denyPrivilege | revokeCommand | grantCommand | startDatabase | stopDatabase | enableServerCommand | allocationCommand);
+createRole:
+   ROLE commandNameExpression (IF NOT EXISTS)? (AS COPY OF commandNameExpression)?;
+
+createUser:
+   USER commandNameExpression (IF NOT EXISTS)? SET (PLAINTEXT | ENCRYPTED)? PASSWORD passwordExpression
+   passwordChangeRequired?
+   (SET (PASSWORD passwordChangeRequired | userStatus | homeDatabase))*;
+
+createDatabase:
+   DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)?
+   (TOPOLOGY (primaryTopology | secondaryTopology)+)?
+   commandOptions?
+   waitClause?;
+
+primaryTopology:
+   UNSIGNED_DECIMAL_INTEGER PRIMARY;
+
+secondaryTopology:
+   UNSIGNED_DECIMAL_INTEGER SECONDARY;
+
+createConstraint:
+   CONSTRAINT symbolicNameOrStringParameter? (IF NOT EXISTS)? (ON | FOR)
+   (commandNodePattern | commandRelPattern)
+   constraintType
+   commandOptions?
+   ;
+
+constraintType
+   : ASSERT EXISTS propertyList                                                     #ConstraintExists
+   | (REQUIRE | ASSERT) propertyList (COLONCOLON | IS (TYPED | COLONCOLON)) type    #ConstraintTyped
+   | (REQUIRE | ASSERT) propertyList IS (NODE | RELATIONSHIP | REL)? UNIQUE         #ConstraintIsUnique
+   | (REQUIRE | ASSERT) propertyList IS (NODE | RELATIONSHIP | REL)? KEY            #ConstraintKey
+   | (REQUIRE | ASSERT) propertyList IS NOT NULL                                    #ConstraintIsNotNull
+   ;
+
+commandOptions:
+    OPTIONS mapOrParameter;
+
+createIndex:
+   (BTREE INDEX createIndex_
+   | RANGE INDEX createIndex_
+   | TEXT INDEX createIndex_
+   | POINT INDEX createIndex_
+   | VECTOR INDEX createIndex_
+   | LOOKUP INDEX createLookupIndex
+   | FULLTEXT INDEX createFulltextIndex
+   | INDEX (ON oldCreateIndex | createIndex_));
+
+createAlias:
+   ALIAS symbolicAliasNameOrParameter (IF NOT EXISTS)?
+   FOR DATABASE symbolicAliasNameOrParameter
+   (AT stringOrParameter USER commandNameExpression PASSWORD passwordExpression (DRIVER mapOrParameter)?)?
+   (PROPERTIES mapOrParameter)?;
+
+createCompositeDatabase:
+   COMPOSITE DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? commandOptions? waitClause?;
+
 
 dropCommand:
    DROP (dropRole | dropUser | dropDatabase | dropConstraint | dropIndex | dropAlias | dropServer);
@@ -574,11 +658,6 @@ composableCommandClauses:
 stringsOrExpression:
    (stringList | expression);
 
-createConstraint:
-   CONSTRAINT (ON LPAREN | FOR LPAREN | IF NOT EXISTS (ON | FOR) LPAREN | symbolicNameOrStringParameter? (IF NOT EXISTS)? (ON | FOR) LPAREN) (
-       constraintNodePattern | constraintRelPattern
-   ) (ASSERT EXISTS propertyList | (REQUIRE | ASSERT) propertyList (COLONCOLON type | IS (UNIQUE | KEY | createConstraintNodeCheck | createConstraintRelCheck | NOT NULL | (TYPED | COLONCOLON) type))) (OPTIONS mapOrParameter)?;
-
 type:
    typePart (BAR typePart)*;
 
@@ -619,46 +698,60 @@ typeName
  typeListSuffix:
     (LIST | ARRAY) typeNullability?;
 
-constraintNodePattern:
-   variable labelOrRelType RPAREN;
+commandNodePattern:
+   LPAREN variable labelType RPAREN;
 
-constraintRelPattern:
-   RPAREN leftArrow? arrowLine LBRACKET variable labelOrRelType RBRACKET arrowLine rightArrow? LPAREN RPAREN;
-
-createConstraintNodeCheck:
-   NODE (KEY | UNIQUE);
-
-createConstraintRelCheck:
-   (RELATIONSHIP | REL) (KEY | UNIQUE);
+commandRelPattern:
+   LPAREN RPAREN leftArrow? arrowLine LBRACKET variable relType RBRACKET arrowLine rightArrow? LPAREN RPAREN;
 
 dropConstraint:
-   CONSTRAINT (ON LPAREN (constraintNodePattern | constraintRelPattern) ASSERT (EXISTS propertyList | propertyList IS (dropConstraintNodeCheck | NOT NULL)) | symbolicNameOrStringParameter (IF EXISTS)?);
+   CONSTRAINT (ON (commandNodePattern | commandRelPattern) ASSERT (EXISTS propertyList | propertyList IS (dropConstraintNodeCheck | NOT NULL)) | symbolicNameOrStringParameter (IF EXISTS)?);
 
 dropConstraintNodeCheck:
    UNIQUE | NODE KEY;
 
-createIndex:
-   (BTREE INDEX createIndex_ | RANGE INDEX createIndex_ | FULLTEXT INDEX createFulltextIndex | TEXT INDEX createIndex_ | POINT INDEX createIndex_ | VECTOR INDEX createIndex_ | LOOKUP INDEX createLookupIndex | INDEX (ON oldCreateIndex | createIndex_));
-
 oldCreateIndex:
-   labelOrRelType LPAREN nonEmptyNameList RPAREN;
+   labelType LPAREN nonEmptyNameList RPAREN;
 
-createIndex_:
-   (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameOrStringParameter (IF NOT EXISTS)? FOR LPAREN) (variable labelOrRelType RPAREN | RPAREN leftArrow? arrowLine LBRACKET variable labelOrRelType RBRACKET arrowLine rightArrow? LPAREN RPAREN) ON propertyList (OPTIONS mapOrParameter)?;
+createIndex_
+   : symbolicNameOrStringParameter? (IF NOT EXISTS)?
+     FOR (commandNodePattern | commandRelPattern)
+     ON propertyList
+     commandOptions?
+   ;
 
-createFulltextIndex:
-   (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameOrStringParameter (IF NOT EXISTS)? FOR LPAREN) (variable labelOrRelTypes RPAREN | RPAREN leftArrow? arrowLine LBRACKET variable labelOrRelTypes RBRACKET arrowLine rightArrow? LPAREN RPAREN) ON EACH LBRACKET variable property (COMMA variable property)* RBRACKET (OPTIONS mapOrParameter)?;
+createFulltextIndex
+   : symbolicNameOrStringParameter? (IF NOT EXISTS)?
+     FOR (fulltextNodePattern | fulltextRelPattern)
+     ON EACH
+     LBRACKET variable property (COMMA variable property)* RBRACKET
+     commandOptions?
+   ;
 
-createLookupIndex:
-   (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameOrStringParameter (IF NOT EXISTS)? FOR LPAREN)
-        (
-            variable RPAREN ON EACH |
-            RPAREN leftArrow? arrowLine LBRACKET variable RBRACKET arrowLine rightArrow? LPAREN RPAREN ON EACH?
-        )
-        lookupIndexFunctionName LPAREN variable RPAREN (OPTIONS mapOrParameter)?;
 
-lookupIndexFunctionName:
-   symbolicNameString;
+fulltextNodePattern:
+   LPAREN variable COLON symbolicNameString (BAR symbolicNameString)* RPAREN;
+
+fulltextRelPattern
+   : LPAREN RPAREN leftArrow? arrowLine
+   LBRACKET variable COLON symbolicNameString (BAR symbolicNameString)* RBRACKET
+   arrowLine rightArrow? LPAREN RPAREN
+   ;
+
+createLookupIndex
+   : symbolicNameOrStringParameter? (IF NOT EXISTS)?
+   FOR
+   (lookupIndexNodePattern | lookupIndexRelPattern)
+   symbolicNameString LPAREN variable RPAREN
+   commandOptions?
+   ;
+
+lookupIndexNodePattern:
+      LPAREN variable RPAREN ON EACH;
+
+lookupIndexRelPattern:
+      LPAREN RPAREN leftArrow? arrowLine LBRACKET variable RBRACKET arrowLine rightArrow? LPAREN RPAREN ON EACH?;
+
 
 dropIndex:
    INDEX (ON labelOrRelType LPAREN nonEmptyNameList RPAREN | symbolicNameOrStringParameter (IF EXISTS)?);
@@ -676,10 +769,10 @@ revokeCommand:
    REVOKE (DENY IMMUTABLE? (revokePrivilege | ROLE revokeRoleManagement) | GRANT IMMUTABLE? (revokePrivilege | ROLE revokeRoleManagement) | IMMUTABLE (revokePrivilege | ROLE revokeRoleManagement) | (revokePrivilege | ROLE revokeRoleManagement | (ROLE | ROLES) revokeRole));
 
 enableServerCommand:
-   ENABLE SERVER stringOrParameter options_?;
+   ENABLE SERVER stringOrParameter commandOptions?;
 
 alterServer:
-   SERVER stringOrParameter SET options_;
+   SERVER stringOrParameter SET commandOptions;
 
 renameServer:
    SERVER stringOrParameter TO stringOrParameter;
@@ -699,9 +792,6 @@ deallocateDatabaseFromServers:
 reallocateDatabases:
    REALLOCATE (DATABASE | DATABASES);
 
-createRole:
-   ROLE symbolicNameOrStringParameter (IF NOT EXISTS)? (AS COPY OF symbolicNameOrStringParameter)?;
-
 dropRole:
    ROLE symbolicNameOrStringParameter (IF EXISTS)?;
 
@@ -716,9 +806,6 @@ grantRole:
 
 revokeRole:
    symbolicNameOrStringParameterList FROM symbolicNameOrStringParameterList;
-
-createUser:
-   USER symbolicNameOrStringParameter (IF NOT EXISTS)? SET (PLAINTEXT | ENCRYPTED)? PASSWORD passwordExpression passwordChangeRequired? (SET (PASSWORD passwordChangeRequired | userStatus | homeDatabase))*;
 
 dropUser:
    USER symbolicNameOrStringParameter (IF EXISTS)?;
@@ -736,7 +823,7 @@ setPassword:
    passwordExpression;
 
 passwordExpression:
-   (stringLiteral | parameter["STRING"]);
+   stringLiteral | parameter["STRING"];
 
 passwordChangeRequired:
    CHANGE NOT? REQUIRED;
@@ -852,20 +939,11 @@ propertyResource:
 graphQualifier:
    ((RELATIONSHIP | RELATIONSHIPS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (NODE | NODES) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (ELEMENT | ELEMENTS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | map RPAREN))?;
 
-createDatabase:
-   DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? (TOPOLOGY (UNSIGNED_DECIMAL_INTEGER ((PRIMARY | PRIMARIES) | (SECONDARY | SECONDARIES)))+)? options_? waitClause?;
-
-options_:
-   OPTIONS mapOrParameter;
-
-createCompositeDatabase:
-   COMPOSITE DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? options_? waitClause?;
-
 dropDatabase:
    COMPOSITE? DATABASE symbolicAliasNameOrParameter (IF EXISTS)? ((DUMP | DESTROY) DATA)? waitClause?;
 
 alterDatabase:
-   DATABASE symbolicAliasNameOrParameter (IF EXISTS)? ((SET (ACCESS READ (ONLY | WRITE) | TOPOLOGY (UNSIGNED_DECIMAL_INTEGER ((PRIMARY | PRIMARIES) | (SECONDARY | SECONDARIES)))+ | OPTION symbolicNameString expression))+ | (REMOVE OPTION symbolicNameString)+) waitClause?;
+   DATABASE symbolicAliasNameOrParameter (IF EXISTS)? ((SET (ACCESS READ (ONLY | WRITE) | TOPOLOGY (UNSIGNED_DECIMAL_INTEGER (PRIMARY | SECONDARY))+ | OPTION symbolicNameString expression))+ | (REMOVE OPTION symbolicNameString)+) waitClause?;
 
 startDatabase:
    START DATABASE symbolicAliasNameOrParameter waitClause?;
@@ -874,7 +952,7 @@ stopDatabase:
    STOP DATABASE symbolicAliasNameOrParameter waitClause?;
 
 waitClause:
-   (WAIT (UNSIGNED_DECIMAL_INTEGER (SEC | SECOND | SECONDS)?)? | NOWAIT);
+   (WAIT (UNSIGNED_DECIMAL_INTEGER SECONDS?)? | NOWAIT);
 
 showDatabase:
    ((DATABASES | DATABASE) (symbolicAliasNameOrParameter (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | symbolicAliasNameOrParameter)? | (DEFAULT DATABASE | HOME DATABASE) (yieldClause returnClause? | whereClause)?);
@@ -884,9 +962,6 @@ databaseScope:
 
 graphScope:
    ((GRAPH | GRAPHS) (TIMES | symbolicAliasNameList) | DEFAULT GRAPH | HOME GRAPH);
-
-createAlias:
-   ALIAS symbolicAliasNameOrParameter (IF NOT EXISTS)? FOR DATABASE symbolicAliasNameOrParameter (AT stringOrParameter USER symbolicNameOrStringParameter PASSWORD passwordExpression (DRIVER mapOrParameter)?)? (PROPERTIES mapOrParameter)?;
 
 dropAlias:
    ALIAS symbolicAliasNameOrParameter (IF EXISTS)? FOR DATABASE;
@@ -909,6 +984,11 @@ symbolicAliasName:
 symbolicNameOrStringParameterList:
    symbolicNameOrStringParameter (COMMA symbolicNameOrStringParameter)*;
 
+// Should return an Expression
+commandNameExpression:
+   (symbolicNameString | parameter["STRING"]);
+
+// Should return an Either[String, Parameter]
 symbolicNameOrStringParameter:
    (symbolicNameString | parameter["STRING"]);
 
@@ -931,7 +1011,7 @@ stringOrParameter:
    (stringLiteral | parameter["STRING"]);
 
 mapOrParameter:
-   (map | parameter["MAP"]);
+   map | parameter["MAP"];
 
 map: LCURLY (propertyKeyName COLON expression)? (COMMA propertyKeyName COLON expression)* RCURLY;
 

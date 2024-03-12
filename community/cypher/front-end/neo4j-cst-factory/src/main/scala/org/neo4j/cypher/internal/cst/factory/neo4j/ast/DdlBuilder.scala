@@ -16,22 +16,71 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
+import org.neo4j.cypher.internal.ast.DatabaseName
+import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.NoWait
+import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.OptionsParam
+import org.neo4j.cypher.internal.ast.ParameterName
+import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.StatementWithGraph
+import org.neo4j.cypher.internal.ast.TimeoutAfter
+import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astPairs
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
+import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
+import org.neo4j.cypher.internal.util.symbols.CTString
+
+import java.nio.charset.StandardCharsets
+
+import scala.collection.immutable.ArraySeq
 
 trait DdlBuilder extends CypherParserListener {
 
-  final override def exitCreateCommand(
-    ctx: CypherParser.CreateCommandContext
-  ): Unit = {}
+  override def exitCommandOptions(ctx: CypherParser.CommandOptionsContext): Unit = {
+    val map = ctx.mapOrParameter().ast[Either[Map[String, Expression], Parameter]]()
+    ctx.ast = map match {
+      case Left(m)  => OptionsMap(m)
+      case Right(p) => OptionsParam(p)
+    }
+  }
+
+  final override def exitMapOrParameter(
+    ctx: CypherParser.MapOrParameterContext
+  ): Unit = {
+    val map = ctx.map()
+    ctx.ast = if (map != null) {
+      Left[Map[String, Expression], Parameter](map.ast[MapExpression]().items.map(x => (x._1.name, x._2)).toMap)
+    } else {
+      Right[Map[String, Expression], Parameter](ctx.parameter().ast())
+    }
+  }
 
   final override def exitCommand(
     ctx: CypherParser.CommandContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = lastChild[AstRuleCtx](ctx) match {
+      case c: CypherParser.CreateCommandContext =>
+        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
+      case _ => null
+    }
 
-  final override def exitCommandWithUseGraph(
-    ctx: CypherParser.CommandWithUseGraphContext
-  ): Unit = {}
+  }
 
   final override def exitDropCommand(
     ctx: CypherParser.DropCommandContext
@@ -119,7 +168,15 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitWaitClause(
     ctx: CypherParser.WaitClauseContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
+      case CypherParser.NOWAIT => NoWait
+      case CypherParser.WAIT => ctx.UNSIGNED_DECIMAL_INTEGER() match {
+          case null    => IndefiniteWait
+          case seconds => TimeoutAfter(seconds.getText.toLong)
+        }
+    }
+  }
 
   final override def exitShowDatabase(
     ctx: CypherParser.ShowDatabaseContext
@@ -155,22 +212,22 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitSymbolicAliasNameOrParameter(
     ctx: CypherParser.SymbolicAliasNameOrParameterContext
+  ): Unit = {
+    val symbAliasName = ctx.symbolicAliasName()
+    ctx.ast =
+      if (symbAliasName != null) {
+        val s = symbAliasName.ast[ArraySeq[String]]().toList
+        NamespacedName(s)(pos(ctx))
+      } else
+        ParameterName(ctx.parameter().ast())(pos(ctx))
+  }
+
+  final override def exitCommandNodePattern(
+    ctx: CypherParser.CommandNodePatternContext
   ): Unit = {}
 
-  final override def exitConstraintNodePattern(
-    ctx: CypherParser.ConstraintNodePatternContext
-  ): Unit = {}
-
-  final override def exitConstraintRelPattern(
-    ctx: CypherParser.ConstraintRelPatternContext
-  ): Unit = {}
-
-  final override def exitCreateConstraintNodeCheck(
-    ctx: CypherParser.CreateConstraintNodeCheckContext
-  ): Unit = {}
-
-  final override def exitCreateConstraintRelCheck(
-    ctx: CypherParser.CreateConstraintRelCheckContext
+  final override def exitCommandRelPattern(
+    ctx: CypherParser.CommandRelPatternContext
   ): Unit = {}
 
   final override def exitDropConstraint(
@@ -181,37 +238,17 @@ trait DdlBuilder extends CypherParserListener {
     ctx: CypherParser.DropConstraintNodeCheckContext
   ): Unit = {}
 
-  final override def exitCreateIndex(
-    ctx: CypherParser.CreateIndexContext
-  ): Unit = {}
-
-  final override def exitOldCreateIndex(
-    ctx: CypherParser.OldCreateIndexContext
-  ): Unit = {}
-
-  final override def exitCreateIndex_(
-    ctx: CypherParser.CreateIndex_Context
-  ): Unit = {}
-
-  final override def exitCreateFulltextIndex(
-    ctx: CypherParser.CreateFulltextIndexContext
-  ): Unit = {}
-
-  final override def exitCreateLookupIndex(
-    ctx: CypherParser.CreateLookupIndexContext
-  ): Unit = {}
-
-  final override def exitLookupIndexFunctionName(
-    ctx: CypherParser.LookupIndexFunctionNameContext
-  ): Unit = {}
-
   final override def exitDropIndex(
     ctx: CypherParser.DropIndexContext
   ): Unit = {}
 
   final override def exitPropertyList(
     ctx: CypherParser.PropertyListContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = astPairs[Expression, PropertyKeyName](ctx.variable(), ctx.property()).map {
+      case (e, p) => Property(e, p)(pos(ctx))
+    }
+  }
 
   final override def exitAlterServer(
     ctx: CypherParser.AlterServerContext
@@ -287,19 +324,35 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitPasswordExpression(
     ctx: CypherParser.PasswordExpressionContext
-  ): Unit = {}
+  ): Unit = {
+    val str = ctx.stringLiteral()
+    ctx.ast = if (str != null) {
+      val pass = str.ast[StringLiteral]()
+      SensitiveStringLiteral(pass.value.getBytes(StandardCharsets.UTF_8))(pass.position, pass.endPosition)
+    } else {
+      val pass = ctx.parameter().ast[Parameter]()
+      new ExplicitParameter(pass.name, CTString)(pass.position) with SensitiveParameter
+    }
+  }
 
   final override def exitPasswordChangeRequired(
     ctx: CypherParser.PasswordChangeRequiredContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ctx.NOT() == null
+  }
 
   final override def exitUserStatus(
     ctx: CypherParser.UserStatusContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ctx.SUSPENDED() != null
+  }
 
   final override def exitHomeDatabase(
     ctx: CypherParser.HomeDatabaseContext
-  ): Unit = {}
+  ): Unit = {
+    val dbName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
+    ctx.ast = SetHomeDatabaseAction(dbName)
+  }
 
   final override def exitShowUsers(
     ctx: CypherParser.ShowUsersContext
@@ -413,10 +466,6 @@ trait DdlBuilder extends CypherParserListener {
     ctx: CypherParser.SettingQualifierContext
   ): Unit = {}
 
-  override def exitOptions_(
-    ctx: CypherParser.Options_Context
-  ): Unit = {}
-
   final override def exitQualifiedGraphPrivilegesWithProperty(
     ctx: CypherParser.QualifiedGraphPrivilegesWithPropertyContext
   ): Unit = {}
@@ -440,5 +489,58 @@ trait DdlBuilder extends CypherParserListener {
   final override def exitGlobPart(
     ctx: CypherParser.GlobPartContext
   ): Unit = {}
+
+  final override def exitLabelResource(
+    ctx: CypherParser.LabelResourceContext
+  ): Unit = {}
+
+  final override def exitPropertyResource(
+    ctx: CypherParser.PropertyResourceContext
+  ): Unit = {}
+
+  final override def exitGraphQualifier(
+    ctx: CypherParser.GraphQualifierContext
+  ): Unit = {}
+
+  final override def exitSymbolicNameOrStringParameterList(
+    ctx: CypherParser.SymbolicNameOrStringParameterListContext
+  ): Unit = {}
+
+  final override def exitCommandNameExpression(
+    ctx: CypherParser.CommandNameExpressionContext
+  ): Unit = {
+    ctx.ast = if (ctx.symbolicNameString() != null) {
+      StringLiteral(ctx.symbolicNameString().ast[String]())(
+        pos(ctx.symbolicNameString.start),
+        pos(ctx.symbolicNameString.stop)
+      )
+    } else {
+      ctx.parameter().ast[Parameter]()
+    }
+  }
+
+  final override def exitSymbolicNameOrStringParameter(
+    ctx: CypherParser.SymbolicNameOrStringParameterContext
+  ): Unit = {
+    ctx.ast = if (ctx.symbolicNameString() != null) {
+      Left(ctx.symbolicNameString().ast[String]())
+    } else {
+      Right(ctx.parameter().ast[Parameter]())
+    }
+  }
+
+  final override def exitStringList(
+    ctx: CypherParser.StringListContext
+  ): Unit = {}
+
+  final override def exitStringOrParameter(
+    ctx: CypherParser.StringOrParameterContext
+  ): Unit = {
+    ctx.ast = if (ctx.stringLiteral() != null) {
+      Left(ctx.stringLiteral().ast[StringLiteral]().value)
+    } else {
+      Right(ctx.parameter().ast[Parameter]())
+    }
+  }
 
 }

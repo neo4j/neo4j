@@ -28,10 +28,12 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.parser.CypherParser
-import org.neo4j.cypher.internal.parser.CypherParser.ConstraintNodePatternContext
-import org.neo4j.cypher.internal.parser.CypherParser.ConstraintRelPatternContext
-import org.neo4j.cypher.internal.parser.CypherParser.CreateConstraintNodeCheckContext
-import org.neo4j.cypher.internal.parser.CypherParser.CreateConstraintRelCheckContext
+import org.neo4j.cypher.internal.parser.CypherParser.CommandRelPatternContext
+import org.neo4j.cypher.internal.parser.CypherParser.ConstraintExistsContext
+import org.neo4j.cypher.internal.parser.CypherParser.ConstraintIsNotNullContext
+import org.neo4j.cypher.internal.parser.CypherParser.ConstraintIsUniqueContext
+import org.neo4j.cypher.internal.parser.CypherParser.ConstraintKeyContext
+import org.neo4j.cypher.internal.parser.CypherParser.ConstraintTypedContext
 import org.neo4j.cypher.internal.parser.CypherParser.DropConstraintNodeCheckContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobRecursiveContext
@@ -144,25 +146,6 @@ final class SyntaxChecker extends ParseTreeListener {
     }
   }
 
-  private def errorOnNodesAndRelConstraints[S <: ParserRuleContext, T <: ParserRuleContext](
-    nodePattern: S,
-    constraint: T,
-    containsKey: T => Boolean
-  ): Unit = {
-    if (nodePattern != null && constraint != null) {
-      val relType: ConstraintType = if (containsKey(constraint)) {
-        ConstraintType.REL_KEY
-      } else {
-        ConstraintType.REL_UNIQUE
-      }
-
-      errors :+= exceptionFactory.syntaxException(
-        relType.toString ++ " does not allow node patterns",
-        inputPosition(nodePattern.getStart)
-      )
-    }
-  }
-
   private def checkSubqueryInTransactionsParameters(ctx: CypherParser.SubqueryInTransactionsParametersContext): Unit = {
     errorOnDuplicatedRule(ctx.subqueryInTransactionsBatchParameters(), "OF ROWS")
     errorOnDuplicatedRule(ctx.subqueryInTransactionsErrorParameters(), "ON ERROR")
@@ -250,43 +233,70 @@ final class SyntaxChecker extends ParseTreeListener {
   }
 
   private def checkCreateConstraint(ctx: CypherParser.CreateConstraintContext): Unit = {
-    errorOnNodesAndRelConstraints[ConstraintNodePatternContext, CreateConstraintRelCheckContext](
-      ctx.constraintNodePattern(),
-      ctx.createConstraintRelCheck(),
-      _.KEY() != null
-    )
 
-    errorOnRelationshipAndNodeConstraints[ConstraintRelPatternContext, CreateConstraintNodeCheckContext](
-      ctx.constraintRelPattern(),
-      ctx.createConstraintNodeCheck(),
-      _.KEY() != null
-    )
-
-    if (ctx.propertyList() != null && ctx.propertyList().property().size() > 1) {
-      val secondProperty = ctx.propertyList().property(1).start
-
-      if (ctx.NULL() != null) {
+    ctx.constraintType() match {
+      case c: ConstraintIsUniqueContext =>
+        if (ctx.commandNodePattern() != null && (c.RELATIONSHIP() != null || c.REL() != null)) {
+          errors :+= exceptionFactory.syntaxException(
+            ConstraintType.REL_UNIQUE.toString ++ " does not allow node patterns",
+            inputPosition(ctx.commandNodePattern().getStart)
+          )
+        }
+        if (ctx.commandRelPattern() != null && c.NODE() != null) {
+          errors :+= exceptionFactory.syntaxException(
+            ConstraintType.NODE_UNIQUE.toString ++ " does not allow relationship patterns",
+            inputPosition(ctx.commandRelPattern().getStart)
+          )
+        }
+      case c: ConstraintKeyContext =>
+        if (ctx.commandNodePattern() != null && (c.RELATIONSHIP() != null || c.REL() != null)) {
+          errors :+= exceptionFactory.syntaxException(
+            ConstraintType.REL_KEY.toString ++ " does not allow node patterns",
+            inputPosition(ctx.commandNodePattern().getStart)
+          )
+        }
+        if (ctx.commandRelPattern() != null && c.NODE() != null) {
+          errors :+= exceptionFactory.syntaxException(
+            ConstraintType.NODE_KEY.toString ++ " does not allow relationship patterns",
+            inputPosition(ctx.commandRelPattern().getStart)
+          )
+        }
+      case c: ConstraintExistsContext =>
+        if (c.propertyList() != null && c.propertyList().property().size() > 1) {
+          val secondProperty = c.propertyList().property(1).start
+          errors :+= exceptionFactory.syntaxException(
+            "Constraint type 'EXISTS' does not allow multiple properties",
+            inputPosition(secondProperty)
+          )
+        }
+      case c: ConstraintTypedContext =>
+        if (c.propertyList() != null && c.propertyList().property().size() > 1) {
+          val secondProperty = c.propertyList().property(1).start
+          errors :+= exceptionFactory.syntaxException(
+            "Constraint type 'IS TYPED' does not allow multiple properties",
+            inputPosition(secondProperty)
+          )
+        }
+      case c: ConstraintIsNotNullContext =>
+        if (c.propertyList() != null && c.propertyList().property().size() > 1) {
+          val secondProperty = c.propertyList().property(1).start
+          errors :+= exceptionFactory.syntaxException(
+            "Constraint type 'IS NOT NULL' does not allow multiple properties",
+            inputPosition(secondProperty)
+          )
+        }
+      case _ =>
         errors :+= exceptionFactory.syntaxException(
-          "Constraint type 'IS NOT NULL' does not allow multiple properties",
-          inputPosition(secondProperty)
+          "Constraint type is not recognized",
+          inputPosition(ctx.constraintType().getStart)
         )
-      } else if (ctx.TYPED() != null || ctx.COLONCOLON() != null) {
-        errors :+= exceptionFactory.syntaxException(
-          "Constraint type 'IS TYPED' does not allow multiple properties",
-          inputPosition(secondProperty)
-        )
-      } else if (ctx.EXISTS().size() == 2 || ctx.EXISTS().size() == 1 && ctx.IF() == null) {
-        errors :+= exceptionFactory.syntaxException(
-          "Constraint type 'EXISTS' does not allow multiple properties",
-          inputPosition(secondProperty)
-        )
-      }
     }
+
   }
 
   private def checkDropConstraint(ctx: CypherParser.DropConstraintContext): Unit = {
-    errorOnRelationshipAndNodeConstraints[ConstraintRelPatternContext, DropConstraintNodeCheckContext](
-      ctx.constraintRelPattern(),
+    errorOnRelationshipAndNodeConstraints[CommandRelPatternContext, DropConstraintNodeCheckContext](
+      ctx.commandRelPattern(),
       ctx.dropConstraintNodeCheck(),
       _.KEY() != null
     )
@@ -300,20 +310,15 @@ final class SyntaxChecker extends ParseTreeListener {
   }
 
   private def checkCreateDatabase(ctx: CypherParser.CreateDatabaseContext): Unit = {
-    val primaries =
-      (ctx.PRIMARY().asScala ++ ctx.PRIMARIES().asScala).sortBy(_.getSymbol.getStartIndex)
-    val secondaries =
-      (ctx.SECONDARY().asScala ++ ctx.SECONDARIES().asScala).sortBy(_.getSymbol.getStartIndex)
-
-    errorOnDuplicated(primaries.asJava, "PRIMARY")
-    errorOnDuplicated(secondaries.asJava, "SECONDARY")
+    errorOnDuplicatedRule[CypherParser.PrimaryTopologyContext](ctx.primaryTopology(), "PRIMARY")
+    errorOnDuplicatedRule[CypherParser.SecondaryTopologyContext](ctx.secondaryTopology(), "SECONDARY")
   }
 
   private def checkAlterDatabase(ctx: CypherParser.AlterDatabaseContext): Unit = {
     val primaries =
-      (ctx.PRIMARY().asScala ++ ctx.PRIMARIES().asScala).sortBy(_.getSymbol.getStartIndex)
+      ctx.PRIMARY().asScala.sortBy(_.getSymbol.getStartIndex)
     val secondaries =
-      (ctx.SECONDARY().asScala ++ ctx.SECONDARIES().asScala).sortBy(_.getSymbol.getStartIndex)
+      ctx.SECONDARY().asScala.sortBy(_.getSymbol.getStartIndex)
 
     errorOnDuplicated(primaries.asJava, "PRIMARY")
     errorOnDuplicated(secondaries.asJava, "SECONDARY")
@@ -347,22 +352,19 @@ final class SyntaxChecker extends ParseTreeListener {
   }
 
   private def checkCreateLookupIndex(ctx: CypherParser.CreateLookupIndexContext): Unit = {
-    val lookupIndexFunctionName = ctx.lookupIndexFunctionName()
-
-    if (lookupIndexFunctionName != null) {
-      val functionName = lookupIndexFunctionName.symbolicNameString()
-      /* This should not be valid:
+    val functionName = ctx.symbolicNameString()
+    /* This should not be valid:
          CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)
 
          This should be valid:
          CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH EACH(x)
-       */
-      if (functionName.getText.toUpperCase() == "EACH" && ctx.EACH() == null) {
-        errors :+= exceptionFactory.syntaxException(
-          "Missing function name for the LOOKUP INDEX",
-          inputPosition(functionName.start)
-        )
-      }
+     */
+    val relPattern = ctx.lookupIndexRelPattern()
+    if (functionName.getText.toUpperCase() == "EACH" && relPattern != null && relPattern.EACH() == null) {
+      errors :+= exceptionFactory.syntaxException(
+        "Missing function name for the LOOKUP INDEX",
+        inputPosition(functionName.start)
+      )
     }
   }
 

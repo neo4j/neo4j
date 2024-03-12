@@ -642,7 +642,7 @@ PRIMARY:
    P R I M A R Y;
 
 PRIMARIES:
-   P R I M A R I E S;
+   P R I M A R I E S -> type(PRIMARY);
 
 PRIVILEGE:
    P R I V I L E G E;
@@ -741,16 +741,16 @@ SCAN:
    S C A N;
 
 SEC:
-   S E C;
+   S E C -> type(SECONDS);
 
 SECOND:
-   S E C O N D;
+   S E C O N D -> type(SECONDS);
 
 SECONDARY:
    S E C O N D A R Y;
 
 SECONDARIES:
-   S E C O N D A R I E S;
+   S E C O N D A R I E S -> type(SECONDARY);
 
 SECONDS:
    S E C O N D S;

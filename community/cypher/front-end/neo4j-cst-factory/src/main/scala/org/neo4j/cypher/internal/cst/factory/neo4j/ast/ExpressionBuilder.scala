@@ -512,7 +512,9 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitPostFix(ctx: CypherParser.PostFixContext): Unit = {}
 
-  final override def exitProperty(ctx: CypherParser.PropertyContext): Unit = {}
+  final override def exitProperty(ctx: CypherParser.PropertyContext): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast[PropertyKeyName]()
+  }
 
   final override def exitPropertyExpression(ctx: CypherParser.PropertyExpressionContext): Unit = {
     var result = Property(ctxChild(ctx, 0).ast(), ctxChild(ctx, 2).ast())(pos(ctx))
@@ -884,7 +886,7 @@ trait ExpressionBuilder extends CypherParserListener {
       case 1 => ctxChild(ctx, 0).ast
       case _ =>
         val types = ctx.typePart().asScala.map(_.ast[CypherType]()).toSet
-        if (types.size == 1) types.head else ClosedDynamicUnionType(types)(pos(ctx))
+        if (types.size == 1) types.head.simplify else ClosedDynamicUnionType(types)(pos(ctx)).simplify
     }
   }
 
@@ -892,7 +894,7 @@ trait ExpressionBuilder extends CypherParserListener {
     var cypherType = ctx.typeName().ast[CypherType]()
     if (ctx.typeNullability() != null) cypherType = cypherType.withIsNullable(false)
     ctx.typeListSuffix().forEach { list =>
-      cypherType = ListType(cypherType, list.ast())(pos(list))
+      cypherType = ListType(cypherType, list.ast())(pos(ctx))
     }
     ctx.ast = cypherType
   }
@@ -972,38 +974,6 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitTypeListSuffix(ctx: CypherParser.TypeListSuffixContext): Unit = {
     ctx.ast = ctx.typeNullability() == null
   }
-
-  final override def exitLabelResource(
-    ctx: CypherParser.LabelResourceContext
-  ): Unit = {}
-
-  final override def exitPropertyResource(
-    ctx: CypherParser.PropertyResourceContext
-  ): Unit = {}
-
-  final override def exitGraphQualifier(
-    ctx: CypherParser.GraphQualifierContext
-  ): Unit = {}
-
-  final override def exitSymbolicNameOrStringParameterList(
-    ctx: CypherParser.SymbolicNameOrStringParameterListContext
-  ): Unit = {}
-
-  final override def exitSymbolicNameOrStringParameter(
-    ctx: CypherParser.SymbolicNameOrStringParameterContext
-  ): Unit = {}
-
-  final override def exitStringList(
-    ctx: CypherParser.StringListContext
-  ): Unit = {}
-
-  final override def exitStringOrParameter(
-    ctx: CypherParser.StringOrParameterContext
-  ): Unit = {}
-
-  final override def exitMapOrParameter(
-    ctx: CypherParser.MapOrParameterContext
-  ): Unit = {}
 
   final override def exitMap(ctx: CypherParser.MapContext): Unit =
     ctx.ast = MapExpression(astPairs(ctx.propertyKeyName(), ctx.expression()))(pos(ctx))
