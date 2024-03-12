@@ -14,13 +14,6 @@
     <name>Neo4j - Cypher ANTLR4 based parser</name>
 
     <description>Cypher parser using ANTLR4</description>
-    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-
-    <scm>
-        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
-        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-        <url>https://github.com/neo4j/neo4j</url>
-    </scm>
 
     <properties>
         <moduleName>org.neo4j.cypher.internal.parser.antlr4</moduleName>
@@ -43,24 +36,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.antlr</groupId>
-                <artifactId>antlr4-maven-plugin</artifactId>
-                <version>${antlr.version}</version>
-                <executions>
-                    <execution>
-                        <id>antlr</id>
-                        <goals>
-                            <goal>antlr4</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <options><contextSuperClass>org.neo4j.cypher.internal.parser.AstRuleCtx</contextSuperClass></options>
-                    <listener>false</listener> <!-- We have our own optimised listener -->
-                    <visitor>false</visitor>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
@@ -71,8 +46,9 @@
                         </goals>
                         <configuration>
                             <rules>
+                                <!-- Antlr generates start imports so ignore it -->
                                 <RestrictImports>
-                                    <excludedSourceRoot>target/generated-sources/antlr4</excludedSourceRoot>
+                                    <excludedSourceRoot>${basedir}/src/main/java/</excludedSourceRoot>
                                 </RestrictImports>
                             </rules>
                         </configuration>
@@ -80,16 +56,70 @@
                 </executions>
             </plugin>
         </plugins>
-
     </build>
 
+    <profiles>
+        <!-- Profile to generate the lexer and parser, update license headers and format the code with spotless -->
+        <profile>
+            <id>generate-antlr</id>
+            <activation>
+                <property>
+                    <name>generate.antlr</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.antlr</groupId>
+                        <artifactId>antlr4-maven-plugin</artifactId>
+                        <version>${antlr.version}</version>
+                        <executions>
+                            <execution>
+                                <id>antlr</id>
+                                <goals>
+                                    <goal>antlr4</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <options><contextSuperClass>org.neo4j.cypher.internal.parser.AstRuleCtx</contextSuperClass></options>
+                            <listener>false</listener> <!-- We have our own optimised listener -->
+                            <visitor>false</visitor>
+                            <outputDirectory>${basedir}/src/main/java/</outputDirectory>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.mycila</groupId>
+                        <artifactId>license-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>check-licenses</id>
+                                <goals>
+                                    <goal>format</goal>
+                                </goals>
+                                <phase>process-sources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>format-code</id>
+                                <goals>
+                                    <goal>apply</goal>
+                                </goals>
+                                <phase>process-sources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <dependencies>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>

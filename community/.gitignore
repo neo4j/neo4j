@@ -15,12 +15,8 @@ target
 .idea
 .DS_Store
 .shell_history
-cypher/project
-cypher/lib_managed
-cypher/.cache
 artifacts
 */bin
 */pom-with-build-number.xml
 *.egg-info
 *.egg
-work-tools/sauron/build/
