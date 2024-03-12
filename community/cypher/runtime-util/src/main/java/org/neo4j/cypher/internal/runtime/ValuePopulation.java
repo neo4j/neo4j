@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
+import org.neo4j.kernel.impl.util.ReadAndDeleteTransactionConflictException;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
@@ -34,7 +35,6 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.HeapTrackingListValueBuilder;
 import org.neo4j.values.virtual.HeapTrackingMapValueBuilder;
 import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
@@ -240,8 +240,14 @@ public final class ValuePopulation
 
         if ( !nodeCursor.next() )
         {
-            //the node has probably been deleted, we still return it but just a bare id
-            return VirtualValues.nodeValue( id, EMPTY_TEXT_ARRAY, EMPTY_MAP, true );
+            if ( !dbAccess.nodeDeletedInThisTransactionI(id) )
+            {
+                throw new ReadAndDeleteTransactionConflictException( false );
+            }
+            else
+            {
+                return VirtualValues.nodeValue( id, EMPTY_TEXT_ARRAY, EMPTY_MAP, true );
+            }
         }
         else
         {
@@ -258,8 +264,14 @@ public final class ValuePopulation
         dbAccess.singleRelationship( id, relCursor );
         if ( !relCursor.next() )
         {
-            //the relationship has probably been deleted, we still return it but just a bare id
-            return VirtualValues.relationshipValue( id, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true );
+            if ( !dbAccess.relationshipDeletedInThisTransactionI(id) )
+            {
+                throw new ReadAndDeleteTransactionConflictException( false );
+            }
+            else
+            {
+                 return VirtualValues.relationshipValue( id, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true );
+            }
         }
         else
         {

@@ -465,6 +465,9 @@ object StaticEvaluation {
                                  nodeCursor: NodeCursor,
                                  propertyCursor: PropertyCursor): Boolean = notAvailable()
 
+
+    override def nodeDeletedInThisTransactionI(id: Long): Boolean = notAvailable()
+
     override def relationshipPropertyIds(node: Long,
                                          relationshipScanCursor: RelationshipScanCursor,
                                          propertyCursor: PropertyCursor): Array[Int] = notAvailable()
@@ -473,6 +476,9 @@ object StaticEvaluation {
                                          property: Int,
                                          relationshipScanCursor: RelationshipScanCursor,
                                          propertyCursor: PropertyCursor): Boolean = notAvailable()
+
+
+    override def relationshipDeletedInThisTransactionI(id: Long): Boolean = notAvailable()
 
     override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = notAvailable()
 
