@@ -146,7 +146,8 @@ class RelationshipModifierTest {
                 relationshipModifierTestLocker,
                 NONE,
                 CursorContext.NULL_CONTEXT,
-                EmptyMemoryTracker.INSTANCE);
+                EmptyMemoryTracker.INSTANCE,
+                false);
         txState = mock(ReadableTransactionState.class);
         store = new MapRecordStore();
         monitors.addMonitorListener(new LockVerificationMonitor(lockTracking, txState, store));

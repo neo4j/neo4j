@@ -50,14 +50,17 @@ class RelationshipDeleter {
     private final RelationshipGroupGetter relGroupGetter;
     private final PropertyDeleter propertyChainDeleter;
     private final long externalDegreesThreshold;
+    private final boolean multiVersion;
 
     RelationshipDeleter(
             RelationshipGroupGetter relGroupGetter,
             PropertyDeleter propertyChainDeleter,
-            long externalDegreesThreshold) {
+            long externalDegreesThreshold,
+            boolean multiVersion) {
         this.relGroupGetter = relGroupGetter;
         this.propertyChainDeleter = propertyChainDeleter;
         this.externalDegreesThreshold = externalDegreesThreshold;
+        this.multiVersion = multiVersion;
     }
 
     /**
@@ -187,7 +190,7 @@ class RelationshipDeleter {
                     // deadlocks
                     boolean nodeRelationshipsLocked = locks.tryExclusiveLock(NODE_RELATIONSHIP_GROUP_DELETE, nodeId);
                     boolean nodeLocked = nodeRelationshipsLocked && locks.tryExclusiveLock(NODE, nodeId);
-                    if (nodeLocked && locks.tryExclusiveLock(RELATIONSHIP_GROUP, nodeId)) {
+                    if (multiVersion || (nodeLocked && locks.tryExclusiveLock(RELATIONSHIP_GROUP, nodeId))) {
                         // We got all the locks, delete it!
                         nodeProxy = recordChanges.getNodeRecords().getOrLoad(nodeId, null);
 

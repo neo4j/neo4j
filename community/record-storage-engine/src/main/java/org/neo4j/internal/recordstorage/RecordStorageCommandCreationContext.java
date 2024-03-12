@@ -177,7 +177,8 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
                 relationshipLocker,
                 lockTracer,
                 cursorContext,
-                memoryTracker);
+                memoryTracker,
+                multiVersioned);
         return new TransactionRecordState(
                 kernelVersionProvider,
                 recordChangeSet,

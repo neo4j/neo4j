@@ -66,6 +66,7 @@ public class RelationshipModifier {
     private final MemoryTracker memoryTracker;
     private final RelationshipCreator creator;
     private final RelationshipDeleter deleter;
+    private final boolean multiVersion;
 
     public RelationshipModifier(
             RelationshipGroupGetter relGroupGetter,
@@ -74,18 +75,20 @@ public class RelationshipModifier {
             ResourceLocker locks,
             LockTracer lockTracer,
             CursorContext cursorContext,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean multiVersion) {
         this.relGroupGetter = relGroupGetter;
         this.denseNodeThreshold = denseNodeThreshold;
         this.locks = locks;
         this.lockTracer = lockTracer;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
+        this.multiVersion = multiVersion;
 
         this.creator =
                 new RelationshipCreator(denseNodeThreshold, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, cursorContext);
         this.deleter = new RelationshipDeleter(
-                relGroupGetter, propertyChainDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH);
+                relGroupGetter, propertyChainDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, multiVersion);
     }
 
     /**
@@ -134,7 +137,7 @@ public class RelationshipModifier {
                     recordChanges.getNodeRecords().getOrLoad(nodeId, null);
             NodeRecord node = nodeProxy.forReadingLinkage(); // optimistic (unlocked) read
             boolean nodeIsAddedInTx = node.isCreated();
-            if (!node.isDense()) // we can not trust this as the node is not locked
+            if (!multiVersion && !node.isDense()) // we can not trust this as the node is not locked
             {
                 if (!nodeIsAddedInTx) // to avoid locking unnecessarily
                 {
@@ -203,12 +206,12 @@ public class RelationshipModifier {
                                     groupStartingId);
                             // another transaction might beat us at this point, so we are not guaranteed to be the
                             // creator but we can trust it to exist
-                            if (!nodeContext.hasExclusiveGroupLock()) {
+                            if ((multiVersion && !groupProxy.isCreated()) || !nodeContext.hasExclusiveGroupLock()) {
                                 nodeContext.markExclusiveGroupLock();
                             } else if (groupProxy.isCreated()) {
-                                nodeContext
-                                        .clearDenseContext(); // When a new group is created we can no longer trust the
+                                // When a new group is created we can no longer trust the
                                 // pointers of the cache
+                                nodeContext.clearDenseContext();
                             }
                         }
                         nodeContext.denseContext(byType.type()).setGroup(groupProxy);
@@ -288,10 +291,10 @@ public class RelationshipModifier {
                 // Look for an opportunity to delete empty groups that we noticed while looking for groups above
                 if (nodeContext.hasExclusiveGroupLock() && nodeContext.hasAnyEmptyGroup()) {
                     // There may be one or more empty groups that we can delete
-                    if (locks.tryExclusiveLock(NODE_RELATIONSHIP_GROUP_DELETE, nodeId)) {
+                    if (multiVersion || locks.tryExclusiveLock(NODE_RELATIONSHIP_GROUP_DELETE, nodeId)) {
                         // We got the EXCLUSIVE group lock so we can go ahead and try to remove any potentially empty
                         // groups
-                        if (!nodeContext.hasEmptyFirstGroup() || locks.tryExclusiveLock(NODE, nodeId)) {
+                        if (multiVersion || !nodeContext.hasEmptyFirstGroup() || locks.tryExclusiveLock(NODE, nodeId)) {
                             if (nodeContext.hasEmptyFirstGroup()) {
                                 // It's possible that we need to delete the first group, i.e. we just now locked the
                                 // node and therefore need to re-read it
@@ -356,7 +359,7 @@ public class RelationshipModifier {
                 // Since it is a sparse node we know that it is exclusively locked
                 if (!checkAndLockRelationshipsIfNodeIsGoingToBeDense(node, byNode, relRecords)) {
                     // We're not turning this node into dense
-                    if (byNode.hasDeletions()) {
+                    if (!multiVersion && byNode.hasDeletions()) {
                         // Lock all relationships we're deleting, including the first in chain to update degrees
                         lockRelationshipsInOrder(
                                 byNode.deletions(), node.getNextRel(), relRecords, locks, memoryTracker);
@@ -389,12 +392,14 @@ public class RelationshipModifier {
                         // heavily reduce the number of iterations
                         // needed to get a stable lock on all the relationships when there a lot of contention on these
                         // particular chains
-                        lockRelationshipsInOrder(
-                                byType.out(), outFirstInChainForDegrees, relRecords, locks, memoryTracker);
-                        lockRelationshipsInOrder(
-                                byType.in(), inFirstInChainForDegrees, relRecords, locks, memoryTracker);
-                        lockRelationshipsInOrder(
-                                byType.loop(), loopFirstInChainForDegrees, relRecords, locks, memoryTracker);
+                        if (!multiVersion) {
+                            lockRelationshipsInOrder(
+                                    byType.out(), outFirstInChainForDegrees, relRecords, locks, memoryTracker);
+                            lockRelationshipsInOrder(
+                                    byType.in(), inFirstInChainForDegrees, relRecords, locks, memoryTracker);
+                            lockRelationshipsInOrder(
+                                    byType.loop(), loopFirstInChainForDegrees, relRecords, locks, memoryTracker);
+                        }
 
                         // If we've locked some relationships for deletion, then we can use that as an insertion point
                         // for any creations we might have

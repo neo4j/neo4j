@@ -200,7 +200,8 @@ class RelationshipCreatorTest {
                 ResourceLocker.IGNORE,
                 LockTracer.NONE,
                 CursorContext.NULL_CONTEXT,
-                EmptyMemoryTracker.INSTANCE);
+                EmptyMemoryTracker.INSTANCE,
+                false);
 
         FlatRelationshipModifications data = new FlatRelationshipModifications(
                 new FlatRelationshipModifications.RelationshipData(nextRelId(givenState), 0, fromNode, toNode));

@@ -1882,7 +1882,8 @@ class TransactionRecordStateTest {
                         ResourceLocker.IGNORE,
                         NONE,
                         NULL_CONTEXT,
-                        EmptyMemoryTracker.INSTANCE),
+                        EmptyMemoryTracker.INSTANCE,
+                        false),
                 new PropertyCreator(
                         allocatorProvider.allocator(StoreType.PROPERTY_STRING),
                         allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),

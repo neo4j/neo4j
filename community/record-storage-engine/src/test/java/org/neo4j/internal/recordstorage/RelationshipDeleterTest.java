@@ -65,7 +65,7 @@ class RelationshipDeleterTest {
                 CursorContext.NULL_CONTEXT,
                 StoreCursors.NULL);
         deleter = new RelationshipDeleter(
-                relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH);
+                relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, false);
         store = new MapRecordStore();
         recordChanges = store.newRecordChanges(NULL_MONITOR, MapRecordStore.Monitor.NULL);
     }
