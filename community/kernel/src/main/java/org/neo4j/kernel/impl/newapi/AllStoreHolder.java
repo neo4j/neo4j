@@ -781,6 +781,12 @@ public class AllStoreHolder extends Read
     public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
         acquireSharedSchemaLock( index );
+        return indexGetOwningUniquenessConstraintIdNonLocking(index);
+    }
+
+    @Override
+    public Long indexGetOwningUniquenessConstraintIdNonLocking( IndexDescriptor index )
+    {
         ktx.assertOpen();
         return storageReader.indexGetOwningUniquenessConstraintId( storageReader.indexGetForName( index.getName() ) );
     }
