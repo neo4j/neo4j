@@ -58,6 +58,8 @@ public interface DbAccess extends EntityById {
 
     boolean nodeHasProperty(long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor);
 
+    boolean nodeDeletedInThisTransactionI(long id);
+
     Value relationshipProperty(
             long relationship,
             int property,
@@ -97,6 +99,8 @@ public interface DbAccess extends EntityById {
             int property,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor);
+
+    boolean relationshipDeletedInThisTransactionI(long id);
 
     boolean relationshipHasProperty(
             VirtualRelationshipValue relationship,

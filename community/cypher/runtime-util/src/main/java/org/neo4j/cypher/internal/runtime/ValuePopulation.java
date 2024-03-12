@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
+import org.neo4j.kernel.impl.util.ReadAndDeleteTransactionConflictException;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.AnyValue;
@@ -204,8 +205,11 @@ public final class ValuePopulation {
         final var elementId = dbAccess.elementIdMapper().nodeElementId(id);
 
         if (!nodeCursor.next()) {
-            // the node has probably been deleted, we still return it but just a bare id
-            return VirtualValues.nodeValue(id, elementId, EMPTY_TEXT_ARRAY, EMPTY_MAP, true);
+            if (!dbAccess.nodeDeletedInThisTransactionI(id)) {
+                throw new ReadAndDeleteTransactionConflictException(false);
+            } else {
+                return VirtualValues.nodeValue(id, elementId, EMPTY_TEXT_ARRAY, EMPTY_MAP, true);
+            }
         } else {
             nodeCursor.properties(propertyCursor);
             return VirtualValues.nodeValue(
@@ -220,9 +224,12 @@ public final class ValuePopulation {
         final var elementId = idMapper.relationshipElementId(id);
 
         if (!relCursor.next()) {
-            // the relationship has probably been deleted, we still return it but just a bare id
-            return VirtualValues.relationshipValue(
-                    id, elementId, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true);
+            if (!dbAccess.relationshipDeletedInThisTransactionI(id)) {
+                throw new ReadAndDeleteTransactionConflictException(false);
+            } else {
+                return VirtualValues.relationshipValue(
+                        id, elementId, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true);
+            }
         } else {
             // Bolt doesn't require start and end node to be populated
             final var start = VirtualValues.node(relCursor.sourceNodeReference(), idMapper);
