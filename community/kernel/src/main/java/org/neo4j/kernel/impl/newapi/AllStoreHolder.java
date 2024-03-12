@@ -585,6 +585,11 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public Long indexGetOwningUniquenessConstraintId(IndexDescriptor index) {
         acquireSharedSchemaLock(index);
+        return indexGetOwningUniquenessConstraintIdNonLocking(index);
+    }
+
+    @Override
+    public Long indexGetOwningUniquenessConstraintIdNonLocking(IndexDescriptor index) {
         performCheckBeforeOperation();
         return storageReader.indexGetOwningUniquenessConstraintId(storageReader.indexGetForName(index.getName()));
     }

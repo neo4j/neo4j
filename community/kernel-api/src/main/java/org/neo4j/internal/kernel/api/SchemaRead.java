@@ -148,6 +148,8 @@ public interface SchemaRead extends SchemaReadCore {
      */
     Long indexGetOwningUniquenessConstraintId(IndexDescriptor index);
 
+    Long indexGetOwningUniquenessConstraintIdNonLocking(IndexDescriptor index);
+
     /**
      * Returns schema state for the given key or create a new state if not there
      * @param key The key to access

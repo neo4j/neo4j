@@ -676,6 +676,11 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
+        public Long indexGetOwningUniquenessConstraintIdNonLocking(IndexDescriptor index) {
+            return null;
+        }
+
+        @Override
         public <K, V> V schemaStateGetOrCreate(K key, Function<K, V> creator) {
             return null;
         }
