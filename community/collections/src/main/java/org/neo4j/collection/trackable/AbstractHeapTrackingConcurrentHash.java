@@ -359,6 +359,7 @@ public abstract class AbstractHeapTrackingConcurrentHash {
             while (this.index < this.currentState.end) {
                 Object o = this.currentState.currentTable.get(this.index);
                 while (o == RESERVED) {
+                    Thread.onSpinWait();
                     o = this.currentState.currentTable.get(this.index);
                 }
 

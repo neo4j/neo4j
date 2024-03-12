@@ -38,6 +38,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 
 @SuppressWarnings({"SameParameterValue", "resource"})
 public class HeapTrackingConcurrentHashMapTest {
+    volatile long volatileLong = 0L;
 
     @Test
     public void putIfAbsent() {
@@ -111,7 +112,7 @@ public class HeapTrackingConcurrentHashMapTest {
     }
 
     @SuppressWarnings("RedundantCollectionOperation")
-    @Test
+    @RepeatedTest(100)
     public void concurrentPutGetPutAllRemoveContainsKeyContainsValueGetIfAbsentPutTest() {
         HeapTrackingConcurrentHashMap<Integer, Integer> map1 =
                 HeapTrackingConcurrentHashMap.newMap(EmptyMemoryTracker.INSTANCE);
@@ -130,7 +131,61 @@ public class HeapTrackingConcurrentHashMapTest {
                     assertThat(map2.get(each)).isNull();
                     assertThat(map2.containsValue(each)).isFalse();
                     assertThat(map2.containsKey(each)).isFalse();
+                    assertThat(map2.putIfAbsent(each, each)).isNull();
+                    assertThat(map2.containsValue(each)).isTrue();
+                    assertThat(map2.containsKey(each)).isTrue();
+                    map2.remove(each);
+                    assertThat(map2.containsValue(each)).isFalse();
+                    assertThat(map2.containsKey(each)).isFalse();
                     assertThat(map2.computeIfAbsent(each, i -> i)).isEqualTo(each);
+                    assertThat(map2.containsValue(each)).isTrue();
+                    assertThat(map2.containsKey(each)).isTrue();
+                    assertThat(each).isEqualTo(map2.computeIfAbsent(each, i -> i));
+                    map2.remove(each);
+                    assertThat(map2.putIfAbsent(each, each)).isNull();
+                },
+                1,
+                executor());
+        assertThat(map1).isEqualTo(map2);
+        assertThat(map1).hasSameHashCodeAs(map2);
+    }
+
+    @SuppressWarnings("RedundantCollectionOperation")
+    @RepeatedTest(10)
+    public void concurrentSlowComputeIfAbsentTest() {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
+        HeapTrackingConcurrentHashMap<Integer, Integer> map1 =
+                HeapTrackingConcurrentHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+        HeapTrackingConcurrentHashMap<Integer, Integer> map2 =
+                HeapTrackingConcurrentHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+        ParallelIterate.forEach(
+                Interval.oneTo(100),
+                each -> {
+                    map1.put(each, each);
+                    assertThat(each).isEqualTo(map1.get(each));
+                    map2.putAll(Map.of(each, each));
+                    map1.remove(each);
+                    map1.putAll(Map.of(each, each));
+                    assertThat(each).isEqualTo(map2.get(each));
+                    map2.remove(each);
+                    assertThat(map2.get(each)).isNull();
+                    assertThat(map2.containsValue(each)).isFalse();
+                    assertThat(map2.containsKey(each)).isFalse();
+                    assertThat(map2.putIfAbsent(each, each)).isNull();
+                    assertThat(map2.containsValue(each)).isTrue();
+                    assertThat(map2.containsKey(each)).isTrue();
+                    map2.remove(each);
+                    assertThat(map2.containsValue(each)).isFalse();
+                    assertThat(map2.containsKey(each)).isFalse();
+                    assertThat(map2.computeIfAbsent(each, i -> {
+                                long iterations = random.nextLong(500000L, 5000000L);
+                                for (long c = 0L; c < iterations; c++) {
+                                    volatileLong = c;
+                                }
+                                return i;
+                            }))
+                            .isEqualTo(each);
                     assertThat(map2.containsValue(each)).isTrue();
                     assertThat(map2.containsKey(each)).isTrue();
                     assertThat(each).isEqualTo(map2.computeIfAbsent(each, i -> i));

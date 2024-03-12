@@ -89,9 +89,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key) {
@@ -122,9 +126,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key) {
@@ -149,9 +157,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key) {
@@ -164,8 +176,9 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
                     Entry<V> newEntry = new Entry<>(key, newValue, (Entry<V>) o);
                     currentArray.set(index, newEntry);
                     this.incrementSizeAndPossiblyResize(currentArray, length, o);
-                    return newValue; // per the contract of computeIfAbsent, we return the newvalue when the map didn't
-                    // have this key before
+                    // per the contract of computeIfAbsent, we return the newvalue when the map
+                    // didn't have this key before
+                    return newValue;
                 }
             }
         }
@@ -177,6 +190,10 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
 
         for (int j = 0; j < src.length() - 1; ) {
             Object o = src.get(j);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = src.get(j);
+            }
             if (o == null) {
                 if (src.compareAndSet(j, null, RESIZED)) {
                     j++;
@@ -186,7 +203,7 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
                 if (resizeContainer.resizers.get() == 1) {
                     break;
                 }
-            } else if (o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 if (src.compareAndSet(j, o, RESIZING)) {
                     while (e != null) {
@@ -214,6 +231,10 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
                 }
                 for (int j = end - 1; j >= start; ) {
                     Object o = src.get(j);
+                    while (o == RESERVED) {
+                        Thread.onSpinWait();
+                        o = src.get(j);
+                    }
                     if (o == null) {
                         if (src.compareAndSet(j, null, RESIZED)) {
                             j--;
@@ -221,7 +242,7 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
                     } else if (o == RESIZED || o == RESIZING) {
                         resizeContainer.zeroOutQueuePosition();
                         return;
-                    } else if (o instanceof Entry<?>) {
+                    } else {
                         Entry<V> e = (Entry<V>) o;
                         if (src.compareAndSet(j, o, RESIZING)) {
                             while (e != null) {
@@ -244,9 +265,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = ((ResizeContainer) currentArray.get(length - 1)).nextArray;
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> newEntry;
                 if (o == null) {
                     if (toCopyEntry.getNext() == null) {
@@ -273,9 +298,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key && Objects.equals(e.getValue(), value)) {
@@ -305,9 +334,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             resizeContainer = null;
             for (int i = 0; i < currentArray.length() - 1; i++) {
                 Object o = currentArray.get(i);
+                while (o == RESERVED) {
+                    Thread.onSpinWait();
+                    o = currentArray.get(i);
+                }
                 if (o == RESIZED || o == RESIZING) {
                     resizeContainer = (ResizeContainer) currentArray.get(currentArray.length() - 1);
-                } else if (o instanceof Entry<?>) {
+                } else if (o != null) {
                     Entry<V> e = (Entry<V>) o;
                     while (e != null) {
                         Object v = e.getValue();
@@ -334,7 +367,11 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
         AtomicReferenceArray<Object> currentArray = this.table;
         int index = indexFor(hash, currentArray.length());
         Object o = currentArray.get(index);
-        if (o == RESIZED || o == RESIZING || o == RESERVED) {
+        while (o == RESERVED) {
+            Thread.onSpinWait();
+            o = currentArray.get(index);
+        }
+        if (o == RESIZED || o == RESIZING) {
             return this.slowGet(key, hash, currentArray);
         }
         for (Entry<V> e = (Entry<V>) o; e != null; e = e.getNext()) {
@@ -350,9 +387,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key) {
@@ -390,6 +431,10 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
         }
     }
 
+    /**
+     * WARNING: The map function could be called multiple times if the map is concurrently modified.
+     * This is different from java.util.concurrent.ConcurrentHashMap where it is guaranteed to be called exactly once.
+     */
     public V compute(long key, Function<V, ? extends V> mapFunction) {
         int hash = this.hash(Long.hashCode(key));
         var currentArray = this.table;
@@ -416,9 +461,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key) {
@@ -454,9 +503,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key) {
@@ -477,6 +530,7 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             for (int i = 0; i < currentArray.length() - 1; i++) {
                 Object o = currentArray.get(i);
                 while (o == RESERVED) {
+                    Thread.onSpinWait();
                     o = currentArray.get(i);
                 }
                 if (o == RESIZED || o == RESIZING) {
@@ -510,6 +564,7 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
         int index = indexFor(hash, length);
         Object o = currentArray.get(index);
         while (o == RESERVED) {
+            Thread.onSpinWait();
             o = currentArray.get(index);
         }
         if (o == RESIZED || o == RESIZING) {
@@ -538,9 +593,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key) {
@@ -581,9 +640,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key) {
@@ -609,21 +672,24 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
         int length = currentArray.length();
         int index = indexFor(hash, length);
         Object o = currentArray.get(index);
-        if (o == RESIZED || o == RESIZING || o == RESERVED) {
+        while (o == RESERVED) {
+            Thread.onSpinWait();
+            o = currentArray.get(index);
+        }
+        if (o == RESIZED || o == RESIZING) {
             return this.slowRemove(key, hash, currentArray);
-        } else if (o == null || o instanceof Entry<?>) {
-            Entry<V> e = (Entry<V>) o;
-            while (e != null) {
-                if (e.key == key) {
-                    Entry<V> replacement = this.createReplacementChainForRemoval((Entry<V>) o, e);
-                    if (currentArray.compareAndSet(index, o, replacement)) {
-                        this.addToSize(-1);
-                        return e.getValue();
-                    }
-                    return this.slowRemove(key, hash, currentArray);
+        }
+        Entry<V> e = (Entry<V>) o;
+        while (e != null) {
+            if (e.key == key) {
+                Entry<V> replacement = this.createReplacementChainForRemoval((Entry<V>) o, e);
+                if (currentArray.compareAndSet(index, o, replacement)) {
+                    this.addToSize(-1);
+                    return e.getValue();
                 }
-                e = e.getNext();
+                return this.slowRemove(key, hash, currentArray);
             }
+            e = e.getNext();
         }
         return null;
     }
@@ -635,9 +701,13 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             int length = currentArray.length();
             int index = indexFor(hash, length);
             Object o = currentArray.get(index);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(index);
+            }
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else if (o == null || o instanceof Entry<?>) {
+            } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
                     if (e.key == key) {
@@ -677,16 +747,19 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
         AtomicReferenceArray<Object> currentArray = this.table;
         for (int i = 0; i < currentArray.length() - 1; i++) {
             Object o = currentArray.get(i);
+            while (o == RESERVED) {
+                Thread.onSpinWait();
+                o = currentArray.get(i);
+            }
             if (o == RESIZED || o == RESIZING) {
                 throw new ConcurrentModificationException("can't compute hashcode while resizing!");
-            } else if (o == null || o instanceof Entry<?>) {
-                Entry<V> e = (Entry<V>) o;
-                while (e != null) {
-                    long key = e.key;
-                    Object value = e.getValue();
-                    h += Long.hashCode(key) ^ (value == null ? 0 : value.hashCode());
-                    e = e.getNext();
-                }
+            }
+            Entry<V> e = (Entry<V>) o;
+            while (e != null) {
+                long key = e.key;
+                Object value = e.getValue();
+                h += Long.hashCode(key) ^ (value == null ? 0 : value.hashCode());
+                e = e.getNext();
             }
         }
         return h;
