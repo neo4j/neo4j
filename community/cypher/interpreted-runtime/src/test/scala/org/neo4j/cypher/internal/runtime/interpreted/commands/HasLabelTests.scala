@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnknown
-import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.NO_VALUE
 
@@ -33,7 +32,7 @@ class HasLabelTests extends CypherFunSuite {
 
   test("should_handle_null_values") {
     // given match n-[?]-m
-    val predicate = HasLabel(Literal(NO_VALUE), KeyToken.Unresolved("Person", TokenType.Label))
+    val predicate = HasLabel(Literal(NO_VALUE), LazyLabel("Person"))
 
     // when
     val ctx = CypherRow.empty

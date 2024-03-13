@@ -157,6 +157,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.runtime.interpreted.pipes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -883,9 +884,12 @@ case class CommunityExpressionConverter(
   private def hasLabels(id: Id, e: internal.expressions.HasLabels, self: ExpressionConverters): Predicate = {
     val preds = e.labels.map {
       l =>
+        val label = LazyLabel(l.name)
+        // attempt to resolve immediately
+        label.getId(tokenContext)
         predicates.HasLabel(
           self.toCommandExpression(id, e.expression),
-          commands.values.KeyToken.Unresolved(l.name, commands.values.TokenType.Label)
+          label
         ): Predicate
     }
     commands.predicates.Ands(preds.toSeq: _*)

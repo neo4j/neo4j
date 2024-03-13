@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Abstra
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -634,7 +635,7 @@ case class HasLabelOrType(entity: Expression, labelOrType: String) extends Predi
   override def arguments: Seq[Expression] = Seq(entity)
 }
 
-case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
+case class HasLabel(entity: Expression, label: LazyLabel) extends Predicate {
 
   override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
 
@@ -645,21 +646,20 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
       val node = CastSupport.castOrFail[VirtualNodeValue](value)
       val nodeId = node.id
       val queryCtx = state.query
-
-      label.getOptId(state.query) match {
-        case None =>
-          IsFalse
-        case Some(labelId) =>
-          IsMatchResult(queryCtx.isLabelSetOnNode(labelId, nodeId, state.cursors.nodeCursor))
+      val labelId = label.getId(state.query)
+      if (labelId == LazyLabel.UNKNOWN) {
+        IsFalse
+      } else {
+        IsMatchResult(queryCtx.isLabelSetOnNode(labelId, nodeId, state.cursors.nodeCursor))
       }
   }
 
   override def toString = s"$entity:${label.name}"
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(HasLabel(entity.rewrite(f), label.typedRewrite[KeyToken](f)))
+    f(HasLabel(entity.rewrite(f), label))
 
-  override def children: Seq[Expression] = Seq(label, entity)
+  override def children: Seq[Expression] = Seq(entity)
 
   override def arguments: Seq[Expression] = Seq(entity)
 }
