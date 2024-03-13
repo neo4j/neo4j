@@ -1553,7 +1553,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         "b:B(x = ???, y = ???)",
         paramExpr = Seq(prop("a", "prop"), prop("a", "otherProp")),
         argumentIds = Set("a"),
-        unique = true
+        unique = true,
+        supportPartitionedScan = false
       )
       .nodeIndexOperator("a:A(id = 15)", unique = true)
       .build()
@@ -1590,7 +1591,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         "b:B(x = ???, y = ???)",
         paramExpr = Seq(prop("a", "prop"), prop("anotherA", "otherProp")),
         argumentIds = Set("a", "anotherA", "anon_0"),
-        unique = true
+        unique = true,
+        supportPartitionedScan = false
       )
       .filter("anotherA.id > 123", "anotherA:A")
       .expandAll("(a)-[anon_0]->(anotherA)")

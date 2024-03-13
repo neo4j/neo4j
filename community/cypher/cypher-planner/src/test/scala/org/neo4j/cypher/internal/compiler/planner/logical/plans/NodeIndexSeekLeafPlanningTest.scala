@@ -908,6 +908,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             SingleQueryExpression(`lit42`),
             _,
             _,
+            _,
             _
           )) => ()
       }
@@ -934,6 +935,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _,
             _,
+            _,
             _
           )) => ()
       }
@@ -957,6 +959,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             `n`,
             _,
             Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
+            _,
             _,
             _,
             _,
@@ -1014,6 +1017,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             SingleQueryExpression(`lit42`),
             _,
             _,
+            _,
             _
           )) => ()
       }
@@ -1046,6 +1050,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
               SingleQueryExpression(`lit42`),
               _,
               _,
+              _,
               _
             ),
             NodeUniqueIndexSeek(
@@ -1053,6 +1058,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
               LabelToken("Awesomer", _),
               _,
               SingleQueryExpression(`lit42`),
+              _,
               _,
               _,
               _
@@ -1079,6 +1085,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _,
             SingleQueryExpression(`lit42`),
+            _,
             _,
             _,
             _
@@ -1113,6 +1120,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                   SingleQueryExpression(`lit42`),
                   _,
                   _,
+                  _,
                   _
                 ),
                 NodeUniqueIndexSeek(
@@ -1120,6 +1128,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                   LabelToken(l2, _),
                   _,
                   SingleQueryExpression(`lit42`),
+                  _,
                   _,
                   _,
                   _
@@ -1130,6 +1139,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 LabelToken(l3, _),
                 _,
                 SingleQueryExpression(`lit42`),
+                _,
                 _,
                 _,
                 _
@@ -1175,6 +1185,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                     SingleQueryExpression(`lit42`),
                     _,
                     _,
+                    _,
                     _
                   ),
                   NodeUniqueIndexSeek(
@@ -1182,6 +1193,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                     LabelToken(l2, _),
                     _,
                     SingleQueryExpression(`lit42`),
+                    _,
                     _,
                     _,
                     _
@@ -1194,6 +1206,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                   SingleQueryExpression(`lit42`),
                   _,
                   _,
+                  _,
                   _
                 )
               ),
@@ -1202,6 +1215,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 LabelToken(l4, _),
                 _,
                 SingleQueryExpression(`lit42`),
+                _,
                 _,
                 _,
                 _
@@ -1253,6 +1267,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 )),
                 _,
                 _,
+                _,
                 _
               ),
               NodeUniqueIndexSeek(
@@ -1260,6 +1275,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 LabelToken("Awesome", _),
                 _,
                 SingleQueryExpression(`val3`),
+                _,
                 _,
                 _,
                 _
@@ -1311,6 +1327,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 )),
                 _,
                 _,
+                _,
                 _
               ),
               NodeUniqueIndexSeek(
@@ -1324,6 +1341,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                   SingleQueryExpression(`val2`),
                   SingleQueryExpression(`val3`)
                 )),
+                _,
                 _,
                 _,
                 _
@@ -1371,6 +1389,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 SingleQueryExpression(`val2`),
                 SingleQueryExpression(`val3`)
               )),
+              _,
               _,
               _,
               _

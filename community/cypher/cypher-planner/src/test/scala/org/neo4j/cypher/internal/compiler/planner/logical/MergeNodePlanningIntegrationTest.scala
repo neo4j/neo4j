@@ -204,11 +204,11 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
             LogicalVariable("n"),
             Apply(
               RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName1, _),
-              NodeUniqueIndexSeek(LogicalVariable("n"), _, _, _, SetExtractor(argumentName1), _, _)
+              NodeUniqueIndexSeek(LogicalVariable("n"), _, _, _, SetExtractor(argumentName1), _, _, _)
             ),
             Apply(
               RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName2, _),
-              NodeUniqueIndexSeek(LogicalVariable("n"), _, _, _, SetExtractor(argumentName2), _, _)
+              NodeUniqueIndexSeek(LogicalVariable("n"), _, _, _, SetExtractor(argumentName2), _, _, _)
             )
           ),
           _,

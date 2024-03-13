@@ -193,7 +193,7 @@ object VariableRefRewriter extends Rewriter {
                       s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
                     case s @ PartitionedNodeIndexSeek(node, _, _, _, args, _) =>
                       s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
-                    case s @ NodeUniqueIndexSeek(node, _, _, _, args, _, _) =>
+                    case s @ NodeUniqueIndexSeek(node, _, _, _, args, _, _, _) =>
                       s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
                   }
                 case s @ NodeIndexContainsScan(node, _, _, _, args, _, _) =>

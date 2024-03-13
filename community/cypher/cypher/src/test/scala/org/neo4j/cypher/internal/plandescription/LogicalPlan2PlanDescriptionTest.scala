@@ -1280,7 +1280,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ManyQueryExpression(ListLiteral(Seq(stringLiteral("Andres")))(pos)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          false
         ),
         95.0
       ),

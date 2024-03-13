@@ -420,7 +420,7 @@ class SlottedPipeMapper(
           slots
         )(id)
 
-      case NodeUniqueIndexSeek(column, label, properties, valueExpr, _, indexOrder, indexType) =>
+      case NodeUniqueIndexSeek(column, label, properties, valueExpr, _, indexOrder, indexType, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekSlottedPipe(
           column.name,

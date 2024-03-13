@@ -60,7 +60,16 @@ class IndexSeekTest extends CypherFunSuite {
     indexType: IndexType
   ): Boolean => NodeIndexSeekLeafPlan = { unique =>
     if (unique) {
-      NodeUniqueIndexSeek(varFor(idName), label, properties, valueExpr, argumentIds.map(varFor), indexOrder, indexType)
+      NodeUniqueIndexSeek(
+        varFor(idName),
+        label,
+        properties,
+        valueExpr,
+        argumentIds.map(varFor),
+        indexOrder,
+        indexType,
+        supportPartitionedScan = true
+      )
     } else {
       NodeIndexSeek(
         varFor(idName),

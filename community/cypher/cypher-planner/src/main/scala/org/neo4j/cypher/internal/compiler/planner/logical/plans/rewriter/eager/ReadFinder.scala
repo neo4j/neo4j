@@ -381,7 +381,7 @@ object ReadFinder {
       case NodeIndexSeek(node, LabelToken(labelName, _), properties, _, _, _, _, _) =>
         processNodeIndexPlan(node, labelName, properties)
 
-      case NodeUniqueIndexSeek(node, LabelToken(labelName, _), properties, _, _, _, _) =>
+      case NodeUniqueIndexSeek(node, LabelToken(labelName, _), properties, _, _, _, _, _) =>
         processNodeIndexPlan(node, labelName, properties)
 
       case NodeIndexContainsScan(

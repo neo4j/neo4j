@@ -2994,7 +2994,8 @@ case class NodeUniqueIndexSeek(
   valueExpr: QueryExpression[Expression],
   argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
-  override val indexType: IndexType
+  override val indexType: IndexType,
+  supportPartitionedScan: Boolean
 )(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds + idName

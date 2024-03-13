@@ -609,7 +609,7 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case p @ NodeUniqueIndexSeek(idName, label, properties, valueExpr, _, _, indexType) =>
+      case p @ NodeUniqueIndexSeek(idName, label, properties, valueExpr, _, _, indexType, _) =>
         val (indexMode, indexDesc) = getNodeIndexDescriptions(
           idName.name,
           label,

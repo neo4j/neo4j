@@ -863,7 +863,16 @@ object LogicalPlanToPlanBuilderString {
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
         partitionedNodeIndexOperator(idName, labelToken, properties, argumentIds, queryStr, indexType)
-      case NodeUniqueIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
+      case NodeUniqueIndexSeek(
+          idName,
+          labelToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        ) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
         nodeIndexOperator(
@@ -875,7 +884,7 @@ object LogicalPlanToPlanBuilderString {
           unique = true,
           queryStr,
           indexType,
-          supportPartitionedScan = false
+          supportPartitionedScan = supportPartitionedScan
         )
       case DirectedRelationshipIndexSeek(
           idName,

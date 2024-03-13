@@ -730,7 +730,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             SingleQueryExpression(literalString("foo")),
             Set.empty,
             IndexOrderNone,
-            IndexType.RANGE
+            IndexType.RANGE,
+            supportPartitionedScan = true
           ),
           Seq(createNodeWithProperties("n", Seq("Awesome"), "{prop: 'foo'}")),
           Seq.empty,
@@ -761,7 +762,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             SingleQueryExpression(literalString("foo")),
             Set.empty,
             IndexOrderNone,
-            IndexType.RANGE
+            IndexType.RANGE,
+            supportPartitionedScan = true
           ),
           Seq(createNodeWithProperties("n", Seq("Awesome"), "{prop: 'foo'}")),
           Seq.empty,
@@ -793,7 +795,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             SingleQueryExpression(literalString("foo")),
             Set.empty,
             IndexOrderNone,
-            IndexType.RANGE
+            IndexType.RANGE,
+            supportPartitionedScan = true
           ),
           Seq(createNodeWithProperties("n", Seq("Awesome"), "{prop: 'foo'}")),
           Seq.empty,

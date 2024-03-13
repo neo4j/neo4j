@@ -885,7 +885,7 @@ case class InterpretedPipeMapper(
           IndexOrderNone
         )(id = id)
 
-      case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType) =>
+      case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(
           ident.name,

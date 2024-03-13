@@ -2536,7 +2536,7 @@ class IndexPlanningIntegrationTest
         paramExpr = Some(prop("x", "prop")),
         supportPartitionedScan = false
       ).withCardinality(expectedCardinality)
-      .nodeIndexOperator("x:A(id = 123)", unique = true, supportPartitionedScan = false).withCardinality(1.0)
+      .nodeIndexOperator("x:A(id = 123)", unique = true).withCardinality(1.0)
 
     planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
   }

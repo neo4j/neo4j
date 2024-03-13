@@ -822,7 +822,8 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       seekExpression,
       Set.empty,
       IndexOrderNone,
-      IndexType.RANGE
+      IndexType.RANGE,
+      supportPartitionedScan = true
     )
 
     // when

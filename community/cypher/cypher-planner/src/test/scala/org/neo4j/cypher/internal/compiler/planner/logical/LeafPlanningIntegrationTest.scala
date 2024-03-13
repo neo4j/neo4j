@@ -439,7 +439,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         SingleQueryExpression(literalInt(42)),
         Set.empty,
         IndexOrderNone,
-        IndexType.RANGE
+        IndexType.RANGE,
+        supportPartitionedScan = true
       )
     )
   }
@@ -738,7 +739,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         SingleQueryExpression(literalInt(42)),
         Set.empty,
         IndexOrderNone,
-        IndexType.RANGE
+        IndexType.RANGE,
+        supportPartitionedScan = true
       )
     )
   }
@@ -760,7 +762,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           SingleQueryExpression(literalInt(3)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         )
       )
     )
@@ -783,7 +786,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           SingleQueryExpression(literalInt(3)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         )
       )
     )

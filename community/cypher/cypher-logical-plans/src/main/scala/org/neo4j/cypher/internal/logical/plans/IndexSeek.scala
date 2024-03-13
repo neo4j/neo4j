@@ -136,7 +136,16 @@ object IndexSeek {
 
     def createSeek(properties: Seq[IndexedProperty], valueExpr: QueryExpression[Expression]): NodeIndexSeekLeafPlan =
       if (unique) {
-        NodeUniqueIndexSeek(varFor(node), label, properties, valueExpr, argumentIds.map(varFor), indexOrder, indexType)
+        NodeUniqueIndexSeek(
+          varFor(node),
+          label,
+          properties,
+          valueExpr,
+          argumentIds.map(varFor),
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        )
       } else {
         NodeIndexSeek(
           varFor(node),
