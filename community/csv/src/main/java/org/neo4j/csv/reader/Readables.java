@@ -49,7 +49,7 @@ import org.neo4j.function.ThrowingFunction;
 
 /**
  * Means of instantiating common {@link CharReadable} instances.
- *
+ * <br>
  * There are support for compressed files as well for those methods accepting a {@link Path} argument.
  * <ol>
  * <li>ZIP: is both an archive and a compression format. In many cases the order of files
@@ -139,130 +139,158 @@ public class Readables {
         return new WrappedCharReadable(length, reader, sourceDescription);
     }
 
-    private static class FromFile implements IOFunction<Path, CharReadable> {
-        private final Charset charset;
-
-        FromFile(Charset charset) {
-            this.charset = charset;
-        }
-
+    private record FromFile(Charset charset) implements IOFunction<Path, CharReadable> {
         @Override
         public CharReadable apply(final Path path) throws IOException {
-            Magic magic = Magic.of(path);
-            if (magic == Magic.ZIP) { // ZIP file
-                ZipEntry entry;
-                try (ZipFile zipFile = new ZipFile(path.toFile())) {
-                    entry = getSingleSuitableEntry(zipFile);
-                }
-                return wrap(
-                        new InputStreamReader(openZipInputStream(path, entry), charset) {
-                            @Override
-                            public String toString() {
-                                return path.toAbsolutePath().toString();
-                            }
-                        },
-                        entry.getSize());
-            } else if (magic
-                    == Magic.GZIP) { // GZIP file. GZIP isn't an archive like ZIP, so this is purely data that is
-                // compressed.
-                // Although a very common way of compressing with GZIP is to use TAR which can combine many
-                // files into one blob, which is then compressed. If that's the case then
-                // the data will look like garbage and the reader will fail for whatever it will be used for.
-                // TODO add tar support
-                LongSupplier[] bytesReadFromCompressedSource = new LongSupplier[1];
-                GZIPInputStream zipStream = new GZIPInputStream(Files.newInputStream(path)) {
-                    {
-                        // Access GZIPInputStream's internal Inflater instance and make number of bytes read available
-                        // to the returned CharReadable below.
-                        bytesReadFromCompressedSource[0] = inf::getBytesRead;
-                    }
-                };
-                InputStreamReader reader = new InputStreamReader(zipStream, charset) {
+            final var input = MagicInputStream.create(path);
+            if (input.magic() == Magic.ZIP) {
+                return input.isDefaultFileSystemBased()
+                        ? zipReadableFromFile(input.path(), charset)
+                        : zipReadable(input, charset);
+            } else if (input.magic() == Magic.GZIP) {
+                return gzipReadable(input, charset);
+            } else {
+                return readableWithEncoding(input, charset);
+            }
+        }
+    }
+
+    private static CharReadable zipReadable(MagicInputStream input, Charset charset) throws IOException {
+        // can't use ZipFile unfortunately as the (storage) Path implementation would throw on a toFile call :-(
+        final var stream = new ZipInputStream(input);
+
+        ZipEntry entry;
+        while ((entry = stream.getNextEntry()) != null) {
+            if (entry.isDirectory() || invalidZipEntry(entry.getName())) {
+                continue;
+            }
+
+            return wrap(
+                    new InputStreamReader(stream, charset) {
+                        @Override
+                        public String toString() {
+                            return input.path().toAbsolutePath().toString();
+                        }
+                    },
+                    entry.getSize());
+        }
+
+        stream.close();
+        throw new IllegalStateException("Couldn't find zip entry when opening the stream at " + input.path());
+    }
+
+    private static CharReadable zipReadableFromFile(Path path, Charset charset) throws IOException {
+        try (var zipFile = new ZipFile(path.toFile())) {
+            final var entry = getSingleSuitableEntry(zipFile);
+            return wrap(
+                    new InputStreamReader(openZipInputStream(path, entry), charset) {
+                        @Override
+                        public String toString() {
+                            return path.toAbsolutePath().toString();
+                        }
+                    },
+                    entry.getSize());
+        }
+    }
+
+    private static CharReadable gzipReadable(MagicInputStream input, Charset charset) throws IOException {
+        final var path = input.path();
+        // GZIP isn't an archive like ZIP, so this is purely data that is compressed.
+        // Although a very common way of compressing with GZIP is to use TAR which can combine many files into one
+        // blob, which is then compressed. If that's the case then the data will look like garbage and the reader
+        // will fail for whatever it will be used for.
+        // TODO add tar support
+        LongSupplier[] bytesReadFromCompressedSource = new LongSupplier[1];
+        GZIPInputStream zipStream = new GZIPInputStream(input) {
+            {
+                // Access GZIPInputStream's internal Inflater instance and make number of bytes read available
+                // to the returned CharReadable below.
+                bytesReadFromCompressedSource[0] = inf::getBytesRead;
+            }
+        };
+        InputStreamReader reader = new InputStreamReader(zipStream, charset) {
+            @Override
+            public String toString() {
+                return path.toAbsolutePath().toString();
+            }
+        };
+        // For GZIP there's no reliable way of getting the decompressed file size w/o decompressing the whole file,
+        // therefore this compression ratio estimation mechanic is put in place such that at any given time the
+        // reader can be queried about its observed compression ratio and the longer the reader goes the more
+        // accurate it gets.
+        return new WrappedCharReadable(
+                Files.size(path), reader, path.toAbsolutePath().toString()) {
+            @Override
+            public float compressionRatio() {
+                long decompressedPosition = position();
+                long compressedPosition = bytesReadFromCompressedSource[0].getAsLong();
+                return (float) ((double) compressedPosition / decompressedPosition);
+            }
+        };
+    }
+
+    private static CharReadable readableWithEncoding(MagicInputStream input, Charset defaultCharset)
+            throws IOException {
+        final var magic = input.magic();
+        var usedCharset = defaultCharset;
+        if (magic.impliesEncoding()) {
+            // Read (and skip) the magic (BOM in this case) from the file we're returning out
+            long skip = input.skip(magic.length());
+            if (skip != magic.length()) {
+                throw new IOException(
+                        "Unable to skip " + magic.length() + " bytes, only able to skip " + skip + " bytes.");
+            }
+            usedCharset = magic.encoding();
+        }
+        return wrap(
+                new InputStreamReader(input, usedCharset) {
                     @Override
                     public String toString() {
-                        return path.toAbsolutePath().toString();
+                        return input.path().toAbsolutePath().toString();
                     }
-                };
-                // For GZIP there's no reliable way of getting the decompressed file size w/o decompressing the whole
-                // file,
-                // therefore this compression ratio estimation mechanic is put in place such that at any given time the
-                // reader
-                // can be queried about its observed compression ratio and the longer the reader goes the more accurate
-                // it gets.
-                long compressedFileLength = Files.size(path);
-                return new WrappedCharReadable(
-                        compressedFileLength, reader, path.toAbsolutePath().toString()) {
-                    @Override
-                    public float compressionRatio() {
-                        long decompressedPosition = position();
-                        long compressedPosition = bytesReadFromCompressedSource[0].getAsLong();
-                        return (float) ((double) compressedPosition / decompressedPosition);
-                    }
-                };
-            } else {
-                InputStream in = Files.newInputStream(path);
-                Charset usedCharset = this.charset;
-                if (magic.impliesEncoding()) {
-                    // Read (and skip) the magic (BOM in this case) from the file we're returning out
-                    long skip = in.skip(magic.length());
-                    if (skip != magic.length()) {
-                        throw new IOException(
-                                "Unable to skip " + magic.length() + " bytes, only able to skip " + skip + " bytes.");
-                    }
-                    usedCharset = magic.encoding();
-                }
-                return wrap(
-                        new InputStreamReader(in, usedCharset) {
-                            @Override
-                            public String toString() {
-                                return path.toAbsolutePath().toString();
-                            }
-                        },
-                        Files.size(path));
+                },
+                Files.size(input.path()));
+    }
+
+    private static ZipInputStream openZipInputStream(Path path, ZipEntry entry) throws IOException {
+        var stream = new ZipInputStream(new BufferedInputStream(new FileInputStream(path.toFile())));
+        ZipEntry readEntry;
+        while ((readEntry = stream.getNextEntry()) != null) {
+            if (!readEntry.isDirectory() && readEntry.getName().equals(entry.getName())) {
+                return stream;
             }
         }
+        stream.close();
+        throw new IllegalStateException(
+                "Couldn't find zip entry with name " + entry.getName() + " when opening it as a stream");
+    }
 
-        private static ZipInputStream openZipInputStream(Path path, ZipEntry entry) throws IOException {
-            var stream = new ZipInputStream(new BufferedInputStream(new FileInputStream(path.toFile())));
-            ZipEntry readEntry;
-            while ((readEntry = stream.getNextEntry()) != null) {
-                if (!readEntry.isDirectory() && readEntry.getName().equals(entry.getName())) {
-                    return stream;
-                }
+    private static ZipEntry getSingleSuitableEntry(ZipFile zipFile) throws IOException {
+        List<String> unsuitableEntries = new ArrayList<>();
+        Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
+        ZipEntry found = null;
+        while (enumeration.hasMoreElements()) {
+            ZipEntry entry = enumeration.nextElement();
+            if (entry.isDirectory() || invalidZipEntry(entry.getName())) {
+                unsuitableEntries.add(entry.getName());
+                continue;
             }
-            stream.close();
-            throw new IllegalStateException(
-                    "Couldn't find zip entry with name " + entry.getName() + " when opening it as a stream");
+
+            if (found != null) {
+                throw new IOException("Multiple suitable files found in zip file " + zipFile.getName() + ", at least "
+                        + found.getName() + " and " + entry.getName()
+                        + ". Only a single file per zip file is supported");
+            }
+            found = entry;
         }
 
-        private static ZipEntry getSingleSuitableEntry(ZipFile zipFile) throws IOException {
-            List<String> unsuitableEntries = new ArrayList<>();
-            Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
-            ZipEntry found = null;
-            while (enumeration.hasMoreElements()) {
-                ZipEntry entry = enumeration.nextElement();
-                if (entry.isDirectory() || invalidZipEntry(entry.getName())) {
-                    unsuitableEntries.add(entry.getName());
-                    continue;
-                }
-
-                if (found != null) {
-                    throw new IOException(
-                            "Multiple suitable files found in zip file " + zipFile.getName() + ", at least "
-                                    + found.getName() + " and " + entry.getName()
-                                    + ". Only a single file per zip file is supported");
-                }
-                found = entry;
-            }
-
-            if (found == null) {
-                throw new IOException("No suitable file found in zip file " + zipFile.getName() + "."
-                        + (!unsuitableEntries.isEmpty()
-                                ? " Although found these unsuitable entries " + unsuitableEntries
-                                : ""));
-            }
-            return found;
+        if (found == null) {
+            throw new IOException("No suitable file found in zip file " + zipFile.getName() + "."
+                    + (!unsuitableEntries.isEmpty()
+                            ? " Although found these unsuitable entries " + unsuitableEntries
+                            : ""));
         }
+        return found;
     }
 
     private static boolean invalidZipEntry(String name) {
@@ -275,14 +303,11 @@ public class Readables {
 
     public static CharReadable files(Charset charset, Path... files) throws IOException {
         IOFunction<Path, CharReadable> opener = new FromFile(charset);
-        switch (files.length) {
-            case 0:
-                return EMPTY;
-            case 1:
-                return opener.apply(files[0]);
-            default:
-                return new MultiReadable(iterator(opener, files));
-        }
+        return switch (files.length) {
+            case 0 -> EMPTY;
+            case 1 -> opener.apply(files[0]);
+            default -> new MultiReadable(iterator(opener, files));
+        };
     }
 
     @SafeVarargs
@@ -306,11 +331,6 @@ public class Readables {
                     throw new IllegalStateException();
                 }
                 return converter.apply(items[cursor++]);
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException();
             }
         };
     }
@@ -365,7 +385,7 @@ public class Readables {
         return Arrays.copyOf(result, cursor);
     }
 
-    interface CharSupplier {
+    public interface CharSupplier {
         boolean next(char[] into, int offset) throws IOException;
     }
 }

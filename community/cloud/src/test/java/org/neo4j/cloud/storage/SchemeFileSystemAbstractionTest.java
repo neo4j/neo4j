@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,6 +119,11 @@ class SchemeFileSystemAbstractionTest {
     }
 
     @Test
+    void resolvableSchemes() {
+        assertThat(schemeFs.resolvableSchemes()).containsExactlyInAnyOrder(SCHEME, "file");
+    }
+
+    @Test
     void canResolve() {
         assertThat(schemeFs.canResolve(URI.create(SCHEME + "://stuff")))
                 .as("handled via the storage system")
@@ -125,7 +131,7 @@ class SchemeFileSystemAbstractionTest {
         assertThat(schemeFs.canResolve(SCHEME + "://stuff"))
                 .as("handled via the storage system")
                 .isTrue();
-        assertThat(schemeFs.canResolve(SCHEME + "://stuff"))
+        assertThat(schemeFs.canResolve(SCHEME.toUpperCase(Locale.ROOT) + "://stuff"))
                 .as("handled via the storage system")
                 .isTrue();
 
@@ -133,6 +139,9 @@ class SchemeFileSystemAbstractionTest {
                 .as("handled via the fallback file system")
                 .isTrue();
         assertThat(schemeFs.canResolve("file:///stuff"))
+                .as("handled via the fallback file system")
+                .isTrue();
+        assertThat(schemeFs.canResolve("FILE:///stuff"))
                 .as("handled via the fallback file system")
                 .isTrue();
         assertThat(schemeFs.canResolve("/stuff"))

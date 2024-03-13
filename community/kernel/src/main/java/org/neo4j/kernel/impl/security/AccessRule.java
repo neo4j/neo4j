@@ -20,14 +20,13 @@
 package org.neo4j.kernel.impl.security;
 
 import java.io.IOException;
-import java.net.URL;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 
-public interface URLAccessRule {
+public interface AccessRule<T> {
     CharReadable getReader(
-            URL url, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
+            T resource, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
             throws URLAccessValidationError, IOException;
 }

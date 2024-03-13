@@ -138,7 +138,7 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
-import java.net.URL
+import java.net.URI
 import java.util
 import java.util.Locale
 
@@ -1086,7 +1086,7 @@ private[internal] class TransactionBoundReadQueryContext(
     relationshipCursor: RelationshipScanCursor,
     propertyCursor: PropertyCursor
   ): MapValue = {
-    CursorUtils.relationshipAsMap(reads(), tokenRead, relationship, relationshipCursor, propertyCursor);
+    CursorUtils.relationshipAsMap(reads(), tokenRead, relationship, relationshipCursor, propertyCursor)
   }
 
   override def getNodesByLabel(
@@ -1279,7 +1279,7 @@ private[internal] class TransactionBoundReadQueryContext(
       cursor: NodeCursor,
       propertyCursor: PropertyCursor
     ): Array[Value] = {
-      CursorUtils.propertiesGet(properties, node, reads(), cursor, propertyCursor);
+      CursorUtils.propertiesGet(properties, node, reads(), cursor, propertyCursor)
     }
 
     override def getProperties(
@@ -1288,7 +1288,7 @@ private[internal] class TransactionBoundReadQueryContext(
       cursor: NodeCursor,
       propertyCursor: PropertyCursor
     ): Array[Value] = {
-      CursorUtils.propertiesGet(properties, node.id(), reads(), cursor, propertyCursor);
+      CursorUtils.propertiesGet(properties, node.id(), reads(), cursor, propertyCursor)
     }
 
     override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Value =
@@ -1373,7 +1373,7 @@ private[internal] class TransactionBoundReadQueryContext(
       relationshipScanCursor: RelationshipScanCursor,
       propertyCursor: PropertyCursor
     ): Array[Int] = {
-      CursorUtils.relationshipPropertyIds(reads(), rel, relationshipScanCursor, propertyCursor);
+      CursorUtils.relationshipPropertyIds(reads(), rel, relationshipScanCursor, propertyCursor)
     }
 
     override def getProperty(
@@ -1624,8 +1624,8 @@ private[internal] class TransactionBoundReadQueryContext(
     def relationshipTypeGetName(relTypeId: Int): String = getRelTypeName(relTypeId)
   }
 
-  override def getImportDataConnection(url: URL): CharReadable = {
-    transactionalContext.getImportDataConnection(url)
+  override def getImportDataConnection(uri: URI): CharReadable = {
+    transactionalContext.getImportDataConnection(uri)
   }
 
   override def nodeCountByCountStore(labelId: Int): Long = {

@@ -81,7 +81,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import java.net.URL
+import java.net.URI
 
 class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends ReadQueryContext
     with ExceptionTranslationSupport {
@@ -375,8 +375,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   ): NodeValueIndexCursor =
     translateException(tokenNameLookup, inner.nodeLockingUniqueIndexSeek(index, values))
 
-  override def getImportDataConnection(url: URL): CharReadable =
-    translateException(tokenNameLookup, inner.getImportDataConnection(url))
+  override def getImportDataConnection(uri: URI): CharReadable =
+    translateException(tokenNameLookup, inner.getImportDataConnection(uri))
 
   override def getRelationshipsForIds(
     node: Long,

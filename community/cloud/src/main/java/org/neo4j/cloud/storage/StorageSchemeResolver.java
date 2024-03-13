@@ -22,6 +22,7 @@ package org.neo4j.cloud.storage;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public interface StorageSchemeResolver {
@@ -37,6 +38,11 @@ public interface StorageSchemeResolver {
     static boolean isSchemeBased(String resource) {
         return SCHEME.matcher(resource).matches();
     }
+
+    /**
+     * @return the set of scheme names that can be resolved by this resolver
+     */
+    Set<String> resolvableSchemes();
 
     /**
      * Determine if the resource {@link URI} can be resolved by this system into an implementation-dependent {@link Path}

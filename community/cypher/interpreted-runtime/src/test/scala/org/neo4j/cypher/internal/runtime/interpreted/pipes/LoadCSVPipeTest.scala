@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Litera
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 
-import java.net.URL
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
@@ -46,8 +46,8 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    when(state.query.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(state.query.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     val input = new FakePipe(Seq(Map("x" -> 0), Map("x" -> 1)))
@@ -75,8 +75,8 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    when(state.query.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(state.query.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     val input = new FakePipe(Seq(
@@ -113,8 +113,8 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    when(state.query.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(state.query.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     val input = new FakePipe(Seq(Map("x" -> 0), Map("x" -> 1)))
@@ -142,8 +142,8 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    when(state.query.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(state.query.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     val input = new FakePipe(Seq(

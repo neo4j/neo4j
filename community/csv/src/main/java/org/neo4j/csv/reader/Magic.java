@@ -22,13 +22,8 @@ package org.neo4j.csv.reader;
 import static java.nio.charset.Charset.forName;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,7 +51,7 @@ public class Magic {
     public static final Magic BOM_UTF_8 = define("BOM_UTF8", StandardCharsets.UTF_8, 0xEF, 0xBB, 0xBF);
 
     /**
-     * Defines a magic signature which can later be detected in {@link #of(Path)} and {@link #of(byte[])}.
+     * Defines a magic signature which can later be detected in {@link #of(byte[])}.
      *
      * @param description description of the magic, typically which file it is.
      * @param impliesEncoding if a match for this to-be-defined magic implies that the contents in
@@ -75,27 +70,6 @@ public class Magic {
         DEFINITIONS.add(magic);
         LONGEST = Math.max(LONGEST, bytes.length);
         return magic;
-    }
-
-    /**
-     * Extracts and matches the magic of the header in the given {@code file}. If no magic matches
-     * then {@link #NONE} is returned.
-     *
-     * @param file {@link Path} to extract the magic from.
-     * @return matching {@link Magic}, or {@link #NONE} if no match.
-     * @throws IOException for errors reading from the file.
-     */
-    public static Magic of(Path file) throws IOException {
-        try (InputStream in = Files.newInputStream(file)) {
-            byte[] bytes = new byte[LONGEST];
-            int read = in.read(bytes);
-            if (read > 0) {
-                bytes = Arrays.copyOf(bytes, read);
-                return of(bytes);
-            }
-        } catch (EOFException e) { // This is OK
-        }
-        return Magic.NONE;
     }
 
     /**

@@ -36,8 +36,7 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-import java.net.MalformedURLException
-import java.net.URL
+import java.net.URI
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
@@ -85,15 +84,6 @@ abstract class AbstractLoadCSVPipe(
     argumentRow: CypherRow,
     value: AnyValue
   ): CypherRow
-
-  protected def getImportURL(urlString: String): URL = {
-    try {
-      new URL(urlString)
-    } catch {
-      case e: MalformedURLException =>
-        throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${e.getMessage}", e)
-    }
-  }
 
   // Uses an ArrayBackedMap to store header-to-values mapping
   private class IteratorWithHeaders(
@@ -180,21 +170,56 @@ abstract class AbstractLoadCSVPipe(
   ): ClosingIterator[CypherRow] = {
     input.flatMap(row => {
       val urlString: String = urlExpression(row, state).asInstanceOf[TextValue].stringValue()
+      val uri = getImportURI(urlString)
+      val fileName = fileNameFromUri(uri)
 
       format match {
         case HasHeaders =>
           val iterator = getLoadCSVIterator(state, urlString, useHeaders = true)
           val headers =
             if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
-          new IteratorWithHeaders(replaceNoValues(headers), row, getImportURL(urlString).getFile, iterator)
+          new IteratorWithHeaders(replaceNoValues(headers), row, fileName, iterator)
         case NoHeaders =>
           new IteratorWithoutHeaders(
             row,
-            getImportURL(urlString).getFile,
+            fileName,
             getLoadCSVIterator(state, urlString, useHeaders = false)
           )
       }
     })
+  }
+
+  private def getImportURI(urlString: String): URI = {
+    // even though we're working with URIs - report as URL errors for compat with original error messages
+    val uri: URI =
+      try {
+        new URI(urlString)
+      } catch {
+        case e: java.net.URISyntaxException =>
+          if (e.getMessage.startsWith("Expected scheme name")) {
+            // this captures the previous behaviour when creating a URL
+            throw new LoadExternalResourceException(s"Invalid URL '$urlString': no protocol: $urlString", e)
+          } else {
+            throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${e.getMessage}", e)
+          }
+      }
+
+    // this also captures the previous behaviour when creating a URL
+    if (!uri.isAbsolute || uri.getScheme == null) {
+      throw new LoadExternalResourceException(s"Invalid URL '$urlString': no protocol: $urlString")
+    }
+
+    uri
+  }
+
+  private def fileNameFromUri(uri: URI): String = {
+    if (uri.getScheme == "file") {
+      uri.getSchemeSpecificPart
+    } else {
+      val path = uri.getPath
+      val ix = if (path == null) -1 else path.lastIndexOf("/")
+      if (ix == -1) "N/A" else path.substring(ix + 1)
+    }
   }
 
   private def replaceNoValues(headers: IndexedSeq[Value]): IndexedSeq[Value] = headers.map {

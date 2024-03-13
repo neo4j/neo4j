@@ -56,7 +56,7 @@ import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
 import org.neo4j.values.ValueMapper
 
-import java.net.URL
+import java.net.URI
 
 abstract class TransactionalContextWrapper extends QueryTransactionalContext {
 
@@ -74,7 +74,7 @@ abstract class TransactionalContextWrapper extends QueryTransactionalContext {
 
   def cancellationChecker: CancellationChecker
 
-  def getImportDataConnection(url: URL): CharReadable
+  def getImportDataConnection(uri: URI): CharReadable
 }
 
 class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
@@ -180,7 +180,8 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
 
   override val cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
 
-  override def getImportDataConnection(url: URL): CharReadable = tc.graph().validateURLAccess(securityContext, url)
+  override def getImportDataConnection(uri: URI): CharReadable =
+    tc.graph().validateURIAccess(securityContext, uri)
 
   override def userTransactionId: String = {
     TransactionId(tc.databaseId().name(), tc.kernelTransaction().getTransactionSequenceNumber).toString

@@ -81,7 +81,7 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import java.lang.Boolean.FALSE
 import java.lang.Boolean.TRUE
-import java.net.URL
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicReference
 
@@ -345,27 +345,28 @@ class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFil
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
-    val fileUrl = createCSVTempFileURL("data")({
+    val fileName = "data.csv"
+    val fileUrl = createCSVTempFileURL(fileName)({
       _ => ()
     })
 
     // THEN
     withHttpServer(
-      "/data.csv",
+      s"/$fileName",
       httpPort => {
         context.getImportDataConnection(
-          new URL(s"http://localhost:$httpPort/data.csv")
+          new URI(s"http://localhost:$httpPort/$fileName")
         ).sourceDescription() should equal(
-          s"http://localhost:$httpPort/data.csv"
+          s"http://localhost:$httpPort/$fileName"
         )
       }
     )
-    windowsSafeFileURL(context.getImportDataConnection(new URL(fileUrl)).sourceDescription()) should equal(
-      windowsSafeFileURL(new URL(fileUrl).getFile)
+    windowsSafeFileURL(context.getImportDataConnection(new URI(fileUrl)).sourceDescription()) should equal(
+      windowsSafeFileURL(new URI(fileUrl).getSchemeSpecificPart)
     )
     the[URLAccessValidationError] thrownBy (context.getImportDataConnection(
-      new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")
-    )) should have message "loading resources via protocol 'jar' is not permitted"
+      new URI("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")
+    )) should have message "Invalid URL 'jar:file:/tmp/blah.jar!/tmp/foo/data.csv': unknown protocol: jar"
 
     transactionalContext.close()
     tx.close()
@@ -393,12 +394,12 @@ class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFil
       "/data.csv",
       httpPort => {
         context.getImportDataConnection(
-          new URL(s"http://localhost:$httpPort/data.csv")
+          new URI(s"http://localhost:$httpPort/data.csv")
         ).sourceDescription() should equal(
           s"http://localhost:$httpPort/data.csv"
         )
         the[URLAccessValidationError] thrownBy (context.getImportDataConnection(
-          new URL("file:///tmp/foo/data.csv")
+          new URI("file:///tmp/foo/data.csv")
         )) should have message (
           "configuration property 'dbms.security.allow_csv_import_from_file_urls' is false"
         )

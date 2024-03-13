@@ -38,11 +38,12 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
 import java.util.Collection;
-import java.util.Objects;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.map.MutableMap;
 import org.neo4j.cloud.storage.StorageSystemProviderFactory.ChunkChannel;
 import org.neo4j.configuration.Config;
@@ -101,6 +102,17 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
         this.config = requireNonNull(config);
         this.logProvider = requireNonNull(logProvider);
         this.memoryTracker = requireNonNull(memoryTracker);
+    }
+
+    @Override
+    public Set<String> resolvableSchemes() {
+        // will always support the file scheme
+        final var schemes = Sets.mutable.of("file");
+        // and whatever has been registered in the system
+        for (var factory : factories) {
+            schemes.add(factory.scheme());
+        }
+        return schemes.asUnmodifiable();
     }
 
     @Override
@@ -164,6 +176,7 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     public OutputStream openAsOutputStream(Path fileName, boolean append) throws IOException {
         if (fileName instanceof StoragePath path) {
             final var options = append ? APPEND_OPTIONS : WRITE_OPTIONS;
+            //noinspection resource
             return provider(path).newOutputStream(fileName, options.toArray(OpenOption[]::new));
         }
 
@@ -173,6 +186,7 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     @Override
     public InputStream openAsInputStream(Path fileName) throws IOException {
         if (fileName instanceof StoragePath path) {
+            //noinspection resource
             return provider(path).openAsInputStream(path);
         }
 
@@ -183,6 +197,7 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     public void truncate(Path file, long size) throws IOException {
         if (file instanceof StoragePath path) {
             // must go this route as the default Files impl requires a FileChannel which we don't support
+            //noinspection resource
             try (var channel = provider(path).newByteChannel(path, WRITE_OPTIONS)) {
                 channel.truncate(size);
             }
@@ -335,7 +350,7 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     }
 
     private boolean internalCanResolve(String scheme) {
-        if (scheme == null || scheme.equals("file")) {
+        if (scheme == null || "file".equalsIgnoreCase(scheme)) {
             return true;
         }
 
@@ -348,17 +363,18 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     }
 
     private Path internalResolve(String scheme, Supplier<URI> resource) throws IOException {
-        if (scheme == null || Objects.equals("file", scheme)) {
+        if (scheme == null || "file".equalsIgnoreCase(scheme)) {
             return Path.of(resource.get());
         }
 
+        final var schemeToResolve = scheme.toLowerCase(Locale.ROOT);
         for (var factory : factories) {
-            if (factory.matches(scheme)) {
+            if (factory.matches(schemeToResolve)) {
                 try {
                     final var provider = schemesToProvider.getIfAbsentPut(
-                            scheme,
+                            schemeToResolve,
                             () -> factory.createStorageSystemProvider(
-                                    (prefix) -> tempChannel(prefix, scheme),
+                                    (prefix) -> tempChannel(prefix, schemeToResolve),
                                     config,
                                     logProvider,
                                     memoryTracker,
@@ -401,6 +417,7 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     }
 
     private StoreChannel internalOpen(StoragePath path, Set<OpenOption> options) throws IOException {
+        //noinspection resource
         return new StorageChannel(provider(path).newByteChannel(path, options));
     }
 

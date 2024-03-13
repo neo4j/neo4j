@@ -80,7 +80,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import java.net.URL
+import java.net.URI
 
 object StaticEvaluation {
 
@@ -426,7 +426,7 @@ object StaticEvaluation {
 
     override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = notAvailable()
 
-    override def getImportDataConnection(url: URL): CharReadable = notAvailable()
+    override def getImportDataConnection(uri: URI): CharReadable = notAvailable()
 
     override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = notAvailable()
 

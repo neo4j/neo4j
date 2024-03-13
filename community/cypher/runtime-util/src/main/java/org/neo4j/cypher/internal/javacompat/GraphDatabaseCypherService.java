@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -34,18 +34,18 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.security.URLAccessRules;
+import org.neo4j.kernel.impl.security.URIAccessRules;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class GraphDatabaseCypherService implements GraphDatabaseQueryService {
     private final GraphDatabaseAPI graph;
-    private final URLAccessRules urlAccessRule;
+    private final URIAccessRules urlAccessRule;
     private final Config config;
 
     public GraphDatabaseCypherService(GraphDatabaseService graph) {
         this.graph = (GraphDatabaseAPI) graph;
         DependencyResolver dependencyResolver = getDependencyResolver();
-        this.urlAccessRule = dependencyResolver.resolveDependency(URLAccessRules.class);
+        this.urlAccessRule = dependencyResolver.resolveDependency(URIAccessRules.class);
         this.config = dependencyResolver.resolveDependency(Config.class);
     }
 
@@ -76,8 +76,8 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService {
     }
 
     @Override
-    public CharReadable validateURLAccess(SecurityContext securityContext, URL url) throws URLAccessValidationError {
-        return urlAccessRule.validateAndOpen(securityContext, url);
+    public CharReadable validateURIAccess(SecurityContext securityContext, URI uri) throws URLAccessValidationError {
+        return urlAccessRule.validateAndOpen(securityContext, uri);
     }
 
     public Transaction beginTx() {

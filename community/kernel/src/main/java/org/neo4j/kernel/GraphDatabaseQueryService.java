@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.csv.reader.CharReadable;
@@ -74,5 +74,5 @@ public interface GraphDatabaseQueryService {
             long timeout,
             TimeUnit unit);
 
-    CharReadable validateURLAccess(SecurityContext securityContext, URL url) throws URLAccessValidationError;
+    CharReadable validateURIAccess(SecurityContext securityContext, URI uri) throws URLAccessValidationError;
 }

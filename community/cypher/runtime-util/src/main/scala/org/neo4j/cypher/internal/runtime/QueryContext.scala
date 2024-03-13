@@ -90,7 +90,7 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import java.net.URL
+import java.net.URI
 import java.util.Optional
 
 /*
@@ -239,7 +239,7 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def addStatistics(statistics: QueryStatistics): Unit = {}
 
-  def getImportDataConnection(url: URL): CharReadable
+  def getImportDataConnection(uri: URI): CharReadable
 
   def nodeGetDegreeWithMax(maxDegree: Int, node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int =
     dir match {

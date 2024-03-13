@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.values.storable.TextValue
 
-import java.net.URL
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
@@ -66,8 +66,8 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("3")
         writer.println("4")
     }
-    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(queryContext.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     // when
@@ -98,8 +98,8 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("1,2")
         writer.println("3,4")
     }
-    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(queryContext.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     // when
@@ -133,8 +133,8 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("1,2")
         writer.println("3")
     }
-    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(queryContext.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     // when
@@ -163,8 +163,8 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
   test("should give a helpful message when asking for headers with empty file") {
     // given
     val url = createCSVTempFileURL(_ => {})
-    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(queryContext.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     // when
@@ -190,8 +190,8 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("1,2")
         writer.println("3,4")
     }
-    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(queryContext.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     // when
@@ -210,8 +210,8 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("3455\tbaz")
         writer.println("4\tx")
     }
-    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(queryContext.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     // when
@@ -241,8 +241,8 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("Malm\u0246")
         writer.println("K\u0248benhavn")
     }
-    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(queryContext.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
@@ -271,8 +271,8 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         // that provides it.
         writer.println("\"quoted\" and then some")
     }
-    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(queryContext.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     // when
@@ -303,8 +303,8 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("2\t\"Bar\n\nQuux\n\"")
         writer.println("3\t\"Bar\n\nQuux\"")
     }
-    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    when(queryContext.getImportDataConnection(any[URI])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URI](0)))
     )
 
     // when

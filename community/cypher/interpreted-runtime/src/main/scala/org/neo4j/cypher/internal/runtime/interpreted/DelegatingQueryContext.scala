@@ -102,7 +102,7 @@ import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import java.net.URL
+import java.net.URI
 
 abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
@@ -500,7 +500,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getRelTypeName(id: Int): String = singleDbHit(inner.getRelTypeName(id))
 
-  override def getImportDataConnection(url: URL): CharReadable = inner.getImportDataConnection(url)
+  override def getImportDataConnection(uri: URI): CharReadable = inner.getImportDataConnection(uri)
 
   override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int =
     singleDbHit(inner.nodeGetOutgoingDegreeWithMax(maxDegree, node, nodeCursor))

@@ -25,7 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.of;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,12 +38,17 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -109,49 +119,88 @@ class ReadablesTest {
 
     @ParameterizedTest(name = "read method {index}")
     @MethodSource("parameters")
-    void shouldFailWhenThereAreMoreThanOneSuitableFileInThere(ReadMethod readMethod) throws Exception {
+    void shouldReadTheFirstRealFileInThereWhenStreamSupportsMark(ReadMethod readMethod) throws Exception {
+        // GIVEN
+        final var text = "abcdefghijlkmnopqrstuvxyz";
+        final var absPath = directory.file("/mocked/absolute/path");
+
+        // WHEN
+        final var zippedContent = new ByteArrayOutputStream();
+        try (var out = new ZipOutputStream(zippedContent)) {
+            for (var otherEntry : List.of(".nothing", ".DS_Store", "__MACOSX/", "__MACOSX/file")) {
+                out.putNextEntry(new ZipEntry(otherEntry));
+            }
+
+            out.putNextEntry(new ZipEntry("file"));
+            out.write(text.getBytes());
+
+            out.putNextEntry(new ZipEntry("otherFile"));
+            out.write("ignored".getBytes());
+        }
+
+        final var streamCreationCount = new AtomicInteger();
+        final var fileSystemProvider = mock(FileSystemProvider.class);
+        when(fileSystemProvider.newInputStream(any())).thenAnswer(call -> {
+            streamCreationCount.incrementAndGet();
+            return new ByteArrayInputStream(zippedContent.toByteArray());
+        });
+
+        final var fileSystem = mock(FileSystem.class);
+        when(fileSystem.provider()).thenReturn(fileSystemProvider);
+
+        final var path = mock(Path.class);
+        when(path.getFileSystem()).thenReturn(fileSystem);
+        when(path.toAbsolutePath()).thenReturn(absPath);
+
+        // THEN
+        assertReadText(path, text, readMethod);
+        assertThat(streamCreationCount.get())
+                .as("should mark and reset the stream, i.e. only loaded once")
+                .isOne();
+    }
+
+    @Test
+    void shouldFailWhenThereAreMoreThanOneSuitableFileInThere() throws Exception {
         // GIVEN
         String text = "abcdefghijlkmnopqrstuvxyz";
         Path compressed = compressWithZip(text, ".nothing", ".DS_Store", "somewhere/something");
 
         // WHEN
+        @SuppressWarnings("resource")
         IOException exception =
                 assertThrows(IOException.class, () -> Readables.files(Charset.defaultCharset(), compressed));
         assertThat(exception.getMessage()).contains("Multiple");
     }
 
-    @ParameterizedTest(name = "read method {index}")
-    @MethodSource("parameters")
-    void shouldTrackPosition(ReadMethod readMethod) throws Exception {
+    @Test
+    void shouldTrackPosition() throws Exception {
         // GIVEN
         String data = "1234567890";
-        //                 ^   ^
-        CharReadable reader = Readables.wrap(data);
-        SectionedCharBuffer buffer = new SectionedCharBuffer(4);
+        try (CharReadable reader = Readables.wrap(data)) {
+            SectionedCharBuffer buffer = new SectionedCharBuffer(4);
 
-        // WHEN
-        int expected = 0;
-        do {
-            buffer = reader.read(buffer, buffer.front());
-            expected += buffer.available();
+            // WHEN
+            int expected = 0;
+            do {
+                buffer = reader.read(buffer, buffer.front());
+                expected += buffer.available();
 
-            // THEN
-            assertEquals(expected, reader.position());
-        } while (buffer.hasAvailable());
+                // THEN
+                assertEquals(expected, reader.position());
+            } while (buffer.hasAvailable());
 
-        // and THEN
-        assertEquals(data.toCharArray().length, expected);
+            // and THEN
+            assertEquals(data.toCharArray().length, expected);
+        }
     }
 
-    @ParameterizedTest(name = "read method {index}")
-    @MethodSource("parameters")
-    void shouldComplyWithUtf8CharsetForExample(ReadMethod readMethod) throws Exception {
+    @Test
+    void shouldComplyWithUtf8CharsetForExample() throws Exception {
         shouldComplyWithSpecifiedCharset(StandardCharsets.UTF_8);
     }
 
-    @ParameterizedTest(name = "read method {index}")
-    @MethodSource("parameters")
-    void shouldComplyWithIso88591CharsetForExample(ReadMethod readMethod) throws Exception {
+    @Test
+    void shouldComplyWithIso88591CharsetForExample() throws Exception {
         shouldComplyWithSpecifiedCharset(StandardCharsets.ISO_8859_1);
     }
 
@@ -196,9 +245,8 @@ class ReadablesTest {
         shouldReadTextFromInputStreamWithBom(Magic.BOM_UTF_8, text, readMethod);
     }
 
-    @ParameterizedTest(name = "read method {index}")
-    @MethodSource("parameters")
-    void shouldExtractFirstLine(ReadMethod readMethod) throws Exception {
+    @Test
+    void shouldExtractFirstLine() throws Exception {
         // given
         String firstLine = "characters of first line";
         String secondLine = "here on the second line";
@@ -214,9 +262,8 @@ class ReadablesTest {
         assertArrayEquals(secondLine.toCharArray(), secondLineCharacters);
     }
 
-    @ParameterizedTest(name = "read method {index}")
-    @MethodSource("parameters")
-    void shouldExtractOnlyLine(ReadMethod readMethod) throws Exception {
+    @Test
+    void shouldExtractOnlyLine() throws Exception {
         // given
         String firstLine = "characters of only line";
         CharReadable reader = Readables.wrap(firstLine);
@@ -245,16 +292,17 @@ class ReadablesTest {
         Path file = writeToFile(data, charset);
 
         // WHEN
-        CharReadable reader = Readables.files(charset, file);
-        SectionedCharBuffer buffer = new SectionedCharBuffer(100);
-        buffer = reader.read(buffer, buffer.front());
+        try (CharReadable reader = Readables.files(charset, file)) {
+            SectionedCharBuffer buffer = new SectionedCharBuffer(100);
+            buffer = reader.read(buffer, buffer.front());
 
-        // THEN
-        char[] expected = data.toCharArray();
-        char[] array = buffer.array();
-        assertEquals(expected.length, buffer.available());
-        for (int i = 0; i < expected.length; i++) {
-            assertEquals(expected[i], array[buffer.pivot() + i]);
+            // THEN
+            char[] expected = data.toCharArray();
+            char[] array = buffer.array();
+            assertEquals(expected.length, buffer.available());
+            for (int i = 0; i < expected.length; i++) {
+                assertEquals(expected[i], array[buffer.pivot() + i]);
+            }
         }
     }
 

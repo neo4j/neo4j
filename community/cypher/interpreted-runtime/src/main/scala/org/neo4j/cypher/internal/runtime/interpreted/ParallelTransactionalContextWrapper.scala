@@ -55,7 +55,7 @@ import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
 import org.neo4j.values.ValueMapper
 
-import java.net.URL
+import java.net.URI
 
 class ParallelTransactionalContextWrapper(
   private[this] val tc: TransactionalContext
@@ -73,7 +73,7 @@ class ParallelTransactionalContextWrapper(
 
     override def getPageCacheHits: Long = tracer.hits()
 
-    override def getPageCacheMisses: Long = tracer.faults();
+    override def getPageCacheMisses: Long = tracer.faults()
   }
 
   override def transactionHeapHighWaterMark: Long = _kernelExecutionContext.memoryTracker().heapHighWaterMark()
@@ -165,7 +165,8 @@ class ParallelTransactionalContextWrapper(
 
   override def cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
 
-  override def getImportDataConnection(url: URL): CharReadable = tc.graph().validateURLAccess(securityContext, url)
+  override def getImportDataConnection(uri: URI): CharReadable =
+    tc.graph().validateURIAccess(securityContext, uri)
 
   override def userTransactionId: String = unsupported()
 

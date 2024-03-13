@@ -88,7 +88,7 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.CommunityIOControllerService;
-import org.neo4j.kernel.impl.security.URLAccessRules;
+import org.neo4j.kernel.impl.security.URIAccessRules;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -139,7 +139,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
 
         logProvider = globalModule.getLogService().getInternalLogProvider();
         securityLog = new CommunitySecurityLog(logProvider.getLog(CommunitySecurityModule.class));
-        globalDependencies.satisfyDependency(new URLAccessRules(securityLog, globalConfig));
+        globalDependencies.satisfyDependency(new URIAccessRules(securityLog, globalConfig));
 
         identityModule = tryResolveOrCreate(
                         ServerIdentityFactory.class,

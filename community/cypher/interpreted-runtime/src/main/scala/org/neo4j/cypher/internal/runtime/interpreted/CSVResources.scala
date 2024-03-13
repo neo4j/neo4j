@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.LoadExternalResourceException
 import org.neo4j.graphdb.security.AuthorizationViolationException
+import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.values.storable.Value
@@ -39,8 +40,8 @@ import org.neo4j.values.storable.Values
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
-import java.net.MalformedURLException
-import java.net.URL
+import java.net.URI
+import java.net.URISyntaxException
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Failure
@@ -62,7 +63,7 @@ object CSVResources {
     .build()
 }
 
-case class CSVResource(url: URL, resource: AutoCloseable) extends DefaultCloseListenable with AutoCloseablePlus {
+case class CSVResource(url: URI, resource: AutoCloseable) extends DefaultCloseListenable with AutoCloseablePlus {
   override def closeInternal(): Unit = resource.close()
 
   // This is not correct, but hopefully the defensive answer. We don't expect this to be called,
@@ -82,14 +83,22 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     headers: Boolean = false
   ): LoadCsvIterator = {
 
-    val (url, reader) = Try {
-      val url = new URL(urlString)
-      (url, query.getImportDataConnection(url))
+    val (uri, reader) = Try {
+      val uri = new URI(urlString)
+      (uri, query.getImportDataConnection(uri))
     } match {
       case Success(readable)                               => readable
       case Failure(error: AuthorizationViolationException) => throw error
-      case Failure(error: MalformedURLException) =>
+      // even though we're working with URIs - report as URL errors for compat with original error messages
+      case Failure(error: URISyntaxException) =>
         throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${error.getMessage}", error)
+      case Failure(error: URLAccessValidationError) =>
+        if (error.getMessage.contains("unknown protocol:")) {
+          // for backwards compatability with old error messages
+          throw new LoadExternalResourceException(error.getMessage, error)
+        } else {
+          throw new LoadExternalResourceException(s"Cannot load from URL '$urlString': ${error.getMessage}", error)
+        }
       case Failure(error) =>
         throw new LoadExternalResourceException(s"Cannot load from URL '$urlString': ${error.getMessage}", error)
     }
@@ -99,7 +108,7 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     val intDelimiter = delimiter.toInt
     val mark = new Mark
 
-    val resource = CSVResource(url, seeker)
+    val resource = CSVResource(uri, seeker)
     resourceManager.trace(resource)
 
     new LoadCsvIterator {

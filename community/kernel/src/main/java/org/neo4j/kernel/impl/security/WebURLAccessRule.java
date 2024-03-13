@@ -49,7 +49,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.util.VisibleForTesting;
 
-public class WebURLAccessRule implements URLAccessRule {
+public class WebURLAccessRule implements AccessRule<URL> {
     public static final String LOAD_CSV_USER_AGENT_PREFIX = "NeoLoadCSV_";
     private static final int REDIRECT_LIMIT = 10;
     private final Configuration config;
@@ -206,6 +206,7 @@ public class WebURLAccessRule implements URLAccessRule {
         }
     }
 
+    @Override
     public CharReadable getReader(
             URL url, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
             throws URLAccessValidationError {
