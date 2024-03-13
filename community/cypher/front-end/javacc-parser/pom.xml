@@ -54,7 +54,7 @@
                         <configuration>
                             <rules>
                                 <RestrictImports>
-                                    <excludedSourceRoot>src/main/java/org/neo4j/cypher/internal/parser/javacc/org/neo4j/cypher/internal/parser/javacc/*.java</excludedSourceRoot>
+                                    <excludedSourceRoot>src/main/java/org/neo4j/cypher/internal/parser/javacc/org/neo4j/cypher/internal/parser/javacc/</excludedSourceRoot>
                                 </RestrictImports>
                             </rules>
                         </configuration>
