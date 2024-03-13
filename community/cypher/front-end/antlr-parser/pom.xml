@@ -17,6 +17,7 @@
 
     <properties>
         <moduleName>org.neo4j.cypher.internal.parser.antlr4</moduleName>
+        <spotless.check.skip>true</spotless.check.skip>
     </properties>
 
     <build>
