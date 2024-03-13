@@ -574,7 +574,7 @@ object expandSolverStep {
    * A value that controls what StatefulShortestPath candidates should be produced.
    */
   sealed trait SSPHeuristic extends Ordered[SSPHeuristic] {
-    private val inOrder = Seq(SSPHeuristic.Disprefer, SSPHeuristic.Neutral, SSPHeuristic.Prefer)
+    private val inOrder = Seq(SSPHeuristic.Avoid, SSPHeuristic.Neutral, SSPHeuristic.Prefer)
 
     override def compare(that: SSPHeuristic): Int = inOrder.indexOf(this) - inOrder.indexOf(that)
   }
@@ -592,10 +592,9 @@ object expandSolverStep {
     case object Neutral extends SSPHeuristic
 
     /**
-     * Prefer not planning this plan, if possible.
-     * (Disprefer is not a word according to oxford dictionary.)
+     * Avoid planning this plan, if possible.
      */
-    case object Disprefer extends SSPHeuristic
+    case object Avoid extends SSPHeuristic
   }
 
   case class LogicalPlanWithSSPHeuristic(plan: LogicalPlan, heuristic: SSPHeuristic)
@@ -623,7 +622,7 @@ object expandSolverStep {
         val cardinalities = context.staticComponents.planningAttributes.cardinalities
         val inCardinality = cardinalities.get(ssp.source.id)
         val single = inCardinality <= Cardinality.SINGLE
-        LogicalPlanWithSSPHeuristic(ssp, if (single) SSPHeuristic.Prefer else SSPHeuristic.Disprefer)
+        LogicalPlanWithSSPHeuristic(ssp, if (single) SSPHeuristic.Prefer else SSPHeuristic.Avoid)
     }
   }
 
@@ -658,7 +657,7 @@ object expandSolverStep {
       .lastOption
       .map {
         _._2.map(_._1)
-      }.getOrElse(mutable.Iterable.empty)
+      }.getOrElse(Iterable.empty)
   }
 
   private def selectionsWithOriginalPredicates(spp: SelectivePathPattern): Selections =
