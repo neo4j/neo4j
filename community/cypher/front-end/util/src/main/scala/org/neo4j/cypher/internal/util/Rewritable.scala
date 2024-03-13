@@ -69,7 +69,20 @@ object Rewritable {
 
     def eqElements[B <: AnyRef](that: Iterator[B]): Boolean = {
       while (iterator.hasNext && that.hasNext) {
-        if (!(iterator.next() eq that.next()))
+        val dis = iterator.next()
+        val dat = that.next()
+        val same = dis match {
+          case v: java.lang.Integer   => v == dat
+          case v: java.lang.Long      => v == dat
+          case v: java.lang.Double    => v == dat
+          case v: java.lang.Float     => v == dat
+          case v: java.lang.Short     => v == dat
+          case v: java.lang.Byte      => v == dat
+          case v: java.lang.Character => v == dat
+          case v: java.lang.Boolean   => v == dat
+          case _                      => dis eq dat
+        }
+        if (!same)
           return false
       }
       !iterator.hasNext && !that.hasNext

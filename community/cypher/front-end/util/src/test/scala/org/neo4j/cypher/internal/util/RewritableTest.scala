@@ -115,6 +115,19 @@ class RewritableTest extends CypherFunSuite {
       result should be theSameInstanceAs ast
     }
 
+    test(s"$name should be identical when no rule matches, big integer number") {
+      val ast = Add(Val(1), Add(Val(854), Val(3)))
+
+      val result = rewrite(
+        ast,
+        {
+          case None => ???
+        }
+      )
+
+      result should be theSameInstanceAs ast
+    }
+
     test(s"$name should be identical when using identity") {
       val ast = Add(Val(1), Add(Val(2), Val(3)))
 
