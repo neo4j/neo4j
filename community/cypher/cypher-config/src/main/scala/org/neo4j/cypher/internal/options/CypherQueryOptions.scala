@@ -68,7 +68,14 @@ case class CypherQueryOptions(
     throw InvalidCypherOption.parallelRuntimeIsDisabled()
   }
 
-  def render: String = CypherQueryOptions.renderer.render(this)
+  def renderCypherOptions: String = {
+    // For Cypher query rendering purposes, execution mode and Cypher options are two separate things.
+    // Default execution mode renders to nothing, so let's use it as a part of a trick for rendering
+    // just Cypher options with execution mode.
+    CypherQueryOptions.renderer.render(this.copy(executionMode = CypherExecutionMode.default))
+  }
+
+  def renderExecutionMode: String = executionMode.render
 
   /**
    * Cache key used for executableQueryCache, astCache, and exeuctionPlanCache.

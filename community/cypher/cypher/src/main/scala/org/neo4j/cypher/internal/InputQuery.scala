@@ -163,8 +163,10 @@ case class QueryOptions(
   }
 
   def render: Option[String] = {
-    val text = queryOptions.render
-    if (text.isBlank) None else Some("CYPHER " + text)
+    val options = queryOptions.renderCypherOptions
+    val cypherOptions = if (!options.isBlank) "CYPHER " + options else ""
+    val fullOptions = (queryOptions.renderExecutionMode + " " + cypherOptions).trim
+    if (fullOptions.isBlank) None else Some(fullOptions)
   }
 
 }
