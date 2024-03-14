@@ -148,6 +148,10 @@ public interface SchemaRead extends SchemaReadCore {
      */
     Long indexGetOwningUniquenessConstraintId(IndexDescriptor index);
 
+    /**
+     * Get the owning constraint for a constraint index or <tt>null</tt> if the index does not have an owning
+     * constraint, without taking any locks.
+     */
     Long indexGetOwningUniquenessConstraintIdNonLocking(IndexDescriptor index);
 
     /**
