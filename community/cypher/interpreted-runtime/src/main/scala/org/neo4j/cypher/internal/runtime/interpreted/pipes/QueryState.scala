@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.scheduler.CallableExecutor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.utils.InCache
 
@@ -62,7 +63,8 @@ class QueryState(
   val cachedIn: InCache = createDefaultInCache(),
   val lenientCreateRelationship: Boolean = false,
   val prePopulateResults: Boolean = false,
-  val input: InputDataStream = NoInput
+  val input: InputDataStream = NoInput,
+  val transactionWorkerExecutor: Option[CallableExecutor] = None
 ) extends AutoCloseable {
 
   private var _rowFactory: CypherRowFactory = _
@@ -106,7 +108,8 @@ class QueryState(
       cachedIn,
       lenientCreateRelationship,
       prePopulateResults,
-      input
+      input,
+      transactionWorkerExecutor
     )
 
   def withInitialContext(initialContext: CypherRow): QueryState =
@@ -128,7 +131,8 @@ class QueryState(
       cachedIn,
       lenientCreateRelationship,
       prePopulateResults,
-      input
+      input,
+      transactionWorkerExecutor
     )
 
   def withInitialContextAndDecorator(initialContext: CypherRow, newDecorator: PipeDecorator): QueryState =
@@ -150,7 +154,8 @@ class QueryState(
       cachedIn,
       lenientCreateRelationship,
       prePopulateResults,
-      input
+      input,
+      transactionWorkerExecutor
     )
 
   def withQueryContext(query: QueryContext): QueryState =
@@ -172,7 +177,8 @@ class QueryState(
       cachedIn,
       lenientCreateRelationship,
       prePopulateResults,
-      input
+      input,
+      transactionWorkerExecutor
     )
 
   def withNewTransaction(): QueryState = {
@@ -227,7 +233,8 @@ class QueryState(
       newCachedIn,
       lenientCreateRelationship,
       prePopulateResults,
-      input
+      input,
+      transactionWorkerExecutor
     )
   }
 
@@ -286,48 +293,6 @@ object QueryState {
     params: Array[AnyValue],
     cursors: ExpressionCursors,
     queryIndexes: Array[IndexReadSession],
-    nodeLabelTokenReadSession: Option[TokenReadSession],
-    relTypeTokenReadSession: Option[TokenReadSession],
-    selectivityTrackerStorage: SelectivityTrackerStorage,
-    expressionVariables: Array[AnyValue],
-    subscriber: QuerySubscriber,
-    memoryTrackingController: MemoryTrackingController,
-    doProfile: Boolean,
-    decorator: PipeDecorator,
-    initialContext: Option[CypherRow],
-    cachedIn: InCache,
-    lenientCreateRelationship: Boolean,
-    prePopulateResults: Boolean,
-    input: InputDataStream
-  ): QueryState = {
-    val queryHeapHighWatermarkTracker = QueryMemoryTracker(memoryTrackingController.memoryTracking)
-    apply(
-      query,
-      resources,
-      params,
-      cursors,
-      queryIndexes,
-      selectivityTrackerStorage,
-      nodeLabelTokenReadSession,
-      relTypeTokenReadSession,
-      expressionVariables,
-      subscriber,
-      queryHeapHighWatermarkTracker,
-      decorator,
-      initialContext,
-      cachedIn,
-      lenientCreateRelationship,
-      prePopulateResults,
-      input
-    )
-  }
-
-  def apply(
-    query: QueryContext,
-    resources: ExternalCSVResource,
-    params: Array[AnyValue],
-    cursors: ExpressionCursors,
-    queryIndexes: Array[IndexReadSession],
     selectivityTrackerStorage: SelectivityTrackerStorage,
     nodeLabelTokenReadSession: Option[TokenReadSession],
     relTypeTokenReadSession: Option[TokenReadSession],
@@ -339,7 +304,8 @@ object QueryState {
     cachedIn: InCache,
     lenientCreateRelationship: Boolean,
     prePopulateResults: Boolean,
-    input: InputDataStream
+    input: InputDataStream,
+    transactionWorkerExecutor: Option[CallableExecutor]
   ): QueryState = {
     val memoryTrackerForOperatorProvider =
       queryHeapHighWatermarkTracker.newMemoryTrackerForOperatorProvider(query.transactionalContext.memoryTracker)
@@ -361,7 +327,8 @@ object QueryState {
       cachedIn,
       lenientCreateRelationship,
       prePopulateResults,
-      input
+      input,
+      transactionWorkerExecutor
     )
   }
 }

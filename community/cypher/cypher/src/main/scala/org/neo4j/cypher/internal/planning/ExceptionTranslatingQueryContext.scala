@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.logging.InternalLogProvider
+import org.neo4j.scheduler.JobScheduler
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -491,6 +492,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     new ExceptionTranslatingQueryContext(inner.contextWithNewTransaction())
 
   override def systemGraph: GraphDatabaseService = translateException(tokenNameLookup, inner.systemGraph)
+
+  override def jobScheduler: JobScheduler = translateException(tokenNameLookup, inner.jobScheduler)
 
   override def logProvider: InternalLogProvider = translateException(tokenNameLookup, inner.logProvider)
 

@@ -93,6 +93,7 @@ import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.scheduler.JobScheduler
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ElementIdMapper
 import org.neo4j.values.ValueMapper
@@ -678,6 +679,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def addStatistics(statistics: QueryStatistics): Unit = inner.addStatistics(statistics)
 
   override def systemGraph: GraphDatabaseService = inner.systemGraph
+
+  override def jobScheduler: JobScheduler = inner.jobScheduler
 
   override def logProvider: InternalLogProvider = inner.logProvider
 

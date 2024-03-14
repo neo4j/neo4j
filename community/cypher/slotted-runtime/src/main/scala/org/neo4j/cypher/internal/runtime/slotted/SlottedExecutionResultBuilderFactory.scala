@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.slotted
 
 import org.neo4j.cypher.internal.config.MemoryTrackingController
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ParameterMapping
@@ -47,7 +48,7 @@ class SlottedExecutionResultBuilderFactory(
   lenientCreateRelationship: Boolean,
   memoryTrackingController: MemoryTrackingController,
   hasLoadCSV: Boolean,
-  startsTransactions: Boolean
+  startsTransactions: Option[TransactionConcurrency]
 ) extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV, startsTransactions) {
 
   override def create(queryContext: QueryContext): ExecutionResultBuilder = SlottedExecutionResultBuilder(queryContext)
@@ -70,26 +71,26 @@ class SlottedExecutionResultBuilderFactory(
       subscriber: QuerySubscriber,
       doProfile: Boolean
     ): QueryState = {
-
+      val queryMemoryTracker = createQueryMemoryTracker(memoryTrackingController)
       QueryState(
         queryContext,
         externalResource,
         createParameterArray(params, parameterMapping),
         cursors,
         queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
+        querySelectivityTrackers.initializeTrackers(),
         queryIndexes.initiateNodeTokenIndex(queryContext),
         queryIndexes.initiateRelationshipTokenIndex(queryContext),
-        querySelectivityTrackers.initializeTrackers(),
         new Array[AnyValue](nExpressionSlots),
         subscriber,
-        memoryTrackingController,
-        doProfile,
+        queryMemoryTracker,
         pipeDecorator,
         initialContext = None,
         cachedIn = createDefaultInCache(),
         lenientCreateRelationship = lenientCreateRelationship,
         prePopulateResults = prePopulateResults,
-        input = input
+        input = input,
+        transactionWorkerExecutor = transactionWorkerExecutor
       )
     }
   }

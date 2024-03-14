@@ -41,6 +41,7 @@ object DebugSupport {
   final val DEBUG_WORKERS_ON_PROGRESS_STALL = false
   final val DEBUG_MEMORY_TRACKING = false
   final val DEBUG_GENERATED_SOURCE_CODE = false
+  final val DEBUG_CONCURRENT_TRANSACTIONS = false
 
   /** LOGS */
 
@@ -59,6 +60,8 @@ object DebugSupport {
   final val TRANSACTIONAL_CONTEXT = new DebugLog(DEBUG_TRANSACTIONAL_CONTEXT, Green)
   final val MEMORY_TRACKING = new DebugLog(DEBUG_MEMORY_TRACKING, Yellow)
   final val PROGRESS = new DebugLog(DEBUG_PROGRESS, Bold + Underline)
+  final val CONCURRENT_TRANSACTIONS = new DebugLog(DEBUG_CONCURRENT_TRANSACTIONS, "")
+  final val CONCURRENT_TRANSACTIONS_WORKER = new DebugLog(DEBUG_CONCURRENT_TRANSACTIONS, BrightBlue)
 
   /** COLORS AND FORMATTING **/
 
@@ -68,6 +71,7 @@ object DebugSupport {
   final val Yellow = "\u001b[33m"
   final val BrightYellow = "\u001b[33;1m"
   final val Blue = "\u001b[34m"
+  final val BrightBlue = "\u001b[34;1m"
   final val Magenta = "\u001b[35m"
   final val Cyan = "\u001b[36m"
   final val White = "\u001b[37m"

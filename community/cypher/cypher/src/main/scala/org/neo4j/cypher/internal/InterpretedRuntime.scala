@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.plandescription.Argument
@@ -43,11 +45,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfileInformation
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.Profiler
 import org.neo4j.cypher.internal.runtime.slottedParameters
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
+import scala.annotation.nowarn
 import scala.collection.immutable.ArraySeq
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
@@ -92,7 +97,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans, () => context.assertOpen.assertOpen())
     val columns = query.resultColumns
 
-    val startsTransactions = doesStartTransactions(query)
+    val transactionsMode = calculateTransactionsMode(query)
 
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(
       pipe,
@@ -104,23 +109,52 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       context.config.lenientCreateRelationship,
       context.config.memoryTrackingController,
       query.hasLoadCSV,
-      startsTransactions
+      transactionsMode
     )
 
     new InterpretedExecutionPlan(
       resultBuilderFactory,
       InterpretedRuntimeName,
       query.readOnly,
-      startsTransactions,
+      transactionsMode.isDefined,
       IndexedSeq.empty,
       Set.empty
     )
   }
 
-  def doesStartTransactions(query: LogicalQuery): Boolean =
-    query.logicalPlan.folder.treeExists {
-      case _: TransactionForeach | _: TransactionApply => true // CALL { ... } IN TRANSACTIONS
+  def calculateTransactionsMode(logicalQuery: LogicalQuery): Option[TransactionConcurrency] = {
+    val (startsTransactions, hasConcurrentTransactions) = doCalculateTransactionsMode(logicalQuery.logicalPlan)
+
+    if (hasConcurrentTransactions) {
+      Some(TransactionConcurrency.Concurrent(None))
+    } else if (startsTransactions) {
+      Some(TransactionConcurrency.Serial)
+    } else {
+      None
     }
+  }
+
+  @nowarn("msg=return statement")
+  private def doCalculateTransactionsMode(plan: LogicalPlan): (Boolean, Boolean) = {
+    val startsTransactions = plan.folder.treeFold(false) {
+      case TransactionApply(_, _, _, TransactionConcurrency.Concurrent(_), _, _) =>
+        return (true, true) // short circuit - if we are concurrent, we already know that we start transactions
+
+      case TransactionForeach(_, _, _, TransactionConcurrency.Concurrent(_), _, _) =>
+        return (true, true)
+
+      case _: TransactionApply | _: TransactionForeach =>
+        _ => TraverseChildren(true)
+
+      case _: LogicalPlan =>
+        b => TraverseChildren(b)
+
+      case _ =>
+        b => SkipChildren(b)
+    }
+
+    (startsTransactions, false)
+  }
 
   /**
    * Executable plan for a single cypher query. Warning, this class will get cached! Do not leak transaction objects

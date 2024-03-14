@@ -2826,6 +2826,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
 
   def transactionApply(
+    batchSize: Long,
+    concurrency: Int
+  ): IMPL =
+    transactionApply(batchSize = batchSize, concurrency = TransactionConcurrency.Concurrent(concurrency))
+
+  def transactionApply(
     batchSize: Long = TransactionForeach.defaultBatchSize,
     concurrency: TransactionConcurrency = TransactionConcurrency.Serial,
     onErrorBehaviour: InTransactionsOnErrorBehaviour = OnErrorFail,

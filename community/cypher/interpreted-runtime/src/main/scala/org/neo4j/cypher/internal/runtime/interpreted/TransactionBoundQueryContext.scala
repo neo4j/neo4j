@@ -124,6 +124,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.internal.LogService
 import org.neo4j.storageengine.api.PropertySelection
+import org.neo4j.scheduler.JobScheduler
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ValueMapper
@@ -1719,6 +1720,10 @@ private[internal] class TransactionBoundReadQueryContext(
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[DatabaseManagementService]).database(
       SYSTEM_DATABASE_NAME
     )
+  }
+
+  override def jobScheduler: JobScheduler = {
+    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[JobScheduler])
   }
 
   override def logProvider: InternalLogProvider = {

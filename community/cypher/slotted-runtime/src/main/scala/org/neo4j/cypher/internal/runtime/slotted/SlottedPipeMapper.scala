@@ -147,6 +147,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
@@ -247,6 +248,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.ArgumentSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.AssertSameRelationshipSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.BFSPruningVarLengthExpandSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CartesianProductSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.ConcurrentTransactionApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ConditionalApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateNodeSlottedCommand
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateRelationshipSlottedCommand
@@ -315,6 +317,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.UnwindSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ValueHashJoinSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.SlottedVariablePredicate
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -1839,7 +1842,7 @@ class SlottedPipeMapper(
           slots.get(variable).getOrElse(throw new InternalException(s"Foreach variable '$variable' has no slot"))
         ForeachSlottedApplyPipe(lhs, rhs, innerVariableSlot, convertExpressions(expression))(id)
 
-      case TransactionForeach(_, _, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
+      case TransactionForeach(_, _, batchSize, TransactionConcurrency.Serial, onErrorBehaviour, maybeReportAs) =>
         TransactionForeachSlottedPipe(
           lhs,
           rhs,
@@ -1848,11 +1851,55 @@ class SlottedPipeMapper(
           maybeReportAs.map(slots.apply)
         )(id = id)
 
-      case TransactionApply(lhsPlan, rhsPlan, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
+      case TransactionApply(
+          lhsPlan,
+          rhsPlan,
+          batchSize,
+          TransactionConcurrency.Serial,
+          onErrorBehaviour,
+          maybeReportAs
+        ) =>
         TransactionApplySlottedPipe(
           lhs,
           rhs,
           expressionConverters.toCommandExpression(id, batchSize),
+          onErrorBehaviour,
+          (rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name)).map(slots.apply),
+          maybeReportAs.map(slots.apply)
+        )(id = id)
+
+//      case TransactionForeach(_, _, batchSize, TransactionConcurrency.Concurrent(maybeConcurrency), onErrorBehaviour, maybeReportAs) =>
+//        val concurrency = maybeConcurrency match {
+//          case Some(concurrency) => concurrency
+//          case _ => Literal(intValue(50))
+//        }
+//        ConcurrentTransactionForeachSlottedPipe(
+//          lhs,
+//          rhs,
+//          expressionConverters.toCommandExpression(id, batchSize),
+//          concurrency,
+//          onErrorBehaviour,
+//          maybeReportAs.map(slots.apply)
+//        )(id = id)
+
+      case TransactionApply(
+          lhsPlan,
+          rhsPlan,
+          batchSize,
+          TransactionConcurrency.Concurrent(maybeConcurrency),
+          onErrorBehaviour,
+          maybeReportAs
+        ) =>
+        val concurrency: internal.expressions.Expression = maybeConcurrency match {
+          case Some(concurrency) => concurrency
+          case _                 => SignedDecimalIntegerLiteral("50")(InputPosition.NONE) // FIXME: use CPU count?
+        }
+
+        ConcurrentTransactionApplySlottedPipe(
+          lhs,
+          rhs,
+          expressionConverters.toCommandExpression(id, batchSize),
+          expressionConverters.toCommandExpression(id, concurrency),
           onErrorBehaviour,
           (rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name)).map(slots.apply),
           maybeReportAs.map(slots.apply)

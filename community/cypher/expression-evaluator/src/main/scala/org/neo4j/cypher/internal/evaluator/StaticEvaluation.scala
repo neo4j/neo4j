@@ -72,6 +72,7 @@ import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.logging.InternalLogProvider
+import org.neo4j.scheduler.JobScheduler
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -641,6 +642,8 @@ object StaticEvaluation {
     override def close(): Unit = notAvailable()
 
     override def systemGraph: GraphDatabaseService = notAvailable()
+
+    override def jobScheduler: JobScheduler = notAvailable()
 
     override def logProvider: InternalLogProvider = notAvailable()
 

@@ -88,6 +88,9 @@ public enum Group {
     CYPHER_WORKER("CypherWorker", ExecutorServiceFactory.workStealing()),
     CYPHER_CACHE("CypherCache", ExecutorServiceFactory.workStealing()),
 
+    /** Thread pool for running call in transaction subqueries in parallel. */
+    CYPHER_TRANSACTION_WORKER("CypherTransactionWorker", ExecutorServiceFactory.cached()),
+
     /** Removes queries that have timed out */
     CYPHER_QUERY_MONITOR("CypherQueryMonitor"),
 

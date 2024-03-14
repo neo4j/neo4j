@@ -17,22 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.logical.plans
+package org.neo4j.exceptions;
 
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.kernel.api.exceptions.Status;
 
-sealed trait TransactionConcurrency
+public class CypherExecutionInterruptedException extends Neo4jException {
+    private final Status status;
 
-object TransactionConcurrency {
-  case object Serial extends TransactionConcurrency
-  case class Concurrent(concurrency: Option[Expression]) extends TransactionConcurrency
-
-  object Concurrent {
-
-    def apply(concurrency: Int): Concurrent = {
-      Concurrent(Some(SignedDecimalIntegerLiteral(concurrency.toString)(InputPosition.NONE)))
+    public CypherExecutionInterruptedException(String message, Status status) {
+        super(message);
+        this.status = status;
     }
-  }
+
+    public static CypherExecutionInterruptedException concurrentBatchTransactionInterrupted() {
+        return new CypherExecutionInterruptedException(
+                "The batch was interrupted and the transaction was rolled back because another batch failed",
+                Status.Transaction.QueryExecutionFailedOnTransaction);
+    }
+
+    public Status status() {
+        return status;
+    }
 }

@@ -19,7 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.internal.config.CUSTOM_MEMORY_TRACKING
+import org.neo4j.cypher.internal.config.MEMORY_TRACKING
 import org.neo4j.cypher.internal.config.MemoryTrackingController
+import org.neo4j.cypher.internal.config.NO_TRACKING
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Concurrent
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -33,9 +38,17 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
+import org.neo4j.cypher.internal.runtime.memory.CustomTrackingQueryMemoryTracker
+import org.neo4j.cypher.internal.runtime.memory.NoOpQueryMemoryTracker
+import org.neo4j.cypher.internal.runtime.memory.ProfilingParallelTrackingQueryMemoryTracker
+import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
+import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.scheduler.CallableExecutor
+import org.neo4j.scheduler.Group
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
@@ -43,12 +56,32 @@ abstract class BaseExecutionResultBuilderFactory(
   pipe: Pipe,
   columns: Seq[String],
   hasLoadCSV: Boolean,
-  startsTransactions: Boolean
+  startsTransactions: Option[TransactionConcurrency]
 ) extends ExecutionResultBuilderFactory {
 
   abstract class BaseExecutionResultBuilder() extends ExecutionResultBuilder {
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
     protected var pipeDecorator: PipeDecorator = if (hasLoadCSV) new LinenumberPipeDecorator() else NullPipeDecorator
+
+    protected val transactionWorkerExecutor: Option[CallableExecutor] = startsTransactions match {
+      case Some(Concurrent(_)) =>
+        Some(queryContext.jobScheduler.executor(Group.CYPHER_TRANSACTION_WORKER))
+      case _ => None
+    }
+
+    protected def createQueryMemoryTracker(memoryTrackingController: MemoryTrackingController): QueryMemoryTracker = {
+      (memoryTrackingController.memoryTracking, startsTransactions) match {
+        case (NO_TRACKING, _) => NoOpQueryMemoryTracker
+        case (MEMORY_TRACKING, Some(Concurrent(_))) =>
+          val t = new ProfilingParallelTrackingQueryMemoryTracker
+          t.setInitializationMemoryTracker(
+            EmptyMemoryTracker.INSTANCE
+          ) // TODO: We need to solve delegation to the TransactionMemoryPool
+          t
+        case (MEMORY_TRACKING, _)                   => new TrackingQueryMemoryTracker
+        case (CUSTOM_MEMORY_TRACKING(decorator), _) => new CustomTrackingQueryMemoryTracker(decorator)
+      }
+    }
 
     protected def createQueryState(
       params: MapValue,
@@ -74,7 +107,7 @@ abstract class BaseExecutionResultBuilderFactory(
       doProfile: Boolean
     ): RuntimeResult = {
       val state = createQueryState(params, prePopulateResults, input, subscriber, doProfile)
-      new PipeExecutionResult(pipe, columns.toArray, state, queryProfile, subscriber, startsTransactions)
+      new PipeExecutionResult(pipe, columns.toArray, state, queryProfile, subscriber, startsTransactions.isDefined)
     }
   }
 
@@ -90,7 +123,7 @@ case class InterpretedExecutionResultBuilderFactory(
   lenientCreateRelationship: Boolean,
   memoryTrackingController: MemoryTrackingController,
   hasLoadCSV: Boolean,
-  startsTransactions: Boolean
+  startsTransactions: Option[TransactionConcurrency]
 ) extends BaseExecutionResultBuilderFactory(pipe, columns, hasLoadCSV, startsTransactions) {
 
   override def create(queryContext: QueryContext): ExecutionResultBuilder =
@@ -106,26 +139,26 @@ case class InterpretedExecutionResultBuilderFactory(
       doProfile: Boolean
     ): QueryState = {
       val cursors = queryContext.createExpressionCursors()
-
+      val queryMemoryTracker = createQueryMemoryTracker(memoryTrackingController)
       QueryState(
         queryContext,
         externalResource,
         createParameterArray(params, parameterMapping),
         cursors,
         queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
+        querySelectivityTrackers.initializeTrackers(),
         queryIndexes.initiateNodeTokenIndex(queryContext),
         queryIndexes.initiateRelationshipTokenIndex(queryContext),
-        querySelectivityTrackers.initializeTrackers(),
         new Array[AnyValue](nExpressionSlots),
         subscriber,
-        memoryTrackingController,
-        doProfile,
+        queryMemoryTracker,
         pipeDecorator,
         initialContext = None,
         cachedIn = createDefaultInCache(),
         lenientCreateRelationship = lenientCreateRelationship,
         prePopulateResults = prePopulateResults,
-        input = input
+        input = input,
+        transactionWorkerExecutor
       )
     }
   }

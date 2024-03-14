@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.options.CypherRuntimeOption.slotted
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -1349,6 +1350,71 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .transactionApply()
+      .|.limit(1)
+      .|.sort("y ASC")
+      .|.unwind(s"range(1, $rowCount) as y")
+      .|.argument()
+      .limit(1)
+      .sort("x ASC")
+      .unwind(s"range(1, $rowCount) as x")
+      .argument()
+      .build(readOnly = false)
+
+    // Used to check that we choose the right amount of rows:
+    {
+      val checkQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .limit(1)
+        .sort("x ASC")
+        .unwind(s"range(1, ${2 * rowCount}) as x") // When doubling the rows we should consume too much
+        .argument()
+        .build()
+
+      a[MemoryLimitExceededException] should be thrownBy {
+        consume(execute(checkQuery, runtime))
+      }
+      // Restart tx here to reset memory usage
+      runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+    }
+
+    // Used to check that the same query without IN TRANSACTIONS runs out of memory:
+    {
+      val checkQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .apply()
+        .|.limit(1)
+        .|.sort("y ASC")
+        .|.unwind(s"range(1, $rowCount) as y")
+        .|.argument()
+        .limit(1)
+        .sort("x ASC")
+        .unwind(s"range(1, $rowCount) as x")
+        .argument()
+        .build(readOnly = false)
+
+      a[MemoryLimitExceededException] should be thrownBy {
+        consume(execute(checkQuery, runtime))
+      }
+      // Restart tx here to reset memory usage
+      runtimeTestSupport.restartTx(KernelTransaction.Type.IMPLICIT)
+    }
+
+    // then
+    noException should be thrownBy consume(execute(logicalQuery, runtime))
+  }
+
+  test("should not kill concurrent transaction apply subquery if both inner and outer together exceed the limit") {
+    // Determined empirically
+    val rowCount = runtimeUsed match {
+      case Interpreted => 37000
+      case Slotted     => 53000
+      case Pipelined   => 79000
+    }
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionApply(concurrency = TransactionConcurrency.Concurrent(None))
       .|.limit(1)
       .|.sort("y ASC")
       .|.unwind(s"range(1, $rowCount) as y")

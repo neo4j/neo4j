@@ -79,6 +79,7 @@ import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.scheduler.JobScheduler
 import org.neo4j.storageengine.api.PropertySelection
 import org.neo4j.storageengine.api.Reference
 import org.neo4j.util.VisibleForTesting
@@ -299,6 +300,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   def assertShowConstraintAllowed(): Unit
 
   def systemGraph: GraphDatabaseService
+
+  def jobScheduler: JobScheduler
 
   def logProvider: InternalLogProvider
 

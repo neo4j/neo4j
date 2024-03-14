@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.InterpretedRuntime.InterpretedExecutionPlan
+import org.neo4j.cypher.internal.InterpretedRuntime.calculateTransactionsMode
 import org.neo4j.cypher.internal.SlottedRuntime.NO_METADATA
 import org.neo4j.cypher.internal.SlottedRuntime.NO_WARNINGS
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
@@ -142,7 +143,7 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
       val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans, () => context.assertOpen.assertOpen())
       val columns = query.resultColumns
 
-      val startsTransactions = InterpretedRuntime.doesStartTransactions(query)
+      val startsTransactions = calculateTransactionsMode(query)
 
       val resultBuilderFactory =
         new SlottedExecutionResultBuilderFactory(
@@ -171,7 +172,7 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
         resultBuilderFactory,
         SlottedRuntimeName,
         query.readOnly,
-        startsTransactions,
+        startsTransactions.isDefined,
         metadataGen(),
         warningsGen()
       )

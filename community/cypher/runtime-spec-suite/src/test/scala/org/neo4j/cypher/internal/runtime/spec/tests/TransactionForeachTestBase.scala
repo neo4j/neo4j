@@ -28,11 +28,15 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Concurrent
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Serial
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.IteratorInputStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -44,6 +48,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionForEachTests.genRandomTestSetup
+import org.neo4j.cypher.internal.util.InputPosition.NONE
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.ConstraintViolationException
@@ -1734,7 +1739,7 @@ object RandomisedTransactionForEachTests {
     lazy val shouldFail: Boolean = rhsUnwind.contains(ShouldFail)
   }
 
-  case class TestSetup(txBatchSize: Int, input: IndexedSeq[InputRow]) {
+  case class TestSetup(txBatchSize: Int, concurrency: TransactionConcurrency, input: IndexedSeq[InputRow]) {
     def batches(): Iterator[Iterable[InputRow]] = input.grouped(txBatchSize)
 
     def generateRows(successValue: AnyValue, failValue: AnyValue): Iterator[Array[AnyValue]] = {
@@ -1756,12 +1761,14 @@ object RandomisedTransactionForEachTests {
    * - input row count
    * - rhs row count factor
    * - call in transaction batch size
+   * - concurrency size (parallelism)
    * - if rows will fail transaction
    */
   def genRandomTestSetup(sizeHint: Int): Gen[TestSetup] = {
     for {
       maxInputRowCount <- Gen.choose(1, sizeHint)
       txBatchSize <- Gen.chooseNum(1, sizeHint)
+      concurrencyInt <- Gen.chooseNum(0, 4) // FIXME: base this on the spec suite value that is passed in
       probabilityOfTxBatchSuccess <- Gen.oneOf(1.0, 0.5) // Probability to have a committed tx batch
       txBatchSuccess <- Gen.infiniteStream(Gen.prob(probabilityOfTxBatchSuccess))
       rhsSizeGen = Gen.choose(0, sizeHint / 10)
@@ -1798,7 +1805,17 @@ object RandomisedTransactionForEachTests {
         .map { case (row, i) => InputRow(i, row) }
         .toIndexedSeq
 
-      TestSetup(txBatchSize, rows)
+      val concurrency = concurrencyInt match {
+        case 0           => Serial
+        case 1           => Concurrent(None)
+        case parallelism => Concurrent(Some(SignedDecimalIntegerLiteral(parallelism.toString)(NONE)))
+      }
+//      TestSetup(txBatchSize, Serial, rows)
+      TestSetup(
+        txBatchSize,
+        Concurrent(Some(SignedDecimalIntegerLiteral("3")(NONE))),
+        rows
+      ) // FIXME: feed this in correctly
     }
   }
 }

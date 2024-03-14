@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrappe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.assertTransactionStateIsEmpty
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.commitTransactionWithStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.logError
+import org.neo4j.exceptions.CypherExecutionInterruptedException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 import org.neo4j.kernel.impl.util.collection.EagerBuffer.createEagerBuffer
@@ -95,6 +96,8 @@ trait TransactionPipeWrapper {
     outerRows: EagerBuffer[CypherRow] // Should not be closed
   )(f: CypherRow => Unit): TransactionStatus
 
+  protected def shouldBreak: Boolean
+
   /**
    * Evaluates inner pipe in a new transaction.
    * 
@@ -122,6 +125,10 @@ trait TransactionPipeWrapper {
       val batchIterator = outerRows.iterator()
       while (batchIterator.hasNext) {
         val outerRow = batchIterator.next()
+
+        if (shouldBreak) {
+          throw CypherExecutionInterruptedException.concurrentBatchTransactionInterrupted()
+        }
 
         outerRow.invalidateCachedProperties()
 
@@ -167,11 +174,15 @@ class OnErrorContinueTxPipe(val inner: Pipe) extends TransactionPipeWrapper {
   )(f: CypherRow => Unit): TransactionStatus = {
     createInnerResultsInNewTransaction(state, outerRows)(f)
   }
+
+  protected def shouldBreak: Boolean = false
 }
 
 // NOTE! Keeps state that is not safe to re-use between queries. Create a new instance for each query.
 class OnErrorBreakTxPipe(val inner: Pipe) extends TransactionPipeWrapper {
-  private[this] var break: Boolean = false
+  @volatile private[this] var break: Boolean = false
+
+  override def shouldBreak: Boolean = { break }
 
   override def processBatch(
     state: QueryState,
@@ -192,15 +203,25 @@ class OnErrorBreakTxPipe(val inner: Pipe) extends TransactionPipeWrapper {
 }
 
 class OnErrorFailTxPipe(val inner: Pipe) extends TransactionPipeWrapper {
+  @volatile private[this] var break: Boolean = false
+
+  override def shouldBreak: Boolean = { break }
 
   override def processBatch(
     state: QueryState,
     outerRows: EagerBuffer[CypherRow]
   )(f: CypherRow => Unit): TransactionStatus = {
-    createInnerResultsInNewTransaction(state, outerRows)(f) match {
-      case commit: Commit     => commit
-      case rollback: Rollback => throw rollback.failure
-      case other              => throw new IllegalStateException(s"Unexpected transaction status $other")
+    if (break) {
+      NotRun
+    } else {
+      createInnerResultsInNewTransaction(state, outerRows)(f) match {
+        case commit: Commit => commit
+        case rollback: Rollback => {
+          break = true
+          throw rollback.failure
+        }
+        case other => throw new IllegalStateException(s"Unexpected transaction status $other")
+      }
     }
   }
 }
@@ -244,6 +265,10 @@ object TransactionPipeWrapper {
 
   def evaluateBatchSize(batchSize: Expression, state: QueryState): Long = {
     PipeHelper.evaluateStaticLongOrThrow(batchSize, _ > 0, state, "OF ... ROWS", " Must be a positive integer.")
+  }
+
+  def evaluateConcurrency(concurrency: Expression, state: QueryState): Long = {
+    PipeHelper.evaluateStaticLongOrThrow(concurrency, _ > 0, state, "IN ... CONCURRENT", " Must be a positive integer.")
   }
 
   def assertTransactionStateIsEmpty(state: QueryState): Unit = {

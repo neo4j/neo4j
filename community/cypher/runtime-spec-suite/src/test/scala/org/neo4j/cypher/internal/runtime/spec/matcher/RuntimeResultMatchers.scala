@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.matcher
 
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Prober
+import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -136,16 +137,43 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
       transactionsRolledBack: Int = 0
     ): RuntimeResultMatcher = {
       maybeStatistics = Some(new QueryStatisticsMatcher(
-        nodesCreated,
-        nodesDeleted,
-        relationshipsCreated,
-        relationshipsDeleted,
-        labelsAdded,
-        labelsRemoved,
-        propertiesSet,
-        transactionsStarted,
-        transactionsCommitted,
-        transactionsRolledBack
+        Some(nodesCreated),
+        Some(nodesDeleted),
+        Some(relationshipsCreated),
+        Some(relationshipsDeleted),
+        Some(labelsAdded),
+        Some(labelsRemoved),
+        Some(propertiesSet),
+        Some(transactionsStarted),
+        Some(transactionsCommitted),
+        Some(transactionsRolledBack)
+      ))
+      this
+    }
+
+    def withPartialStatistics(
+      nodesCreated: Int = -1,
+      nodesDeleted: Int = -1,
+      relationshipsCreated: Int = -1,
+      relationshipsDeleted: Int = -1,
+      labelsAdded: Int = -1,
+      labelsRemoved: Int = -1,
+      propertiesSet: Int = -1,
+      transactionsStarted: Int = -1,
+      transactionsCommitted: Int = -1,
+      transactionsRolledBack: Int = -1
+    ): RuntimeResultMatcher = {
+      maybeStatistics = Some(new QueryStatisticsMatcher(
+        if (nodesCreated < 0) None else Some(nodesCreated),
+        if (nodesDeleted < 0) None else Some(nodesDeleted),
+        if (relationshipsCreated < 0) None else Some(relationshipsCreated),
+        if (relationshipsDeleted < 0) None else Some(relationshipsDeleted),
+        if (labelsAdded < 0) None else Some(labelsAdded),
+        if (labelsRemoved < 0) None else Some(labelsRemoved),
+        if (propertiesSet < 0) None else Some(propertiesSet),
+        if (transactionsStarted < 0) None else Some(transactionsStarted),
+        if (transactionsCommitted < 0) None else Some(transactionsCommitted),
+        if (transactionsRolledBack < 0) None else Some(transactionsRolledBack)
       ))
       this
     }
@@ -270,49 +298,53 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
   }
 
   class QueryStatisticsMatcher(
-    nodesCreated: Int,
-    nodesDeleted: Int,
-    relationshipsCreated: Int,
-    relationshipsDeleted: Int,
-    labelsAdded: Int,
-    labelsRemoved: Int,
-    propertiesSet: Int,
-    transactionsStarted: Int,
-    transactionsCommitted: Int,
-    transactionsRolledBack: Int
+    nodesCreated: Option[Int],
+    nodesDeleted: Option[Int],
+    relationshipsCreated: Option[Int],
+    relationshipsDeleted: Option[Int],
+    labelsAdded: Option[Int],
+    labelsRemoved: Option[Int],
+    propertiesSet: Option[Int],
+    transactionsStarted: Option[Int],
+    transactionsCommitted: Option[Int],
+    transactionsRolledBack: Option[Int]
   ) extends Matcher[QueryStatistics] {
 
     override def apply(left: QueryStatistics): MatchResult = {
-      def transactionsStatsDoesNotMatch: Option[MatchResult] = {
+      def matchFailed(ourValue: Option[Int], leftValue: Int): Boolean = {
+        ourValue.isDefined && ourValue.get != leftValue
+      }
+
+      def transactionsStatsDoNotMatch: Option[MatchResult] = {
         left match {
           case qs: org.neo4j.cypher.internal.runtime.ExtendedQueryStatistics =>
             // FIXME: we currently do not account for the outermost transaction because that is out of cypher's control
-            if (transactionsCommitted - 1 != qs.getTransactionsCommitted) {
+            if (matchFailed(transactionsCommitted, qs.getTransactionsCommitted + 1)) {
               Some(MatchResult(
                 matches = false,
-                s"expected transactionsCommitted=$transactionsCommitted but was ${qs.getTransactionsCommitted + 1}",
+                s"expected transactionsCommitted=${transactionsCommitted.get} but was ${qs.getTransactionsCommitted + 1}",
                 ""
               ))
-            } else if (transactionsStarted - 1 != qs.getTransactionsStarted) {
+            } else if (matchFailed(transactionsStarted, qs.getTransactionsStarted + 1)) {
               Some(MatchResult(
                 matches = false,
-                s"expected transactionsStarted=$transactionsStarted but was ${qs.getTransactionsStarted + 1}",
+                s"expected transactionsStarted=${transactionsStarted.get} but was ${qs.getTransactionsStarted + 1}",
                 ""
               ))
-            } else if (transactionsRolledBack != qs.getTransactionsRolledBack) {
+            } else if (matchFailed(transactionsRolledBack, qs.getTransactionsRolledBack)) {
               Some(MatchResult(
                 matches = false,
-                s"expected transactionsRolledBack=$transactionsRolledBack but was ${qs.getTransactionsRolledBack}",
+                s"expected transactionsRolledBack=${transactionsRolledBack.get} but was ${qs.getTransactionsRolledBack}",
                 ""
               ))
             } else {
               None
             }
           case _ =>
-            if (transactionsCommitted != 1) {
+            if (matchFailed(transactionsCommitted, 1)) {
               Some(MatchResult(
                 matches = false,
-                s"expected transactionsCommitted=$transactionsCommitted but can only match on org.neo4j.cypher.internal.runtime.QueryStatistics and was $left",
+                s"expected transactionsCommitted=${transactionsCommitted.get} but can only match on org.neo4j.cypher.internal.runtime.QueryStatistics and was $left",
                 ""
               ))
             } else {
@@ -321,30 +353,38 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
         }
       }
 
-      if (nodesCreated != left.getNodesCreated) {
-        MatchResult(matches = false, s"expected nodesCreated=$nodesCreated but was ${left.getNodesCreated}", "")
-      } else if (nodesDeleted != left.getNodesDeleted) {
-        MatchResult(matches = false, s"expected nodesDeleted=$nodesDeleted but was ${left.getNodesDeleted}", "")
-      } else if (relationshipsCreated != left.getRelationshipsCreated) {
+      if (matchFailed(nodesCreated, left.getNodesCreated)) {
+        MatchResult(matches = false, s"expected nodesCreated=${nodesCreated.get} but was ${left.getNodesCreated}", "")
+      } else if (matchFailed(nodesDeleted, left.getNodesDeleted)) {
+        MatchResult(matches = false, s"expected nodesDeleted=${nodesDeleted.get} but was ${left.getNodesDeleted}", "")
+      } else if (matchFailed(relationshipsCreated, left.getRelationshipsCreated)) {
         MatchResult(
           matches = false,
-          s"expected relationshipCreated=$relationshipsCreated but was ${left.getRelationshipsCreated}",
+          s"expected relationshipCreated=${relationshipsCreated.get} but was ${left.getRelationshipsCreated}",
           ""
         )
-      } else if (relationshipsDeleted != left.getRelationshipsDeleted) {
+      } else if (matchFailed(relationshipsDeleted, left.getRelationshipsDeleted)) {
         MatchResult(
           matches = false,
-          s"expected relationshipsDeleted=$relationshipsDeleted but was ${left.getRelationshipsDeleted}",
+          s"expected relationshipsDeleted=${relationshipsDeleted.get} but was ${left.getRelationshipsDeleted}",
           ""
         )
-      } else if (labelsAdded != left.getLabelsAdded) {
-        MatchResult(matches = false, s"expected labelsAdded=$labelsAdded but was ${left.getLabelsAdded}", "")
-      } else if (labelsRemoved != left.getLabelsRemoved) {
-        MatchResult(matches = false, s"expected labelsRemoved=$labelsRemoved but was ${left.getLabelsRemoved}", "")
-      } else if (propertiesSet != left.getPropertiesSet) {
-        MatchResult(matches = false, s"expected propertiesSet=$propertiesSet but was ${left.getPropertiesSet}", "")
-      } else if (transactionsStatsDoesNotMatch.nonEmpty) {
-        transactionsStatsDoesNotMatch.get
+      } else if (matchFailed(labelsAdded, left.getLabelsAdded)) {
+        MatchResult(matches = false, s"expected labelsAdded=${labelsAdded.get} but was ${left.getLabelsAdded}", "")
+      } else if (matchFailed(labelsRemoved, left.getLabelsRemoved)) {
+        MatchResult(
+          matches = false,
+          s"expected labelsRemoved=${labelsRemoved.get} but was ${left.getLabelsRemoved}",
+          ""
+        )
+      } else if (matchFailed(propertiesSet, left.getPropertiesSet)) {
+        MatchResult(
+          matches = false,
+          s"expected propertiesSet=${propertiesSet.get} but was ${left.getPropertiesSet}",
+          ""
+        )
+      } else if (transactionsStatsDoNotMatch.nonEmpty) {
+        transactionsStatsDoNotMatch.get
       } else {
         MatchResult(matches = true, "", "")
       }
@@ -364,4 +404,19 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
       }
     }
 
+  def failOnVariableProbe(
+    variable: String,
+    predicate: AnyValue => Boolean,
+    fail: String => Throwable = msg => new RuntimeException(msg)
+  ): Prober.Probe =
+    new Prober.Probe {
+
+      override def onRow(row: AnyRef, state: AnyRef): Unit = {
+        val cypherRow = row.asInstanceOf[CypherRow]
+        val variableValue = cypherRow.getByName(variable)
+        if (predicate(variableValue)) {
+          throw fail(s"Probe failed as expected")
+        }
+      }
+    }
 }
