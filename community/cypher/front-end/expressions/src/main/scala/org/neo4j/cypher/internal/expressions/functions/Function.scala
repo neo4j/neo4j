@@ -148,8 +148,8 @@ object Function {
     lookup.values.flatMap {
       (f: Function) =>
         f.signatures.flatMap {
-          case signature: FunctionTypeSignature if !(signature.deprecated || signature.internal) => Some(signature)
-          case _                                                                                 => None
+          case signature: FunctionTypeSignature if !signature.internal => Some(signature)
+          case _                                                       => None
         }
     }.toList
   }
