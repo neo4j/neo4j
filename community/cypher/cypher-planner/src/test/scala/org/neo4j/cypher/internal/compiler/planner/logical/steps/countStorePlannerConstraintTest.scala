@@ -443,4 +443,120 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       case _: RelationshipCountFromCountStore =>
     })
   }
+
+  test(
+    "should plan to obtain the count from count store when counting node properties with a constraint when there is a non-conflicting predicate in the query"
+  ) {
+    val query = "MATCH (n:A) WHERE n.prop IS NOT NULL RETURN count(n.prop)"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setLabelCardinality("A", 30)
+      .addNodeExistenceConstraint("A", "prop")
+      .build()
+
+    val plan = planner
+      .plan(query)
+
+    plan should equal(planner.planBuilder()
+      .produceResults("`count(n.prop)`")
+      .nodeCountFromCountStore("count(n.prop)", Seq(Some("A")))
+      .build())
+  }
+
+  test(
+    "should not plan to obtain the count from count store when the property key names of the 'IS NOT NULL' predicate and the aggregation do not match"
+  ) {
+    val query = "MATCH (n:A) WHERE n.prop2 IS NOT NULL RETURN count(n.prop)"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setLabelCardinality("A", 30)
+      .addNodeExistenceConstraint("A", "prop")
+      .build()
+
+    val plan = planner
+      .plan(query)
+
+    plan should not(containPlanMatching {
+      case _: NodeCountFromCountStore =>
+    })
+  }
+
+  test(
+    "should not plan to obtain the count from count store when the property variable names of the 'IS NOT NULL' predicate and the aggregation do not match"
+  ) {
+    val query = "MATCH (n:A), (m:A) WHERE n.prop IS NOT NULL RETURN count(m.prop)"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setLabelCardinality("A", 30)
+      .addNodeExistenceConstraint("A", "prop")
+      .build()
+
+    val plan = planner
+      .plan(query)
+
+    plan should not(containPlanMatching {
+      case _: NodeCountFromCountStore =>
+    })
+  }
+
+  test(
+    "should plan to obtain the count from count store when counting relationship properties with a constraint when there is a non-conflicting predicate in the query"
+  ) {
+    val query = "MATCH ()-[e:T]->() WHERE e.prop IS NOT NULL RETURN count(e.prop)"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:T]->()", 30)
+      .addRelationshipExistenceConstraint("T", "prop")
+      .build()
+
+    val plan = planner
+      .plan(query)
+
+    plan should equal(planner.planBuilder()
+      .produceResults("`count(e.prop)`")
+      .relationshipCountFromCountStore("count(e.prop)", None, Seq("T"), None)
+      .build())
+  }
+
+  test(
+    "should not plan to obtain the relationship count from count store when the property variable names of the 'IS NOT NULL' predicate and the aggregation do not match"
+  ) {
+    val query = "MATCH (n)-[e:T]->() WHERE e.prop IS NOT NULL RETURN count(n.prop)"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:T]->()", 30)
+      .addRelationshipExistenceConstraint("T", "prop")
+      .build()
+
+    val plan = planner
+      .plan(query)
+
+    plan should not(containPlanMatching {
+      case _: NodeCountFromCountStore =>
+    })
+  }
+
+  test(
+    "should not plan to obtain the relationship count from count store when the property key names of the 'IS NOT NULL' predicate and the aggregation do not match"
+  ) {
+    val query = "MATCH ()-[e:T]->() WHERE e.prop2 IS NOT NULL RETURN count(e.prop)"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:T]->()", 30)
+      .addRelationshipExistenceConstraint("T", "prop")
+      .build()
+
+    val plan = planner
+      .plan(query)
+
+    plan should not(containPlanMatching {
+      case _: NodeCountFromCountStore =>
+    })
+  }
 }

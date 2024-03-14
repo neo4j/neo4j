@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
@@ -125,7 +126,8 @@ case object countStorePlanner {
           patternNodes,
           argumentIds,
           selections,
-          context
+          context,
+          None
         )
 
       case // COUNT(*)
@@ -138,11 +140,12 @@ case object countStorePlanner {
           patternNodes,
           argumentIds,
           selections,
-          context
+          context,
+          None
         )
 
       case // COUNT(n.prop)
-        func @ FunctionInvocation(_, _, false, Vector(Property(v: Variable, propKeyName)), _, _)
+        func @ FunctionInvocation(_, _, false, Vector(prop @ Property(v: Variable, propKeyName)), _, _)
         if func.function == functions.Count =>
         trySolveNodeOrRelationshipAggregation(
           query,
@@ -153,7 +156,7 @@ case object countStorePlanner {
           argumentIds,
           selections,
           context,
-          Some(propKeyName)
+          Some(prop)
         )
 
       case _ => None
@@ -172,16 +175,16 @@ case object countStorePlanner {
     argumentIds: Set[LogicalVariable],
     selections: Selections,
     context: LogicalPlanningContext,
-    propertyKeyName: Option[PropertyKeyName] = None
+    property: Option[Property]
   ): Option[LogicalPlan] = {
     if (
       patternRelationships.isEmpty &&
       patternNodes.nonEmpty &&
       variableName.forall(patternNodes.contains) &&
-      noWrongPredicates(patternNodes, selections)
+      noWrongPredicates(patternNodes, selections, property)
     ) { // MATCH (n), MATCH (n:A)
 
-      if (couldPlanCountStoreLookupOnAllLabels(variableName, selections, propertyKeyName, context)) {
+      if (couldPlanCountStoreLookupOnAllLabels(variableName, selections, property.map(_.propertyKey), context)) {
         // this is the case where the count can be answered using the counts of the provided labels
 
         val allLabels = patternNodes.toList.map(n => findLabel(n, selections))
@@ -198,7 +201,7 @@ case object countStorePlanner {
     } else if (patternRelationships.size == 1 && notLoop(patternRelationships.head)) { // MATCH ()-[r]->(), MATCH ()-[r:X]->(), MATCH ()-[r:X|Y]->()
       val types = patternRelationships.head.types
       // this means that the given type implies the predicate that we do the count on through constraint
-      if (types.forall(relTypeImpliesProperty(_, propertyKeyName, context))) {
+      if (types.forall(relTypeImpliesProperty(_, property.map(_.propertyKey), context))) {
         trySolveRelationshipAggregation(
           query,
           columnName,
@@ -206,7 +209,8 @@ case object countStorePlanner {
           patternRelationships.head,
           argumentIds,
           selections,
-          context
+          context,
+          property
         )
       } else {
         None
@@ -262,13 +266,14 @@ case object countStorePlanner {
     patternRelationship: PatternRelationship,
     argumentIds: Set[LogicalVariable],
     selections: Selections,
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    property: Option[Property]
   ): Option[LogicalPlan] = {
     patternRelationship match {
 
       case PatternRelationship(relId, (startNodeId, endNodeId), direction, types, SimplePatternLength)
         if variableName.forall(name => Set(relId, startNodeId, endNodeId).contains(name)) &&
-          noWrongPredicates(Set(startNodeId, endNodeId), selections) =>
+          noWrongPredicates(Set(startNodeId, endNodeId), selections, property) =>
         def planRelAggr(fromLabel: Option[LabelName], toLabel: Option[LabelName]): Option[LogicalPlan] =
           Some(context.staticComponents.logicalPlanProducer.planCountStoreRelationshipAggregation(
             query,
@@ -296,15 +301,37 @@ case object countStorePlanner {
   }
 
   /**
-   * Tests whether the predicates in selections consist of only hasLabel-predicates and max one for each given node.
+   * Check if all predicates can be handled by the count store
+   * Only when each predicate:
+   * - matches the property key name and the property variable of the aggregate function
+   * @param predicates The predicates to check
+   * @param aggregateProperty The aggregate function's property
+   * @return True if all predicates can be handled
    */
-  private def noWrongPredicates(nodeIds: Set[LogicalVariable], selections: Selections): Boolean = {
-    val (labelPredicates, other) = selections.predicates.partition {
+  private def canHandlePredicates(predicates: Set[Predicate], aggregateProperty: Option[Property]): Boolean = {
+    predicates.forall(predicate =>
+      predicate match {
+        case Predicate(_, IsNotNull(innProperty: Property)) => aggregateProperty.contains(innProperty)
+        case _                                              => false
+      }
+    )
+  }
+
+  /**
+   * Tests whether the predicates in selections consist of only hasLabel-predicates and max one for each given node
+   * or it has 'other' predicates that can all be handled.
+   */
+  private def noWrongPredicates(
+    nodeIds: Set[LogicalVariable],
+    selections: Selections,
+    aggregateProperty: Option[Property]
+  ): Boolean = {
+    val (labelPredicates, others) = selections.predicates.partition {
       case Predicate(nIds, h: HasLabels) if nIds.forall(nodeIds.contains) && h.labels.size == 1 => true
       case _                                                                                    => false
     }
     val groupedLabelPredicates = labelPredicates.groupBy(_.dependencies intersect nodeIds)
-    groupedLabelPredicates.values.forall(_.size == 1) && other.isEmpty
+    groupedLabelPredicates.values.forall(_.size == 1) && canHandlePredicates(others, aggregateProperty)
   }
 
   private def findLabel(nodeId: LogicalVariable, selections: Selections): Option[LabelName] =
