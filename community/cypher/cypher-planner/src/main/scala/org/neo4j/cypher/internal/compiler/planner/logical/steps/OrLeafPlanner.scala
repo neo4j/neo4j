@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.Ordering.orderedUnionColumns
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.Ordering.planDistinctOrOrderedDistinct
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.Ordering.planUnionOrOrderedUnion
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsElementIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.DisjunctionForOneVariable
@@ -42,11 +45,9 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
-import org.neo4j.cypher.internal.logical
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
@@ -425,47 +426,15 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
         case Array(singlePlan) => singlePlan
         case _                 =>
           // Determines if we can plan OrderedUnion
-          val maybeSortColumn = Option(context.staticComponents.planningAttributes.providedOrders(plans.head.id))
-            // We only support a sorted union if the plans are sorted by a single column.
-            .filter(_.columns.size == 1)
-            // All plans must be ordered by the same thing.
-            .filter(head =>
-              plans.tail.map(p => context.staticComponents.planningAttributes.providedOrders(p.id)).forall(_ == head)
-            )
-            .flatMap(_.columns.headOption)
-            // The only sort column must be by a variable. Convert to a logical plan ColumnOrder.
-            .collect {
-              case ordering.ColumnOrder.Asc(v: Variable, _)  => (v, logical.plans.Ascending(v))
-              case ordering.ColumnOrder.Desc(v: Variable, _) => (v, logical.plans.Descending(v))
-            }
+          val maybeSortColumns = orderedUnionColumns(plans, context)
 
           // Join the plans with Union
           val unionPlan = plans.reduce[LogicalPlan] {
-            case (p1, p2) =>
-              maybeSortColumn match {
-                case Some((_, sortColumn)) =>
-                  context.staticComponents.logicalPlanProducer.planOrderedUnion(
-                    p1,
-                    p2,
-                    List(),
-                    Seq(sortColumn),
-                    context
-                  )
-                case None => context.staticComponents.logicalPlanProducer.planUnion(p1, p2, List(), context)
-              }
+            case (p1, p2) => planUnionOrOrderedUnion(maybeSortColumns, p1, p2, Nil, context)
           }
 
           // Plan a single Distinct on top
-          val orPlan = maybeSortColumn match {
-            // Parallel runtime does currently not support OrderedDistinct
-            case Some((sortVariable, _)) if context.settings.executionModel.providedOrderPreserving =>
-              context.staticComponents.logicalPlanProducer.planOrderedDistinctForUnion(
-                unionPlan,
-                Seq(sortVariable),
-                context
-              )
-            case _ => context.staticComponents.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
-          }
+          val orPlan = planDistinctOrOrderedDistinct(maybeSortColumns, unionPlan, context)
 
           // Update solved with the joinedSolvedQueryGraph
           context.staticComponents.logicalPlanProducer.updateSolvedForOr(orPlan, joinedSolvedQueryGraph, context)

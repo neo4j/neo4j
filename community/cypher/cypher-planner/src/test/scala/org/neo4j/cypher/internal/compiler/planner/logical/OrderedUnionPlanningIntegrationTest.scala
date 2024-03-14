@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
@@ -171,6 +172,26 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .unionNodeByLabelsScan("n", Seq("A", "B"), IndexOrderAscending)
         .build()
     )(SymmetricalLogicalPlanEquality)
+  }
+
+  test("should not use ordered union in parallel runtime") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .setLabelCardinality("B", 500)
+      .addNodeExistenceConstraint("A", "prop")
+      .setExecutionModel(BatchedParallel(1, 2))
+      .build()
+
+    val plan = cfg.plan("MATCH (a:A|B) WHERE a.prop IS NOT NULL RETURN a")
+    plan shouldEqual cfg.planBuilder()
+      .produceResults("a")
+      .distinct("a AS a")
+      .union()
+      .|.filter("a.prop IS NOT NULL")
+      .|.nodeByLabelScan("a", "B")
+      .nodeByLabelScan("a", "A")
+      .build()
   }
 
   test("should use normal union for predicate disjunction with ORDER BY") {
