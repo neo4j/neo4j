@@ -140,7 +140,7 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
   private def fromValues(input: Set[String]): Set[Opt] = input.size match {
     case 0 => Set.empty
     case 1 => Set(fromValue(input.head))
-    case _ => throw InvalidCypherOption.conflictingOptionForName(name)
+    case _ => throw InvalidCypherOption.conflictingOptionForName(s"$name (${input.mkString(",")})")
   }
 
   protected def fromValue(input: String): Opt = OptionReader.canonical(input) match {

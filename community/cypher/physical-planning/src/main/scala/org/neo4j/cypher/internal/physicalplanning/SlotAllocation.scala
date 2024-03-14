@@ -464,8 +464,14 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   ): Unit = plan match {
     case ssp: StatefulShortestPath =>
       allocateExpressionsInternal(ssp.nfa, slots, semanticTable, plan.id)
-    case _: OptionalExpand | _: FindShortestPaths =>
-    case _                                        => allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
+    case _: OptionalExpand                                               =>
+    case FindShortestPaths(_, _, nodePredicates, relPredicates, _, _, _) =>
+      // Node & Relationship predicates may contain NestPlanExpressions.
+      // In those cases the nested plan must have the same slot configuration as input rows,
+      // otherwise argument copying breaks with index out of bounds.
+      nodePredicates.foreach(allocateExpressionsInternal(_, slots, semanticTable, plan.id))
+      relPredicates.foreach(allocateExpressionsInternal(_, slots, semanticTable, plan.id))
+    case _ => allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
   }
 
   private def allocateExpressionsOneChildOnOutput(
@@ -476,8 +482,12 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   ): Unit = plan match {
     case ssp: StatefulShortestPath =>
       allocateExpressionsInternal(ssp.nonInlinedPreFilters, slots, semanticTable, plan.id)
-    case _: OptionalExpand | _: FindShortestPaths =>
+    case _: OptionalExpand =>
       allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
+    case FindShortestPaths(_, pattern, _, _, pathPredicates, _, _) =>
+      // Path predicates must be allocated after 'rels' and 'path' slots have been allocated.
+      allocateExpressionsInternal(pattern, slots, semanticTable, plan.id)
+      allocateExpressionsInternal(pathPredicates, slots, semanticTable, plan.id)
     case _ =>
   }
 
