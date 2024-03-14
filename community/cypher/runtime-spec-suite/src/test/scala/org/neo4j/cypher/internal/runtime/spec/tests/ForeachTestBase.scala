@@ -594,6 +594,34 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("foreach should set property from map + non fusable") {
+    val nodes = givenGraph(nodeGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .nonFuseable()
+      .foreach("m", "[{prop1: 1}, {prop2: 2}, {prop3: 3}]", Seq(setPropertyFromMap("n", "m", removeOtherProps = false)))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(propertiesSet = 3 * sizeHint)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop1") should equal(1)
+        n.getProperty("prop2") should equal(2)
+        n.getProperty("prop3") should equal(3)
+      }
+    } finally {
+      allNodes.close()
+    }
+  }
+
   test("foreach + set property from map should handle null") {
     val nodes = givenGraph(nodeGraph(sizeHint))
     // when
