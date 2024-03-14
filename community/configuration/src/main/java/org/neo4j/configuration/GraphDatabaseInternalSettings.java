@@ -483,7 +483,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<EagerAnalysisImplementation> cypher_eager_analysis_implementation = newBuilder(
                     "internal.cypher.eager_analysis_implementation",
                     ofEnum(EagerAnalysisImplementation.class),
-                    EagerAnalysisImplementation.IR)
+                    EagerAnalysisImplementation.LP)
             .build();
 
     @Internal

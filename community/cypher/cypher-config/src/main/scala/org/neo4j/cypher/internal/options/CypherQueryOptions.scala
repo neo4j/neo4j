@@ -491,7 +491,7 @@ case object CypherEagerAnalyzerOption extends CypherOptionCompanion[CypherEagerA
   case object lp extends CypherEagerAnalyzerOption("lp")
   case object ir extends CypherEagerAnalyzerOption("ir")
 
-  override def default: CypherEagerAnalyzerOption = ir
+  override def default: CypherEagerAnalyzerOption = lp
 
   def values: Set[CypherEagerAnalyzerOption] = Set(lp, ir)
 
