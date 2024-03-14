@@ -116,6 +116,15 @@ public abstract class AbstractHeapTrackingConcurrentHash {
         return h & length - 2;
     }
 
+    static Object getAtIndex(AtomicReferenceArray<Object> currentArray, int index) {
+        Object o = currentArray.get(index);
+        while (o == RESERVED) {
+            Thread.onSpinWait();
+            o = currentArray.get(index);
+        }
+        return o;
+    }
+
     public abstract long sizeOfWrapperObject();
 
     private AtomicReferenceArray<Object> allocateAtomicReferenceArray(int newSize) {
@@ -357,12 +366,7 @@ public abstract class AbstractHeapTrackingConcurrentHash {
 
         final void findNext() {
             while (this.index < this.currentState.end) {
-                Object o = this.currentState.currentTable.get(this.index);
-                while (o == RESERVED) {
-                    Thread.onSpinWait();
-                    o = this.currentState.currentTable.get(this.index);
-                }
-
+                Object o = getAtIndex(this.currentState.currentTable, this.index);
                 if (o == RESIZED || o == RESIZING) {
                     AtomicReferenceArray<Object> nextArray =
                             helpWithResizeWhileCurrentIndex(this.currentState.currentTable, this.index);

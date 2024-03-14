@@ -87,11 +87,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
             } else {
@@ -126,11 +122,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
             } else {
@@ -159,11 +151,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
             } else {
@@ -214,11 +202,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         AtomicReferenceArray<Object> dest = resizeContainer.nextArray;
 
         for (int j = 0; j < src.length() - 1; ) {
-            Object o = src.get(j);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = src.get(j);
-            }
+            Object o = getAtIndex(src, j);
             if (o == null) {
                 if (src.compareAndSet(j, null, RESIZED)) {
                     j++;
@@ -255,11 +239,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                     start = 0;
                 }
                 for (int j = end - 1; j >= start; ) {
-                    Object o = src.get(j);
-                    while (o == RESERVED) {
-                        Thread.onSpinWait();
-                        o = src.get(j);
-                    }
+                    Object o = getAtIndex(src, j);
                     if (o == null) {
                         if (src.compareAndSet(j, null, RESIZED)) {
                             j--;
@@ -289,11 +269,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = ((ResizeContainer) currentArray.get(length - 1)).nextArray;
             } else {
@@ -323,11 +299,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = helpWithResizeWhileCurrentIndex(currentArray, index);
             } else {
@@ -362,11 +334,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         do {
             resizeContainer = null;
             for (int i = 0; i < currentArray.length() - 1; i++) {
-                Object o = currentArray.get(i);
-                while (o == RESERVED) {
-                    Thread.onSpinWait();
-                    o = currentArray.get(i);
-                }
+                Object o = getAtIndex(currentArray, i);
                 if (o == RESIZED || o == RESIZING) {
                     resizeContainer = (ResizeContainer) currentArray.get(currentArray.length() - 1);
                 } else if (o != null) {
@@ -396,11 +364,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         int hash = this.hash(key);
         AtomicReferenceArray<Object> currentArray = this.table;
         int index = indexFor(hash, currentArray.length());
-        Object o = currentArray.get(index);
-        while (o == RESERVED) {
-            Thread.onSpinWait();
-            o = currentArray.get(index);
-        }
+        Object o = getAtIndex(currentArray, index);
         if (o == RESIZED || o == RESIZING) {
             return this.slowGet(key, hash, currentArray);
         }
@@ -417,11 +381,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
             } else {
@@ -444,11 +404,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
             } else {
@@ -477,11 +433,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         do {
             resizeContainer = null;
             for (int i = 0; i < currentArray.length() - 1; i++) {
-                Object o = currentArray.get(i);
-                while (o == RESERVED) {
-                    Thread.onSpinWait();
-                    o = currentArray.get(i);
-                }
+                Object o = getAtIndex(currentArray, i);
                 if (o == RESIZED || o == RESIZING) {
                     resizeContainer = (ResizeContainer) currentArray.get(currentArray.length() - 1);
                 } else if (o != null) {
@@ -527,11 +479,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         AtomicReferenceArray<Object> currentArray = this.table;
         int length = currentArray.length();
         int index = indexFor(hash, length);
-        Object o = currentArray.get(index);
-        while (o == RESERVED) {
-            Thread.onSpinWait();
-            o = currentArray.get(index);
-        }
+        Object o = getAtIndex(currentArray, index);
         if (o == RESIZED || o == RESIZING) {
             return this.slowReplace(key, oldValue, newValue, hash, currentArray);
         }
@@ -558,11 +506,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
             } else {
@@ -607,11 +551,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
             } else {
@@ -641,11 +581,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         AtomicReferenceArray<Object> currentArray = this.table;
         int length = currentArray.length();
         int index = indexFor(hash, length);
-        Object o = currentArray.get(index);
-        while (o == RESERVED) {
-            Thread.onSpinWait();
-            o = currentArray.get(index);
-        }
+        Object o = getAtIndex(currentArray, index);
         if (o == RESIZED || o == RESIZING) {
             return this.slowRemove(key, hash, currentArray);
         }
@@ -671,11 +607,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
-            Object o = currentArray.get(index);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(index);
-            }
+            Object o = getAtIndex(currentArray, index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
             } else {
@@ -718,11 +650,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         int h = 0;
         AtomicReferenceArray<Object> currentArray = this.table;
         for (int i = 0; i < currentArray.length() - 1; i++) {
-            Object o = currentArray.get(i);
-            while (o == RESERVED) {
-                Thread.onSpinWait();
-                o = currentArray.get(i);
-            }
+            Object o = getAtIndex(currentArray, i);
             if (o == RESIZED || o == RESIZING) {
                 throw new ConcurrentModificationException("can't compute hashcode while resizing!");
             }
