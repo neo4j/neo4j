@@ -1,1 +1,2 @@
 org.neo4j.kernel.api.impl.schema.vector.codec.LuceneKnnVectorFormatV1
+org.neo4j.kernel.api.impl.schema.vector.codec.LuceneKnnVectorFormatV2

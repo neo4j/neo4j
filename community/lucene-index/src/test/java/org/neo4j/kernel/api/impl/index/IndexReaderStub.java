@@ -75,7 +75,8 @@ public class IndexReaderStub extends LeafReader {
             0,
             VectorEncoding.BYTE,
             VectorSimilarityFunction.EUCLIDEAN,
-            true);
+            true,
+            false);
 
     public IndexReaderStub(final NumericDocValues ndv) {
         this.ndvs = s -> ndv;
@@ -177,6 +178,7 @@ public class IndexReaderStub extends LeafReader {
                     0,
                     VectorEncoding.BYTE,
                     VectorSimilarityFunction.EUCLIDEAN,
+                    false,
                     false));
         }
         return new FieldInfos(infos.toArray(new FieldInfo[0]));

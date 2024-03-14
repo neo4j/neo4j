@@ -142,7 +142,7 @@
     <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
 
     <jamm.version>0.4.0</jamm.version>
-    <lucene.version>9.8.0</lucene.version>
+    <lucene.version>9.10.0</lucene.version>
     <bouncycastle.version>1.77</bouncycastle.version>
     <jetty.version>10.0.20</jetty.version>
     <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>

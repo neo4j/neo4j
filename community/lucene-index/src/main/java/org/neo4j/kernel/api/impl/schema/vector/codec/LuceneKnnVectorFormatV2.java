@@ -20,27 +20,27 @@
 package org.neo4j.kernel.api.impl.schema.vector.codec;
 
 import java.io.IOException;
-import org.apache.lucene.backward_codecs.lucene95.Lucene95HnswVectorsFormat;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.KnnVectorsReader;
 import org.apache.lucene.codecs.KnnVectorsWriter;
+import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
-public class LuceneKnnVectorFormatV1 extends KnnVectorsFormat {
-    private static final String LUCENE_VECTOR_FORMAT_V1_NAME = "LuceneKnnVectorFormatV1";
-    private final Lucene95HnswVectorsFormat vectorsFormat;
+public class LuceneKnnVectorFormatV2 extends KnnVectorsFormat {
+    private static final String LUCENE_VECTOR_FORMAT_V2_NAME = "LuceneKnnVectorFormatV2";
+    private final KnnVectorsFormat vectorsFormat;
     private final int maxDimensions;
 
     // This constructor is only needed for Lucene Service Loader
-    public LuceneKnnVectorFormatV1() {
+    public LuceneKnnVectorFormatV2() {
         this(Integer.MAX_VALUE);
     }
 
-    public LuceneKnnVectorFormatV1(int maxDimensions) {
-        super(LUCENE_VECTOR_FORMAT_V1_NAME);
+    public LuceneKnnVectorFormatV2(int maxDimensions) {
+        super(LUCENE_VECTOR_FORMAT_V2_NAME);
         this.maxDimensions = maxDimensions;
-        this.vectorsFormat = new Lucene95HnswVectorsFormat();
+        this.vectorsFormat = new Lucene99HnswVectorsFormat();
     }
 
     @Override

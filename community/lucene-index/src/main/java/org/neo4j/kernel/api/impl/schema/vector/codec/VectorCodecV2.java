@@ -20,14 +20,14 @@
 package org.neo4j.kernel.api.impl.schema.vector.codec;
 
 import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene95.Lucene95Codec;
+import org.apache.lucene.codecs.lucene99.Lucene99Codec;
 
-public class VectorV1Codec extends Lucene95Codec {
-    private final LuceneKnnVectorFormatV1 vectorFormat;
+public class VectorCodecV2 extends Lucene99Codec {
+    private final LuceneKnnVectorFormatV2 vectorFormat;
 
-    public VectorV1Codec(int maxDimensions) {
+    public VectorCodecV2(int maxDimensions) {
         super();
-        this.vectorFormat = new LuceneKnnVectorFormatV1(maxDimensions);
+        this.vectorFormat = new LuceneKnnVectorFormatV2(maxDimensions);
     }
 
     @Override

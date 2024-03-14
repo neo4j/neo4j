@@ -59,7 +59,7 @@ class StatsCollector {
         for (PreparedSearch search : searches) {
             Neo4jIndexSearcher searcher = search.searcher();
             try {
-                TermStates context = TermStates.build(searcher.getTopReaderContext(), term, true);
+                TermStates context = TermStates.build(searcher, term, true);
                 if (context.docFreq() > 0) {
                     var statistic = searcher.termStatistics(term, context.docFreq(), context.totalTermFreq());
                     statistics.add(statistic);

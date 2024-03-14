@@ -43,7 +43,7 @@ import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexType;
-import org.neo4j.kernel.api.impl.schema.vector.codec.VectorV1Codec;
+import org.neo4j.kernel.api.impl.schema.vector.codec.VectorCodecV2;
 
 /**
  * Helper factory for standard lucene index writer configuration.
@@ -70,7 +70,7 @@ public final class IndexWriterConfigs {
         writerConfig.setRAMBufferSizeMB(config.get(lucene_standard_ram_buffer_size));
 
         if (index == VECTOR) {
-            writerConfig.setCodec(new VectorV1Codec(vectorDimensionsFrom(indexConfig)));
+            writerConfig.setCodec(new VectorCodecV2(vectorDimensionsFrom(indexConfig)));
         }
 
         final var mergePolicy = new LogByteSizeMergePolicy();
