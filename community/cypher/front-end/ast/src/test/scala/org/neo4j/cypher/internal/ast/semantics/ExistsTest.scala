@@ -90,6 +90,19 @@ class ExistsTest extends SemanticFunSuite {
     result.errors shouldBe empty
   }
 
+  test("EXISTS does not work for a regular query ending with FINISH") {
+    val expression = ExistsExpression(
+      singleQuery(match_(relChain), finish())
+    )(pos, None, None)
+
+    val result =
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
+
+    result.errors shouldBe Seq(
+      SemanticError("An Exists Expression cannot contain a query ending with FINISH.", pos)
+    )
+  }
+
   test("EXISTS does not work for an updating query") {
     val expression = ExistsExpression(
       singleQuery(create(nodePat(Some("n"))))

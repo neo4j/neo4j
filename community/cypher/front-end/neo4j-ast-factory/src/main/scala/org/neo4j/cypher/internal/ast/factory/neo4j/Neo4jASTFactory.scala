@@ -147,6 +147,7 @@ import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.FileResource
+import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.FunctionQualifier
@@ -551,6 +552,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       Statement,
       Query,
       Clause,
+      Finish,
       Return,
       ReturnItem,
       ReturnItems,
@@ -643,6 +645,10 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   override def functionUseClause(p: InputPosition, function: FunctionInvocation): UseGraph = {
     UseGraph(GraphFunctionReference(function)(function.position))(p)
+  }
+
+  override def newFinishClause(p: InputPosition): Finish = {
+    Finish()(p)
   }
 
   override def newReturnClause(

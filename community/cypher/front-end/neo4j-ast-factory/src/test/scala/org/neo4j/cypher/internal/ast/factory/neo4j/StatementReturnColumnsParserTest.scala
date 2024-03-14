@@ -42,6 +42,12 @@ class StatementReturnColumnsParserTest extends AstParsingTestBase with LegacyAst
     "CALL foo YIELD x, y AS z" should parse[Statement].withAstLike(columns("x", "z"))
   }
 
+  test("... FINISH") {
+    "FINISH" should parse[Statement].withAstLike(columns())
+    "MATCH (n) FINISH" should parse[Statement].withAstLike(columns())
+    "MATCH (n) WITH 1 AS x FINISH" should parse[Statement].withAstLike(columns())
+  }
+
   test("Updates") {
     "MATCH (n) CREATE ()" should parse[Statement].withAstLike(columns())
     "MATCH (n) SET n.prop=12" should parse[Statement].withAstLike(columns())

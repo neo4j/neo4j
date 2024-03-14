@@ -29,7 +29,7 @@ class CollectExpressionSemanticAnalysisTest
   ) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(17, 1, 18)
       ),
       SemanticError(
@@ -398,11 +398,11 @@ class CollectExpressionSemanticAnalysisTest
   ) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(42, 3, 5)
       ),
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(66, 5, 5)
       ),
       SemanticError(
@@ -429,7 +429,7 @@ class CollectExpressionSemanticAnalysisTest
         InputPosition(74, 5, 5)
       ),
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(88, 6, 5)
       ),
       SemanticError(
@@ -456,7 +456,7 @@ class CollectExpressionSemanticAnalysisTest
         InputPosition(56, 4, 5)
       ),
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(42, 3, 5)
       ),
       SemanticError(
@@ -483,7 +483,7 @@ class CollectExpressionSemanticAnalysisTest
         InputPosition(69, 5, 5)
       ),
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(83, 6, 5)
       ),
       SemanticError(
@@ -510,7 +510,7 @@ class CollectExpressionSemanticAnalysisTest
         InputPosition(56, 4, 5)
       ),
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(42, 3, 5)
       ),
       SemanticError(
@@ -539,11 +539,11 @@ class CollectExpressionSemanticAnalysisTest
         InputPosition(56, 4, 5)
       ),
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(42, 3, 5)
       ),
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(111, 8, 5)
       ),
       SemanticError(

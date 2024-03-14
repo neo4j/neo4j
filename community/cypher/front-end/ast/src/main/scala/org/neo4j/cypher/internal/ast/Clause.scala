@@ -1514,6 +1514,13 @@ case class With(
     this.copy(returnItems = ReturnItems(returnItems.includeExisting, items)(returnItems.position))(this.position)
 }
 
+case class Finish()(val position: InputPosition) extends Clause with ClauseAllowedOnSystem {
+
+  override def name: String = "FINISH"
+
+  override def clauseSpecificSemanticCheck: SemanticCheck = SemanticCheck.success
+}
+
 object Return {
 
   def apply(returnItems: ReturnItems)(pos: InputPosition): Return =

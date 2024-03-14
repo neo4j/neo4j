@@ -78,6 +78,11 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
   def isReturning: Boolean
 
   /**
+   * True iff this query part ends with a finish clause.
+   */
+  def endsWithFinish: Boolean
+
+  /**
    * Exists and Count can omit the Return Statement
    * Count still requires it for Distinct Unions as in this case the count
    * changes based on which rows are distinct vs not
@@ -120,6 +125,11 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def isReturning: Boolean = clauses.last match {
     case _: Return => true
+    case _         => false
+  }
+
+  override def endsWithFinish: Boolean = clauses.last match {
+    case _: Finish => true
     case _         => false
   }
 
@@ -282,12 +292,16 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
                 match2.position
               ))
             case Seq(clause: Return, _) =>
-              Some(SemanticError(s"${clause.name} can only be used at the end of the query", clause.position))
+              Some(SemanticError(s"${clause.name} can only be used at the end of the query.", clause.position))
+            case Seq(clause: Finish, _) =>
+              Some(SemanticError(s"${clause.name} can only be used at the end of the query.", clause.position))
             case Seq(_: UpdateClause, _: UpdateClause) =>
               None
             case Seq(_: UpdateClause, _: With) =>
               None
             case Seq(_: UpdateClause, _: Return) =>
+              None
+            case Seq(_: UpdateClause, _: Finish) =>
               None
             case Seq(update: UpdateClause, clause) =>
               Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.position))
@@ -331,7 +345,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         } else Vector.empty[SemanticError]
 
       val validLastClauses =
-        "a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD"
+        "a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD"
 
       val concludeError = clauses match {
         // standalone procedure call
@@ -339,11 +353,11 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         case Seq(_: GraphSelection, _: CallClause) => None
 
         case Seq() =>
-          Some(SemanticError(s"Query must conclude with $validLastClauses", this.position))
+          Some(SemanticError(s"Query must conclude with $validLastClauses.", this.position))
 
         // otherwise
         case seq => seq.last match {
-            case _: UpdateClause | _: Return | _: CommandClause                                              => None
+            case _: UpdateClause | _: Return | _: Finish | _: CommandClause                                  => None
             case subquery: SubqueryCall if !subquery.innerQuery.isReturning && subquery.reportParams.isEmpty => None
             case call: CallClause if call.returnVariables.explicitVariables.isEmpty && !call.yieldAll        => None
             case call: CallClause =>
@@ -351,7 +365,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
             case _ if canOmitReturnClause => None
             case clause =>
               Some(SemanticError(
-                s"Query cannot conclude with ${clause.name} (must be $validLastClauses)",
+                s"Query cannot conclude with ${clause.name} (must be $validLastClauses).",
                 clause.position
               ))
           }
@@ -606,6 +620,8 @@ sealed trait Union extends Query {
   override def isCorrelated: Boolean = lhs.isCorrelated || rhs.isCorrelated
 
   override def isReturning: Boolean = rhs.isReturning // we assume lhs has the same value
+
+  override def endsWithFinish: Boolean = rhs.endsWithFinish || lhs.endsWithFinish
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
     checkRecursively(_.semanticCheckInSubqueryContext(outer))

@@ -47,6 +47,7 @@ public class NullAstFactory
                 NULL, // STATEMENT,
                 NULL, // QUERY extends STATEMENT,
                 NULL, // CLAUSE,
+                NULL, // FINISH_CLAUSE extends CLAUSE,
                 NULL, // RETURN_CLAUSE extends CLAUSE,
                 NULL, // RETURN_ITEM,
                 NULL, // RETURN_ITEMS,
@@ -535,6 +536,11 @@ public class NullAstFactory
 
     @Override
     public NULL functionUseClause(NULL p, NULL function) {
+        return null;
+    }
+
+    @Override
+    public NULL newFinishClause(NULL p) {
         return null;
     }
 

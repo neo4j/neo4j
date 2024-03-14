@@ -477,6 +477,62 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
     }
   }
 
+  // This would parse but would not pass the semantic check
+  test("RETURN COUNT { FINISH }") {
+    val countExpression: CountExpression = CountExpression(
+      singleQuery(
+        finish()
+      )
+    )(InputPosition(7, 1, 8), None, None)
+
+    givesIncludingPositions[Statement] {
+      singleQuery(
+        return_(returnItem(countExpression, "COUNT { FINISH }"))
+      )
+    }
+  }
+
+  // This would parse but would not pass the semantic check
+  test("RETURN COUNT { MATCH (n) FINISH }") {
+    val countExpression: CountExpression = CountExpression(
+      singleQuery(
+        match_(
+          nodePat(Some("n"), namePos = InputPosition(22, 1, 23), position = InputPosition(21, 1, 22))
+        ),
+        finish()
+      )
+    )(InputPosition(7, 1, 8), None, None)
+
+    givesIncludingPositions[Statement] {
+      singleQuery(
+        return_(returnItem(countExpression, "COUNT { MATCH (n) FINISH }"))
+      )
+    }
+  }
+
+  // This would parse but would not pass the semantic check
+  test(
+    """MATCH (m)
+      |WHERE COUNT { MATCH (n) FINISH } = 1
+      |RETURN m""".stripMargin
+  ) {
+    val countExpression: CountExpression = CountExpression(
+      singleQuery(
+        match_(
+          nodePat(Some("n"), namePos = InputPosition(31, 2, 22), position = InputPosition(30, 2, 21))
+        ),
+        finish()
+      )
+    )(InputPosition(16, 2, 7), None, None)
+
+    givesIncludingPositions[Statement] {
+      singleQuery(
+        match_(nodePat(name = Some("m")), where = Some(where(eq(countExpression, literal(1))))),
+        return_(variableReturnItem("m"))
+      )
+    }
+  }
+
   test(
     """MATCH (m)
       |WHERE COUNT { MATCH (b) RETURN b WHERE true } >= 1

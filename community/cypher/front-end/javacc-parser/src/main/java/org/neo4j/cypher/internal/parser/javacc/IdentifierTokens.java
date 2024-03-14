@@ -103,6 +103,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FAIL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FALSE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FIELDTERMINATOR;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FINISH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FLOAT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOREACH;
@@ -365,6 +366,7 @@ public class IdentifierTokens {
             FAIL,
             FALSE,
             FIELDTERMINATOR,
+            FINISH,
             FLOAT,
             FOR,
             FOREACH,

@@ -936,6 +936,8 @@ trait AstConstructionTestSupport {
   def removePropertyItem(map: String, propertyName: String): RemovePropertyItem =
     RemovePropertyItem(Property(Variable(map)(pos), PropertyKeyName(propertyName)(pos))(pos))
 
+  def finish(): Finish = Finish()(pos)
+
   def return_(items: ReturnItem*): Return =
     Return(ReturnItems(includeExisting = false, items)(pos))(pos)
 

@@ -507,6 +507,62 @@ class CollectExpressionParserTest extends AstParsingTestBase with LegacyAstParsi
     }
   }
 
+  // This would parse but would not pass the semantic check
+  test("RETURN COLLECT { FINISH }") {
+    val collectExpression: CollectExpression = CollectExpression(
+      singleQuery(
+        finish()
+      )
+    )(InputPosition(7, 1, 8), None, None)
+
+    parses[Statements].toAstPositioned {
+      singleQuery(
+        return_(returnItem(collectExpression, "COLLECT { FINISH }"))
+      )
+    }
+  }
+
+  // This would parse but would not pass the semantic check
+  test("RETURN COLLECT { MATCH (n) FINISH }") {
+    val collectExpression: CollectExpression = CollectExpression(
+      singleQuery(
+        match_(
+          nodePat(Some("n"), namePos = InputPosition(24, 1, 25), position = InputPosition(23, 1, 24))
+        ),
+        finish()
+      )
+    )(InputPosition(7, 1, 8), None, None)
+
+    parses[Statements].toAstPositioned {
+      singleQuery(
+        return_(returnItem(collectExpression, "COLLECT { MATCH (n) FINISH }"))
+      )
+    }
+  }
+
+  // This would parse but would not pass the semantic check
+  test(
+    """MATCH (m)
+      |WHERE COLLECT { MATCH (n) FINISH } = []
+      |RETURN m""".stripMargin
+  ) {
+    val collectExpression: CollectExpression = CollectExpression(
+      singleQuery(
+        match_(
+          nodePat(Some("n"), namePos = InputPosition(33, 2, 24), position = InputPosition(32, 2, 23))
+        ),
+        finish()
+      )
+    )(InputPosition(16, 2, 7), None, None)
+
+    parses[Statements].toAstPositioned {
+      singleQuery(
+        match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOf())))),
+        return_(variableReturnItem("m"))
+      )
+    }
+  }
+
   test(
     """MATCH (m)
       |WHERE COLLECT { MATCH (b) RETURN b WHERE true } = [1, 2, 3]

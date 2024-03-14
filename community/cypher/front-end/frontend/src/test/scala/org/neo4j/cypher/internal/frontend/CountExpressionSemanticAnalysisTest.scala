@@ -329,11 +329,11 @@ class CountExpressionSemanticAnalysisTest
      """.stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(40, 3, 5)
       ),
       SemanticError(
-        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
         InputPosition(64, 5, 5)
       )
     )

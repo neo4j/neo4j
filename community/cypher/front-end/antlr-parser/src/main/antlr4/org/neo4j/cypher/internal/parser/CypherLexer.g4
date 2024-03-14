@@ -368,6 +368,9 @@ FALSE:
 FIELDTERMINATOR:
    F I E L D T E R M I N A T O R;
 
+FINISH:
+   F I N I S H;
+
 FLOAT:
    F L O A T;
 

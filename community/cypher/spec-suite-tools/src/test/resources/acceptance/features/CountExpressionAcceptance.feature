@@ -1391,6 +1391,18 @@ Feature: CountExpressionAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
 
+  Scenario: Count subquery with FINISH should fail
+    Given any graph
+    When executing query:
+      """
+      MATCH (n) WHERE COUNT {
+        MATCH (n)-->(m)
+        FINISH
+      } > 1
+      RETURN n
+      """
+    Then a SyntaxError should be raised at compile time: *
+
   Scenario: COUNT subquery in join key
     Given an empty graph
     And having executed:

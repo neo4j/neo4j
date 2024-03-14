@@ -42,6 +42,7 @@ class PrettifierIT extends CypherFunSuite {
         |  ORDER BY b.prop ASCENDING, b.foo DESCENDING
         |  SKIP 1
         |  LIMIT 2""".stripMargin,
+    "fiNIsh" -> "FINISH",
     "match (a) return a" ->
       """MATCH (a)
         |RETURN a""".stripMargin,
@@ -118,6 +119,12 @@ class PrettifierIT extends CypherFunSuite {
     "CALL nsp.proc() yield *" ->
       """CALL nsp.proc()
         |  YIELD *""".stripMargin,
+    "call { Match (n)  where n:(A| (B)) finish }" ->
+      """CALL {
+        |  MATCH (n)
+        |    WHERE n:A|B
+        |  FINISH
+        |}""".stripMargin,
     "call { create ( n ) } in transactions" ->
       """CALL {
         |  CREATE (n)

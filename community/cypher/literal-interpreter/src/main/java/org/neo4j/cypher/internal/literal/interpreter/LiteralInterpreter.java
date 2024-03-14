@@ -66,6 +66,7 @@ public class LiteralInterpreter
                 NULL, // STATEMENT,
                 NULL, // QUERY extends STATEMENT,
                 NULL, // CLAUSE,
+                NULL, // FINISH_CLAUSE extends CLAUSE,
                 NULL, // RETURN_CLAUSE extends CLAUSE,
                 NULL, // RETURN_ITEM,
                 NULL, // RETURN_ITEMS,
@@ -152,6 +153,11 @@ public class LiteralInterpreter
     @Override
     public NULL functionUseClause(NULL p, Object function) {
         throw new UnsupportedOperationException("directUseClause is not a literal");
+    }
+
+    @Override
+    public NULL newFinishClause(NULL p) {
+        throw new UnsupportedOperationException("newFinishClause is not a literal");
     }
 
     @Override

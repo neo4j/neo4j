@@ -463,7 +463,7 @@ Feature: SubqueryAcceptance
       | <(:N)> | 0 |
     And no side effects
 
-  Scenario: Side-effects in uncorrelated subquery
+  Scenario: Side effects in uncorrelated subquery
     And having executed:
       """
       CREATE (:Label), (:Label), (:Label)
@@ -483,7 +483,27 @@ Feature: SubqueryAcceptance
     And the side effects should be:
       | +nodes  | 3 |
 
-  Scenario: Side-effects in order dependant subquery
+  Scenario: Side effects in uncorrelated subquery with FINISH
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL {
+        CREATE (y:Label)
+        FINISH
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes  | 3 |
+
+  Scenario: Side effects in order dependant subquery
     And having executed:
       """
       CREATE ({value: 3})
@@ -507,7 +527,31 @@ Feature: SubqueryAcceptance
       | +nodes       | 3 |
       | +properties  | 3 |
 
-  Scenario: Side-effects in subquery with update that depending on previous updates
+  Scenario: Side effects in order dependant subquery with FINISH
+    And having executed:
+      """
+      CREATE ({value: 3})
+      """
+    When executing query:
+      """
+      UNWIND [1, 2, 3] AS i
+      WITH i ORDER BY i DESC
+      CALL {
+        WITH i
+        MATCH (n {value: i})
+        CREATE (m {value: i - 1})
+        FINISH
+      }
+      RETURN count(*) as count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes       | 3 |
+      | +properties  | 3 |
+
+  Scenario: Side effects in subquery with update that depending on previous updates
     And having executed:
       """
       CREATE (:Number {value: 19})
@@ -553,7 +597,6 @@ Feature: SubqueryAcceptance
       | -properties  | 1 |
       | +properties  | 1 |
 
-
   Scenario: Uncorrelated unit subquery
     And having executed:
       """
@@ -564,6 +607,26 @@ Feature: SubqueryAcceptance
       MATCH (x)
       CALL {
         CREATE (:Label)
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes  | 3 |
+
+  Scenario: Uncorrelated unit subquery with FINISH
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL {
+        CREATE (:Label)
+        FINISH
       }
       RETURN count(*) AS count
       """
@@ -584,6 +647,27 @@ Feature: SubqueryAcceptance
       CALL {
         WITH x
         SET x.prop = 1
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +properties    | 3 |
+
+  Scenario: Correlated unit subquery with FINISH
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL {
+        WITH x
+        SET x.prop = 1
+        FINISH
       }
       RETURN count(*) AS count
       """
@@ -617,7 +701,6 @@ Feature: SubqueryAcceptance
       | +properties | 3 |
       | +nodes      | 3 |
       | +labels     | 1 |
-
 
   Scenario: Correlated union unit subquery
     When having executed:
@@ -664,6 +747,28 @@ Feature: SubqueryAcceptance
       | +nodes      | 6 |
       | +labels     | 1 |
 
+  Scenario: Uncorrelated unit subquery with increasing cardinality with FINISH
+    When having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    And executing query:
+      """
+      MATCH (n)
+      CALL {
+        UNWIND [1, 2] AS i
+        CREATE (x: Foo)
+        FINISH
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes      | 6 |
+      | +labels     | 1 |
+
   Scenario: Unit subquery under limit
     And having executed:
       """
@@ -682,6 +787,23 @@ Feature: SubqueryAcceptance
     And the side effects should be:
       | +nodes  | 3 |
 
+  Scenario: Unit subquery under FINISH
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL {
+        CREATE (:Label)
+      }
+      FINISH
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 3 |
+
   Scenario: Embedded nested unit subquery call
     And having executed:
       """
@@ -694,6 +816,53 @@ Feature: SubqueryAcceptance
         CALL {
           CREATE (x: Foo)
         }
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes  | 3 |
+      | +labels | 1 |
+
+  Scenario: Embedded nested unit subquery call with FINISH
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        CALL {
+          CREATE (x: Foo)
+          FINISH
+        }
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes  | 3 |
+      | +labels | 1 |
+
+  Scenario: Embedded nested unit subquery call with FINISH on all nested levels
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        CALL {
+          CREATE (x: Foo)
+          FINISH
+        }
+        FINISH
       }
       RETURN count(*) AS count
       """
@@ -721,6 +890,24 @@ Feature: SubqueryAcceptance
       | +nodes  | 3 |
       | +labels | 1 |
 
+  Scenario: Ending unit subquery call with FINISH
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        CREATE (x: Foo)
+        FINISH
+      }
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 3 |
+      | +labels | 1 |
+
   Scenario: Ending nested unit subquery call
     And having executed:
       """
@@ -732,6 +919,26 @@ Feature: SubqueryAcceptance
       CALL {
         CALL {
           CREATE (x: Foo)
+        }
+      }
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 3 |
+      | +labels | 1 |
+
+  Scenario: Ending nested unit subquery call with FINISH
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        CALL {
+          CREATE (x: Foo)
+          FINISH
         }
       }
       """
@@ -759,7 +966,28 @@ Feature: SubqueryAcceptance
       | +nodes  | 6 |
       | +labels | 1 |
 
-  Scenario: Side-effects from unit subquery are visible after subquery
+  Scenario: Ending union unit subquery call with FINISH
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        CREATE (x: Foo)
+        FINISH
+          UNION
+        CREATE (x: Foo)
+        FINISH
+      }
+      """
+    Then the result should be empty
+    And the side effects should be:
+      | +nodes  | 6 |
+      | +labels | 1 |
+
+  Scenario: Side effects from unit subquery are visible after subquery
     When having executed:
       """
       CREATE (:Label), (:Label), (:Label)
@@ -781,7 +1009,7 @@ Feature: SubqueryAcceptance
     And the side effects should be:
       | +properties | 3 |
 
-  Scenario: Side-effects from unit subquery are visible after subquery, when previously read
+  Scenario: Side effects from unit subquery are visible after subquery, when previously read
     When having executed:
       """
       CREATE (:Label {prop: 1}), (:Label {prop: 1}), (:Label {prop: 1})
@@ -943,3 +1171,115 @@ Feature: SubqueryAcceptance
       | 2 |  4 | 12 |
       | 2 |  4 | 22 |
       | 2 |  4 | 32 |
+    And no side effects
+
+  Scenario: A subquery with FINISH
+    When executing query:
+      """
+      CALL {
+        FINISH
+      }
+      RETURN 1 AS x
+      """
+    Then the result should be, in order:
+      | x |
+      | 1 |
+    And no side effects
+
+  Scenario: Nested subqueries with FINISH
+    When executing query:
+      """
+      CALL {
+        CALL {
+          FINISH
+        }
+      }
+      RETURN 1 AS x
+      """
+    Then the result should be, in order:
+      | x |
+      | 1 |
+    And no side effects
+
+  Scenario: Nested subqueries with FINISH on all levels
+    When executing query:
+      """
+      CALL {
+        CALL {
+          FINISH
+        }
+        FINISH
+      }
+      FINISH
+      """
+    Then the result should be empty
+    And no side effects
+
+  Scenario: An uncorrelated subquery with FINISH does not change the cardinality of the outer query with cardinality equal 0
+    When executing query:
+      """
+      UNWIND [] AS x
+      CALL {
+        WITH toInteger(rand()*101) AS nInner
+        UNWIND [0] + range(1, nInner) AS y
+        FINISH
+      }
+      RETURN x AS invariant
+      """
+    Then the result should be, in order:
+      | invariant |
+    And no side effects
+
+  Scenario: An uncorrelated subquery with FINISH does not change the cardinality of the outer query with cardinality greater 0
+    When executing query:
+      """
+      WITH toInteger(rand()*101) AS n
+      UNWIND [0] + range(1, n) AS x
+      CALL {
+        WITH toInteger(rand()*101) AS nInner
+        UNWIND range(1, nInner) AS y
+        FINISH
+      }
+      WITH n + 1 AS n, COUNT(*) AS card
+      RETURN n = card AS invariant
+      """
+    Then the result should be, in order:
+      | invariant |
+      | true      |
+    And no side effects
+
+  Scenario: A correlated subquery with FINISH does not change the cardinality of the outer query with cardinality equal 0
+    When executing query:
+      """
+      WITH toInteger(rand()*101) AS n
+      UNWIND [] AS x
+      CALL {
+        WITH n
+        WITH toInteger(n * (rand() + rand())) AS nInner
+        UNWIND [0] + range(1, nInner) AS y
+        FINISH
+      }
+      RETURN x AS invariant
+      """
+    Then the result should be, in order:
+      | invariant |
+    And no side effects
+
+  Scenario: A correlated subquery with FINISH does not change the cardinality of the outer query with cardinality greater 0
+    When executing query:
+      """
+      WITH toInteger(rand()*101) AS n
+      UNWIND [0] + range(1, n) AS x
+      CALL {
+        WITH n
+        WITH toInteger(n * (rand() + rand())) AS nInner
+        UNWIND range(1, nInner) AS y
+        FINISH
+      }
+      WITH n + 1 AS n, COUNT(*) AS card
+      RETURN n = card AS invariant
+      """
+    Then the result should be, in order:
+      | invariant |
+      | true      |
+    And no side effects

@@ -268,7 +268,7 @@ class SubqueryCallSemanticAnalysisTest
       query,
       Set(
         SemanticError(
-          "Query must conclude with a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD",
+          "Query must conclude with a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD.",
           InputPosition(19, 1, 20)
         )
       )
@@ -281,7 +281,7 @@ class SubqueryCallSemanticAnalysisTest
       query,
       Set(
         SemanticError(
-          "Query must conclude with a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD",
+          "Query must conclude with a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD.",
           InputPosition(19, 1, 20)
         )
       ),
@@ -295,7 +295,7 @@ class SubqueryCallSemanticAnalysisTest
       query,
       Set(
         SemanticError(
-          "Query must conclude with a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD",
+          "Query must conclude with a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD.",
           InputPosition(19, 1, 20)
         )
       ),
@@ -504,7 +504,7 @@ class SubqueryCallSemanticAnalysisTest
       query,
       Set(
         SemanticError(
-          "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+          "Query cannot conclude with MATCH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
           InputPosition(19, 1, 20)
         )
       )

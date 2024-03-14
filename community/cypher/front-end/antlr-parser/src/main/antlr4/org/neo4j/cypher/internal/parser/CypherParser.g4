@@ -42,6 +42,7 @@ singleQuery
 
 clause
    : useClause
+   | finishClause
    | returnClause
    | createClause
    | insertClause
@@ -63,6 +64,9 @@ useClause:
 
 graphReference:
     LPAREN graphReference RPAREN | functionInvocation | symbolicAliasName;
+
+finishClause:
+   FINISH;
 
 returnClause:
    RETURN returnBody;
@@ -1112,6 +1116,7 @@ unescapedLabelSymbolicNameString
    | FAIL
    | FALSE
    | FIELDTERMINATOR
+   | FINISH
    | FLOAT
    | FOREACH
    | FOR

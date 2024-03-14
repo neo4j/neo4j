@@ -110,6 +110,26 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ))
   }
 
+  test("CALL around single query with FINISH") {
+    val query = buildSinglePlannerQuery("CALL { FINISH } RETURN 2 as y")
+    query.horizon should equal(CallSubqueryHorizon(
+      RegularSinglePlannerQuery(
+        horizon = QueryProjection.empty
+      ),
+      correlated = false,
+      yielding = false,
+      inTransactionsParameters = None
+    ))
+
+    query.tail should not be empty
+
+    val nextQuery = query.tail.get
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(2)),
+      position = QueryProjection.Position.Final
+    ))
+  }
+
   test("CALL around single correlated query") {
     val query = buildSinglePlannerQuery("WITH 1 AS x CALL { WITH x RETURN x as y } RETURN y")
 
@@ -134,6 +154,35 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nextQuery = subQuery.tail.get
 
     nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> v"y"), position = QueryProjection.Position.Final))
+  }
+
+  test("CALL around single correlated query with FINISH") {
+    val query = buildSinglePlannerQuery("WITH 1 AS x CALL { WITH x FINISH } RETURN 1 AS y")
+
+    query.horizon should equal(RegularQueryProjection(Map(v"x" -> literalInt(1))))
+
+    query.tail should not be empty
+    val subQuery = query.tail.get
+
+    subQuery.horizon should equal(
+      CallSubqueryHorizon(
+        correlated = true,
+        yielding = false,
+        inTransactionsParameters = None,
+        callSubquery = RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(argumentIds = Set(v"x")),
+          horizon = QueryProjection.empty
+        )
+      )
+    )
+
+    subQuery.tail should not be empty
+    val nextQuery = subQuery.tail.get
+
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(1)),
+      position = QueryProjection.Position.Final
+    ))
   }
 
   test("CALL around single query - using returned var in outer query") {
@@ -180,6 +229,33 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ))
   }
 
+  test("CALL around union query with FINISH") {
+    val query = buildSinglePlannerQuery("CALL { FINISH UNION FINISH } RETURN 3 as y")
+    query.horizon should equal(CallSubqueryHorizon(
+      UnionQuery(
+        RegularSinglePlannerQuery(
+          horizon = QueryProjection.empty
+        ),
+        RegularSinglePlannerQuery(
+          horizon = QueryProjection.empty
+        ),
+        distinct = true,
+        List()
+      ),
+      correlated = false,
+      yielding = false,
+      inTransactionsParameters = None
+    ))
+
+    query.tail should not be empty
+
+    val nextQuery = query.tail.get
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(3)),
+      position = QueryProjection.Position.Final
+    ))
+  }
+
   test("CALL around correlated union query") {
     val query =
       buildSinglePlannerQuery("WITH 1 AS x, 2 AS n CALL { WITH x RETURN x as y UNION RETURN 2 as y } RETURN y")
@@ -210,6 +286,41 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val nextQuery = subquery.tail.get
     nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> v"y"), position = QueryProjection.Position.Final))
+  }
+
+  test("CALL around correlated union query with FINISH") {
+    val query =
+      buildSinglePlannerQuery("WITH 1 AS x, 2 AS n CALL { WITH x FINISH UNION FINISH } RETURN 3 as y")
+
+    query.horizon should equal(RegularQueryProjection(Map(v"x" -> literalInt(1), v"n" -> literalInt(2))))
+
+    query.tail should not be empty
+
+    val subquery = query.tail.get
+    subquery.horizon should equal(CallSubqueryHorizon(
+      correlated = true,
+      yielding = false,
+      inTransactionsParameters = None,
+      callSubquery = UnionQuery(
+        RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(argumentIds = Set(v"x")),
+          horizon = QueryProjection.empty
+        ),
+        RegularSinglePlannerQuery(
+          horizon = QueryProjection.empty
+        ),
+        distinct = true,
+        List()
+      )
+    ))
+
+    subquery.tail should not be empty
+
+    val nextQuery = subquery.tail.get
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(3)),
+      position = QueryProjection.Position.Final
+    ))
   }
 
   test("CALL around union query - using returned var in outer query") {
@@ -332,6 +443,38 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(v"y" -> literalInt(2)),
       position = QueryProjection.Position.Final
     ))
+  }
+
+  test("FINISH") {
+    val query = buildSinglePlannerQuery("FINISH")
+    query.horizon should equal(QueryProjection.empty)
+  }
+
+  test("MATCH (a) FINISH") {
+    val query = buildSinglePlannerQuery("MATCH (a) FINISH")
+    query.queryGraph.patternNodes should equal(Set(v"a"))
+    query.horizon should equal(QueryProjection.empty)
+  }
+
+  test("MATCH (a) WITH 1 AS b FINISH") {
+    val query = buildSinglePlannerQuery("MATCH (a) WITH 1 AS b FINISH")
+    query.queryGraph.patternNodes should equal(Set(v"a"))
+    query.horizon should equal(RegularQueryProjection(Map(v"b" -> literalInt(1))))
+    query.tail should equal(Some(RegularSinglePlannerQuery(
+      QueryGraph(argumentIds = Set(v"b")),
+      InterestingOrder.empty,
+      QueryProjection.empty
+    )))
+  }
+
+  test("WITH 1 AS b FINISH") {
+    val query = buildSinglePlannerQuery("WITH 1 AS b FINISH")
+    query.horizon should equal(RegularQueryProjection(Map(v"b" -> literalInt(1))))
+    query.tail should equal(Some(RegularSinglePlannerQuery(
+      QueryGraph(argumentIds = Set(v"b")),
+      InterestingOrder.empty,
+      QueryProjection.empty
+    )))
   }
 
   test("RETURN 42") {
@@ -2229,6 +2372,17 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   val createKeywords = Seq("CREATE", "INSERT")
+
+  test("CREATE/INSERT/DELETE alone have empty projection") {
+    for {
+      clause <- List("CREATE (n)", "INSERT (n)", "DELETE null")
+    } {
+      withClue(s"$clause") {
+        val query = buildSinglePlannerQuery(clause)
+        query.horizon should equal(QueryProjection.empty)
+      }
+    }
+  }
 
   test("Should combine two simple create statement into one create pattern") {
     for {

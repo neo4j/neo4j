@@ -39,6 +39,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitGraphReference(CypherParser.GraphReferenceContext ctx);
 
+    void exitFinishClause(CypherParser.FinishClauseContext ctx);
+
     void exitReturnClause(CypherParser.ReturnClauseContext ctx);
 
     void exitReturnBody(CypherParser.ReturnBodyContext ctx);

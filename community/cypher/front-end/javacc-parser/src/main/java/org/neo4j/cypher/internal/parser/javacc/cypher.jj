@@ -74,6 +74,7 @@ public class Cypher<STATEMENTS,
                     STATEMENT,
                     QUERY extends STATEMENT,
                     CLAUSE,
+                    FINISH_CLAUSE extends CLAUSE,
                     RETURN_CLAUSE extends CLAUSE,
                     RETURN_ITEM,
                     RETURN_ITEMS,
@@ -126,6 +127,7 @@ public class Cypher<STATEMENTS,
                STATEMENT,
                QUERY,
                CLAUSE,
+               FINISH_CLAUSE,
                RETURN_CLAUSE,
                RETURN_ITEM,
                RETURN_ITEMS,
@@ -179,6 +181,7 @@ public class Cypher<STATEMENTS,
                              STATEMENT,
                              QUERY,
                              CLAUSE,
+                             FINISH_CLAUSE,
                              RETURN_CLAUSE,
                              RETURN_ITEM,
                              RETURN_ITEMS,
@@ -501,6 +504,7 @@ TOKEN [IGNORE_CASE] :
     | < FAIL: "FAIL" >
     | < FALSE: "false" >
     | < FIELDTERMINATOR: "FIELDTERMINATOR" >
+    | < FINISH: "FINISH" >
     | < FLOAT: "FLOAT" >
     | < FOR: "FOR" >
     | < FOREACH: "FOREACH" >
@@ -1716,6 +1720,7 @@ CLAUSE Clause() throws Exception:
 {
     (
         x=UseClause()
+        | x=FinishClause()
         | x=ReturnClause()
         | x=CreateClause() // because create index/constraint
         | x=InsertClause()
@@ -1763,6 +1768,19 @@ USE_CLAUSE graphReference(Token t) throws Exception:
     <LPAREN> useClause=graphReference(t) <RPAREN> { return useClause; }
     | LOOKAHEAD(FunctionInvocation()) functionInvocation = FunctionInvocation(true)  { return astFactory.functionUseClause(pos(t), functionInvocation); }
     | aliasName = SymbolicAliasName()  { return astFactory.directUseClause(pos(t), aliasName.getLocalAliasName(astFactory));}
+}
+
+// FINISH
+
+FINISH_CLAUSE FinishClause() throws Exception:
+{
+    Token t;
+}
+{
+    t=<FINISH>
+    {
+        return astFactory.newFinishClause( pos( t ) );
+    }
 }
 
 // RETURN
@@ -7408,6 +7426,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<FAIL>
         | t=<FALSE>
         | t=<FIELDTERMINATOR>
+        | t=<FINISH>
         | t=<FLOAT>
         | t=<FOREACH>
         | t=<FOR>

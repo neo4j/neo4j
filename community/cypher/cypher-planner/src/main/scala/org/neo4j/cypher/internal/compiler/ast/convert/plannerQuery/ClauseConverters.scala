@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.InputDataStream
 import org.neo4j.cypher.internal.ast.LoadCSV
@@ -166,6 +167,7 @@ object ClauseConverters {
     cancellationChecker: CancellationChecker,
     position: QueryProjection.Position
   ): PlannerQueryBuilder = clause match {
+    case c: Finish          => acc
     case c: Return          => addReturnToLogicalPlanInput(acc, c, position)
     case c: Match           => addMatchToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
     case c: With            => addWithToLogicalPlanInput(acc, c, nextClause)

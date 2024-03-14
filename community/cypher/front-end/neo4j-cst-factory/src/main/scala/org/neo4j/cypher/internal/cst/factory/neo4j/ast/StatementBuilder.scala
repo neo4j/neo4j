@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
@@ -169,6 +170,10 @@ trait StatementBuilder extends CypherParserListener {
 
   final override def exitReturnClause(ctx: CypherParser.ReturnClauseContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast[Return]().copy()(pos(ctx))
+  }
+
+  final override def exitFinishClause(ctx: CypherParser.FinishClauseContext): Unit = {
+    ctx.ast = Finish()(pos(ctx))
   }
 
   final override def exitReturnBody(ctx: CypherParser.ReturnBodyContext): Unit = {

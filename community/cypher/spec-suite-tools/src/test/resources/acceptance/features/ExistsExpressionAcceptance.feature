@@ -1844,6 +1844,19 @@ Feature: ExistsExpressionAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
 
+  Scenario: Exists with FINISH should fail with syntax error
+    Given any graph
+    When executing query:
+      """
+      MATCH (person:Person)
+      WHERE EXISTS {
+        MATCH (person)-[:HAS_DOG]->(Dog { name: "Pluto" })
+        FINISH
+      }
+      RETURN person.name
+      """
+    Then a SyntaxError should be raised at compile time: *
+
   Scenario: Exists can be nested inside another exists
     Given any graph
     When executing query:

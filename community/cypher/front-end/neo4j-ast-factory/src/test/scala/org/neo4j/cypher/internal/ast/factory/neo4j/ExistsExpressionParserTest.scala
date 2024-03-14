@@ -246,6 +246,62 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
     }
   }
 
+  // This would parse but would not pass the semantic check
+  test("RETURN EXISTS { FINISH }") {
+    val existsExpression: ExistsExpression = ExistsExpression(
+      singleQuery(
+        finish()
+      )
+    )(InputPosition(7, 1, 8), None, None)
+
+    givesIncludingPositions[Statement] {
+      singleQuery(
+        return_(returnItem(existsExpression, "EXISTS { FINISH }"))
+      )
+    }
+  }
+
+  // This would parse but would not pass the semantic check
+  test("RETURN EXISTS { MATCH (n) FINISH }") {
+    val existsExpression: ExistsExpression = ExistsExpression(
+      singleQuery(
+        match_(
+          nodePat(Some("n"), namePos = InputPosition(23, 1, 24), position = InputPosition(22, 1, 23))
+        ),
+        finish()
+      )
+    )(InputPosition(7, 1, 8), None, None)
+
+    givesIncludingPositions[Statement] {
+      singleQuery(
+        return_(returnItem(existsExpression, "EXISTS { MATCH (n) FINISH }"))
+      )
+    }
+  }
+
+  // This would parse but would not pass the semantic check
+  test(
+    """MATCH (m)
+      |WHERE EXISTS { MATCH (n) FINISH } = 1
+      |RETURN m""".stripMargin
+  ) {
+    val existsExpression: ExistsExpression = ExistsExpression(
+      singleQuery(
+        match_(
+          nodePat(Some("n"), namePos = InputPosition(32, 2, 23), position = InputPosition(31, 2, 22))
+        ),
+        finish()
+      )
+    )(InputPosition(16, 2, 7), None, None)
+
+    givesIncludingPositions[Statement] {
+      singleQuery(
+        match_(nodePat(name = Some("m")), where = Some(where(eq(existsExpression, literal(1))))),
+        return_(variableReturnItem("m"))
+      )
+    }
+  }
+
   test(
     """MATCH (m)
       |WHERE EXISTS { MATCH (b) RETURN b WHERE true }

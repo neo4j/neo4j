@@ -88,6 +88,7 @@ import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.EnableServer
 import org.neo4j.cypher.internal.ast.ExecutableBy
+import org.neo4j.cypher.internal.ast.Finish
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FunctionAllQualifier
 import org.neo4j.cypher.internal.ast.FunctionQualifier
@@ -1043,6 +1044,7 @@ case class Prettifier(
     def dispatch(clause: Clause): String = clause match {
       case u: UseGraph                    => asString(u)
       case e: Return                      => asString(e)
+      case f: Finish                      => asString(f)
       case m: Match                       => asString(m)
       case c: SubqueryCall                => asString(c)
       case w: With                        => asString(w)
@@ -1205,6 +1207,8 @@ case class Prettifier(
         val s = r.skip.map(ind.asString).map(asNewLine).getOrElse("")
         s"${INDENT}RETURN$d $i$o$s$l"
       }
+
+    def asString(f: Finish): String = s"${INDENT}FINISH"
 
     def asString(w: With): String = {
       val ind = indented()

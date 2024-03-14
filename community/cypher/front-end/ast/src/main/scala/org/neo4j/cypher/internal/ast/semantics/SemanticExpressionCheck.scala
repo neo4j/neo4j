@@ -755,9 +755,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x: ExistsExpression =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState {
-            x.query.semanticCheckInSubqueryExpressionContext(true) chain
+            x.query.semanticCheckInSubqueryExpressionContext(canOmitReturn = true) chain
               when(x.query.containsUpdates) {
                 SemanticError("An Exists Expression cannot contain any updates", x.position)
+              } chain
+              when(x.query.endsWithFinish) {
+                SemanticError("An Exists Expression cannot contain a query ending with FINISH.", x.position)
               } chain
               checkForShadowedVariables(x.query.folder.findAllByClass[SubqueryCall]) chain
               SemanticState.recordCurrentScope(x.query)
@@ -767,9 +770,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x: CountExpression =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState {
-            x.query.semanticCheckInSubqueryExpressionContext(!x.query.isInstanceOf[UnionDistinct]) chain
+            x.query.semanticCheckInSubqueryExpressionContext(canOmitReturn = !x.query.isInstanceOf[UnionDistinct]) chain
               when(x.query.containsUpdates) {
                 SemanticError("A Count Expression cannot contain any updates", x.position)
+              } chain
+              when(x.query.endsWithFinish) {
+                SemanticError("A Count Expression cannot contain a query ending with FINISH.", x.position)
               } chain
               checkForShadowedVariables(x.query.folder.findAllByClass[SubqueryCall]) chain
               SemanticState.recordCurrentScope(x.query)
@@ -785,6 +791,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
               } chain
               when(x.query.returnVariables.includeExisting || x.query.returnColumns.size != 1) {
                 SemanticError("A Collect Expression must end with a single return column.", x.position)
+                // by implication this also ensures that "A Collect Expression cannot contain a query ending with FINISH"
               } chain
               checkForShadowedVariables(x.query.folder.findAllByClass[SubqueryCall]) chain
               SemanticState.recordCurrentScope(x.query)

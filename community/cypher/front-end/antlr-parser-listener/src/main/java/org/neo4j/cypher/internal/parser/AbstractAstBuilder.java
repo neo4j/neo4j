@@ -42,6 +42,7 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_clause -> exitClause((CypherParser.ClauseContext) ctx);
             case CypherParser.RULE_useClause -> exitUseClause((CypherParser.UseClauseContext) ctx);
             case CypherParser.RULE_graphReference -> exitGraphReference((CypherParser.GraphReferenceContext) ctx);
+            case CypherParser.RULE_finishClause -> exitFinishClause((CypherParser.FinishClauseContext) ctx);
             case CypherParser.RULE_returnClause -> exitReturnClause((CypherParser.ReturnClauseContext) ctx);
             case CypherParser.RULE_returnBody -> exitReturnBody((CypherParser.ReturnBodyContext) ctx);
             case CypherParser.RULE_returnItem -> exitReturnItem((CypherParser.ReturnItemContext) ctx);

@@ -1557,12 +1557,29 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       query,
       Set(
         SemanticError(
-          "Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+          "Query cannot conclude with WITH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
           InputPosition(10, 1, 11)
         ),
         SemanticError(
           "All sub queries in an UNION must have the same return column names",
           InputPosition(17, 1, 18)
+        )
+      )
+    )
+  }
+
+  test("UNION with incomplete second part") {
+    val query = "MATCH (a) RETURN a UNION MATCH (a) WITH a"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Query cannot conclude with WITH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
+          InputPosition(35, 1, 36)
+        ),
+        SemanticError(
+          "All sub queries in an UNION must have the same return column names",
+          InputPosition(19, 1, 20)
         )
       )
     )
@@ -1594,18 +1611,27 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
-  test("UNION with incomplete second part") {
-    val query = "MATCH (a) RETURN a UNION MATCH (a) WITH a"
+  test("UNION with finish in first part") {
+    val query = "UNWIND [1,2] AS a FINISH UNION UNWIND [2,3] AS a RETURN a"
     expectErrorsFrom(
       query,
       Set(
         SemanticError(
-          "Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
-          InputPosition(35, 1, 36)
-        ),
+          "All sub queries in an UNION must have the same return column names",
+          InputPosition(25, 1, 26)
+        )
+      )
+    )
+  }
+
+  test("UNION with finish in second part") {
+    val query = "UNWIND [1,2] AS a RETURN a UNION UNWIND [2,3] AS a FINISH"
+    expectErrorsFrom(
+      query,
+      Set(
         SemanticError(
           "All sub queries in an UNION must have the same return column names",
-          InputPosition(19, 1, 20)
+          InputPosition(27, 1, 28)
         )
       )
     )
@@ -1628,7 +1654,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       Set(
         SemanticError("Variable `a` not defined", InputPosition(5, 1, 6)),
         SemanticError(
-          "Query cannot conclude with WITH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+          "Query cannot conclude with WITH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
           InputPosition(0, 1, 1)
         )
       )

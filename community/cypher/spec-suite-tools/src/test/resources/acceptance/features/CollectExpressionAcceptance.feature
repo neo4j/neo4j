@@ -1090,6 +1090,16 @@ Feature: CollectExpressionAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
 
+  Scenario: COLLECT with FINISH should fail
+    Given any graph
+    When executing query:
+      """
+      RETURN COLLECT {
+        MATCH (n)-[]->(p) FINISH
+      }
+      """
+    Then a SyntaxError should be raised at compile time: *
+
   Scenario: COLLECT subquery as property inside node
     Given an empty graph
     When executing query:

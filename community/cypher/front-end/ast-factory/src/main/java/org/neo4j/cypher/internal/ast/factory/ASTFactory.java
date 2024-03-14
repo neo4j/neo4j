@@ -39,6 +39,7 @@ public interface ASTFactory<
                 STATEMENT,
                 QUERY extends STATEMENT,
                 CLAUSE,
+                FINISH_CLAUSE extends CLAUSE,
                 RETURN_CLAUSE extends CLAUSE,
                 RETURN_ITEM,
                 RETURN_ITEMS,
@@ -136,6 +137,8 @@ public interface ASTFactory<
     USE_GRAPH directUseClause(POS p, DATABASE_NAME name);
 
     USE_GRAPH functionUseClause(POS p, FUNCTION_INVOCATION function);
+
+    FINISH_CLAUSE newFinishClause(POS p);
 
     RETURN_CLAUSE newReturnClause(
             POS p,
