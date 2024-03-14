@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache.CacheableLogicalPlan
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.CypherPlannerFactory
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
@@ -193,7 +192,7 @@ case class CypherPlanner(
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
 
   private val planner: compiler.CypherPlanner[PlannerContext] =
-    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors)
+    compiler.CypherPlanner(monitors, config, clock)
 
   private val schemaStateKey: SchemaStateKey = SchemaStateKey.newKey()
 

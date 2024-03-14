@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCac
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.systemPipeLine
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.CachedSimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -49,6 +50,18 @@ import org.neo4j.values.virtual.MapValue
 import java.time.Clock
 
 import scala.jdk.CollectionConverters.MapHasAsJava
+
+object CypherPlanner {
+
+  def apply[Context <: PlannerContext](
+    monitors: Monitors,
+    config: CypherPlannerConfiguration,
+    clock: Clock
+  ): CypherPlanner[Context] = {
+    val metricsFactory = CachedSimpleMetricsFactory
+    CypherPlanner(monitors, metricsFactory, config, clock)
+  }
+}
 
 case class CypherPlanner[Context <: PlannerContext](
   monitors: Monitors,
