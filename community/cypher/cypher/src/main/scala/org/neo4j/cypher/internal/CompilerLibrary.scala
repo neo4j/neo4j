@@ -42,7 +42,8 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
 
   def selectCompiler(
     cypherPlanner: CypherPlannerOption,
-    cypherRuntime: CypherRuntimeOption
+    cypherRuntime: CypherRuntimeOption,
+    materializedEntitiesMode: Boolean
   ): Compiler = {
     val key = CompilerKey(cypherPlanner, cypherRuntime)
     compilers.computeIfAbsent(
@@ -51,6 +52,7 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
         factory.createCompiler(
           cypherPlanner,
           cypherRuntime,
+          materializedEntitiesMode,
           executionEngineProvider
         )
     )

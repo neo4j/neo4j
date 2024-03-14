@@ -493,7 +493,8 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     val compilers = CypherRuntimeOption.values.map { runtime =>
       compilerLibrary.selectCompiler(
         CypherPlannerOption.default,
-        CommunityRuntimeFactory.getRuntime(runtime, disallowFallback = false).correspondingRuntimeOption.get
+        CommunityRuntimeFactory.getRuntime(runtime, disallowFallback = false).correspondingRuntimeOption.get,
+        false
       )
     }
 

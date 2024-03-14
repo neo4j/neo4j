@@ -171,7 +171,13 @@ abstract class ExecutionEngine(
     closing(context, queryTracer) {
       val couldContainSensitiveFields = isOutermostQuery && masterCompiler.supportsAdministrativeCommands()
       val notificationLogger = new RecordingNotificationLogger()
-      val preParsedQuery = preParser.preParseQuery(query, notificationLogger, profile, couldContainSensitiveFields)
+      val preParsedQuery = preParser.preParseQuery(
+        query,
+        notificationLogger,
+        profile,
+        couldContainSensitiveFields,
+        context.targetsComposite()
+      )
       doExecute(
         preParsedQuery,
         params,

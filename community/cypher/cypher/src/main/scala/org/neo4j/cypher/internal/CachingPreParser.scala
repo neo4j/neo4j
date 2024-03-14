@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherQueryOptions
+import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.preparser.javacc.CypherPreParser
 import org.neo4j.cypher.internal.preparser.javacc.PreParserCharStream
 import org.neo4j.cypher.internal.preparser.javacc.PreParserResult
@@ -77,8 +79,10 @@ class CachingPreParser(
    * Pre-parse a user-specified cypher query.
    *
    * @param queryText                   the query
+   * @param notificationLogger          records notifications during pre parsing
    * @param profile                     true if the query should be profiled even if profile is not given as a pre-parser option
    * @param couldContainSensitiveFields true if the query might contain passwords, like some administrative commands can
+   * @param targetsComposite            true if the query targets a composite database
    * @throws SyntaxException if there are syntactic errors in the pre-parser options
    * @return the pre-parsed query
    */
@@ -87,7 +91,8 @@ class CachingPreParser(
     queryText: String,
     notificationLogger: InternalNotificationLogger,
     profile: Boolean = false,
-    couldContainSensitiveFields: Boolean = false
+    couldContainSensitiveFields: Boolean = false,
+    targetsComposite: Boolean = false
   ): PreParsedQuery = {
     val preParsedQuery =
       if (couldContainSensitiveFields) { // This is potentially any outer query running on the system database
@@ -98,6 +103,16 @@ class CachingPreParser(
     preParsedQuery.notifications.foreach(notificationLogger.log)
     if (profile) {
       preParsedQuery.copy(options = preParsedQuery.options.withExecutionMode(CypherExecutionMode.profile))
+    } else if (targetsComposite) {
+      preParsedQuery.copy(options =
+        preParsedQuery.options.copy(
+          queryOptions = QueryOptions.default.queryOptions.copy(
+            runtime = CypherRuntimeOption.slotted,
+            expressionEngine = CypherExpressionEngineOption.interpreted
+          ),
+          materializedEntitiesMode = true
+        )
+      )
     } else {
       preParsedQuery
     }

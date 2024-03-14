@@ -31,6 +31,7 @@ trait CompilerFactory {
   def createCompiler(
     cypherPlanner: CypherPlannerOption,
     cypherRuntime: CypherRuntimeOption,
+    materializedEntitiesMode: Boolean,
     executionEngineProvider: () => ExecutionEngine
   ): Compiler
 }
