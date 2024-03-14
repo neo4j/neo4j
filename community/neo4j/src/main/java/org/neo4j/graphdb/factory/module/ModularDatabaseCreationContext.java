@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.DatabaseConfig;
-import org.neo4j.cypher.internal.util.InternalNotificationStats;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
@@ -116,7 +115,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final Function<DatabaseLayout, DatabaseLayoutWatcher> watcherServiceFactory;
     private final DatabaseLayout databaseLayout;
     private final DatabaseEventListeners eventListeners;
-    private final InternalNotificationStats cypherNotificationStats;
     private final GlobalTransactionEventListeners transactionEventListeners;
     private final StorageEngineFactorySupplier storageEngineFactorySupplier;
     private final FileLockerService fileLockerService;
@@ -180,7 +178,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
                 databaseLogService.getInternalLog(DatabaseHealth.class));
         this.commitProcessFactory = commitProcessFactory;
         this.pageCache = globalModule.getPageCache();
-        this.cypherNotificationStats = globalModule.getCypherNotificationStats();
         this.constraintSemantics = constraintSemantics;
         this.tracers = globalModule.getTracers();
         this.globalProcedures = globalDependencies.resolveDependency(GlobalProcedures.class);

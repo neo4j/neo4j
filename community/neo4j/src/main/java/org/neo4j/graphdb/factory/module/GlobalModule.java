@@ -489,10 +489,6 @@ public class GlobalModule {
         return pageCache;
     }
 
-    public InternalNotificationStats getCypherNotificationStats() {
-        return cypherNotificationStats;
-    }
-
     public Monitors getGlobalMonitors() {
         return globalMonitors;
     }
