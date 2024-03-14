@@ -38,7 +38,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 
 @SuppressWarnings({"SameParameterValue", "resource"})
 public class HeapTrackingConcurrentHashMapTest {
-    volatile long volatileLong = 0L;
+    public volatile long volatileLong = 0L;
 
     @Test
     public void putIfAbsent() {

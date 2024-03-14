@@ -28,7 +28,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.LongFunction;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.iterator.LongIterator;
@@ -388,67 +387,6 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
         var values = values();
         while (values.hasNext()) {
             action.accept(values.next());
-        }
-    }
-
-    /**
-     * WARNING: The map function could be called multiple times if the map is concurrently modified.
-     * This is different from java.util.concurrent.ConcurrentHashMap where it is guaranteed to be called exactly once.
-     */
-    public V compute(long key, Function<V, ? extends V> mapFunction) {
-        int hash = this.hash(Long.hashCode(key));
-        var currentArray = this.table;
-        int length = currentArray.length();
-        int index = indexFor(hash, length);
-        Object o = currentArray.get(index);
-        if (o == null) {
-            V mappedValue = mapFunction.apply(null);
-            Entry<V> newEntry = new Entry<>(key, mappedValue, null);
-            addToSize(1);
-            if (currentArray.compareAndSet(index, null, newEntry)) {
-                return mappedValue;
-            }
-            addToSize(-1);
-        }
-        return this.slowCompute(key, mapFunction, hash, currentArray);
-    }
-
-    private V slowCompute(
-            long key, Function<V, ? extends V> mapFunction, int hash, AtomicReferenceArray<Object> currentArray) {
-        //noinspection LabeledStatement
-        outer:
-        while (true) {
-            int length = currentArray.length();
-            int index = indexFor(hash, length);
-            Object o = getAtIndex(currentArray, index);
-            if (o == RESIZED || o == RESIZING) {
-                currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
-            } else {
-                Entry<V> e = (Entry<V>) o;
-                while (e != null) {
-                    if (e.key == key) {
-                        V mappedValue = mapFunction.apply(e.getValue());
-                        if (mappedValue == e.getValue()) {
-                            return mappedValue;
-                        }
-                        Entry<V> newEntry =
-                                new Entry<>(e.key, mappedValue, this.createReplacementChainForRemoval((Entry<V>) o, e));
-                        if (!currentArray.compareAndSet(index, o, newEntry)) {
-                            //noinspection ContinueStatementWithLabel
-                            continue outer;
-                        }
-                        return mappedValue;
-                    }
-                    e = e.getNext();
-                }
-
-                V mappedValue = mapFunction.apply(null);
-                Entry<V> newEntry = new Entry<>(key, mappedValue, (Entry<V>) o);
-                if (currentArray.compareAndSet(index, o, newEntry)) {
-                    this.incrementSizeAndPossiblyResize(currentArray, length, o);
-                    return mappedValue;
-                }
-            }
         }
     }
 

@@ -21,11 +21,14 @@ package org.neo4j.collection.trackable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 import org.eclipse.collections.impl.list.Interval;
 import org.eclipse.collections.impl.parallel.ParallelIterate;
@@ -35,7 +38,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 
 @SuppressWarnings({"SameParameterValue", "resource"})
 public class HeapTrackingConcurrentLongObjectHashMapTest {
-    volatile long volatileLong = 0L;
+    public volatile long volatileLong = 0L;
 
     @Test
     public void putIfAbsent() {
@@ -203,25 +206,40 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
                 executor());
     }
 
-    @RepeatedTest(10)
-    void computeTest() throws Throwable {
+    @RepeatedTest(100)
+    void concurrentComputeTest() throws Throwable {
         HeapTrackingConcurrentLongObjectHashMap<Integer> map =
                 HeapTrackingConcurrentLongObjectHashMap.newMap(EmptyMemoryTracker.INSTANCE);
-        int max = 10000;
+        int start = 0;
+        int end = 100000;
+        int offset = 100000;
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        int randomStart = random.nextInt(0, 100);
-        int randomEnd = random.nextInt(100, max);
-        for (int i = randomStart; i < randomEnd; i++) {
-            map.put(i, -1);
-        }
 
         int threads = random.nextInt(1, 2 * Runtime.getRuntime().availableProcessors());
         var executor = Executors.newFixedThreadPool(threads);
 
+        var computeFailed = new AtomicBoolean(false);
+        var iteratorFailed = new AtomicReference<String>(null);
+        var replaceFailed = new AtomicBoolean(false);
+        var putFailed = new AtomicBoolean(false);
+
+        int max = end + (threads - 1) * offset;
         for (int i = 0; i < threads; i++) {
-            executor.submit(new RangeComputeContestant(map, 0, max));
+            executor.submit(new ComputeContestant(map, start, end, computeFailed));
+            executor.submit(new IteratorContestant(map, start, end, max, iteratorFailed));
+            executor.submit(new ReplaceContestant(map, start, end, replaceFailed));
+            executor.submit(new IteratorContestant(map, start, end, max, iteratorFailed));
+            executor.submit(new PutContestant(map, start, end, putFailed));
+            executor.submit(new IteratorContestant(map, start, end, max, iteratorFailed));
+            start += offset;
+            end += offset;
         }
         executor.shutdown();
+        assertThat(end).isEqualTo(max + offset);
+        assertThat(computeFailed.get()).isFalse();
+        assertThat(iteratorFailed.get()).isNull();
+        assertThat(replaceFailed.get()).isFalse();
+        assertThat(putFailed.get()).isFalse();
         assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
         assertThat(map.size()).isEqualTo(max);
         for (int i = 0; i < max; i++) {
@@ -292,20 +310,125 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
         }
     }
 
-    private record RangeComputeContestant(HeapTrackingConcurrentLongObjectHashMap<Integer> map, int start, int end)
+    private record ComputeContestant(
+            HeapTrackingConcurrentLongObjectHashMap<Integer> map, int start, int end, AtomicBoolean hasFailed)
             implements Runnable {
 
         @Override
         public void run() {
-            for (int i = start; i < end; i++) {
-                final int newValue = i;
-                map.compute(i, integer -> {
-                    if (integer == null || integer == -1) {
-                        return newValue;
-                    } else {
-                        return integer;
+            try {
+                for (int i = start; i < end; i++) {
+                    var v = map.computeIfAbsent(i, integer -> (int) integer);
+                    if (v != i) {
+                        hasFailed.set(true);
                     }
-                });
+                }
+            } catch (Exception e) {
+                hasFailed.set(true);
+            }
+        }
+    }
+
+    private record ReplaceContestant(
+            HeapTrackingConcurrentLongObjectHashMap<Integer> map, int start, int end, AtomicBoolean hasFailed)
+            implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                for (int i = start; i < end; i++) {
+                    var oldV = map.replace(i, i);
+                    if (oldV != null && oldV != i) {
+                        hasFailed.set(true);
+                        // Do not return, we want to continue to see if we can find more errors
+                    }
+                }
+            } catch (Exception e) {
+                hasFailed.set(true);
+            }
+        }
+    }
+
+    private record PutContestant(
+            HeapTrackingConcurrentLongObjectHashMap<Integer> map, int start, int end, AtomicBoolean hasFailed)
+            implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                for (int i = start; i < end; i++) {
+                    var oldV = map.put(i, i);
+                    if (oldV != null && oldV != i) {
+                        hasFailed.set(true);
+                        // Do not return, we want to continue to see if we can find more errors
+                    }
+                }
+            } catch (Exception e) {
+                hasFailed.set(true);
+            }
+        }
+    }
+
+    private record IteratorContestant(
+            HeapTrackingConcurrentLongObjectHashMap<Integer> map,
+            int start,
+            int end,
+            int max,
+            AtomicReference<String> hasFailed)
+            implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                var valuesIterator = map.values();
+                var buffer = new Integer[max];
+                int highestObservedInRange = -1;
+                while (valuesIterator.hasNext()) {
+                    var v = valuesIterator.next();
+                    buffer[v] = v;
+                    if (v > highestObservedInRange && v >= start && v < end) {
+                        highestObservedInRange = v;
+                    }
+                }
+                for (int i = start; i <= highestObservedInRange; i++) {
+                    var cachedV = buffer[i];
+                    var getV = map.get(i);
+                    if ((getV == null || getV != i) // The value must now be observable
+                            // And must match the cached value if we have one
+                            // Note that the object holding it may have been replaced, so we can't compare references
+                            || (cachedV != null && cachedV.intValue() != getV.intValue())) {
+                        hasFailed.set(String.format(
+                                "Failed at index %d, cached %d, got %d, highest observed %d",
+                                i, cachedV, getV, highestObservedInRange));
+                        return;
+                    }
+                }
+                if (highestObservedInRange < end) {
+                    long highestObservedInRange2 = -1L;
+                    var keysIterator = map.keys();
+                    while (keysIterator.hasNext()) {
+                        var k = keysIterator.next();
+                        var v = map.get(k);
+                        if (v == null || v != k) {
+                            hasFailed.set(String.format("Failed at key %d, value %d", k, v));
+                            return;
+                        }
+                        if (k > highestObservedInRange2 && k >= start && k < end) {
+                            highestObservedInRange2 = k;
+                        }
+                    }
+                    if (highestObservedInRange > highestObservedInRange2) {
+                        hasFailed.set(String.format(
+                                "Failed at highest observed first time %d > highest observed second time %d",
+                                highestObservedInRange, highestObservedInRange2));
+                    }
+                }
+            } catch (Exception e) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                PrintStream ps = new PrintStream(baos);
+                ps.print("Failed with exception: ");
+                e.printStackTrace(ps);
+                hasFailed.set(baos.toString());
             }
         }
     }
