@@ -67,6 +67,53 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite {
     stats.getSyntaxUsageCount(SyntaxUsageMetricKey.LEGACY_SHORTEST) should be(1)
   }
 
+  test("should find COLLECT subquery") {
+    val stats = runPipeline(
+      """
+        |RETURN COLLECT { MATCH (a) RETURN a } AS as
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.COLLECT_SUBQUERY) should be(1)
+  }
+
+  test("should find COUNT subquery") {
+    val stats = runPipeline(
+      """
+        |RETURN COUNT { MATCH (a) RETURN a } AS as
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.COUNT_SUBQUERY) should be(1)
+  }
+
+  test("should find EXISTS subquery") {
+    val stats = runPipeline(
+      """
+        |RETURN EXISTS { MATCH (a) RETURN a } AS as
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.EXISTS_SUBQUERY) should be(1)
+  }
+
+  test("should find QPP") {
+    val stats = runPipeline(
+      """
+        |MATCH ANY SHORTEST (a)( ()-->() )*(b)
+        |RETURN *
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.QUANTIFIED_PATH_PATTERN) should be(1)
+  }
+
+  test("should find QPP syntactic sugar") {
+    val stats = runPipeline(
+      """
+        |MATCH ANY SHORTEST (a)-->*(b)
+        |RETURN *
+        |""".stripMargin
+    )
+    stats.getSyntaxUsageCount(SyntaxUsageMetricKey.QUANTIFIED_PATH_PATTERN) should be(1)
+  }
+
   private def runPipeline(query: String): InternalSyntaxUsageStats = {
     val startState = InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
     val context = new ErrorCollectingContext() {

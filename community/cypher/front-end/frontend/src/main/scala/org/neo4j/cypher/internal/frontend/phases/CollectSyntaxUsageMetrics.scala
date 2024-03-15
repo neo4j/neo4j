@@ -16,9 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.CollectExpression
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.PatternPart.SelectiveSelector
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.METADATA_COLLECTION
 import org.neo4j.cypher.internal.frontend.phases.IsolateSubqueriesInMutatingPatterns.SubqueriesInMutatingPatternsIsolated
@@ -50,6 +54,14 @@ case object CollectSyntaxUsageMetrics
         increaseMetric(SyntaxUsageMetricKey.GPM_SHORTEST)
       case _: ShortestPathsPatternPart =>
         increaseMetric(SyntaxUsageMetricKey.LEGACY_SHORTEST)
+      case _: QuantifiedPath =>
+        increaseMetric(SyntaxUsageMetricKey.QUANTIFIED_PATH_PATTERN)
+      case _: ExistsExpression =>
+        increaseMetric(SyntaxUsageMetricKey.EXISTS_SUBQUERY)
+      case _: CountExpression =>
+        increaseMetric(SyntaxUsageMetricKey.COUNT_SUBQUERY)
+      case _: CollectExpression =>
+        increaseMetric(SyntaxUsageMetricKey.COLLECT_SUBQUERY)
     }
   }
 

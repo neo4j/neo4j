@@ -18,7 +18,11 @@ package org.neo4j.cypher.internal.frontend.phases;
 
 public enum SyntaxUsageMetricKey {
     GPM_SHORTEST("GPM_SHORTEST"),
-    LEGACY_SHORTEST("LEGACY_SHORTEST");
+    LEGACY_SHORTEST("LEGACY_SHORTEST"),
+    COLLECT_SUBQUERY("COLLECT_SUBQUERY"),
+    COUNT_SUBQUERY("COUNT_SUBQUERY"),
+    EXISTS_SUBQUERY("EXISTS_SUBQUERY"),
+    QUANTIFIED_PATH_PATTERN("QUANTIFIED_PATH_PATTERN");
 
     public final String key;
 
