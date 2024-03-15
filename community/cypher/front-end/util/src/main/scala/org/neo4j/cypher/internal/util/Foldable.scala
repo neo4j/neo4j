@@ -190,6 +190,12 @@ object Foldable {
     def treeFind[A: ClassTag](f: PartialFunction[A, Boolean]): Option[A] =
       findAcc[A](mutable.Stack(foldedOver), f.lift, cancellation)
 
+    /**
+     * Apply any side effects in f, where defined.
+     */
+    def treeForeach(f: PartialFunction[Any, Unit]): Unit =
+      foreachAcc(mutable.Stack(foldedOver), f.lift, cancellation)
+
     /*
     Allows searching through object tree and object collections for a class
      */
@@ -314,6 +320,20 @@ object Foldable {
       }
 
       countAcc(remaining.pushAll(that.reverseTreeChildren), f, next, cancellation)
+    }
+  }
+
+  @tailrec
+  private def foreachAcc(
+    remaining: mutable.Stack[Any],
+    f: Any => Option[Unit],
+    cancellation: CancellationChecker
+  ): Unit = {
+    cancellation.throwIfCancelled()
+    if (remaining.nonEmpty) {
+      val that = remaining.pop()
+      f(that)
+      foreachAcc(remaining.pushAll(that.reverseTreeChildren), f, cancellation)
     }
   }
 

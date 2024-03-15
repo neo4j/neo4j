@@ -405,6 +405,32 @@ class FoldableTest extends CypherFunSuite {
     ex.getMessage.shouldEqual(cancellation.message)
   }
 
+  test("treeForeach should apply f for every defined element, once") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    var i = 0
+
+    ast.folder.treeForeach {
+      case Val(3)           => i += 1
+      case Val(n) if n >= 4 => i += 1
+    }
+
+    i should be(3)
+  }
+
+  test("treeForeach should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCountdownCancellationChecker(2)
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).treeForeach {
+        case Val(3) => fail("did not cancel")
+      }
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
   test("treeFindByClass should support cancelling") {
     val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
 
