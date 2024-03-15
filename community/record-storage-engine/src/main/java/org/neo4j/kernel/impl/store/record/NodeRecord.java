@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.string.Mask;
 
 public class NodeRecord extends PrimitiveRecord {
     public static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeRecord.class);
@@ -126,7 +127,7 @@ public class NodeRecord extends PrimitiveRecord {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         String denseInfo = (dense ? "group" : "rel") + "=" + nextRel;
         String lightHeavyInfo =
                 isLight ? "light" : dynamicLabelRecords.isEmpty() ? "heavy" : "heavy,dynlabels=" + dynamicLabelRecords;

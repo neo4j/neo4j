@@ -37,6 +37,7 @@ import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.string.Mask;
 
 class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements AutoCloseable {
     private final RelationshipStore relationshipStore;
@@ -147,12 +148,12 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         if (!open) {
             return "RelationshipGroupCursor[closed state]";
         } else {
-            return "RelationshipGroupCursor[id=" + getId() + ", open state with: underlying record=" + super.toString()
-                    + "]";
+            return "RelationshipGroupCursor[id=" + getId() + ", open state with: underlying record="
+                    + super.toString(mask) + "]";
         }
     }
 

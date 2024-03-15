@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUN
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
+import org.neo4j.string.Mask;
 
 public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
     private final long timeWritten;
@@ -51,7 +52,7 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         return "LogEntryChunkStart{" + "timeWritten="
                 + timeWritten + ", chunkId="
                 + chunkId + ", previousBatchLogPosition="

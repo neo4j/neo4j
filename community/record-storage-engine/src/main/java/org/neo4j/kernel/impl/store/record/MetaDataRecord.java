@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
+import org.neo4j.string.Mask;
 
 public class MetaDataRecord extends AbstractBaseRecord {
     private long value;
@@ -44,7 +45,7 @@ public class MetaDataRecord extends AbstractBaseRecord {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         return String.format("Meta[%d,value:%d]", getId(), value);
     }
 

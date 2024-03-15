@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.internal.helpers.Format;
+import org.neo4j.string.Mask;
 
 public abstract class AbstractLogEntry implements LogEntry {
     private final byte type;
@@ -36,5 +37,10 @@ public abstract class AbstractLogEntry implements LogEntry {
     @Override
     public String timestamp(long timeWritten) {
         return Format.date(timeWritten) + "/" + timeWritten;
+    }
+
+    @Override
+    public final String toString() {
+        return toString(Mask.NO);
     }
 }

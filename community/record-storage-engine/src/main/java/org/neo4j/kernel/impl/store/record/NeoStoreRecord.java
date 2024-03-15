@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import org.neo4j.string.Mask;
+
 public class NeoStoreRecord extends PrimitiveRecord {
     public NeoStoreRecord() {
         super(-1);
@@ -41,7 +43,7 @@ public class NeoStoreRecord extends PrimitiveRecord {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         return getClass().getSimpleName() + "[" + "used=" + inUse() + ",prop=" + getNextProp() + "]";
     }
 

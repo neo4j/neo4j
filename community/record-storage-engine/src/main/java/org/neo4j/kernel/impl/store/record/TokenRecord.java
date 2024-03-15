@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.neo4j.string.Mask;
 
 public abstract class TokenRecord extends AbstractBaseRecord {
     private int nameId;
@@ -114,7 +115,7 @@ public abstract class TokenRecord extends AbstractBaseRecord {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         StringBuilder buf = new StringBuilder().append(simpleName()).append('[');
         buf.append(getId()).append(',').append(inUse() ? "in" : "no").append(" use");
         buf.append(",nameId=").append(nameId);
@@ -122,7 +123,7 @@ public abstract class TokenRecord extends AbstractBaseRecord {
         additionalToString(buf);
         if (!isLight()) {
             for (DynamicRecord dyn : nameRecords) {
-                buf.append(',').append(dyn);
+                buf.append(',').append(dyn.toString(mask));
             }
         }
         return buf.append(']').toString();

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry.v42;
 import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.string.Mask;
 
 public class LogEntryCommitV4_2 extends LogEntryCommit {
     private final int checksum;
@@ -37,7 +38,7 @@ public class LogEntryCommitV4_2 extends LogEntryCommit {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         return "Commit[txId=" + getTxId() + ", " + timestamp(getTimeWritten()) + ", checksum=" + checksum + "]";
     }
 

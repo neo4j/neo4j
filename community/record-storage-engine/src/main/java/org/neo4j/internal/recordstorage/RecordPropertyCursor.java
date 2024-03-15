@@ -48,6 +48,7 @@ import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.string.Mask;
 import org.neo4j.util.BitBuffer;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -356,12 +357,12 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         if (!open) {
             return "RecordPropertyCursor[closed state]";
         } else {
             return "RecordPropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next
-                    + ", underlying record=" + super.toString() + "]";
+                    + ", underlying record=" + super.toString(mask) + "]";
         }
     }
 

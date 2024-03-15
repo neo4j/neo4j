@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.string.Mask;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -183,6 +184,10 @@ public class PropertyBlock {
 
     @Override
     public String toString() {
+        return toString(Mask.NO);
+    }
+
+    public String toString(Mask mask) {
         StringBuilder result = new StringBuilder("PropertyBlock[");
         PropertyType type = getType();
         if (valueBlocks != null) {
@@ -214,7 +219,7 @@ public class PropertyBlock {
                         }
                         value = buf.append(']');
                     }
-                    result.append(",value=").append(value);
+                    result.append(",value=").append(mask.filter(value));
                     break;
             }
         }
@@ -222,7 +227,7 @@ public class PropertyBlock {
             result.append(",ValueRecords[");
             Iterator<DynamicRecord> recIt = valueRecords.iterator();
             while (recIt.hasNext()) {
-                result.append(recIt.next());
+                result.append(recIt.next().toString(mask));
                 if (recIt.hasNext()) {
                     result.append(',');
                 }

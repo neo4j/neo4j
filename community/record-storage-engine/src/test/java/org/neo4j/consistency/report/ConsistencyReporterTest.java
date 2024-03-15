@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.string.Mask;
 import org.neo4j.test.InMemoryTokens;
 
 class ConsistencyReporterTest {
@@ -257,6 +258,11 @@ class ConsistencyReporterTest {
                 @Override
                 public String userDescription(TokenNameLookup tokenNameLookup) {
                     return null;
+                }
+
+                @Override
+                public String toString(Mask mask) {
+                    return toString();
                 }
             };
         }

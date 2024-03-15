@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_S
 import java.util.Arrays;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.string.Mask;
 
 public class LogEntryStart extends AbstractVersionAwareLogEntry {
     protected final long timeWritten;
@@ -65,7 +66,7 @@ public class LogEntryStart extends AbstractVersionAwareLogEntry {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         return "Start[" + "kernelVersion="
                 + kernelVersion() + ",time="
                 + timestamp(timeWritten) + ",lastCommittedTxWhenTransactionStarted="

@@ -75,6 +75,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.string.Mask;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -336,6 +337,11 @@ class CommonAbstractStoreTest {
     private static class TheRecord extends AbstractBaseRecord {
         TheRecord(long id) {
             super(id);
+        }
+
+        @Override
+        public String toString(Mask mask) {
+            return String.format("TheRecord[%d]", getId());
         }
     }
 }

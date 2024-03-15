@@ -19,10 +19,12 @@
  */
 package org.neo4j.internal.schema;
 
+import org.neo4j.string.Mask;
+
 /**
  * Represents a stored schema rule.
  */
-public interface SchemaRule extends SchemaDescriptorSupplier {
+public interface SchemaRule extends SchemaDescriptorSupplier, Mask.Maskable {
     /**
      * The persistence id for this rule.
      */

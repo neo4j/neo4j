@@ -33,6 +33,10 @@
             <artifactId>commons-text</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>annotations</artifactId>
             <version>${project.version}</version>

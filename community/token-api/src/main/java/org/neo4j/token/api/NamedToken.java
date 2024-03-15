@@ -20,6 +20,7 @@
 package org.neo4j.token.api;
 
 import java.util.Objects;
+import org.neo4j.string.Mask;
 
 /**
  * A token with its associated name.
@@ -78,7 +79,12 @@ public final class NamedToken {
 
     @Override
     public String toString() {
-        return String.format("%s[name:%s, id:%d, internal:%s]", getClass().getSimpleName(), name, id, internal);
+        return toString(Mask.NO);
+    }
+
+    public String toString(Mask mask) {
+        return String.format(
+                "%s[name:%s, id:%d, internal:%s]", getClass().getSimpleName(), mask.filter(name), id, internal);
     }
 
     public boolean isInternal() {

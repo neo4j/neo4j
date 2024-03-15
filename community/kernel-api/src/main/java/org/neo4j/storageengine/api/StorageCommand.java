@@ -28,6 +28,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.string.Mask;
 
 /**
  * A command representing one unit of change to a {@link StorageEngine}. Commands are created by
@@ -36,7 +37,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
  * {@link StorageEngine#apply(CommandBatchToApply, TransactionApplicationMode)} for application where the
  * changes represented by the command are actually applied onto storage.
  */
-public interface StorageCommand extends KernelVersionProvider {
+public interface StorageCommand extends KernelVersionProvider, Mask.Maskable {
     /**
      * Serializes change this command represents into a {@link WritableChannel} for later reading back.
      * First byte of command must be type of command.
@@ -45,6 +46,11 @@ public interface StorageCommand extends KernelVersionProvider {
      * @throws IOException I/O error from channel.
      */
     void serialize(WritableChannel channel) throws IOException;
+
+    @Override
+    default String toString(Mask mask) {
+        return toString();
+    }
 
     interface TokenCommand extends StorageCommand {
         /**

@@ -48,6 +48,7 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.string.Mask;
 
 public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     private final NodeStore read;
@@ -375,14 +376,14 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         if (!open) {
             return "RecordNodeCursor[closed state]";
         } else {
             return "RecordNodeCursor[id=" + getId() + ", open state with: highMark="
                     + highMark + ", next="
                     + next + ", underlying record="
-                    + super.toString() + "]";
+                    + super.toString(mask) + "]";
         }
     }
 

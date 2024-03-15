@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
+import org.neo4j.string.Mask;
 
 /**
  * {@link AbstractBaseRecord records} are intended to be reusable. Created with a zero-arg constructor
@@ -37,7 +38,7 @@ import java.util.Objects;
  *     and wasn't there when it was loaded from the store</li>
  * </ul>
  */
-public abstract class AbstractBaseRecord {
+public abstract class AbstractBaseRecord implements Mask.Maskable {
     public static final int NO_ID = -1;
     private long id;
     // Used for the "record unit" feature where one logical record may span two physical records,
@@ -218,5 +219,9 @@ public abstract class AbstractBaseRecord {
             return "";
         }
         return String.format(",%ssecondaryUnitId=%d", requiresSecondaryUnit() ? "+" : "-", getSecondaryUnitId());
+    }
+
+    public final String toString() {
+        return toString(Mask.NO);
     }
 }

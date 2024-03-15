@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.string.Mask;
 
 /**
  * Captures the transaction metadata when the {@link EnrichmentMode} is in an active state
@@ -38,7 +39,8 @@ public record TxMetadata(
         String serverId,
         AuthSubject subject,
         ClientConnectionInfo connectionInfo,
-        long lastCommittedTx) {
+        long lastCommittedTx)
+        implements Mask.Maskable {
 
     public TxMetadata(
             CaptureMode captureMode,
@@ -183,5 +185,16 @@ public record TxMetadata(
             final var bytes = data.getBytes(StandardCharsets.UTF_8);
             channel.putInt(bytes.length).put(bytes, bytes.length);
         }
+    }
+
+    @Override
+    public String toString(Mask mask) {
+        return "TxMetadata(%s, %s, %s, %s, %d)"
+                .formatted(
+                        mask.filter(captureMode),
+                        mask.filter(serverId),
+                        mask.filter(subject),
+                        mask.filter(connectionInfo),
+                        lastCommittedTx);
     }
 }

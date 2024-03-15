@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Objects;
+import org.neo4j.string.Mask;
 
 public class RelationshipRecord extends PrimitiveRecord {
     public static final long SHALLOW_SIZE = shallowSizeOfInstance(RelationshipRecord.class);
@@ -226,7 +227,7 @@ public class RelationshipRecord extends PrimitiveRecord {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         return "Relationship[" + getId() + ",used="
                 + inUse() + ",source="
                 + firstNode + ",target="

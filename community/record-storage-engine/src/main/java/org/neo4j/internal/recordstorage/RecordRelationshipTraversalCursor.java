@@ -33,6 +33,7 @@ import org.neo4j.storageengine.api.ReadTracer;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.string.Mask;
 
 class RecordRelationshipTraversalCursor extends RecordRelationshipCursor implements StorageRelationshipTraversalCursor {
     private final StoreCursors storeCursors;
@@ -310,15 +311,15 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         if (!open) {
             return "RelationshipTraversalCursor[closed state]";
         } else {
             String dense = "denseNode=" + traversingDenseNode();
             return "RelationshipTraversalCursor[id=" + getId() + ", open state with: "
                     + dense + ", next="
-                    + next + ", " + ", underlying record="
-                    + super.toString() + "]";
+                    + next + ", underlying record="
+                    + super.toString(mask) + "]";
         }
     }
 }

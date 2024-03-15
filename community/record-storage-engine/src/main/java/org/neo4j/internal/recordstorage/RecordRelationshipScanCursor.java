@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.string.Mask;
 
 public class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor {
     private final StoreCursors storeCursors;
@@ -158,12 +159,12 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         if (!open) {
             return "RelationshipScanCursor[closed state]";
         } else {
             return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next
-                    + ", underlying record=" + super.toString() + "]";
+                    + ", underlying record=" + super.toString(mask) + "]";
         }
     }
 

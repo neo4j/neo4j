@@ -27,6 +27,7 @@ import java.util.function.IntFunction;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.string.Mask;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 public final class SchemaUserDescription {
@@ -59,7 +60,7 @@ public final class SchemaUserDescription {
             SchemaDescriptor schema,
             IndexProviderDescriptor indexProvider) {
         StringJoiner joiner = new StringJoiner(", ", "Index( ", " )");
-        addPrototypeParams(tokenNameLookup, name, indexType, schema, indexProvider, joiner);
+        addPrototypeParams(tokenNameLookup, name, indexType, schema, indexProvider, joiner, Mask.NO);
         return joiner.toString();
     }
 
@@ -71,9 +72,21 @@ public final class SchemaUserDescription {
             SchemaDescriptor schema,
             IndexProviderDescriptor indexProvider,
             Long owningConstraintId) {
+        return forIndex(tokenNameLookup, id, name, indexType, schema, indexProvider, owningConstraintId, Mask.NO);
+    }
+
+    public static String forIndex(
+            TokenNameLookup tokenNameLookup,
+            long id,
+            String name,
+            String indexType,
+            SchemaDescriptor schema,
+            IndexProviderDescriptor indexProvider,
+            Long owningConstraintId,
+            Mask mask) {
         StringJoiner joiner = new StringJoiner(", ", "Index( ", " )");
         joiner.add("id=" + id);
-        addPrototypeParams(tokenNameLookup, name, indexType, schema, indexProvider, joiner);
+        addPrototypeParams(tokenNameLookup, name, indexType, schema, indexProvider, joiner, mask);
         if (owningConstraintId != null) {
             joiner.add("owningConstraint=" + owningConstraintId);
         }
@@ -88,9 +101,21 @@ public final class SchemaUserDescription {
             SchemaDescriptor schema,
             Long ownedIndex,
             PropertyTypeSet propertyType) {
+        return forConstraint(tokenNameLookup, id, name, type, schema, ownedIndex, propertyType, Mask.NO);
+    }
+
+    public static String forConstraint(
+            TokenNameLookup tokenNameLookup,
+            long id,
+            String name,
+            ConstraintType type,
+            SchemaDescriptor schema,
+            Long ownedIndex,
+            PropertyTypeSet propertyType,
+            Mask mask) {
         StringJoiner joiner = new StringJoiner(", ", "Constraint( ", " )");
         maybeAddId(id, joiner);
-        maybeAddName(name, joiner);
+        maybeAddName(name, joiner, mask);
         addType(constraintType(type, schema.entityType()), joiner);
         addSchema(tokenNameLookup, schema, joiner);
         if (ownedIndex != null) {
@@ -115,9 +140,9 @@ public final class SchemaUserDescription {
         }
     }
 
-    private static void maybeAddName(String name, StringJoiner joiner) {
+    private static void maybeAddName(String name, StringJoiner joiner, Mask mask) {
         if (name != null) {
-            joiner.add("name='" + name + "'");
+            joiner.add("name='" + mask.filter(name) + "'");
         }
     }
 
@@ -133,8 +158,9 @@ public final class SchemaUserDescription {
             String indexType,
             SchemaDescriptor schema,
             IndexProviderDescriptor indexProvider,
-            StringJoiner joiner) {
-        maybeAddName(name, joiner);
+            StringJoiner joiner,
+            Mask mask) {
+        maybeAddName(name, joiner, mask);
         addType(indexType, joiner);
         addSchema(tokenNameLookup, schema, joiner);
         joiner.add("indexProvider='" + indexProvider.name() + "'");

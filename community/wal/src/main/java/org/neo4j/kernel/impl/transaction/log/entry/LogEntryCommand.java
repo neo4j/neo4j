@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
 
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.string.Mask;
 
 public class LogEntryCommand extends AbstractLogEntry {
     private final StorageCommand command;
@@ -36,8 +37,8 @@ public class LogEntryCommand extends AbstractLogEntry {
     }
 
     @Override
-    public String toString() {
-        return "Command[" + System.lineSeparator() + command + "]";
+    public String toString(Mask mask) {
+        return "Command[" + System.lineSeparator() + command.toString(mask) + "]";
     }
 
     @Override

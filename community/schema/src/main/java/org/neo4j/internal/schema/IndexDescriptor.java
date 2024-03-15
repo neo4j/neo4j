@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.string.Mask;
 
 public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaRule {
     /**
@@ -170,8 +171,12 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
 
     @Override
     public String userDescription(TokenNameLookup tokenNameLookup) {
+        return userDescription(tokenNameLookup, Mask.NO);
+    }
+
+    private String userDescription(TokenNameLookup tokenNameLookup, Mask mask) {
         return SchemaUserDescription.forIndex(
-                tokenNameLookup, id, name, indexType.name(), schema(), getIndexProvider(), owningConstraintId);
+                tokenNameLookup, id, name, indexType.name(), schema(), getIndexProvider(), owningConstraintId, mask);
     }
 
     @Override
@@ -270,7 +275,13 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
 
     @Override
     public String toString() {
-        return userDescription(TOKEN_ID_NAME_LOOKUP);
+        return toString(Mask.NO);
+    }
+
+    @Override
+    public String toString(Mask mask) {
+        // TOKEN_ID_NAME_LOOKUP makes sure we don't include schema token names, regardless of masking
+        return userDescription(TOKEN_ID_NAME_LOOKUP, mask);
     }
 
     /**

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.string.Mask;
 
 /**
  * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
@@ -338,7 +339,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         StringBuilder buf = new StringBuilder();
         buf.append("Property[")
                 .append(getId())
@@ -363,7 +364,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
 
         if (blocksLoaded) {
             for (int i = 0; i < blockRecordsCursor; i++) {
-                buf.append(',').append(blockRecords[i]);
+                buf.append(',').append(blockRecords[i].toString(mask));
             }
         } else {
             buf.append(", (blocks not loaded)");

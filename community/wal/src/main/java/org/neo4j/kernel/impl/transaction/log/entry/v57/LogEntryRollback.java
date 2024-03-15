@@ -23,6 +23,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_R
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
+import org.neo4j.string.Mask;
 
 public class LogEntryRollback extends AbstractVersionAwareLogEntry {
     private final long transactionId;
@@ -49,7 +50,7 @@ public class LogEntryRollback extends AbstractVersionAwareLogEntry {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         return "LogEntryRollback{" + "transactionId="
                 + transactionId + ", timeWritten="
                 + timeWritten + ", checksum="

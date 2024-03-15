@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.string.Mask;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
@@ -343,7 +344,7 @@ class CommonAbstractStoreBehaviourTest {
         }
 
         @Override
-        public String toString() {
+        public String toString(Mask mask) {
             return "IntRecord[" + getId() + "](" + value + ")";
         }
     }

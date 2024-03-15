@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.string.Mask;
 
 public class LogEntryDetachedCheckpointV5_0 extends AbstractVersionAwareLogEntry {
     private final TransactionId transactionId;
@@ -110,7 +111,7 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractVersionAwareLogEntry
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         return "LogEntryDetachedCheckpointV5_0{" + "transactionId="
                 + transactionId + ", logPosition="
                 + logPosition + ", checkpointTime="

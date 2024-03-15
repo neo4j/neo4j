@@ -25,6 +25,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.string.Mask;
 
 /**
  * Synthetic record type that stands in for a real record to fit in conveniently
@@ -47,7 +48,7 @@ public class IndexEntry extends AbstractBaseRecord {
     }
 
     @Override
-    public String toString() {
+    public String toString(Mask mask) {
         return format(
                 "IndexEntry[%s=%d, index=%s]",
                 indexDescriptor.schema().entityType() == EntityType.NODE ? "nodeId" : "relationshipId",

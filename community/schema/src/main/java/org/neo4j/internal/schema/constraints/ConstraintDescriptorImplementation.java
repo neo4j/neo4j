@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.SchemaUserDescription;
+import org.neo4j.string.Mask;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -126,7 +127,12 @@ public class ConstraintDescriptorImplementation
      */
     @Override
     public String userDescription(TokenNameLookup tokenNameLookup) {
-        return SchemaUserDescription.forConstraint(tokenNameLookup, id, name, type, schema(), ownedIndex, propertyType);
+        return userDescription(tokenNameLookup, Mask.NO);
+    }
+
+    private String userDescription(TokenNameLookup tokenNameLookup, Mask mask) {
+        return SchemaUserDescription.forConstraint(
+                tokenNameLookup, id, name, type, schema(), ownedIndex, propertyType, mask);
     }
 
     @Override
@@ -336,6 +342,12 @@ public class ConstraintDescriptorImplementation
 
     @Override
     public String toString() {
-        return userDescription(TOKEN_ID_NAME_LOOKUP);
+        return toString(Mask.NO);
+    }
+
+    @Override
+    public String toString(Mask mask) {
+        // TOKEN_ID_NAME_LOOKUP makes sure we don't include schema token names, regardless of masking
+        return userDescription(TOKEN_ID_NAME_LOOKUP, mask);
     }
 }

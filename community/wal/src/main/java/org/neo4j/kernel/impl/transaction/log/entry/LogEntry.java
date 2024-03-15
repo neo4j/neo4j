@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-public interface LogEntry {
+import org.neo4j.string.Mask;
+
+public interface LogEntry extends Mask.Maskable {
     byte getType();
 
     String timestamp(long timeWritten);
