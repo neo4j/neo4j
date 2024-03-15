@@ -383,6 +383,15 @@ class FoldableTest extends CypherFunSuite {
     } shouldEqual false
   }
 
+  test("treeFind should only find if the partial function returns true") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    ast.folder.treeFind[Exp] {
+      case Val(3) => true
+      case Val(1) => false
+    } should equal(Some(Val(3)))
+  }
+
   test("treeFind should support cancelling") {
     val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
 

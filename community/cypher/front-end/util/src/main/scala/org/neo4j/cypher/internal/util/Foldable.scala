@@ -367,7 +367,7 @@ object Foldable {
     } else {
       val that = remaining.pop()
       that match {
-        case x: A if predicate(x).isDefined => Some(x)
+        case x: A if predicate(x).contains(true) => Some(x)
         case _ => findAcc(remaining.pushAll(that.reverseTreeChildren), predicate, cancellation)
       }
     }

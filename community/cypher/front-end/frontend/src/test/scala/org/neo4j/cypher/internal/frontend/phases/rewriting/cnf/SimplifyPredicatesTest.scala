@@ -277,10 +277,9 @@ class SimplifyPredicatesTest extends CypherFunSuite {
       flattenBooleanOperators.instance(CancellationChecker.NeverCancelled) andThen simplifyPredicates(checkResult.state)
     val result = original.endoRewrite(rewriter)
     val maybeReturnExp = result.folder.treeFind({
-      case UnaliasedReturnItem(expression, _) => {
+      case UnaliasedReturnItem(expression, _) =>
         assert(matcher.lift(expression).isDefined, expression)
         true
-      }
     }: PartialFunction[AnyRef, Boolean])
     assert(maybeReturnExp.isDefined, "Could not find return in parsed query!")
   }
