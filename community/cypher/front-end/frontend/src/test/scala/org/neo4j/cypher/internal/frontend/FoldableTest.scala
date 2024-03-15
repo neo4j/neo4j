@@ -429,19 +429,6 @@ class FoldableTest extends CypherFunSuite {
     ex.getMessage.shouldEqual(cancellation.message)
   }
 
-  test("treeCountAccumulation should support cancelling") {
-    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
-
-    val cancellation = new TestCountdownCancellationChecker(2)
-    val ex = the[Exception].thrownBy(
-      ast.folder(cancellation).treeCountAccumulation {
-        case _: Val => 1
-      }
-    )
-
-    ex.getMessage.shouldEqual(cancellation.message)
-  }
-
   test("findAllByClass should support cancelling") {
     val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
 

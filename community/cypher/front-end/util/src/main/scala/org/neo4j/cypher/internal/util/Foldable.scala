@@ -204,10 +204,6 @@ object Foldable {
       countAcc(mutable.Stack(foldedOver), (a: Any) => lifted(a).map(_ => 1), 0, cancellation)
     }
 
-    def treeCountAccumulation(f: PartialFunction[Any, Int]): Int = {
-      countAcc(mutable.Stack(foldedOver), f.lift, 0, cancellation)
-    }
-
     def findAllByClass[A: ClassTag]: Seq[A] = {
       val remaining = mutable.Stack(foldedOver)
       val result = mutable.ListBuffer[A]()
@@ -318,23 +314,6 @@ object Foldable {
       }
 
       countAcc(remaining.pushAll(that.reverseTreeChildren), f, next, cancellation)
-    }
-  }
-
-  @tailrec
-  private def findAcc[A: ClassTag](
-    remaining: mutable.Stack[Any],
-    cancellation: CancellationChecker
-  ): A = {
-    cancellation.throwIfCancelled()
-    if (remaining.isEmpty) {
-      throw new NoSuchElementException
-    } else {
-      val that = remaining.pop()
-      that match {
-        case x: A => x
-        case _    => findAcc(remaining.pushAll(that.reverseTreeChildren), cancellation)
-      }
     }
   }
 
