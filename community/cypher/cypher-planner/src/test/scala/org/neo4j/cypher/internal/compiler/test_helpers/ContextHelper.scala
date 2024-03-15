@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
@@ -76,7 +77,8 @@ object ContextHelper extends MockitoSugar {
       CypherStatefulShortestPlanningModeOption.default,
     databaseReferenceRepository: DatabaseReferenceRepository = mockDatabaseReferenceRepository,
     databaseId: NamedDatabaseId = mock[NamedDatabaseId],
-    internalNotificationStats: InternalNotificationStats = new InternalNotificationStats
+    internalNotificationStats: InternalNotificationStats = InternalNotificationStats(),
+    internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStats.newImpl()
   ): PlannerContext = {
     new PlannerContext(
       cypherExceptionFactory,
@@ -100,7 +102,8 @@ object ContextHelper extends MockitoSugar {
       databaseReferenceRepository,
       databaseId,
       NullLog.getInstance(),
-      internalNotificationStats
+      internalNotificationStats,
+      internalSyntaxUsageStats
     )
   }
 

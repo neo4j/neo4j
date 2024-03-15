@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -132,6 +133,8 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap 
 
         var globalProcedures = resolve(GlobalProcedures.class);
 
+        var internalSyntaxUsageStats = resolve(InternalSyntaxUsageStats.class);
+
         register(
                 new TransactionManager(
                         remoteExecutor,
@@ -166,7 +169,8 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap 
                 internalLogProvider,
                 statementLifecycles,
                 fabricWorkerExecutor,
-                monitors);
+                monitors,
+                internalSyntaxUsageStats);
         register(fabricExecutor, FabricExecutor.class);
         return createBoltDatabaseManagementServiceProvider();
     }

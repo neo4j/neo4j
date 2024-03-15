@@ -278,6 +278,7 @@ class CypherPlannerTest extends CypherFunSuite {
       caches,
       CypherPlannerOption.default,
       null,
+      null,
       null
     )
 

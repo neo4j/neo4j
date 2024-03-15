@@ -53,6 +53,7 @@ trait FrontEndCompilationPhases {
 
   def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     Parse andThen
+      CollectSyntaxUsageMetrics andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeatures) andThen
       PreparatoryRewriting andThen
       If((_: BaseState) => config.obfuscateLiterals)(

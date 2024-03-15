@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats.InternalSyntaxUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -169,7 +170,8 @@ trait FragmentTestUtils {
       frontend.preParsing.preParse(query, devNullLogger),
       params,
       CancellationChecker.NeverCancelled,
-      devNullLogger
+      devNullLogger,
+      InternalSyntaxUsageStatsNoOp
     )
 
   def fragment(query: String): Fragment = {

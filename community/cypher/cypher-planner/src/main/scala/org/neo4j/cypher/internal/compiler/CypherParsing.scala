@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.defaultSemant
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -43,7 +44,8 @@ class CypherParsing(
   monitors: Monitors,
   config: CypherParsingConfig,
   queryRouterEnabled: Boolean,
-  queryRouterForCompositeEnabled: Boolean
+  queryRouterForCompositeEnabled: Boolean,
+  internalSyntaxUsageStats: InternalSyntaxUsageStats
 ) {
 
   def parseQuery(
@@ -60,7 +62,15 @@ class CypherParsing(
   ): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
-    val context = BaseContextImpl(tracer, notificationLogger, rawQueryText, offset, monitors, cancellationChecker)
+    val context = BaseContextImpl(
+      tracer,
+      notificationLogger,
+      rawQueryText,
+      offset,
+      monitors,
+      cancellationChecker,
+      internalSyntaxUsageStats
+    )
     val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint())
 
     val features = CypherParsingConfig.getEnabledFeatures(

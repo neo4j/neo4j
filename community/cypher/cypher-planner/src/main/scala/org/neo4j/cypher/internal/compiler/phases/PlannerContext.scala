@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
@@ -54,11 +55,12 @@ import org.neo4j.values.virtual.MapValue
 import java.time.Clock
 
 class BaseContextImpl(
-  val cypherExceptionFactory: CypherExceptionFactory,
-  val tracer: CompilationPhaseTracer,
-  val notificationLogger: InternalNotificationLogger,
-  val monitors: Monitors,
-  val cancellationChecker: CancellationChecker
+  override val cypherExceptionFactory: CypherExceptionFactory,
+  override val tracer: CompilationPhaseTracer,
+  override val notificationLogger: InternalNotificationLogger,
+  override val monitors: Monitors,
+  override val cancellationChecker: CancellationChecker,
+  override val internalSyntaxUsageStats: InternalSyntaxUsageStats
 ) extends BaseContext {
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
@@ -75,10 +77,18 @@ object BaseContextImpl {
     queryText: String,
     offset: Option[InputPosition],
     monitors: Monitors,
-    cancellationChecker: CancellationChecker
+    cancellationChecker: CancellationChecker,
+    internalSyntaxUsageStats: InternalSyntaxUsageStats
   ): BaseContextImpl = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
-    new BaseContextImpl(exceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
+    new BaseContextImpl(
+      exceptionFactory,
+      tracer,
+      notificationLogger,
+      monitors,
+      cancellationChecker,
+      internalSyntaxUsageStats
+    )
   }
 }
 
@@ -104,8 +114,16 @@ class PlannerContext(
   val databaseReferenceRepository: DatabaseReferenceRepository,
   val databaseId: NamedDatabaseId,
   val log: Log,
-  val internalNotificationStats: InternalNotificationStats
-) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker) {
+  val internalNotificationStats: InternalNotificationStats,
+  internalSyntaxUsageStats: InternalSyntaxUsageStats
+) extends BaseContextImpl(
+      cypherExceptionFactory,
+      tracer,
+      notificationLogger,
+      monitors,
+      cancellationChecker,
+      internalSyntaxUsageStats
+    ) {
 
   /**
    * Return a copy with the given notificationLogger
@@ -113,28 +131,29 @@ class PlannerContext(
   def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlannerContext = {
     val newPlanContext = planContext.withNotificationLogger(notificationLogger)
     new PlannerContext(
-      cypherExceptionFactory: CypherExceptionFactory,
-      tracer: CompilationPhaseTracer,
-      notificationLogger: InternalNotificationLogger,
-      newPlanContext: PlanContext,
-      monitors: Monitors,
-      metrics: Metrics,
-      config: CypherPlannerConfiguration,
-      queryGraphSolver: QueryGraphSolver,
-      updateStrategy: UpdateStrategy,
-      debugOptions: CypherDebugOptions,
-      clock: Clock,
-      logicalPlanIdGen: IdGen,
-      params: MapValue,
-      executionModel: ExecutionModel,
-      cancellationChecker: CancellationChecker,
-      materializedEntitiesMode: Boolean,
-      eagerAnalyzer: CypherEagerAnalyzerOption,
-      statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption,
-      databaseReferenceRepository: DatabaseReferenceRepository,
-      databaseId: NamedDatabaseId,
-      log: Log,
-      internalNotificationStats: InternalNotificationStats
+      cypherExceptionFactory,
+      tracer,
+      notificationLogger,
+      newPlanContext,
+      monitors,
+      metrics,
+      config,
+      queryGraphSolver,
+      updateStrategy,
+      debugOptions,
+      clock,
+      logicalPlanIdGen,
+      params,
+      executionModel,
+      cancellationChecker,
+      materializedEntitiesMode,
+      eagerAnalyzer,
+      statefulShortestPlanningMode,
+      databaseReferenceRepository,
+      databaseId,
+      log,
+      internalNotificationStats,
+      internalSyntaxUsageStats
     )
   }
 }
@@ -166,7 +185,8 @@ object PlannerContext {
     databaseReferenceRepository: DatabaseReferenceRepository,
     databaseId: NamedDatabaseId,
     log: Log,
-    internalNotificationStats: InternalNotificationStats
+    internalNotificationStats: InternalNotificationStats,
+    internalSyntaxUsageStats: InternalSyntaxUsageStats
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
@@ -199,7 +219,8 @@ object PlannerContext {
       databaseReferenceRepository,
       databaseId,
       log,
-      internalNotificationStats
+      internalNotificationStats,
+      internalSyntaxUsageStats
     )
   }
 }

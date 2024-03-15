@@ -42,6 +42,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats;
 import org.neo4j.cypher.internal.util.InternalNotificationStats;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -135,6 +136,7 @@ public class GlobalModule {
     private final FileLockerService fileLockerService;
     private final MemoryPools memoryPools;
     private final InternalNotificationStats cypherNotificationStats;
+    private final InternalSyntaxUsageStats cypherSyntaxUsageStats;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final CapabilitiesService capabilitiesService;
@@ -255,6 +257,9 @@ public class GlobalModule {
 
         cypherNotificationStats = new InternalNotificationStats();
         globalDependencies.satisfyDependencies(cypherNotificationStats);
+
+        cypherSyntaxUsageStats = InternalSyntaxUsageStats.newImpl();
+        globalDependencies.satisfyDependencies(cypherSyntaxUsageStats);
 
         var outOfDiskSpaceListener =
                 new OutOfDiskSpaceListener(globalConfig, logService.getInternalLog(OutOfDiskSpaceListener.class));

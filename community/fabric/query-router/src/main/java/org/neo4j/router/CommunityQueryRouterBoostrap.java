@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.compiler.CypherParsing;
 import org.neo4j.cypher.internal.compiler.CypherParsingConfig;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -164,7 +165,8 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                 null,
                 CypherParsingConfig.fromCypherPlannerConfiguration(plannerConfig),
                 plannerConfig.queryRouterEnabled(),
-                plannerConfig.queryRouterForCompositeQueriesEnabled());
+                plannerConfig.queryRouterForCompositeQueriesEnabled(),
+                resolve(InternalSyntaxUsageStats.class));
         DefaultDatabaseReferenceResolver databaseReferenceResolver =
                 new DefaultDatabaseReferenceResolver(databaseReferenceRepo);
         var databaseManager = (DatabaseContextProvider<DatabaseContext>) resolve(DatabaseContextProvider.class);

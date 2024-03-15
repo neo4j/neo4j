@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats.InternalSyntaxUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
@@ -124,6 +126,7 @@ class FabricParsingPropertyTest extends CypherFunSuite
           override def errorHandler: Seq[SemanticErrorDef] => Unit = _ => ()
           override val errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
           override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
+          override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
         }
 
         try {

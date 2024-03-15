@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats.InternalSyntaxUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting.SemanticAnalysisPossible
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
@@ -279,4 +281,6 @@ class TestContext(override val monitors: Monitors) extends BaseContext {
   override def errorMessageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
 
   override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
+
+  override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
 }

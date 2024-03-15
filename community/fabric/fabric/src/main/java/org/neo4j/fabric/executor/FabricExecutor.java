@@ -36,6 +36,7 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
 import org.neo4j.cypher.internal.evaluator.StaticEvaluation;
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.UseEvaluation;
@@ -74,6 +75,7 @@ public class FabricExecutor {
     private final QueryStatementLifecycles statementLifecycles;
     private final Executor fabricWorkerExecutor;
     private final QueryRoutingMonitor queryRoutingMonitor;
+    private final InternalSyntaxUsageStats internalSyntaxUsageStats;
 
     public FabricExecutor(
             FabricConfig config,
@@ -82,7 +84,8 @@ public class FabricExecutor {
             InternalLogProvider internalLog,
             QueryStatementLifecycles statementLifecycles,
             Executor fabricWorkerExecutor,
-            Monitors monitors) {
+            Monitors monitors,
+            InternalSyntaxUsageStats internalSyntaxUsageStats) {
         this.dataStreamConfig = config.getDataStream();
         this.planner = planner;
         this.useEvaluation = useEvaluation;
@@ -90,6 +93,7 @@ public class FabricExecutor {
         this.statementLifecycles = statementLifecycles;
         this.fabricWorkerExecutor = fabricWorkerExecutor;
         this.queryRoutingMonitor = monitors.newMonitor(QueryRoutingMonitor.class);
+        this.internalSyntaxUsageStats = internalSyntaxUsageStats;
     }
 
     public StatementResult run(FabricTransaction fabricTransaction, String statement, MapValue parameters) {
@@ -117,6 +121,7 @@ public class FabricExecutor {
                     parameters,
                     defaultGraphName,
                     catalog,
+                    internalSyntaxUsageStats,
                     fabricTransaction.cancellationChecker());
             var plan = plannerInstance.plan();
             var query = plan.query();

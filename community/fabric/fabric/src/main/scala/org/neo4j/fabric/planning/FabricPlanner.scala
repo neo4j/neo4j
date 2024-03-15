@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats.InternalSyntaxUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
@@ -56,7 +58,7 @@ case class FabricPlanner(
   private val frontend = FabricFrontEnd(cypherConfig, monitors, cacheFactory)
 
   /**
-   * Convenience method without cancellation checker. Should be used for tests only.
+   * Convenience method without cancellation checker or InternalSyntaxUsageStats. Should be used for tests only.
    */
   def instance(
     signatureResolver: ProcedureSignatureResolver,
@@ -65,7 +67,15 @@ case class FabricPlanner(
     defaultGraphName: String,
     catalog: Catalog
   ): PlannerInstance =
-    instance(signatureResolver, queryString, queryParams, defaultGraphName, catalog, CancellationChecker.NeverCancelled)
+    instance(
+      signatureResolver,
+      queryString,
+      queryParams,
+      defaultGraphName,
+      catalog,
+      InternalSyntaxUsageStatsNoOp,
+      CancellationChecker.NeverCancelled
+    )
 
   def instance(
     signatureResolver: ProcedureSignatureResolver,
@@ -73,6 +83,7 @@ case class FabricPlanner(
     queryParams: MapValue,
     defaultGraphName: String,
     catalog: Catalog,
+    internalSyntaxUsageStats: InternalSyntaxUsageStats,
     cancellationChecker: CancellationChecker
   ): PlannerInstance = {
     val notificationLogger = new RecordingNotificationLogger()
@@ -84,7 +95,8 @@ case class FabricPlanner(
       defaultGraphName,
       catalog,
       cancellationChecker,
-      notificationLogger
+      notificationLogger,
+      internalSyntaxUsageStats
     )
   }
 
@@ -95,7 +107,8 @@ case class FabricPlanner(
     defaultContextName: String,
     catalog: Catalog,
     cancellationChecker: CancellationChecker,
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    internalSyntaxUsageStats: InternalSyntaxUsageStats
   ) {
 
     private lazy val pipeline =
@@ -104,7 +117,8 @@ case class FabricPlanner(
         query,
         queryParams,
         cancellationChecker,
-        notificationLogger
+        notificationLogger,
+        internalSyntaxUsageStats
       )
 
     private val useHelper = new UseHelper(catalog, defaultContextName)

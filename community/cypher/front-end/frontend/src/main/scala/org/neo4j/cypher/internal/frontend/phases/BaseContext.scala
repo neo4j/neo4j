@@ -32,4 +32,6 @@ trait BaseContext {
   def errorMessageProvider: ErrorMessageProvider
 
   def cancellationChecker: CancellationChecker
+
+  def internalSyntaxUsageStats: InternalSyntaxUsageStats
 }

@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.AdministrationCommandLogicalPlan
@@ -184,7 +185,8 @@ case class CypherPlanner(
   queryCaches: CypherQueryCaches,
   plannerOption: CypherPlannerOption,
   databaseReferenceRepository: DatabaseReferenceRepository,
-  internalNotificationStats: InternalNotificationStats
+  internalNotificationStats: InternalNotificationStats,
+  internalSyntaxUsageStats: InternalSyntaxUsageStats
 ) {
 
   private val caches = new queryCaches.CypherPlannerCaches()
@@ -192,7 +194,7 @@ case class CypherPlanner(
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
 
   private val planner: compiler.CypherPlanner[PlannerContext] =
-    compiler.CypherPlanner(monitors, config, clock)
+    compiler.CypherPlanner(monitors, config, clock, internalSyntaxUsageStats)
 
   private val schemaStateKey: SchemaStateKey = SchemaStateKey.newKey()
 
@@ -392,7 +394,8 @@ case class CypherPlanner(
       databaseReferenceRepository,
       transactionalContextWrapper.databaseId,
       log,
-      internalNotificationStats
+      internalNotificationStats,
+      internalSyntaxUsageStats
     )
 
     // Prepare query for caching

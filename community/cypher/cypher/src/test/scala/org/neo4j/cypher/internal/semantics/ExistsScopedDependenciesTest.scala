@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats.InternalSyntaxUsageStatsNoOp
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planning.WrappedMonitors
@@ -63,6 +65,7 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
       errs => if (errs.nonEmpty) throw new Exception(s"had the following errors $errs")
     override val errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
     override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
+    override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
   }
 
   test(

@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
@@ -56,10 +57,11 @@ object CypherPlanner {
   def apply[Context <: PlannerContext](
     monitors: Monitors,
     config: CypherPlannerConfiguration,
-    clock: Clock
+    clock: Clock,
+    internalSyntaxUsageStats: InternalSyntaxUsageStats
   ): CypherPlanner[Context] = {
     val metricsFactory = CachedSimpleMetricsFactory
-    CypherPlanner(monitors, metricsFactory, config, clock)
+    CypherPlanner(monitors, metricsFactory, config, clock, internalSyntaxUsageStats)
   }
 }
 
@@ -67,13 +69,20 @@ case class CypherPlanner[Context <: PlannerContext](
   monitors: Monitors,
   metricsFactory: MetricsFactory,
   config: CypherPlannerConfiguration,
-  clock: Clock
+  clock: Clock,
+  internalSyntaxUsageStats: InternalSyntaxUsageStats
 ) {
 
   private val parsingConfig = CypherParsingConfig.fromCypherPlannerConfiguration(config)
 
   private val parsing =
-    new CypherParsing(monitors, parsingConfig, config.queryRouterEnabled, config.queryRouterForCompositeQueriesEnabled)
+    new CypherParsing(
+      monitors,
+      parsingConfig,
+      config.queryRouterEnabled,
+      config.queryRouterForCompositeQueriesEnabled,
+      internalSyntaxUsageStats
+    )
 
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 

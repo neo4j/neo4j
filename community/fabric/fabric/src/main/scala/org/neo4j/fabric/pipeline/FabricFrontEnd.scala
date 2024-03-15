@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.options.CypherExecutionMode
@@ -99,7 +100,8 @@ case class FabricFrontEnd(
     query: PreParsedQuery,
     params: MapValue,
     cancellationChecker: CancellationChecker,
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    internalSyntaxUsageStats: InternalSyntaxUsageStats
   ) {
 
     def traceStart(): CompilationTracer.QueryCompilationEvent =
@@ -111,7 +113,8 @@ case class FabricFrontEnd(
       query.rawStatement,
       Some(query.options.offset),
       WrappedMonitors(kernelMonitors),
-      cancellationChecker
+      cancellationChecker,
+      internalSyntaxUsageStats
     )
 
     private val semanticFeatures = Seq(

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planning.CypherPlanner
@@ -66,7 +67,8 @@ class CommunityCompilerFactory(
         queryCaches,
         cypherPlanner,
         dependencies.resolveDependency(classOf[DatabaseReferenceRepository]),
-        dependencies.resolveDependency(classOf[InternalNotificationStats])
+        dependencies.resolveDependency(classOf[InternalNotificationStats]),
+        dependencies.resolveDependency(classOf[InternalSyntaxUsageStats])
       )
 
     val runtime =
