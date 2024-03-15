@@ -39,6 +39,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -460,6 +461,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
         assertFalse(result);
 
         verify(relationshipTypeTokenStore).updateRecord(eq(after), any(), any(), any(), any());
+        verify(cacheAccess).addRelationshipTypeToken(any(), eq(true));
     }
 
     @Test
@@ -489,7 +491,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
 
         verify(relationshipTypeTokenStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(relationshipTypeTokenStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(cacheAccess).addRelationshipTypeToken(token);
+        verify(cacheAccess).addRelationshipTypeToken(token, false);
     }
 
     // LABEL TOKEN COMMAND
@@ -514,6 +516,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
         assertFalse(result);
 
         verify(labelTokenStore).updateRecord(eq(after), any(), any(), any(), any());
+        verify(cacheAccess).addLabelToken(any(), eq(true));
     }
 
     @Test
@@ -539,7 +542,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
 
         verify(labelTokenStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(labelTokenStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(cacheAccess).addLabelToken(token);
+        verify(cacheAccess).addLabelToken(token, false);
     }
 
     // PROPERTY KEY TOKEN COMMAND
@@ -564,6 +567,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
         assertFalse(result);
 
         verify(propertyKeyTokenStore).updateRecord(eq(after), any(), any(), any(), any());
+        verify(cacheAccess).addPropertyKeyToken(any(), eq(true));
     }
 
     @Test
@@ -593,7 +597,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
 
         verify(propertyKeyTokenStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(propertyKeyTokenStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(cacheAccess).addPropertyKeyToken(token);
+        verify(cacheAccess).addPropertyKeyToken(token, false);
     }
 
     @Test
@@ -960,8 +964,8 @@ class LockGuardedNeoStoreTransactionApplierTest {
     }
 
     private TransactionApplierFactory newApplier(boolean recovery) {
-        TransactionApplierFactory applier =
-                new LockGuardedNeoStoreTransactionApplierFactory(INTERNAL, neoStores, cacheAccess, lockService);
+        TransactionApplierFactory applier = new LockGuardedNeoStoreTransactionApplierFactory(
+                recovery ? RECOVERY : INTERNAL, neoStores, cacheAccess, lockService);
         if (recovery) {
             applier = newApplierFacade(new HighIdTransactionApplierFactory(neoStores), applier);
         }

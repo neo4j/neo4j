@@ -99,7 +99,8 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
     public boolean visitRelationshipTypeTokenCommand(Command.RelationshipTypeTokenCommand command) {
         updateStore(neoStores.getRelationshipTypeTokenStore(), command, REL_TYPE_TOKEN_CURSOR);
         if (!mode.isReverseStep()) {
-            cacheAccess.addRelationshipTypeToken(getTokenFromTokenCommand(command));
+            cacheAccess.addRelationshipTypeToken(
+                    getTokenFromTokenCommand(command), mode != TransactionApplicationMode.RECOVERY);
         }
         return false;
     }
@@ -108,7 +109,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
     public boolean visitLabelTokenCommand(Command.LabelTokenCommand command) {
         updateStore(neoStores.getLabelTokenStore(), command, LABEL_TOKEN_CURSOR);
         if (!mode.isReverseStep()) {
-            cacheAccess.addLabelToken(getTokenFromTokenCommand(command));
+            cacheAccess.addLabelToken(getTokenFromTokenCommand(command), mode != TransactionApplicationMode.RECOVERY);
         }
         return false;
     }
@@ -117,7 +118,8 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
     public boolean visitPropertyKeyTokenCommand(Command.PropertyKeyTokenCommand command) {
         updateStore(neoStores.getPropertyKeyTokenStore(), command, PROPERTY_KEY_TOKEN_CURSOR);
         if (!mode.isReverseStep()) {
-            cacheAccess.addPropertyKeyToken(getTokenFromTokenCommand(command));
+            cacheAccess.addPropertyKeyToken(
+                    getTokenFromTokenCommand(command), mode != TransactionApplicationMode.RECOVERY);
         }
         return false;
     }

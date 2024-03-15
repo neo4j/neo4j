@@ -41,9 +41,17 @@ public interface TokenHolder {
      * Add the given token to the internal token registry. The token maybe be either a public or an internal one.
      *
      * @param token The token to add.
+     * @param atomic whether there should be extra care taken to make this addition look atomic to readers.
      * @throws NonUniqueTokenException if the token conflicts with an existing token on id, or on name.
      */
-    void addToken(NamedToken token);
+    void addToken(NamedToken token, boolean atomic);
+
+    /**
+     * @see #addToken(NamedToken, boolean) with {@code atomic} = {@code true}.
+     */
+    default void addToken(NamedToken token) {
+        addToken(token, true);
+    }
 
     /**
      * Get the id of the public token by the given name, or create a new id for the token if it does not have one already,

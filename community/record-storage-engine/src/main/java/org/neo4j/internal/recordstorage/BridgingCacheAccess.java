@@ -48,17 +48,17 @@ class BridgingCacheAccess implements CacheAccessBackDoor {
     }
 
     @Override
-    public void addRelationshipTypeToken(NamedToken type) {
-        tokenHolders.relationshipTypeTokens().addToken(type);
+    public void addRelationshipTypeToken(NamedToken type, boolean atomic) {
+        tokenHolders.relationshipTypeTokens().addToken(type, atomic);
     }
 
     @Override
-    public void addLabelToken(NamedToken label) {
-        tokenHolders.labelTokens().addToken(label);
+    public void addLabelToken(NamedToken label, boolean atomic) {
+        tokenHolders.labelTokens().addToken(label, atomic);
     }
 
     @Override
-    public void addPropertyKeyToken(NamedToken propertyKey) {
-        tokenHolders.propertyKeyTokens().addToken(propertyKey);
+    public void addPropertyKeyToken(NamedToken propertyKey, boolean atomic) {
+        tokenHolders.propertyKeyTokens().addToken(propertyKey, atomic);
     }
 }

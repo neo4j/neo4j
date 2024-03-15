@@ -58,7 +58,11 @@ public class TokenRegistry {
         registries = insertAllChecked(tokens, new Registries());
     }
 
-    public synchronized void put(NamedToken token) {
+    public void put(NamedToken token) {
+        put(token, true);
+    }
+
+    public synchronized void put(NamedToken token, boolean atomic) {
         Registries reg = this.registries;
         if (reg.idToToken.containsKey(token.id())) {
             NamedToken existingToken = reg.idToToken.get(token.id());
@@ -68,7 +72,9 @@ public class TokenRegistry {
             throw new NonUniqueTokenException(tokenType, token, existingToken);
         }
 
-        reg = reg.copy();
+        if (atomic) {
+            reg = reg.copy();
+        }
         if (token.isInternal()) {
             checkNameUniqueness(reg.internalNameToId, token, reg);
             reg.internalNameToId.put(token.name(), token.id());

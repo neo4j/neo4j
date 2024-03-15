@@ -522,6 +522,9 @@ public final class Recovery {
                 new CursorContextFactory(tracers.getPageCacheTracer(), versionContextSupplier);
         DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, recoveryLog);
 
+        // The token registries during recovery can add tokens w/o making a defensive copy
+        // of all internal token registry state, because there should be none doing lookups
+        // In fact token lookup should not be necessary at all during recovery
         TokenHolders tokenHolders = new TokenHolders(
                 new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_PROPERTY_KEY),
                 new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_LABEL),

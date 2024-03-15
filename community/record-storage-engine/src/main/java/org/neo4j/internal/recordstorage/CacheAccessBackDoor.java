@@ -27,9 +27,9 @@ public interface CacheAccessBackDoor {
 
     void removeSchemaRuleFromCache(long id);
 
-    void addRelationshipTypeToken(NamedToken type);
+    void addRelationshipTypeToken(NamedToken type, boolean atomic);
 
-    void addLabelToken(NamedToken labelId);
+    void addLabelToken(NamedToken labelId, boolean atomic);
 
-    void addPropertyKeyToken(NamedToken index);
+    void addPropertyKeyToken(NamedToken index, boolean atomic);
 }
