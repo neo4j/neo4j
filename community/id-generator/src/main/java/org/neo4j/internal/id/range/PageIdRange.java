@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.id.range;
 
+import static org.apache.commons.lang3.ArrayUtils.isSorted;
+
 import org.neo4j.internal.id.IdGenerator;
 
 /**
@@ -60,6 +62,7 @@ public interface PageIdRange {
     };
 
     static PageIdRange wrap(long[] ids, int idsPerPage) {
+        assert isSorted(ids);
         if (ids[0] + ids.length - 1 == ids[ids.length - 1]) {
             return new ContinuousIdRange(ids[0], ids.length, idsPerPage);
         }

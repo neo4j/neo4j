@@ -490,6 +490,7 @@ public class IndexedIdGenerator implements IdGenerator {
             // now we need to make sure that range is not yet used by any other concurrent allocator
             // so we check if it's not yet locked before returning it, otherwise we mark those ids unallocated and
             // fallback to new range
+            Arrays.sort(reusedIds);
             var range = PageIdRange.wrap(reusedIds, idsPerPage);
             if (lockedPageRanges.add(range.pageId())) {
                 return range;

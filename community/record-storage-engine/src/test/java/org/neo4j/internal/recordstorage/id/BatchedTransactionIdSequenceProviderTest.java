@@ -114,6 +114,10 @@ class BatchedTransactionIdSequenceProviderTest {
         pageIdRange = PageIdRange.wrap(new long[] {2, 5, 6, 7, 8, 9}, 280);
         assertThat(pageIdRange).isInstanceOf(ArrayBasedRange.class);
         assertEquals(2, pageIdRange.nextId());
+
+        pageIdRange = PageIdRange.wrap(new long[] {2992, 2993, 2994, 2995, 2997, 2998, 2999}, 545);
+        assertThat(pageIdRange).isInstanceOf(ArrayBasedRange.class);
+        assertEquals(2992, pageIdRange.nextId());
     }
 
     @Test
