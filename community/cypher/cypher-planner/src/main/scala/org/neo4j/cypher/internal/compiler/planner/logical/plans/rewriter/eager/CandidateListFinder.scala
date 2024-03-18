@@ -161,7 +161,7 @@ object CandidateListFinder {
   private case class SequencesAcc(
     openConflicts: Map[Ref[LogicalPlan], Set[ConflictingPlanPair]],
     openSequences: Map[Ref[LogicalPlan], Seq[OpenSequence]] = Map.empty,
-    candidateLists: Seq[CandidateList] = Seq.empty,
+    candidateLists: Vector[CandidateList] = Vector.empty,
     currentLayer: Int = -1
   ) {
 
@@ -268,9 +268,22 @@ object CandidateListFinder {
     )
   }
 
-  private def planTreeContains(planTree: LogicalPlan, planToFind: LogicalPlan)(implicit
-  planChildrenLookup: PlanChildrenLookup): Boolean = {
+  private def planTreeContains(
+    planTree: LogicalPlan,
+    planToFind: LogicalPlan
+  )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
     (planTree eq planToFind) || planChildrenLookup.hasChild(planTree, planToFind)
+  }
+
+  private def isLhsVsRhsConflict(
+    plan: LogicalBinaryPlan,
+    candidateList: CandidateList
+  )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
+    candidateList match {
+      case CandidateList(_, ConflictingPlanPair(first, second, _)) =>
+        (planTreeContains(plan.left, first.value) && planTreeContains(plan.right, second.value)) ||
+        (planTreeContains(plan.left, second.value) && planTreeContains(plan.right, first.value))
+    }
   }
 
   private def preProcessBinaryPlan(
@@ -279,13 +292,19 @@ object CandidateListFinder {
   )(implicit planChildrenLookup: PlanChildrenLookup): SequencesAcc = {
     // Partition all candidate lists into whether they solve a lhs vs rhs conflict of the given binary plan,
     // or some other conflict.
-    val (lHSvsRHSCandidateLists, otherCandidateLists) = acc.candidateLists.partition {
-      case CandidateList(_, ConflictingPlanPair(first, second, _)) =>
-        (planTreeContains(plan.left, first.value) && planTreeContains(plan.right, second.value)) ||
-        (planTreeContains(plan.left, second.value) && planTreeContains(plan.right, first.value))
+    val (hasLhsVsRhsCandidateLists, otherCandidateLists) = {
+      val otherCandidateListsBuilder = Vector.newBuilder[CandidateList]
+      var hasLhsVsRhsCandidateLists = false
+      acc.candidateLists.foreach { cl =>
+        if (isLhsVsRhsConflict(plan, cl))
+          hasLhsVsRhsCandidateLists = true
+        else
+          otherCandidateListsBuilder.addOne(cl)
+      }
+      (hasLhsVsRhsCandidateLists, otherCandidateListsBuilder.result())
     }
 
-    val eagerizationStrategy = BinaryPlanEagerizationStrategy.forPlan(plan, lHSvsRHSCandidateLists.nonEmpty)
+    val eagerizationStrategy = BinaryPlanEagerizationStrategy.forPlan(plan, hasLhsVsRhsCandidateLists)
 
     val newCandidateLists = if (eagerizationStrategy.eagerizeLHSvsRHSConflicts) {
       acc.candidateLists
