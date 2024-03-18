@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.ConflictingPlanPair
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.hasChild
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.PlanChildrenLookup
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
@@ -268,13 +268,21 @@ object CandidateListFinder {
     )
   }
 
-  private def preProcessBinaryPlan(acc: SequencesAcc, plan: LogicalBinaryPlan): SequencesAcc = {
+  private def planTreeContains(planTree: LogicalPlan, planToFind: LogicalPlan)(implicit
+  planChildrenLookup: PlanChildrenLookup): Boolean = {
+    (planTree eq planToFind) || planChildrenLookup.hasChild(planTree, planToFind)
+  }
+
+  private def preProcessBinaryPlan(
+    acc: SequencesAcc,
+    plan: LogicalBinaryPlan
+  )(implicit planChildrenLookup: PlanChildrenLookup): SequencesAcc = {
     // Partition all candidate lists into whether they solve a lhs vs rhs conflict of the given binary plan,
     // or some other conflict.
     val (lHSvsRHSCandidateLists, otherCandidateLists) = acc.candidateLists.partition {
       case CandidateList(_, ConflictingPlanPair(first, second, _)) =>
-        (hasChild(plan.left, first.value) && hasChild(plan.right, second.value)) ||
-        (hasChild(plan.left, second.value) && hasChild(plan.right, first.value))
+        (planTreeContains(plan.left, first.value) && planTreeContains(plan.right, second.value)) ||
+        (planTreeContains(plan.left, second.value) && planTreeContains(plan.right, first.value))
     }
 
     val eagerizationStrategy = BinaryPlanEagerizationStrategy.forPlan(plan, lHSvsRHSCandidateLists.nonEmpty)
@@ -290,7 +298,10 @@ object CandidateListFinder {
     ).popLayer(eagerizationStrategy.emptyCandidateListsForRHSvsTopConflicts)
   }
 
-  private def processPlan(acc: SequencesAcc, plan: LogicalPlan): SequencesAcc = {
+  private def processPlan(
+    acc: SequencesAcc,
+    plan: LogicalPlan
+  )(implicit planChildrenLookup: PlanChildrenLookup): SequencesAcc = {
     checkConstraints(plan)
 
     Function.chain[SequencesAcc](Seq(
@@ -309,7 +320,10 @@ object CandidateListFinder {
    *
    * This is done by traversing the plan and accumulating the plans between the two conflicting plans as candidates.
    */
-  private[eager] def findCandidateLists(plan: LogicalPlan, conflicts: Seq[ConflictingPlanPair]): Seq[CandidateList] = {
+  private[eager] def findCandidateLists(
+    plan: LogicalPlan,
+    conflicts: Seq[ConflictingPlanPair]
+  )(implicit planChildrenLookup: PlanChildrenLookup): Seq[CandidateList] = {
     val conflictsMapBuilder = scala.collection.mutable.MultiDict.empty[Ref[LogicalPlan], ConflictingPlanPair]
     conflicts.foreach {
       case c @ ConflictingPlanPair(first, second, _) =>

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.ConflictingPlanPair
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.PlanChildrenLookup
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.FilterExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PlanThatIntroducesVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PlanWithAccessor
@@ -98,7 +99,7 @@ sealed trait ConflictFinder {
     wholePlan: LogicalPlan,
     writtenProperties: ReadsAndWritesFinder.Sets => Seq[(Option[PropertyKeyName], Seq[PlanWithAccessor])],
     plansReadingProperty: (ReadsAndWritesFinder.Reads, Option[PropertyKeyName]) => Seq[PlanWithAccessor]
-  ): Seq[ConflictingPlanPair] = {
+  )(implicit planChildrenLookup: PlanChildrenLookup): Seq[ConflictingPlanPair] = {
     for {
       (prop, writePlans) <- writtenProperties(readsAndWrites.writes.sets)
       read @ PlanWithAccessor(readPlan, _) <- plansReadingProperty(readsAndWrites.reads, prop)
@@ -134,7 +135,8 @@ sealed trait ConflictFinder {
     }
   }
 
-  private def labelConflicts(readsAndWrites: ReadsAndWrites, wholePlan: LogicalPlan): Iterable[ConflictingPlanPair] = {
+  private def labelConflicts(readsAndWrites: ReadsAndWrites, wholePlan: LogicalPlan)(implicit
+  planChildrenLookup: PlanChildrenLookup): Iterable[ConflictingPlanPair] = {
     for {
       (label, writePlans) <- readsAndWrites.writes.sets.writtenLabels
       read @ PlanWithAccessor(readPlan, _) <- readsAndWrites.reads.plansReadingLabel(label)
@@ -176,7 +178,7 @@ sealed trait ConflictFinder {
     ) => Map[LogicalVariable, FilterExpressions],
     filterExpressions: ReadsAndWritesFinder.Reads => Map[LogicalVariable, FilterExpressions],
     createEntityReason: (String, Conflict) => EagernessReason
-  ): Iterable[ConflictingPlanPair] = {
+  )(implicit planChildrenLookup: PlanChildrenLookup): Iterable[ConflictingPlanPair] = {
     for {
       (Ref(writePlan), createdEntities) <- createdEntities(readsAndWrites.writes.creates)
 
@@ -286,7 +288,7 @@ sealed trait ConflictFinder {
       ReadsAndWritesFinder.Deletes,
       Ref[LogicalPlan]
     ) => Map[LogicalVariable, PossibleDeleteConflictPlans]
-  ): Iterable[ConflictingPlanPair] = {
+  )(implicit planChildrenLookup: PlanChildrenLookup): Iterable[ConflictingPlanPair] = {
     for {
       (Ref(writePlan), deletedEntities) <- deletedEntities(readsAndWrites.writes.deletes)
 
@@ -330,7 +332,7 @@ sealed trait ConflictFinder {
       ReadsAndWritesFinder.Deletes,
       Ref[LogicalPlan]
     ) => Map[LogicalVariable, PossibleDeleteConflictPlans]
-  ): Iterable[ConflictingPlanPair] = {
+  )(implicit planChildrenLookup: PlanChildrenLookup): Iterable[ConflictingPlanPair] = {
     for {
       writePlan <-
         deleteExpressions(
@@ -416,7 +418,7 @@ sealed trait ConflictFinder {
   private[eager] def findConflictingPlans(
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan
-  ): Seq[ConflictingPlanPair] = {
+  )(implicit planChildrenLookup: PlanChildrenLookup): Seq[ConflictingPlanPair] = {
     val map = mutable.Map[Set[Ref[LogicalPlan]], Set[EagernessReason]]()
 
     def addConflict(conflictingPlanPair: ConflictingPlanPair): Unit = {
@@ -534,12 +536,13 @@ sealed trait ConflictFinder {
     }
   }
 
-  private def isValidConflict(readPlan: LogicalPlan, writePlan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
+  private def isValidConflict(readPlan: LogicalPlan, writePlan: LogicalPlan, wholePlan: LogicalPlan)(implicit
+  planChildrenLookup: PlanChildrenLookup): Boolean = {
     // A plan can never conflict with itself
     def conflictsWithItself = writePlan eq readPlan
 
     // a merge plan can never conflict with its children
-    def mergeConflictWithChild = writePlan.isInstanceOf[Merge] && hasChild(writePlan, readPlan)
+    def mergeConflictWithChild = writePlan.isInstanceOf[Merge] && planChildrenLookup.hasChild(writePlan, readPlan)
 
     // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
     def conflictsWithUnstablePlan =
@@ -661,21 +664,6 @@ sealed trait ConflictFinder {
         val maybeLhs = outerPlan.lhs.flatMap(recurse)
         maybeLhs.orElse(outerPlan.rhs.flatMap(recurse))
     }
-  }
-
-  /**
-   * Checks whether a plan has a child plan (recursively),
-   * using reference equality.
-   */
-  private[eager] def hasChild(plan: LogicalPlan, child: LogicalPlan): Boolean = {
-    hasChildMatching(plan, _ eq child)
-  }
-
-  /**
-   * Checks whether a plan has a child plan matching the predicate, recursively.
-   */
-  private[eager] def hasChildMatching(plan: LogicalPlan, pred: LogicalPlan => Boolean): Boolean = {
-    pred(plan) || plan.lhs.exists(hasChildMatching(_, pred)) || plan.rhs.exists(hasChildMatching(_, pred))
   }
 
   /**

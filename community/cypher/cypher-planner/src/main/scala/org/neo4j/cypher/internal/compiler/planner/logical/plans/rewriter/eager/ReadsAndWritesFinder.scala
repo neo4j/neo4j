@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.ChildrenIds
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.AccessedLabel
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.AccessedProperty
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.PlanReads
@@ -973,11 +974,14 @@ object ReadsAndWritesFinder {
   private[eager] def collectReadsAndWrites(
     wholePlan: LogicalPlan,
     semanticTable: SemanticTable,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    childrenIds: ChildrenIds
   ): ReadsAndWrites = {
     def processPlan(acc: ReadsAndWrites, plan: LogicalPlan): ReadsAndWrites = {
-      val planReads = collectReads(plan, semanticTable, anonymousVariableNameGenerator)
+      val planReads = collectReads(plan, semanticTable, anonymousVariableNameGenerator, childrenIds)
       val planWrites = collectWrites(plan)
+
+      childrenIds.recordChildren(plan)
 
       Function.chain[ReadsAndWrites](Seq(
         // We update the writes first, because they take snapshots of the reads,

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.ChildrenIds
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.collectReadsAndWrites
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -308,7 +309,8 @@ object ReadFinder {
   private[eager] def collectReads(
     plan: LogicalPlan,
     semanticTable: SemanticTable,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    childrenIds: ChildrenIds
   ): PlanReads = {
     // Match on plans
     val planReads = plan match {
@@ -993,7 +995,8 @@ object ReadFinder {
 
       case npe: NestedPlanExpression =>
         // A nested plan expression cannot have writes
-        val nestedReads = collectReadsAndWrites(npe.plan, semanticTable, anonymousVariableNameGenerator).reads
+        val nestedReads =
+          collectReadsAndWrites(npe.plan, semanticTable, anonymousVariableNameGenerator, childrenIds).reads
 
         // Remap all reads to the outer plan, i.e. to the PlanReads currently being built
         val readNodeProperties = nestedReads.readNodeProperties.plansReadingConcreteSymbol.view

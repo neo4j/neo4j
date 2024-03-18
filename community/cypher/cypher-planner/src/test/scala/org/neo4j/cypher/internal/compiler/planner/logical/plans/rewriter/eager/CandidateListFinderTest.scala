@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 import org.neo4j.cypher.internal.compiler.helpers.AnnotatedLogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.CandidateListFinder.CandidateList
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.ConflictingPlanPair
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.ChildrenIds
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -39,6 +41,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p2")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("p2"))), conflicts(0))
@@ -56,6 +59,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p2")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should be(empty)
   }
@@ -73,6 +77,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p2")), Ref(p.get("p4")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3"))), conflicts(0)),
@@ -93,6 +98,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p2")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     the[IllegalStateException] thrownBy CandidateListFinder.findCandidateLists(p.plan, conflicts) should have message (
       "Eagerness analysis does not support if the RHS of a SingleFromRightLogicalPlan contains writes"
     )
@@ -112,6 +118,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p3")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3"))), conflicts(0))
@@ -132,6 +139,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p4")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3")), Ref(p.get("p4"))), conflicts(0))
@@ -152,6 +160,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p3")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("p2"))), conflicts(0))
@@ -172,6 +181,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p3")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3"))), conflicts(0))
@@ -192,6 +202,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p4")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3")), Ref(p.get("p4"))), conflicts(0))
@@ -212,6 +223,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p3")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("p2"))), conflicts(0))
@@ -239,6 +251,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("c")), Ref(p.get("d")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("a"))), conflicts(0)),
@@ -265,6 +278,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p3")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     the[IllegalStateException] thrownBy CandidateListFinder.findCandidateLists(p.plan, conflicts) should have message (
       "We do not expect conflicts between the two branches of a AssertSameNode yet."
     )
@@ -290,6 +304,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("c")), Ref(p.get("d")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("a"))), conflicts(0)),
@@ -315,6 +330,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p3")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should be(empty)
   }
@@ -333,6 +349,7 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p4")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should be(empty)
   }
@@ -351,9 +368,16 @@ class CandidateListFinderTest extends CypherFunSuite {
       ConflictingPlanPair(Ref(p.get("p1")), Ref(p.get("p4")), Set.empty)
     )
 
+    implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
       CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3")), Ref(p.get("p4"))), conflicts(0))
     )
+  }
+
+  private def childrenIdsForPlan(lp: LogicalPlan): ChildrenIds = {
+    val childrenIds = new ChildrenIds
+    lp.flatten.reverseIterator.foreach(childrenIds.recordChildren)
+    childrenIds
   }
 }
