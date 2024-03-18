@@ -2029,11 +2029,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
 
     @Test
     void shouldNotUseFailedIndexToFindEntities() {
-        long expectedNode;
+        String expectedNode;
         // Given
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(label);
-            expectedNode = node.getId();
+            expectedNode = node.getElementId();
             node.setProperty(propertyKey, "somevalue");
             // Property that can't be indexed
             tx.createNode(label).setProperty(propertyKey, tooLargeString());
@@ -2059,7 +2059,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx();
                 ResourceIterator<Node> nodes = tx.findNodes(label, propertyKey, "somevalue")) {
             assertThat(nodes.hasNext()).isTrue();
-            assertThat(nodes.next().getId()).isEqualTo(expectedNode);
+            assertThat(nodes.next().getElementId()).isEqualTo(expectedNode);
             assertThat(nodes.hasNext()).isFalse();
             nodes.close();
         }
