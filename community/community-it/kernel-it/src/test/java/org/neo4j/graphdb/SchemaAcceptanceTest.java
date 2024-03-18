@@ -23,13 +23,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.graphdb.schema.IndexType.POINT;
 import static org.neo4j.graphdb.schema.IndexType.RANGE;
@@ -42,7 +36,6 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -114,6 +107,9 @@ import org.neo4j.util.concurrent.BinaryLatch;
 @ImpermanentDbmsExtension(configurationCallback = "configure")
 @ExtendWith(OtherThreadExtension.class)
 class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
+    public static final double[] TEST_ARRAY1 = {200.0, 200.0};
+    public static final double[] TEST_ARRAY2 = {-90.0, -90.0};
+
     @Inject
     private DbmsController controller;
 
@@ -151,15 +147,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         monitors.addMonitorListener(trappingMonitor);
         builder.setMonitors(monitors);
         builder.setConfig(GraphDatabaseInternalSettings.type_constraints, true);
-    }
-
-    @BeforeEach
-    void beforeEach() {
-        // drop default indexes
-        try (var tx = db.beginTx()) {
-            tx.schema().getIndexes().forEach(IndexDefinition::drop);
-            tx.commit();
-        }
+        builder.setConfig(GraphDatabaseInternalSettings.skip_default_indexes_on_creation, true);
     }
 
     @Test
@@ -521,11 +509,21 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             index = getIndex(tx, index.getName());
             index.drop();
-            ConstraintViolationException e = assertThrows(ConstraintViolationException.class, index::drop);
-            assertThat(e)
-                    .hasMessageContaining("Unable to drop index: Index does not exist: Index( id=")
-                    .hasMessageContaining("name='index_1efc11af', type='RANGE', schema=(:MY_LABEL {my_property_key}),"
-                            + " indexProvider='range-1.0' )");
+            assertThatThrownBy(index::drop)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContainingAll(
+                            "Unable to drop index",
+                            "Index does not exist",
+                            "Index",
+                            "name",
+                            index.getName(),
+                            "type",
+                            "RANGE",
+                            "schema",
+                            label.name(),
+                            propertyKey,
+                            "indexProvider",
+                            "range-1.0");
             tx.commit();
         }
 
@@ -543,8 +541,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             index = tx.schema().getIndexByName(index.getName());
             index.drop();
-            ConstraintViolationException e = assertThrows(ConstraintViolationException.class, index::drop);
-            assertThat(e).hasMessageContaining("Unable to drop index: Index does not exist: ");
+            assertThatThrownBy(index::drop)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining("Unable to drop index: Index does not exist: ");
             tx.commit();
         }
 
@@ -561,9 +560,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         dropIndex(index);
 
         // WHEN
-
-        Exception e = assertThrows(Exception.class, () -> dropIndex(index));
-        assertThat(e).hasMessageContaining("No index found with the name 'index_1efc11af'.");
+        assertThatThrownBy(() -> dropIndex(index))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("No index found with the name 'index_1efc11af'.");
 
         // THEN
         try (Transaction tx = db.beginTx()) {
@@ -583,7 +582,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             tx.schema().awaitIndexOnline(index, 2L, TimeUnit.MINUTES);
 
             // THEN
-            assertEquals(ONLINE, getIndexState(tx, index));
+            assertThat(getIndexState(tx, index)).isEqualTo(ONLINE);
         }
     }
 
@@ -608,7 +607,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             tx.schema().awaitIndexOnline("my_index", 2L, TimeUnit.MINUTES);
 
             // THEN
-            assertEquals(ONLINE, getIndexState(tx, index));
+            assertThat(getIndexState(tx, index)).isEqualTo(ONLINE);
         }
     }
 
@@ -638,7 +637,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             tx.schema().awaitIndexesOnline(2L, TimeUnit.MINUTES);
 
             // THEN
-            assertEquals(ONLINE, getIndexState(tx, index));
+            assertThat(getIndexState(tx, index)).isEqualTo(ONLINE);
         }
     }
 
@@ -700,8 +699,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
 
         // WHEN recreating that index
         IndexDefinition newIndex = createIndex(db, label, propertyKey);
-        NotFoundException e = assertThrows(NotFoundException.class, () -> waitForIndex(db, index));
-        assertThat(e).hasMessageContaining("No index was found");
+        assertThatThrownBy(() -> waitForIndex(db, index))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("No index was found");
         waitForIndex(db, newIndex);
 
         try (Transaction transaction = db.beginTx()) {
@@ -726,10 +726,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // THEN
         try (Transaction tx = db.beginTx()) {
             constraint = tx.schema().getConstraintByName(constraint.getName());
-            assertEquals(ConstraintType.UNIQUENESS, constraint.getConstraintType());
-            assertEquals(label.name(), constraint.getLabel().name());
-            assertEquals(asSet(propertyKey), Iterables.asSet(constraint.getPropertyKeys()));
-            assertEquals("constraint_d3208c60", constraint.getName());
+            assertThat(constraint.getConstraintType()).isEqualTo(ConstraintType.UNIQUENESS);
+            assertThat(constraint.getLabel().name()).isEqualTo(label.name());
+            assertThat(constraint.getPropertyKeys()).containsExactly(propertyKey);
+            assertThat(constraint.getName()).isEqualTo("constraint_d3208c60");
             tx.commit();
         }
     }
@@ -742,10 +742,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // THEN
         try (Transaction tx = db.beginTx()) {
             constraint = tx.schema().getConstraintByName(constraint.getName());
-            assertEquals(ConstraintType.RELATIONSHIP_UNIQUENESS, constraint.getConstraintType());
-            assertEquals(relType.name(), constraint.getRelationshipType().name());
-            assertEquals(asSet(propertyKey), Iterables.asSet(constraint.getPropertyKeys()));
-            assertEquals("constraint_c5954bea", constraint.getName());
+            assertThat(constraint.getConstraintType()).isEqualTo(ConstraintType.RELATIONSHIP_UNIQUENESS);
+            assertThat(constraint.getRelationshipType().name()).isEqualTo(relType.name());
+            assertThat(constraint.getPropertyKeys()).containsExactly(propertyKey);
+            assertThat(constraint.getName()).isEqualTo("constraint_c5954bea");
             tx.commit();
         }
     }
@@ -758,10 +758,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // Then
         try (Transaction tx = db.beginTx()) {
             constraint = tx.schema().getConstraintByName(constraint.getName());
-            assertEquals(ConstraintType.UNIQUENESS, constraint.getConstraintType());
-            assertEquals(label.name(), constraint.getLabel().name());
-            assertEquals(asSet(propertyKey), Iterables.asSet(constraint.getPropertyKeys()));
-            assertEquals("MyConstraint", constraint.getName());
+            assertThat(constraint.getConstraintType()).isEqualTo(ConstraintType.UNIQUENESS);
+            assertThat(constraint.getLabel().name()).isEqualTo(label.name());
+            assertThat(constraint.getPropertyKeys()).containsExactly(propertyKey);
+            assertThat(constraint.getName()).isEqualTo("MyConstraint");
             tx.commit();
         }
     }
@@ -774,10 +774,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // Then
         try (Transaction tx = db.beginTx()) {
             constraint = tx.schema().getConstraintByName(constraint.getName());
-            assertEquals(ConstraintType.RELATIONSHIP_UNIQUENESS, constraint.getConstraintType());
-            assertEquals(relType.name(), constraint.getRelationshipType().name());
-            assertEquals(asSet(propertyKey), Iterables.asSet(constraint.getPropertyKeys()));
-            assertEquals("MyConstraint", constraint.getName());
+            assertThat(constraint.getConstraintType()).isEqualTo(ConstraintType.RELATIONSHIP_UNIQUENESS);
+            assertThat(constraint.getRelationshipType().name()).isEqualTo(relType.name());
+            assertThat(constraint.getPropertyKeys()).containsExactly(propertyKey);
+            assertThat(constraint.getName()).isEqualTo("MyConstraint");
             tx.commit();
         }
     }
@@ -790,10 +790,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // THEN
         try (Transaction tx = db.beginTx()) {
             constraint = tx.schema().getConstraintByName(constraint.getName());
-            assertEquals(ConstraintType.UNIQUENESS, constraint.getConstraintType());
-            assertEquals(label.name(), constraint.getLabel().name());
-            assertEquals(asSet(propertyKey, secondPropertyKey), Iterables.asSet(constraint.getPropertyKeys()));
-            assertEquals("constraint_860007cd", constraint.getName());
+            assertThat(constraint.getConstraintType()).isEqualTo(ConstraintType.UNIQUENESS);
+            assertThat(constraint.getLabel().name()).isEqualTo(label.name());
+            assertThat(constraint.getPropertyKeys()).containsExactly(propertyKey, secondPropertyKey);
+            assertThat(constraint.getName()).isEqualTo("constraint_860007cd");
             tx.commit();
         }
     }
@@ -806,10 +806,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // THEN
         try (Transaction tx = db.beginTx()) {
             constraint = tx.schema().getConstraintByName(constraint.getName());
-            assertEquals(ConstraintType.RELATIONSHIP_UNIQUENESS, constraint.getConstraintType());
-            assertEquals(relType.name(), constraint.getRelationshipType().name());
-            assertEquals(asSet(propertyKey, secondPropertyKey), Iterables.asSet(constraint.getPropertyKeys()));
-            assertEquals("constraint_ba789ec", constraint.getName());
+
+            assertThat(constraint.getConstraintType()).isEqualTo(ConstraintType.RELATIONSHIP_UNIQUENESS);
+            assertThat(constraint.getRelationshipType().name()).isEqualTo(relType.name());
+            assertThat(constraint.getPropertyKeys()).containsExactly(propertyKey, secondPropertyKey);
+            assertThat(constraint.getName()).isEqualTo("constraint_ba789ec");
+
             tx.commit();
         }
     }
@@ -823,10 +825,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // THEN
         try (Transaction tx = db.beginTx()) {
             constraint = tx.schema().getConstraintByName(constraint.getName());
-            assertEquals(ConstraintType.UNIQUENESS, constraint.getConstraintType());
-            assertEquals(label.name(), constraint.getLabel().name());
-            assertEquals(asSet(propertyKey, secondPropertyKey), Iterables.asSet(constraint.getPropertyKeys()));
-            assertEquals("MyConstraint", constraint.getName());
+
+            assertThat(constraint.getConstraintType()).isEqualTo(ConstraintType.UNIQUENESS);
+            assertThat(constraint.getLabel().name()).isEqualTo(label.name());
+            assertThat(constraint.getPropertyKeys()).containsExactly(propertyKey, secondPropertyKey);
+            assertThat(constraint.getName()).isEqualTo("MyConstraint");
             tx.commit();
         }
     }
@@ -840,10 +843,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // THEN
         try (Transaction tx = db.beginTx()) {
             constraint = tx.schema().getConstraintByName(constraint.getName());
-            assertEquals(ConstraintType.RELATIONSHIP_UNIQUENESS, constraint.getConstraintType());
-            assertEquals(relType.name(), constraint.getRelationshipType().name());
-            assertEquals(asSet(propertyKey, secondPropertyKey), Iterables.asSet(constraint.getPropertyKeys()));
-            assertEquals("MyConstraint", constraint.getName());
+
+            assertThat(constraint.getConstraintType()).isEqualTo(ConstraintType.RELATIONSHIP_UNIQUENESS);
+            assertThat(constraint.getRelationshipType().name()).isEqualTo(relType.name());
+            assertThat(constraint.getPropertyKeys()).containsExactly(propertyKey, secondPropertyKey);
+            assertThat(constraint.getName()).isEqualTo("MyConstraint");
             tx.commit();
         }
     }
@@ -907,12 +911,13 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         createIndex(db, label, propertyKey);
 
         // WHEN
-        ConstraintViolationException e =
-                assertThrows(ConstraintViolationException.class, () -> createUniquenessConstraint(label, propertyKey));
-        assertEquals(
-                "There already exists an index (:MY_LABEL {my_property_key}). A constraint cannot be created "
-                        + "until the index has been dropped.",
-                e.getMessage());
+        assertThatThrownBy(() -> createUniquenessConstraint(label, propertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContainingAll(
+                        "There already exists an index",
+                        ":MY_LABEL",
+                        "my_property_key",
+                        "cannot be created until the index has been dropped");
     }
 
     @Test
@@ -928,7 +933,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         assertThatThrownBy(() -> createUniquenessConstraint(label, propertyKey))
                 .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContainingAll(
-                        "Unable to create Constraint( name='constraint_d3208c60', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}) )",
+                        "Unable to create Constraint",
+                        "name='constraint_d3208c60'",
+                        "type='UNIQUENESS'",
+                        "schema=(:MY_LABEL {my_property_key})",
                         "Note that only the first found violation is shown.");
     }
 
@@ -956,79 +964,81 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void indexNamesMustBeUnique() {
         createIndex(db, "MyIndex", label, propertyKey);
-        ConstraintViolationException exception = assertThrows(
-                ConstraintViolationException.class, () -> createIndex(db, "MyIndex", label, secondPropertyKey));
-        assertThat(exception).hasMessageContaining("MyIndex");
+
+        assertThatThrownBy(() -> createIndex(db, "MyIndex", label, secondPropertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("MyIndex");
     }
 
     @Test
     void indexNamesMustBeUniqueEvenWhenGenerated() {
         IndexDefinition index = createIndex(db, label, propertyKey); // Index with generated name.
-        ConstraintViolationException exception = assertThrows(
-                ConstraintViolationException.class,
-                () -> createIndex(db, index.getName(), otherLabel, secondPropertyKey));
-        assertThat(exception).hasMessageContaining(index.getName());
+
+        assertThatThrownBy(() -> createIndex(db, index.getName(), otherLabel, secondPropertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining(index.getName());
     }
 
     @Test
     void indexNamesMustBeUniqueEvenWhenGenerated2() {
         IndexDefinition index = createIndex(db, "index_1efc11af", otherLabel, secondPropertyKey);
-        ConstraintViolationException exception =
-                assertThrows(ConstraintViolationException.class, () -> createIndex(db, label, propertyKey));
-        assertThat(exception).hasMessageContaining(index.getName());
+
+        assertThatThrownBy(() -> createIndex(db, label, propertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining(index.getName());
     }
 
     @Test
     void constraintNamesMustBeUnique() {
         createUniquenessConstraint("MyConstraint", label, propertyKey);
-        ConstraintViolationException exception = assertThrows(
-                ConstraintViolationException.class,
-                () -> createUniquenessConstraint("MyConstraint", label, secondPropertyKey));
-        assertThat(exception).hasMessageContaining("MyConstraint");
+
+        assertThatThrownBy(() -> createUniquenessConstraint("MyConstraint", label, secondPropertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("MyConstraint");
     }
 
     @Test
     void cannotCreateConstraintWithSameNameAsExistingIndex() {
         createIndex(db, "MySchema", label, propertyKey);
-        ConstraintViolationException exception = assertThrows(
-                ConstraintViolationException.class,
-                () -> createUniquenessConstraint("MySchema", label, secondPropertyKey));
-        assertThat(exception).hasMessageContaining("MySchema");
+
+        assertThatThrownBy(() -> createUniquenessConstraint("MySchema", label, secondPropertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("MySchema");
     }
 
     @Test
     void cannotCreateIndexWithSameNameAsExistingIndexWithGeneratedName() {
         IndexDefinition index = createIndex(db, label, propertyKey); // Index with generated name.
-        ConstraintViolationException exception = assertThrows(
-                ConstraintViolationException.class,
-                () -> createIndex(db, index.getName(), otherLabel, secondPropertyKey));
-        assertThat(exception).hasMessageContaining(index.getName());
+
+        assertThatThrownBy(() -> createIndex(db, index.getName(), otherLabel, secondPropertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining(index.getName());
     }
 
     @Test
     void cannotCreateConstraintWithSameNameAsExistingIndexWithGeneratedName() {
         IndexDefinition index = createIndex(db, label, propertyKey); // Index with generated name.
-        ConstraintViolationException exception = assertThrows(
-                ConstraintViolationException.class,
-                () -> createUniquenessConstraint(index.getName(), otherLabel, secondPropertyKey));
-        assertThat(exception).hasMessageContaining(index.getName());
+        assertThatThrownBy(() -> createUniquenessConstraint(index.getName(), otherLabel, secondPropertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining(index.getName());
     }
 
     @Test
     void cannotCreateIndexWithSameNameAsExistingConstraint() {
         createUniquenessConstraint("MySchema", label, propertyKey);
-        ConstraintViolationException exception = assertThrows(
-                ConstraintViolationException.class, () -> createIndex(db, "MySchema", label, secondPropertyKey));
-        assertThat(exception).hasMessageContaining("MySchema");
+
+        assertThatThrownBy(() -> createIndex(db, "MySchema", label, secondPropertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining("MySchema");
     }
 
     @Test
     void cannotCreateIndexWithSameNameAsExistingConstraintWithGeneratedName() {
         ConstraintDefinition constraint = createUniquenessConstraint(label, propertyKey);
-        ConstraintViolationException exception = assertThrows(
-                ConstraintViolationException.class,
-                () -> createIndex(db, constraint.getName(), label, secondPropertyKey));
-        assertThat(exception).hasMessageContaining(constraint.getName());
+
+        assertThatThrownBy(() -> createIndex(db, constraint.getName(), label, secondPropertyKey))
+                .isInstanceOf(ConstraintViolationException.class)
+                .hasMessageContaining(constraint.getName());
     }
 
     @Test
@@ -1036,9 +1046,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         createUniquenessConstraint("MySchema", label, propertyKey);
         try (Transaction tx = db.beginTx()) {
             IndexDefinition index = getIndex(tx, "MySchema");
-            assertTrue(index.isConstraintIndex());
-            assertTrue(index.isNodeIndex());
-            assertEquals("MySchema", index.getName());
+            assertThat(index.isConstraintIndex()).isTrue();
+            assertThat(index.isNodeIndex()).isTrue();
+            assertThat(index.getName()).isEqualTo("MySchema");
             tx.commit();
         }
     }
@@ -1048,10 +1058,13 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             final String indexName = "MyIndex";
             tx.schema().indexFor(label).on(propertyKey).withName(indexName).create();
-            IndexCreator creator =
+            IndexCreator indexCreator =
                     tx.schema().indexFor(otherLabel).on(secondPropertyKey).withName(indexName);
-            ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, creator::create);
-            assertThat(exception).hasMessageContaining(alreadyExistsIndexMessage(indexName));
+
+            assertThatThrownBy(indexCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessage(alreadyExistsIndexMessage(indexName));
+
             tx.commit();
         }
     }
@@ -1060,10 +1073,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     void indexNamesInTransactionStateMustBeUniqueEvenWhenGenerated() {
         try (Transaction tx = db.beginTx()) {
             IndexDefinition index = tx.schema().indexFor(label).on(propertyKey).create();
-            IndexCreator creator =
+            IndexCreator indexCreator =
                     tx.schema().indexFor(otherLabel).on(secondPropertyKey).withName(index.getName());
-            ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, creator::create);
-            assertThat(exception).hasMessageContaining(alreadyExistsIndexMessage(index.getName()));
+
+            assertThatThrownBy(indexCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessage(alreadyExistsIndexMessage(index.getName()));
             tx.commit();
         }
     }
@@ -1076,9 +1091,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .on(secondPropertyKey)
                     .withName("index_1efc11af")
                     .create();
-            IndexCreator creator = tx.schema().indexFor(label).on(propertyKey);
-            ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, creator::create);
-            assertThat(exception).hasMessageContaining(alreadyExistsIndexMessage(index.getName()));
+            IndexCreator indexCreator = tx.schema().indexFor(label).on(propertyKey);
+
+            assertThatThrownBy(indexCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessage(alreadyExistsIndexMessage(index.getName()));
             tx.commit();
         }
     }
@@ -1091,12 +1108,14 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .assertPropertyIsUnique(propertyKey)
                     .withName("MyConstraint")
                     .create();
-            ConstraintCreator creator = tx.schema()
+            ConstraintCreator constraintCreator = tx.schema()
                     .constraintFor(otherLabel)
                     .assertPropertyIsUnique(secondPropertyKey)
                     .withName("MyConstraint");
-            ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, creator::create);
-            assertThat(exception).hasMessageContaining(thereAlreadyExistsConstraintMessage("MyConstraint"));
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessage(thereAlreadyExistsConstraintMessage("MyConstraint"));
             tx.commit();
         }
     }
@@ -1108,12 +1127,14 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .constraintFor(label)
                     .assertPropertyIsUnique(propertyKey)
                     .create();
-            ConstraintCreator creator = tx.schema()
+            ConstraintCreator constraintCreator = tx.schema()
                     .constraintFor(otherLabel)
                     .assertPropertyIsUnique(secondPropertyKey)
                     .withName(constraint.getName());
-            ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, creator::create);
-            assertThat(exception).hasMessageContaining(thereAlreadyExistsConstraintMessage(constraint.getName()));
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining(constraint.getName());
             tx.commit();
         }
     }
@@ -1126,9 +1147,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .assertPropertyIsUnique(secondPropertyKey)
                     .withName("constraint_d3208c60")
                     .create();
-            ConstraintCreator creator = tx.schema().constraintFor(label).assertPropertyIsUnique(propertyKey);
-            ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, creator::create);
-            assertThat(exception).hasMessageContaining(thereAlreadyExistsConstraintMessage(constraint.getName()));
+            ConstraintCreator constraintCreator =
+                    tx.schema().constraintFor(label).assertPropertyIsUnique(propertyKey);
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining(thereAlreadyExistsConstraintMessage(constraint.getName()));
             tx.commit();
         }
     }
@@ -1141,10 +1165,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .assertPropertyIsUnique(propertyKey)
                     .withName("MySchema")
                     .create();
-            IndexCreator creator =
+            IndexCreator indexCreator =
                     tx.schema().indexFor(otherLabel).on(secondPropertyKey).withName("MySchema");
-            ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, creator::create);
-            assertThat(exception).hasMessageContaining("MySchema");
+            assertThatThrownBy(indexCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining("MySchema");
             tx.commit();
         }
     }
@@ -1153,12 +1178,14 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     void indexAndConstraintNamesInTransactionStateMustBeUnique() {
         try (Transaction tx = db.beginTx()) {
             tx.schema().indexFor(label).on(propertyKey).withName("MySchema").create();
-            ConstraintCreator creator = tx.schema()
+            ConstraintCreator constraintCreator = tx.schema()
                     .constraintFor(otherLabel)
                     .assertPropertyIsUnique(secondPropertyKey)
                     .withName("MySchema");
-            ConstraintViolationException exception = assertThrows(ConstraintViolationException.class, creator::create);
-            assertThat(exception).hasMessageContaining("MySchema");
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining("MySchema");
             tx.commit();
         }
     }
@@ -1168,9 +1195,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator =
                     tx.schema().constraintFor(label).assertPropertyIsNodeKey(propertyKey);
-            ConstraintViolationException exception =
-                    assertThrows(ConstraintViolationException.class, constraintCreator::create);
-            assertThat(exception).hasMessageContaining("Enterprise Edition");
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining("Enterprise Edition");
             tx.commit();
         }
     }
@@ -1180,9 +1208,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator =
                     tx.schema().constraintFor(relType).assertPropertyIsRelationshipKey(propertyKey);
-            ConstraintViolationException exception =
-                    assertThrows(ConstraintViolationException.class, constraintCreator::create);
-            assertThat(exception).hasMessageContaining("Enterprise Edition");
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining("Enterprise Edition");
             tx.commit();
         }
     }
@@ -1192,9 +1221,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator =
                     tx.schema().constraintFor(label).assertPropertyExists(propertyKey);
-            ConstraintViolationException exception =
-                    assertThrows(ConstraintViolationException.class, constraintCreator::create);
-            assertThat(exception).hasMessageContaining("Enterprise Edition");
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining("Enterprise Edition");
             tx.commit();
         }
     }
@@ -1204,9 +1234,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator =
                     tx.schema().constraintFor(relType).assertPropertyExists(propertyKey);
-            ConstraintViolationException exception =
-                    assertThrows(ConstraintViolationException.class, constraintCreator::create);
-            assertThat(exception).hasMessageContaining("Enterprise Edition");
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining("Enterprise Edition");
             tx.commit();
         }
     }
@@ -1216,9 +1247,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator =
                     tx.schema().constraintFor(label).assertPropertyHasType(propertyKey, PropertyType.DATE);
-            ConstraintViolationException exception =
-                    assertThrows(ConstraintViolationException.class, constraintCreator::create);
-            assertThat(exception).hasMessageContaining("Enterprise Edition");
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining("Enterprise Edition");
             tx.commit();
         }
     }
@@ -1228,107 +1260,87 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator =
                     tx.schema().constraintFor(relType).assertPropertyHasType(propertyKey, PropertyType.BOOLEAN);
-            ConstraintViolationException exception =
-                    assertThrows(ConstraintViolationException.class, constraintCreator::create);
-            assertThat(exception).hasMessageContaining("Enterprise Edition");
+
+            assertThatThrownBy(constraintCreator::create)
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasMessageContaining("Enterprise Edition");
             tx.commit();
         }
     }
 
     @Test
     void indexNamesCanContainBackTicks() {
+        final String BACK_TICK_NAME = "`a`b``";
+
         try (Transaction tx = db.beginTx()) {
-            IndexCreator creator =
-                    tx.schema().indexFor(label).withName("`a`b``").on(propertyKey);
-            creator.create();
+            IndexCreator indexCreator =
+                    tx.schema().indexFor(label).withName(BACK_TICK_NAME).on(propertyKey);
+            indexCreator.create();
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
-            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
-            assertThat(count(indexes)).isEqualTo(1L);
-            assertEquals("`a`b``", indexes.iterator().next().getName());
-
-            assertThat(count(tx.schema().getConstraints())).isEqualTo(0L);
+            var index = tx.schema().getIndexByName(BACK_TICK_NAME);
+            assertThat(index.getName()).isEqualTo(BACK_TICK_NAME);
             tx.commit();
         }
     }
 
     @Test
     void indexTokensCanContainBackTicks() {
+        final String NAME = "abc";
         try (Transaction tx = db.beginTx()) {
-            IndexCreator creator =
-                    tx.schema().indexFor(labelWithBackticks).withName("abc").on(propertyKeyWithBackticks);
-            creator.create();
+            IndexCreator indexCreator =
+                    tx.schema().indexFor(labelWithBackticks).withName(NAME).on(propertyKeyWithBackticks);
+            indexCreator.create();
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
-            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
-            assertThat(count(indexes)).isEqualTo(1L);
-
-            final IndexDefinition index = indexes.iterator().next();
-            assertEquals("abc", index.getName());
-            assertEquals(
-                    labelWithBackticks.name(),
-                    index.getLabels().iterator().next().name());
-            assertEquals(
-                    propertyKeyWithBackticks, index.getPropertyKeys().iterator().next());
-
-            assertThat(count(tx.schema().getConstraints())).isEqualTo(0L);
+            var index = tx.schema().getIndexByName(NAME);
+            assertThat(index.getName()).isEqualTo(NAME);
+            assertThat(index.getLabels()).containsExactly(labelWithBackticks);
+            assertThat(index.getPropertyKeys()).containsExactly(propertyKeyWithBackticks);
+            assertThat(tx.schema().getConstraints()).isEmpty();
             tx.commit();
         }
     }
 
     @Test
     void constraintNamesCanContainBackTicks() {
+        final String BACKTICK_NAME = "`a`b``";
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator creator =
-                    tx.schema().constraintFor(label).withName("`a`b``").assertPropertyIsUnique(propertyKey);
-            creator.create();
+            ConstraintCreator constraintCreator =
+                    tx.schema().constraintFor(label).withName(BACKTICK_NAME).assertPropertyIsUnique(propertyKey);
+            constraintCreator.create();
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
-            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
-            assertThat(count(indexes)).isEqualTo(1L);
-            assertEquals("`a`b``", indexes.iterator().next().getName());
-
-            final Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints();
-            assertThat(count(constraints)).isEqualTo(1L);
-            assertEquals("`a`b``", constraints.iterator().next().getName());
+            assertThat(tx.schema().getIndexByName(BACKTICK_NAME).getName()).isEqualTo(BACKTICK_NAME);
+            assertThat(tx.schema().getConstraintByName(BACKTICK_NAME).getName()).isEqualTo(BACKTICK_NAME);
             tx.commit();
         }
     }
 
     @Test
     void constraintTokensCanContainBackTicks() {
+        String name = "abc";
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator creator = tx.schema()
+            ConstraintCreator constraintCreator = tx.schema()
                     .constraintFor(labelWithBackticks)
-                    .withName("abc")
+                    .withName(name)
                     .assertPropertyIsUnique(propertyKeyWithBackticks);
-            creator.create();
+            constraintCreator.create();
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
-            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
-            assertThat(count(indexes)).isEqualTo(1L);
+            final IndexDefinition index = tx.schema().getIndexByName(name);
+            assertThat(index.getName()).isEqualTo(name);
+            assertThat(index.getLabels()).containsExactly(labelWithBackticks);
+            assertThat(index.getPropertyKeys()).containsExactly(propertyKeyWithBackticks);
 
-            final IndexDefinition index = indexes.iterator().next();
-            assertEquals("abc", index.getName());
-            assertEquals(
-                    labelWithBackticks.name(),
-                    index.getLabels().iterator().next().name());
-            assertEquals(
-                    propertyKeyWithBackticks, index.getPropertyKeys().iterator().next());
-
-            final Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints();
-            assertThat(count(constraints)).isEqualTo(1L);
-
-            final ConstraintDefinition constraint = constraints.iterator().next();
-            assertEquals("abc", constraint.getName());
-            assertEquals(labelWithBackticks.name(), constraint.getLabel().name());
-            assertEquals(
-                    propertyKeyWithBackticks,
-                    constraint.getPropertyKeys().iterator().next());
+            final ConstraintDefinition constraint = tx.schema().getConstraintByName(name);
+            assertThat(constraint.getName()).isEqualTo(name);
+            assertThat(constraint.getLabel()).isEqualTo(labelWithBackticks);
+            assertThat(constraint.getPropertyKeys()).containsExactly(propertyKeyWithBackticks);
             tx.commit();
         }
     }
@@ -1336,13 +1348,14 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void mustCreateFullTextIndexBySettingIndexType() {
         try (Transaction tx = db.beginTx()) {
-            IndexCreator creator = tx.schema().indexFor(label).on(propertyKey).withIndexType(IndexType.FULLTEXT);
-            IndexDefinition definition = creator.create();
-            assertEquals(IndexType.FULLTEXT, definition.getIndexType());
+            IndexCreator indexCreator =
+                    tx.schema().indexFor(label).on(propertyKey).withIndexType(IndexType.FULLTEXT);
+            IndexDefinition definition = indexCreator.create();
+            assertThat(definition.getIndexType()).isEqualTo(IndexType.FULLTEXT);
 
             IndexProviderDescriptor provider =
                     ((IndexDefinitionImpl) definition).getIndexReference().getIndexProvider();
-            assertEquals(provider, FulltextIndexProviderFactory.DESCRIPTOR);
+            assertThat(FulltextIndexProviderFactory.DESCRIPTOR).isEqualTo(provider);
             tx.commit();
         }
     }
@@ -1357,15 +1370,13 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .withName("my_index")
                     .create();
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertNotNull(config);
-            assertTrue(config.containsKey(IndexSettingImpl.SPATIAL_CARTESIAN_MIN));
+            assertThat(config).isNotNull().containsKey(IndexSettingImpl.SPATIAL_CARTESIAN_MIN);
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
             IndexDefinition index = getIndex(tx, "my_index");
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertNotNull(config);
-            assertTrue(config.containsKey(IndexSettingImpl.SPATIAL_CARTESIAN_MIN));
+            assertThat(config).isNotNull().containsKey(IndexSettingImpl.SPATIAL_CARTESIAN_MAX);
             tx.commit();
         }
     }
@@ -1380,15 +1391,13 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .withIndexType(IndexType.FULLTEXT)
                     .create();
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertNotNull(config);
-            assertTrue(config.containsKey(IndexSettingImpl.FULLTEXT_ANALYZER));
+            assertThat(config).isNotNull().containsKey(IndexSettingImpl.FULLTEXT_ANALYZER);
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
             IndexDefinition index = getIndex(tx, "my_index");
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertNotNull(config);
-            assertTrue(config.containsKey(IndexSettingImpl.FULLTEXT_ANALYZER));
+            assertThat(config).isNotNull().containsKey(IndexSettingImpl.FULLTEXT_ANALYZER);
             tx.commit();
         }
     }
@@ -1408,14 +1417,15 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                             true))
                     .create();
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertEquals("swedish", config.get(IndexSettingImpl.FULLTEXT_ANALYZER));
-            assertEquals(true, config.get(IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT));
+            assertThat(config.get(IndexSettingImpl.FULLTEXT_ANALYZER)).isEqualTo("swedish");
+            assertThat(config.get(IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT))
+                    .isEqualTo(true);
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
             IndexDefinition index = getIndex(tx, "my_index");
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertEquals("swedish", config.get(IndexSettingImpl.FULLTEXT_ANALYZER));
+            assertThat(config.get(IndexSettingImpl.FULLTEXT_ANALYZER)).isEqualTo("swedish");
             tx.commit();
         }
     }
@@ -1430,22 +1440,24 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .withIndexType(POINT)
                     .withIndexConfiguration(Map.of(
                             IndexSettingImpl.SPATIAL_CARTESIAN_MAX,
-                            new double[] {200.0, 200.0},
+                            TEST_ARRAY1,
                             IndexSettingImpl.SPATIAL_WGS84_MIN,
-                            new double[] {-90.0, -90.0}))
+                            TEST_ARRAY2))
                     .create();
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertArrayEquals(
-                    new double[] {200.0, 200.0}, (double[]) config.get(IndexSettingImpl.SPATIAL_CARTESIAN_MAX));
-            assertArrayEquals(new double[] {-90.0, -90.0}, (double[]) config.get(IndexSettingImpl.SPATIAL_WGS84_MIN));
+            assertThat((double[]) config.get(IndexSettingImpl.SPATIAL_CARTESIAN_MAX))
+                    .containsExactly(TEST_ARRAY1);
+            assertThat((double[]) config.get(IndexSettingImpl.SPATIAL_WGS84_MIN))
+                    .containsExactly(TEST_ARRAY2);
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
             IndexDefinition index = getIndex(tx, "my_index");
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertArrayEquals(
-                    new double[] {200.0, 200.0}, (double[]) config.get(IndexSettingImpl.SPATIAL_CARTESIAN_MAX));
-            assertArrayEquals(new double[] {-90.0, -90.0}, (double[]) config.get(IndexSettingImpl.SPATIAL_WGS84_MIN));
+            assertThat((double[]) config.get(IndexSettingImpl.SPATIAL_CARTESIAN_MAX))
+                    .containsExactly(TEST_ARRAY1);
+            assertThat((double[]) config.get(IndexSettingImpl.SPATIAL_WGS84_MIN))
+                    .containsExactly(TEST_ARRAY2);
             tx.commit();
         }
     }
@@ -1480,29 +1492,41 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void indexSettingValuesMustHaveCorrectType() {
         try (Transaction tx = db.beginTx()) {
-            IndexCreator creator =
+            IndexCreator indexCreator =
                     tx.schema().indexFor(label).withName("my_index").on(propertyKey);
-            assertThrows(IllegalArgumentException.class, () -> creator.withIndexType(IndexType.FULLTEXT)
-                    .withIndexConfiguration(Map.of(IndexSettingImpl.FULLTEXT_ANALYZER, 1))
-                    .create());
-            assertThrows(IllegalArgumentException.class, () -> creator.withIndexType(IndexType.FULLTEXT)
-                    .withIndexConfiguration(Map.of(IndexSettingImpl.FULLTEXT_ANALYZER, true))
-                    .create());
-            assertThrows(IllegalArgumentException.class, () -> creator.withIndexType(IndexType.FULLTEXT)
-                    .withIndexConfiguration(Map.of(IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT, "true"))
-                    .create());
-            assertThrows(IllegalArgumentException.class, () -> creator.withIndexType(IndexType.FULLTEXT)
-                    .withIndexConfiguration(Map.of(IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT, 1))
-                    .create());
-            assertThrows(IllegalArgumentException.class, () -> creator.withIndexConfiguration(
-                            Map.of(IndexSettingImpl.SPATIAL_CARTESIAN_MAX, "1"))
-                    .create());
-            assertThrows(IllegalArgumentException.class, () -> creator.withIndexConfiguration(
-                            Map.of(IndexSettingImpl.SPATIAL_CARTESIAN_MAX, 1))
-                    .create());
-            assertThrows(IllegalArgumentException.class, () -> creator.withIndexConfiguration(
-                            Map.of(IndexSettingImpl.SPATIAL_CARTESIAN_MAX, 1.0))
-                    .create());
+            assertThatThrownBy(() -> indexCreator
+                            .withIndexType(IndexType.FULLTEXT)
+                            .withIndexConfiguration(Map.of(IndexSettingImpl.FULLTEXT_ANALYZER, 1))
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> indexCreator
+                            .withIndexType(IndexType.FULLTEXT)
+                            .withIndexConfiguration(Map.of(IndexSettingImpl.FULLTEXT_ANALYZER, true))
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> indexCreator
+                            .withIndexType(IndexType.FULLTEXT)
+                            .withIndexConfiguration(Map.of(IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT, "true"))
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> indexCreator
+                            .withIndexType(IndexType.FULLTEXT)
+                            .withIndexConfiguration(Map.of(IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT, 1))
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> indexCreator
+                            .withIndexConfiguration(Map.of(IndexSettingImpl.SPATIAL_CARTESIAN_MAX, "1"))
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> indexCreator
+                            .withIndexConfiguration(Map.of(IndexSettingImpl.SPATIAL_CARTESIAN_MAX, 1))
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> indexCreator
+                            .withIndexConfiguration(Map.of(IndexSettingImpl.SPATIAL_CARTESIAN_MAX, 1.0))
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
+
             tx.commit();
         }
     }
@@ -1549,18 +1573,23 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     void indexSettingsWithNonsensicalValuesMustBeRejected() {
         try (Transaction tx = db.beginTx()) {
             Exception e;
-            IndexCreator creator =
+            IndexCreator indexCreator =
                     tx.schema().indexFor(label).withName("my_index").on(propertyKey);
-            e = assertThrows(IllegalArgumentException.class, () -> creator.withIndexType(IndexType.FULLTEXT)
-                    .withIndexConfiguration(Map.of(IndexSettingImpl.FULLTEXT_ANALYZER, "analyzer that does not exist"))
-                    .create());
-            assertThat(e).hasMessageContaining("'analyzer that does not exist'");
+            assertThatThrownBy(() -> indexCreator
+                            .withIndexType(IndexType.FULLTEXT)
+                            .withIndexConfiguration(
+                                    Map.of(IndexSettingImpl.FULLTEXT_ANALYZER, "analyzer that does not exist"))
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("'analyzer that does not exist'");
 
-            e = assertThrows(IllegalArgumentException.class, () -> creator.withIndexType(POINT)
-                    .withIndexConfiguration(
-                            Map.of(IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[] {100.0, 10.0, 1.0}))
-                    .create());
-            assertThat(e).hasMessageContaining("Invalid spatial index settings");
+            assertThatThrownBy(() -> indexCreator
+                            .withIndexType(POINT)
+                            .withIndexConfiguration(
+                                    Map.of(IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[] {100.0, 10.0, 1.0}))
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Invalid spatial index settings");
 
             tx.commit();
         }
@@ -1576,7 +1605,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .withName("index")
                     .create();
             assertThat(index.getLabels()).contains(label, otherLabel);
-            assertTrue(index.isMultiTokenIndex());
+            assertThat(index.isMultiTokenIndex()).isTrue();
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
@@ -1584,7 +1613,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             List<String> labelNames = new ArrayList<>();
             index.getLabels().forEach(label -> labelNames.add(label.name()));
             assertThat(labelNames).contains(label.name(), otherLabel.name());
-            assertTrue(index.isMultiTokenIndex());
+            assertThat(index.isMultiTokenIndex()).isTrue();
             tx.commit();
         }
     }
@@ -1592,9 +1621,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void mustThrowWhenCreatingRangeIndexWithZeroLabels() {
         try (Transaction tx = db.beginTx()) {
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> tx.schema().indexFor(new Label[0]).on(propertyKey).create());
+            assertThatThrownBy(() ->
+                            tx.schema().indexFor(new Label[0]).on(propertyKey).create())
+                    .isInstanceOf(IllegalArgumentException.class);
             tx.commit();
         }
     }
@@ -1602,10 +1631,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void mustThrowWhenCreatingRangeIndexWithMoreThanOneLabel() {
         try (Transaction tx = db.beginTx()) {
-            assertThrows(IllegalArgumentException.class, () -> tx.schema()
-                    .indexFor(label, otherLabel)
-                    .on(propertyKey)
-                    .create());
+            assertThatThrownBy(() -> tx.schema()
+                            .indexFor(label, otherLabel)
+                            .on(propertyKey)
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
             tx.commit();
         }
     }
@@ -1613,11 +1643,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void mustThrowWhenCreatingFullTextIndexWithZeroLabels() {
         try (Transaction tx = db.beginTx()) {
-            assertThrows(IllegalArgumentException.class, () -> tx.schema()
-                    .indexFor(new Label[0])
-                    .on(propertyKey)
-                    .withIndexType(IndexType.FULLTEXT)
-                    .create());
+            assertThatThrownBy(() -> tx.schema()
+                            .indexFor(new Label[0])
+                            .on(propertyKey)
+                            .withIndexType(IndexType.FULLTEXT)
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
             tx.commit();
         }
     }
@@ -1631,14 +1662,14 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .withIndexType(IndexType.FULLTEXT)
                     .withName("index")
                     .create();
-            assertTrue(index.isRelationshipIndex());
+            assertThat(index.isRelationshipIndex()).isTrue();
             assertThat(index.getRelationshipTypes()).contains(relType);
             assertThat(index.getIndexType()).isEqualTo(IndexType.FULLTEXT);
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
             IndexDefinition index = getIndex(tx, "index");
-            assertTrue(index.isRelationshipIndex());
+            assertThat(index.isRelationshipIndex()).isTrue();
             assertThat(index.getRelationshipTypes()).contains(relType);
             assertThat(index.getIndexType()).isEqualTo(IndexType.FULLTEXT);
             tx.commit();
@@ -1654,14 +1685,14 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .withIndexType(IndexType.FULLTEXT)
                     .withName("index")
                     .create();
-            assertTrue(index.isRelationshipIndex());
+            assertThat(index.isRelationshipIndex()).isTrue();
             assertThat(index.getRelationshipTypes()).contains(relType, otherRelType);
             assertThat(index.getIndexType()).isEqualTo(IndexType.FULLTEXT);
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
             IndexDefinition index = getIndex(tx, "index");
-            assertTrue(index.isRelationshipIndex());
+            assertThat(index.isRelationshipIndex()).isTrue();
             assertThat(index.getRelationshipTypes()).contains(relType, otherRelType);
             assertThat(index.getIndexType()).isEqualTo(IndexType.FULLTEXT);
             tx.commit();
@@ -1671,11 +1702,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void mustThrowWhenCreatingFullTextIndexOnZeroRelationshipTypes() {
         try (Transaction tx = db.beginTx()) {
-            assertThrows(IllegalArgumentException.class, () -> tx.schema()
-                    .indexFor(new RelationshipType[0])
-                    .on(propertyKey)
-                    .withIndexType(IndexType.FULLTEXT)
-                    .create());
+            assertThatThrownBy(() -> tx.schema()
+                            .indexFor(new RelationshipType[0])
+                            .on(propertyKey)
+                            .withIndexType(IndexType.FULLTEXT)
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class);
             tx.commit();
         }
     }
@@ -1683,11 +1715,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void mustThrowWhenCreatingRangeIndexOnZeroRelationshipTypes() {
         try (Transaction tx = db.beginTx()) {
-            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> tx.schema()
-                    .indexFor(new RelationshipType[0])
-                    .on(propertyKey)
-                    .create());
-            assertThat(e)
+
+            assertThatThrownBy(() -> tx.schema()
+                            .indexFor(new RelationshipType[0])
+                            .on(propertyKey)
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining(
                             "RANGE indexes can only be created with exactly one relationship type, but got no relationship types.");
             tx.commit();
@@ -1697,11 +1730,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void mustThrowWhenCreatingRangeIndexOnMultipleRelationshipTypes() {
         try (Transaction tx = db.beginTx()) {
-            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> tx.schema()
-                    .indexFor(relType, otherRelType)
-                    .on(propertyKey)
-                    .create());
-            assertThat(e)
+            assertThatThrownBy(() -> tx.schema()
+                            .indexFor(relType, otherRelType)
+                            .on(propertyKey)
+                            .create())
+                    .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining(
                             "RANGE indexes can only be created with exactly one relationship type, but got 2 relationship types.");
             tx.commit();
@@ -1730,22 +1763,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void creatingUniquenessConstraintWithFullTextIndexTypeMustThrow() {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator creator = tx.schema()
+            ConstraintCreator constraintCreator = tx.schema()
                     .constraintFor(label)
                     .assertPropertyIsUnique(propertyKey)
                     .withIndexType(FULLTEXT);
-            assertThrows(IllegalArgumentException.class, creator::create);
+            assertThatThrownBy(constraintCreator::create).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
     @Test
     void creatingNodePropertyExistenceConstraintMustThrowWhenGivenIndexType() {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator creator = tx.schema()
+            ConstraintCreator constraintCreator = tx.schema()
                     .constraintFor(label)
                     .assertPropertyExists(propertyKey)
                     .withIndexType(RANGE);
-            assertThrows(IllegalArgumentException.class, creator::create);
+            assertThatThrownBy(constraintCreator::create).isInstanceOf(IllegalArgumentException.class);
             tx.commit();
         }
     }
@@ -1753,11 +1786,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void creatingRelationshipPropertyExistenceConstraintsMustThrowWhenGivenIndexType() {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator creator = tx.schema()
+            ConstraintCreator constraintCreator = tx.schema()
                     .constraintFor(relType)
                     .assertPropertyExists(propertyKey)
                     .withIndexType(RANGE);
-            assertThrows(IllegalArgumentException.class, creator::create);
+            assertThatThrownBy(constraintCreator::create).isInstanceOf(IllegalArgumentException.class);
             tx.commit();
         }
     }
@@ -1771,23 +1804,25 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
                     .assertPropertyIsUnique(propertyKey)
                     .withIndexConfiguration(Map.of(
                             IndexSettingImpl.SPATIAL_CARTESIAN_MAX,
-                            new double[] {200.0, 200.0},
+                            TEST_ARRAY1,
                             IndexSettingImpl.SPATIAL_WGS84_MIN,
-                            new double[] {-90.0, -90.0}))
+                            TEST_ARRAY2))
                     .create();
             IndexDefinition index = getIndex(tx, constraint.getName());
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertArrayEquals(
-                    new double[] {200.0, 200.0}, (double[]) config.get(IndexSettingImpl.SPATIAL_CARTESIAN_MAX));
-            assertArrayEquals(new double[] {-90.0, -90.0}, (double[]) config.get(IndexSettingImpl.SPATIAL_WGS84_MIN));
+            assertThat((double[]) config.get(IndexSettingImpl.SPATIAL_CARTESIAN_MAX))
+                    .isEqualTo(TEST_ARRAY1);
+            assertThat((double[]) config.get(IndexSettingImpl.SPATIAL_WGS84_MIN))
+                    .isEqualTo(TEST_ARRAY2);
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
             IndexDefinition index = getIndex(tx, "my constraint");
             Map<IndexSetting, Object> config = index.getIndexConfiguration();
-            assertArrayEquals(
-                    new double[] {200.0, 200.0}, (double[]) config.get(IndexSettingImpl.SPATIAL_CARTESIAN_MAX));
-            assertArrayEquals(new double[] {-90.0, -90.0}, (double[]) config.get(IndexSettingImpl.SPATIAL_WGS84_MIN));
+            assertThat((double[]) config.get(IndexSettingImpl.SPATIAL_CARTESIAN_MAX))
+                    .isEqualTo(TEST_ARRAY1);
+            assertThat((double[]) config.get(IndexSettingImpl.SPATIAL_WGS84_MIN))
+                    .isEqualTo(TEST_ARRAY2);
             tx.commit();
         }
     }
@@ -1795,11 +1830,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void creatingNodePropertyExistenceConstraintMustThrowWhenGivenIndexConfiguration() {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator creator = tx.schema()
+            ConstraintCreator constraintCreator = tx.schema()
                     .constraintFor(label)
                     .withIndexConfiguration(Map.of())
                     .assertPropertyExists(propertyKey);
-            assertThrows(IllegalArgumentException.class, creator::create);
+            assertThatThrownBy(constraintCreator::create).isInstanceOf(IllegalArgumentException.class);
             tx.commit();
         }
     }
@@ -1807,11 +1842,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void creatingRelationshipPropertyExistenceConstraintMustThrowWhenGivenIndexConfiguration() {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator creator = tx.schema()
+            ConstraintCreator constraintCreator = tx.schema()
                     .constraintFor(relType)
                     .withIndexConfiguration(Map.of())
                     .assertPropertyExists(propertyKey);
-            assertThrows(IllegalArgumentException.class, creator::create);
+            assertThatThrownBy(constraintCreator::create).isInstanceOf(IllegalArgumentException.class);
             tx.commit();
         }
     }
@@ -1907,8 +1942,8 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // Then
         try (Transaction tx = db.beginTx()) {
             assertThat(count(tx.schema().getIndexes())).isEqualTo(0);
-            assertThrows(NotFoundException.class, () -> getIndexState(tx, indexA));
-            assertThrows(NotFoundException.class, () -> getIndexState(tx, indexB));
+            assertThatThrownBy(() -> getIndexState(tx, indexA)).isInstanceOf(NotFoundException.class);
+            assertThatThrownBy(() -> getIndexState(tx, indexB)).isInstanceOf(NotFoundException.class);
             tx.commit();
         }
     }
@@ -1917,14 +1952,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     void implicitRollbackTxOnConflictOnFirstIndexCreation() {
         // Given
         IndexDefinition oldIndexA = createIndex(db, nameA, label, propertyKey);
-
-        assertThrows(ConstraintViolationException.class, () -> {
-            try (Transaction tx = db.beginTx()) {
-                tx.schema().indexFor(label).on(propertyKey).withName(nameA).create();
-                tx.schema().indexFor(otherLabel).on(propertyKey).withName(nameB).create();
-                tx.commit();
-            }
-        });
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.schema()
+                                .indexFor(label)
+                                .on(propertyKey)
+                                .withName(nameA)
+                                .create();
+                        tx.schema()
+                                .indexFor(otherLabel)
+                                .on(propertyKey)
+                                .withName(nameB)
+                                .create();
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(ConstraintViolationException.class);
         waitForIndexes(db);
 
         // Then
@@ -1939,14 +1982,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     void implicitRollbackTxOnConflictOnSecondIndexCreation() {
         // Given
         IndexDefinition oldIndexB = createIndex(db, nameB, otherLabel, propertyKey);
-
-        assertThrows(ConstraintViolationException.class, () -> {
-            try (Transaction tx = db.beginTx()) {
-                tx.schema().indexFor(label).on(propertyKey).withName(nameA).create();
-                tx.schema().indexFor(otherLabel).on(propertyKey).withName(nameB).create();
-                tx.commit();
-            }
-        });
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.schema()
+                                .indexFor(label)
+                                .on(propertyKey)
+                                .withName(nameA)
+                                .create();
+                        tx.schema()
+                                .indexFor(otherLabel)
+                                .on(propertyKey)
+                                .withName(nameB)
+                                .create();
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(ConstraintViolationException.class);
         waitForIndexes(db);
 
         // Then
@@ -1970,7 +2021,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // Then
         try (Transaction tx = db.beginTx()) {
             assertThat(count(tx.schema().getIndexes())).isEqualTo(0);
-            assertThrows(NotFoundException.class, () -> getIndexState(tx, indexA));
+            assertThatThrownBy(() -> getIndexState(tx, indexA)).isInstanceOf(NotFoundException.class);
             tx.commit();
         }
     }
@@ -1989,7 +2040,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // Then
         try (Transaction tx = db.beginTx()) {
             assertThat(count(tx.schema().getIndexes())).isEqualTo(1);
-            assertThrows(NotFoundException.class, () -> getIndexState(tx, oldIndexA));
+            assertThatThrownBy(() -> getIndexState(tx, oldIndexA)).isInstanceOf(NotFoundException.class);
             assertThat(getIndexState(tx, indexA)).isEqualTo(ONLINE);
             tx.commit();
         }
@@ -2017,7 +2068,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         }
 
         // Then
-        assertThrows(IllegalStateException.class, () -> waitForIndexes(db));
+        assertThatThrownBy(() -> waitForIndexes(db)).isInstanceOf(IllegalStateException.class);
         waitForIndex(db, indexB);
         try (Transaction tx = db.beginTx()) {
             assertThat(count(tx.schema().getIndexes())).isEqualTo(2);
@@ -2048,7 +2099,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         }
 
         // Then the index ends up in failed state
-        assertThrows(IllegalStateException.class, () -> waitForIndexes(db));
+        assertThatThrownBy(() -> waitForIndexes(db)).isInstanceOf(IllegalStateException.class);
         try (Transaction tx = db.beginTx()) {
             assertThat(count(tx.schema().getIndexes())).isEqualTo(1);
             assertThat(getIndexState(tx, indexA)).isEqualTo(FAILED);
@@ -2058,10 +2109,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         // but it should still be possible to find entities (without trying to use the index and getting exceptions)
         try (Transaction tx = db.beginTx();
                 ResourceIterator<Node> nodes = tx.findNodes(label, propertyKey, "somevalue")) {
-            assertThat(nodes.hasNext()).isTrue();
+            assertThat(nodes).hasNext();
             assertThat(nodes.next().getElementId()).isEqualTo(expectedNode);
-            assertThat(nodes.hasNext()).isFalse();
-            nodes.close();
+            assertThat(nodes).isExhausted();
         }
     }
 
@@ -2119,22 +2169,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             tx.createNode(label).setProperty(propertyKey, tooLargeString());
             tx.commit();
         }
-
-        assertThrows(ConstraintViolationException.class, () -> {
-            try (Transaction tx = db.beginTx()) {
-                tx.schema()
-                        .constraintFor(label)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameA)
-                        .create();
-                tx.schema()
-                        .constraintFor(otherLabel)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameB)
-                        .create();
-                tx.commit();
-            }
-        });
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.schema()
+                                .constraintFor(label)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameA)
+                                .create();
+                        tx.schema()
+                                .constraintFor(otherLabel)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameB)
+                                .create();
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(ConstraintViolationException.class);
 
         try (Transaction tx = db.beginTx()) {
             assertThat(count(tx.schema().getConstraints())).isEqualTo(0);
@@ -2151,21 +2201,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             tx.commit();
         }
 
-        assertThrows(ConstraintViolationException.class, () -> {
-            try (Transaction tx = db.beginTx()) {
-                tx.schema()
-                        .constraintFor(label)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameA)
-                        .create();
-                tx.schema()
-                        .constraintFor(otherLabel)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameB)
-                        .create();
-                tx.commit();
-            }
-        });
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.schema()
+                                .constraintFor(label)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameA)
+                                .create();
+                        tx.schema()
+                                .constraintFor(otherLabel)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameB)
+                                .create();
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(ConstraintViolationException.class);
 
         try (Transaction tx = db.beginTx()) {
             assertThat(count(tx.schema().getConstraints())).isEqualTo(0);
@@ -2183,21 +2234,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             tx.commit();
         }
 
-        assertThrows(ConstraintViolationException.class, () -> {
-            try (Transaction tx = db.beginTx()) {
-                tx.schema()
-                        .constraintFor(label)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameA)
-                        .create();
-                tx.schema()
-                        .constraintFor(otherLabel)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameB)
-                        .create();
-                tx.commit();
-            }
-        });
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.schema()
+                                .constraintFor(label)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameA)
+                                .create();
+                        tx.schema()
+                                .constraintFor(otherLabel)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameB)
+                                .create();
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(ConstraintViolationException.class);
 
         try (Transaction tx = db.beginTx()) {
             assertThat(count(tx.schema().getConstraints())).isEqualTo(0);
@@ -2214,22 +2266,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             tx.createNode(otherLabel).setProperty(propertyKey, "Non-unique string");
             tx.commit();
         }
-
-        assertThrows(ConstraintViolationException.class, () -> {
-            try (Transaction tx = db.beginTx()) {
-                tx.schema()
-                        .constraintFor(label)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameA)
-                        .create();
-                tx.schema()
-                        .constraintFor(otherLabel)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameB)
-                        .create();
-                tx.commit();
-            }
-        });
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.schema()
+                                .constraintFor(label)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameA)
+                                .create();
+                        tx.schema()
+                                .constraintFor(otherLabel)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameB)
+                                .create();
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(ConstraintViolationException.class);
 
         try (Transaction tx = db.beginTx()) {
             assertThat(count(tx.schema().getConstraints())).isEqualTo(0);
@@ -2251,21 +2303,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         }
 
         // When
-        assertThrows(ConstraintViolationException.class, () -> {
-            try (Transaction tx = db.beginTx()) {
-                tx.schema()
-                        .constraintFor(label)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameA)
-                        .create();
-                tx.schema()
-                        .constraintFor(otherLabel)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameB)
-                        .create();
-                tx.commit();
-            }
-        });
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.schema()
+                                .constraintFor(label)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameA)
+                                .create();
+                        tx.schema()
+                                .constraintFor(otherLabel)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameB)
+                                .create();
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(ConstraintViolationException.class);
 
         // Then
         try (Transaction tx = db.beginTx()) {
@@ -2288,21 +2341,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         }
 
         // When
-        assertThrows(ConstraintViolationException.class, () -> {
-            try (Transaction tx = db.beginTx()) {
-                tx.schema()
-                        .constraintFor(label)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameA)
-                        .create();
-                tx.schema()
-                        .constraintFor(otherLabel)
-                        .assertPropertyIsUnique(propertyKey)
-                        .withName(nameB)
-                        .create();
-                tx.commit();
-            }
-        });
+        assertThatThrownBy(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        tx.schema()
+                                .constraintFor(label)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameA)
+                                .create();
+                        tx.schema()
+                                .constraintFor(otherLabel)
+                                .assertPropertyIsUnique(propertyKey)
+                                .withName(nameB)
+                                .create();
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(ConstraintViolationException.class);
 
         // Then
         try (Transaction tx = db.beginTx()) {
@@ -2419,17 +2473,18 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         }
 
         Future<Object> constraintCreation = otherThread.execute(() -> {
-            assertThrows(TransactionTerminatedException.class, () -> {
-                try (Transaction tx = db.beginTx()) {
-                    ((TransactionImpl) tx).setMetaData(Map.of("terminateMe", true));
-                    tx.schema()
-                            .constraintFor(x)
-                            .assertPropertyIsUnique("x")
-                            .withName("hej")
-                            .create();
-                    tx.commit();
-                }
-            });
+            assertThatThrownBy(() -> {
+                        try (Transaction tx = db.beginTx()) {
+                            ((TransactionImpl) tx).setMetaData(Map.of("terminateMe", true));
+                            tx.schema()
+                                    .constraintFor(x)
+                                    .assertPropertyIsUnique("x")
+                                    .withName("hej")
+                                    .create();
+                            tx.commit();
+                        }
+                    })
+                    .isInstanceOf(TransactionTerminatedException.class);
             return null;
         });
 
@@ -2447,7 +2502,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             assertThat(Iterables.count(tx.schema().getConstraints())).isEqualTo(0);
             assertThat(Iterables.count(tx.schema().getIndexes())).isEqualTo(0);
         }
-        assertFalse(fs.fileExists(indexDir.get()));
+        assertThat(fs.fileExists(indexDir.get())).isFalse();
     }
 
     /**
@@ -2516,27 +2571,29 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         }
         // and we cannot drop the constraint because it was never created
         {
-            QueryExecutionException e = assertThrows(QueryExecutionException.class, () -> {
-                try (Transaction tx = db.beginTx()) {
-                    tx.execute("DROP CONSTRAINT `" + nameA + "`");
-                    tx.commit();
-                }
-            });
-            assertThat(e).hasRootCauseInstanceOf(NoSuchConstraintException.class);
+            assertThatThrownBy(() -> {
+                        try (Transaction tx = db.beginTx()) {
+                            tx.execute("DROP CONSTRAINT `" + nameA + "`");
+                            tx.commit();
+                        }
+                    })
+                    .isInstanceOf(QueryExecutionException.class)
+                    .hasRootCauseInstanceOf(NoSuchConstraintException.class);
         }
         // and we cannot re-create the constraint because index is blocking us
         {
-            ConstraintViolationException e = assertThrows(ConstraintViolationException.class, () -> {
-                try (Transaction tx = db.beginTx()) {
-                    tx.schema()
-                            .constraintFor(label)
-                            .assertPropertyIsUnique(propertyKey)
-                            .withName(nameA)
-                            .create();
-                    tx.commit();
-                }
-            });
-            assertThat(e).hasRootCauseInstanceOf(IndexWithNameAlreadyExistsException.class);
+            assertThatThrownBy(() -> {
+                        try (Transaction tx = db.beginTx()) {
+                            tx.schema()
+                                    .constraintFor(label)
+                                    .assertPropertyIsUnique(propertyKey)
+                                    .withName(nameA)
+                                    .create();
+                            tx.commit();
+                        }
+                    })
+                    .isInstanceOf(ConstraintViolationException.class)
+                    .hasRootCauseInstanceOf(IndexWithNameAlreadyExistsException.class);
         }
 
         // When
@@ -2584,7 +2641,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     }
 
     private static String alreadyExistsIndexMessage(String indexName) {
-        return "There already exists an index called '" + indexName + "'";
+        return "There already exists an index called '" + indexName + "'.";
     }
 
     private static String thereAlreadyExistsConstraintMessage(String constraintName) {
@@ -2715,11 +2772,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             firstFuture.get();
             secondFuture.get();
             try (Transaction tx = db.beginTx()) {
-                assertFalse(tx.schema().getConstraints().iterator().hasNext());
-                Iterator<IndexDefinition> indexes = tx.schema().getIndexes().iterator();
-                assertTrue(indexes.hasNext());
-                assertEquals(indexes.next().getName(), schemaName);
-                assertFalse(indexes.hasNext());
+                assertThat(tx.schema().getConstraints()).isEmpty();
+                final var indexes = tx.schema().getIndexes().iterator();
+                assertThat(indexes).hasNext();
+                assertThat(indexes.next().getName()).isEqualTo(schemaName);
+                assertThat(indexes).isExhausted();
                 tx.commit();
             }
         }
@@ -2851,14 +2908,14 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
 
     private ConstraintDefinition createUniquenessConstraint(String name, Label label, String... properties) {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator creator = tx.schema().constraintFor(label);
+            ConstraintCreator constraintCreator = tx.schema().constraintFor(label);
 
             for (String property : properties) {
-                creator = creator.assertPropertyIsUnique(property);
+                constraintCreator = constraintCreator.assertPropertyIsUnique(property);
             }
 
-            creator = creator.withName(name);
-            ConstraintDefinition constraint = creator.create();
+            constraintCreator = constraintCreator.withName(name);
+            ConstraintDefinition constraint = constraintCreator.create();
             tx.commit();
             return constraint;
         }
@@ -2871,14 +2928,14 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     private ConstraintDefinition createRelUniquenessConstraint(
             String name, RelationshipType type, String... properties) {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator creator = tx.schema().constraintFor(type);
+            ConstraintCreator constraintCreator = tx.schema().constraintFor(type);
 
             for (String property : properties) {
-                creator = creator.assertPropertyIsUnique(property);
+                constraintCreator = constraintCreator.assertPropertyIsUnique(property);
             }
 
-            creator = creator.withName(name);
-            ConstraintDefinition constraint = creator.create();
+            constraintCreator = constraintCreator.withName(name);
+            ConstraintDefinition constraint = constraintCreator.create();
             tx.commit();
             return constraint;
         }
@@ -2956,11 +3013,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     public static IndexDefinition createIndex(GraphDatabaseService db, AnyTokens tokens, String name) {
         IndexDefinition index;
         try (var tx = db.beginTx()) {
-            IndexCreator creator = tx.schema().indexFor(tokens);
+            IndexCreator indexCreator = tx.schema().indexFor(tokens);
             if (name != null) {
-                creator = creator.withName(name);
+                indexCreator = indexCreator.withName(name);
             }
-            index = creator.create();
+            index = indexCreator.create();
             tx.commit();
         }
         waitForIndex(db, index);
