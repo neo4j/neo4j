@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.input.csv;
 import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.internal.batchimport.input.Group;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 /**
  * Contains logic around a single or multiple :ID columns, the combined value and also which parts are stored
@@ -64,7 +65,7 @@ class IdValueBuilder {
     }
 
     Iterable<Part> idPropertyValues() {
-        return parts.stream().filter(p -> p.name != null).toList();
+        return Iterables.filter(p -> p.name != null, parts);
     }
 
     boolean isEmpty() {
