@@ -182,11 +182,11 @@ public class ImportLogic implements Closeable {
                 log,
                 databaseName);
         // Some temporary caches and indexes in the import
-        idMapper = instantiateIdMapper(input);
-        nodeRelationshipCache = new NodeRelationshipCache(
-                numberArrayFactory, dbConfig.get(GraphDatabaseSettings.dense_node_threshold), memoryTracker);
         Input.Estimates inputEstimates =
                 input.calculateEstimates(neoStore.getPropertyStore().newValueEncodedSizeCalculator());
+        idMapper = instantiateIdMapper(input, inputEstimates);
+        nodeRelationshipCache = new NodeRelationshipCache(
+                numberArrayFactory, dbConfig.get(GraphDatabaseSettings.dense_node_threshold), memoryTracker);
 
         // Sanity checking against estimates
         new EstimationSanityChecker(recordFormats, monitor).sanityCheck(inputEstimates);
@@ -209,11 +209,12 @@ public class ImportLogic implements Closeable {
         executionMonitor.initialize(dependencies);
     }
 
-    protected IdMapper instantiateIdMapper(Input input) {
+    protected IdMapper instantiateIdMapper(Input input, Input.Estimates inputEstimates) {
+        var estimatedNumNodes = inputEstimates.numberOfNodes();
         return switch (input.idType()) {
             case STRING -> IdMappers.strings(
-                    numberArrayFactory, input.groups(), config.strictNodeCheck(), memoryTracker);
-            case INTEGER -> IdMappers.longs(numberArrayFactory, input.groups(), memoryTracker);
+                    numberArrayFactory, input.groups(), config.strictNodeCheck(), memoryTracker, estimatedNumNodes);
+            case INTEGER -> IdMappers.longs(numberArrayFactory, input.groups(), memoryTracker, estimatedNumNodes);
             case ACTUAL -> IdMappers.actual();
         };
     }

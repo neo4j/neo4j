@@ -24,7 +24,6 @@ import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.eclipse.collections.impl.tuple.primitive.PrimitiveTuples.pair;
-import static org.neo4j.internal.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,8 +95,6 @@ import org.neo4j.util.concurrent.Futures;
  *       input ids will be encoded into the same eId. These are called collisions.
  */
 public class EncodingIdMapper implements IdMapper {
-    private static final String IMPORT_COLLISION_INFO_TAG = "importCollisionInfo";
-
     public interface Monitor {
         /**
          * Called when mapper is starting to prepare, including the sorting.
@@ -122,7 +119,7 @@ public class EncodingIdMapper implements IdMapper {
     // where the 7 most significant bits in that byte denotes length of original string.
     // See StringEncoder.
     private static final long COLLISION_BIT = 1L << 56;
-    private static final int DEFAULT_CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
+    public static final int DEFAULT_CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
     private static final int COLLISION_ENTRY_SIZE = 5 /*nodeId*/ + 6 /*offset*/;
     // Using 0 as gap value, i.e. value for a node not having an id, i.e. not present in dataCache is safe
     // because the current set of Encoder implementations will always set some amount of bits higher up in
@@ -174,31 +171,6 @@ public class EncodingIdMapper implements IdMapper {
     private CollisionValues collisionValues;
 
     public EncodingIdMapper(
-            NumberArrayFactory cacheFactory,
-            Encoder encoder,
-            boolean strictNodeCheck,
-            Factory<Radix> radixFactory,
-            Monitor monitor,
-            TrackerFactory trackerFactory,
-            ReadableGroups groups,
-            LongFunction<CollisionValues> collisionValuesFactory,
-            MemoryTracker memoryTracker) {
-        this(
-                cacheFactory,
-                encoder,
-                strictNodeCheck,
-                radixFactory,
-                monitor,
-                trackerFactory,
-                groups,
-                collisionValuesFactory,
-                DEFAULT_CACHE_CHUNK_SIZE,
-                Runtime.getRuntime().availableProcessors() - 1,
-                DEFAULT,
-                memoryTracker);
-    }
-
-    EncodingIdMapper(
             NumberArrayFactory cacheFactory,
             Encoder encoder,
             boolean strictNodeCheck,
@@ -943,5 +915,9 @@ public class EncodingIdMapper implements IdMapper {
                 return false;
             }
         };
+    }
+
+    public static int defaultNumberOfSortWorkers() {
+        return Runtime.getRuntime().availableProcessors() - 1;
     }
 }

@@ -21,6 +21,8 @@ package org.neo4j.internal.batchimport.cache.idmapping;
 
 import static org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
 import static org.neo4j.internal.batchimport.cache.idmapping.string.TrackerFactories.dynamic;
+import static org.neo4j.internal.helpers.MathUtil.clamp;
+import static org.neo4j.io.ByteUnit.gibiBytes;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
@@ -30,6 +32,7 @@ import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
 import org.neo4j.internal.batchimport.cache.idmapping.string.LongCollisionValues;
 import org.neo4j.internal.batchimport.cache.idmapping.string.LongEncoder;
+import org.neo4j.internal.batchimport.cache.idmapping.string.ParallelSort;
 import org.neo4j.internal.batchimport.cache.idmapping.string.Radix;
 import org.neo4j.internal.batchimport.cache.idmapping.string.StringCollisionValues;
 import org.neo4j.internal.batchimport.cache.idmapping.string.StringEncoder;
@@ -118,7 +121,8 @@ public class IdMappers {
             NumberArrayFactory cacheFactory,
             ReadableGroups groups,
             boolean strictNodeCheck,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            long estimatedNumberOfNodes) {
         return new EncodingIdMapper(
                 cacheFactory,
                 new StringEncoder(),
@@ -128,6 +132,9 @@ public class IdMappers {
                 dynamic(memoryTracker),
                 groups,
                 numberOfCollisions -> new StringCollisionValues(cacheFactory, numberOfCollisions, memoryTracker),
+                goodChunkSize(estimatedNumberOfNodes),
+                EncodingIdMapper.defaultNumberOfSortWorkers(),
+                ParallelSort.DEFAULT,
                 memoryTracker);
     }
 
@@ -139,7 +146,11 @@ public class IdMappers {
      * @param memoryTracker underlying buffers allocation memory tracker
      * @return {@link IdMapper} for when input ids are numbers.
      */
-    public static IdMapper longs(NumberArrayFactory cacheFactory, ReadableGroups groups, MemoryTracker memoryTracker) {
+    public static IdMapper longs(
+            NumberArrayFactory cacheFactory,
+            ReadableGroups groups,
+            MemoryTracker memoryTracker,
+            long estimatedNumberOfNodes) {
         return new EncodingIdMapper(
                 cacheFactory,
                 new LongEncoder(),
@@ -149,6 +160,14 @@ public class IdMappers {
                 dynamic(memoryTracker),
                 groups,
                 numberOfCollisions -> new LongCollisionValues(cacheFactory, numberOfCollisions, memoryTracker),
+                goodChunkSize(estimatedNumberOfNodes),
+                EncodingIdMapper.defaultNumberOfSortWorkers(),
+                ParallelSort.DEFAULT,
                 memoryTracker);
+    }
+
+    private static int goodChunkSize(long estimatedNumberOfNodes) {
+        return (int) clamp(
+                estimatedNumberOfNodes / 100, EncodingIdMapper.DEFAULT_CACHE_CHUNK_SIZE, gibiBytes(1) / Long.BYTES);
     }
 }
