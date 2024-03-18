@@ -521,7 +521,7 @@ case object CypherStatefulShortestPlanningModeOption
   case object allIfPossible extends CypherStatefulShortestPlanningModeOption("all_if_possible")
   case object cardinalityHeuristic extends CypherStatefulShortestPlanningModeOption("cardinality_heuristic")
 
-  override def default: CypherStatefulShortestPlanningModeOption = intoOnly
+  override def default: CypherStatefulShortestPlanningModeOption = cardinalityHeuristic
 
   def values: Set[CypherStatefulShortestPlanningModeOption] = Set(intoOnly, allIfPossible, cardinalityHeuristic)
 

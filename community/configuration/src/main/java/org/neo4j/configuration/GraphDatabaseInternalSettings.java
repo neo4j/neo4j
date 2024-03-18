@@ -238,7 +238,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<StatefulShortestPlanningMode> stateful_shortest_planning_mode = newBuilder(
                     "internal.cypher.stateful_shortest_planning_mode",
                     ofEnum(StatefulShortestPlanningMode.class),
-                    StatefulShortestPlanningMode.INTO_ONLY)
+                    StatefulShortestPlanningMode.CARDINALITY_HEURISTIC)
             .build();
 
     @Internal
