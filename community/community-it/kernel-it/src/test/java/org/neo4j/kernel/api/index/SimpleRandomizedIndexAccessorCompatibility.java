@@ -97,11 +97,11 @@ abstract class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorC
                         updates.add(add(id, descriptor, value));
                     } else if (type == 1) { // update
                         ValueAndId existing = random.among(sortedValues.toArray(new ValueAndId[0]));
-                        sortedValues.remove(existing);
                         Value newValue = generateUniqueRandomValue(types, uniqueValues);
                         if (newValue == null) {
                             continue;
                         }
+                        sortedValues.remove(existing);
                         uniqueValues.remove(existing.value);
                         sortedValues.add(new ValueAndId(newValue, existing.id));
                         updates.add(change(existing.id, descriptor, existing.value, newValue));
