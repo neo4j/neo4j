@@ -614,6 +614,19 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
     )
   }
 
+  test("addAlias on existing slot should insert a DuplicatedSlot") {
+
+    val slots = SlotConfiguration.empty
+
+    slots.newLong("x", nullable = false, CTNode)
+    slots.newLong("y", nullable = false, CTNode)
+    slots.addAlias("x", "y")
+
+    slots.getLongOffsetFor("x") shouldBe 1
+    slots.getLongOffsetFor("y") shouldBe 1
+    slots.hasDuplicateSlot("x", 0) shouldBe true
+  }
+
   private def cachedPropertiesTest(
     slots: SlotConfiguration,
     expected: (ASTCachedProperty.RuntimeKey, RefSlot)*

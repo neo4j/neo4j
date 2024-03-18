@@ -75,7 +75,7 @@ object SlotConfiguration {
   sealed trait SlotKey
   case class VariableSlotKey(name: String) extends SlotKey
   case class CachedPropertySlotKey(property: ASTCachedProperty.RuntimeKey) extends SlotKey
-  case class DuplicatedSlotKey(property: ASTCachedProperty.RuntimeKey, refSlotId: Int) extends SlotKey
+  case class DuplicatedSlotKey(name: String, slotId: Int) extends SlotKey
   case class ApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
   case class OuterNestedApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
   case class MetaDataSlotKey(name: String, planId: Id) extends SlotKey
@@ -136,11 +136,23 @@ class SlotConfiguration private (
     require(!finalized)
     val slot = slots.getOrElse(
       VariableSlotKey(existingKey),
-      throw new SlotAllocationFailed(s"Tried to alias non-existing slot '$existingKey'  with alias '$newKey'")
+      throw new SlotAllocationFailed(s"Tried to alias non-existing slot '$existingKey' with alias '$newKey'")
     )
     markNotDiscarded(slot)
-    slots.put(VariableSlotKey(newKey), slot)
+    val maybeOldSlot = slots.put(VariableSlotKey(newKey), slot)
     slotAliases.addBinding(rootKey(existingKey), newKey)
+
+    // In case the new alias replaces an existing slot and moves it to a new slot offset
+    // we also need to preserve the old slot offset to make sure we can use Arraycopy in CartesianProduct.
+    // The old slot will never be read again but the slot offsets must be a continuous series to
+    // avoid off-by-one or ArrayIndexOutOfBoundsException errors.
+    // See {@link SlotConfiguration.newCachedProperty()} for more details.
+    maybeOldSlot.foreach(oldSlot => {
+      if (!slots.exists { case (_, slot) => slot.offset == oldSlot.offset && slot.isLongSlot == oldSlot.isLongSlot }) {
+        slots.put(DuplicatedSlotKey(newKey, oldSlot.offset), oldSlot.asNullable)
+        slotAliases.remove(newKey)
+      }
+    })
 
     this
   }
@@ -344,7 +356,7 @@ class SlotConfiguration private (
           // a placeholder for the additional slot. We can then simply copy the cached property into that position together with all
           // the other slots. We won't read it ever again from that array position, we will rather read the duplicate that exists at some other position
           // in the row.
-          newDuplicatedSlot(key)
+          newDuplicatedRefSlot(key.asCanonicalStringVal)
         }
 
       case None =>
@@ -355,13 +367,23 @@ class SlotConfiguration private (
     this
   }
 
-  private def newDuplicatedSlot(property: ASTCachedProperty.RuntimeKey): SlotConfiguration = {
+  def newDuplicatedRefSlot(name: String, typ: CypherType = CTAny): SlotConfiguration = {
     require(!finalized)
     slots.put(
-      DuplicatedSlotKey(property, numberOfReferences),
-      RefSlot(numberOfReferences, nullable = false, typ = CTAny)
+      DuplicatedSlotKey(name, numberOfReferences),
+      RefSlot(numberOfReferences, nullable = true, typ)
     )
     numberOfReferences = numberOfReferences + 1
+    this
+  }
+
+  def newDuplicatedLongSlot(originalName: String, typ: CypherType = CTAny): SlotConfiguration = {
+    require(!finalized)
+    slots.put(
+      DuplicatedSlotKey(originalName, numberOfLongs),
+      LongSlot(numberOfLongs, nullable = true, typ)
+    )
+    numberOfLongs = numberOfLongs + 1
     this
   }
 
@@ -560,7 +582,9 @@ class SlotConfiguration private (
           }
         case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
           other.newCachedProperty(key, shouldDuplicate = true)
-        case SlotWithKeyAndAliases(DuplicatedSlotKey(key, _), _, _)     => other.newDuplicatedSlot(key)
+        case SlotWithKeyAndAliases(DuplicatedSlotKey(key, _), slot, _) =>
+          if (slot.isLongSlot) other.newDuplicatedLongSlot(key)
+          else other.newDuplicatedRefSlot(key)
         case SlotWithKeyAndAliases(MetaDataSlotKey(key, id), _, _)      => other.newMetaData(key, id)
         case SlotWithKeyAndAliases(ApplyPlanSlotKey(applyPlanId), _, _) => other.newArgument(applyPlanId)
         case SlotWithKeyAndAliases(OuterNestedApplyPlanSlotKey(applyPlanId), _, _) =>
@@ -615,6 +639,8 @@ class SlotConfiguration private (
     s"slots=$slots)"
 
   def hasCachedPropertySlot(key: ASTCachedProperty.RuntimeKey): Boolean = slots.contains(CachedPropertySlotKey(key))
+
+  def hasDuplicateSlot(key: String, offset: Int): Boolean = slots.contains(DuplicatedSlotKey(key, offset))
 
   def getCachedPropertySlot(key: ASTCachedProperty.RuntimeKey): Option[RefSlot] =
     slots.get(CachedPropertySlotKey(key)).asInstanceOf[Option[RefSlot]]

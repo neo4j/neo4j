@@ -612,6 +612,188 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y1", "y2", "z").withRows(expectedResultRows)
   }
 
+  test("cartesian product with leftOuterHashJoin on RHS, with join-key as alias") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .cartesianProduct()
+      .|.leftOuterHashJoin("x")
+      .|.|.projection("y AS x")
+      .|.|.allNodeScan("y")
+      .|.allNodeScan("x")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
+  test("nested cartesian product with leftOuterHashJoin on RHS, with join-key as alias") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .cartesianProduct()
+      .|.cartesianProduct()
+      .|.|.leftOuterHashJoin("y")
+      .|.|.|.projection("x AS y")
+      .|.|.|.allNodeScan("x")
+      .|.|.allNodeScan("y")
+      .|.argument()
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
+  test("cartesian product with rightOuterHashJoin on RHS, with join-key as alias") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .cartesianProduct()
+      .|.rightOuterHashJoin("x")
+      .|.|.allNodeScan("x")
+      .|.projection("y AS x")
+      .|.allNodeScan("y")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
+  test("nested cartesian product with rightOuterHashJoin, with join-key as alias") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .cartesianProduct()
+      .|.cartesianProduct()
+      .|.|.rightOuterHashJoin("y")
+      .|.|.|.allNodeScan("y")
+      .|.|.projection("x AS y")
+      .|.|.allNodeScan("x")
+      .|.argument()
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
+  test("cartesian product with leftOuterHashJoin on RHS, with join-key as alias on both sides") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .cartesianProduct()
+      .|.leftOuterHashJoin("x")
+      .|.|.projection("y AS x")
+      .|.|.allNodeScan("y")
+      .|.projection("z as x")
+      .|.allNodeScan("z")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => Array(n, n, n))
+
+    result should beColumns("x", "y", "z").withRows(expected)
+  }
+
+  test("cartesian product with rightOuterHashJoin on RHS, with join-key as alias on both sides") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .cartesianProduct()
+      .|.rightOuterHashJoin("x")
+      .|.|.projection("y AS x")
+      .|.|.allNodeScan("y")
+      .|.projection("z as x")
+      .|.allNodeScan("z")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => Array(n, n, n))
+
+    result should beColumns("x", "y", "z").withRows(expected)
+  }
+
+  test("cartesian product with nodeHashJoin on RHS, with join-key as alias") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .cartesianProduct()
+      .|.nodeHashJoin("x")
+      .|.|.projection("y as x")
+      .|.|.allNodeScan("y")
+      .|.allNodeScan("x")
+      .argument()
+      .build()
+
+    val result = execute(query, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
+  test("cartesian product with valueHashJoin on RHS, with join-key as alias") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .cartesianProduct()
+      .|.valueHashJoin("x=x")
+      .|.|.projection("y as x")
+      .|.|.allNodeScan("y")
+      .|.allNodeScan("x")
+      .argument()
+      .build()
+
+    val result = execute(query, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
   test("should support join with cartesian product on RHS") {
     // given
     val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }

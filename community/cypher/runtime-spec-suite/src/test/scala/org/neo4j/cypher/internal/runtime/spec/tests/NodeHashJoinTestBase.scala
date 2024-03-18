@@ -1070,4 +1070,26 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     result should beColumns("x", "y", "z").withRows(expected)
   }
+
+  test("should join nested when join-key is alias on rhs") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .nodeHashJoin("x")
+      .|.nodeHashJoin("x")
+      .|.|.projection("y as x")
+      .|.|.allNodeScan("y")
+      .|.allNodeScan("x")
+      .allNodeScan("x")
+      .build()
+
+    val result = execute(query, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
 }

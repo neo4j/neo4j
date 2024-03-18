@@ -708,6 +708,28 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("y").withRows(expectedResultRows)
   }
 
+  test("nested joins, with join-key as alias") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .leftOuterHashJoin("x")
+      .|.leftOuterHashJoin("x")
+      .|.|.projection("y as x")
+      .|.|.allNodeScan("y")
+      .|.allNodeScan("x")
+      .allNodeScan("x")
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
   test("should discard columns") {
     assume(runtime.name != "interpreted")
 

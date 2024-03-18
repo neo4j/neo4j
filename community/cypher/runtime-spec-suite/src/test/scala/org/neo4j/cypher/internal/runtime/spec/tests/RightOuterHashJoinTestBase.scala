@@ -640,6 +640,28 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
+  test("nested joins, with join-key as alias") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .rightOuterHashJoin("x")
+      .|.rightOuterHashJoin("x")
+      .|.|.allNodeScan("x")
+      .|.projection("y as x")
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
   test("should discard columns") {
     assume(runtime.name != "interpreted")
 

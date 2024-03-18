@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.LOAD_CSV_METADA
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.DuplicatedSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.OuterNestedApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotWithKeyAndAliases
@@ -476,6 +477,9 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
             if (!isRefInitialized(thisOffset) || (getRefAtWithoutCheckingInitialized(thisOffset) eq Values.NO_VALUE)) {
               setRefAt(thisOffset, other.getRefAt(refSlot.offset))
             }
+
+          case (DuplicatedSlotKey(_, _), _) =>
+          // no op
         })
 
       case _ =>

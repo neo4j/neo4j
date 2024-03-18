@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -750,6 +751,137 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ).newLong("n" + N, false, CTNode)
 
     allocations(Xproduct.id) should equal(expectedPipelines)
+  }
+
+  test("cartesian product with joins, join-key as alias") {
+    // given
+    val lhs = Argument()
+    val scan = AllNodesScan(varFor("x"), Set.empty)
+    val projection = Projection(
+      source = AllNodesScan(varFor("y"), Set.empty),
+      projectExpressions = Map(varFor("x") -> varFor("y"))
+    )
+    val x = varFor("x")
+    val joins = Seq(
+      LeftOuterHashJoin(
+        nodes = Set(x),
+        left = scan,
+        right = projection
+      ),
+      RightOuterHashJoin(
+        nodes = Set(x),
+        left = projection,
+        right = scan
+      ),
+      NodeHashJoin(
+        nodes = Set(x),
+        left = scan,
+        right = projection
+      ),
+      ValueHashJoin(
+        left = scan,
+        right = projection,
+        join = Equals(x, x)(InputPosition.NONE)
+      )
+    )
+
+    for (join <- joins) {
+      withClue(s"operator[${join.getClass.getSimpleName}]:") {
+        val Xproduct = CartesianProduct(lhs, join)
+
+        // when
+        val allocations = allocateSlots(
+          Xproduct,
+          semanticTable,
+          breakFor(Xproduct),
+          NO_EXPR_VARS,
+          config,
+          new AnonymousVariableNameGenerator()
+        ).slotConfigurations
+
+        // then
+        allocations should have size 6
+        allocations(lhs.id) should equal(SlotConfiguration.empty)
+
+        val nullable = join.isInstanceOf[LeftOuterHashJoin] || join.isInstanceOf[RightOuterHashJoin]
+        allocations(join.id) should equal(SlotConfiguration.empty
+          .newDuplicatedLongSlot("x", CTNode)
+          .newLong("y", nullable, CTNode)
+          .addAlias("x", "y"))
+        allocations(Xproduct.id) should equal(SlotConfiguration.empty
+          .newDuplicatedLongSlot("x", CTAny)
+          .newLong("y", nullable, CTNode)
+          .addAlias("x", "y"))
+      }
+    }
+  }
+
+  test("nested joins with join-key as alias") {
+    val projection = Projection(
+      source = AllNodesScan(varFor("y"), Set.empty),
+      projectExpressions = Map(varFor("x") -> varFor("y"))
+    )
+    def scan = AllNodesScan(varFor("x"), Set.empty)
+    val x = varFor("x")
+    val joins = Seq(
+      LeftOuterHashJoin(
+        nodes = Set(x),
+        left = scan,
+        right = LeftOuterHashJoin(
+          nodes = Set(x),
+          left = scan,
+          right = projection
+        )
+      ),
+      RightOuterHashJoin(
+        nodes = Set(x),
+        left = RightOuterHashJoin(
+          nodes = Set(x),
+          left = projection,
+          right = scan
+        ),
+        right = scan
+      ),
+      NodeHashJoin(
+        nodes = Set(x),
+        left = scan,
+        right = NodeHashJoin(
+          nodes = Set(x),
+          left = scan,
+          right = projection
+        )
+      ),
+      ValueHashJoin(
+        left = scan,
+        right = ValueHashJoin(
+          left = scan,
+          right = projection,
+          join = Equals(x, x)(InputPosition.NONE)
+        ),
+        join = Equals(x, x)(InputPosition.NONE)
+      )
+    )
+
+    for (join <- joins) {
+      withClue(s"operator[${join.getClass.getSimpleName}]:") {
+        val allocations = allocateSlots(
+          join,
+          semanticTable,
+          breakFor(join),
+          NO_EXPR_VARS,
+          config,
+          new AnonymousVariableNameGenerator()
+        ).slotConfigurations
+
+        allocations should have size 6
+        val nullable = join.isInstanceOf[LeftOuterHashJoin] || join.isInstanceOf[RightOuterHashJoin]
+
+        allocations(join.id) should equal(SlotConfiguration.empty
+          .newDuplicatedLongSlot("x", CTNode)
+          .newLong("y", nullable, CTNode)
+          .addAlias("x", "y"))
+      }
+    }
   }
 
   test("node hash join I") {

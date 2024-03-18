@@ -2002,8 +2002,8 @@ class SlottedPipeMapper(
         case (VariableSlotKey(k), _) => lhsSlots.get(k).isDefined
         case (CachedPropertySlotKey(k), slot) =>
           slot.offset < argumentSize.nReferences && lhsSlots.hasCachedPropertySlot(k)
-        case (DuplicatedSlotKey(k, _), slot) =>
-          slot.offset < argumentSize.nReferences && lhsSlots.hasCachedPropertySlot(k)
+        case (DuplicatedSlotKey(k, offset), _) =>
+          lhsSlots.hasDuplicateSlot(k, offset)
         case (key: MetaDataSlotKey, slot) => slot.offset < argumentSize.nReferences && lhsSlots.hasMetaDataSlot(key)
         case (key: ApplyPlanSlotKey, _)   => throw new InternalException(s"Unexpected slot key $key")
         case (key: OuterNestedApplyPlanSlotKey, _) => throw new InternalException(s"Unexpected slot key $key")
@@ -2076,6 +2076,12 @@ class SlottedPipeMapper(
         throw new InternalException(s"Unexpected slot key $key")
       case SlotWithKeyAndAliases(key: OuterNestedApplyPlanSlotKey, _, _) =>
         throw new InternalException(s"Unexpected slot key $key")
+      case SlotWithKeyAndAliases(key: DuplicatedSlotKey, slot, _) =>
+        if (slot.isLongSlot && slot.offset < argumentSize.nLongs) {
+          lhsArgLongSlots += (key.toString -> slot)
+        } else if (!slot.isLongSlot && slot.offset < argumentSize.nReferences) {
+          lhsArgRefSlots += (key.toString -> slot)
+        }
     })
     rhsSlots.foreachSlotAndAliases({
       case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
@@ -2098,6 +2104,12 @@ class SlottedPipeMapper(
         throw new InternalException(s"Unexpected slot key $key")
       case SlotWithKeyAndAliases(key: OuterNestedApplyPlanSlotKey, _, _) =>
         throw new InternalException(s"Unexpected slot key $key")
+      case SlotWithKeyAndAliases(key: DuplicatedSlotKey, slot, _) =>
+        if (slot.isLongSlot && slot.offset < argumentSize.nLongs) {
+          lhsArgLongSlots += (key.toString -> slot)
+        } else if (!slot.isLongSlot && slot.offset < argumentSize.nReferences) {
+          lhsArgRefSlots += (key.toString -> slot)
+        }
     })
 
     def sameSlotsInOrder(a: ArrayBuffer[(String, Slot)], b: ArrayBuffer[(String, Slot)]): Boolean =
@@ -2169,6 +2181,7 @@ object SlottedPipeMapper {
       case SlotWithKeyAndAliases(_: VariableSlotKey, _, _)             => // do nothing, part of arguments
       case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _)            => // do nothing, part of arguments
       case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) => // do nothing, part of arguments
+      case SlotWithKeyAndAliases(_: DuplicatedSlotKey, _, _)           => // do nothing
       case SlotWithKeyAndAliases(CachedPropertySlotKey(cnp), _, _) =>
         val offset = fromSlots.getCachedPropertyOffsetFor(cnp)
         if (offset >= argumentSize.nReferences) {
@@ -2180,6 +2193,7 @@ object SlottedPipeMapper {
           val toOffset = toSlots.getMetaDataOffsetFor(key)
           slotMappings += SlotMapping(fromOffset, toOffset, fromIsLongSlot = false, toIsLongSlot = false)
         }
+
     })
 
     SlotMappings(slotMappings.result().toArray, cachedPropertyMappings.result().toArray)

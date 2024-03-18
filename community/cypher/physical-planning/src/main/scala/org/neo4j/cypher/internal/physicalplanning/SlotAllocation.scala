@@ -161,6 +161,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.SlotsAndArgumen
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.TRAIL_STATE_METADATA_KEY
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.DuplicatedSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.OuterNestedApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.Size
@@ -1041,7 +1042,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         recordArgument(lp)
         val result = breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans)
 
-        // Note, we can potentially carry discaded slots from lhs here to save memory
+        // Note, we can potentially carry discarded slots from lhs here to save memory
         lhs.foreachSlotAndAliasesOrdered {
           case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
             // If the column is one of the join columns there is no need to add it again
@@ -1061,6 +1062,12 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
           case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
           // apply plan slots are already in the argument, and don't have to be added here
+
+          case SlotWithKeyAndAliases(DuplicatedSlotKey(key, _), slot, _) =>
+            if (result.get(key).isEmpty) {
+              if (slot.isLongSlot) result.newDuplicatedLongSlot(key)
+              else result.newDuplicatedRefSlot(key)
+            }
         }
         result
 
@@ -1069,7 +1076,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         recordArgument(lp)
         val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans)
 
-        // Note, we can potentially carry discaded slots from rhs here to save memory
+        // Note, we can potentially carry discarded slots from rhs here to save memory
         rhs.foreachSlotAndAliasesOrdered {
           case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
             // If the column is one of the join columns there is no need to add it again
@@ -1089,6 +1096,12 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
           case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
           // apply plan slots are already in the argument, and don't have to be added here
+
+          case SlotWithKeyAndAliases(DuplicatedSlotKey(key, _), slot, _) =>
+            if (result.get(key).isEmpty) {
+              if (slot.isLongSlot) result.newDuplicatedLongSlot(key)
+              else result.newDuplicatedRefSlot(key)
+            }
         }
         result
 
@@ -1117,6 +1130,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
           case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
           // nested apply plan slots are already in the argument, and don't have to be added here
+          case SlotWithKeyAndAliases(DuplicatedSlotKey(key, _), slot, _) =>
+            if (result.get(key).isEmpty) {
+              if (slot.isLongSlot) result.newDuplicatedLongSlot(key)
+              else result.newDuplicatedRefSlot(key)
+            }
         }
         result
 
@@ -1141,6 +1159,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             // apply plan slots are already in the argument, and don't have to be added here
             case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
             // apply plan slots are already in the argument, and don't have to be added here
+            case SlotWithKeyAndAliases(DuplicatedSlotKey(key, _), slot, _) =>
+              if (result.get(key).isEmpty) {
+                if (slot.isLongSlot) result.newDuplicatedLongSlot(key)
+                else result.newDuplicatedRefSlot(key)
+              }
           },
           skipFirst = argument.argumentSize
         )
