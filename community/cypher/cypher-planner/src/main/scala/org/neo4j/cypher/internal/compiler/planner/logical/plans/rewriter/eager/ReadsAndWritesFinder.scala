@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.AbstractLetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractLetSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
@@ -212,7 +213,10 @@ object ReadsAndWritesFinder {
       copy(expression = compositeExpression)
     }
 
-    def mergeWith(other: FilterExpressions, mergePlan: LogicalBinaryPlan): FilterExpressions = {
+    def mergeWith(
+      other: FilterExpressions,
+      mergePlan: LogicalBinaryPlan
+    )(implicit containsOptional: Ref[LogicalPlan] => Boolean): FilterExpressions = {
       val allPlans = this.plansThatIntroduceVariable ++ other.plansThatIntroduceVariable
 
       val lhs = this
@@ -259,9 +263,7 @@ object ReadsAndWritesFinder {
           // These plans are used for subqueries and sometimes yield lhs rows more or less unchanged.
           // So any rhs predicates on already defined variables must not be considered.
           lhs.expression
-        case ApplyPlan(_, applyRhs) if applyRhs.folder.treeExists {
-            case _: Optional => true
-          } =>
+        case ApplyPlan(_, applyRhs) if containsOptional(Ref(applyRhs)) =>
           // RHS predicates might not be applied if the rows are filtered out by Optional
           lhs.expression
         case _: Apply |
@@ -595,7 +597,10 @@ object ReadsAndWritesFinder {
      * Returns a copy of this class, except that the [[FilterExpressions]] from the other plan are merged in
      * as if it was invoked like `other.mergeWith(this, mergePlan)`.
      */
-    def mergeFilterExpressions(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
+    def mergeFilterExpressions(
+      other: Reads,
+      mergePlan: LogicalBinaryPlan
+    )(implicit containsOptional: Ref[LogicalPlan] => Boolean): Reads = {
       copy(
         nodeFilterExpressions = other.nodeFilterExpressions.fuse(this.nodeFilterExpressions)(_.mergeWith(_, mergePlan)),
         relationshipFilterExpressions =
@@ -603,7 +608,10 @@ object ReadsAndWritesFinder {
       )
     }
 
-    def mergeWith(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
+    def mergeWith(
+      other: Reads,
+      mergePlan: LogicalBinaryPlan
+    )(implicit containsOptional: Ref[LogicalPlan] => Boolean): Reads = {
       copy(
         readNodeProperties = this.readNodeProperties ++ other.readNodeProperties,
         readLabels = this.readLabels ++ other.readLabels,
@@ -954,13 +962,19 @@ object ReadsAndWritesFinder {
      * Returns a copy of this class, except that the [[FilterExpressions]] from the other plan are merged in
      * as if it was invoked like `other.mergeWith(this, mergePlan)`.
      */
-    def mergeFilterExpressions(other: ReadsAndWrites, mergePlan: LogicalBinaryPlan): ReadsAndWrites = {
+    def mergeFilterExpressions(
+      other: ReadsAndWrites,
+      mergePlan: LogicalBinaryPlan
+    )(implicit containsOptional: Ref[LogicalPlan] => Boolean): ReadsAndWrites = {
       copy(
         reads = this.reads.mergeFilterExpressions(other.reads, mergePlan)
       )
     }
 
-    def mergeWith(other: ReadsAndWrites, mergePlan: LogicalBinaryPlan): ReadsAndWrites = {
+    def mergeWith(
+      other: ReadsAndWrites,
+      mergePlan: LogicalBinaryPlan
+    )(implicit containsOptional: Ref[LogicalPlan] => Boolean): ReadsAndWrites = {
       copy(
         reads = this.reads.mergeWith(other.reads, mergePlan),
         writes = this.writes ++ other.writes
@@ -1002,6 +1016,13 @@ object ReadsAndWritesFinder {
         },
         acc => acc.withReads(acc.reads.includePlanReads(plan, planReads))
       ))(acc)
+    }
+
+    implicit val containsOptionalCached: Ref[LogicalPlan] => Boolean = CachedFunction {
+      planRef =>
+        planRef.value.folder.treeExists {
+          case _: Optional => true
+        }
     }
 
     LogicalPlans.foldPlan(ReadsAndWrites())(
