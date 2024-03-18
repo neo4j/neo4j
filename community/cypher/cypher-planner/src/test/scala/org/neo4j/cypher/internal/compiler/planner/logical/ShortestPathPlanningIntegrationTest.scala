@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.ALL_IF_POSSIBLE
-import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.COST_WEIGHTED
+import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.CARDINALITY_HEURISTIC
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.INTO_ONLY
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
@@ -3357,7 +3357,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
-    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities"
+    "With statefulShortestPlanningMode=cardinality_heuristic should plan SHORTEST Into/All depending on boundary nodes cardinalities"
   ) {
     val query = "MATCH ANY SHORTEST (a:A)((n)-[r]->(m))+(b:B) RETURN *"
 
@@ -3372,7 +3372,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3410,7 +3410,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3448,7 +3448,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3479,7 +3479,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
-    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities, using a unique index"
+    "With statefulShortestPlanningMode=cardinality_heuristic should plan SHORTEST Into/All depending on boundary nodes cardinalities, using a unique index"
   ) {
     val query = "MATCH ANY SHORTEST (a:A {p:1})((n)-[r]->(m))+(b:B {p:1}) RETURN *"
 
@@ -3496,7 +3496,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3536,7 +3536,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3567,7 +3567,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
-    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities, with SHORTEST 10 GROUPS"
+    "With statefulShortestPlanningMode=cardinality_heuristic should plan SHORTEST Into/All depending on boundary nodes cardinalities, with SHORTEST 10 GROUPS"
   ) {
     val query = "MATCH SHORTEST 10 GROUPS (a:A)((n)-[r]->(m))+(b:B) RETURN *"
 
@@ -3582,7 +3582,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3620,7 +3620,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3651,7 +3651,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
-    "With statefulShortestPlanningMode=cost_weighted should adhere to USING JOIN hint"
+    "With statefulShortestPlanningMode=cardinality_heuristic should adhere to USING JOIN hint"
   ) {
     val query = "MATCH ANY SHORTEST (a:A)((n)-[r]->(m))+(b:B) USING JOIN ON a RETURN *"
 
@@ -3666,7 +3666,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       val plan = planner.plan(query).stripProduceResults
@@ -3687,7 +3687,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       // The JOIN hint weighs stronger than the requirement to use ExpandInto,
@@ -3701,7 +3701,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
-    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities, in tail query"
+    "With statefulShortestPlanningMode=cardinality_heuristic should plan SHORTEST Into/All depending on boundary nodes cardinalities, in tail query"
   ) {
     val query =
       """
@@ -3723,7 +3723,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 500)
         .setRelationshipCardinality("()-[]->(:B)", 500)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3765,7 +3765,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:A)-[]->(:B)", 40)
         .setRelationshipCardinality("()-[]->(:B)", 40)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3799,7 +3799,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
-    "With statefulShortestPlanningMode=cost_weighted should plan SHORTEST Into/All depending on boundary nodes cardinalities, if part of a larger connected component"
+    "With statefulShortestPlanningMode=cardinality_heuristic should plan SHORTEST Into/All depending on boundary nodes cardinalities, if part of a larger connected component"
   ) {
     val query =
       """
@@ -3829,7 +3829,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:AA)-[]->()", 10)
         .setRelationshipCardinality("(:AA)-[]->(:A)", 10)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3881,7 +3881,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setRelationshipCardinality("(:AA)-[]->()", 10)
         .setRelationshipCardinality("(:AA)-[]->(:A)", 10)
         .addSemanticFeature(SemanticFeature.GpmShortestPath)
-        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+        .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
         .build()
 
       planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3919,7 +3919,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
-    "With statefulShortestPlanningMode=cost_weighted should be able to force using INTO by using a subquery"
+    "With statefulShortestPlanningMode=cardinality_heuristic should be able to force using INTO by using a subquery"
   ) {
     val queryWithSubqueryWorkaround =
       """MATCH (a:A), (b:B)
@@ -3939,7 +3939,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:A)-[]->(:B)", 500)
       .setRelationshipCardinality("()-[]->(:B)", 500)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
-      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
       .build()
 
     planner.plan(queryWithSubqueryWorkaround).stripProduceResults should equal(planner.subPlanBuilder()
@@ -3973,7 +3973,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
-    "With statefulShortestPlanningMode=cost_weighted, when only INTO is possible and it is not 1:1, should still find a plan and solve hint"
+    "With statefulShortestPlanningMode=cardinality_heuristic, when only INTO is possible and it is not 1:1, should still find a plan and solve hint"
   ) {
     val query =
       """MATCH (a:A), (b:B)
@@ -3998,7 +3998,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("()-[:KNOWS]->()", 4)
       .setRelationshipCardinality("()-[:KNOWS]->(:B)", 4)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
-      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, COST_WEIGHTED)
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
       .build()
 
     planner.plan(query).stripProduceResults should equal(planner.subPlanBuilder()

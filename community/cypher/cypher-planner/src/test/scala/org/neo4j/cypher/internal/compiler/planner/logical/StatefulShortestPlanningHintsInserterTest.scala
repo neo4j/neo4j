@@ -53,10 +53,10 @@ class StatefulShortestPlanningHintsInserterTest extends CypherFunSuite with Logi
     q.endoRewrite(StatefulShortestPlanningHintsInserter.instance(mock[LogicalPlanState], context))
   }
 
-  test("should insert no hint if using cost_weighted") {
+  test("should insert no hint if using cardinality_heuristic") {
     val q = buildSinglePlannerQueryAndRewrite(
       "MATCH ANY SHORTEST (a)-[r]->*(b) RETURN *",
-      CypherStatefulShortestPlanningModeOption.costWeighted
+      CypherStatefulShortestPlanningModeOption.cardinalityHeuristic
     )
 
     q.allHints should be(empty)

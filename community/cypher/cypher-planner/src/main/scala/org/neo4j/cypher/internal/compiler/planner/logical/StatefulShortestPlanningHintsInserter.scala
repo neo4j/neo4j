@@ -61,7 +61,7 @@ case object StatefulShortestPlanningHintsInserter extends PlannerQueryRewriter w
           rewriter(AllIfPossibleHinter),
           cancellation = context.cancellationChecker
         )
-      case CypherStatefulShortestPlanningModeOption.costWeighted =>
+      case CypherStatefulShortestPlanningModeOption.cardinalityHeuristic =>
         // No hints needed.
         Rewriter.noop
     }

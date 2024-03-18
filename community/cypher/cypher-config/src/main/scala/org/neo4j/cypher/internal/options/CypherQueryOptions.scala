@@ -519,11 +519,11 @@ case object CypherStatefulShortestPlanningModeOption
   // If you get a bad CartesianProduct, see the comment on StatefulShortestPlanningMode.INTO_ONLY
   case object intoOnly extends CypherStatefulShortestPlanningModeOption("into_only")
   case object allIfPossible extends CypherStatefulShortestPlanningModeOption("all_if_possible")
-  case object costWeighted extends CypherStatefulShortestPlanningModeOption("cost_weighted")
+  case object cardinalityHeuristic extends CypherStatefulShortestPlanningModeOption("cardinality_heuristic")
 
   override def default: CypherStatefulShortestPlanningModeOption = intoOnly
 
-  def values: Set[CypherStatefulShortestPlanningModeOption] = Set(intoOnly, allIfPossible, costWeighted)
+  def values: Set[CypherStatefulShortestPlanningModeOption] = Set(intoOnly, allIfPossible, cardinalityHeuristic)
 
   implicit val hasDefault: OptionDefault[CypherStatefulShortestPlanningModeOption] = OptionDefault.create(default)
   implicit val renderer: OptionRenderer[CypherStatefulShortestPlanningModeOption] = OptionRenderer.create(_.render)

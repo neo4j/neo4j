@@ -57,7 +57,7 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     execute(q)
     execute("CYPHER statefulShortestPlanningMode=all_if_possible " + q)
     execute("CYPHER statefulShortestPlanningMode=into_only " + q)
-    execute("CYPHER statefulShortestPlanningMode=cost_weighted " + q)
+    execute("CYPHER statefulShortestPlanningMode=cardinality_heuristic " + q)
 
     stats.preParserCacheEntries().shouldEqual(4)
     stats.astCacheEntries().shouldEqual(3)

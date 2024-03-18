@@ -606,7 +606,7 @@ object expandSolverStep {
   }
 
   /**
-   * If we have `statefulShortestPlanningMode = cost_weighted`,
+   * If we have `statefulShortestPlanningMode = cardinality_heuristic`,
    * then we want to heuristically prefer some plans over others:
    * - Favor INTO if the input cardinality is <= 1
    * - Do not prefer INTO if the input cardinality is > 1
@@ -635,7 +635,7 @@ object expandSolverStep {
    * filtering in this method.
    * This is necessary so that
    * - USING JOIN/SCAN hints can be fulfilled
-   * - our internal hints when we don't use `statefulShortestPlanningMode = cost_weighted` can be fulfilled
+   * - our internal hints when we don't use `statefulShortestPlanningMode = cardinality_heuristic` can be fulfilled
    */
   private[idp] def preFilterCandidatesBySSPHeuristic(
     candidates: Iterable[LogicalPlanWithSSPHeuristic],

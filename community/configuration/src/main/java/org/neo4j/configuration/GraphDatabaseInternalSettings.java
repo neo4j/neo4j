@@ -226,9 +226,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
          */
         ALL_IF_POSSIBLE,
         /**
-         * Let the cost model decide between both plan alternatives.
+         * Decide between StatefulShortestPath(All) and StatefulShortestPath(Into) using a heuristic based
+         * on the cardinality estimation of the boundary nodes. If both boundary nodes are estimated to
+         * yield 1 row (or less), use StatefulShortestPath(Into). Use StatefulShortestPath(All) otherwise.
          */
-        COST_WEIGHTED
+        CARDINALITY_HEURISTIC
     }
 
     @Internal
