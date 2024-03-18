@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.apache.commons.lang3.mutable.MutableInt;
+import java.util.function.IntSupplier;
 
 /**
  * Calculates the radix of {@link Long} values.
@@ -57,9 +57,9 @@ public abstract class RadixCalculator {
      * Radix optimized for strings encoded into long by {@link LongEncoder}.
      */
     public static class Long extends RadixCalculator {
-        private final MutableInt radixShift;
+        private final IntSupplier radixShift;
 
-        public Long(MutableInt radixShift) {
+        public Long(IntSupplier radixShift) {
             this.radixShift = radixShift;
         }
 
@@ -70,9 +70,8 @@ public abstract class RadixCalculator {
             }
 
             long val1 = value & ~LENGTH_BITS;
-            val1 = val1 >>> radixShift.intValue();
-            int index = (int) val1;
-            return index;
+            val1 = val1 >>> radixShift.getAsInt();
+            return (int) val1;
         }
     }
 }

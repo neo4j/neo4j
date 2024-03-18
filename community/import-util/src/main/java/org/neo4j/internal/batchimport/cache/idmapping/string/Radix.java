@@ -21,7 +21,8 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import static java.lang.Math.pow;
 
-import org.apache.commons.lang3.mutable.MutableInt;
+import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.function.Factory;
 
 /**
@@ -33,25 +34,37 @@ public abstract class Radix {
 
     public static final Factory<Radix> STRING = String::new;
 
-    private long nullCount;
-    final long[] radixIndexCount = new long[(int) pow(2, RadixCalculator.RADIX_BITS - 1)];
+    private final LongAdder nullCount = new LongAdder();
+    final AtomicLongArray radixIndexCount = new AtomicLongArray((int) pow(2, RadixCalculator.RADIX_BITS - 1));
 
-    public int registerRadixOf(long value) {
+    /**
+     * A way of noting radix of a certain value, without actually registering that radix.
+     * This is useful since the radix buckets layout may change depending on the seen radixes.
+     * After the bucket distribution have been established it's much more straight forward to register
+     * the actual radixes in parallel.
+     */
+    public void preRegisterRadixOf(long value) {}
+
+    public void registerRadixOf(long value) {
         int radix = calculator().radixOf(value);
         if (radix == RadixCalculator.NULL_RADIX) {
-            nullCount++;
+            nullCount.add(1);
         } else {
-            radixIndexCount[radix]++;
+            radixIndexCount.incrementAndGet(radix);
         }
-        return radix;
     }
 
     public long getNullCount() {
-        return nullCount;
+        return nullCount.sum();
     }
 
     public long[] getRadixIndexCounts() {
-        return radixIndexCount;
+        // TODO expose something other than long[] as getter instead
+        long[] array = new long[radixIndexCount.length()];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = radixIndexCount.get(i);
+        }
+        return array;
     }
 
     public abstract RadixCalculator calculator();
@@ -75,12 +88,11 @@ public abstract class Radix {
     }
 
     public static class Long extends Radix {
-        private final MutableInt radixShift;
+        private volatile int radixShift;
         private final RadixCalculator calculator;
 
         public Long() {
-            this.radixShift = new MutableInt();
-            this.calculator = new RadixCalculator.Long(radixShift);
+            this.calculator = new RadixCalculator.Long(() -> radixShift);
         }
 
         @Override
@@ -89,29 +101,16 @@ public abstract class Radix {
         }
 
         @Override
-        public int registerRadixOf(long value) {
-            radixOverflow(value);
-            return super.registerRadixOf(value);
-        }
-
-        private void radixOverflow(long val) {
-            long shiftVal =
-                    (val & ~RadixCalculator.LENGTH_BITS) >> (RadixCalculator.RADIX_BITS - 1 + radixShift.intValue());
+        public void preRegisterRadixOf(long val) {
+            long shiftVal = (val & ~RadixCalculator.LENGTH_BITS) >> (RadixCalculator.RADIX_BITS - 1 + radixShift);
             if (shiftVal > 0) {
-                while (shiftVal > 0) {
-                    radixShift.increment();
-                    compressRadixIndex();
-                    shiftVal = shiftVal >> 1;
+                synchronized (this) {
+                    shiftVal = (val & ~RadixCalculator.LENGTH_BITS) >> (RadixCalculator.RADIX_BITS - 1 + radixShift);
+                    while (shiftVal > 0) {
+                        radixShift++;
+                        shiftVal = shiftVal >> 1;
+                    }
                 }
-            }
-        }
-
-        private void compressRadixIndex() {
-            for (int i = 0; i < radixIndexCount.length / 2; i++) {
-                radixIndexCount[i] = radixIndexCount[2 * i] + radixIndexCount[2 * i + 1];
-            }
-            for (int i = radixIndexCount.length / 2; i < radixIndexCount.length; i++) {
-                radixIndexCount[i] = 0;
             }
         }
     }

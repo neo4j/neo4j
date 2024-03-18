@@ -37,14 +37,17 @@ class RadixTest {
     void shouldHandleCountsLargerThanInt() {
         // when
         Radix radix = Radix.LONG.newInstance();
-        long value = random.nextLong(0xFFFFFFFFFFFFL);
+        long value = randomLongValue();
         long count = 0x100000000L;
+        for (long i = 0; i < count; i++) {
+            radix.preRegisterRadixOf(value);
+        }
         for (long i = 0; i < count; i++) {
             radix.registerRadixOf(value);
         }
 
         // then
-        assertThat(LongStream.of(radix.radixIndexCount).sum()).isEqualTo(count);
+        assertThat(LongStream.of(radix.getRadixIndexCounts()).sum()).isEqualTo(count);
     }
 
     @Test
@@ -52,18 +55,29 @@ class RadixTest {
         // given
         Radix radix = Radix.LONG.newInstance();
         long nullValue = EncodingIdMapper.GAP_VALUE;
-
-        // when
+        long[] values = new long[100];
         int expectedNumNullValues = 0;
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < values.length; i++) {
             boolean realValue = random.nextBoolean();
-            radix.registerRadixOf(realValue ? random.nextLong(1, 10_000) : nullValue);
+            values[i] = realValue ? randomLongValue() : nullValue;
             if (!realValue) {
                 expectedNumNullValues++;
             }
         }
 
+        // when
+        for (long value : values) {
+            radix.preRegisterRadixOf(value);
+        }
+        for (long value : values) {
+            radix.registerRadixOf(value);
+        }
+
         // then
         assertThat(radix.getNullCount()).isEqualTo(expectedNumNullValues);
+    }
+
+    private long randomLongValue() {
+        return random.nextLong(0xFFFFFFFFFFFFL);
     }
 }

@@ -32,7 +32,9 @@ import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.stream.LongStream;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.tuple.primitive.LongLongPair;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
@@ -58,6 +60,8 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.concurrent.Futures;
+import org.neo4j.util.concurrent.IdSpaceParallelExecution;
+import org.neo4j.util.concurrent.IdSpaceParallelExecution.Partition;
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,
@@ -229,6 +233,7 @@ public class EncodingIdMapper implements IdMapper {
         dataCache.set(nodeId, eId);
         groupCache.set(nodeId, group.id());
         candidateHighestSetIndex.offer(nodeId);
+        radix.preRegisterRadixOf(eId);
     }
 
     private long encode(Object inputId) {
@@ -280,9 +285,7 @@ public class EncodingIdMapper implements IdMapper {
 
             long pessimisticNumberOfCollisions = detectAndMarkCollisions(progress, sortBuckets);
             if (pessimisticNumberOfCollisions > 0) {
-                try (var lookup = inputIdLookup.newLookup()) {
-                    buildCollisionInfo(lookup, pessimisticNumberOfCollisions, collector, progress);
-                }
+                buildCollisionInfo(inputIdLookup, pessimisticNumberOfCollisions, collector, progress);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -294,10 +297,13 @@ public class EncodingIdMapper implements IdMapper {
         readyForUse = true;
     }
 
-    private static void updateRadix(LongArray values, Radix radix, long highestSetIndex) {
-        for (long dataIndex = 0; dataIndex <= highestSetIndex; dataIndex++) {
-            radix.registerRadixOf(values.get(dataIndex));
-        }
+    private void updateRadix(LongArray values, Radix radix, long highestSetIndex) {
+        runInParallel("update radix", highestSetIndex + 1, partition -> () -> {
+            for (long dataIndex = partition.startInclusive(); dataIndex < partition.endExclusive(); dataIndex++) {
+                radix.registerRadixOf(values.get(dataIndex));
+            }
+            return null;
+        });
     }
 
     private int radixOf(long value) {
@@ -499,40 +505,74 @@ public class EncodingIdMapper implements IdMapper {
         }
     }
 
+    private void runInParallel(
+            String threadNamePrefix, long highIndex, Function<Partition, Callable<Void>> taskFactory) {
+        try {
+            IdSpaceParallelExecution.runInParallel(threadNamePrefix, processorsForParallelWork, highIndex, taskFactory);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void buildCollisionInfo(
-            PropertyValueLookup.Lookup inputIdLookup,
+            PropertyValueLookup inputIdLookup,
             long pessimisticNumberOfCollisions,
             Collector collector,
             ProgressListener progress)
             throws InterruptedException {
         Radix radix = radixFactory.newInstance();
+        // All collisions need to end up in the collisionNodeIdCache sorted by nodeId since we're using
+        // binary search on that data structure later. Therefor track num collisions per thread so that
+        // we can recreate that order below
+        long[] numCollisionsPerWorker = new long[processorsForParallelWork];
+        runInParallel("register collision radix", highestSetIndex + 1, partition -> () -> {
+            int workerId = partition.partitionId();
+            long localNumCollisions = 0;
+            for (long nodeId = partition.startInclusive(); nodeId < partition.endExclusive(); nodeId++) {
+                long eId = dataCache.get(nodeId);
+                if (isCollision(eId)) {
+                    radix.preRegisterRadixOf(clearCollision(eId));
+                    localNumCollisions++;
+                }
+            }
+            numCollisionsPerWorker[workerId] = localNumCollisions;
+            return null;
+        });
+
+        numberOfCollisions = LongStream.of(numCollisionsPerWorker).sum();
         collisionNodeIdCache =
                 cacheFactory.newByteArray(pessimisticNumberOfCollisions, new byte[COLLISION_ENTRY_SIZE], memoryTracker);
-        collisionTrackerCache = trackerFactory.create(cacheFactory, pessimisticNumberOfCollisions);
         collisionValues = collisionValuesFactory.apply(pessimisticNumberOfCollisions);
-        for (long nodeId = 0; nodeId <= highestSetIndex; nodeId++) {
-            long eId = dataCache.get(nodeId);
-            if (isCollision(eId)) {
-                // Store this collision input id for matching later in get()
-                long collisionIndex = numberOfCollisions++;
-                Object id = inputIdLookup.lookupProperty(nodeId);
-                long eIdFromInputId = encode(id);
-                long eIdWithoutCollisionBit = clearCollision(eId);
-                assert eIdFromInputId == eIdWithoutCollisionBit
-                        : format(
-                                "Encoding mismatch during building of "
-                                        + "collision info. input id %s (a %s) marked as collision where this id was encoded into "
-                                        + "%d when put, but was now encoded into %d",
-                                id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId);
-                long offset = collisionValues.add(id);
-                collisionNodeIdCache.set5ByteLong(collisionIndex, 0, nodeId);
-                collisionNodeIdCache.set6ByteLong(collisionIndex, 5, offset);
-
-                // The base of our sorting this time is going to be node id, so register that in the radix
-                radix.registerRadixOf(eIdWithoutCollisionBit);
+        runInParallel("build collision info", highestSetIndex + 1, partition -> () -> {
+            int workerId = partition.partitionId();
+            long nextLocalCollisionId = 0;
+            for (int i = 0; i < workerId; i++) {
+                nextLocalCollisionId += numCollisionsPerWorker[i];
             }
-            progress.add(1);
-        }
+            try (var localProgress = progress.threadLocalReporter();
+                    var lookup = inputIdLookup.newLookup()) {
+                for (long nodeId = partition.startInclusive(); nodeId < partition.endExclusive(); nodeId++) {
+                    long eId = dataCache.get(nodeId);
+                    if (isCollision(eId)) {
+                        // Store this collision input id for matching later in get()
+                        long collisionIndex = nextLocalCollisionId++;
+                        Object id = lookup.lookupProperty(nodeId);
+                        long eIdWithoutCollisionBit = clearCollision(eId);
+                        assert eIdMatches(eIdWithoutCollisionBit, id);
+                        long offset = collisionValues.add(id);
+                        collisionNodeIdCache.set5ByteLong(collisionIndex, 0, nodeId);
+                        collisionNodeIdCache.set6ByteLong(collisionIndex, 5, offset);
+
+                        // The base of our sorting this time is going to be node id, so register that in the radix
+                        radix.registerRadixOf(eIdWithoutCollisionBit);
+                    }
+                    localProgress.add(1);
+                }
+            }
+            return null;
+        });
+
+        collisionTrackerCache = trackerFactory.create(cacheFactory, pessimisticNumberOfCollisions);
 
         // Detect input id duplicates within the same group, with source information, line number and the works
         detectDuplicateInputIds(radix, collector, progress);
@@ -540,6 +580,17 @@ public class EncodingIdMapper implements IdMapper {
         // We won't be needing these anymore
         collisionTrackerCache.close();
         collisionTrackerCache = null;
+    }
+
+    private boolean eIdMatches(long eIdWithoutCollisionBit, Object id) {
+        long eIdFromInputId = encode(id);
+        assert eIdFromInputId == eIdWithoutCollisionBit
+                : format(
+                        "Encoding mismatch during building of "
+                                + "collision info. input id %s (a %s) marked as collision where this id was encoded into "
+                                + "%d when put, but was now encoded into %d",
+                        id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId);
+        return true;
     }
 
     private void detectDuplicateInputIds(Radix radix, Collector collector, ProgressListener progress)

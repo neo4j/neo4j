@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.batchimport.cache.LongArray;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -29,7 +30,7 @@ import org.neo4j.memory.MemoryTracker;
  */
 public class LongCollisionValues implements CollisionValues {
     private final LongArray cache;
-    private long nextOffset;
+    private final AtomicLong nextOffset = new AtomicLong();
 
     public LongCollisionValues(NumberArrayFactory factory, long length, MemoryTracker memoryTracker) {
         cache = factory.newLongArray(length, 0, memoryTracker);
@@ -37,7 +38,7 @@ public class LongCollisionValues implements CollisionValues {
 
     @Override
     public long add(Object id) {
-        long collisionIndex = nextOffset++;
+        long collisionIndex = nextOffset.getAndIncrement();
         cache.set(collisionIndex, ((Number) id).longValue());
         return collisionIndex;
     }

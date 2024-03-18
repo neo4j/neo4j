@@ -23,6 +23,7 @@ import static java.lang.Integer.min;
 import static java.lang.Long.max;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -36,8 +37,7 @@ import org.neo4j.string.UTF8;
 public class StringCollisionValues implements CollisionValues {
     private final long chunkSize;
     private final ByteArray cache;
-    private long offset;
-    private ByteArray current;
+    private final AtomicLong offset = new AtomicLong();
 
     public StringCollisionValues(NumberArrayFactory factory, long length, MemoryTracker memoryTracker) {
         // Let's have length (also chunk size) be divisible by PAGE_SIZE, such that our calculations below
@@ -49,7 +49,6 @@ public class StringCollisionValues implements CollisionValues {
 
         chunkSize = max(length, PAGE_SIZE);
         cache = factory.newDynamicByteArray(chunkSize, new byte[1], memoryTracker);
-        current = cache.at(0);
     }
 
     @Override
@@ -61,10 +60,11 @@ public class StringCollisionValues implements CollisionValues {
             throw new IllegalArgumentException(string);
         }
 
-        long startOffset = offset;
+        long startOffset = offset.getAndAdd(2 + length);
+        long offset = startOffset;
         cache.setByte(offset++, 0, (byte) length);
         cache.setByte(offset++, 0, (byte) (length >>> Byte.SIZE));
-        current = cache.at(offset);
+        var current = cache.at(offset);
         for (int i = 0; i < length; ) {
             int bytesLeftToWrite = length - i;
             int bytesLeftInChunk = (int) (chunkSize - offset % chunkSize);
