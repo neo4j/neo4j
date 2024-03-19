@@ -40,27 +40,28 @@ object ExpressionConverters {
     }
 
     def asPredicates(outerScope: Set[LogicalVariable]): ListSet[Predicate] = {
-      predicate.folder.treeFold(ListSet.empty[Predicate]) {
+      val builder = ListSet.newBuilder[Predicate]
+      predicate.folder.treeFold(()) {
         // n:Label
         case p @ HasLabels(v: Variable, labels) =>
-          acc =>
-            val newAcc = acc ++ labels.map { label =>
-              Predicate(Set(v), p.copy(labels = Seq(label))(p.position))
-            }
-            SkipChildren(newAcc)
+          builder ++= labels.map { label =>
+            Predicate(Set(v), p.copy(labels = Seq(label))(p.position))
+          }
+          SkipChildren(_)
         // r:T
         case p @ HasTypes(v: Variable, types) =>
-          acc =>
-            val newAcc = acc ++ types.map { typ =>
-              Predicate(Set(v), p.copy(types = Seq(typ))(p.position))
-            }
-            SkipChildren(newAcc)
+          builder ++= types.map { typ =>
+            Predicate(Set(v), p.copy(types = Seq(typ))(p.position))
+          }
+          SkipChildren(_)
         // and
         case _: Ands | _: And =>
-          acc => TraverseChildren(acc)
+          TraverseChildren(_)
         case p: Expression =>
-          acc => SkipChildren(acc + Predicate(p.dependencies -- outerScope, p))
+          builder += Predicate(p.dependencies -- outerScope, p)
+          SkipChildren(_)
       }
+      builder.result()
     }
   }
 }
