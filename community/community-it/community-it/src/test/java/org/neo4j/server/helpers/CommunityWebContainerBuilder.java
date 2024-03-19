@@ -37,6 +37,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -154,6 +155,8 @@ public class CommunityWebContainerBuilder {
         properties.put(HttpsConnector.enabled.name(), String.valueOf(httpsEnabled));
         properties.put(HttpsConnector.listen_address.name(), httpsAddress.toString());
         properties.put(HttpsConnector.advertised_address.name(), ":" + httpsAddress.getPort());
+
+        properties.put(BoltConnectorInternalSettings.enable_local_connector.name(), FALSE);
 
         properties.put(
                 GraphDatabaseSettings.neo4j_home.name(),

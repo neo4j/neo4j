@@ -32,6 +32,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -45,6 +46,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.dbms.DatabaseStateService;
@@ -192,7 +194,7 @@ public class DatabaseManagementServiceFactory {
                 new TransactionManagerImpl(boltGraphDatabaseManagementServiceSPI, globalModule.getGlobalClock());
         globalDependencies.satisfyDependency(transactionManager);
 
-        var boltServer = createBoltServer(globalModule, edition, transactionManager, routingService);
+        var boltServer = createBoltServer(globalModule, edition, transactionManager, routingService, config);
 
         globalLife.add(boltServer);
         globalDependencies.satisfyDependency(boltServer);
@@ -419,11 +421,18 @@ public class DatabaseManagementServiceFactory {
             GlobalModule globalModule,
             AbstractEditionModule edition,
             TransactionManager transactionManager,
-            RoutingService routingService) {
+            RoutingService routingService,
+            Config config) {
 
         // Must be called before loading any Netty classes in order to override the factory
         InternalLoggerFactory.setDefaultFactory(
                 new Netty4LoggerFactory(globalModule.getLogService().getInternalLogProvider()));
+
+        if (config.get(BoltConnectorInternalSettings.local_channel_address) == null) {
+            config.set(
+                    BoltConnectorInternalSettings.local_channel_address,
+                    UUID.randomUUID().toString());
+        }
 
         return new BoltServer(
                 globalModule.getDbmsInfo(),

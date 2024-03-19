@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.dbms;
 
-import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
-
 import java.io.IOException;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -53,8 +51,7 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter {
             JettyHttpConnection.updateUserForCurrentConnection(
                     loginContext.subject().executingUser(), userAgent);
 
-            filterChain.doFilter(
-                    new AuthorizedRequestWrapper(BASIC_AUTH, "neo4j", request, loginContext), servletResponse);
+            filterChain.doFilter(new AuthorizedRequestWrapper(null, "neo4j", request, loginContext), servletResponse);
         } catch (AuthorizationViolationException e) {
             unauthorizedAccess(e.getMessage()).accept(response);
         }

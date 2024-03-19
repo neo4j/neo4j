@@ -217,14 +217,13 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
 
     @Internal
     @Description("Specifies the string used to connect to the local channel")
-    public static final Setting<String> local_channel_address = newBuilder(
-                    "internal.dbms.bolt.local_address", STRING, "LocalBoltAddress")
-            .build();
+    public static final Setting<String> local_channel_address =
+            newBuilder("internal.dbms.bolt.local_address", STRING, null).build();
 
     @Internal
     @Description("Enabled of disable local bolt connector.")
     public static final Setting<Boolean> enable_local_connector =
-            newBuilder("internal.dbms.bolt.local_enabled", BOOL, false).build();
+            newBuilder("internal.dbms.bolt.local_enabled", BOOL, true).build();
 
     public enum ProtocolLoggingMode {
         DECODED(false, true),

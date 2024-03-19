@@ -25,3 +25,17 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
+Apache Software License, Version 2.0
+  Neo4j Java Driver
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Netty/Transport/Native/Unix/Common
+  Non-Blocking Reactive Foundation for the JVM
+
+MIT No Attribution License
+  reactive-streams
+

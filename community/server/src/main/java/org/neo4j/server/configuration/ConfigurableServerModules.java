@@ -39,5 +39,10 @@ public enum ConfigurableServerModules {
     /**
      * Provides cluster management endpoints if applicable.
      */
-    ENTERPRISE_MANAGEMENT_ENDPOINTS
+    ENTERPRISE_MANAGEMENT_ENDPOINTS,
+
+    /**
+     * Provides the Query API endpoints.
+     */
+    QUERY_API_ENDPOINTS
 }

@@ -332,7 +332,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
         // WHEN
         Response response2 = POST(
                 transactionCommitUri(),
-                rawPayload("{ \"statements\" : [{\"statement\":\"match (n) where id(n) = " + id + " delete n\"}]}"));
+                rawPayload("{ \"statements\" : [{\"statement\":\"match (n) where id(n) = " + id
+                        + " delete n return n\"}]}"));
         assertEquals(200, response2.status());
 
         // THEN

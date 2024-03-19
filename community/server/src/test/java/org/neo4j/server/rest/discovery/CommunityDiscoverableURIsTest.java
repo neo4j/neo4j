@@ -51,7 +51,9 @@ class CommunityDiscoverableURIsTest {
         var uris = communityDiscoverableURIs(
                 Config.defaults(
                         ServerSettings.http_enabled_modules,
-                        EnumSet.complementOf(EnumSet.of(ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS))),
+                        EnumSet.complementOf(EnumSet.of(
+                                ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS,
+                                ConfigurableServerModules.QUERY_API_ENDPOINTS))),
                 null,
                 null);
         assertEquals(Map.of(), toMap(uris));

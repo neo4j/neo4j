@@ -19,11 +19,40 @@
  */
 package org.neo4j.server.web;
 
+import static org.neo4j.server.httpv2.response.HttpErrorResponse.singleError;
+
+import java.io.IOException;
 import java.io.Writer;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
+import org.neo4j.server.httpv2.response.format.QueryAPICodec;
+import org.neo4j.server.httpv2.response.format.View;
 
 public class NeoJettyErrorHandler extends ErrorHandler {
+
+    @Override
+    protected void generateAcceptableResponse(
+            Request baseRequest,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            int code,
+            String message,
+            String contentType)
+            throws IOException {
+        // Overriding to generate HTTP API V2's error format
+        // todo should be filter out other endpoints here?
+
+        var jsonGenerator = DefaultJsonFactory.INSTANCE
+                .get()
+                .copy()
+                .setCodec(new QueryAPICodec(View.PLAIN_JSON))
+                .createGenerator(response.getOutputStream());
+        jsonGenerator.writeObject(singleError(Status.Request.Invalid.code().serialize(), message));
+    }
 
     @Override
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message) {

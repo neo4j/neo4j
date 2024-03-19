@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import static org.neo4j.server.http.cypher.CypherResource.absoluteDatabaseTransactionPath;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.CypherResource;
+import org.neo4j.server.httpv2.QueryResource;
 
 public class CommunityDiscoverableURIs {
     /**
@@ -43,7 +42,10 @@ public class CommunityDiscoverableURIs {
         var builder = new DiscoverableURIs.Builder(clientRoutingDomainChecker);
         if (config.get(ServerSettings.http_enabled_modules)
                 .contains(ConfigurableServerModules.TRANSACTIONAL_ENDPOINTS)) {
-            builder = builder.addEndpoint(CypherResource.NAME, absoluteDatabaseTransactionPath(config));
+            builder = builder.addEndpoint(CypherResource.NAME, CypherResource.absoluteDatabaseTransactionPath(config));
+        }
+        if (config.get(ServerSettings.http_enabled_modules).contains(ConfigurableServerModules.QUERY_API_ENDPOINTS)) {
+            builder = builder.addEndpoint(QueryResource.NAME, QueryResource.absoluteDatabaseTransactionPath(config));
         }
         return builder.addBoltEndpoint(config, portRegister);
     }

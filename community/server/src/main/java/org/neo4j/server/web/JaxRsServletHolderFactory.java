@@ -32,6 +32,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.neo4j.server.bind.ComponentsBinder;
+import org.neo4j.server.http.error.JacksonExceptionMapper;
 import org.neo4j.server.http.error.MediaTypeExceptionMapper;
 import org.neo4j.server.modules.ServerModule;
 
@@ -48,6 +49,7 @@ public class JaxRsServletHolderFactory {
     public JaxRsServletHolderFactory() {
         // add classes common to all mount points
         classes.add(MediaTypeExceptionMapper.class);
+        classes.add(JacksonExceptionMapper.class);
         classes.add(JacksonJsonProvider.class);
     }
 

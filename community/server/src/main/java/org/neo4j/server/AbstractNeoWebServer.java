@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 
+import io.netty.channel.local.LocalAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.Clock;
@@ -39,6 +40,7 @@ import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -46,6 +48,7 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.driver.Driver;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
@@ -65,6 +68,7 @@ import org.neo4j.server.http.HttpMemoryPool;
 import org.neo4j.server.http.HttpTransactionMemoryPool;
 import org.neo4j.server.http.cypher.HttpTransactionManager;
 import org.neo4j.server.http.cypher.TransactionRegistry;
+import org.neo4j.server.httpv2.driver.LocalChannelDriverFactory;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
 import org.neo4j.server.web.RotatingRequestLog;
@@ -110,6 +114,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     protected ArrayByteBufferPool byteBufferPool;
     private final Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
     private final HttpTransactionManager httpTransactionManager;
+
+    private Driver driver;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     protected final SystemNanoClock clock;
 
@@ -168,6 +174,20 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         globalAvailabilityGuard = globalDependencies.resolveDependency(CompositeDatabaseAvailabilityGuard.class);
 
         life.add(new ServerComponentsLifecycleAdapter());
+    }
+
+    private Driver getOrCreateDriver() {
+        if (driver != null) {
+            return driver;
+        } else {
+            var internalLogProvider =
+                    globalDependencies.resolveDependency(LogService.class).getInternalLogProvider();
+            var driverFactory = new LocalChannelDriverFactory(
+                    new LocalAddress(config.get(BoltConnectorInternalSettings.local_channel_address)),
+                    internalLogProvider);
+            driver = driverFactory.createLocalDriver();
+            return driver;
+        }
     }
 
     protected Dependencies getGlobalDependencies() {
@@ -363,6 +383,14 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     }
 
     @Override
+    public void shutdown() throws Exception {
+        if (driver != null) {
+            driver.close();
+            driver = null;
+        }
+    }
+
+    @Override
     public TransactionRegistry getTransactionRegistry() {
         return httpTransactionManager.getTransactionRegistry();
     }
@@ -400,6 +428,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         binder.addLazyBinding(authManagerSupplier, AuthManager.class);
         binder.addSingletonBinding(userLogProvider, InternalLogProvider.class);
         binder.addSingletonBinding(userLogProvider.getLog(NeoWebServer.class), InternalLog.class);
+        binder.addLazyBinding(this::getOrCreateDriver, Driver.class);
 
         return binder;
     }

@@ -38,6 +38,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.modules.AuthorizationModule;
 import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
+import org.neo4j.server.modules.QueryModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.TransactionModule;
@@ -83,6 +84,9 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer {
             }
             if (enabledModules.contains(ConfigurableServerModules.BROWSER)) {
                 serverModules.add(new Neo4jBrowserModule(webServer));
+            }
+            if (enabledModules.contains(ConfigurableServerModules.QUERY_API_ENDPOINTS)) {
+                serverModules.add(new QueryModule(webServer, config));
             }
 
             serverModules.add(createAuthorizationModule());
