@@ -73,6 +73,17 @@ class ListSet[A](underlying: java.util.LinkedHashSet[A])
     }
   }
 
+  override def removedAll(that: IterableOnce[A]): ListSet[A] = {
+    val it = that.iterator
+    if (it.isEmpty) {
+      this
+    } else {
+      val newJava = new java.util.LinkedHashSet(underlying)
+      it.foreach(newJava.remove)
+      new ListSet(newJava)
+    }
+  }
+
   /**
    * Eagerly compute hashCode. This will prevent StackOverflowErrors with deeply nested expressions with ListSets,
    * e.g. Ands.
