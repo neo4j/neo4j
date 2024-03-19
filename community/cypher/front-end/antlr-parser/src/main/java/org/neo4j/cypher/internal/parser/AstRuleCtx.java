@@ -36,7 +36,7 @@ public class AstRuleCtx extends ParserRuleContext {
          * 95% had two or less,
          * 97% had three or less.
          */
-        this.children = new ArrayList<>(3);
+        this.children = new ArrayList<>(1);
     }
 
     @SuppressWarnings("unchecked")
