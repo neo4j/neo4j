@@ -76,7 +76,11 @@ class FabricFragmenter(
           case init: Init =>
             // Previous is Init which means that we are at the start of a chain
             // Inherit or declare new Use
-            val use = leadingUse(sq).map(Use.Declared).getOrElse(init.use)
+            val use =
+              sq.partitionedClauses
+                .leadingGraphSelection
+                .map(Use.Declared)
+                .getOrElse(init.use)
             Init(use, previous.argumentColumns, sq.importColumns)
 
           case other => other
@@ -106,20 +110,6 @@ class FabricFragmenter(
       case _: ast.UnionAll      => false
       case _: ast.UnionDistinct => true
     }
-
-  private def leadingUse(sq: ast.SingleQuery): Option[ast.GraphSelection] = {
-    sq.partitionedClauses.clausesExceptImportingWithAndLeadingGraphSelection
-      .filter(_.isInstanceOf[ast.UseGraph])
-      .map(clause =>
-        Errors.syntax(
-          "USE can only appear at the beginning of a (sub-)query",
-          queryString,
-          clause.position
-        )
-      )
-
-    sq.partitionedClauses.leadingGraphSelection
-  }
 
   private def makeDefaultUse(graphName: String, pos: InputPosition) =
     Use.Inherited(Use.Default(UseGraph(GraphDirectReference(CatalogName(graphName))(pos))(pos)))(pos)

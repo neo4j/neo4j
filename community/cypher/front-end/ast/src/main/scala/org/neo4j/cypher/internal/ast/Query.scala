@@ -451,23 +451,15 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  private def checkUsePosition(): SemanticCheck = {
-    val maybeFirstUse = clauses.find(_.isInstanceOf[UseGraph])
-    if (maybeFirstUse.isEmpty) {
-      return success
+  private def checkUsePosition(): SemanticCheck =
+    partitionedClauses.clausesExceptImportingWithAndLeadingGraphSelection.collect {
+      case useGraph: UseGraph => useGraph
+    }.foldSemanticCheck { clause =>
+      error(
+        "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query.",
+        clause.position
+      )
     }
-
-    partitionedClauses.clausesExceptImportingWith.headOption match {
-      case None => success
-      case Some(clause) => clause match {
-          case _: UseGraph => success
-          case _: Clause => error(
-              "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query.",
-              maybeFirstUse.get.position
-            )
-        }
-    }
-  }
 
   private def checkShadowedVariables(outer: SemanticState): SemanticCheck = { (inner: SemanticState) =>
     val outerScopeSymbols: Map[String, Symbol] = outer.currentScope.scope.symbolTable
@@ -515,11 +507,6 @@ object SingleQuery {
 
     lazy val clausesExceptImportingWithAndInitialGraphSelection: Seq[Clause] =
       subsequentGraphSelection.toSeq ++ clausesExceptImportingWithAndLeadingGraphSelection
-
-    lazy val clausesExceptImportingWith: Seq[Clause] =
-      initialGraphSelection.toSeq ++
-        subsequentGraphSelection.toSeq ++
-        clausesExceptImportingWithAndLeadingGraphSelection
   }
 
   private def partitionClauses(clauses: Seq[Clause]): PartitionedClauses =
