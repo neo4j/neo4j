@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import java.util.Arrays;
 import org.neo4j.internal.batchimport.cache.ByteArray;
-import org.neo4j.internal.batchimport.cache.LongBitsManipulator;
 
 /**
  * {@link Tracker} capable of keeping 6B range values, using {@link ByteArray}.
@@ -30,8 +29,7 @@ public class BigIdTracker extends AbstractTracker<ByteArray> {
     static final int SIZE = 5;
     static final int ID_BITS = (Byte.SIZE * SIZE) - 1;
     static final byte[] DEFAULT_VALUE;
-    public static final long MAX_ID = 1L << ID_BITS - 1;
-    private static final LongBitsManipulator BITS = new LongBitsManipulator(ID_BITS, 1);
+    public static final long ID_MASK = (1L << ID_BITS) - 1;
 
     static {
         DEFAULT_VALUE = new byte[SIZE];
@@ -44,26 +42,24 @@ public class BigIdTracker extends AbstractTracker<ByteArray> {
 
     @Override
     public long get(long index) {
-        return BITS.get(array.get5ByteLong(index, 0), 0);
+        long value = array.get5ByteLong(index, 0) & ID_MASK;
+        return value == ID_MASK ? -1 : value;
     }
 
     @Override
     public void set(long index, long value) {
-        long field = array.get5ByteLong(index, 0);
-        field = BITS.set(field, 0, value);
-        array.set5ByteLong(index, 0, field);
+        long isDuplicate = array.get5ByteLong(index, 0) & ~ID_MASK;
+        array.set5ByteLong(index, 0, isDuplicate | value);
     }
 
     @Override
     public void markAsDuplicate(long index) {
-        long field = array.get5ByteLong(index, 0);
-        field = BITS.set(field, 1, 0);
-        array.set5ByteLong(index, 0, field);
+        array.set5ByteLong(index, 0, array.get5ByteLong(index, 0) & ID_MASK);
     }
 
     @Override
     public boolean isMarkedAsDuplicate(long index) {
-        long field = array.get5ByteLong(index, 0);
-        return BITS.get(field, 1) == 0;
+        long isDuplicate = array.get5ByteLong(index, 0) & ~ID_MASK;
+        return isDuplicate == 0;
     }
 }

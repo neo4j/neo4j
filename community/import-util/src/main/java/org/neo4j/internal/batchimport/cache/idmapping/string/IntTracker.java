@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import org.neo4j.internal.batchimport.cache.IntArray;
-import org.neo4j.internal.batchimport.cache.LongBitsManipulator;
 
 /**
  * {@link Tracker} capable of keeping {@code int} range values, using {@link IntArray}.
@@ -29,9 +28,8 @@ import org.neo4j.internal.batchimport.cache.LongBitsManipulator;
 public class IntTracker extends AbstractTracker<IntArray> {
     static final int SIZE = Integer.BYTES;
     static final int ID_BITS = Byte.SIZE * SIZE - 1;
-    static final long MAX_ID = (1 << ID_BITS) - 1;
     static final int DEFAULT_VALUE = -1;
-    private static final LongBitsManipulator BITS = new LongBitsManipulator(ID_BITS, 1);
+    static final long ID_MASK = (1L << ID_BITS) - 1;
 
     public IntTracker(IntArray array) {
         super(array);
@@ -39,7 +37,8 @@ public class IntTracker extends AbstractTracker<IntArray> {
 
     @Override
     public long get(long index) {
-        return BITS.get(array.get(index), 0);
+        long value = array.get(index) & ID_MASK;
+        return value == ID_MASK ? -1L : value;
     }
 
     /**
@@ -47,22 +46,19 @@ public class IntTracker extends AbstractTracker<IntArray> {
      */
     @Override
     public void set(long index, long value) {
-        long field = array.get(index);
-        field = BITS.set(field, 0, value);
-        array.set(index, (int) field);
+        long isDuplicate = array.get(index) & ~ID_MASK;
+        array.set(index, (int) (isDuplicate | value));
     }
 
     @Override
     public void markAsDuplicate(long index) {
-        long field = array.get(index);
         // Since the default value for the whole field is -1 (i.e. all 1s) then this mark will have to be 0.
-        field = BITS.set(field, 1, 0);
-        array.set(index, (int) field);
+        array.set(index, (int) (array.get(index) & ID_MASK));
     }
 
     @Override
     public boolean isMarkedAsDuplicate(long index) {
-        long field = array.get(index);
-        return BITS.get(field, 1) == 0;
+        long isDuplicate = array.get(index) & ~ID_MASK;
+        return isDuplicate == 0;
     }
 }

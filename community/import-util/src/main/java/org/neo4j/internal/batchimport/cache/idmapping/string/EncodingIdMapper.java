@@ -44,7 +44,6 @@ import org.neo4j.internal.batchimport.PropertyValueLookup;
 import org.neo4j.internal.batchimport.Utils;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.LongArray;
-import org.neo4j.internal.batchimport.cache.LongBitsManipulator;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
@@ -122,7 +121,7 @@ public class EncodingIdMapper implements IdMapper {
     // This bit is the least significant in the most significant byte of the encoded values,
     // where the 7 most significant bits in that byte denotes length of original string.
     // See StringEncoder.
-    private static final LongBitsManipulator COLLISION_BIT = new LongBitsManipulator(56, 1);
+    private static final long COLLISION_BIT = 1L << 56;
     private static final int DEFAULT_CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
     private static final int COLLISION_ENTRY_SIZE = 5 /*nodeId*/ + 6 /*offset*/;
     // Using 0 as gap value, i.e. value for a node not having an id, i.e. not present in dataCache is safe
@@ -364,15 +363,15 @@ public class EncodingIdMapper implements IdMapper {
     }
 
     private static long setCollision(long eId) {
-        return COLLISION_BIT.set(eId, 1, 1);
+        return eId | COLLISION_BIT;
     }
 
     static long clearCollision(long eId) {
-        return COLLISION_BIT.clear(eId, 1, false);
+        return eId & ~COLLISION_BIT;
     }
 
     private static boolean isCollision(long eId) {
-        return COLLISION_BIT.get(eId, 1) != 0;
+        return (eId & COLLISION_BIT) != 0;
     }
 
     private class DetectWorker implements Runnable {
@@ -917,7 +916,7 @@ public class EncodingIdMapper implements IdMapper {
     }
 
     public static long estimateMemory(long numberOfNodes, int numberOfGroups) {
-        int trackerSize = numberOfNodes > IntTracker.MAX_ID ? BigIdTracker.SIZE : IntTracker.SIZE;
+        int trackerSize = numberOfNodes > IntTracker.ID_MASK ? BigIdTracker.SIZE : IntTracker.SIZE;
         int groupSize = GroupCache.numberOfBytesPerGroup(numberOfGroups);
         return numberOfNodes * (Long.BYTES /*data*/ + groupSize /*group*/ + trackerSize /*tracker*/);
     }

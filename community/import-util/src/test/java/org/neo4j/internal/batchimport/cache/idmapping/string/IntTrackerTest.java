@@ -44,7 +44,7 @@ class IntTrackerTest {
             long[] values = new long[length];
             boolean[] marks = new boolean[length];
             for (int i = 0; i < length; i++) {
-                tracker.set(i, values[i] = random.nextLong(IntTracker.MAX_ID));
+                tracker.set(i, values[i] = random.nextLong(IntTracker.ID_MASK));
                 if (random.nextBoolean()) {
                     tracker.markAsDuplicate(i);
                     marks[i] = true;

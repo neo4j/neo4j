@@ -32,7 +32,7 @@ public class TrackerFactories {
      * @return {@link TrackerFactory} creating different {@link Tracker} instances depending on size.
      */
     public static TrackerFactory dynamic(MemoryTracker memoryTracker) {
-        return (arrayFactory, size) -> size > IntTracker.MAX_ID
+        return (arrayFactory, size) -> size > IntTracker.ID_MASK
                 ? new BigIdTracker(arrayFactory.newByteArray(size, BigIdTracker.DEFAULT_VALUE, memoryTracker))
                 : new IntTracker(arrayFactory.newIntArray(size, IntTracker.DEFAULT_VALUE, memoryTracker));
     }

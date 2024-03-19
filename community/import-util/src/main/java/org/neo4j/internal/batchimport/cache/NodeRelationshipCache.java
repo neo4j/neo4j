@@ -211,9 +211,9 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
      * @param nodeCount high node id in the store, e.g. the highest node id + 1
      */
     public void setNodeCount(long nodeCount) {
-        if (nodeCount - 1 > BigIdTracker.MAX_ID) {
+        if (nodeCount - 1 > BigIdTracker.ID_MASK) {
             throw new IllegalArgumentException(
-                    String.format("Invalid number of nodes %d. Max is %d", nodeCount, BigIdTracker.MAX_ID));
+                    String.format("Invalid number of nodes %d. Max is %d", nodeCount, BigIdTracker.ID_MASK));
         }
 
         this.highNodeId = nodeCount;
