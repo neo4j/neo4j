@@ -4032,4 +4032,33 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .nodeByLabelScan("a", "A")
       .build())
   }
+
+  test(
+    "With statefulShortestPlanningMode=cardinality_heuristic, should accept small rounding errors and still choose INTO"
+  ) {
+    val query =
+      """MATCH p = ALL SHORTEST (start:AccountHolder {accountHolderID: $startID})-[r:MAKES_PAYMENTS_TO]->{1,2}
+        |                       (end:AccountHolder {accountHolderID: $endID})
+        |RETURN p
+        |""".stripMargin
+
+    val accountHolders = 105491.toDouble
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(64398064)
+      .setLabelCardinality("AccountHolder", accountHolders)
+      .setRelationshipCardinality("(:AccountHolder)-[:MAKES_PAYMENTS_TO]->(:AccountHolder)", 911026)
+      .setRelationshipCardinality("(:AccountHolder)-[:MAKES_PAYMENTS_TO]->()", 911026)
+      .setRelationshipCardinality("()-[:MAKES_PAYMENTS_TO]->(:AccountHolder)", 911026)
+      .setRelationshipCardinality("()-[:MAKES_PAYMENTS_TO]->()", 911026)
+      .addNodeIndex("AccountHolder", Seq("accountHolderID"), 1.0, 1 / accountHolders, isUnique = true)
+      .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, CARDINALITY_HEURISTIC)
+      .build()
+
+    // Should not use ExpandAll
+    val plan = planner.plan(query).stripProduceResults
+    plan.folder.treeFind[StatefulShortestPath] {
+      case ssp: StatefulShortestPath if ssp.mode == ExpandAll => true
+    } should be(empty)
+  }
 }

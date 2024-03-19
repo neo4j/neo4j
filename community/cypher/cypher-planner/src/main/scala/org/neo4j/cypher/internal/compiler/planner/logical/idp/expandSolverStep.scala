@@ -621,7 +621,8 @@ object expandSolverStep {
       case Expand.ExpandInto =>
         val cardinalities = context.staticComponents.planningAttributes.cardinalities
         val inCardinality = cardinalities.get(ssp.source.id)
-        val single = inCardinality <= Cardinality.SINGLE
+        // + 0.1 to accommodate very leniently for rounding errors.
+        val single = inCardinality <= Cardinality.SINGLE + 0.1
         LogicalPlanWithSSPHeuristic(ssp, if (single) SSPHeuristic.Prefer else SSPHeuristic.Avoid)
     }
   }
