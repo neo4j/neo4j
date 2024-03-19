@@ -97,18 +97,17 @@ public class ParallelSort {
                 if (count != 0) {
                     sortBuckets[threadIndex].count = count;
                     fullCount += count;
-                    progress.add(count);
                     count = radixIndexCount[i];
                 } else {
                     sortBuckets[threadIndex].count = radixIndexCount[i];
                     fullCount += radixIndexCount[i];
-                    progress.add(radixIndexCount[i]);
                 }
                 initializers.start(new TrackerInitializer(
                         threadIndex,
                         sortBuckets[threadIndex],
                         threadIndex > 0 ? bucketRange[threadIndex - 1] : -1,
-                        bucketRange[threadIndex]));
+                        bucketRange[threadIndex],
+                        progress));
                 threadIndex++;
             } else {
                 count += radixIndexCount[i];
@@ -121,7 +120,8 @@ public class ParallelSort {
                         threadIndex,
                         sortBuckets[threadIndex],
                         threadIndex > 0 ? bucketRange[threadIndex - 1] : -1,
-                        bucketRange[threadIndex]));
+                        bucketRange[threadIndex],
+                        progress));
                 break;
             }
         }
@@ -330,28 +330,37 @@ public class ParallelSort {
         private final SortBucket sortBucket;
         private final int lowRadixRangeExclusive;
         private final int highRadixRangeInclusive;
+        private final ProgressListener progress;
         private final int threadIndex;
         private long bucketIndex;
 
         TrackerInitializer(
-                int threadIndex, SortBucket sortBucket, int lowRadixRangeExclusive, int highRadixRangeInclusive) {
+                int threadIndex,
+                SortBucket sortBucket,
+                int lowRadixRangeExclusive,
+                int highRadixRangeInclusive,
+                ProgressListener progress) {
             this.threadIndex = threadIndex;
             this.sortBucket = sortBucket;
             this.lowRadixRangeExclusive = lowRadixRangeExclusive;
             this.highRadixRangeInclusive = highRadixRangeInclusive;
+            this.progress = progress;
         }
 
         @Override
         public void run() {
-            for (long i = 0; i <= highestSetIndex; i++) {
-                int rIndex = radixCalculator.radixOf(comparator.dataValue(dataCache.get(i)));
-                if (rIndex > lowRadixRangeExclusive && rIndex <= highRadixRangeInclusive) {
-                    long trackerIndex = sortBucket.baseIndex + bucketIndex++;
-                    assert tracker.get(trackerIndex) == -1
-                            : "Overlapping buckets i:" + i + ", k:" + threadIndex + ", index:" + trackerIndex;
-                    tracker.set(trackerIndex, i);
-                    if (bucketIndex == sortBucket.count) {
-                        sortBucket.highRadixRange = highRadixRangeInclusive;
+            try (var localProgress = progress.threadLocalReporter()) {
+                for (long i = 0; i <= highestSetIndex; i++) {
+                    int rIndex = radixCalculator.radixOf(comparator.dataValue(dataCache.get(i)));
+                    if (rIndex > lowRadixRangeExclusive && rIndex <= highRadixRangeInclusive) {
+                        long trackerIndex = sortBucket.baseIndex + bucketIndex++;
+                        assert tracker.get(trackerIndex) == -1
+                                : "Overlapping buckets i:" + i + ", k:" + threadIndex + ", index:" + trackerIndex;
+                        tracker.set(trackerIndex, i);
+                        if (bucketIndex == sortBucket.count) {
+                            sortBucket.highRadixRange = highRadixRangeInclusive;
+                        }
+                        localProgress.add(1);
                     }
                 }
             }
