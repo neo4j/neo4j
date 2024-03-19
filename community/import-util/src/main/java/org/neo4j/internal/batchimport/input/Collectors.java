@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import static java.io.OutputStream.nullOutputStream;
 import static org.neo4j.internal.batchimport.input.BadCollector.BAD_NODES;
 import static org.neo4j.internal.batchimport.input.BadCollector.BAD_RELATIONSHIPS;
 import static org.neo4j.internal.batchimport.input.BadCollector.COLLECT_ALL;
@@ -35,14 +34,6 @@ import java.util.function.Function;
  */
 public class Collectors {
     private Collectors() {}
-
-    public static Collector silentBadCollector(long tolerance) {
-        return silentBadCollector(tolerance, COLLECT_ALL);
-    }
-
-    public static Collector silentBadCollector(long tolerance, int collect) {
-        return badCollector(nullOutputStream(), tolerance, collect);
-    }
 
     public static Collector badCollector(OutputStream out, long tolerance) {
         return badCollector(out, tolerance, COLLECT_ALL, false);

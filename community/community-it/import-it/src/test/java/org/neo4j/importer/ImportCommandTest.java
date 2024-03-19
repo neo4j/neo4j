@@ -1115,6 +1115,8 @@ class ImportCommandTest {
                 "2",
                 "--skip-bad-entries-logging",
                 "true",
+                "--skip-bad-relationships",
+                "true",
                 "--relationships",
                 relationshipData1.toAbsolutePath() + "," + relationshipData2.toAbsolutePath());
 

@@ -26,7 +26,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.db_temporal_timezone
 import static org.neo4j.configuration.GraphDatabaseSettings.server_logging_config_path;
 import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
 import static org.neo4j.internal.batchimport.input.Collectors.collect;
-import static org.neo4j.internal.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.defaultRelationshipType;
@@ -422,10 +421,11 @@ class CsvImporter implements Importer {
     }
 
     private Collector getBadCollector(boolean skipBadEntriesLogging, OutputStream badOutput) {
-        return skipBadEntriesLogging
-                ? silentBadCollector(badTolerance)
-                : badCollector(
-                        badOutput, badTolerance, collect(skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns));
+        return badCollector(
+                badOutput,
+                badTolerance,
+                collect(skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns),
+                skipBadEntriesLogging);
     }
 
     static InternalLogProvider createLogProvider(FileSystemAbstraction fileSystem, Config databaseConfig) {
