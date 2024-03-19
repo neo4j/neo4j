@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Remove
@@ -35,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -45,10 +47,15 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Range
+import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
@@ -395,5 +402,53 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
         singleQuery(returnLit(3 -> "x"))
       )
     )
+  }
+
+  test("shortest query") {
+    """MATCH (src:A), (dst:D)
+      |RETURN shortestPath((src:A)-[*]->(dst:D)) as path
+      |""".stripMargin should parseTo[Statements] {
+      Statements(Seq(SingleQuery(Seq(
+        Match(
+          optional = false,
+          DifferentRelationships(implicitlyCreated = true)(pos),
+          ForMatch(Seq(
+            PatternPartWithSelector(
+              AllPaths()(pos),
+              PathPatternPart(NodePattern(Some(varFor("src")), Some(Leaf(LabelName("A")(pos))), None, None)(pos))
+            ),
+            PatternPartWithSelector(
+              AllPaths()(pos),
+              PathPatternPart(NodePattern(Some(varFor("dst")), Some(Leaf(LabelName("D")(pos))), None, None)(pos))
+            )
+          ))(pos),
+          Seq(),
+          None
+        )(pos),
+        Return(
+          distinct = false,
+          ReturnItems(
+            includeExisting = false,
+            Seq(AliasedReturnItem(
+              ShortestPathExpression(ShortestPathsPatternPart(
+                RelationshipChain(
+                  NodePattern(Some(varFor("src")), Some(Leaf(LabelName("A")(pos))), None, None)(pos),
+                  RelationshipPattern(None, None, Some(None), None, None, OUTGOING)(pos),
+                  NodePattern(Some(varFor("dst")), Some(Leaf(LabelName("D")(pos))), None, None)(pos)
+                )(pos),
+                single = true
+              )(pos)),
+              varFor("path")
+            )(pos)),
+            None
+          )(pos),
+          None,
+          None,
+          None,
+          Set(),
+          addedInRewrite = false
+        )(pos)
+      ))(pos)))
+    }
   }
 }

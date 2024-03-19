@@ -681,10 +681,8 @@ trait ExpressionBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitShortestPathExpression(
-    ctx: CypherParser.ShortestPathExpressionContext
-  ): Unit = {
-    ctx.ast = ShortestPathExpression(ShortestPathsPatternPart(null, true)(pos(ctx)))
+  final override def exitShortestPathExpression(ctx: CypherParser.ShortestPathExpressionContext): Unit = {
+    ctx.ast = ShortestPathExpression(astChild(ctx, 0))
   }
 
   final override def exitParenthesizedExpression(

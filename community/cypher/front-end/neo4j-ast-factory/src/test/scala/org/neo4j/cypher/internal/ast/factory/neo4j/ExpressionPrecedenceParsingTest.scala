@@ -344,25 +344,15 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
       )
     }
 
-//    ParseSuccess(ContainerIndex(ShortestPathExpression(ShortestPathsPatternPart(null,true)),CaseExpression(Some(Variable(x)),ArraySeq((True(),SignedDecimalIntegerLiteral(1))),Some(SignedDecimalIntegerLiteral(2)))))
-    // ParseSuccess(ContainerIndex(null,CaseExpression(Some(Variable(x)),ArraySeq((True(),SignedDecimalIntegerLiteral(1))),Some(SignedDecimalIntegerLiteral(2)))))
-
     // (shortestPath((a)-->(b)))[(CASE x WHEN true THEN 1 ELSE 2 END)]
-    "shortestPath((a)-->(b))[CASE x WHEN true THEN 1 ELSE 2 END]" should parse[Expression].toAsts {
-      case JavaCc => containerIndex(
-          ShortestPathExpression(ShortestPathsPatternPart(
-            relationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b"))),
-            single = true
-          )(pos)),
-          caseExpression(Some(varFor("x")), Some(literalInt(2)), (equals(varFor("x"), trueLiteral), literalInt(1)))
-        )
-      case Antlr => containerIndex(
-          ShortestPathExpression(ShortestPathsPatternPart(
-            null,
-            single = true
-          )(pos)),
-          caseExpression(Some(varFor("x")), Some(literalInt(2)), (equals(varFor("x"), trueLiteral), literalInt(1)))
-        )
+    "shortestPath((a)-->(b))[CASE x WHEN true THEN 1 ELSE 2 END]" should parse[Expression].toAst {
+      containerIndex(
+        ShortestPathExpression(ShortestPathsPatternPart(
+          relationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b"))),
+          single = true
+        )(pos)),
+        caseExpression(Some(varFor("x")), Some(literalInt(2)), (equals(varFor("x"), trueLiteral), literalInt(1)))
+      )
     }
   }
 }
