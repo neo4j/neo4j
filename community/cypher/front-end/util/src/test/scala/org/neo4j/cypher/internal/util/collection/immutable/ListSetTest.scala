@@ -17,11 +17,15 @@
 package org.neo4j.cypher.internal.util.collection.immutable
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
+import org.scalacheck.Gen
+
+import scala.collection.immutable
 
 /**
  * Testing only the pieces which differ from the scala implementation.
  */
-class ListSetTest extends CypherFunSuite {
+class ListSetTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
 
   test("Can build a ListSet from a distinct Seq, and keep the insertion order") {
     val seq = Seq(1, 2, 3, 4, 5)
@@ -120,7 +124,6 @@ class ListSetTest extends CypherFunSuite {
   }
 
   test("t12316 ++ is correctly ordered") {
-    // was: ListSet(1, 2, 3, 42, 43, 44, 29, 28, 27, 12, 11, 10)
     (ListSet(1, 2, 3, 42, 43, 44) ++ ListSet(10, 11, 12, 42, 43, 44, 27, 28, 29)).iterator.toList should equal(List(1,
       2, 3, 42, 43, 44, 10, 11, 12, 27, 28, 29))
   }
@@ -160,6 +163,30 @@ class ListSetTest extends CypherFunSuite {
       val ls0 = ListSet((start0 until end0): _*)
       val ls1 = ListSet((start1 until end1): _*)
       check(ls0, ls1)
+    }
+  }
+
+  private def twoSmallIntLists: Gen[(List[Int], List[Int])] = {
+    for {
+      xs <- Gen.listOf(Gen.chooseNum(1, 10))
+      ys <- Gen.listOf(Gen.chooseNum(1, 10))
+    } yield (xs, ys)
+  }
+
+  test("concat") {
+
+    def concatTest(xs: List[Int], ys: List[Int]): Unit = {
+      val listSet = ListSet.from(xs) concat ListSet.from(ys)
+      val scalaListSet = immutable.ListSet.from(xs) concat immutable.ListSet.from(ys)
+      listSet shouldEqual scalaListSet
+    }
+
+    forAll(twoSmallIntLists) { case (xs, ys) =>
+      concatTest(xs, ys)
+      concatTest(ys, xs)
+
+      concatTest(xs, xs.empty)
+      concatTest(xs.empty, xs)
     }
   }
 }

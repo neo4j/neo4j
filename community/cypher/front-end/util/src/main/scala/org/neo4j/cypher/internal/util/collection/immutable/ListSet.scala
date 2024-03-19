@@ -65,6 +65,14 @@ class ListSet[A](underlying: java.util.LinkedHashSet[A])
 
   override def iterableFactory: IterableFactory[ListSet] = ListSet
 
+  override def concat(that: IterableOnce[A]): ListSet[A] = {
+    if (that.iterator.isEmpty) {
+      this
+    } else {
+      iterableFactory.newBuilder.addAll(this).addAll(that).result()
+    }
+  }
+
   /**
    * Eagerly compute hashCode. This will prevent StackOverflowErrors with deeply nested expressions with ListSets,
    * e.g. Ands.
