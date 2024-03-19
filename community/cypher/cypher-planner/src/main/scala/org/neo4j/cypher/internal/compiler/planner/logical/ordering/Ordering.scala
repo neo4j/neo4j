@@ -56,8 +56,8 @@ object Ordering {
     unionMappings: List[UnionMapping],
     context: LogicalPlanningContext
   ): LogicalPlan = {
+    // Parallel runtime does currently not support OrderedUnion
     if (maybeSortColumns.nonEmpty && context.settings.executionModel.providedOrderPreserving) {
-      // Parallel runtime does currently not support OrderedUnion
       context.staticComponents.logicalPlanProducer.planOrderedUnion(
         p1,
         p2,
