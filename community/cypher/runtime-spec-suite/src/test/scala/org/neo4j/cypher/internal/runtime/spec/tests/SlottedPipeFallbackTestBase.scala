@@ -230,8 +230,8 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
 
     // TIME
     queryProfile.operatorProfile(0).time() should be > 0L // produce result
-    queryProfile.operatorProfile(2).time() shouldBe OperatorProfile.NO_DATA // nonPipelined
-    queryProfile.operatorProfile(4).time() shouldBe OperatorProfile.NO_DATA // nonPipelined
+    queryProfile.operatorProfile(2).time() should be > 0L // nonPipelined
+    queryProfile.operatorProfile(4).time() should be > 0L // nonPipelined
     queryProfile.operatorProfile(6).time() should be > 0L // input
   }
 

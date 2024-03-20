@@ -295,9 +295,9 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
-    queryProfile.operatorProfile(1).time() should be(
-      OperatorProfile.NO_DATA
-    ) // pruning var expand (OperatorProfile.NO_DATA as long as we use slotted fallback)
+    queryProfile.operatorProfile(
+      1
+    ).time() should be > 0L // pruning var expand (slotted fallback with 1 pipe)
     queryProfile.operatorProfile(2).time() should be > 0L // all node scan
     // Should not attribute anything to the invalid id
     queryProfile.operatorProfile(Id.INVALID_ID.x) should (be(NO_PROFILE) or be(NO_PROFILE_NO_TIME))

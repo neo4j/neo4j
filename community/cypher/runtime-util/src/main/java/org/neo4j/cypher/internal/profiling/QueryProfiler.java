@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.profiling;
 
 import org.neo4j.cypher.internal.util.attribution.Id;
+import org.neo4j.util.CalledFromGeneratedCode;
 
 public interface QueryProfiler {
     OperatorProfileEvent executeOperator(Id queryId);
 
     OperatorProfileEvent executeOperator(Id operatorId, boolean trackTime);
 
+    @CalledFromGeneratedCode
     default OperatorProfileEvent executeOperator(int operatorId, boolean trackTime) {
         return executeOperator(new Id(operatorId), trackTime);
     }

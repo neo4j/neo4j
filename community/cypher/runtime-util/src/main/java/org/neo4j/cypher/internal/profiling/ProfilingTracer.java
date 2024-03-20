@@ -80,13 +80,13 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile {
     }
 
     @Override
-    public OperatorProfileEvent executeOperator(Id operatorId, boolean trackTime) {
+    public OperatorProfileEvent executeOperator(Id operatorId, boolean trackAll) {
         ProfilingTracerData operatorData = this.data.get(operatorId.x());
         if (operatorData == null) {
             operatorData = new ProfilingTracerData();
             this.data.put(operatorId.x(), operatorData);
         }
-        if (trackTime) {
+        if (trackAll) {
             return new TrackingExecutionEvent(clock, statisticProvider, operatorData, operatorId.x());
         } else {
             return new ExecutionEvent(statisticProvider, operatorData, operatorId.x());
