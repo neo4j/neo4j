@@ -212,11 +212,11 @@ public class EncodingIdMapperTest {
     @Test
     public void shouldDetectUnknownInputIdWhenStrict() {
         final var existingInputId = "A";
-        final var nonExistingCollidingInputId = "Ŀ";
-        // First make sure that assumptions of hashing function holds, that is the two input ids above gets the same
-        // hash. If the following assert fails a new pair of input ids needs to be found unless the hash function
-        // has found the perfect non colliding hash function.
-        var encoder = new StringEncoder();
+        final var nonExistingCollidingInputId = "B";
+        StringEncoder encoder = mock(StringEncoder.class);
+        when(encoder.encode(existingInputId)).thenReturn(13L);
+        when(encoder.encode(nonExistingCollidingInputId)).thenReturn(13L);
+
         assertThat(encoder.encode(existingInputId)).isEqualTo(encoder.encode(nonExistingCollidingInputId));
 
         // Now the strict mapper should detect that these two are not the same by using the property value lookup
