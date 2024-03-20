@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.TestCountdownCancellationChecker
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -74,7 +75,6 @@ import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.builder.Parser
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
@@ -2304,7 +2304,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         cancellationChecker
       )
     }
-    ex should have message cancellationChecker.message
+    ex should have message cancellationChecker.errorMessage
   }
 
   test("should cancel processing when clause count in FOREACH is above the limit") {
@@ -2325,7 +2325,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         cancellationChecker
       )
     }
-    ex should have message cancellationChecker.message
+    ex should have message cancellationChecker.errorMessage
   }
 
   test("should cancel processing when clause count in a subquery is above the limit") {
@@ -2346,7 +2346,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         cancellationChecker
       )
     }
-    ex should have message cancellationChecker.message
+    ex should have message cancellationChecker.errorMessage
   }
 
   test("should cancel processing when clause count in a union query is above the limit") {
@@ -2368,7 +2368,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         cancellationChecker
       )
     }
-    ex should have message cancellationChecker.message
+    ex should have message cancellationChecker.errorMessage
   }
 
   val createKeywords = Seq("CREATE", "INSERT")
@@ -2888,15 +2888,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     query.allPlannerQueries should have size 2
-  }
-
-  private class TestCountdownCancellationChecker(var count: Int) extends CancellationChecker {
-    val message = "my exception"
-
-    override def throwIfCancelled(): Unit = {
-      count -= 1
-      if (count <= 0) throw new RuntimeException(message)
-    }
   }
 
   private def createNodeIr(node: String, properties: Option[String] = None): org.neo4j.cypher.internal.ir.CreateNode =

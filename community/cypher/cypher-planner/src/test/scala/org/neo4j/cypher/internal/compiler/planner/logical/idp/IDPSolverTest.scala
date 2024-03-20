@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
+import org.neo4j.cypher.internal.compiler.helpers.TestCountdownCancellationChecker
 import org.neo4j.cypher.internal.compiler.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.time.FakeClock
 import org.neo4j.time.Stopwatch
@@ -45,7 +47,8 @@ class IDPSolverTest extends CypherFunSuite {
       maxTableSize = 16,
       extraRequirement = ExtraRequirement.empty,
       iterationDurationLimit = Int.MaxValue,
-      stopWatchFactory = neverTimesOut
+      stopWatchFactory = neverTimesOut,
+      cancellationChecker = CancellationChecker.neverCancelled()
     )
 
     val seed = Seq(
@@ -71,7 +74,8 @@ class IDPSolverTest extends CypherFunSuite {
       maxTableSize = 16,
       extraRequirement = CapitalizationRequirement(capitalization),
       iterationDurationLimit = Int.MaxValue,
-      stopWatchFactory = neverTimesOut
+      stopWatchFactory = neverTimesOut,
+      cancellationChecker = CancellationChecker.neverCancelled()
     )
 
     val seed = Seq(
@@ -97,7 +101,8 @@ class IDPSolverTest extends CypherFunSuite {
       maxTableSize = 16,
       extraRequirement = CapitalizationRequirement(capitalization),
       iterationDurationLimit = Int.MaxValue,
-      stopWatchFactory = neverTimesOut
+      stopWatchFactory = neverTimesOut,
+      cancellationChecker = CancellationChecker.neverCancelled()
     )
 
     val seed = Seq(
@@ -124,7 +129,8 @@ class IDPSolverTest extends CypherFunSuite {
       maxTableSize = 16,
       extraRequirement = ExtraRequirement.empty,
       iterationDurationLimit = Int.MaxValue,
-      stopWatchFactory = neverTimesOut
+      stopWatchFactory = neverTimesOut,
+      cancellationChecker = CancellationChecker.neverCancelled()
     )
 
     val seed = Seq(
@@ -156,7 +162,8 @@ class IDPSolverTest extends CypherFunSuite {
       maxTableSize = 4,
       extraRequirement = ExtraRequirement.empty,
       iterationDurationLimit = Int.MaxValue,
-      stopWatchFactory = neverTimesOut
+      stopWatchFactory = neverTimesOut,
+      cancellationChecker = CancellationChecker.neverCancelled()
     )
 
     val seed: Seq[((Set[Char], Boolean), String)] = Seq(
@@ -205,7 +212,7 @@ class IDPSolverTest extends CypherFunSuite {
     override def endIteration(iteration: Int, depth: Int, tableSize: Int): Unit = {}
   }
 
-  def runTimeLimitedSolver(iterationDuration: Int): Int = {
+  private def runTimeLimitedSolver(iterationDuration: Int): Int = {
     var table: IDPTable[String] = null
     val monitor = TestIDPSolverMonitor()
     val solver = new IDPSolver[Char, String, Unit](
@@ -219,7 +226,8 @@ class IDPSolverTest extends CypherFunSuite {
       maxTableSize = Int.MaxValue,
       extraRequirement = ExtraRequirement.empty,
       iterationDurationLimit = iterationDuration,
-      stopWatchFactory = () => Stopwatch.start()
+      stopWatchFactory = () => Stopwatch.start(),
+      cancellationChecker = CancellationChecker.neverCancelled()
     )
 
     val seed: Seq[((Set[Char], Boolean), String)] =
@@ -241,6 +249,37 @@ class IDPSolverTest extends CypherFunSuite {
     val shortSolverIterations = runTimeLimitedSolver(10)
     val longSolverIterations = runTimeLimitedSolver(1000)
     shortSolverIterations should be > longSolverIterations
+  }
+
+  test("should check CancellationChecker in IDP loop") {
+    def runIdp(cancellationChecker: CancellationChecker): Unit = {
+      val solver = new IDPSolver[Char, String, Unit](
+        monitor = mock[IDPSolverMonitor],
+        generator = stringAppendingSolverStep(),
+        projectingSelector = firstLongest,
+        maxTableSize = 16,
+        extraRequirement = ExtraRequirement.empty,
+        iterationDurationLimit = Int.MaxValue,
+        stopWatchFactory = neverTimesOut,
+        cancellationChecker = cancellationChecker
+      )
+
+      val seed = Seq(
+        (Set('a'), false) -> "a",
+        (Set('b'), false) -> "b",
+        (Set('c'), false) -> "c",
+        (Set('d'), false) -> "d"
+      )
+
+      val solution = solver(seed, Seq('a', 'b', 'c', 'd'), context)
+      solution should equal(BestResults("abcd", None))
+    }
+
+    noException should be thrownBy runIdp(new TestCountdownCancellationChecker(11))
+
+    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val ex = the[RuntimeException] thrownBy runIdp(cancellationChecker)
+    ex should have message cancellationChecker.errorMessage
   }
 
   /**

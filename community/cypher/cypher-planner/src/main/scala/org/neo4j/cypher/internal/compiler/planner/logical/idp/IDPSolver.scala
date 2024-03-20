@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.helpers.IteratorSupport.RichIterator
 import org.neo4j.cypher.internal.compiler.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.Selector
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.exceptions.InternalException
 import org.neo4j.time.Stopwatch
 
@@ -83,7 +84,8 @@ class IDPSolver[Solvable, Result, Context](
   iterationDurationLimit: Long, // limits computation effort, reducing result quality
   extraRequirement: ExtraRequirement[Result],
   monitor: IDPSolverMonitor,
-  stopWatchFactory: () => Stopwatch
+  stopWatchFactory: () => Stopwatch,
+  cancellationChecker: CancellationChecker
 ) {
 
   /**
@@ -118,6 +120,8 @@ class IDPSolver[Solvable, Result, Context](
         blockSize += 1
         val goals = toDo.subGoals(blockSize)
         while (keepGoing && goals.hasNext) {
+          cancellationChecker.throwIfCancelled()
+
           val goal = goals.next()
           if (!table.contains(goal, sorted = false)) {
             val candidates: Iterable[Result] = generator(registry, goal, table, context).toVector

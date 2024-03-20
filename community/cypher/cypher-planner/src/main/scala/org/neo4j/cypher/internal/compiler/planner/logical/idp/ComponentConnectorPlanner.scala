@@ -136,7 +136,8 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
       iterationDurationLimit = config.iterationDurationLimit,
       extraRequirement = orderRequirement,
       monitor = monitor,
-      stopWatchFactory = () => Stopwatch.start()
+      stopWatchFactory = () => Stopwatch.start(),
+      cancellationChecker = context.staticComponents.cancellationChecker
     )
 
     val seed: Seed[QueryGraph, LogicalPlan] = components.flatMap {
