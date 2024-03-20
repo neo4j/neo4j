@@ -530,6 +530,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     seq
   }
 
+  def rollbackAndRestartTx(txType: KernelTransaction.Type): Unit =
+    runtimeTestSupport.rollbackAndRestartTx(txType)
+
   def request(numberOfRows: Long, left: RecordingRuntimeResult): Unit = {
     left.runtimeResult.request(numberOfRows)
     left.runtimeResult.await()
