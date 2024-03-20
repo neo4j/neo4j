@@ -183,7 +183,8 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 fromVersion.hasCapability(Index44Compatibility.INSTANCE),
                 contextFactory,
                 tailMetadata,
-                forceBtreeIndexesToRange);
+                forceBtreeIndexesToRange,
+                ReadBehaviour.INCLUSIVE_STRICT);
     }
 
     private Monitor progressTrackingMonitor(ProgressListener progressReporter) {

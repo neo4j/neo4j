@@ -33,6 +33,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
+import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -74,7 +75,8 @@ public class SchemaMigrator {
             boolean from44store,
             CursorContextFactory contextFactory,
             LogTailMetadata fromTailMetadata,
-            boolean forceBtreeIndexesToRange)
+            boolean forceBtreeIndexesToRange,
+            ReadBehaviour readBehaviour)
             throws IOException, KernelException {
         // Need to start the stores with the correct logTail since some stores depend on tx-id.
         LogTailExtractor logTailExtractor = new LogTailExtractor(fs, config, toStorage, DatabaseTracers.EMPTY);
@@ -111,70 +113,80 @@ public class SchemaMigrator {
                     forceBtreeIndexesToRange,
                     tokenHolders)) {
                 if (schemaRule instanceof IndexDescriptor indexDescriptor) {
-                    if (indexDescriptor.isTokenIndex()) {
-                        // Skip since they have already been created by the copy operation
-                        continue;
-                    }
-                    SchemaDescriptor schema = translateToNewSchema(
-                            indexDescriptor.schema(), tokenRead, schemaRuleMigrationAccess.tokenHolders());
+                    try {
+                        if (indexDescriptor.isTokenIndex()) {
+                            // Skip since they have already been created by the copy operation
+                            continue;
+                        }
+                        SchemaDescriptor schema = translateToNewSchema(
+                                indexDescriptor.schema(), tokenRead, schemaRuleMigrationAccess.tokenHolders());
 
-                    IndexPrototype newPrototype = indexDescriptor.isUnique()
-                            ? IndexPrototype.uniqueForSchema(schema, indexDescriptor.getIndexProvider())
-                            : IndexPrototype.forSchema(schema, indexDescriptor.getIndexProvider());
-                    newPrototype = newPrototype
-                            .withName(indexDescriptor.getName())
-                            .withIndexType(indexDescriptor.getIndexType())
-                            .withIndexConfig(indexDescriptor.getIndexConfig());
+                        IndexPrototype newPrototype = indexDescriptor.isUnique()
+                                ? IndexPrototype.uniqueForSchema(schema, indexDescriptor.getIndexProvider())
+                                : IndexPrototype.forSchema(schema, indexDescriptor.getIndexProvider());
+                        newPrototype = newPrototype
+                                .withName(indexDescriptor.getName())
+                                .withIndexType(indexDescriptor.getIndexType())
+                                .withIndexConfig(indexDescriptor.getIndexConfig());
 
-                    if (indexDescriptor.isUnique()) {
-                        // Handle constraint indexes later
-                        indexesToConnect.put(
-                                indexDescriptor.getId(),
-                                new IndexToConnect(
-                                        indexDescriptor.getId(),
-                                        indexDescriptor.getOwningConstraintId(),
-                                        newPrototype));
-                    } else {
-                        IndexDescriptor newDescriptor = newPrototype.materialise(schemaRuleMigrationAccess.nextId());
-                        schemaRuleMigrationAccess.writeSchemaRule(newDescriptor);
+                        if (indexDescriptor.isUnique()) {
+                            // Handle constraint indexes later
+                            indexesToConnect.put(
+                                    indexDescriptor.getId(),
+                                    new IndexToConnect(
+                                            indexDescriptor.getId(),
+                                            indexDescriptor.getOwningConstraintId(),
+                                            newPrototype));
+                        } else {
+                            IndexDescriptor newDescriptor =
+                                    newPrototype.materialise(schemaRuleMigrationAccess.nextId());
+                            schemaRuleMigrationAccess.writeSchemaRule(newDescriptor);
+                        }
+                    } catch (Exception e) {
+                        readBehaviour.error(e, "Could not copy %s", indexDescriptor.userDescription(tokenHolders));
                     }
                 } else if (schemaRule instanceof ConstraintDescriptor constraintDescriptor) {
-                    SchemaDescriptor schema = translateToNewSchema(
-                            constraintDescriptor.schema(), tokenRead, schemaRuleMigrationAccess.tokenHolders());
-                    ConstraintDescriptor descriptor =
-                            switch (constraintDescriptor.type()) {
-                                case UNIQUE -> {
-                                    IndexBackedConstraintDescriptor indexBacked =
-                                            constraintDescriptor.asIndexBackedConstraint();
-                                    yield ConstraintDescriptorFactory.uniqueForSchema(schema, indexBacked.indexType());
-                                }
-                                case EXISTS -> ConstraintDescriptorFactory.existsForSchema(schema);
-                                case UNIQUE_EXISTS -> {
-                                    IndexBackedConstraintDescriptor indexBacked =
-                                            constraintDescriptor.asIndexBackedConstraint();
-                                    yield ConstraintDescriptorFactory.keyForSchema(schema, indexBacked.indexType());
-                                }
-                                case PROPERTY_TYPE -> ConstraintDescriptorFactory.typeForSchema(
-                                        schema,
-                                        constraintDescriptor
-                                                .asPropertyTypeConstraint()
-                                                .propertyType());
-                            };
-                    descriptor = descriptor.withName(constraintDescriptor.getName());
+                    try {
+                        SchemaDescriptor schema = translateToNewSchema(
+                                constraintDescriptor.schema(), tokenRead, schemaRuleMigrationAccess.tokenHolders());
+                        ConstraintDescriptor descriptor =
+                                switch (constraintDescriptor.type()) {
+                                    case UNIQUE -> {
+                                        IndexBackedConstraintDescriptor indexBacked =
+                                                constraintDescriptor.asIndexBackedConstraint();
+                                        yield ConstraintDescriptorFactory.uniqueForSchema(
+                                                schema, indexBacked.indexType());
+                                    }
+                                    case EXISTS -> ConstraintDescriptorFactory.existsForSchema(schema);
+                                    case UNIQUE_EXISTS -> {
+                                        IndexBackedConstraintDescriptor indexBacked =
+                                                constraintDescriptor.asIndexBackedConstraint();
+                                        yield ConstraintDescriptorFactory.keyForSchema(schema, indexBacked.indexType());
+                                    }
+                                    case PROPERTY_TYPE -> ConstraintDescriptorFactory.typeForSchema(
+                                            schema,
+                                            constraintDescriptor
+                                                    .asPropertyTypeConstraint()
+                                                    .propertyType());
+                                };
+                        descriptor = descriptor.withName(constraintDescriptor.getName());
 
-                    if (descriptor.isIndexBackedConstraint()) {
-                        // Handle index-backed constraints later
-                        constraintsToConnect.put(
-                                constraintDescriptor.getId(),
-                                new ConstraintToConnect(
-                                        constraintDescriptor.getId(),
-                                        constraintDescriptor
-                                                .asIndexBackedConstraint()
-                                                .ownedIndexId(),
-                                        descriptor));
-                    } else {
-                        descriptor = descriptor.withId(schemaRuleMigrationAccess.nextId());
-                        schemaRuleMigrationAccess.writeSchemaRule(descriptor);
+                        if (descriptor.isIndexBackedConstraint()) {
+                            // Handle index-backed constraints later
+                            constraintsToConnect.put(
+                                    constraintDescriptor.getId(),
+                                    new ConstraintToConnect(
+                                            constraintDescriptor.getId(),
+                                            constraintDescriptor
+                                                    .asIndexBackedConstraint()
+                                                    .ownedIndexId(),
+                                            descriptor));
+                        } else {
+                            descriptor = descriptor.withId(schemaRuleMigrationAccess.nextId());
+                            schemaRuleMigrationAccess.writeSchemaRule(descriptor);
+                        }
+                    } catch (Exception e) {
+                        readBehaviour.error(e, "Could not copy %s", constraintDescriptor.userDescription(tokenHolders));
                     }
                 }
             }
