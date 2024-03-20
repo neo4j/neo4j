@@ -77,7 +77,7 @@ object ContextHelper extends MockitoSugar {
       CypherStatefulShortestPlanningModeOption.default,
     databaseReferenceRepository: DatabaseReferenceRepository = mockDatabaseReferenceRepository,
     databaseId: NamedDatabaseId = mock[NamedDatabaseId],
-    internalNotificationStats: InternalNotificationStats = InternalNotificationStats(),
+    internalNotificationStats: InternalNotificationStats = new InternalNotificationStats(),
     internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStats.newImpl()
   ): PlannerContext = {
     new PlannerContext(
