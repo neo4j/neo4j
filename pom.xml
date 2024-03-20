@@ -696,6 +696,7 @@
                                   <exclude>com.neo4j:enterprise-integration-tests:*:*:compile</exclude>
                                   <exclude>com.neo4j:neo4j-net-test-utils:*:*:compile</exclude>
                                   <exclude>com.neo4j:lighthouse-testbed:*:*:compile</exclude>
+                                  <exclude>com.neo4j:lighthouse-common-test:*:*:compile</exclude>
                                   <exclude>com.neo4j:neo4j-tools:*:*:compile</exclude>
                                   <exclude>org.neo4j:*test*:*:*:compile</exclude>
                                   <exclude>org.neo4j:*-test-util:*:*:compile</exclude>
