@@ -77,7 +77,7 @@ case class RunQueryAtPipe(
 
     new RunQueryAtIterator(
       s => transaction.executeQuery(query, params, s),
-      () => state.rowFactory.newRow(),
+      () => row.createClone(),
       columns.size,
       BUFFER_SIZE,
       state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
