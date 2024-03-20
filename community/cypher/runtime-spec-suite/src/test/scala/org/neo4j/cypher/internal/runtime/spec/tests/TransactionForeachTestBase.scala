@@ -582,6 +582,30 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     nodes.size shouldBe Math.pow(2, 2 * numberOfIterations)
   }
 
+  test("should pass LHS slot configuration onto downstream pipeline") {
+    // This test was added to recreate a bug encountered by customers
+    // See: https://trello.com/c/O7LN98Bd
+    val inputRows = Seq(Array[Any](42))
+
+    givenGraph {
+      nodeGraph(1, "N")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach(1)
+      .|.argument()
+      .distinct("x AS x")
+      .transactionForeach(1)
+      .|.allNodeScan("n")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
   test("statistics should report data creation from subqueries") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
