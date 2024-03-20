@@ -66,10 +66,11 @@ class ListSet[A](underlying: java.util.LinkedHashSet[A])
   override def iterableFactory: IterableFactory[ListSet] = ListSet
 
   override def concat(that: IterableOnce[A]): ListSet[A] = {
-    if (that.iterator.isEmpty) {
+    val it = that.iterator
+    if (it.isEmpty) {
       this
     } else {
-      iterableFactory.newBuilder.addAll(this).addAll(that).result()
+      iterableFactory.newBuilder.addAll(this).addAll(it).result()
     }
   }
 
