@@ -30,7 +30,7 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
  *
  * Inspired by scala.collection.immutable.ListSet and scala.collection.convert.JavaCollectionWrappers.JSetWrapper
  */
-class ListSet[A](underlying: java.util.LinkedHashSet[A])
+class ListSet[A](private val underlying: java.util.LinkedHashSet[A])
     extends AbstractSet[A]
     with StrictOptimizedSetOps[A, ListSet, ListSet[A]]
     with IterableFactoryDefaults[A, ListSet] {
@@ -80,7 +80,12 @@ class ListSet[A](underlying: java.util.LinkedHashSet[A])
       this
     } else {
       val newJava = new java.util.LinkedHashSet(underlying)
-      it.foreach(newJava.remove)
+
+      that match {
+        case ls: ListSet[A] => newJava.removeAll(ls.underlying)
+        case _              => it.foreach(newJava.remove)
+      }
+
       new ListSet(newJava)
     }
   }

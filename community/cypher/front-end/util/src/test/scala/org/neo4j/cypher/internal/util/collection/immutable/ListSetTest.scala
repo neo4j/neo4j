@@ -192,15 +192,18 @@ class ListSetTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChec
 
   test("removedAll") {
 
-    def removedAllTest(xs: List[Int], ys: List[Int]): Unit = {
-      val listSet = ListSet.from(xs) removedAll ListSet.from(ys)
-      val scalaListSet = immutable.ListSet.from(xs) removedAll immutable.ListSet.from(ys)
+    def removedAllTest(xs: List[Int], ys: IterableOnce[Int]): Unit = {
+      val listSet = ListSet.from(xs) removedAll ys
+      val scalaListSet = immutable.ListSet.from(xs) removedAll ys
       listSet shouldEqual scalaListSet
     }
 
     forAll(twoSmallIntLists) { case (xs, ys) =>
       removedAllTest(xs, ys)
       removedAllTest(ys, xs)
+
+      removedAllTest(xs, ListSet.from(ys))
+      removedAllTest(ys, ListSet.from(xs))
 
       removedAllTest(xs, xs.empty)
       removedAllTest(xs.empty, xs)
