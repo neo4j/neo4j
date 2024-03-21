@@ -97,7 +97,7 @@ object LiteralBuilder {
       input
     } else {
       var start = 0
-      val builder = new java.lang.StringBuilder(input.length)
+      var builder: java.lang.StringBuilder = null
       while (pos != -1) {
         val replacement: Char = input.charAt(pos + 1) match {
           case 't'  => '\t'
@@ -111,12 +111,13 @@ object LiteralBuilder {
           case _    => Char.MinValue
         }
         if (replacement != Char.MinValue) {
+          if (builder == null) builder = new java.lang.StringBuilder(input.length)
           builder.append(input, start, pos).append(replacement)
           start = pos + 2
         }
         pos = input.indexOf('\\', pos + 2)
       }
-      if (builder.isEmpty) input
+      if (builder == null || builder.isEmpty) input
       else if (start < input.length) builder.append(input, start, input.length).toString
       else builder.toString
     }
