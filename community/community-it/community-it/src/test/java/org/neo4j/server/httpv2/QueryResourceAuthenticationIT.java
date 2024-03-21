@@ -51,9 +51,9 @@ import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceAuthenticationIT {
+class QueryResourceAuthenticationIT {
 
-    private static DatabaseManagementService database;
+    private static DatabaseManagementService dbms;
     private static HttpClient client;
 
     private static String queryEndpoint;
@@ -61,9 +61,9 @@ public class QueryResourceAuthenticationIT {
     private final ObjectMapper MAPPER = new ObjectMapper();
 
     @BeforeEach
-    public void beforeEach() {
+    void beforeEach() {
         var builder = new TestDatabaseManagementServiceBuilder();
-        database = builder.setConfig(HttpConnector.enabled, true)
+        dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                 .setConfig(GraphDatabaseSettings.auth_enabled, true)
                 .setConfig(BoltConnector.enabled, true)
@@ -71,14 +71,14 @@ public class QueryResourceAuthenticationIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = resolveDependency(database, ConnectorPortRegister.class);
+        var portRegister = resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
 
     @AfterEach
-    public void cleanUp() {
-        database.shutdown();
+    void cleanUp() {
+        dbms.shutdown();
     }
 
     @Test
@@ -199,341 +199,10 @@ public class QueryResourceAuthenticationIT {
         assertThat(updatePasswordResp.statusCode()).isEqualTo(202);
     }
 
-    //
-    //    @ProtocolTest
-    //    void shouldFailIfWrongCredentialsFollowingSuccessfulLogin(
-    //            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException {
-    //
-    //        connection.send(wire.hello());
-    //        // ensure that the server returns the expected set of metadata
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //        // authenticate normally using the preset credentials and update the password to a new value
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", "neo4j",
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-    //
-    //        connection.send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x ->
-    // x.withParameters(
-    //                        singletonMap("password", "secretPassword"))
-    //                .withDatabase(SYSTEM_DATABASE_NAME)));
-    //        connection.send(wire.pull());
-    //
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
-    //
-    //        // attempt to authenticate again with the new password
-    //        connection.reconnect();
-    //        wire.negotiate(connection);
-    //
-    //        connection.send(wire.hello());
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-    //
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", "neo4j",
-    //                "credentials", "secretPassword")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-    //
-    //        // attempt to authenticate again with the old password
-    //        connection.reconnect();
-    //        wire.negotiate(connection);
-    //
-    //        connection.send(wire.hello());
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-    //
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", "neo4j",
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesFailure(
-    //                        Status.Security.Unauthorized, "The client is unauthorized due to authentication failure.")
-    //                .isEventuallyTerminated();
-    //    }
-    //
-    //    @ProtocolTest
-    //    void shouldFailIfMalformedAuthTokenWrongType(BoltWire wire, @VersionSelected TransportConnection connection)
-    //            throws IOException {
-    //        connection.send(wire.hello());
-    //        // ensure that the server returns the expected set of metadata
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", List.of("neo4j"),
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesFailureFuzzy(
-    //                        Status.Security.Unauthorized,
-    //                        "Unsupported authentication token, the value associated with the key `principal` must be a
-    // String but was: ArrayList")
-    //                .isEventuallyTerminated();
-    //    }
-    //
-    //    @ProtocolTest
-    //    void shouldFailIfMalformedAuthTokenMissingKey(BoltWire wire, @VersionSelected TransportConnection connection)
-    //            throws IOException {
-    //        connection.send(wire.hello());
-    //        // ensure that the server returns the expected set of metadata
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", "neo4j",
-    //                "this-should-have-been-credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesFailureFuzzy(
-    //                        Status.Security.Unauthorized, "Unsupported authentication token, missing key
-    // `credentials`")
-    //                .isEventuallyTerminated();
-    //    }
-    //
-    //    @ProtocolTest
-    //    void shouldFailIfMalformedAuthTokenMissingScheme(BoltWire wire, @VersionSelected TransportConnection
-    // connection)
-    //            throws IOException {
-    //        connection.send(wire.hello());
-    //        // ensure that the server returns the expected set of metadata
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //        connection.send(wire.logon(Map.of(
-    //                "principal", "neo4j",
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesFailureFuzzy(
-    //                        Status.Security.Unauthorized, "Unsupported authentication token, missing key `scheme`")
-    //                .isEventuallyTerminated();
-    //    }
-    //
-    //    @ProtocolTest
-    //    protected void shouldFailIfMalformedAuthTokenUnknownScheme(
-    //            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException {
-    //        connection.send(wire.hello());
-    //        // ensure that the server returns the expected set of metadata
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "unknown",
-    //                "principal", "neo4j",
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesFailure(
-    //                        Status.Security.Unauthorized,
-    //                        "Unsupported authentication token, scheme 'unknown' is not supported.")
-    //                .isEventuallyTerminated();
-    //    }
-    //
-    //    @ProtocolTest
-    //    void shouldFailDifferentlyIfTooManyFailedAuthAttempts(BoltWire wire, TransportConnection connection) {
-    //        awaitUntilAsserted(() -> {
-    //            connection.reconnect();
-    //            wire.negotiate(connection);
-    //
-    //            connection.send(wire.hello());
-    //            // ensure that the server returns the expected set of metadata
-    //            BoltConnectionAssertions.assertThat(connection)
-    //                    .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //            connection.send(wire.logon(Map.of(
-    //                    "scheme", "basic",
-    //                    "principal", "neo4j",
-    //                    "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN")));
-    //
-    //            BoltConnectionAssertions.assertThat(connection)
-    //                    .receivesFailure(
-    //                            Status.Security.AuthenticationRateLimit,
-    //                            "The client has provided incorrect authentication details too many times in a row.")
-    //                    .isEventuallyTerminated();
-    //        });
-    //    }
-    //
-    //    @ProtocolTest
-    //    void shouldFailWhenReusingTheSamePassword(BoltWire wire, @VersionSelected TransportConnection connection)
-    //            throws IOException {
-    //        connection.send(wire.hello());
-    //        // ensure that the server returns the expected set of metadata
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", "neo4j",
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
-    //
-    //        connection
-    //                .send(wire.reset())
-    //                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
-    //                                singletonMap("password", "password"))
-    //                        .withDatabase(SYSTEM_DATABASE_NAME)))
-    //                .send(wire.pull());
-    //
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
-    //
-    //        connection
-    //                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x ->
-    // x.withParameters(
-    //                                singletonMap("password", "password"))
-    //                        .withDatabase(SYSTEM_DATABASE_NAME)))
-    //                .send(wire.pull());
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesFailureFuzzy(
-    //                        Status.Statement.ArgumentError, "Old password and new password cannot be the same.")
-    //                .receivesIgnored();
-    //
-    //        connection
-    //                .send(wire.reset())
-    //                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x ->
-    // x.withParameters(
-    //                                singletonMap("password", "abcdefgh"))
-    //                        .withDatabase(SYSTEM_DATABASE_NAME)))
-    //                .send(wire.pull());
-    //
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
-    //    }
-    //
-    //    @ProtocolTest
-    //    void shouldFailWhenSubmittingEmptyPassword(BoltWire wire, @VersionSelected TransportConnection connection)
-    //            throws IOException {
-    //        connection.send(wire.hello());
-    //        // ensure that the server returns the expected set of metadata
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", "neo4j",
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
-    //
-    //        connection
-    //                .send(wire.run(
-    //                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-    //                        x -> x.withParameters(singletonMap("password", "")).withDatabase(SYSTEM_DATABASE_NAME)))
-    //                .send(wire.pull());
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesFailure(Status.Statement.ArgumentError, "A password cannot be empty.")
-    //                .receivesIgnored();
-    //
-    //        connection
-    //                .send(wire.reset())
-    //                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
-    //                                singletonMap("password", "abcdefgh"))
-    //                        .withDatabase(SYSTEM_DATABASE_NAME)))
-    //                .send(wire.pull());
-    //
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
-    //    }
-    //
-    //    @ProtocolTest
-    //    void shouldNotBeAbleToReadWhenPasswordChangeRequired(BoltWire wire, @VersionSelected TransportConnection
-    // connection)
-    //            throws IOException {
-    //        connection.send(wire.hello());
-    //        // ensure that the server returns the expected set of metadata
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //        // authenticate with the default (expired) credentials
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", "neo4j",
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
-    //
-    //        // attempt to execute a query
-    //        connection.send(wire.run("MATCH (n) RETURN n")).send(wire.pull());
-    //
-    //        // which should fail with one of two possible errors
-    //        try {
-    //            BoltConnectionAssertions.assertThat(connection)
-    //                    .receivesFailureFuzzy(
-    //                            Status.Security.CredentialsExpired,
-    //                            "The credentials you provided were valid, but must be changed before you can use this
-    // instance.");
-    //        } catch (AssertionError ignore) {
-    //            // Compiled runtime triggers the AuthorizationViolation exception on the PULL_N message, which means
-    // the RUN
-    //            // message will
-    //            // give a Success response. This should not matter much since RUN + PULL_N are always sent together.
-    //            BoltConnectionAssertions.assertThat(connection)
-    //                    .receivesFailureFuzzy(
-    //                            Status.Security.CredentialsExpired,
-    //                            "The credentials you provided were valid, but must be changed before you can use this
-    // instance.");
-    //        }
-    //    }
-    //
-    //    @ProtocolTest
-    //    void shouldBeAbleToLogoffAfterBeingAuthenticatedThenLogBackOn(
-    //            BoltWire wire, @VersionSelected TransportConnection connection) throws IOException {
-    //        connection.send(wire.hello());
-    //        // ensure that the server returns the expected set of metadata
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
-    //
-    //        // authenticate normally using the preset credentials and update the password to a new value
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", "neo4j",
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-    //
-    //        connection.send(wire.logoff());
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-    //
-    //        // Should be back in authentication state so should be able to log back on
-    //        connection.send(wire.logon(Map.of(
-    //                "scheme", "basic",
-    //                "principal", "neo4j",
-    //                "credentials", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-    //    }
-    //
-    //    @ProtocolTest
-    //    void shouldNotBeAbleToAuthenticateOnHelloMessage(BoltWire wire, @VersionSelected TransportConnection
-    // connection)
-    //            throws IOException {
-    //        // authenticate normally using the preset credentials and update the password to a new value
-    //        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
-    //
-    //        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-    //
-    //        // Attempt to start a transaction this will fail because you are in authentication state and not
-    // authenticated
-    //        connection.send(wire.begin());
-    //
-    //        BoltConnectionAssertions.assertThat(connection)
-    //                .receivesFailureFuzzy(
-    //                        Status.Request.Invalid, "cannot be handled by a session in the AUTHENTICATION state.");
-    //    }
-
     @AfterAll
-    public static void teardown() {
-        database.shutdown();
+    static void teardown() {
+        if (dbms != null) {
+            dbms.shutdown();
+        }
     }
 }

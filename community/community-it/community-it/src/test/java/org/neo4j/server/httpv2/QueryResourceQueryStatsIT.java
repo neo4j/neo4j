@@ -22,9 +22,6 @@ package org.neo4j.server.httpv2;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.httpv2.HttpV2ClientUtil.baseRequestBuilder;
 import static org.neo4j.server.httpv2.HttpV2ClientUtil.resolveDependency;
-import static org.neo4j.server.httpv2.response.format.Fieldnames.DATA_KEY;
-import static org.neo4j.server.httpv2.response.format.Fieldnames.FIELDS_KEY;
-import static org.neo4j.server.httpv2.response.format.Fieldnames.QUERY_STATS_KEY;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -46,9 +43,9 @@ import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceQueryStatsIT {
+class QueryResourceQueryStatsIT {
 
-    private static DatabaseManagementService database;
+    private static DatabaseManagementService dbms;
     private static HttpClient client;
 
     private static String queryEndpoint;
@@ -56,9 +53,9 @@ public class QueryResourceQueryStatsIT {
     private final ObjectMapper MAPPER = new ObjectMapper();
 
     @BeforeAll
-    public static void beforeAll() {
+    static void beforeAll() {
         var builder = new TestDatabaseManagementServiceBuilder();
-        database = builder.setConfig(HttpConnector.enabled, true)
+        dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                 .setConfig(
                         BoltConnectorInternalSettings.local_channel_address,
@@ -68,29 +65,28 @@ public class QueryResourceQueryStatsIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = resolveDependency(database, ConnectorPortRegister.class);
+        var portRegister = resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
 
     @AfterAll
-    public static void teardown() {
-        database.shutdown();
+    static void teardown() {
+        dbms.shutdown();
     }
 
     @Test
-    public void shouldIncludeQueryStats() throws IOException, InterruptedException {
+    void shouldIncludeQueryStats() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        "{\"statement\": \"RETURN 1\", \"includeQueryStatistics\": true}"))
+                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\", \"includeCounters\": true}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
-        var queryStatsMap = parsedJson.get(QUERY_STATS_KEY);
+        var queryStatsMap = parsedJson.get("counters");
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson.get("data").get("fields").size()).isEqualTo(1);
         assertThat(queryStatsMap.size()).isEqualTo(14);
         assertThat(queryStatsMap.get("containsUpdates").asBoolean()).isEqualTo(false);
         assertThat(queryStatsMap.get("containsSystemUpdates").asBoolean()).isEqualTo(false);
@@ -109,22 +105,21 @@ public class QueryResourceQueryStatsIT {
     }
 
     @Test
-    public void shouldNotIncludeQueryStats() throws IOException, InterruptedException {
+    void shouldNotIncludeQueryStats() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        "{\"statement\": \"RETURN 1\", \"includeQueryStatistics\": false}"))
+                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\", \"includeCounters\": false}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(QUERY_STATS_KEY)).isNull();
+        assertThat(parsedJson.get("data").get("fields").size()).isEqualTo(1);
+        assertThat(parsedJson.get("counters")).isNull();
     }
 
     @Test
-    public void shouldNotIncludeQueryStatsByDefault() throws IOException, InterruptedException {
+    void shouldNotIncludeQueryStatsByDefault() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
@@ -133,15 +128,15 @@ public class QueryResourceQueryStatsIT {
         assertThat(response.statusCode()).isEqualTo(202);
         var parsedJson = MAPPER.readTree(response.body());
 
-        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
-        assertThat(parsedJson.get(QUERY_STATS_KEY)).isNull();
+        assertThat(parsedJson.get("data").get("fields").size()).isEqualTo(1);
+        assertThat(parsedJson.get("counters")).isNull();
     }
 
     @Test
-    public void shouldErrorIfInvalidInput() throws IOException, InterruptedException {
+    void shouldErrorIfInvalidInput() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
-                        "{\"statement\": \"RETURN 1\", " + "\"includeQueryStatistics\": \"banana\"}"))
+                        "{\"statement\": \"RETURN 1\", " + "\"includeCounters\": \"banana\"}"))
                 .build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 

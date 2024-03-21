@@ -75,7 +75,11 @@ public class QueryResource {
         // The session will be closed after the result set has been serialized, it must not be closed in a
         // try-with-resources block here
         // It must be closed only in an exceptional state
-        Session session = driver.session(Session.class, sessionConfig, extractAuthToken(rawRequest));
+        var sessionAuthToken = extractAuthToken(rawRequest);
+        if (sessionAuthToken == null) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+        Session session = driver.session(Session.class, sessionConfig, sessionAuthToken);
 
         Response response;
         try {
@@ -83,14 +87,18 @@ public class QueryResource {
             var resultAndSession = new ResultContainer(result, session, request);
             response = Response.accepted(resultAndSession).build();
         } catch (FatalDiscoveryException ex) {
-            response = Response.status(404).entity(fromDriverException(ex)).build();
+            response = Response.status(Response.Status.NOT_FOUND)
+                    .entity(fromDriverException(ex))
+                    .build();
         } catch (ClientException | TransientException clientException) {
 
-            response = Response.status(400)
+            response = Response.status(Response.Status.BAD_REQUEST)
                     .entity(fromDriverException(clientException))
                     .build();
         } catch (Exception clientException) {
-            response = Response.status(400).entity(clientException).build();
+            response = Response.status(Response.Status.BAD_REQUEST)
+                    .entity(clientException)
+                    .build();
         }
 
         if (response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
@@ -109,9 +117,13 @@ public class QueryResource {
     private SessionConfig buildSessionConfig(QueryRequest request, String databaseName) {
         var sessionConfigBuilder = SessionConfig.builder().withDatabase(databaseName);
 
-        if (request.bookmarks() != null && !request.bookmarks().isEmpty()) {
+        if (!(request.bookmarks() == null || request.bookmarks().isEmpty())) {
             sessionConfigBuilder.withBookmarks(
                     request.bookmarks().stream().map(Bookmark::from).collect(Collectors.toList()));
+        }
+
+        if (!(request.impersonatedUser() == null || request.impersonatedUser().isBlank())) {
+            sessionConfigBuilder.withImpersonatedUser(request.impersonatedUser().trim());
         }
 
         if (request.accessMode() != null) {
@@ -122,10 +134,10 @@ public class QueryResource {
     }
 
     private static AuthToken extractAuthToken(HttpServletRequest request) {
-        /* Auth has already passed through AuthorizationEnabledFilter so we know we have formatted credential s**/
+        // Auth has already passed through AuthorizationEnabledFilter, so we know we have formatted credential
         if (HttpServletRequest.BASIC_AUTH.equals(request.getAuthType())) {
             var decoded = AuthorizationHeaders.decode(request.getHeader("Authorization"));
-            return AuthTokens.basic(decoded[0], decoded[1]);
+            return decoded != null ? AuthTokens.basic(decoded[0], decoded[1]) : null;
         }
         return AuthTokens.none();
     }

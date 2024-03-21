@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 
-class HttpV2Assertions extends AbstractAssert<HttpV2Assertions, JsonNode> {
+final class HttpV2Assertions extends AbstractAssert<HttpV2Assertions, JsonNode> {
 
     private final JsonNode jsonNode;
 

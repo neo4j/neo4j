@@ -58,18 +58,18 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.httpv2.response.format.Fieldnames;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceTypedJsonIT {
+class QueryResourceTypedJsonIT {
 
-    private static DatabaseManagementService database;
+    private static DatabaseManagementService dbms;
     private static HttpClient client;
     private static String queryEndpoint;
 
     private final ObjectMapper MAPPER = new ObjectMapper();
 
     @BeforeAll
-    public static void beforeAll() {
+    static void beforeAll() {
         var builder = new TestDatabaseManagementServiceBuilder();
-        database = builder.setConfig(HttpConnector.enabled, true)
+        dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                 .setConfig(
                         BoltConnectorInternalSettings.local_channel_address,
@@ -79,18 +79,18 @@ public class QueryResourceTypedJsonIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = resolveDependency(database, ConnectorPortRegister.class);
+        var portRegister = resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
 
     @AfterAll
-    public static void teardown() {
-        database.shutdown();
+    static void teardown() {
+        dbms.shutdown();
     }
 
     @Test
-    public void basicTypes() throws IOException, InterruptedException {
+    void basicTypes() throws IOException, InterruptedException {
         var response = simpleRequest(
                 client,
                 queryEndpoint,
@@ -139,7 +139,7 @@ public class QueryResourceTypedJsonIT {
     }
 
     @Test
-    public void temporalTypes() throws IOException, InterruptedException {
+    void temporalTypes() throws IOException, InterruptedException {
         var response = simpleRequest(
                 client,
                 queryEndpoint,
@@ -175,7 +175,7 @@ public class QueryResourceTypedJsonIT {
     }
 
     @Test
-    public void duration() throws IOException, InterruptedException {
+    void duration() throws IOException, InterruptedException {
         var response = simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"RETURN duration('P14DT16H12M') AS theDuration\"}");
 
@@ -187,8 +187,8 @@ public class QueryResourceTypedJsonIT {
     }
 
     @Test
-    public void binary() throws IOException, InterruptedException {
-        try (var tx = database.database("neo4j").beginTx()) {
+    void binary() throws IOException, InterruptedException {
+        try (var tx = dbms.database("neo4j").beginTx()) {
             tx.createNode(Label.label("FindMe")).setProperty("binaryGoodness", new byte[] {1, 2, 3, 4, 5});
             tx.commit();
         }
@@ -205,7 +205,7 @@ public class QueryResourceTypedJsonIT {
     }
 
     @Test
-    public void map() throws IOException, InterruptedException {
+    void map() throws IOException, InterruptedException {
         var response = simpleRequest(
                 client,
                 queryEndpoint,
@@ -254,7 +254,7 @@ public class QueryResourceTypedJsonIT {
     }
 
     @Test
-    public void list() throws IOException, InterruptedException {
+    void list() throws IOException, InterruptedException {
         var response = simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"RETURN [1,true,'hello',date('+2015-W13-4')] as list\"}");
 
@@ -283,7 +283,7 @@ public class QueryResourceTypedJsonIT {
     }
 
     @Test
-    public void node() throws IOException, InterruptedException {
+    void node() throws IOException, InterruptedException {
         var response = simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"CREATE (n:MyLabel {aNumber: 1234}) RETURN n\"}");
 
@@ -301,7 +301,7 @@ public class QueryResourceTypedJsonIT {
     }
 
     @Test
-    public void relationship() throws IOException, InterruptedException {
+    void relationship() throws IOException, InterruptedException {
         var response = simpleRequest(
                 client, queryEndpoint, "{\"statement\": \"CREATE (a)-[r:RELTYPE {onFire: 'owch!'}]->(b) RETURN r\"}");
 
@@ -318,7 +318,7 @@ public class QueryResourceTypedJsonIT {
     }
 
     @Test
-    public void simplePath() throws IOException, InterruptedException {
+    void simplePath() throws IOException, InterruptedException {
         var createPathReq =
                 simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE (a:LabelA)-[rel1:REL]->(b:LabelB)\"}");
 
@@ -357,7 +357,7 @@ public class QueryResourceTypedJsonIT {
     }
 
     @Test
-    public void path() throws IOException, InterruptedException {
+    void path() throws IOException, InterruptedException {
         var createPathReq = simpleRequest(
                 client,
                 queryEndpoint,

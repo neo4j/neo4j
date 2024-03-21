@@ -52,9 +52,9 @@ import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceConfigIT {
+class QueryResourceConfigIT {
 
-    private static DatabaseManagementService database;
+    private static DatabaseManagementService dbms;
     private static HttpClient client;
 
     private static String queryEndpoint;
@@ -62,9 +62,9 @@ public class QueryResourceConfigIT {
     private final ObjectMapper MAPPER = new ObjectMapper();
 
     @BeforeAll
-    public static void beforeAll() {
+    static void beforeAll() {
         var builder = new TestDatabaseManagementServiceBuilder();
-        database = builder.setConfig(HttpConnector.enabled, true)
+        dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                 .setConfig(
                         BoltConnectorInternalSettings.local_channel_address,
@@ -74,18 +74,18 @@ public class QueryResourceConfigIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = resolveDependency(database, ConnectorPortRegister.class);
+        var portRegister = resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
 
     @AfterAll
-    public static void teardown() {
-        database.shutdown();
+    static void teardown() {
+        dbms.shutdown();
     }
 
     @Test
-    public void shouldUseWriteAccessModeByDefault() throws IOException, InterruptedException {
+    void shouldUseWriteAccessModeByDefault() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"CREATE (n) RETURN n\"}"))
                 .build();
@@ -101,7 +101,7 @@ public class QueryResourceConfigIT {
 
     @ParameterizedTest
     @ValueSource(strings = {"WRITE", "write", "Write"})
-    public void shouldUseWriteAccessModeExplicitly(String input) throws IOException, InterruptedException {
+    void shouldUseWriteAccessModeExplicitly(String input) throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"CREATE (n) RETURN n\",\"accessMode\": \"" + input + "\"}"))
@@ -119,7 +119,7 @@ public class QueryResourceConfigIT {
 
     @ParameterizedTest
     @ValueSource(strings = {"READ", "read", "Read"})
-    public void shouldUseReadAccessModeExplicitly(String input) throws IOException, InterruptedException {
+    void shouldUseReadAccessModeExplicitly(String input) throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"RETURN 1\",\"accessMode\": \"" + input + "\"}"))
@@ -136,7 +136,7 @@ public class QueryResourceConfigIT {
     }
 
     @Test
-    public void shouldErrorIfWrongAccessModeUsed() throws IOException, InterruptedException {
+    void shouldErrorIfWrongAccessModeUsed() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"CREATE (n) RETURN n\",\"accessMode\": \"READ\"}"))
@@ -150,7 +150,7 @@ public class QueryResourceConfigIT {
     }
 
     @Test
-    public void shouldErrorIfInvalidAccessModeGiven() throws IOException, InterruptedException {
+    void shouldErrorIfInvalidAccessModeGiven() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"CREATE (n) RETURN n\",\"accessMode\": \"bananas\"}"))
@@ -164,7 +164,7 @@ public class QueryResourceConfigIT {
     }
 
     @Test
-    public void shouldReturnQueryPlan() throws IOException, InterruptedException {
+    void shouldReturnQueryPlan() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"EXPLAIN RETURN 1\"}"))
                 .build();
@@ -194,7 +194,7 @@ public class QueryResourceConfigIT {
     }
 
     @Test
-    public void shouldReturnProfile() throws IOException, InterruptedException {
+    void shouldReturnProfile() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"PROFILE RETURN 1\"}"))
                 .build();

@@ -25,7 +25,7 @@ import java.util.Map;
 public record QueryRequest(
         String statement,
         Map<String, Object> parameters,
-        boolean includeQueryStatistics,
+        boolean includeCounters,
         AccessMode accessMode,
         int maxExecutionTime,
         List<String> bookmarks,

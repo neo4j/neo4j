@@ -29,7 +29,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-class HttpV2ClientUtil {
+final class HttpV2ClientUtil {
 
     public static HttpRequest.Builder baseRequestBuilder(String endpoint, String databaseName) {
         return HttpRequest.newBuilder()

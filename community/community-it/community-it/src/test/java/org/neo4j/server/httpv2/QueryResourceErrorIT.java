@@ -45,17 +45,17 @@ import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceErrorIT {
+class QueryResourceErrorIT {
 
-    private static DatabaseManagementService database;
+    private static DatabaseManagementService dbms;
     private static HttpClient client;
     private final ObjectMapper MAPPER = new ObjectMapper();
     private static String queryEndpoint;
 
     @BeforeAll
-    public static void beforeAll() {
+    static void beforeAll() {
         var builder = new TestDatabaseManagementServiceBuilder();
-        database = builder.setConfig(HttpConnector.enabled, true)
+        dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                 .setConfig(
                         BoltConnectorInternalSettings.local_channel_address, QueryResourceErrorIT.class.getSimpleName())
@@ -64,18 +64,18 @@ public class QueryResourceErrorIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = resolveDependency(database, ConnectorPortRegister.class);
+        var portRegister = resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
 
     @AfterAll
-    public static void teardown() {
-        database.shutdown();
+    static void teardown() {
+        dbms.shutdown();
     }
 
     @Test
-    public void blankRequestReturnsBadRequest() throws IOException, InterruptedException {
+    void blankRequestReturnsBadRequest() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
@@ -88,7 +88,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void invalidHTTPVerb() throws IOException, InterruptedException {
+    void invalidHTTPVerb() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j").GET().build();
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
@@ -99,7 +99,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void invalidContentTypeHeader() throws IOException, InterruptedException {
+    void invalidContentTypeHeader() throws IOException, InterruptedException {
         var httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create(queryEndpoint.replace("{databaseName}", "neo4j")))
                 .header("Content-Type", "text/csv")
@@ -116,7 +116,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void unknownContentTypeHeader() throws IOException, InterruptedException {
+    void unknownContentTypeHeader() throws IOException, InterruptedException {
         var httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create(queryEndpoint.replace("{databaseName}", "neo4j")))
                 .header("Content-Type", "application/doesnt-exist")
@@ -133,7 +133,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void missingContentTypeHeader() throws IOException, InterruptedException {
+    void missingContentTypeHeader() throws IOException, InterruptedException {
         var httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create(queryEndpoint.replace("{databaseName}", "neo4j")))
                 .header("Accept", "application/json")
@@ -149,7 +149,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void contentTypeHeaderDoesNotMatchBody() throws IOException, InterruptedException {
+    void contentTypeHeaderDoesNotMatchBody() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("This is a random string!"))
                 .build();
@@ -162,7 +162,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void invalidAcceptHeader() throws IOException, InterruptedException {
+    void invalidAcceptHeader() throws IOException, InterruptedException {
         var httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create(queryEndpoint.replace("{databaseName}", "neo4j")))
                 .header("Content-Type", "application/json")
@@ -179,7 +179,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void unknownDatabase() throws IOException, InterruptedException {
+    void unknownDatabase() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "thisDbisALie")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
@@ -192,7 +192,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void invalidCypher() throws IOException, InterruptedException {
+    void invalidCypher() throws IOException, InterruptedException {
         var response = simpleRequest(client, queryEndpoint, "{\"statement\": \"MATCH (n)\"}");
 
         assertThat(response.statusCode()).isEqualTo(400);
@@ -202,7 +202,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void cypherButInAwayThatFielsCanBeComputedButTheResultNot() throws IOException, InterruptedException {
+    void cypherButInAwayThatFieldsCanBeComputedButTheResultNot() throws IOException, InterruptedException {
         var response = simpleRequest(client, queryEndpoint, "{\"statement\": \"RETURN 1/0 AS f\"}");
 
         assertThat(response.statusCode()).isEqualTo(202);
@@ -212,7 +212,30 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void systemCommandsDontWork() throws IOException, InterruptedException {
+    void impersonationOnCommunityEditionAuthDisabled() throws IOException, InterruptedException {
+
+        var body = """
+            {"statement": "RETURN 1 AS n", "impersonatedUser": "Waldo"}
+            """;
+
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(queryEndpoint.replace("{databaseName}", "neo4j")))
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.body())
+                .contains(
+                        """
+                        {"errors":[{"error":"Neo.ClientError.Statement.ArgumentError","message":"Impersonation is not supported with auth disabled."}]}""");
+    }
+
+    @Test
+    void systemCommandsDontWork() throws IOException, InterruptedException {
         var response = simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE DATABASE foo\"}");
 
         assertThat(response.statusCode()).isEqualTo(400);
@@ -222,7 +245,7 @@ public class QueryResourceErrorIT {
     }
 
     @Test
-    public void errorDuringCypherExecution() throws IOException, InterruptedException {
+    void errorDuringCypherExecution() throws IOException, InterruptedException {
         var response =
                 simpleRequest(client, queryEndpoint, "{\"statement\": \"UNWIND range(5, 0, -1) as N RETURN 3/N\"}");
 

@@ -142,8 +142,7 @@ public class ServerSettings implements SettingsDeclaration {
             .build();
 
     @Description(
-            "Defines the set of modules loaded into the Neo4j web server. "
-                    + "Options include TRANSACTIONAL_ENDPOINTS, BROWSER, UNMANAGED_EXTENSIONS and ENTERPRISE_MANAGEMENT_ENDPOINTS (if applicable).")
+            "Defines the set of modules loaded into the Neo4j web server. The enterprise management endpoints are only available in the enterprise edition.")
     public static final Setting<Set<ConfigurableServerModules>> http_enabled_modules = newBuilder(
                     "server.http_enabled_modules",
                     setOfEnums(ConfigurableServerModules.class),

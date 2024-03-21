@@ -55,9 +55,9 @@ import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceIT {
+class QueryResourceIT {
 
-    private static DatabaseManagementService database;
+    private static DatabaseManagementService dbms;
     private static HttpClient client;
 
     private static String queryEndpoint;
@@ -65,9 +65,9 @@ public class QueryResourceIT {
     private final ObjectMapper MAPPER = new ObjectMapper();
 
     @BeforeAll
-    public static void beforeAll() {
+    static void beforeAll() {
         var builder = new TestDatabaseManagementServiceBuilder();
-        database = builder.setConfig(HttpConnector.enabled, true)
+        dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                 .setConfig(BoltConnectorInternalSettings.local_channel_address, QueryResourceIT.class.getSimpleName())
                 .setConfig(BoltConnector.enabled, true)
@@ -75,18 +75,18 @@ public class QueryResourceIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = resolveDependency(database, ConnectorPortRegister.class);
+        var portRegister = resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
 
     @AfterAll
-    public static void teardown() {
-        database.shutdown();
+    static void teardown() {
+        dbms.shutdown();
     }
 
     @Test
-    public void shouldExecuteSimpleQuery() throws IOException, InterruptedException {
+    void shouldExecuteSimpleQuery() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
@@ -100,7 +100,7 @@ public class QueryResourceIT {
     }
 
     @Test
-    public void shouldReturnBookmarks() throws IOException, InterruptedException {
+    void shouldReturnBookmarks() throws IOException, InterruptedException {
         var response = simpleRequest(client, queryEndpoint);
 
         assertThat(response.statusCode()).isEqualTo(202);
@@ -111,7 +111,7 @@ public class QueryResourceIT {
     }
 
     @Test
-    public void shouldReturnUpdatedBookmark() throws IOException, InterruptedException {
+    void shouldReturnUpdatedBookmark() throws IOException, InterruptedException {
         var responseA = simpleRequest(client, queryEndpoint);
 
         assertThat(responseA.statusCode()).isEqualTo(202);
@@ -132,7 +132,7 @@ public class QueryResourceIT {
     }
 
     @Test
-    public void shouldAcceptBookmarksAsInput() throws IOException, InterruptedException {
+    void shouldAcceptBookmarksAsInput() throws IOException, InterruptedException {
         var responseA = simpleRequest(client, queryEndpoint);
 
         assertThat(responseA.statusCode()).isEqualTo(202);
@@ -155,7 +155,7 @@ public class QueryResourceIT {
     }
 
     @Test
-    public void shouldAcceptMultipleBookmarksAsInput() throws IOException, InterruptedException {
+    void shouldAcceptMultipleBookmarksAsInput() throws IOException, InterruptedException {
         var responseA = simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE (n)\"}");
         assertThat(responseA.statusCode()).isEqualTo(202);
 
@@ -183,14 +183,14 @@ public class QueryResourceIT {
     }
 
     @Test
-    public void shouldTimeoutWaitingForUnreachableBookmark() throws IOException, InterruptedException {
+    void shouldTimeoutWaitingForUnreachableBookmark() throws IOException, InterruptedException {
         var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
                 List.of(new QueryRouterBookmark.InternalGraphState(
-                        resolveDependency(database, Database.class)
+                        resolveDependency(dbms, Database.class)
                                 .getNamedDatabaseId()
                                 .databaseId()
                                 .uuid(),
-                        getLastClosedTransactionId(database) + 1)),
+                        getLastClosedTransactionId(dbms) + 1)),
                 List.of()));
 
         var response = simpleRequest(
@@ -206,14 +206,14 @@ public class QueryResourceIT {
     }
 
     @Test
-    public void shouldWaitForUpdatedBookmark() throws IOException, InterruptedException {
+    void shouldWaitForUpdatedBookmark() throws IOException, InterruptedException {
         var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
                 List.of(new QueryRouterBookmark.InternalGraphState(
-                        resolveDependency(database, Database.class)
+                        resolveDependency(dbms, Database.class)
                                 .getNamedDatabaseId()
                                 .databaseId()
                                 .uuid(),
-                        getLastClosedTransactionId(database) + 1)),
+                        getLastClosedTransactionId(dbms) + 1)),
                 List.of()));
 
         var responseA = simpleRequest(
@@ -239,7 +239,7 @@ public class QueryResourceIT {
     }
 
     @Test
-    public void callInTransactions() throws Exception {
+    void callInTransactions() throws Exception {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"UNWIND [4, 2, 1, 0] AS i"
                         + " CALL { WITH i CREATE ()} IN TRANSACTIONS OF 2 ROWS RETURN i\"}"))

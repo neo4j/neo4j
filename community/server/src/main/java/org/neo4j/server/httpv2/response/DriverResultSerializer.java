@@ -20,13 +20,13 @@
 package org.neo4j.server.httpv2.response;
 
 import static org.neo4j.server.httpv2.response.format.Fieldnames.BOOKMARKS_KEY;
+import static org.neo4j.server.httpv2.response.format.Fieldnames.COUNTERS_KEY;
 import static org.neo4j.server.httpv2.response.format.Fieldnames.DATA_KEY;
 import static org.neo4j.server.httpv2.response.format.Fieldnames.ERRORS_KEY;
 import static org.neo4j.server.httpv2.response.format.Fieldnames.FIELDS_KEY;
 import static org.neo4j.server.httpv2.response.format.Fieldnames.NOTIFICATIONS_KEY;
 import static org.neo4j.server.httpv2.response.format.Fieldnames.PROFILE_KEY;
 import static org.neo4j.server.httpv2.response.format.Fieldnames.QUERY_PLAN_KEY;
-import static org.neo4j.server.httpv2.response.format.Fieldnames.QUERY_STATS_KEY;
 import static org.neo4j.server.httpv2.response.format.Fieldnames.VALUES_KEY;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -91,8 +91,8 @@ public class DriverResultSerializer {
 
         writeNotifications(resultSummary.notifications());
 
-        if (queryRequest.includeQueryStatistics()) {
-            writeQueryStats(resultSummary.counters());
+        if (queryRequest.includeCounters()) {
+            writeCounters(resultSummary.counters());
         }
 
         if (resultSummary.hasPlan() && resultSummary.hasProfile()) {
@@ -116,8 +116,8 @@ public class DriverResultSerializer {
         jsonGenerator.flush();
     }
 
-    private void writeQueryStats(SummaryCounters counters) throws IOException {
-        jsonGenerator.writeFieldName(QUERY_STATS_KEY);
+    private void writeCounters(SummaryCounters counters) throws IOException {
+        jsonGenerator.writeFieldName(COUNTERS_KEY);
         jsonGenerator.writeObject(counters);
     }
 

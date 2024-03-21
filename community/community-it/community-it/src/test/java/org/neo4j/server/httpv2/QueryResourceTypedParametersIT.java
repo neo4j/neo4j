@@ -21,7 +21,6 @@ package org.neo4j.server.httpv2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.server.httpv2.HttpV2ClientUtil.baseRequestBuilder;
 import static org.neo4j.server.httpv2.HttpV2ClientUtil.resolveDependency;
 import static org.neo4j.server.httpv2.response.TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE;
 import static org.neo4j.server.httpv2.response.format.Fieldnames.CYPHER_TYPE;
@@ -56,9 +55,9 @@ import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceTypedParametersIT {
+class QueryResourceTypedParametersIT {
 
-    private static DatabaseManagementService database;
+    private static DatabaseManagementService dbms;
     private static HttpClient client;
 
     private static String queryEndpoint;
@@ -66,9 +65,9 @@ public class QueryResourceTypedParametersIT {
     private final ObjectMapper MAPPER = new ObjectMapper();
 
     @BeforeAll
-    public static void beforeAll() {
+    static void beforeAll() {
         var builder = new TestDatabaseManagementServiceBuilder();
-        database = builder.setConfig(HttpConnector.enabled, true)
+        dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                 .setConfig(
                         BoltConnectorInternalSettings.local_channel_address,
@@ -77,14 +76,14 @@ public class QueryResourceTypedParametersIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = resolveDependency(database, ConnectorPortRegister.class);
+        var portRegister = resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
 
     @AfterAll
-    public static void teardown() {
-        database.shutdown();
+    static void teardown() {
+        dbms.shutdown();
     }
 
     public static Stream<Arguments> paramTypes() {
@@ -105,7 +104,7 @@ public class QueryResourceTypedParametersIT {
 
     @ParameterizedTest
     @MethodSource("paramTypes")
-    public void shouldHandleParameters(String typeString, Object value) throws IOException, InterruptedException {
+    void shouldHandleParameters(String typeString, Object value) throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": {\"$type\":\"" + typeString + "\",\"_value\":\""
@@ -134,7 +133,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldHandleBooleanParameter() throws IOException, InterruptedException {
+    void shouldHandleBooleanParameter() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": {\"$type\":\"Boolean\",\"_value\": true}}}}}"))
@@ -162,7 +161,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldHandleStringParam() throws IOException, InterruptedException {
+    void shouldHandleStringParam() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": " + "{\"$type\":\"String\",\"_value\":\"Hello\"}}}"))
@@ -190,7 +189,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldHandleNullParameter() throws IOException, InterruptedException {
+    void shouldHandleNullParameter() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": {\"$type\":\"Null\",\"_value\": null}}}}}"))
@@ -218,7 +217,7 @@ public class QueryResourceTypedParametersIT {
 
     @ParameterizedTest
     @MethodSource("paramTypes")
-    public void shouldHandleMapParameters(String typeString, Object value) throws IOException, InterruptedException {
+    void shouldHandleMapParameters(String typeString, Object value) throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": {\"$type\":\"Map\",\"_value\":" + "{\"mappy\": {\"$type\":\""
@@ -245,7 +244,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldHandleMapWithBoolean() throws IOException, InterruptedException {
+    void shouldHandleMapWithBoolean() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": {\"$type\":\"Map\",\"_value\":"
@@ -275,7 +274,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldHandleNestedMaps() throws IOException, InterruptedException {
+    void shouldHandleNestedMaps() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": " + "{\"$type\": \"Map\", \"_value\": {\"mappy\": "
@@ -309,7 +308,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldHandleEmptyMaps() throws IOException, InterruptedException {
+    void shouldHandleEmptyMaps() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": " + "{\"$type\": \"Map\", \"_value\": {}}}}}"))
@@ -327,7 +326,7 @@ public class QueryResourceTypedParametersIT {
 
     @ParameterizedTest
     @MethodSource("paramTypes")
-    public void shouldHandleListParameters(String typeString, Object value) throws IOException, InterruptedException {
+    void shouldHandleListParameters(String typeString, Object value) throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": {\"$type\":\"List\",\"_value\": [{\"$type\":\"" + typeString
@@ -358,7 +357,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldHandleEmptyList() throws IOException, InterruptedException {
+    void shouldHandleEmptyList() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": " + "{\"$type\": \"List\", \"_value\": []}}}"))
@@ -374,7 +373,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldHandleNestedLists() throws IOException, InterruptedException {
+    void shouldHandleNestedLists() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(
                         HttpRequest.BodyPublishers.ofString(
@@ -428,7 +427,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldReturnErrorIfParametersDoesNotContainMap() throws IOException, InterruptedException {
+    void shouldReturnErrorIfParametersDoesNotContainMap() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"RETURN $parameter\"," + "\"parameters\": 123}"))
@@ -443,7 +442,7 @@ public class QueryResourceTypedParametersIT {
     }
 
     @Test
-    public void shouldHandleInvalidType() throws IOException, InterruptedException {
+    void shouldHandleInvalidType() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
                         + "\"parameters\": {\"parameter\": " + "{\"$type\": \"Bananas\", \"_value\": []}}}"))

@@ -49,9 +49,9 @@ import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class QueryResourceNotificationsIT {
+class QueryResourceNotificationsIT {
 
-    private static DatabaseManagementService database;
+    private static DatabaseManagementService dbms;
     private static HttpClient client;
 
     private static String queryEndpoint;
@@ -59,9 +59,9 @@ public class QueryResourceNotificationsIT {
     private final ObjectMapper MAPPER = new ObjectMapper();
 
     @BeforeAll
-    public static void beforeAll() {
+    static void beforeAll() {
         var builder = new TestDatabaseManagementServiceBuilder();
-        database = builder.setConfig(HttpConnector.enabled, true)
+        dbms = builder.setConfig(HttpConnector.enabled, true)
                 .setConfig(HttpConnector.listen_address, new SocketAddress("localhost", 0))
                 .setConfig(
                         BoltConnectorInternalSettings.local_channel_address,
@@ -71,18 +71,18 @@ public class QueryResourceNotificationsIT {
                 .setConfig(ServerSettings.http_enabled_modules, EnumSet.allOf(ConfigurableServerModules.class))
                 .impermanent()
                 .build();
-        var portRegister = resolveDependency(database, ConnectorPortRegister.class);
+        var portRegister = resolveDependency(dbms, ConnectorPortRegister.class);
         queryEndpoint = "http://" + portRegister.getLocalAddress(ConnectorType.HTTP) + "/db/{databaseName}/query/v2";
         client = HttpClient.newBuilder().build();
     }
 
     @AfterAll
-    public static void teardown() {
-        database.shutdown();
+    static void teardown() {
+        dbms.shutdown();
     }
 
     @Test
-    public void shouldReturnLabelDoesNotExistNotification() throws IOException, InterruptedException {
+    void shouldReturnLabelDoesNotExistNotification() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"statement\": \"MATCH (n:thisLabelDoesNotExist) return n\"}"))
@@ -121,7 +121,7 @@ public class QueryResourceNotificationsIT {
     }
 
     @Test
-    public void shouldReturnMultipleNotifications() throws IOException, InterruptedException {
+    void shouldReturnMultipleNotifications() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"MATCH (n:thisLabelDoesNotExist), "
                         + "(m:thisLabelDoesNotExist) return m, n\"}"))
@@ -145,7 +145,7 @@ public class QueryResourceNotificationsIT {
     }
 
     @Test
-    public void shouldNotReturnNotificationsIfNonePresent() throws IOException, InterruptedException {
+    void shouldNotReturnNotificationsIfNonePresent() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN 1\"}"))
                 .build();
