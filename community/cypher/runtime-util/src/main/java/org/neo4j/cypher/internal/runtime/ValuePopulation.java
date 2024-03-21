@@ -205,7 +205,7 @@ public final class ValuePopulation {
         final var elementId = dbAccess.elementIdMapper().nodeElementId(id);
 
         if (!nodeCursor.next()) {
-            if (!dbAccess.nodeDeletedInThisTransactionI(id)) {
+            if (!dbAccess.nodeDeletedInThisTransaction(id)) {
                 throw new ReadAndDeleteTransactionConflictException(false);
             } else {
                 return VirtualValues.nodeValue(id, elementId, EMPTY_TEXT_ARRAY, EMPTY_MAP, true);
@@ -224,7 +224,7 @@ public final class ValuePopulation {
         final var elementId = idMapper.relationshipElementId(id);
 
         if (!relCursor.next()) {
-            if (!dbAccess.relationshipDeletedInThisTransactionI(id)) {
+            if (!dbAccess.relationshipDeletedInThisTransaction(id)) {
                 throw new ReadAndDeleteTransactionConflictException(false);
             } else {
                 return VirtualValues.relationshipValue(

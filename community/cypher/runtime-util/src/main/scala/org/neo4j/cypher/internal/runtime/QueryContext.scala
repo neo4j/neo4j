@@ -352,7 +352,7 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   ): Boolean =
     nodeReadOps.hasProperty(node, property, nodeCursor, propertyCursor)
 
-  override def nodeDeletedInThisTransactionI(id: Long): Boolean = nodeReadOps.isDeletedInThisTx(id)
+  override def nodeDeletedInThisTransaction(id: Long): Boolean = nodeReadOps.isDeletedInThisTx(id)
 
   override def relationshipProperty(
     relationship: Long,
@@ -409,7 +409,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
     propertyCursor: PropertyCursor
   ): Boolean =
     relationshipReadOps.hasProperty(relationship, property, relationshipScanCursor, propertyCursor)
-  override def relationshipDeletedInThisTransactionI(id: Long): Boolean = relationshipReadOps.isDeletedInThisTx(id)
+
+  override def relationshipDeletedInThisTransaction(id: Long): Boolean = relationshipReadOps.isDeletedInThisTx(id)
 
   override def relationshipHasProperty(
     relationship: VirtualRelationshipValue,
