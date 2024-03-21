@@ -855,6 +855,13 @@
               <file>scalafmt/scalafmt.conf</file>
             </scalafmt>
           </scala>
+            <antlr4>
+              <!-- These are the defaults, you can override if you want -->
+              <includes>
+                <include>src/*/antlr4/**/*.g4</include>
+              </includes>
+<!--              <antlr4Formatter /> &lt;!&ndash; has its own section below &ndash;&gt;-->
+            </antlr4>
         </configuration>
         <dependencies>
           <dependency>

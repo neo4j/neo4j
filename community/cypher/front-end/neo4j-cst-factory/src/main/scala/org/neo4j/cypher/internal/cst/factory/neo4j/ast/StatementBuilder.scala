@@ -79,6 +79,7 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeqPositioned
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
@@ -344,7 +345,10 @@ trait StatementBuilder extends CypherParserListener {
       case CypherParser.SCAN  => UsingScanHint(ctx.variable().ast(), ctx.labelOrRelType().ast())(pos(ctx))
     }
   }
-  final override def exitNonEmptyNameList(ctx: CypherParser.NonEmptyNameListContext): Unit = {}
+
+  final override def exitNonEmptyNameList(ctx: CypherParser.NonEmptyNameListContext): Unit = {
+    ctx.ast = astSeqPositioned[PropertyKeyName, String](ctx.symbolicNameString(), PropertyKeyName.apply)
+  }
 
   private def nonEmptyPropertyKeyName(list: CypherParser.NonEmptyNameListContext): ArraySeq[PropertyKeyName] = {
     ArraySeq.from(list.symbolicNameString().asScala.collect {

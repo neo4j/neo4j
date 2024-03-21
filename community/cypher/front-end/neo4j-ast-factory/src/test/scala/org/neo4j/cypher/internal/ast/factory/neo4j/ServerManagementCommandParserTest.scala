@@ -32,34 +32,34 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   // SHOW
 
   test("SHOW SERVERS") {
-    assertAst(ast.ShowServers(None)(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(None)(defaultPos))
   }
 
   test("SHOW SERVER") {
-    assertAst(ast.ShowServers(None)(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(None)(defaultPos))
   }
 
   test("SHOW SERVERS YIELD *") {
     val yieldOrWhere = Left((yieldClause(returnAllItems), None))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVER YIELD *") {
     val yieldOrWhere = Left((yieldClause(returnAllItems), None))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVERS YIELD address") {
     val columns = yieldClause(returnItems(variableReturnItem("address")), None)
     val yieldOrWhere = Some(Left((columns, None)))
-    assertAst(ast.ShowServers(yieldOrWhere)(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(yieldOrWhere)(defaultPos))
   }
 
   test("SHOW SERVERS YIELD address ORDER BY name") {
     val orderByClause = Some(orderBy(sortItem(varFor("name"))))
     val columns = yieldClause(returnItems(variableReturnItem("address")), orderByClause)
     val yieldOrWhere = Some(Left((columns, None)))
-    assertAst(ast.ShowServers(yieldOrWhere)(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(yieldOrWhere)(defaultPos))
   }
 
   test("SHOW SERVERS YIELD address ORDER BY name SKIP 1 LIMIT 2 WHERE name = 'badger' RETURN *") {
@@ -73,23 +73,23 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
       Some(whereClause)
     )
     val yieldOrWhere = Some(Left((columns, Some(returnAll))))
-    assertAst(ast.ShowServers(yieldOrWhere)(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(yieldOrWhere)(defaultPos))
   }
 
   test("SHOW SERVERS YIELD * RETURN id") {
     val yieldOrWhere: Left[(Yield, Some[Return]), Nothing] =
       Left((yieldClause(returnAllItems), Some(return_(variableReturnItem("id")))))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVERS WHERE name = 'badger'") {
     val yieldOrWhere = Right(where(equals(varFor("name"), literalString("badger"))))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVER WHERE name = 'badger'") {
     val yieldOrWhere = Right(where(equals(varFor("name"), literalString("badger"))))
-    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+    assertAstNotAntlr(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
   test("SHOW SERVERS RETURN *") {
@@ -216,7 +216,9 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("DRYRUN DEALLOCATE DATABASES FROM SERVER 'badger', 'snake'") {
-    assertAst(ast.DeallocateServers(dryRun = true, Seq(literal("badger"), literal("snake")))(InputPosition(7, 1, 8)))
+    assertAst(
+      ast.DeallocateServers(dryRun = true, Seq(literal("badger"), literal("snake")))(InputPosition(7, 1, 8))
+    )
   }
 
   test("DEALLOCATE DATABASES FROM SERVER $name") {

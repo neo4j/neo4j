@@ -22,27 +22,30 @@ import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOptFromList
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.cast
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
-import org.neo4j.cypher.internal.parser.CypherParser.CommandRelPatternContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintExistsContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintIsNotNullContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintIsUniqueContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintKeyContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintTypedContext
-import org.neo4j.cypher.internal.parser.CypherParser.DropConstraintNodeCheckContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobRecursiveContext
 import org.neo4j.cypher.internal.parser.CypherParser.SymbolicAliasNameOrParameterContext
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.ListHasAsScala
-import scala.jdk.CollectionConverters.SeqHasAsJava
 
 final class SyntaxChecker extends ParseTreeListener {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
@@ -85,31 +88,52 @@ final class SyntaxChecker extends ParseTreeListener {
     new InputPosition(symbol.getStartIndex, symbol.getLine, symbol.getCharPositionInLine + 1)
   }
 
-  private def errorOnDuplicated(
+  private def errorOnDuplicate(
     token: Token,
-    paramDescription: String
+    description: String,
+    isParam: Boolean = false
   ): Unit = {
-    errors :+= exceptionFactory.syntaxException(
-      s"Duplicated $paramDescription parameters",
-      inputPosition(token)
-    )
-  }
+    if (isParam) {
+      errors :+= exceptionFactory.syntaxException(
+        s"Duplicated $description parameters",
+        inputPosition(token)
+      )
+    } else {
+      errors :+= exceptionFactory.syntaxException(
+        s"Duplicate $description clause",
+        inputPosition(token)
+      )
 
-  private def errorOnDuplicated(
-    params: java.util.List[TerminalNode],
-    paramDescription: String
-  ): Unit = {
-    if (params.size() > 1) {
-      errorOnDuplicated(params.get(1).getSymbol, paramDescription)
     }
   }
 
-  private def errorOnDuplicatedRule[T <: ParserRuleContext](
-    params: java.util.List[T],
-    paramDescription: String
+  private def errorOnDuplicateTokens(
+    params: java.util.List[TerminalNode],
+    description: String,
+    isParam: Boolean = false
   ): Unit = {
     if (params.size() > 1) {
-      errorOnDuplicated(params.get(1).start, paramDescription)
+      errorOnDuplicate(params.get(1).getSymbol, description, isParam)
+    }
+  }
+
+  private def errorOnDuplicateCtx[T <: AstRuleCtx](
+    ctx: java.util.List[T],
+    description: String,
+    isParam: Boolean = false
+  ): Unit = {
+    if (ctx.size > 1) {
+      errorOnDuplicate(nodeChild(ctx.get(1), 0).getSymbol, description, isParam)
+    }
+  }
+
+  private def errorOnDuplicateRule[T <: ParserRuleContext](
+    params: java.util.List[T],
+    description: String,
+    isParam: Boolean = false
+  ): Unit = {
+    if (params.size() > 1) {
+      errorOnDuplicate(params.get(1).start, description, isParam)
     }
   }
 
@@ -127,56 +151,57 @@ final class SyntaxChecker extends ParseTreeListener {
     }
   }
 
-  private def errorOnRelationshipAndNodeConstraints[S <: ParserRuleContext, T <: ParserRuleContext](
-    relPattern: S,
-    constraint: T,
-    containsKey: T => Boolean
-  ): Unit = {
-    if (relPattern != null && constraint != null) {
-      val nodeType: ConstraintType = if (containsKey(constraint)) {
-        ConstraintType.NODE_KEY
-      } else {
-        ConstraintType.NODE_UNIQUE
-      }
-
-      errors :+= exceptionFactory.syntaxException(
-        nodeType.toString ++ " does not allow relationship patterns",
-        inputPosition(relPattern.getStart)
-      )
-    }
-  }
-
   private def checkSubqueryInTransactionsParameters(ctx: CypherParser.SubqueryInTransactionsParametersContext): Unit = {
-    errorOnDuplicatedRule(ctx.subqueryInTransactionsBatchParameters(), "OF ROWS")
-    errorOnDuplicatedRule(ctx.subqueryInTransactionsErrorParameters(), "ON ERROR")
-    errorOnDuplicatedRule(ctx.subqueryInTransactionsReportParameters(), "REPORT STATUS AS")
+    errorOnDuplicateRule(ctx.subqueryInTransactionsBatchParameters(), "OF ROWS", isParam = true)
+    errorOnDuplicateRule(ctx.subqueryInTransactionsErrorParameters(), "ON ERROR", isParam = true)
+    errorOnDuplicateRule(ctx.subqueryInTransactionsReportParameters(), "REPORT STATUS AS", isParam = true)
   }
 
   private def checkCreateAlias(ctx: CypherParser.CreateAliasContext): Unit = {
-    errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
+    if (ctx.stringOrParameter() != null)
+      errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
+
   }
 
   private def checkAlterAlias(ctx: CypherParser.AlterAliasContext): Unit = {
-    errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
-    errorOnDuplicated(ctx.DRIVER(), "DRIVER")
-    errorOnDuplicated(ctx.AT(), "AT")
-    errorOnDuplicated(ctx.USER(), "USER")
-    errorOnDuplicated(ctx.PASSWORD(), "PASSWORD")
-    errorOnDuplicated(ctx.PROPERTIES(), "PROPERTIES")
-    errorOnDuplicated(ctx.TARGET(), "TARGET")
+    // Should only be checked in case of remote
+    val aliasTargetCtx = ctx.alterAliasTarget()
+    val url =
+      if (aliasTargetCtx.isEmpty) None else astOpt[Either[String, Parameter]](aliasTargetCtx.get(0).stringOrParameter())
+    val username = astOptFromList[Expression](ctx.alterAliasUser(), None)
+    val password = astOptFromList[Expression](ctx.alterAliasPassword(), None)
+    val driverSettings = astOptFromList[Either[Map[String, Expression], Parameter]](ctx.alterAliasDriver(), None)
+    if (url.isDefined || username.isDefined || password.isDefined || driverSettings.isDefined)
+      errorOnAliasNameContainingDots(java.util.List.of(ctx.symbolicAliasNameOrParameter()))
+
+    errorOnDuplicateCtx(ctx.alterAliasDriver(), "DRIVER")
+    errorOnDuplicateCtx(ctx.alterAliasUser, "USER")
+    errorOnDuplicateCtx(ctx.alterAliasPassword(), "PASSWORD")
+    errorOnDuplicateCtx(ctx.alterAliasProperties(), "PROPERTIES")
+    errorOnDuplicateCtx(aliasTargetCtx, "TARGET")
   }
 
   private def checkCreateUser(ctx: CypherParser.CreateUserContext): Unit = {
-    errorOnDuplicatedRule(ctx.passwordChangeRequired(), "SET PASSWORD CHANGE [NOT] REQUIRED")
-    errorOnDuplicatedRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
-    errorOnDuplicatedRule(ctx.homeDatabase(), "SET HOME DATABASE")
+    val changeRequired = ctx.password().passwordChangeRequired()
+    if (changeRequired != null && !ctx.PASSWORD().isEmpty) {
+      errorOnDuplicate(ctx.PASSWORD().get(0).getSymbol, "SET PASSWORD CHANGE [NOT] REQUIRED")
+    } else if (ctx.PASSWORD().size > 1) {
+      errorOnDuplicate(ctx.PASSWORD().get(1).getSymbol, "SET PASSWORD CHANGE [NOT] REQUIRED")
+    }
+    errorOnDuplicateRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
+    errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")
   }
 
   private def checkAlterUser(ctx: CypherParser.AlterUserContext): Unit = {
-    errorOnDuplicatedRule(ctx.setPassword(), "SET PASSWORD")
-    errorOnDuplicatedRule(ctx.passwordChangeRequired(), "SET PASSWORD CHANGE [NOT] REQUIRED")
-    errorOnDuplicatedRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
-    errorOnDuplicatedRule(ctx.homeDatabase(), "SET HOME DATABASE")
+    val nbrSetPass = ctx.PASSWORD().size + ctx.password().size()
+    if (nbrSetPass > 1) {
+      if (ctx.PASSWORD().size > 1)
+        errorOnDuplicateTokens(ctx.PASSWORD(), "SET PASSWORD CHANGE [NOT] REQUIRED")
+      else if (ctx.password().size > 0)
+        errorOnDuplicateCtx(ctx.password(), "SET PASSWORD")
+    }
+    errorOnDuplicateRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
+    errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")
   }
 
   private def checkAllPrivilege(ctx: CypherParser.AllPrivilegeContext): Unit = {
@@ -295,11 +320,21 @@ final class SyntaxChecker extends ParseTreeListener {
   }
 
   private def checkDropConstraint(ctx: CypherParser.DropConstraintContext): Unit = {
-    errorOnRelationshipAndNodeConstraints[CommandRelPatternContext, DropConstraintNodeCheckContext](
-      ctx.commandRelPattern(),
-      ctx.dropConstraintNodeCheck(),
-      _.KEY() != null
-    )
+    val relPattern = ctx.commandRelPattern()
+    if (relPattern != null) {
+      val errorMessageEnd = " does not allow relationship patterns"
+      if (ctx.KEY() != null) {
+        errors :+= exceptionFactory.syntaxException(
+          ConstraintType.NODE_KEY.toString ++ errorMessageEnd,
+          inputPosition(relPattern.getStart)
+        )
+      } else if (ctx.UNIQUE() != null) {
+        errors :+= exceptionFactory.syntaxException(
+          ConstraintType.NODE_UNIQUE.toString ++ errorMessageEnd,
+          inputPosition(relPattern.getStart)
+        )
+      }
+    }
 
     if (ctx.NULL() != null) {
       errors :+= exceptionFactory.syntaxException(
@@ -310,22 +345,54 @@ final class SyntaxChecker extends ParseTreeListener {
   }
 
   private def checkCreateDatabase(ctx: CypherParser.CreateDatabaseContext): Unit = {
-    errorOnDuplicatedRule[CypherParser.PrimaryTopologyContext](ctx.primaryTopology(), "PRIMARY")
-    errorOnDuplicatedRule[CypherParser.SecondaryTopologyContext](ctx.secondaryTopology(), "SECONDARY")
+    errorOnDuplicateRule[CypherParser.PrimaryTopologyContext](ctx.primaryTopology(), "PRIMARY")
+    errorOnDuplicateRule[CypherParser.SecondaryTopologyContext](ctx.secondaryTopology(), "SECONDARY")
   }
 
   private def checkAlterDatabase(ctx: CypherParser.AlterDatabaseContext): Unit = {
-    val primaries =
-      ctx.PRIMARY().asScala.sortBy(_.getSymbol.getStartIndex)
-    val secondaries =
-      ctx.SECONDARY().asScala.sortBy(_.getSymbol.getStartIndex)
+    if (!ctx.REMOVE().isEmpty) {
+      val keyNames = astSeq[String](ctx.symbolicNameString())
+      val keySet = mutable.Set.empty[String]
+      var i = 0
+      keyNames.foreach(k =>
+        if (keySet.contains(k)) {
+          errors :+= exceptionFactory.syntaxException(
+            s"Duplicate 'REMOVE OPTION $k' clause",
+            pos(ctx.symbolicNameString(i))
+          )
+        } else {
+          keySet.addOne(k)
+          i += 1
+        }
+      )
+    }
 
-    errorOnDuplicated(primaries.asJava, "PRIMARY")
-    errorOnDuplicated(secondaries.asJava, "SECONDARY")
-    errorOnDuplicated(ctx.REMOVE(), "REMOVE")
-    errorOnDuplicated(ctx.ACCESS(), "ACCESS")
-    errorOnDuplicated(ctx.TOPOLOGY(), "TOPOLOGY")
-    errorOnDuplicated(ctx.OPTION(), "OPTION")
+    if (!ctx.alterDatabaseOption().isEmpty) {
+      val optionCtxs = astSeq[Map[String, Expression]](ctx.alterDatabaseOption())
+      val keyNames = optionCtxs.flatMap(m => m.keys)
+      val keySet = mutable.Set.empty[String]
+      var i = 0
+      keyNames.foreach(k =>
+        if (keySet.contains(k)) {
+          errors :+= exceptionFactory.syntaxException(
+            s"Duplicate 'SET OPTION $k' clause",
+            pos(ctx.alterDatabaseOption(i))
+          )
+        } else {
+          keySet.addOne(k)
+          i += 1
+        }
+      )
+    }
+
+    errorOnDuplicateCtx(ctx.alterDatabaseAccess(), "ACCESS")
+
+    val topology = ctx.alterDatabaseTopology()
+    errorOnDuplicateCtx(topology, "TOPOLOGY")
+    if (!topology.isEmpty) {
+      errorOnDuplicateRule[CypherParser.PrimaryTopologyContext](topology.get(0).primaryTopology(), "PRIMARY")
+      errorOnDuplicateRule[CypherParser.SecondaryTopologyContext](topology.get(0).secondaryTopology(), "SECONDARY")
+    }
   }
 
   private def checkPeriodicCommitQueryHintFailure(ctx: CypherParser.PeriodicCommitQueryHintFailureContext): Unit = {

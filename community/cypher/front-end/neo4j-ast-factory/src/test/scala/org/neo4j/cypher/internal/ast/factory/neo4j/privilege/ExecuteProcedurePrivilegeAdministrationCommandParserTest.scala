@@ -145,7 +145,7 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
               }
 
               test(s"$verb$immutableString $execute a b ON DBMS $preposition role") {
-                assertAst(
+                assertAstNotAntlr(
                   func(action, List(ProcedureQualifier("ab")(defaultPos)), Seq(literalRole), immutable)(defaultPos)
                 )
               }

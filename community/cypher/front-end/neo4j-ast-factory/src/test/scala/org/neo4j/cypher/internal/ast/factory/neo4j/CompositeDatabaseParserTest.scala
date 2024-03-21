@@ -123,76 +123,82 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("DROP COMPOSITE DATABASE name") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       namespacedName("name"),
       ifExists = false,
       composite = true,
       DestroyData,
       NoWait
-    ))
+    )(pos))
   }
 
   test("DROP COMPOSITE DATABASE `db.name`") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       namespacedName("db.name"),
       ifExists = false,
       composite = true,
       DestroyData,
       NoWait
-    ))
+    )(pos))
   }
 
   test("DROP COMPOSITE DATABASE db.name") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       namespacedName("db", "name"),
       ifExists = false,
       composite = true,
       DestroyData,
       NoWait
-    ))
+    )(pos))
   }
 
   test("DROP COMPOSITE DATABASE $name") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       stringParamName("name"),
       ifExists = false,
       composite = true,
       DestroyData,
       NoWait
-    ))
+    )(pos))
   }
 
   test("DROP COMPOSITE DATABASE name IF EXISTS") {
-    yields[Statements](ast.DropDatabase(namespacedName("name"), ifExists = true, composite = true, DestroyData, NoWait))
+    parsesTo[Statements](ast.DropDatabase(
+      namespacedName("name"),
+      ifExists = true,
+      composite = true,
+      DestroyData,
+      NoWait
+    )(pos))
   }
 
   test("DROP COMPOSITE DATABASE name WAIT") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       namespacedName("name"),
       ifExists = false,
       composite = true,
       DestroyData,
       IndefiniteWait
-    ))
+    )(pos))
   }
 
   test("DROP COMPOSITE DATABASE name WAIT 10 SECONDS") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       namespacedName("name"),
       ifExists = false,
       composite = true,
       DestroyData,
       TimeoutAfter(10)
-    ))
+    )(pos))
   }
 
   test("DROP COMPOSITE DATABASE name NOWAIT") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       namespacedName("name"),
       ifExists = false,
       composite = true,
       DestroyData,
       NoWait
-    ))
+    )(pos))
   }
 }

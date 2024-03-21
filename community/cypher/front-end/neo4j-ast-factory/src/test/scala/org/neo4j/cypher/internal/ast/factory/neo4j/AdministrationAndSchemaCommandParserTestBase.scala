@@ -37,6 +37,11 @@ import java.nio.charset.StandardCharsets
 class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   protected def assertAst(expected: ast.Statement, comparePosition: Boolean = true): Unit = {
+    if (comparePosition) parses[Statements].toAstPositioned(Statements(Seq(expected)))
+    else parses[Statements].toAst(Statements(Seq(expected)))
+  }
+
+  protected def assertAstNotAntlr(expected: ast.Statement, comparePosition: Boolean = true): Unit = {
     if (comparePosition) parses[Statements](NotAnyAntlr).toAstPositioned(Statements(Seq(expected)))
     else parses[Statements](NotAnyAntlr).toAst(Statements(Seq(expected)))
   }

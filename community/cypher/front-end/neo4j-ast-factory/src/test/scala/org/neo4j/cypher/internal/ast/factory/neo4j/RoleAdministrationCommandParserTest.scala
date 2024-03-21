@@ -364,43 +364,43 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   // Renaming role
 
   test("RENAME ROLE foo TO bar") {
-    yields[Statements](ast.RenameRole(literalFoo, literalBar, ifExists = false))
+    parsesTo[Statements](ast.RenameRole(literalFoo, literalBar, ifExists = false)(pos))
   }
 
   test("RENAME ROLE foo TO $bar") {
-    yields[Statements](ast.RenameRole(literalFoo, stringParam("bar"), ifExists = false))
+    parsesTo[Statements](ast.RenameRole(literalFoo, stringParam("bar"), ifExists = false)(pos))
   }
 
   test("RENAME ROLE $foo TO bar") {
-    yields[Statements](ast.RenameRole(stringParam("foo"), literalBar, ifExists = false))
+    parsesTo[Statements](ast.RenameRole(stringParam("foo"), literalBar, ifExists = false)(pos))
   }
 
   test("RENAME ROLE $foo TO $bar") {
-    yields[Statements](ast.RenameRole(stringParam("foo"), stringParam("bar"), ifExists = false))
+    parsesTo[Statements](ast.RenameRole(stringParam("foo"), stringParam("bar"), ifExists = false)(pos))
   }
 
   test("RENAME ROLE foo IF EXISTS TO bar") {
-    yields[Statements](ast.RenameRole(literalFoo, literalBar, ifExists = true))
+    parsesTo[Statements](ast.RenameRole(literalFoo, literalBar, ifExists = true)(pos))
   }
 
   test("RENAME ROLE foo IF EXISTS TO $bar") {
-    yields[Statements](ast.RenameRole(literalFoo, stringParam("bar"), ifExists = true))
+    parsesTo[Statements](ast.RenameRole(literalFoo, stringParam("bar"), ifExists = true)(pos))
   }
 
   test("RENAME ROLE $foo IF EXISTS TO bar") {
-    yields[Statements](ast.RenameRole(stringParam("foo"), literalBar, ifExists = true))
+    parsesTo[Statements](ast.RenameRole(stringParam("foo"), literalBar, ifExists = true)(pos))
   }
 
   test("RENAME ROLE $foo IF EXISTS TO $bar") {
-    yields[Statements](ast.RenameRole(stringParam("foo"), stringParam("bar"), ifExists = true))
+    parsesTo[Statements](ast.RenameRole(stringParam("foo"), stringParam("bar"), ifExists = true)(pos))
   }
 
   test("RENAME ROLE foo TO ``") {
-    yields[Statements](ast.RenameRole(literalFoo, literalEmpty, ifExists = false))
+    parsesTo[Statements](ast.RenameRole(literalFoo, literalEmpty, ifExists = false)(pos))
   }
 
   test("RENAME ROLE `` TO bar") {
-    yields[Statements](ast.RenameRole(literalEmpty, literalBar, ifExists = false))
+    parsesTo[Statements](ast.RenameRole(literalEmpty, literalBar, ifExists = false)(pos))
   }
 
   test("RENAME ROLE foo TO") {
@@ -485,23 +485,23 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   //  Dropping role
 
   test("DROP ROLE foo") {
-    yields[Statements](ast.DropRole(literalFoo, ifExists = false))
+    parsesTo[Statements](ast.DropRole(literalFoo, ifExists = false)(pos))
   }
 
   test("DROP ROLE $foo") {
-    yields[Statements](ast.DropRole(paramFoo, ifExists = false))
+    parsesTo[Statements](ast.DropRole(paramFoo, ifExists = false)(pos))
   }
 
   test("DROP ROLE ``") {
-    yields[Statements](ast.DropRole(literalEmpty, ifExists = false))
+    parsesTo[Statements](ast.DropRole(literalEmpty, ifExists = false)(pos))
   }
 
   test("DROP ROLE foo IF EXISTS") {
-    yields[Statements](ast.DropRole(literalFoo, ifExists = true))
+    parsesTo[Statements](ast.DropRole(literalFoo, ifExists = true)(pos))
   }
 
   test("DROP ROLE `` IF EXISTS") {
-    yields[Statements](ast.DropRole(literalEmpty, ifExists = true))
+    parsesTo[Statements](ast.DropRole(literalEmpty, ifExists = true)(pos))
   }
 
   test("DROP ROLE ") {
@@ -512,11 +512,11 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("DROP ROLE  IF EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP ROLE foo IF NOT EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   //  Granting/revoking roles to/from users

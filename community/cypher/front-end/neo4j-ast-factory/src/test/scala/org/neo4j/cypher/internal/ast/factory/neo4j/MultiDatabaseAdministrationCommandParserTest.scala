@@ -421,23 +421,23 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE DATABASE \"foo.bar\"") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE DATABASE foo-bar42") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE DATABASE _foo-bar42") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE DATABASE 42foo-bar") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE DATABASE _foo-bar42 IF NOT EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE DATABASE  IF NOT EXISTS") {
@@ -455,11 +455,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE DATABASE foo IF EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE DATABASE foo WAIT -12") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE DATABASE foo WAIT 3.14") {
@@ -470,11 +470,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE DATABASE foo WAIT bar") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE OR REPLACE DATABASE _foo-bar42") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("CREATE OR REPLACE DATABASE") {
@@ -771,117 +771,119 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // DROP DATABASE
 
   test("DROP DATABASE foo") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("foo"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.NoWait
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE alias") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("alias"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.NoWait
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE alias WAIT") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("alias"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.IndefiniteWait
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE alias NOWAIT") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("alias"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.NoWait
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE $foo") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       stringParamName("foo"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.NoWait
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE foo WAIT") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("foo"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.IndefiniteWait
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE foo WAIT 10") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("foo"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.TimeoutAfter(10)
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE foo WAIT 10 SEC") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("foo"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.TimeoutAfter(10)
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE foo WAIT 10 SECOND") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("foo"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.TimeoutAfter(10)
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE foo WAIT 10 SECONDS") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("foo"),
       ifExists = false,
       composite = false,
       ast.DestroyData,
       ast.TimeoutAfter(10)
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE foo NOWAIT") {
-    yields[Statements](ast.DropDatabase(literalFoo, ifExists = false, composite = false, ast.DestroyData, ast.NoWait))
+    parsesTo[Statements](
+      ast.DropDatabase(literalFoo, ifExists = false, composite = false, ast.DestroyData, ast.NoWait)(pos)
+    )
   }
 
   test("DROP DATABASE `foo.bar`") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.DropDatabase(literal("foo.bar"), ifExists = false, composite = false, ast.DestroyData, ast.NoWait)(pos)
     )
   }
 
   test("DROP DATABASE foo.bar") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.DropDatabase(
         NamespacedName(List("bar"), Some("foo"))((1, 14, 13)),
         ifExists = false,
@@ -893,47 +895,59 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("DROP DATABASE foo IF EXISTS") {
-    yields[Statements](ast.DropDatabase(literalFoo, ifExists = true, composite = false, ast.DestroyData, ast.NoWait))
+    parsesTo[Statements](
+      ast.DropDatabase(literalFoo, ifExists = true, composite = false, ast.DestroyData, ast.NoWait)(pos)
+    )
   }
 
   test("DROP DATABASE foo IF EXISTS WAIT") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literalFoo,
       ifExists = true,
       composite = false,
       ast.DestroyData,
       ast.IndefiniteWait
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE foo IF EXISTS NOWAIT") {
-    yields[Statements](ast.DropDatabase(literalFoo, ifExists = true, composite = false, ast.DestroyData, ast.NoWait))
+    parsesTo[Statements](
+      ast.DropDatabase(literalFoo, ifExists = true, composite = false, ast.DestroyData, ast.NoWait)(pos)
+    )
   }
 
   test("DROP DATABASE foo DUMP DATA") {
-    yields[Statements](ast.DropDatabase(literalFoo, ifExists = false, composite = false, ast.DumpData, ast.NoWait))
+    parsesTo[Statements](
+      ast.DropDatabase(literalFoo, ifExists = false, composite = false, ast.DumpData, ast.NoWait)(pos)
+    )
   }
 
   test("DROP DATABASE foo DESTROY DATA") {
-    yields[Statements](ast.DropDatabase(literalFoo, ifExists = false, composite = false, ast.DestroyData, ast.NoWait))
+    parsesTo[Statements](
+      ast.DropDatabase(literalFoo, ifExists = false, composite = false, ast.DestroyData, ast.NoWait)(pos)
+    )
   }
 
   test("DROP DATABASE foo IF EXISTS DUMP DATA") {
-    yields[Statements](ast.DropDatabase(literalFoo, ifExists = true, composite = false, ast.DumpData, ast.NoWait))
+    parsesTo[Statements](
+      ast.DropDatabase(literalFoo, ifExists = true, composite = false, ast.DumpData, ast.NoWait)(pos)
+    )
   }
 
   test("DROP DATABASE foo IF EXISTS DESTROY DATA") {
-    yields[Statements](ast.DropDatabase(literalFoo, ifExists = true, composite = false, ast.DestroyData, ast.NoWait))
+    parsesTo[Statements](
+      ast.DropDatabase(literalFoo, ifExists = true, composite = false, ast.DestroyData, ast.NoWait)(pos)
+    )
   }
 
   test("DROP DATABASE foo IF EXISTS DESTROY DATA WAIT") {
-    yields[Statements](ast.DropDatabase(
+    parsesTo[Statements](ast.DropDatabase(
       literal("foo"),
       ifExists = true,
       composite = false,
       ast.DestroyData,
       ast.IndefiniteWait
-    ))
+    )(pos))
   }
 
   test("DROP DATABASE") {
@@ -944,11 +958,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("DROP DATABASE  IF EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP DATABASE foo IF NOT EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP DATABASE KEEP DATA") {
@@ -1684,43 +1698,43 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // START DATABASE
 
   test("START DATABASE foo") {
-    yields[Statements](ast.StartDatabase(literalFoo, ast.NoWait))
+    parsesTo[Statements](ast.StartDatabase(literalFoo, ast.NoWait)(pos))
   }
 
   test("START DATABASE $foo") {
-    yields[Statements](ast.StartDatabase(stringParamName("foo"), ast.NoWait))
+    parsesTo[Statements](ast.StartDatabase(stringParamName("foo"), ast.NoWait)(pos))
   }
 
   test("START DATABASE foo WAIT") {
-    yields[Statements](ast.StartDatabase(literalFoo, ast.IndefiniteWait))
+    parsesTo[Statements](ast.StartDatabase(literalFoo, ast.IndefiniteWait)(pos))
   }
 
   test("START DATABASE foo WAIT 5") {
-    yields[Statements](ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5)))
+    parsesTo[Statements](ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5))(pos))
   }
 
   test("START DATABASE foo WAIT 5 SEC") {
-    yields[Statements](ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5)))
+    parsesTo[Statements](ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5))(pos))
   }
 
   test("START DATABASE foo WAIT 5 SECOND") {
-    yields[Statements](ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5)))
+    parsesTo[Statements](ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5))(pos))
   }
 
   test("START DATABASE foo WAIT 5 SECONDS") {
-    yields[Statements](ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5)))
+    parsesTo[Statements](ast.StartDatabase(literal("foo"), ast.TimeoutAfter(5))(pos))
   }
 
   test("START DATABASE foo NOWAIT") {
-    yields[Statements](ast.StartDatabase(literalFoo, ast.NoWait))
+    parsesTo[Statements](ast.StartDatabase(literalFoo, ast.NoWait)(pos))
   }
 
   test("START DATABASE `foo.bar`") {
-    yields[Statements](_ => ast.StartDatabase(literal("foo.bar"), ast.NoWait)(pos))
+    parsesTo[Statements](ast.StartDatabase(literal("foo.bar"), ast.NoWait)(pos))
   }
 
   test("START DATABASE foo.bar") {
-    yields[Statements](_ => ast.StartDatabase(NamespacedName(List("bar"), Some("foo"))((1, 16, 15)), ast.NoWait)(pos))
+    parsesTo[Statements](ast.StartDatabase(NamespacedName(List("bar"), Some("foo"))((1, 16, 15)), ast.NoWait)(pos))
   }
 
   test("START DATABASE") {
@@ -1733,43 +1747,43 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // STOP DATABASE
 
   test("STOP DATABASE foo") {
-    yields[Statements](ast.StopDatabase(literalFoo, ast.NoWait))
+    parsesTo[Statements](ast.StopDatabase(literalFoo, ast.NoWait)(pos))
   }
 
   test("STOP DATABASE $foo") {
-    yields[Statements](ast.StopDatabase(stringParamName("foo"), ast.NoWait))
+    parsesTo[Statements](ast.StopDatabase(stringParamName("foo"), ast.NoWait)(pos))
   }
 
   test("STOP DATABASE foo WAIT") {
-    yields[Statements](ast.StopDatabase(literalFoo, ast.IndefiniteWait))
+    parsesTo[Statements](ast.StopDatabase(literalFoo, ast.IndefiniteWait)(pos))
   }
 
   test("STOP DATABASE foo WAIT 99") {
-    yields[Statements](ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99)))
+    parsesTo[Statements](ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99))(pos))
   }
 
   test("STOP DATABASE foo WAIT 99 SEC") {
-    yields[Statements](ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99)))
+    parsesTo[Statements](ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99))(pos))
   }
 
   test("STOP DATABASE foo WAIT 99 SECOND") {
-    yields[Statements](ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99)))
+    parsesTo[Statements](ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99))(pos))
   }
 
   test("STOP DATABASE foo WAIT 99 SECONDS") {
-    yields[Statements](ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99)))
+    parsesTo[Statements](ast.StopDatabase(literal("foo"), ast.TimeoutAfter(99))(pos))
   }
 
   test("STOP DATABASE foo NOWAIT") {
-    yields[Statements](ast.StopDatabase(literalFoo, ast.NoWait))
+    parsesTo[Statements](ast.StopDatabase(literalFoo, ast.NoWait)(pos))
   }
 
   test("STOP DATABASE `foo.bar`") {
-    yields[Statements](_ => ast.StopDatabase(literal("foo.bar"), ast.NoWait)(pos))
+    parsesTo[Statements](ast.StopDatabase(literal("foo.bar"), ast.NoWait)(pos))
   }
 
   test("STOP DATABASE foo.bar") {
-    yields[Statements](_ => ast.StopDatabase(NamespacedName(List("bar"), Some("foo"))((1, 16, 15)), ast.NoWait)(pos))
+    parsesTo[Statements](ast.StopDatabase(NamespacedName(List("bar"), Some("foo"))((1, 16, 15)), ast.NoWait)(pos))
   }
 
   test("STOP DATABASE") {

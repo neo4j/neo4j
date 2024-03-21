@@ -129,9 +129,12 @@ trait DdlCreateBuilder extends CypherParserListener {
 
   private def createUserBuilder(c: CreateUserContext, replace: Boolean, pos: InputPosition): CreateUser = {
     val userName = c.commandNameExpression().ast[Expression]()
-    val isEncryptedPassword = c.ENCRYPTED() != null
-    val initialPassword = c.passwordExpression().ast[Expression]()
-    val passwordReq = astOptFromList[Boolean](c.passwordChangeRequired(), Some(true))
+    val passCtx = c.password()
+    val isEncryptedPassword = passCtx.ENCRYPTED() != null
+    val initialPassword = passCtx.passwordExpression().ast[Expression]()
+    val passwordReq = if (passCtx.passwordChangeRequired() != null) {
+      Some(passCtx.passwordChangeRequired().ast[Boolean]())
+    } else astOptFromList[Boolean](c.passwordChangeRequired(), Some(true))
     val suspended = astOptFromList[Boolean](c.userStatus(), None)
     val homeDatabaseAction = astOptFromList[HomeDatabaseAction](c.homeDatabase(), None)
     val userOptions = UserOptions(passwordReq, suspended, homeDatabaseAction)

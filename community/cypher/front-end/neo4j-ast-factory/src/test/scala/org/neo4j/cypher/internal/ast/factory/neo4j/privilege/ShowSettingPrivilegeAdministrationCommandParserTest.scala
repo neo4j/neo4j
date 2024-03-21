@@ -134,7 +134,7 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
               }
 
               test(s"$verb$immutableString $command a b ON DBMS $preposition role") {
-                assertAst(
+                assertAstNotAntlr(
                   func(action, List(settingQualifier("ab")(defaultPos)), Seq(literalRole), immutable)(defaultPos)
                 )
               }

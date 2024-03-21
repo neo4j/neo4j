@@ -136,6 +136,6 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
   }
 
   test("DROP INDEX ON :Person(name)") {
-    parses[Statements](NotAnyAntlr).withPositionOf[PropertyKeyName](InputPosition(22, 1, 23))
+    parses[Statements].withPositionOf[PropertyKeyName](InputPosition(22, 1, 23))
   }
 }

@@ -3502,7 +3502,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   // Drop constraint
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
-    yields[Statements](ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
+    parsesTo[Statements](ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")))(pos))
   }
 
   test("DROP CONSTRAINT ON (node1:Label) ASSERT node2.prop IS NODE KEY") {
@@ -3517,11 +3517,11 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    yields[Statements](ast.DropNodeKeyConstraint(
+    parsesTo[Statements](ast.DropNodeKeyConstraint(
       varFor("node"),
       labelName("Label"),
       Seq(prop("node", "prop1"), prop("node", "prop2"))
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS NODE KEY") {
@@ -3532,27 +3532,27 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    yields[Statements](ast.DropPropertyUniquenessConstraint(
+    parsesTo[Statements](ast.DropPropertyUniquenessConstraint(
       varFor("node"),
       labelName("Label"),
       Seq(prop("node", "prop"))
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    yields[Statements](ast.DropPropertyUniquenessConstraint(
+    parsesTo[Statements](ast.DropPropertyUniquenessConstraint(
       varFor("node"),
       labelName("Label"),
       Seq(prop("node", "prop"))
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields[Statements](ast.DropPropertyUniquenessConstraint(
+    parsesTo[Statements](ast.DropPropertyUniquenessConstraint(
       varFor("node"),
       labelName("Label"),
       Seq(prop("node", "prop1"), prop("node", "prop2"))
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS UNIQUE") {
@@ -3563,11 +3563,11 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
-    yields[Statements](ast.DropNodePropertyExistenceConstraint(
+    parsesTo[Statements](ast.DropNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "prop")
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON (node1:Label) ASSERT EXISTS node2.prop") {
@@ -3582,27 +3582,27 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    yields[Statements](ast.DropRelationshipPropertyExistenceConstraint(
+    parsesTo[Statements](ast.DropRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop")
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]->() ASSERT EXISTS (r.prop)") {
-    yields[Statements](ast.DropRelationshipPropertyExistenceConstraint(
+    parsesTo[Statements](ast.DropRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop")
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON ()<-[r:R]-() ASSERT EXISTS (r.prop)") {
-    yields[Statements](ast.DropRelationshipPropertyExistenceConstraint(
+    parsesTo[Statements](ast.DropRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "prop")
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT EXISTS r2.prop") {
@@ -3645,51 +3645,53 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.EXISTS) IS NODE KEY") {
-    yields[Statements](ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "EXISTS"))))
+    parsesTo[Statements](
+      ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "EXISTS")))(pos)
+    )
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.EXISTS) IS UNIQUE") {
-    yields[Statements](ast.DropPropertyUniquenessConstraint(
+    parsesTo[Statements](ast.DropPropertyUniquenessConstraint(
       varFor("node"),
       labelName("Label"),
       Seq(prop("node", "EXISTS"))
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.EXISTS)") {
-    yields[Statements](ast.DropNodePropertyExistenceConstraint(
+    parsesTo[Statements](ast.DropNodePropertyExistenceConstraint(
       varFor("node"),
       labelName("Label"),
       prop("node", "EXISTS")
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.EXISTS)") {
-    yields[Statements](ast.DropRelationshipPropertyExistenceConstraint(
+    parsesTo[Statements](ast.DropRelationshipPropertyExistenceConstraint(
       varFor("r"),
       relTypeName("R"),
       prop("r", "EXISTS")
-    ))
+    )(pos))
   }
 
   test("DROP CONSTRAINT my_constraint") {
-    yields[Statements](ast.DropConstraintOnName("my_constraint", ifExists = false))
+    parsesTo[Statements](ast.DropConstraintOnName("my_constraint", ifExists = false)(pos))
   }
 
   test("DROP CONSTRAINT `$my_constraint`") {
-    yields[Statements](ast.DropConstraintOnName("$my_constraint", ifExists = false))
+    parsesTo[Statements](ast.DropConstraintOnName("$my_constraint", ifExists = false)(pos))
   }
 
   test("DROP CONSTRAINT my_constraint IF EXISTS") {
-    yields[Statements](ast.DropConstraintOnName("my_constraint", ifExists = true))
+    parsesTo[Statements](ast.DropConstraintOnName("my_constraint", ifExists = true)(pos))
   }
 
   test("DROP CONSTRAINT $my_constraint") {
-    yields[Statements](ast.DropConstraintOnName(Right(stringParam("my_constraint")), ifExists = false))
+    parsesTo[Statements](ast.DropConstraintOnName(Right(stringParam("my_constraint")), ifExists = false)(pos))
   }
 
   test("DROP CONSTRAINT my_constraint IF EXISTS;") {
-    yields[Statements](ast.DropConstraintOnName("my_constraint", ifExists = true))
+    parsesTo[Statements](ast.DropConstraintOnName("my_constraint", ifExists = true)(pos))
   }
 
   test("DROP CONSTRAINT my_constraint; DROP CONSTRAINT my_constraint2;") {

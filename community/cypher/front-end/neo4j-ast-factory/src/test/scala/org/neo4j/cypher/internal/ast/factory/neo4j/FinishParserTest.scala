@@ -19,18 +19,17 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 
 class FinishParserTest extends AstParsingTestBase {
 
   test("FINISH") {
-    parsesTo[Clause](NotAnyAntlr)(
+    parsesTo[Clause](
       finish()
     )
   }
 
   test("UNWIND [1, 2, 3] AS FINISH FINISH") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
       singleQuery(
         unwind(listOfInt(1, 2, 3), varFor("FINISH")),
         finish()

@@ -2665,75 +2665,75 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   // Drop index
 
   test("DROP INDEX ON :Person(name)") {
-    yields[Statements](ast.DropIndex(labelName("Person"), List(propName("name"))))
+    parsesTo[Statements](ast.DropIndex(labelName("Person"), List(propName("name")))(pos))
   }
 
   test("DROP INDEX ON :Person(name, age)") {
-    yields[Statements](ast.DropIndex(labelName("Person"), List(propName("name"), propName("age"))))
+    parsesTo[Statements](ast.DropIndex(labelName("Person"), List(propName("name"), propName("age")))(pos))
   }
 
   test("DROP INDEX my_index") {
-    yields[Statements](ast.DropIndexOnName(Left("my_index"), ifExists = false))
+    parsesTo[Statements](ast.DropIndexOnName(Left("my_index"), ifExists = false)(pos))
   }
 
   test("DROP INDEX `$my_index`") {
-    yields[Statements](ast.DropIndexOnName(Left("$my_index"), ifExists = false))
+    parsesTo[Statements](ast.DropIndexOnName(Left("$my_index"), ifExists = false)(pos))
   }
 
   test("DROP INDEX my_index IF EXISTS") {
-    yields[Statements](ast.DropIndexOnName(Left("my_index"), ifExists = true))
+    parsesTo[Statements](ast.DropIndexOnName(Left("my_index"), ifExists = true)(pos))
   }
 
   test("DROP INDEX $my_index") {
-    yields[Statements](ast.DropIndexOnName(Right(stringParam("my_index")), ifExists = false))
+    parsesTo[Statements](ast.DropIndexOnName(Right(stringParam("my_index")), ifExists = false)(pos))
   }
 
   test("DROP INDEX my_index ON :Person(name)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP INDEX ON (:Person(name))") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP INDEX ON (:Person {name})") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP INDEX ON [:Person(name)]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP INDEX ON -[:Person(name)]-") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP INDEX ON ()-[:Person(name)]-()") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP INDEX ON [:Person {name}]") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP INDEX ON -[:Person {name}]-") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP INDEX ON ()-[:Person {name}]-()") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP INDEX on IF EXISTS") {
-    yields[Statements](ast.DropIndexOnName(Left("on"), ifExists = true))
+    parsesTo[Statements](ast.DropIndexOnName(Left("on"), ifExists = true)(pos))
   }
 
   test("DROP INDEX on") {
-    yields[Statements](ast.DropIndexOnName(Left("on"), ifExists = false))
+    parsesTo[Statements](ast.DropIndexOnName(Left("on"), ifExists = false)(pos))
   }
 
   test("DROP INDEX ON :if(exists)") {
-    yields[Statements](ast.DropIndex(labelName("if"), List(propName("exists"))))
+    parsesTo[Statements](ast.DropIndex(labelName("if"), List(propName("exists")))(pos))
   }
 
   // help methods

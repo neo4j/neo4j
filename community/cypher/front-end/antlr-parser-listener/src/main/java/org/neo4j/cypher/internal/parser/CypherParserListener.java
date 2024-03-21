@@ -275,31 +275,11 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitCreateCommand(CypherParser.CreateCommandContext ctx);
 
-    void exitCreateRole(CypherParser.CreateRoleContext ctx);
-
-    void exitCreateUser(CypherParser.CreateUserContext ctx);
-
-    void exitCreateDatabase(CypherParser.CreateDatabaseContext ctx);
-
-    void exitPrimaryTopology(CypherParser.PrimaryTopologyContext ctx);
-
-    void exitSecondaryTopology(CypherParser.SecondaryTopologyContext ctx);
-
-    void exitCreateConstraint(CypherParser.CreateConstraintContext ctx);
-
-    void exitConstraintType(CypherParser.ConstraintTypeContext ctx);
-
-    void exitCommandOptions(CypherParser.CommandOptionsContext ctx);
-
-    void exitCreateIndex(CypherParser.CreateIndexContext ctx);
-
-    void exitCreateAlias(CypherParser.CreateAliasContext ctx);
-
-    void exitCreateCompositeDatabase(CypherParser.CreateCompositeDatabaseContext ctx);
-
     void exitDropCommand(CypherParser.DropCommandContext ctx);
 
     void exitAlterCommand(CypherParser.AlterCommandContext ctx);
+
+    void exitRenameCommand(CypherParser.RenameCommandContext ctx);
 
     void exitShowCommand(CypherParser.ShowCommandContext ctx);
 
@@ -339,6 +319,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitShowSettings(CypherParser.ShowSettingsContext ctx);
 
+    void exitTransactionClauses(CypherParser.TransactionClausesContext ctx);
+
     void exitComposableCommandClauses(CypherParser.ComposableCommandClausesContext ctx);
 
     void exitStringsOrExpression(CypherParser.StringsOrExpressionContext ctx);
@@ -357,9 +339,13 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitCommandRelPattern(CypherParser.CommandRelPatternContext ctx);
 
+    void exitCreateConstraint(CypherParser.CreateConstraintContext ctx);
+
+    void exitConstraintType(CypherParser.ConstraintTypeContext ctx);
+
     void exitDropConstraint(CypherParser.DropConstraintContext ctx);
 
-    void exitDropConstraintNodeCheck(CypherParser.DropConstraintNodeCheckContext ctx);
+    void exitCreateIndex(CypherParser.CreateIndexContext ctx);
 
     void exitOldCreateIndex(CypherParser.OldCreateIndexContext ctx);
 
@@ -381,8 +367,6 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitPropertyList(CypherParser.PropertyListContext ctx);
 
-    void exitRenameCommand(CypherParser.RenameCommandContext ctx);
-
     void exitGrantCommand(CypherParser.GrantCommandContext ctx);
 
     void exitRevokeCommand(CypherParser.RevokeCommandContext ctx);
@@ -403,6 +387,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitReallocateDatabases(CypherParser.ReallocateDatabasesContext ctx);
 
+    void exitCreateRole(CypherParser.CreateRoleContext ctx);
+
     void exitDropRole(CypherParser.DropRoleContext ctx);
 
     void exitRenameRole(CypherParser.RenameRoleContext ctx);
@@ -413,6 +399,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitRevokeRole(CypherParser.RevokeRoleContext ctx);
 
+    void exitCreateUser(CypherParser.CreateUserContext ctx);
+
     void exitDropUser(CypherParser.DropUserContext ctx);
 
     void exitRenameUser(CypherParser.RenameUserContext ctx);
@@ -421,7 +409,7 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitAlterUser(CypherParser.AlterUserContext ctx);
 
-    void exitSetPassword(CypherParser.SetPasswordContext ctx);
+    void exitPassword(CypherParser.PasswordContext ctx);
 
     void exitPasswordExpression(CypherParser.PasswordExpressionContext ctx);
 
@@ -499,9 +487,23 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitGraphQualifier(CypherParser.GraphQualifierContext ctx);
 
+    void exitCreateCompositeDatabase(CypherParser.CreateCompositeDatabaseContext ctx);
+
+    void exitCreateDatabase(CypherParser.CreateDatabaseContext ctx);
+
+    void exitPrimaryTopology(CypherParser.PrimaryTopologyContext ctx);
+
+    void exitSecondaryTopology(CypherParser.SecondaryTopologyContext ctx);
+
     void exitDropDatabase(CypherParser.DropDatabaseContext ctx);
 
     void exitAlterDatabase(CypherParser.AlterDatabaseContext ctx);
+
+    void exitAlterDatabaseAccess(CypherParser.AlterDatabaseAccessContext ctx);
+
+    void exitAlterDatabaseTopology(CypherParser.AlterDatabaseTopologyContext ctx);
+
+    void exitAlterDatabaseOption(CypherParser.AlterDatabaseOptionContext ctx);
 
     void exitStartDatabase(CypherParser.StartDatabaseContext ctx);
 
@@ -515,9 +517,27 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitGraphScope(CypherParser.GraphScopeContext ctx);
 
+    void exitCommandOptions(CypherParser.CommandOptionsContext ctx);
+
+    void exitCommandNameExpression(CypherParser.CommandNameExpressionContext ctx);
+
+    void exitSymbolicNameOrStringParameter(CypherParser.SymbolicNameOrStringParameterContext ctx);
+
+    void exitCreateAlias(CypherParser.CreateAliasContext ctx);
+
     void exitDropAlias(CypherParser.DropAliasContext ctx);
 
     void exitAlterAlias(CypherParser.AlterAliasContext ctx);
+
+    void exitAlterAliasTarget(CypherParser.AlterAliasTargetContext ctx);
+
+    void exitAlterAliasUser(CypherParser.AlterAliasUserContext ctx);
+
+    void exitAlterAliasPassword(CypherParser.AlterAliasPasswordContext ctx);
+
+    void exitAlterAliasDriver(CypherParser.AlterAliasDriverContext ctx);
+
+    void exitAlterAliasProperties(CypherParser.AlterAliasPropertiesContext ctx);
 
     void exitShowAliases(CypherParser.ShowAliasesContext ctx);
 
@@ -529,15 +549,13 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitSymbolicNameOrStringParameterList(CypherParser.SymbolicNameOrStringParameterListContext ctx);
 
-    void exitCommandNameExpression(CypherParser.CommandNameExpressionContext ctx);
-
-    void exitSymbolicNameOrStringParameter(CypherParser.SymbolicNameOrStringParameterContext ctx);
-
     void exitGlob(CypherParser.GlobContext ctx);
 
     void exitGlobRecursive(CypherParser.GlobRecursiveContext ctx);
 
     void exitGlobPart(CypherParser.GlobPartContext ctx);
+
+    void exitUnescapedLabelSymbolicNameString(CypherParser.UnescapedLabelSymbolicNameStringContext ctx);
 
     void exitStringList(CypherParser.StringListContext ctx);
 
@@ -556,8 +574,6 @@ public interface CypherParserListener extends ParseTreeListener {
     void exitUnescapedSymbolicNameString(CypherParser.UnescapedSymbolicNameStringContext ctx);
 
     void exitSymbolicLabelNameString(CypherParser.SymbolicLabelNameStringContext ctx);
-
-    void exitUnescapedLabelSymbolicNameString(CypherParser.UnescapedLabelSymbolicNameStringContext ctx);
 
     void exitEndOfFile(CypherParser.EndOfFileContext ctx);
 }

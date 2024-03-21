@@ -881,43 +881,43 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   // Renaming role
 
   test("RENAME USER foo TO bar") {
-    yields[Statements](ast.RenameUser(literalFoo, literalBar, ifExists = false))
+    parsesTo[Statements](ast.RenameUser(literalFoo, literalBar, ifExists = false)(pos))
   }
 
   test("RENAME USER foo TO $bar") {
-    yields[Statements](ast.RenameUser(literalFoo, stringParam("bar"), ifExists = false))
+    parsesTo[Statements](ast.RenameUser(literalFoo, stringParam("bar"), ifExists = false)(pos))
   }
 
   test("RENAME USER $foo TO bar") {
-    yields[Statements](ast.RenameUser(stringParam("foo"), literalBar, ifExists = false))
+    parsesTo[Statements](ast.RenameUser(stringParam("foo"), literalBar, ifExists = false)(pos))
   }
 
   test("RENAME USER $foo TO $bar") {
-    yields[Statements](ast.RenameUser(stringParam("foo"), stringParam("bar"), ifExists = false))
+    parsesTo[Statements](ast.RenameUser(stringParam("foo"), stringParam("bar"), ifExists = false)(pos))
   }
 
   test("RENAME USER foo IF EXISTS TO bar") {
-    yields[Statements](ast.RenameUser(literalFoo, literalBar, ifExists = true))
+    parsesTo[Statements](ast.RenameUser(literalFoo, literalBar, ifExists = true)(pos))
   }
 
   test("RENAME USER foo IF EXISTS TO $bar") {
-    yields[Statements](ast.RenameUser(literalFoo, stringParam("bar"), ifExists = true))
+    parsesTo[Statements](ast.RenameUser(literalFoo, stringParam("bar"), ifExists = true)(pos))
   }
 
   test("RENAME USER $foo IF EXISTS TO bar") {
-    yields[Statements](ast.RenameUser(stringParam("foo"), literalBar, ifExists = true))
+    parsesTo[Statements](ast.RenameUser(stringParam("foo"), literalBar, ifExists = true)(pos))
   }
 
   test("RENAME USER $foo IF EXISTS TO $bar") {
-    yields[Statements](ast.RenameUser(stringParam("foo"), stringParam("bar"), ifExists = true))
+    parsesTo[Statements](ast.RenameUser(stringParam("foo"), stringParam("bar"), ifExists = true)(pos))
   }
 
   test("RENAME USER foo TO ``") {
-    yields[Statements](ast.RenameUser(literalFoo, literalEmpty, ifExists = false))
+    parsesTo[Statements](ast.RenameUser(literalFoo, literalEmpty, ifExists = false)(pos))
   }
 
   test("RENAME USER `` TO bar") {
-    yields[Statements](ast.RenameUser(literalEmpty, literalBar, ifExists = false))
+    parsesTo[Statements](ast.RenameUser(literalEmpty, literalBar, ifExists = false)(pos))
   }
 
   test("RENAME USER foo TO") {
@@ -994,49 +994,49 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   //  Dropping user
 
   test("DROP USER foo") {
-    yields[Statements](ast.DropUser(literalFoo, ifExists = false))
+    parsesTo[Statements](ast.DropUser(literalFoo, ifExists = false)(pos))
   }
 
   test("DROP USER $foo") {
-    yields[Statements](ast.DropUser(paramFoo, ifExists = false))
+    parsesTo[Statements](ast.DropUser(paramFoo, ifExists = false)(pos))
   }
 
   test("DROP USER ``") {
-    yields[Statements](ast.DropUser(literalEmpty, ifExists = false))
+    parsesTo[Statements](ast.DropUser(literalEmpty, ifExists = false)(pos))
   }
 
   test("DROP USER `f:oo`") {
-    yields[Statements](ast.DropUser(literalFColonOo, ifExists = false))
+    parsesTo[Statements](ast.DropUser(literalFColonOo, ifExists = false)(pos))
   }
 
   test("DROP USER foo IF EXISTS") {
-    yields[Statements](ast.DropUser(literalFoo, ifExists = true))
+    parsesTo[Statements](ast.DropUser(literalFoo, ifExists = true)(pos))
   }
 
   test("DROP USER `` IF EXISTS") {
-    yields[Statements](ast.DropUser(literalEmpty, ifExists = true))
+    parsesTo[Statements](ast.DropUser(literalEmpty, ifExists = true)(pos))
   }
 
   test("DROP USER `f:oo` IF EXISTS") {
-    yields[Statements](ast.DropUser(literalFColonOo, ifExists = true))
+    parsesTo[Statements](ast.DropUser(literalFColonOo, ifExists = true)(pos))
   }
 
   test("DROP USER ") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP USER  IF EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("DROP USER foo IF NOT EXISTS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   //  Altering user
 
   test("ALTER USER foo SET PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         isEncryptedPassword = Some(false),
@@ -1048,7 +1048,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER $foo SET PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         paramFoo,
         isEncryptedPassword = Some(false),
@@ -1060,7 +1060,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER foo SET PLAINTEXT PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         isEncryptedPassword = Some(false),
@@ -1072,7 +1072,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"ALTER USER foo SET PLAINTEXT PASSWORD $pwParamString") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         isEncryptedPassword = Some(false),
@@ -1084,57 +1084,57 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER `` SET PASSWORD 'password'") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalEmpty,
       isEncryptedPassword = Some(false),
       Some(password),
       ast.UserOptions(None, None, None),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER `f:oo` SET PASSWORD 'password'") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFColonOo,
       isEncryptedPassword = Some(false),
       Some(password),
       ast.UserOptions(None, None, None),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET PASSWORD ''") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       isEncryptedPassword = Some(false),
       Some(passwordEmpty),
       ast.UserOptions(None, None, None),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test(s"ALTER USER foo SET PASSWORD $pwParamString") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       isEncryptedPassword = Some(false),
       Some(paramPassword),
       ast.UserOptions(None, None, None),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test(s"ALTER USER foo IF EXISTS SET PASSWORD $pwParamString") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       isEncryptedPassword = Some(false),
       Some(paramPassword),
       ast.UserOptions(None, None, None),
       ifExists = true
-    ))
+    )(pos))
   }
 
   test(s"ALTER USER foo SET ENCRYPTED Password $pwParamString") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         isEncryptedPassword = Some(true),
@@ -1146,7 +1146,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER foo SET ENCRYPTED PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         isEncryptedPassword = Some(true),
@@ -1158,7 +1158,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER $foo SET ENCRYPTED PASSWORD 'password'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         paramFoo,
         isEncryptedPassword = Some(true),
@@ -1170,19 +1170,19 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER `` SET ENCRYPTED PASSWORD 'password'") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalEmpty,
       isEncryptedPassword = Some(true),
       Some(password),
       ast.UserOptions(None, None, None),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test(
     "ALTER USER foo SET ENCRYPTED PASSWORD '1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab'"
   ) {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         isEncryptedPassword = Some(true),
@@ -1194,7 +1194,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER foo SET PASSWORD CHANGE REQUIRED") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         None,
@@ -1206,7 +1206,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         None,
@@ -1218,37 +1218,37 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER foo IF EXISTS SET PASSWORD CHANGE NOT REQUIRED") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
       ast.UserOptions(requirePasswordChange = Some(false), None, None),
       ifExists = true
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET STATUS SUSPENDED") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
       ast.UserOptions(None, suspended = Some(true), None),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET STATUS ACTIVE") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
       ast.UserOptions(None, suspended = Some(false), None),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         isEncryptedPassword = Some(false),
@@ -1260,17 +1260,17 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"ALTER USER foo SET PASSWORD $pwParamString SET PASSWORD CHANGE NOT REQUIRED") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       isEncryptedPassword = Some(false),
       Some(paramPassword),
       ast.UserOptions(requirePasswordChange = Some(false), None, None),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         isEncryptedPassword = Some(false),
@@ -1282,7 +1282,7 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.AlterUser(
         literalFoo,
         None,
@@ -1294,57 +1294,57 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test(s"ALTER USER foo SET PASSWORD $pwParamString SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       isEncryptedPassword = Some(false),
       Some(paramPassword),
       ast.UserOptions(requirePasswordChange = Some(false), suspended = Some(true), None),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo IF EXISTS SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       isEncryptedPassword = Some(false),
       Some(password),
       ast.UserOptions(requirePasswordChange = Some(false), suspended = Some(true), None),
       ifExists = true
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET HOME DATABASE db1") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
       ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET HOME DATABASE $db") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
       ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(paramDb))),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET HOME DATABASE null") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
       ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(namespacedName("null")))),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET PASSWORD CHANGE REQUIRED SET HOME DATABASE db1") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
@@ -1354,41 +1354,41 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         Some(ast.SetHomeDatabaseAction(namespacedName("db1")))
       ),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET password 'password' SET HOME DATABASE db1") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       Some(false),
       Some(password),
       ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET HOME DAtabase $db") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       Some(false),
       Some(password),
       ast.UserOptions(requirePasswordChange = Some(false), None, Some(ast.SetHomeDatabaseAction(paramDb))),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo SET HOME DATABASE `#dfkfop!`") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
       ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(namespacedName("#dfkfop!")))),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo RENAME TO bar") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET NAME bar") {
@@ -1437,13 +1437,13 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   Seq("SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1").permutations.foreach {
     clauses =>
       test(s"ALTER USER foo ${clauses.mkString(" ")}") {
-        yields[Statements](ast.AlterUser(
+        parsesTo[Statements](ast.AlterUser(
           literalFoo,
           None,
           None,
           ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
           ifExists = false
-        ))
+        )(pos))
       }
   }
 
@@ -1454,13 +1454,13 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   ).permutations.foreach {
     clauses =>
       test(s"ALTER USER foo ${clauses.mkString(" ")}") {
-        yields[Statements](ast.AlterUser(
+        parsesTo[Statements](ast.AlterUser(
           literalFoo,
           Some(false),
           Some(password),
           ast.UserOptions(Some(false), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
           ifExists = false
-        ))
+        )(pos))
       }
   }
 
@@ -1472,62 +1472,62 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   ).permutations.foreach {
     clauses =>
       test(s"ALTER USER foo ${clauses.mkString(" ")}") {
-        yields[Statements](ast.AlterUser(
+        parsesTo[Statements](ast.AlterUser(
           literalFoo,
           Some(false),
           Some(password),
           ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(namespacedName("db1")))),
           ifExists = false
-        ))
+        )(pos))
       }
   }
 
   test("ALTER USER foo REMOVE HOME DATABASE") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
       ast.UserOptions(None, None, Some(ast.RemoveHomeDatabaseAction)),
       ifExists = false
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo IF EXISTS REMOVE HOME DATABASE") {
-    yields[Statements](ast.AlterUser(
+    parsesTo[Statements](ast.AlterUser(
       literalFoo,
       None,
       None,
       ast.UserOptions(None, None, Some(ast.RemoveHomeDatabaseAction)),
       ifExists = true
-    ))
+    )(pos))
   }
 
   test("ALTER USER foo") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PASSWORD null") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PASSWORD 123") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PASSWORD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET ENCRYPTED PASSWORD 123") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PLAINTEXT PASSWORD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET ENCRYPTED PASSWORD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
@@ -1535,47 +1535,47 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER foo SET PASSWORD 'password' ENCRYPTED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE CHANGE NOT REQUIRED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET STATUS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo PASSWORD CHANGE NOT REQUIRED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo CHANGE NOT REQUIRED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET PASSWORD SET STATUS ACTIVE") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PASSWORD STATUS ACTIVE") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET HOME DATABASE 123456") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET HOME DATABASE #dfkfop!") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET STATUS IMAGINARY") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo IF NOT EXISTS SET PASSWORD 'password'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET STATUS SUSPENDED REMOVE HOME DATABASE") {
@@ -1600,11 +1600,11 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER foo SET DEFAULT DATABASE db1") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo REMOVE DEFAULT DATABASE") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD 'password'") {
@@ -1634,39 +1634,39 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   // Changing own password
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'new'") {
-    yields[Statements](ast.SetOwnPassword(passwordNew, passwordCurrent))
+    parsesTo[Statements](ast.SetOwnPassword(passwordNew, passwordCurrent)(pos))
   }
 
   test("alter current user set password from 'current' to ''") {
-    yields[Statements](ast.SetOwnPassword(passwordEmpty, passwordCurrent))
+    parsesTo[Statements](ast.SetOwnPassword(passwordEmpty, passwordCurrent)(pos))
   }
 
   test("alter current user set password from '' to 'new'") {
-    yields[Statements](ast.SetOwnPassword(passwordNew, passwordEmpty))
+    parsesTo[Statements](ast.SetOwnPassword(passwordNew, passwordEmpty)(pos))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'passWORD123%!'") {
-    yields[Statements](ast.SetOwnPassword(pw("passWORD123%!"), passwordCurrent))
+    parsesTo[Statements](ast.SetOwnPassword(pw("passWORD123%!"), passwordCurrent)(pos))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO $newPassword") {
-    yields[Statements](ast.SetOwnPassword(paramPasswordNew, passwordCurrent))
+    parsesTo[Statements](ast.SetOwnPassword(paramPasswordNew, passwordCurrent)(pos))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'new'") {
-    yields[Statements](ast.SetOwnPassword(passwordNew, paramPasswordCurrent))
+    parsesTo[Statements](ast.SetOwnPassword(passwordNew, paramPasswordCurrent)(pos))
   }
 
   test("alter current user set password from $currentPassword to ''") {
-    yields[Statements](ast.SetOwnPassword(passwordEmpty, paramPasswordCurrent))
+    parsesTo[Statements](ast.SetOwnPassword(passwordEmpty, paramPasswordCurrent)(pos))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'passWORD123%!'") {
-    yields[Statements](ast.SetOwnPassword(pw("passWORD123%!"), paramPasswordCurrent))
+    parsesTo[Statements](ast.SetOwnPassword(pw("passWORD123%!"), paramPasswordCurrent)(pos))
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword") {
-    yields[Statements](ast.SetOwnPassword(paramPasswordNew, paramPasswordCurrent))
+    parsesTo[Statements](ast.SetOwnPassword(paramPasswordNew, paramPasswordCurrent)(pos))
   }
 
   test("ALTER CURRENT USER command finds password literal at correct offset") {
@@ -1686,34 +1686,34 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO null") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM $current TO 123") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER PASSWORD FROM 'current' TO 'new'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER CURRENT PASSWORD FROM 'current' TO 'new'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER CURRENT USER PASSWORD FROM 'current' TO 'new'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM TO 'new'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("ALTER CURRENT USER SET PASSWORD TO 'new'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 }
