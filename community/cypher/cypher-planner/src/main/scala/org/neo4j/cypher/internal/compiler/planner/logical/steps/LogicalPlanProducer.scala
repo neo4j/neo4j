@@ -118,7 +118,6 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -1109,7 +1108,8 @@ case class LogicalPlanProducer(
             nodePredicates,
             relationshipPredicates,
             Set.empty,
-            context
+            context,
+            None
           )
         annotate(
           VarExpand(
@@ -1148,11 +1148,23 @@ case class LogicalPlanProducer(
     nodePredicates: Set[VariablePredicate],
     relationshipPredicates: Set[VariablePredicate],
     pathPredicates: Set[Expression],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    maybePathVariable: Option[LogicalVariable]
   ): (Set[VariablePredicate], Set[VariablePredicate], Set[Expression], LogicalPlan) = {
-    val (pathExistsIrExpressions, pathNonExistsIrExpressions) =
-      pathPredicates.partition(expr => expr.isInstanceOf[ExistsIRExpression])
-    val rewrittenIrExpressions = pathExistsIrExpressions.endoRewrite(irExpressionRewriter(source, context))
+    def splitPathPredsByIrExpressionContainingPathRef: (Set[Expression], Set[Expression]) = {
+      pathPredicates.partition(expr =>
+        expr.folder.findAllByClass[IRExpression]
+          .exists(irExpression =>
+            maybePathVariable.exists(pathVar =>
+              irExpression.dependencies.contains(pathVar)
+            )
+          )
+      )
+    }
+
+    val (predicateWithIrExpressionReferencingPath, otherPathPredicates) = splitPathPredsByIrExpressionContainingPathRef
+    val rewrittenPredicatesWithIrExpressionReferencingPath =
+      predicateWithIrExpressionReferencingPath.endoRewrite(irExpressionRewriter(source, context))
     val solver = SubqueryExpressionSolver.solverFor(source, context)
 
     def solveVariablePredicate(variablePredicate: VariablePredicate): VariablePredicate = {
@@ -1165,12 +1177,12 @@ case class LogicalPlanProducer(
 
     val rewrittenRelationshipPredicates = relationshipPredicates.map(solveVariablePredicate)
     val rewrittenNodePredicates = nodePredicates.map(solveVariablePredicate)
-    val rewrittenPathPredicates = pathNonExistsIrExpressions.map(solver.solve(_))
+    val rewrittenOtherPathPredicates = otherPathPredicates.map(solver.solve(_))
     val rewrittenSource = solver.rewrittenPlan()
     (
       rewrittenRelationshipPredicates,
       rewrittenNodePredicates,
-      rewrittenPathPredicates ++ rewrittenIrExpressions,
+      rewrittenPredicatesWithIrExpressionReferencingPath ++ rewrittenOtherPathPredicates,
       rewrittenSource
     )
   }
@@ -2423,7 +2435,14 @@ case class LogicalPlanProducer(
     )
 
     val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenPathPredicates, rewrittenSource) =
-      solveSubqueryExpressionsForExtractedPredicates(inner, nodePredicates, relPredicates, pathPredicates, context)
+      solveSubqueryExpressionsForExtractedPredicates(
+        inner,
+        nodePredicates,
+        relPredicates,
+        pathPredicates,
+        context,
+        shortestRelationship.maybePathVar
+      )
 
     annotate(
       FindShortestPaths(

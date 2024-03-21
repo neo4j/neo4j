@@ -29,8 +29,12 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -467,6 +471,279 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     // shortestPath fallback ends with Top
     val topPlan = plan.folder.treeFindByClass[Top].value
     topPlan.folder.treeFindByClass[Selection] shouldBe empty
+  }
+
+  test("should plan count predicate with path reference inside the shortestPath operator as a prefilter") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(50)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("C", 10)
+      .build()
+
+    val q =
+      """
+        |MATCH p = shortestPath((src:A)-[r*]->(dest:C))
+        |WHERE COUNT {
+        |  WITH p
+        |  UNWIND nodes(p) AS n
+        |  MATCH (n)-->({prop: 'foobar'}) RETURN n
+        |} > 2
+        |RETURN nodes(p) as nodes
+        |""".stripMargin
+
+    val pathExpression = varLengthPathExpression(varFor("src"), varFor("r"), varFor("dest"), OUTGOING)
+
+    val countExprWithPathReference = planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("count(*) AS anon_2"))
+      .filter("cacheNFromStore[anon_1.prop] = 'foobar'")
+      .expandAll("(n)-[anon_0]->(anon_1)")
+      .unwind("nodes(p) AS n")
+      .argument("p")
+      .build()
+
+    val solvedNestedExpressionAsString =
+      """COUNT { WITH p AS p
+        |UNWIND nodes(p) AS n
+        |MATCH (n)-[`anon_0`]->(`anon_1`)
+        |  WHERE `anon_1`.prop IN ["foobar"]
+        |RETURN n AS n }""".stripMargin
+
+    val greaterThanExpr = greaterThan(
+      NestedPlanGetByNameExpression(
+        countExprWithPathReference,
+        v"anon_2",
+        solvedExpressionAsString = solvedNestedExpressionAsString
+      )(pos),
+      SignedDecimalIntegerLiteral("2")(pos)
+    )
+
+    val plan = planner.plan(q)
+    plan shouldEqual planner.planBuilder()
+      .produceResults("nodes")
+      .projection("nodes(p) AS nodes")
+      .antiConditionalApply("p")
+      .|.top(1, "anon_3 ASC")
+      .|.projection("length(p) AS anon_3")
+      .|.filter("anon_2 > 2")
+      .|.apply()
+      .|.|.aggregation(Seq(), Seq("count(*) AS anon_2"))
+      .|.|.filter("cacheNFromStore[anon_1.prop] = 'foobar'")
+      .|.|.expandAll("(n)-[anon_0]->(anon_1)")
+      .|.|.unwind("nodes(p) AS n")
+      .|.|.argument("p")
+      .|.projection(Map("p" -> pathExpression))
+      .|.expandInto("(src)-[r*1..]->(dest)")
+      .|.argument("src", "dest")
+      .apply()
+      .|.optional("src", "dest")
+      .|.shortestPathExpr(
+        "(src)-[r*1..]->(dest)",
+        pathName = Some("p"),
+        pathPredicates = Seq(greaterThanExpr),
+        withFallback = true
+      )
+      .|.argument("src", "dest")
+      .cartesianProduct()
+      .|.nodeByLabelScan("dest", "C")
+      .nodeByLabelScan("src", "A")
+      .build()
+  }
+
+  test("should plan nested predicate without path reference below the shortestPath operator") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(50)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("C", 10)
+      .build()
+
+    val q =
+      """
+        |MATCH p = shortestPath((src:A)-[r*]->(dest:C))
+        |WHERE COUNT {
+        |  UNWIND [1,2,3] AS n
+        |  MATCH (m)-->({prop: n}) RETURN m
+        |} > length(p)
+        |RETURN nodes(p) as nodes
+        |""".stripMargin
+
+    val pathExpression = varLengthPathExpression(varFor("src"), varFor("r"), varFor("dest"), OUTGOING)
+
+    val plan = planner.plan(q)
+
+    plan shouldEqual planner.planBuilder()
+      .produceResults("nodes")
+      .projection("nodes(p) AS nodes")
+      .antiConditionalApply("p")
+      .|.top(1, "anon_3 ASC")
+      .|.projection("length(p) AS anon_3")
+      .|.filter("anon_2 > length(p)")
+      .|.apply()
+      .|.|.aggregation(Seq(), Seq("count(*) AS anon_2"))
+      .|.|.filter("cacheNFromStore[anon_1.prop] = n")
+      .|.|.apply()
+      .|.|.|.allRelationshipsScan("(m)-[anon_0]->(anon_1)", "n")
+      .|.|.unwind("[1, 2, 3] AS n")
+      .|.|.argument()
+      .|.projection(Map("p" -> pathExpression))
+      .|.expandInto("(src)-[r*1..]->(dest)")
+      .|.argument("src", "dest")
+      .apply()
+      .|.optional("src", "dest")
+      .|.shortestPath(
+        "(src)-[r*1..]->(dest)",
+        pathName = Some("p"),
+        pathPredicates = Seq("anon_2 > length(p)"),
+        withFallback = true
+      )
+      .|.apply()
+      .|.|.aggregation(Seq(), Seq("count(*) AS anon_2"))
+      .|.|.filter("cacheNFromStore[anon_1.prop] = n")
+      .|.|.apply()
+      .|.|.|.allRelationshipsScan("(m)-[anon_0]->(anon_1)", "n")
+      .|.|.unwind("[1, 2, 3] AS n")
+      .|.|.argument()
+      .|.argument("src", "dest")
+      .cartesianProduct()
+      .|.nodeByLabelScan("dest", "C")
+      .nodeByLabelScan("src", "A")
+      .build()
+  }
+
+  test("should plan exists predicate with path reference inside the shortestPath operator as a prefilter") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(50)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("C", 10)
+      .build()
+
+    val q =
+      """
+        |MATCH p = shortestPath((src:A)-[r*]->(dest:C))
+        |WHERE EXISTS {
+        |  WITH p
+        |  UNWIND nodes(p) AS n
+        |  RETURN n
+        |}
+        |RETURN nodes(p) as nodes
+        |""".stripMargin
+
+    val pathExpression = varLengthPathExpression(varFor("src"), varFor("r"), varFor("dest"), OUTGOING)
+
+    val nestedPlanWithPathReference = planner.subPlanBuilder()
+      .unwind("nodes(p) AS n")
+      .argument("p")
+      .build()
+
+    val solvedExpr =
+      """EXISTS { WITH p AS p
+        |UNWIND nodes(p) AS n
+        |RETURN n AS n }""".stripMargin
+
+    val existsExpr = NestedPlanExistsExpression(
+      plan = nestedPlanWithPathReference,
+      solvedExpressionAsString = solvedExpr
+    )(pos)
+
+    val plan = planner.plan(q)
+
+    plan shouldEqual planner.planBuilder()
+      .produceResults("nodes")
+      .projection("nodes(p) AS nodes")
+      .antiConditionalApply("p")
+      .|.top(1, "anon_1 ASC")
+      .|.projection("length(p) AS anon_1")
+      .|.filter("CoerceToPredicate(anon_0)")
+      .|.letSemiApply("anon_0")
+      .|.|.unwind("nodes(p) AS n")
+      .|.|.argument("p")
+      .|.projection(Map("p" -> pathExpression))
+      .|.expandInto("(src)-[r*1..]->(dest)")
+      .|.argument("src", "dest")
+      .apply()
+      .|.optional("src", "dest")
+      .|.shortestPathExpr(
+        "(src)-[r*1..]->(dest)",
+        pathName = Some("p"),
+        pathPredicates = Seq(existsExpr),
+        withFallback = true
+      )
+      .|.argument("src", "dest")
+      .cartesianProduct()
+      .|.nodeByLabelScan("dest", "C")
+      .nodeByLabelScan("src", "A")
+      .build()
+  }
+
+  test("should plan collect predicate with path reference inside the shortestPath operator as a prefilter") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(50)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("C", 10)
+      .build()
+
+    val q =
+      """
+        |MATCH p = shortestPath((src:A)-[r*]->(dest:C))
+        |WHERE 'Mario' IN COLLECT {
+        |  WITH p
+        |  UNWIND nodes(p) AS n
+        |  RETURN n.name AS names
+        |}
+        |RETURN nodes(p) as nodes
+        |""".stripMargin
+
+    val pathExpression = varLengthPathExpression(varFor("src"), varFor("r"), varFor("dest"), OUTGOING)
+
+    val nestedPlanWithPathReference = planner.subPlanBuilder()
+      .projection(Map("names" -> cachedNodePropFromStore("n", "name")))
+      .unwind("nodes(p) AS n")
+      .argument("p")
+      .build()
+
+    val solvedExpr =
+      """COLLECT { WITH p AS p
+        |UNWIND nodes(p) AS n
+        |RETURN n.name AS names }""".stripMargin
+
+    val collectExpr = NestedPlanCollectExpression(
+      plan = nestedPlanWithPathReference,
+      projection = v"names",
+      solvedExpressionAsString = solvedExpr
+    )(pos)
+
+    val plan = planner.plan(q)
+
+    plan shouldEqual planner.planBuilder()
+      .produceResults("nodes")
+      .projection("nodes(p) AS nodes")
+      .antiConditionalApply("p")
+      .|.top(1, "anon_1 ASC")
+      .|.projection("length(p) AS anon_1")
+      .|.filter("'Mario' IN anon_0")
+      .|.rollUpApply("anon_0", "names")
+      .|.|.projection("cacheNFromStore[n.name] AS names")
+      .|.|.unwind("nodes(p) AS n")
+      .|.|.argument("p")
+      .|.projection(Map("p" -> pathExpression))
+      .|.expandInto("(src)-[r*1..]->(dest)")
+      .|.argument("src", "dest")
+      .apply()
+      .|.optional("src", "dest")
+      .|.shortestPathExpr(
+        "(src)-[r*1..]->(dest)",
+        pathName = Some("p"),
+        withFallback = true,
+        pathPredicates = Seq(in(literalString("Mario"), collectExpr))
+      )
+      .|.argument("src", "dest")
+      .cartesianProduct()
+      .|.nodeByLabelScan("dest", "C")
+      .nodeByLabelScan("src", "A")
+      .build()
   }
 
   private def outgoingPathExpression(fromNode: String, rels: String, toNode: String) = {
