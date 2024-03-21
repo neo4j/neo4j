@@ -53,6 +53,11 @@ trait WorkIdentity {
   def workDescription: String
 
   override def toString: String = s"$workDescription-${workId.x}"
+
+  override def equals(obj: Any): Boolean = obj match {
+    case that: WorkIdentity => workId == that.workId && workDescription == that.workDescription
+    case _                  => false
+  }
 }
 
 trait WorkIdentityMutableDescription extends WorkIdentity {
