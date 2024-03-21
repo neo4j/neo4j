@@ -63,7 +63,7 @@ public interface DbAccess extends EntityById
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor );
 
-    boolean nodeDeletedInThisTransactionI( long id );
+    boolean nodeDeletedInThisTransaction( long id );
 
     Value relationshipProperty( long node,
             int property,
@@ -80,7 +80,7 @@ public interface DbAccess extends EntityById
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor );
 
-    boolean relationshipDeletedInThisTransactionI( long id );
+    boolean relationshipDeletedInThisTransaction( long id );
 
     int nodeGetOutgoingDegreeWithMax( int maxDegree, long node, NodeCursor nodeCursor );
 

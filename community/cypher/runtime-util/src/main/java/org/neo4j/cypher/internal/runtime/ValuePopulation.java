@@ -240,7 +240,7 @@ public final class ValuePopulation
 
         if ( !nodeCursor.next() )
         {
-            if ( !dbAccess.nodeDeletedInThisTransactionI(id) )
+            if ( !dbAccess.nodeDeletedInThisTransaction(id) )
             {
                 throw new ReadAndDeleteTransactionConflictException( false );
             }
@@ -264,7 +264,7 @@ public final class ValuePopulation
         dbAccess.singleRelationship( id, relCursor );
         if ( !relCursor.next() )
         {
-            if ( !dbAccess.relationshipDeletedInThisTransactionI(id) )
+            if ( !dbAccess.relationshipDeletedInThisTransaction( id ) )
             {
                 throw new ReadAndDeleteTransactionConflictException( false );
             }
