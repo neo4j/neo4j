@@ -100,6 +100,10 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
         }
         catch ( ReadAndDeleteTransactionConflictException e )
         {
+            if ( !e.wasDeletedInThisTransaction() )
+            {
+                throw e;
+            }
             // best effort, cannot do more
         }
     }
