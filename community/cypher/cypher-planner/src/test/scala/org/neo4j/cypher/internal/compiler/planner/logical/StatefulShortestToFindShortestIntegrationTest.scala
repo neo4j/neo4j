@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.ALL_IF_POSSIBLE
+import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.INTO_ONLY
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -61,7 +62,10 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
     // This makes it deterministic which plans ends up on what side of a CartesianProduct.
     .setExecutionModel(Volcano)
 
-  private val planner = plannerBase.build()
+  private val planner = plannerBase
+    // For the rewrite to trigger, we need an INTO plan
+    .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, INTO_ONLY)
+    .build()
 
   private val all_if_possible_planner = plannerBase
     .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
@@ -599,7 +603,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
   }
 
   // TODO: This currently does not get rewritten due to the quantified nodes being named. And solveds contains the original predicate a.prop <> b.prop and not
-  // all(r in relationships(p) WHERE startNode(r).prop <> endNode(r).prop, the later being inlineable in a legacy shortest with no reference to quantified nodes.
+  //  all(r in relationships(p) WHERE startNode(r).prop <> endNode(r).prop), the later being inlineable in a legacy shortest with no reference to quantified nodes.
   ignore(
     "Shortest QPP with no references to the quantified nodes outside of the Shortest should be rewritten if able"
   ) {
