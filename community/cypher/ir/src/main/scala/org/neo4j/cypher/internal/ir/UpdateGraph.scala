@@ -539,9 +539,19 @@ trait UpdateGraph {
 
     val identifiersToRead = nodesToRead ++ relsToRead
 
+    lazy val containsDegreePredicate =
+      qgWithInfo.queryGraph.selections.folder.treeExists {
+        case _: GetDegree                   => true
+        case _: HasDegree                   => true
+        case _: HasDegreeGreaterThan        => true
+        case _: HasDegreeGreaterThanOrEqual => true
+        case _: HasDegreeLessThan           => true
+        case _: HasDegreeLessThanOrEqual    => true
+      }
+
     if (
       (deletesExpressions && identifiersToRead.nonEmpty) ||
-      (hasDetachDelete && relsToRead.nonEmpty)
+      (hasDetachDelete && (relsToRead.nonEmpty || containsDegreePredicate))
     ) {
       Seq(EagernessReason.Unknown)
     } else {

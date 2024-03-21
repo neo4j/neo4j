@@ -1340,4 +1340,71 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .build()
     )
   }
+
+  test("Relationship in get degree requires an eager operator before detach delete") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Resource", 100)
+      .setRelationshipCardinality("()-[:DEPENDS_ON]->()", 50)
+      .build()
+
+    val query = """MATCH (resource:Resource)
+                  |  WHERE exists((resource)-[:DEPENDS_ON]->())
+                  |DETACH DELETE resource""".stripMargin
+
+    val plan = planner.plan(query)
+
+    val eagernessReasons: ListSet[EagernessReason] = impl match {
+      case EagerAnalysisImplementation.IR =>
+        ListSet(
+          EagernessReason.Unknown
+        )
+      case EagerAnalysisImplementation.LP =>
+        ListSet(
+          EagernessReason.ReadDeleteConflict("anon_3").withConflict(EagernessReason.Conflict(Id(2), Id(4)))
+        )
+    }
+
+    val existsPredicate =
+      HasDegreeGreaterThan(v"resource", Some(relTypeName("DEPENDS_ON")), OUTGOING, literalInt(0))(InputPosition.NONE)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .detachDeleteNode("resource")
+        .eager(eagernessReasons)
+        .filterExpression(existsPredicate)
+        .nodeByLabelScan("resource", "Resource", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("Relationship in get degree does not require an eager operator before a standard delete") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Resource", 100)
+      .setRelationshipCardinality("()-[:DEPENDS_ON]->()", 50)
+      .build()
+
+    // Note that this is a silly query, as nodes can't be deleted if they have incoming or outgoing relationships
+    val query = """MATCH (resource:Resource)
+                  |  WHERE exists((resource)-[:DEPENDS_ON]->())
+                  |DELETE resource""".stripMargin
+
+    val plan = planner.plan(query)
+
+    val existsPredicate =
+      HasDegreeGreaterThan(v"resource", Some(relTypeName("DEPENDS_ON")), OUTGOING, literalInt(0))(InputPosition.NONE)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .deleteNode("resource")
+        .filterExpression(existsPredicate)
+        .nodeByLabelScan("resource", "Resource", IndexOrderNone)
+        .build()
+    )
+  }
 }
