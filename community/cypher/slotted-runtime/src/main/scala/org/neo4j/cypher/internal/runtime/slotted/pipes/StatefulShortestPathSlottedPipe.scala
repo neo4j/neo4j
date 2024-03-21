@@ -98,7 +98,8 @@ case class StatefulShortestPathSlottedPipe(
         selector.k.toInt,
         commandNFA.states.size,
         memoryTracker,
-        hooks
+        hooks,
+        state.query.transactionalContext.assertTransactionOpen _
       ).asSelfClosingIterator
 
     }.closing(nodeCursor).closing(traversalCursor)

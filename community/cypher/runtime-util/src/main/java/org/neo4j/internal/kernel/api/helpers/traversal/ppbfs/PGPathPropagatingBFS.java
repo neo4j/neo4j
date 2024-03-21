@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
@@ -55,6 +56,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
     private final Boolean isGroupSelector;
     private final MemoryTracker memoryTracker;
     private final PPBFSHooks hooks;
+    private final AssertOpen assertOpen;
 
     // iteration state
     private int nextDepth = 0;
@@ -85,7 +87,8 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             int initialCountForTargetNodes,
             int numberOfNfaStates,
             MemoryTracker mt,
-            PPBFSHooks hooks) {
+            PPBFSHooks hooks,
+            AssertOpen assertOpen) {
         this.intoTarget = intoTarget;
         this.pathTracer = pathTracer;
         this.toRow = toRow;
@@ -93,6 +96,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         this.isGroupSelector = isGroupSelector;
         this.memoryTracker = mt.getScopedMemoryTracker();
         this.hooks = hooks;
+        this.assertOpen = assertOpen;
         this.dataManager = new DataManager(this.memoryTracker, hooks, initialCountForTargetNodes, numberOfNfaStates);
         this.bfsExpander = new BFSExpander(
                 dataManager,
@@ -123,7 +127,8 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             int initialCountForTargetNodes,
             int numberOfNfaStates,
             MemoryTracker mt,
-            PPBFSHooks hooks) {
+            PPBFSHooks hooks,
+            AssertOpen assertOpen) {
         return new PGPathPropagatingBFS<>(
                 source,
                 intoTarget,
@@ -136,7 +141,8 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
                 initialCountForTargetNodes,
                 numberOfNfaStates,
                 mt,
-                hooks);
+                hooks,
+                assertOpen);
     }
 
     @Override
@@ -226,6 +232,8 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
      * @return true if we did any expansion/propagation, false if we've exhausted the component about the source node
      */
     private boolean nextLevel() {
+        assertOpen.assertOpen();
+
         nextDepth += 1;
 
         hooks.nextLevel(nextDepth);

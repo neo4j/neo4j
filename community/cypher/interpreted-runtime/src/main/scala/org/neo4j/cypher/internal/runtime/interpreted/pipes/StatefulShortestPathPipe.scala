@@ -89,7 +89,8 @@ case class StatefulShortestPathPipe(
             selector.k.toInt,
             commandNFA.states.size,
             memoryTracker,
-            hooks
+            hooks,
+            state.query.transactionalContext.assertTransactionOpen _
           ).asSelfClosingIterator
 
         case value =>

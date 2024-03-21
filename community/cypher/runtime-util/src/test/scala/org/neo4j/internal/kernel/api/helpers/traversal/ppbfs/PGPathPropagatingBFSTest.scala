@@ -35,13 +35,13 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.PGStateBuilder
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor.DataGraphRelationshipCursor
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipPredicate
+import org.neo4j.kernel.api.AssertOpen
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipDirection
 import org.neo4j.storageengine.api.RelationshipSelection
 
-import scala.collection.immutable.Seq
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 class PGPathPropagatingBFSTest extends CypherFunSuite {
@@ -871,6 +871,28 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     heap4 shouldBe 0
   }
 
+  /****************
+   * Interruption *
+   ****************/
+
+  test("can be interrupted by AssertOpen check") {
+    val graph = TestGraph.builder
+    val a = graph.node()
+    val b = graph.node()
+    graph.rel(a, b)
+
+    val iter = fixture()
+      .withGraph(graph.build())
+      .from(a)
+      .withNfa(anyDirectedPath)
+      .onAssertOpen {
+        throw new Exception("boom")
+      }
+      .build()
+
+    the[Exception] thrownBy iter.asScala.toList should have message "boom"
+  }
+
   /*********************************************************
    * Examples of NFAs which currently break the algorithm! *
    *********************************************************/
@@ -1018,7 +1040,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     projection: TracedPath => A,
     predicate: A => Boolean,
     mt: MemoryTracker,
-    hooks: PPBFSHooks
+    hooks: PPBFSHooks,
+    assertOpen: AssertOpen
   ) {
 
     def withGraph(graph: TestGraph): FixtureBuilder[A] = copy(graph = graph)
@@ -1033,10 +1056,11 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     def grouped: FixtureBuilder[A] = copy(isGroup = true)
     def withK(k: Int): FixtureBuilder[A] = copy(k = k)
     def withMemoryTracker(mt: MemoryTracker): FixtureBuilder[A] = copy(mt = mt)
+    def onAssertOpen(assertOpen: => Unit): FixtureBuilder[A] = copy(assertOpen = () => assertOpen)
 
     /** NB: wipes any configured filter, since the iterated item type will change */
     def project[B](projection: TracedPath => B): FixtureBuilder[B] =
-      FixtureBuilder[B](graph, nfa, source, intoTarget, isGroup, k, projection, _ => true, mt, hooks)
+      FixtureBuilder[B](graph, nfa, source, intoTarget, isGroup, k, projection, _ => true, mt, hooks, assertOpen)
     def filter(predicate: A => Boolean): FixtureBuilder[A] = copy(predicate = predicate)
 
     def build(createPathTracer: (MemoryTracker, PPBFSHooks) => PathTracer = new PathTracer(_, _)) =
@@ -1052,7 +1076,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         k,
         nfa.stateCount(),
         mt,
-        hooks
+        hooks,
+        assertOpen
       )
 
     def toList: Seq[A] = build().asScala.toList
@@ -1083,7 +1108,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     identity,
     _ => true,
     EmptyMemoryTracker.INSTANCE,
-    PPBFSHooks.NULL
+    PPBFSHooks.NULL,
+    () => ()
   )
 }
 
