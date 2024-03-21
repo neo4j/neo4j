@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.runtime.spec.execution.RuntimeTestSupportExecut
 import org.neo4j.cypher.internal.runtime.spec.matcher.RuntimeResultMatchers
 import org.neo4j.cypher.internal.runtime.spec.resolver.RuntimeTestResolver
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.dbms.api.DatabaseManagementService
@@ -577,7 +578,7 @@ case class TestSubscriberRuntimeResult(runtimeResult: RuntimeResult, testSubscri
   def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeTestResult].pageCacheMisses
 }
 
-case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)
+case class ContextCondition[CONTEXT <: RuntimeContext](test: (CONTEXT, Seq[Id]) => Boolean, errorMsg: String)
 
 case class TestSubscriberWrappingRecordingQuerySubscriber(testSubscriber: TestSubscriber)
     extends RecordingQuerySubscriber {
