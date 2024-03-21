@@ -83,7 +83,7 @@ class AntlrParserTckTests extends FeatureTest with FeatureQueryTest with Matcher
   }
 
   private def parseAntlr(query: String): Statement = {
-    val ast = CypherAstParser.parseStatements(query, Neo4jCypherExceptionFactory(query, None))
+    val ast = CypherAstParser.parseStatements(query, Neo4jCypherExceptionFactory(query, None), None)
     if (ast == null) null else ast.statements.head
   }
 

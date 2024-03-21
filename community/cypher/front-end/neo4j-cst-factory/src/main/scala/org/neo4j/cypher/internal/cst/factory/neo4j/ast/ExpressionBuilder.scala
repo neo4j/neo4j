@@ -135,7 +135,11 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
+import org.neo4j.cypher.internal.parser.javacc.DeprecatedChars
+import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
+import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -990,18 +994,22 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = textWithoutEscapes.replace("``", "`")
   }
 
-  final override def exitUnescapedSymbolicNameString(
-    ctx: CypherParser.UnescapedSymbolicNameStringContext
-  ): Unit = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount == 1)
-    // ctx.getText is also correct
-    // This implementation is a micro optimisation to not have to create a string builder.
-    ctx.ast = ctx.children.get(0) match {
-      case childCtx: CypherParser.UnescapedLabelSymbolicNameStringContext =>
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(childCtx.getChildCount == 1)
-        childCtx.children.get(0).getText
-      case other => other.getText
+  protected def notificationLogger: Option[InternalNotificationLogger]
+
+  private def reportDeprecatedChars(text: String, p: InputPosition): Unit = {
+    for {
+      logger <- notificationLogger
+      deprecatedChar <- DeprecatedChars.deprecatedChars(text).asScala
+    } {
+      if (deprecatedChar == '\u0085') logger.log(DeprecatedIdentifierWhitespaceUnicode(p, deprecatedChar, text))
+      else logger.log(DeprecatedIdentifierUnicode(p, deprecatedChar, text))
     }
+  }
+
+  final override def exitUnescapedSymbolicNameString(ctx: CypherParser.UnescapedSymbolicNameStringContext): Unit = {
+    val text = ctx.getText
+    if (DeprecatedChars.containsDeprecatedChar(text)) reportDeprecatedChars(text, pos(ctx))
+    ctx.ast = text
   }
 
   final override def exitSymbolicLabelNameString(

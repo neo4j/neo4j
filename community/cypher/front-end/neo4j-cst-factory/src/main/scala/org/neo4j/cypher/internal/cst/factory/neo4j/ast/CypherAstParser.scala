@@ -34,12 +34,17 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.internal.helpers.Exceptions
 
 /**
  * Parses Neo4j AST using antlr. Fails fast. Optimised for memory by removing the parse as we go.
  */
-class CypherAstParser private (input: TokenStream, createAst: Boolean) extends CypherParser(input) {
+class CypherAstParser private (
+  input: TokenStream,
+  createAst: Boolean,
+  notificationLogger: Option[InternalNotificationLogger]
+) extends CypherParser(input) {
   // These could be added using `addParseListener` too, but this is faster
   private[this] var astBuilder: ParseTreeListener = _
   private[this] var syntaxChecker: SyntaxChecker = _
@@ -83,7 +88,7 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 
   override def reset(): Unit = {
     super.reset()
-    astBuilder = if (createAst) new AstBuilder else NoOpParseTreeListener
+    astBuilder = if (createAst) new AstBuilder(notificationLogger) else NoOpParseTreeListener
     syntaxChecker = new SyntaxChecker
   }
 
@@ -104,12 +109,21 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 object CypherAstParser {
   final val DEBUG = false
 
-  def parseStatements(query: String, exceptionFactory: CypherExceptionFactory): Statements =
-    parse(query, exceptionFactory, _.statements()).ast[Statements]()
+  def parseStatements(
+    query: String,
+    exceptionFactory: CypherExceptionFactory,
+    notificationLogger: Option[InternalNotificationLogger]
+  ): Statements =
+    parse(query, exceptionFactory, notificationLogger, _.statements()).ast[Statements]()
 
-  def parse[T <: AstRuleCtx](query: String, exceptionFactory: CypherExceptionFactory, f: CypherAstParser => T): T = {
+  def parse[T <: AstRuleCtx](
+    query: String,
+    exceptionFactory: CypherExceptionFactory,
+    notificationLogger: Option[InternalNotificationLogger],
+    f: CypherAstParser => T
+  ): T = {
     val tokens = preparsedTokens(query)
-    val parser = new CypherAstParser(tokens, true)
+    val parser = new CypherAstParser(tokens, true, notificationLogger)
     try {
       // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
       // See https://github.com/antlr/antlr4/blob/dev/doc/faq/general.md#why-is-my-expression-parser-slow
@@ -143,11 +157,11 @@ object CypherAstParser {
     }
   }
 
-  def apply(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), true)
-  def apply(input: TokenStream): CypherAstParser = new CypherAstParser(input, true)
+  def apply(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), true, None)
+  def apply(input: TokenStream): CypherAstParser = new CypherAstParser(input, true, None)
 
   // Only needed during development
-  def withoutAst(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), false)
+  def withoutAst(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), false, None)
 
   private def preparsedTokens(cypher: String) = new CommonTokenStream(ReplaceUnicodeEscapeSequences.fromString(cypher))
 }

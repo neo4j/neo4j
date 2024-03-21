@@ -62,7 +62,7 @@ object AntlrRule {
   def fromQueryAndParser[T <: AstRuleCtx](runParser: Parser => T): AntlrRule[T] = new AntlrRule[T] {
 
     override def apply(cypher: String): Cst[T] = {
-      val ctx = CypherAstParser.parse[T](cypher, Neo4jCypherExceptionFactory(cypher, None), runParser)
+      val ctx = CypherAstParser.parse[T](cypher, Neo4jCypherExceptionFactory(cypher, None), None, runParser)
       val theAst = Option(ctx.ast[ASTNode]())
       new Cst(ctx) {
         val parsingErrors: List[Exception] = List.empty

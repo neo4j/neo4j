@@ -21,6 +21,7 @@ import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.parser.AbstractAstBuilder
 import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
 /**
  * Antlr parser listener that builds Neo4j ASTs during parsing.
@@ -29,7 +30,9 @@ import org.neo4j.cypher.internal.parser.CypherParser
  * - Set [[org.neo4j.cypher.internal.parser.AstRuleCtx]].ast of their context.
  * - When antlr grammar do not exactly match neo4j ast, create transient ASTNode classes in [[TransientAstNode]].
  */
-final class AstBuilder extends AbstractAstBuilder
+final class AstBuilder(
+  override val notificationLogger: Option[InternalNotificationLogger]
+) extends AbstractAstBuilder
     with LiteralBuilder
     with LabelExpressionBuilder
     with DdlBuilder
