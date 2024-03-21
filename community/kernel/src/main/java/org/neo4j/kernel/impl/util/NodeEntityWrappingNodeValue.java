@@ -85,6 +85,9 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
             labels(nodeCursor);
             properties(nodeCursor, propertyCursor);
         } catch (ReadAndDeleteTransactionConflictException e) {
+            if (!e.wasDeletedInThisTransaction()) {
+                throw e;
+            }
             // best effort, cannot do more
         }
     }

@@ -164,7 +164,19 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
             properties();
             startNode();
             endNode();
-        } catch (NotFoundException | ReadAndDeleteTransactionConflictException e) {
+        } catch ( NotFoundException e )
+        {
+            if ( !RelationshipEntity.isDeletedInCurrentTransaction( relationship ) )
+            {
+                throw e;
+            }
+            // best effort, cannot do more
+        } catch ( ReadAndDeleteTransactionConflictException e )
+        {
+            if ( !e.wasDeletedInThisTransaction() )
+            {
+                throw e;
+            }
             // best effort, cannot do more
         }
     }
