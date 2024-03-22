@@ -115,7 +115,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     private final Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
     private final HttpTransactionManager httpTransactionManager;
 
-    private Driver driver;
+    private volatile Driver driver;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     protected final SystemNanoClock clock;
 
@@ -177,17 +177,24 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     }
 
     private Driver getOrCreateDriver() {
-        if (driver != null) {
-            return driver;
-        } else {
-            var internalLogProvider =
-                    globalDependencies.resolveDependency(LogService.class).getInternalLogProvider();
-            var driverFactory = new LocalChannelDriverFactory(
-                    new LocalAddress(config.get(BoltConnectorInternalSettings.local_channel_address)),
-                    internalLogProvider);
-            driver = driverFactory.createLocalDriver();
-            return driver;
+
+        var availableDriver = this.driver;
+        if (availableDriver == null) {
+            synchronized (this) {
+                availableDriver = this.driver;
+                if (availableDriver == null) {
+                    var internalLogProvider = globalDependencies
+                            .resolveDependency(LogService.class)
+                            .getInternalLogProvider();
+                    var driverFactory = new LocalChannelDriverFactory(
+                            new LocalAddress(config.get(BoltConnectorInternalSettings.local_channel_address)),
+                            internalLogProvider);
+                    this.driver = driverFactory.createLocalDriver();
+                    availableDriver = this.driver;
+                }
+            }
         }
+        return availableDriver;
     }
 
     protected Dependencies getGlobalDependencies() {
