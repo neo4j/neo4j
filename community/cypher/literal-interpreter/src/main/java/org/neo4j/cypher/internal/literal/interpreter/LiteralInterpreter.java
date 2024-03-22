@@ -1346,6 +1346,11 @@ public class LiteralInterpreter
     }
 
     @Override
+    public Object concatenate(NULL p, Object lhs, Object rhs) {
+        throw new UnsupportedOperationException("concatenation is not a literal");
+    }
+
+    @Override
     public Object minus(NULL p, Object lhs, Object rhs) {
         throw new UnsupportedOperationException("minus is not a literal");
     }

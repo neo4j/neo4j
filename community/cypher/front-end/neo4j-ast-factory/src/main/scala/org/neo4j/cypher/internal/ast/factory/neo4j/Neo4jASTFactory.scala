@@ -375,6 +375,7 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.Concatenate
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -1290,6 +1291,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def not(p: InputPosition, e: Expression): Expression = Not(e)(p)
 
   override def plus(p: InputPosition, lhs: Expression, rhs: Expression): Expression = Add(lhs, rhs)(p)
+
+  override def concatenate(p: InputPosition, lhs: Expression, rhs: Expression): Expression = Concatenate(lhs, rhs)(p)
 
   override def minus(p: InputPosition, lhs: Expression, rhs: Expression): Expression = Subtract(lhs, rhs)(p)
 

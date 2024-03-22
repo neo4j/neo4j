@@ -109,6 +109,8 @@ public interface ASTExpressionFactory<
 
     EXPRESSION minus(POS p, EXPRESSION lhs, EXPRESSION rhs);
 
+    EXPRESSION concatenate(POS p, EXPRESSION lhs, EXPRESSION rhs);
+
     EXPRESSION multiply(POS p, EXPRESSION lhs, EXPRESSION rhs);
 
     EXPRESSION divide(POS p, EXPRESSION lhs, EXPRESSION rhs);

@@ -262,6 +262,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL concatenate(NULL p, NULL lhs, NULL rhs) {
+        return null;
+    }
+
+    @Override
     public NULL minus(NULL p, NULL lhs, NULL rhs) {
         return null;
     }

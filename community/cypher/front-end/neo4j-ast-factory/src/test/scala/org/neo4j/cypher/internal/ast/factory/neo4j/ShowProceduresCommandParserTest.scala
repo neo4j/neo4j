@@ -682,6 +682,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
         |  "WHERE"
         |  "XOR"
         |  "^"
+        |  "||"
         |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
     )
   }

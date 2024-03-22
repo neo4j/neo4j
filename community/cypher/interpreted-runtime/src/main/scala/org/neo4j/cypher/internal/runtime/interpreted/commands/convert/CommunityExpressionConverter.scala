@@ -252,6 +252,8 @@ case class CommunityExpressionConverter(
       case e: internal.expressions.InequalityExpression => inequalityExpression(id, e, self)
       case e: internal.expressions.Add =>
         commands.expressions.Add(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
+      case e: internal.expressions.Concatenate =>
+        commands.expressions.Concatenate(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))
       case e: internal.expressions.UnaryAdd => self.toCommandExpression(id, e.rhs)
       case e: internal.expressions.Subtract => commands.expressions
           .Subtract(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))

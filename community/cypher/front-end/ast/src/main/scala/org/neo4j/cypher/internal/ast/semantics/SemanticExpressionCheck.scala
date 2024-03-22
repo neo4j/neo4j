@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.CoerceTo
+import org.neo4j.cypher.internal.expressions.Concatenate
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -183,6 +184,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           expectType(infixAddRhsTypes(x.lhs), x.rhs) chain
           specifyType(infixAddOutputTypes(x.lhs, x.rhs), x) chain
           checkAddBoundary(x)
+
+      case x: Concatenate =>
+        check(ctx, x.arguments) chain
+          checkTypes(x, x.signatures) chain
+          specifyType(infixAddOutputTypes(x.lhs, x.rhs), x)
 
       case x: Subtract =>
         check(ctx, x.arguments) chain

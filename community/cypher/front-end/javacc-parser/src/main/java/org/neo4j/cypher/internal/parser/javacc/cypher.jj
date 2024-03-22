@@ -475,6 +475,7 @@ TOKEN [IGNORE_CASE] :
     | < DESTROY: "DESTROY">
     | < DETACH: "DETACH" >
     | < DOLLAR: "$">
+    | < DOUBLEBAR: "||">
     | < DIFFERENT: "DIFFERENT" >
     | < DISTINCT: "DISTINCT" >
     | < DIVIDE: "/" >
@@ -3575,6 +3576,7 @@ EXPRESSION Expression6() throws Exception:
     lhs=Expression5() (
         t=<PLUS> rhs=Expression5() { lhs = astFactory.plus( pos( t ), lhs, rhs); }
         | t=<MINUS> rhs=Expression5() { lhs = astFactory.minus( pos( t ), lhs, rhs); }
+        | t=<DOUBLEBAR> rhs=Expression5() { lhs = astFactory.concatenate( pos( t ), lhs, rhs); }
     )*
     {
         return lhs;

@@ -416,7 +416,7 @@ normalForm
    ;
 
 expression6
-   : expression5 ((PLUS | MINUS) expression5)*
+   : expression5 ((PLUS | MINUS | DOUBLEBAR) expression5)*
    ;
 
 expression5

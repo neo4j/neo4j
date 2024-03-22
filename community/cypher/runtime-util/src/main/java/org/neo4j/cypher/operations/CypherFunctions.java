@@ -793,6 +793,47 @@ public final class CypherFunctions {
         }
     }
 
+    public static AnyValue concatenate(AnyValue lhs, AnyValue rhs) {
+        if (lhs == NO_VALUE && rhs == NO_VALUE) {
+            return NO_VALUE;
+        }
+        // List Concatenation - Can only concatenate lists when both sides are lists
+        // arrays are same as lists when it comes to concatenation
+        if (lhs instanceof ArrayValue array) {
+            lhs = VirtualValues.fromArray(array);
+        }
+        if (rhs instanceof ArrayValue array) {
+            rhs = VirtualValues.fromArray(array);
+        }
+
+        // Null values only return null if the other side is either null (checked already) or a valid concatenation
+        // type.
+        if (lhs == NO_VALUE) {
+            if (rhs instanceof ListValue || rhs instanceof TextValue) {
+                return NO_VALUE;
+            }
+        }
+
+        if (rhs == NO_VALUE) {
+            if (lhs instanceof ListValue || lhs instanceof TextValue) {
+                return NO_VALUE;
+            }
+        }
+
+        boolean lhsIsListValue = lhs instanceof ListValue;
+        if (lhsIsListValue && rhs instanceof ListValue) {
+            return ((ListValue) lhs).appendAll((ListValue) rhs);
+        }
+
+        // String Concatenation - Can only concatenate strings when both sides are strings
+        if (lhs instanceof TextValue && rhs instanceof TextValue) {
+            return ((TextValue) lhs).plus((TextValue) rhs);
+        }
+
+        throw new CypherTypeException(
+                String.format("Cannot concatenate `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName()));
+    }
+
     public static AnyValue normalize(AnyValue input) {
         return normalize(input, Values.stringValue("NFC"));
     }

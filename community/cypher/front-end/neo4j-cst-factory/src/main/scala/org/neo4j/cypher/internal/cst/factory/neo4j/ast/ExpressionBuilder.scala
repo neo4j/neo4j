@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.Concatenate
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -456,8 +457,9 @@ trait ExpressionBuilder extends CypherParserListener {
 
   private def binaryAdditive(lhs: Expression, token: TerminalNode, rhs: Expression): Expression = {
     token.getSymbol.getType match {
-      case CypherParser.PLUS  => Add(lhs, rhs)(pos(token.getSymbol))
-      case CypherParser.MINUS => Subtract(lhs, rhs)(pos(token.getSymbol))
+      case CypherParser.PLUS      => Add(lhs, rhs)(pos(token.getSymbol))
+      case CypherParser.MINUS     => Subtract(lhs, rhs)(pos(token.getSymbol))
+      case CypherParser.DOUBLEBAR => Concatenate(lhs, rhs)(pos(token.getSymbol))
     }
   }
 

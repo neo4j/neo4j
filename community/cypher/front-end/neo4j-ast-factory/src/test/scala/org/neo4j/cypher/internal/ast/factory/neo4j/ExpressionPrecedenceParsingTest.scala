@@ -44,7 +44,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
    * 9: NOT
    * 8: =, !=, <>, <, >, <=, >=
    * 7: =~, STARS WITH, ENDS WITH, CONTAINS, IN, IS NULL, IS NOT NULL, IS ::, IS NOT ::, IS NORMALIZED, IS NOT NORMALIZED
-   * 6: +, -
+   * 6: +, -, ||
    * 5: *, /, %
    * 4: POW
    * 3: +(unary), -(unary)
@@ -160,6 +160,20 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
       startsWith(
         add(literalString("string"), literalString("thing")),
         add(literalString("s"), literalString("t"))
+      )
+    )
+    // ('string' || 'thing') STARTS WITH ('s' || 't')
+    "'string' || 'thing' STARTS WITH 's' || 't'" should parseTo[Expression](
+      startsWith(
+        concatenate(literalString("string"), literalString("thing")),
+        concatenate(literalString("s"), literalString("t"))
+      )
+    )
+    // ([1] || [2]) IN ([3] || [4])
+    "[1] || [2] IN [3] || [4]" should parseTo[Expression](
+      in(
+        concatenate(listOf(literalInt(1)), listOf(literalInt(2))),
+        concatenate(listOf(literalInt(3)), listOf(literalInt(4)))
       )
     )
 

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.CoerceTo
+import org.neo4j.cypher.internal.expressions.Concatenate
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -608,6 +609,9 @@ trait AstConstructionTestSupport {
     ListComprehension(variable, collection, predicate, extractExpression)(pos)
 
   def add(lhs: Expression, rhs: Expression, position: InputPosition = pos): Add = Add(lhs, rhs)(position)
+
+  def concatenate(lhs: Expression, rhs: Expression, position: InputPosition = pos): Concatenate =
+    Concatenate(lhs, rhs)(position)
 
   def unaryAdd(source: Expression): UnaryAdd = UnaryAdd(source)(pos)
 

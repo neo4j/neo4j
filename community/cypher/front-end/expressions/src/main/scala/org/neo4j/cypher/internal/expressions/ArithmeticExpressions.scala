@@ -17,13 +17,16 @@
 package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
 import org.neo4j.cypher.internal.util.symbols.CTLocalTime
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 
 case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
@@ -60,6 +63,17 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
   )
 
   override def canonicalOperatorSymbol = "-"
+}
+
+case class Concatenate(lhs: Expression, rhs: Expression)(val position: InputPosition)
+    extends Expression with BinaryOperatorExpression {
+
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTList(CTAny), CTList(CTAny)), outputType = CTList(CTAny))
+  )
+
+  override def canonicalOperatorSymbol = "||"
 }
 
 case class UnarySubtract(rhs: Expression)(val position: InputPosition)

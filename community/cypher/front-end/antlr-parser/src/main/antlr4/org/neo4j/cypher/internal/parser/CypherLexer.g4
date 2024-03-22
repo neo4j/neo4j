@@ -380,6 +380,10 @@ DOTDOT
    : '..'
    ;
 
+DOUBLEBAR
+   : '||'
+   ;
+
 DRIVER
    : D R I V E R
    ;
