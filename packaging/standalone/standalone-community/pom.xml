@@ -33,6 +33,32 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-license-header</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                   </execution>
+                </executions>
+                <configuration>
+                    <artifactItems>
+                        <artifactItem>
+                            <groupId>org.neo4j.build</groupId>
+                            <artifactId>resources</artifactId>
+                            <version>${build-resources.version}</version>
+                            <type>jar</type>
+                            <includes>${license-text.header}</includes>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                        </artifactItem>
+                    </artifactItems>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>appassembler-maven-plugin</artifactId>
                 <version>1.10</version>
@@ -45,7 +71,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <licenseHeaderFile>../../../build-resources/src/main/resources/${license-text.header}</licenseHeaderFile> <!-- Relative path because this plugin does not read from resources -->
+                    <licenseHeaderFile>${project.build.directory}/${license-text.header}</licenseHeaderFile> <!-- Relative path because this plugin does not read from resources -->
                     <assembleDirectory>${project.build.directory}/generated</assembleDirectory>
                     <generateRepository>false</generateRepository>
                     <endorsedDir>lib</endorsedDir>
@@ -136,7 +162,7 @@
                 <groupId>org.neo4j.build.plugins</groupId>
                 <artifactId>licensing-maven-plugin</artifactId>
                 <configuration>
-                    <prependText>licensing/notice-gpl-prefix.txt</prependText>
+                    <prependText>license/neo4j_gpl_v3/notice.txt</prependText>
                 </configuration>
                 <executions>
                     <execution>

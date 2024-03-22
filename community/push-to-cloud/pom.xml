@@ -17,7 +17,7 @@
 
     <properties>
         <license.id>neo4j_apache_v2</license.id>
-        <licensing.prepend.text>licensing/notice-apache2-prefix.txt</licensing.prepend.text>
+        <licensing.prepend.text>license/neo4j_apache_v2/notice.txt</licensing.prepend.text>
         <license-text.header>license/neo4j_apache_v2/header.txt</license-text.header>
         <moduleName>org.neo4j.export</moduleName>
     </properties>
