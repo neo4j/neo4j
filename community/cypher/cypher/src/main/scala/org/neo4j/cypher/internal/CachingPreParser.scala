@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.Neo4jASTExceptionFactory
 import org.neo4j.cypher.internal.cache.LFUCache
-import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherExecutionMode
@@ -34,6 +33,7 @@ import org.neo4j.cypher.internal.preparser.javacc.PreParserResult
 import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.exceptions.SyntaxException
 
 import java.util.Locale

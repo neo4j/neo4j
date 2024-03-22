@@ -120,7 +120,7 @@ ALIASES
    : A L I A S E S
    ;
 
-ALL_SHORTEST_PATH
+ALL_SHORTEST_PATHS
    : A L L S H O R T E S T P A T H S
    ;
 

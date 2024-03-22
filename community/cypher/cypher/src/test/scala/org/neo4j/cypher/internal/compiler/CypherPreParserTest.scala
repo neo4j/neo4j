@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.preparser.javacc.CypherPreParser
 import org.neo4j.cypher.internal.preparser.javacc.PreParserCharStream
 import org.neo4j.cypher.internal.preparser.javacc.PreParserResult
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.prop.TableFor2

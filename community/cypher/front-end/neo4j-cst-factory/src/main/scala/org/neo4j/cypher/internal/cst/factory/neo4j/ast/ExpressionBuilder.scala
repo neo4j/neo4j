@@ -202,7 +202,7 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitShortestPathPattern(ctx: CypherParser.ShortestPathPatternContext): Unit = {
     val first = nodeChild(ctx, 0).getSymbol
     ctx.ast =
-      ShortestPathsPatternPart(ctx.patternElement().ast(), first.getType != CypherParser.ALL_SHORTEST_PATH)(pos(first))
+      ShortestPathsPatternPart(ctx.patternElement().ast(), first.getType != CypherParser.ALL_SHORTEST_PATHS)(pos(first))
   }
 
   final override def exitPatternElement(ctx: CypherParser.PatternElementContext): Unit = {

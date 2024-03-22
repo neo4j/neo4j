@@ -238,7 +238,7 @@ anonymousPattern
    ;
 
 shortestPathPattern
-   : (SHORTEST_PATH | ALL_SHORTEST_PATH) LPAREN patternElement RPAREN
+   : (SHORTEST_PATH | ALL_SHORTEST_PATHS) LPAREN patternElement RPAREN
    ;
 
 patternElement
@@ -1246,7 +1246,7 @@ unescapedLabelSymbolicNameString
    | ADMINISTRATOR
    | ALIAS
    | ALIASES
-   | ALL_SHORTEST_PATH
+   | ALL_SHORTEST_PATHS
    | ALL
    | ALTER
    | AND

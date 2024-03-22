@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
-import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -43,6 +42,7 @@ import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.api.query.QueryObfuscator

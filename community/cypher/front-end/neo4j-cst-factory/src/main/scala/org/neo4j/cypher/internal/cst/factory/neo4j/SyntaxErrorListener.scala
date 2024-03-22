@@ -19,12 +19,13 @@ package org.neo4j.cypher.internal.cst.factory.neo4j
 import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer
-import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener.SyntaxError
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InputPosition
 
-class SyntaxErrorListener extends BaseErrorListener {
-  private[this] var _syntaxErrors = Seq.empty[SyntaxError]
+class SyntaxErrorListener(exceptionFactory: CypherExceptionFactory) extends BaseErrorListener {
+  private[this] var _syntaxErrors = Seq.empty[Exception]
 
-  def syntaxErrors: Seq[SyntaxError] = _syntaxErrors
+  def syntaxErrors: Seq[Exception] = _syntaxErrors
 
   override def syntaxError(
     recognizer: Recognizer[_, _],
@@ -34,7 +35,11 @@ class SyntaxErrorListener extends BaseErrorListener {
     msg: String,
     e: RecognitionException
   ): Unit = {
-    _syntaxErrors = _syntaxErrors.appended(SyntaxError(offendingSymbol, line, charPositionInLine, msg, e))
+    val position = offendingSymbol match {
+      case cypherToken: CypherToken => cypherToken.position()
+      case _                        => InputPosition(recognizer.getInputStream.index(), line, charPositionInLine)
+    }
+    _syntaxErrors = _syntaxErrors.appended(exceptionFactory.syntaxException(msg, position))
   }
 
   def reset(): Unit = _syntaxErrors = Seq.empty

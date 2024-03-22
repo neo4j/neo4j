@@ -32,31 +32,27 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.internal.helpers.Exceptions
 
 /**
  * Parses Neo4j AST using antlr. Fails fast. Optimised for memory by removing the parse as we go.
  */
-// TODO Can be pooled and reused with `setInputStream`, investigate if its worth the risks
-// TODO Parsing mode
 class CypherAstParser private (input: TokenStream, createAst: Boolean) extends CypherParser(input) {
+  // These could be added using `addParseListener` too, but this is faster
   private[this] var astBuilder: ParseTreeListener = _
   private[this] var syntaxChecker: SyntaxChecker = _
-  private[this] var errorListener: SyntaxErrorListener = _
 
   removeErrorListeners() // Avoid printing errors to stdout
-  addErrorListener(errorListener) // TODO Is this necessary when we have BailErrorStrategy?
-  setErrorHandler(new BailErrorStrategy) // Is this the right choice?
 
   override def exitRule(): Unit = {
     val localCtx = _ctx
     super.exitRule()
 
-    if (localCtx.exception == null) {
-      // These could be added using `addParseListener` too, but this is faster
+    if (_syntaxErrors == 0) {
       syntaxChecker.exitEveryRule(localCtx)
-      // TODO!
-      if (syntaxChecker.getErrors.nonEmpty) {
-        throw syntaxChecker.getErrors.next
+      if (syntaxChecker.hasErrors) {
+        throw syntaxChecker.getErrors.reduce(Exceptions.chain)
       }
 
       astBuilder.exitEveryRule(localCtx)
@@ -71,12 +67,9 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
       }
 
       // Throw exception if EOF is not reached
-      if (_ctx == null) {
-        // TODO hides other failures sometimes
-        throwIfEofNotReached(localCtx)
+      if (_ctx == null && !matchedEOF && getTokenStream.LA(1) != Token.EOF) {
+        throw eofNotReached(localCtx)
       }
-    } else {
-      if (DEBUG) localCtx.exception.printStackTrace()
     }
   }
 
@@ -84,45 +77,61 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
     super.reset()
     astBuilder = if (createAst) new AstBuilder else NoOpParseTreeListener
     syntaxChecker = new SyntaxChecker
-    errorListener = new SyntaxErrorListener
   }
 
   override def addParseListener(listener: ParseTreeListener): Unit = throw new UnsupportedOperationException()
 
-  // TODO Tests for this
-  private def throwIfEofNotReached(ctx: ParserRuleContext): Unit = {
-    if (!(matchedEOF || getTokenStream.LA(1) == Token.EOF)) {
-      // TODO can be null
-
-      val stop = Option(ctx).flatMap(c => Option(c.stop))
-      val tokenText = stop.map(_.getText)
-      val tokenLine = stop.map(_.getLine)
-      val tokenColumn = stop.map(_.getCharPositionInLine)
-      // TODO Exception type and message
-      throw new RuntimeException(
-        s"did not read all input, it stopped at token $tokenText at line $tokenLine, column $tokenColumn"
-      )
-    }
+  private def eofNotReached(ctx: ParserRuleContext): Exception = {
+    val stop = Option(ctx).flatMap(c => Option(c.stop))
+    val tokenText = stop.map(_.getText)
+    val tokenLine = stop.map(_.getLine)
+    val tokenColumn = stop.map(_.getCharPositionInLine)
+    // TODO Exception type and message
+    new RuntimeException(
+      s"did not read all input, it stopped at token $tokenText at line $tokenLine, column $tokenColumn"
+    )
   }
 }
 
 object CypherAstParser {
   final val DEBUG = false
 
-  def parseStatements(query: String): Statements = {
-    // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
-    // See https://github.com/antlr/antlr4/blob/dev/doc/faq/general.md#why-is-my-expression-parser-slow
+  def parseStatements(query: String, exceptionFactory: CypherExceptionFactory): Statements =
+    parse(query, exceptionFactory, _.statements()).ast[Statements]()
+
+  def parse[T <: AstRuleCtx](query: String, exceptionFactory: CypherExceptionFactory, f: CypherAstParser => T): T = {
     val tokens = preparsedTokens(query)
     val parser = new CypherAstParser(tokens, true)
-    parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
     try {
-      parser.statements().ast[Statements]()
+      // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
+      // See https://github.com/antlr/antlr4/blob/dev/doc/faq/general.md#why-is-my-expression-parser-slow
+      parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
+
+      // Use bail error strategy to fail fast and avoid recovery attempts
+      parser.setErrorHandler(new BailErrorStrategy)
+
+      f(parser)
     } catch {
       case _: Exception =>
+        // The fast route failed, now try again with full error handling and prediction mode
+
+        // Reset parser and token stream
         tokens.seek(0)
         parser.reset()
+
+        // Slower but correct prediction.
         parser.getInterpreter.setPredictionMode(PredictionMode.LL)
-        parser.statements().ast[Statements]()
+
+        // CypherErrorStrategy allows us to get the correct error messages in case we still fail
+        parser.setErrorHandler(new CypherErrorStrategy)
+        val errorListener = new SyntaxErrorListener(exceptionFactory)
+        parser.addErrorListener(errorListener)
+
+        val result = f(parser)
+        if (errorListener.syntaxErrors.nonEmpty) {
+          throw errorListener.syntaxErrors.reduce(Exceptions.chain)
+        }
+        result
     }
   }
 

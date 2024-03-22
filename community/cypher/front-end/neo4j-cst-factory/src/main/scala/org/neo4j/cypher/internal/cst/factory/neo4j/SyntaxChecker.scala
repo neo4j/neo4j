@@ -80,9 +80,9 @@ final class SyntaxChecker extends ParseTreeListener {
     }
   }
 
-  def getErrors: Iterator[Exception] = {
-    errors.iterator
-  }
+  def getErrors: Seq[Exception] = errors
+
+  def hasErrors: Boolean = errors.nonEmpty
 
   private def inputPosition(symbol: Token): InputPosition = {
     new InputPosition(symbol.getStartIndex, symbol.getLine, symbol.getCharPositionInLine + 1)

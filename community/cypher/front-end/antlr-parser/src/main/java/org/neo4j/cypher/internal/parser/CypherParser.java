@@ -44,7 +44,7 @@ public class CypherParser extends Parser {
             ADMINISTRATOR = 10,
             ALIAS = 11,
             ALIASES = 12,
-            ALL_SHORTEST_PATH = 13,
+            ALL_SHORTEST_PATHS = 13,
             ALL = 14,
             ALTER = 15,
             AND = 16,
@@ -944,7 +944,7 @@ public class CypherParser extends Parser {
             "ADMINISTRATOR",
             "ALIAS",
             "ALIASES",
-            "ALL_SHORTEST_PATH",
+            "ALL_SHORTEST_PATHS",
             "ALL",
             "ALTER",
             "AND",
@@ -2309,7 +2309,7 @@ public class CypherParser extends Parser {
                     case ADMINISTRATOR:
                     case ALIAS:
                     case ALIASES:
-                    case ALL_SHORTEST_PATH:
+                    case ALL_SHORTEST_PATHS:
                     case ALL:
                     case ALTER:
                     case AND:
@@ -4189,7 +4189,7 @@ public class CypherParser extends Parser {
                             case ADMINISTRATOR:
                             case ALIAS:
                             case ALIASES:
-                            case ALL_SHORTEST_PATH:
+                            case ALL_SHORTEST_PATHS:
                             case ALL:
                             case ALTER:
                             case AND:
@@ -5584,7 +5584,7 @@ public class CypherParser extends Parser {
                 setState(998);
                 _errHandler.sync(this);
                 switch (_input.LA(1)) {
-                    case ALL_SHORTEST_PATH:
+                    case ALL_SHORTEST_PATHS:
                     case SHORTEST_PATH:
                         {
                             setState(996);
@@ -5629,8 +5629,8 @@ public class CypherParser extends Parser {
             return getToken(CypherParser.SHORTEST_PATH, 0);
         }
 
-        public TerminalNode ALL_SHORTEST_PATH() {
-            return getToken(CypherParser.ALL_SHORTEST_PATH, 0);
+        public TerminalNode ALL_SHORTEST_PATHS() {
+            return getToken(CypherParser.ALL_SHORTEST_PATHS, 0);
         }
 
         public ShortestPathPatternContext(ParserRuleContext parent, int invokingState) {
@@ -5652,7 +5652,7 @@ public class CypherParser extends Parser {
             {
                 setState(1000);
                 _la = _input.LA(1);
-                if (!(_la == ALL_SHORTEST_PATH || _la == SHORTEST_PATH)) {
+                if (!(_la == ALL_SHORTEST_PATHS || _la == SHORTEST_PATH)) {
                     _errHandler.recoverInline(this);
                 } else {
                     if (_input.LA(1) == Token.EOF) matchedEOF = true;
@@ -7846,7 +7846,7 @@ public class CypherParser extends Parser {
                 case ADMINISTRATOR:
                 case ALIAS:
                 case ALIASES:
-                case ALL_SHORTEST_PATH:
+                case ALL_SHORTEST_PATHS:
                 case ALL:
                 case ALTER:
                 case AND:
@@ -8171,7 +8171,7 @@ public class CypherParser extends Parser {
                 case ADMINISTRATOR:
                 case ALIAS:
                 case ALIASES:
-                case ALL_SHORTEST_PATH:
+                case ALL_SHORTEST_PATHS:
                 case ALL:
                 case ALTER:
                 case AND:
@@ -12455,7 +12455,7 @@ public class CypherParser extends Parser {
                     case ADMINISTRATOR:
                     case ALIAS:
                     case ALIASES:
-                    case ALL_SHORTEST_PATH:
+                    case ALL_SHORTEST_PATHS:
                     case ALL:
                     case ALTER:
                     case AND:
@@ -14931,7 +14931,7 @@ public class CypherParser extends Parser {
                     case ADMINISTRATOR:
                     case ALIAS:
                     case ALIASES:
-                    case ALL_SHORTEST_PATH:
+                    case ALL_SHORTEST_PATHS:
                     case ALL:
                     case ALTER:
                     case AND:
@@ -19796,7 +19796,7 @@ public class CypherParser extends Parser {
                     case ADMINISTRATOR:
                     case ALIAS:
                     case ALIASES:
-                    case ALL_SHORTEST_PATH:
+                    case ALL_SHORTEST_PATHS:
                     case ALL:
                     case ALTER:
                     case AND:
@@ -23968,7 +23968,7 @@ public class CypherParser extends Parser {
                             case ADMINISTRATOR:
                             case ALIAS:
                             case ALIASES:
-                            case ALL_SHORTEST_PATH:
+                            case ALL_SHORTEST_PATHS:
                             case ALL:
                             case ALTER:
                             case AND:
@@ -24250,7 +24250,7 @@ public class CypherParser extends Parser {
                             case ADMINISTRATOR:
                             case ALIAS:
                             case ALIASES:
-                            case ALL_SHORTEST_PATH:
+                            case ALL_SHORTEST_PATHS:
                             case ALL:
                             case ALTER:
                             case AND:
@@ -25312,7 +25312,7 @@ public class CypherParser extends Parser {
                                                     case ADMINISTRATOR:
                                                     case ALIAS:
                                                     case ALIASES:
-                                                    case ALL_SHORTEST_PATH:
+                                                    case ALL_SHORTEST_PATHS:
                                                     case ALL:
                                                     case ALTER:
                                                     case AND:
@@ -26213,7 +26213,7 @@ public class CypherParser extends Parser {
                                         case ADMINISTRATOR:
                                         case ALIAS:
                                         case ALIASES:
-                                        case ALL_SHORTEST_PATH:
+                                        case ALL_SHORTEST_PATHS:
                                         case ALL:
                                         case ALTER:
                                         case AND:
@@ -26506,7 +26506,7 @@ public class CypherParser extends Parser {
                                         case ADMINISTRATOR:
                                         case ALIAS:
                                         case ALIASES:
-                                        case ALL_SHORTEST_PATH:
+                                        case ALL_SHORTEST_PATHS:
                                         case ALL:
                                         case ALTER:
                                         case AND:
@@ -27200,7 +27200,7 @@ public class CypherParser extends Parser {
                                         case ADMINISTRATOR:
                                         case ALIAS:
                                         case ALIASES:
-                                        case ALL_SHORTEST_PATH:
+                                        case ALL_SHORTEST_PATHS:
                                         case ALL:
                                         case ALTER:
                                         case AND:
@@ -27885,7 +27885,7 @@ public class CypherParser extends Parser {
                     case ADMINISTRATOR:
                     case ALIAS:
                     case ALIASES:
-                    case ALL_SHORTEST_PATH:
+                    case ALL_SHORTEST_PATHS:
                     case ALL:
                     case ALTER:
                     case AND:
@@ -28198,7 +28198,7 @@ public class CypherParser extends Parser {
                     case ADMINISTRATOR:
                     case ALIAS:
                     case ALIASES:
-                    case ALL_SHORTEST_PATH:
+                    case ALL_SHORTEST_PATHS:
                     case ALL:
                     case ALTER:
                     case AND:
@@ -28587,7 +28587,7 @@ public class CypherParser extends Parser {
                                 case ADMINISTRATOR:
                                 case ALIAS:
                                 case ALIASES:
-                                case ALL_SHORTEST_PATH:
+                                case ALL_SHORTEST_PATHS:
                                 case ALL:
                                 case ALTER:
                                 case AND:
@@ -28883,7 +28883,7 @@ public class CypherParser extends Parser {
                                 case ADMINISTRATOR:
                                 case ALIAS:
                                 case ALIASES:
-                                case ALL_SHORTEST_PATH:
+                                case ALL_SHORTEST_PATHS:
                                 case ALL:
                                 case ALTER:
                                 case AND:
@@ -29179,7 +29179,7 @@ public class CypherParser extends Parser {
                                 case ADMINISTRATOR:
                                 case ALIAS:
                                 case ALIASES:
-                                case ALL_SHORTEST_PATH:
+                                case ALL_SHORTEST_PATHS:
                                 case ALL:
                                 case ALTER:
                                 case AND:
@@ -30847,7 +30847,7 @@ public class CypherParser extends Parser {
                                 case ADMINISTRATOR:
                                 case ALIAS:
                                 case ALIASES:
-                                case ALL_SHORTEST_PATH:
+                                case ALL_SHORTEST_PATHS:
                                 case ALL:
                                 case ALTER:
                                 case AND:
@@ -31204,7 +31204,7 @@ public class CypherParser extends Parser {
                                 case ADMINISTRATOR:
                                 case ALIAS:
                                 case ALIASES:
-                                case ALL_SHORTEST_PATH:
+                                case ALL_SHORTEST_PATHS:
                                 case ALL:
                                 case ALTER:
                                 case AND:
@@ -31562,7 +31562,7 @@ public class CypherParser extends Parser {
                 case ADMINISTRATOR:
                 case ALIAS:
                 case ALIASES:
-                case ALL_SHORTEST_PATH:
+                case ALL_SHORTEST_PATHS:
                 case ALL:
                 case ALTER:
                 case AND:
@@ -31864,7 +31864,7 @@ public class CypherParser extends Parser {
                 case ADMINISTRATOR:
                 case ALIAS:
                 case ALIASES:
-                case ALL_SHORTEST_PATH:
+                case ALL_SHORTEST_PATHS:
                 case ALL:
                 case ALTER:
                 case AND:
@@ -32983,7 +32983,7 @@ public class CypherParser extends Parser {
                 case ADMINISTRATOR:
                 case ALIAS:
                 case ALIASES:
-                case ALL_SHORTEST_PATH:
+                case ALL_SHORTEST_PATHS:
                 case ALL:
                 case ALTER:
                 case AND:
@@ -33613,8 +33613,8 @@ public class CypherParser extends Parser {
             return getToken(CypherParser.ALIASES, 0);
         }
 
-        public TerminalNode ALL_SHORTEST_PATH() {
-            return getToken(CypherParser.ALL_SHORTEST_PATH, 0);
+        public TerminalNode ALL_SHORTEST_PATHS() {
+            return getToken(CypherParser.ALL_SHORTEST_PATHS, 0);
         }
 
         public TerminalNode ALL() {
@@ -34960,7 +34960,7 @@ public class CypherParser extends Parser {
                 case ADMINISTRATOR:
                 case ALIAS:
                 case ALIASES:
-                case ALL_SHORTEST_PATH:
+                case ALL_SHORTEST_PATHS:
                 case ALL:
                 case ALTER:
                 case AND:
@@ -35317,7 +35317,7 @@ public class CypherParser extends Parser {
                 case ADMINISTRATOR:
                 case ALIAS:
                 case ALIASES:
-                case ALL_SHORTEST_PATH:
+                case ALL_SHORTEST_PATHS:
                 case ALL:
                 case ALTER:
                 case AND:
@@ -35666,7 +35666,7 @@ public class CypherParser extends Parser {
                 case ADMINISTRATOR:
                 case ALIAS:
                 case ALIASES:
-                case ALL_SHORTEST_PATH:
+                case ALL_SHORTEST_PATHS:
                 case ALL:
                 case ALTER:
                 case AND:

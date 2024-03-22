@@ -43,8 +43,8 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.AstRuleCtx
-import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 
 import scala.reflect.ClassTag
 
@@ -55,20 +55,18 @@ trait AntlrRule[+T <: AstRuleCtx] {
 
 object AntlrRule {
 
-  type Parser = CypherParser
+  type Parser = CypherAstParser
 
   def fromParser[T <: AstRuleCtx](runParser: Parser => T): AntlrRule[T] = fromQueryAndParser(runParser)
 
   def fromQueryAndParser[T <: AstRuleCtx](runParser: Parser => T): AntlrRule[T] = new AntlrRule[T] {
 
     override def apply(cypher: String): Cst[T] = {
-      val parser = CypherAstParser(cypher)
-      new Cst(runParser(parser)) {
+      val ctx = CypherAstParser.parse[T](cypher, Neo4jCypherExceptionFactory(cypher, None), runParser)
+      val theAst = Option(ctx.ast[ASTNode]())
+      new Cst(ctx) {
         val parsingErrors: List[Exception] = List.empty
-        override def ast: Option[ASTNode] = ctx match {
-          case c: AstRuleCtx => Option(c.ast())
-          case _             => None
-        }
+        override def ast: Option[ASTNode] = theAst
       }
     }
 

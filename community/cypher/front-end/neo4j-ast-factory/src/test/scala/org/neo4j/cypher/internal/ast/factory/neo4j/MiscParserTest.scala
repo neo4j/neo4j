@@ -29,8 +29,11 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.Explicit
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -55,8 +58,11 @@ import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
+import org.neo4j.cypher.internal.parser.javacc.TokenMgrException
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.exceptions.SyntaxException
 
 class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -447,5 +453,78 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
         )(pos)
       ))(pos)))
     }
+  }
+
+  test("MATCH (a)->(b) RETURN *") {
+    failsParsing[Statements](Explicit(JavaCc))
+      .throws[OpenCypherExceptionFactory.SyntaxException]
+      .withMessageStart("Invalid input '-': expected")
+
+    // Note, antlr will not produce the same errors, it will not even fail on the same token always as shown here
+    failsParsing[Statements](Explicit(Antlr))
+      .throws[SyntaxException]
+      .withMessage(
+        """Mismatched input '>': expected '[', '-' (line 1, column 11 (offset: 10))
+          |"MATCH (a)->(b) RETURN *"
+          |           ^""".stripMargin
+      )
+  }
+
+  test("MATCH (a)--->(b) RETURN *") {
+    failsParsing[Statements](Explicit(JavaCc))
+      .throws[OpenCypherExceptionFactory.SyntaxException]
+      .withMessageStart("Invalid input '-': expected")
+
+    failsParsing[Statements](Explicit(Antlr))
+      .throws[SyntaxException]
+      .withMessage(
+        """Mismatched input '-': expected '{', '+', '*', '(' (line 1, column 12 (offset: 11))
+          |"MATCH (a)--->(b) RETURN *"
+          |            ^""".stripMargin
+      )
+  }
+
+  test("RETURN RETURN 1") {
+    failsParsing[Statements](Explicit(JavaCc))
+      .throws[OpenCypherExceptionFactory.SyntaxException]
+      .withMessageStart("Invalid input '1': expected")
+
+    failsParsing[Statements](Explicit(Antlr))
+      .throws[SyntaxException]
+      .withMessage(
+        """Extraneous input '1': expected ';', <EOF> (line 1, column 15 (offset: 14))
+          |"RETURN RETURN 1"
+          |               ^""".stripMargin
+      )
+  }
+
+  test("RETURN 'hell") {
+    failsParsing[Statements](Explicit(JavaCc))
+      .throws[TokenMgrException]
+      .withMessageStart("Lexical error at line 1, column 13.  Encountered: <EOF> after : \"\"")
+
+    failsParsing[Statements](Explicit(Antlr))
+      .throws[SyntaxException]
+      .withMessage(
+        """Mismatched input ''hell': expected 'DISTINCT', '*', an expression (line 1, column 8 (offset: 7))
+          |"RETURN 'hell"
+          |        ^""".stripMargin
+      )
+  }
+
+  test("correct positions in errors with unicode escapes and comments") {
+    val query = "/* \\u003A\\u0029 */  MATCH /* */ (a)/* */->/* */(b)/* */RETURN *"
+    query should notParse[Statements](Explicit(JavaCc))
+      .throws[OpenCypherExceptionFactory.SyntaxException]
+      .withMessageStart("Invalid input '-': expected")
+      .withMessageContaining("(line 1, column 41 (offset: 40))")
+
+    query should notParse[Statements](Explicit(Antlr))
+      .throws[SyntaxException]
+      .withMessage(
+        s"""Mismatched input '>': expected '[', '-' (line 1, column 42 (offset: 41))
+           |"$query"
+           |                                          ^""".stripMargin
+      )
   }
 }

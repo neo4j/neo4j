@@ -73,7 +73,7 @@ trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstM
   def toAstPositioned(expected: T): Self = toAstIgnorePos(expected).and(havePositionedAst(expected))
   def toAsts(expected: PartialFunction[ParserInTest, T]): Self = and(expected.andThen(haveAst(_)))
   def containing[C <: ASTNode : ClassTag](expected: C*): Self = and(haveAstContaining(expected: _*))
-  def errorShould(matcher: Matcher[Throwable]): Self = and(matcher.compose(forceError))
+  def errorShould(matcher: Matcher[Throwable]): Self = and(failLike(matcher))
   def messageShould(matcher: Matcher[String]): Self = errorShould(matcher.compose(t => norm(t.getMessage)))
   def withError(assertion: Throwable => Unit): Self = errorShould(beLike(assertion))
   def withMessage(expected: String): Self = messageShould(be(norm(expected)))
@@ -177,6 +177,18 @@ trait AstMatchers {
     }
   }
 
+  def failLike(matcher: Matcher[Throwable]): Matcher[ParseResult] = new Matcher[ParseResult] {
+
+    override def apply(left: ParseResult): MatchResult = left match {
+      case ParseSuccess(_) => MatchResult(
+          matches = false,
+          s"Expected to fail, but parsed successfully",
+          s"Parsed successfully"
+        )
+      case failure: ParseFailure => matcher.apply(failure.throwable)
+    }
+  }
+
   def asResultsMatcher(parser: ParserInTest, matcher: Matcher[ParseResult]): Matcher[ParseResults[_]] =
     new Matcher[ParseResults[_]] {
 
@@ -192,9 +204,6 @@ trait AstMatchers {
   protected def resultAsEitherMapped[T <: ASTNode, R](f: T => R)(result: ParseResult): Either[Throwable, R] =
     result.toTry.toEither.map(ast => f(ast.asInstanceOf[T]))
   protected def astOrNull[T <: ASTNode](result: ParseResult): T = result.toTry.getOrElse(null).asInstanceOf[T]
-  protected def forceAst[T <: ASTNode](result: ParseResult): T = result.toTry.get.asInstanceOf[T]
-  protected def forceError(result: ParseResult): Throwable = result.toTry.failed.get
-  protected def errorMessage(result: ParseResult): String = forceError(result).getMessage
   protected def toTryUnit(result: ParseResult): Try[Unit] = result.toTry.map(_ => ())
   protected def subAsts[S <: ASTNode : ClassTag](ast: ASTNode): Seq[S] = ast.folder.findAllByClass[S]
   protected def norm(in: String): String = if (in == null) "" else in.replaceAll("\\r?\\n", "\n")
