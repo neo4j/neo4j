@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -227,36 +226,34 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     }
   }
 
-  // TODO Enable in ANTLR when possible
   test("Unicode escape outside of string literals") {
     // https://neo4j.com/docs/cypher-manual/current/syntax/parsing/#_using_unicodes_in_cypher
-    "M\\u0041TCH (m) RETURN m" should parseAs[Statement]
-      .parseIn(JavaCc)(_.toAstPositioned(
-        SingleQuery(Seq(
-          Match(
-            optional = false,
-            DifferentRelationships(implicitlyCreated = true)(InputPosition(0, 1, 1)),
-            ForMatch(List(PatternPartWithSelector(
-              AllPaths()(InputPosition(11, 1, 12)),
-              PathPatternPart(NodePattern(Some(varFor("m")), None, None, None)(InputPosition(11, 1, 12)))
-            )))(InputPosition(11, 1, 12)),
-            List(),
+    "M\\u0041TCH (m) RETURN m" should parseAs[Statement].toAstPositioned(
+      SingleQuery(Seq(
+        Match(
+          optional = false,
+          DifferentRelationships(implicitlyCreated = true)(InputPosition(0, 1, 1)),
+          ForMatch(List(PatternPartWithSelector(
+            AllPaths()(InputPosition(11, 1, 12)),
+            PathPatternPart(NodePattern(Some(varFor("m")), None, None, None)(InputPosition(11, 1, 12)))
+          )))(InputPosition(11, 1, 12)),
+          List(),
+          None
+        )(InputPosition(0, 1, 1)),
+        Return(
+          distinct = false,
+          ReturnItems(
+            includeExisting = false,
+            List(UnaliasedReturnItem(varFor("m"), "m")(InputPosition(22, 1, 23))),
             None
-          )(InputPosition(0, 1, 1)),
-          Return(
-            distinct = false,
-            ReturnItems(
-              includeExisting = false,
-              List(UnaliasedReturnItem(varFor("m"), "m")(InputPosition(22, 1, 23))),
-              None
-            )(InputPosition(22, 1, 23)),
-            None,
-            None,
-            None,
-            Set()
-          )(InputPosition(15, 1, 16))
-        ))(InputPosition(15, 1, 16))
-      ))
+          )(InputPosition(22, 1, 23)),
+          None,
+          None,
+          None,
+          Set()
+        )(InputPosition(15, 1, 16))
+      ))(InputPosition(15, 1, 16))
+    )
   }
 
   test("map expression") {
