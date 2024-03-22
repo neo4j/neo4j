@@ -42,6 +42,7 @@ import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.graphdb.facade.SystemDbUpgrader;
 import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
+import org.neo4j.graphdb.factory.module.edition.migration.SystemDatabaseMigrator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -60,9 +61,11 @@ public abstract class SystemDbUpgraderAbstractTestBase {
         createDatabase();
 
         var editionFactory = migrationEditionModuleFactory();
+        var systemDatabaseMigrator = systemDatabaseMigrator();
         var eventListener = new StartedDatabaseEventListener();
         SystemDbUpgrader.upgrade(
                 editionFactory,
+                systemDatabaseMigrator,
                 getConfig(databaseLayout.homeDirectory()),
                 NullLogProvider.getInstance(),
                 NullLogProvider.getInstance(),
@@ -76,8 +79,10 @@ public abstract class SystemDbUpgraderAbstractTestBase {
         Unzip.unzip(getClass(), previousMajorsSystemDatabase(), homeDirectory);
 
         var editionFactory = migrationEditionModuleFactory();
+        var systemDatabaseMigrator = systemDatabaseMigrator();
         SystemDbUpgrader.upgrade(
                 editionFactory,
+                systemDatabaseMigrator,
                 getConfig(homeDirectory),
                 NullLogProvider.getInstance(),
                 NullLogProvider.getInstance(),
@@ -118,6 +123,8 @@ public abstract class SystemDbUpgraderAbstractTestBase {
     protected abstract Map<Setting<?>, Object> baseConfig();
 
     protected abstract MigrationEditionModuleFactory migrationEditionModuleFactory();
+
+    protected abstract SystemDatabaseMigrator systemDatabaseMigrator();
 
     protected abstract String previousMajorsSystemDatabase();
 

@@ -25,7 +25,9 @@ import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.module.edition.migration.CommunityMigrationEditionModuleFactory;
+import org.neo4j.graphdb.factory.module.edition.migration.CommunitySystemDatabaseMigrator;
 import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
+import org.neo4j.graphdb.factory.module.edition.migration.SystemDatabaseMigrator;
 
 public class SystemDbUpgraderCommunityTest extends SystemDbUpgraderAbstractTestBase {
     @Override
@@ -36,6 +38,11 @@ public class SystemDbUpgraderCommunityTest extends SystemDbUpgraderAbstractTestB
     @Override
     protected MigrationEditionModuleFactory migrationEditionModuleFactory() {
         return new CommunityMigrationEditionModuleFactory();
+    }
+
+    @Override
+    protected SystemDatabaseMigrator systemDatabaseMigrator() {
+        return new CommunitySystemDatabaseMigrator();
     }
 
     /**

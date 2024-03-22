@@ -29,6 +29,7 @@ import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
+import org.neo4j.graphdb.factory.module.edition.migration.SystemDatabaseMigrator;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
@@ -52,22 +53,23 @@ public class SystemDbUpgrader {
      * <li>Upgrade all system graph components</li>
      * <li>Wait for indexes to come online.</li>
      * </ol>
-     *
-     * @param editionFactory {@link MigrationEditionModuleFactory} factory method for creating edition module.
-     * @param config {@link Config} configuration.
-     * @param logProvider {@link InternalLogProvider} where progress will be reported.
+     * @param editionFactory             {@link MigrationEditionModuleFactory} factory method for creating edition module.
+     * @param systemDatabaseMigrator     {@link SystemDatabaseMigrator} edition specific additional steps during migration.
+     * @param config                     {@link Config} configuration.
+     * @param logProvider                {@link InternalLogProvider} where progress will be reported.
      * @param systemDbStartupLogProvider {@link InternalLogProvider} where system db startup will be reported.
-     * @param eventListener {@link DatabaseEventListener} event listener that will be registered with global module.
+     * @param eventListener              {@link DatabaseEventListener} event listener that will be registered with global module.
      */
     public static void upgrade(
             MigrationEditionModuleFactory editionFactory,
+            SystemDatabaseMigrator systemDatabaseMigrator,
             Config config,
             InternalLogProvider logProvider,
             InternalLogProvider systemDbStartupLogProvider,
             DatabaseEventListener eventListener)
             throws Exception {
-        var progressMonitor =
-                VisibleMigrationProgressMonitorFactory.forSystemUpgrade(logProvider.getLog(SystemDbUpgrader.class));
+        var log = logProvider.getLog(SystemDbUpgrader.class);
+        var progressMonitor = VisibleMigrationProgressMonitorFactory.forSystemUpgrade(log);
         progressMonitor.started(3);
         var bootstrapProgress = progressMonitor.startSection("Bootstrap");
         var graphDatabaseDependencies =
@@ -129,6 +131,20 @@ public class SystemDbUpgrader {
             throw e;
         }
         indexPopulationProgress.close();
+
+        // Remove topology graph object which are not needed
+        try (var tx = systemDb.beginTx()) {
+            systemDatabaseMigrator.performAdditionalSystemDatabaseMigrationSteps(
+                    systemDb, tx, globalModule.getGlobalClock(), log);
+            tx.commit();
+        } catch (IllegalStateException e) {
+            try {
+                globalLife.shutdown();
+            } catch (Exception toSuppress) {
+                throw Exceptions.chain(e, toSuppress);
+            }
+            throw e;
+        }
 
         globalLife.shutdown();
         progressMonitor.completed();
