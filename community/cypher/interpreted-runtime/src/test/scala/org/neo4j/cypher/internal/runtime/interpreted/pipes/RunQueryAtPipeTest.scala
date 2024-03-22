@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -134,7 +135,7 @@ class RunQueryAtPipeTest
     new RunQueryAtIterator(
       getExecution,
       () => CypherRow.empty,
-      expectedFields = execution.fieldNames.length,
+      expectedFields = execution.fieldNames.map(varFor).toSet,
       batchSize = batchSize,
       memoryTracker = memoryTracker
     )

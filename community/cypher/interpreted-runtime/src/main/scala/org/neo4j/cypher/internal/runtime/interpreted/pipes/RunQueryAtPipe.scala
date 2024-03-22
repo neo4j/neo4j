@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ParameterMapping
@@ -32,7 +33,6 @@ import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.memory.MemoryTracker
-import org.neo4j.util.Preconditions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.GraphReferenceValue
 import org.neo4j.values.virtual.MapValue
@@ -78,7 +78,7 @@ case class RunQueryAtPipe(
     new RunQueryAtIterator(
       s => transaction.executeQuery(query, params, s),
       () => row.createClone(),
-      columns.size,
+      columns,
       BUFFER_SIZE,
       state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
     )
@@ -88,49 +88,30 @@ case class RunQueryAtPipe(
 class RunQueryAtIterator(
   getExecution: QuerySubscriber => QueryExecution,
   newRow: () => CypherRow,
-  expectedFields: Int,
+  expectedFields: Set[LogicalVariable],
   batchSize: Int,
   memoryTracker: MemoryTracker
 ) extends PrefetchingIterator[CypherRow] { self =>
 
   private val buffer = HeapTrackingArrayList.newArrayList[CypherRow](batchSize, memoryTracker)
-  private val current = new Array[AnyValue](expectedFields)
+  private val current = new Array[AnyValue](expectedFields.size)
   private var error = Option.empty[Throwable]
   private var moreAvailable = true
   private var currentIndex = 0
   private var currentHeap = 0L
-  private var recordIsOpen = false
 
   private lazy val execution = {
-    getExecution(new QuerySubscriber {
-      def onResult(numberOfFields: Int): Unit = {
-        Preconditions.checkArgument(
-          numberOfFields == expectedFields,
-          s"Number of fields from record $numberOfFields was not expected $expectedFields"
-        )
-      }
-
-      def onRecord(): Unit = {
-        Preconditions.checkState(
-          !self.recordIsOpen,
-          "RunQueryAtIterator.recordIsOpen must be false when record received"
-        )
-        self.recordIsOpen = true
-      }
+    val ex = getExecution(new QuerySubscriber {
+      def onResult(numberOfFields: Int): Unit = ()
+      def onRecord(): Unit = ()
 
       def onField(offset: Int, value: AnyValue): Unit = {
-        Preconditions.checkState(self.recordIsOpen, "RunQueryAtIterator.recordIsOpen must be true when field received")
         self.currentHeap += value.estimatedHeapUsage()
         self.current
           .update(offset, value)
       }
 
       def onRecordCompleted(): Unit = {
-        Preconditions.checkState(
-          self.recordIsOpen,
-          "RunQueryAtIterator.recordIsOpen must be true when record completed"
-        )
-        self.recordIsOpen = false
         memoryTracker.allocateHeap(currentHeap)
         self.buffer.add(createRow())
         self.currentHeap = 0L
@@ -144,6 +125,16 @@ class RunQueryAtIterator(
         moreAvailable = false
       }
     })
+
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      ex.fieldNames().toSet == expectedFields.map(_.name),
+      "RunQueryAt received unexpected fields "
+        + ex.fieldNames().mkString("[", ", ", "]")
+        + s"; expected "
+        + expectedFields.map(_.name).mkString("[", ",", "]")
+    )
+
+    ex
   }
 
   private def createRow(): CypherRow = {

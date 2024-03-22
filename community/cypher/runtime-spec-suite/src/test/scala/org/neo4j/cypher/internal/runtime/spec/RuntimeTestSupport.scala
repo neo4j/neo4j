@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.NormalMode
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.ResourceMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
@@ -73,6 +72,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriberProbe
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.WrappingTransactionalContextFactory
 import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring.Monitors
@@ -104,7 +104,11 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   protected val runtimeContextManager: RuntimeContextManager[CONTEXT] =
     edition.newRuntimeContextManager(resolver, lifeSupport, logProvider)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
-  private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
+
+  private val contextFactory = new WrappingTransactionalContextFactory(
+    Neo4jTransactionalContextFactory.create(cypherGraphDb),
+    wrapTransactionContext
+  )
   private lazy val txIdStore = resolver.resolveDependency(classOf[TransactionIdStore])
   private lazy val authManager = resolver.resolveDependency(classOf[AuthManager])
 
@@ -787,9 +791,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
 
   // CONTEXTS
 
-  def newQueryTransactionalContext(): QueryTransactionalContext = {
-    TransactionalContextWrapper(_txContext)
-  }
+  protected def wrapTransactionContext(ctx: TransactionalContext): TransactionalContext = ctx
 
   protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {
 
