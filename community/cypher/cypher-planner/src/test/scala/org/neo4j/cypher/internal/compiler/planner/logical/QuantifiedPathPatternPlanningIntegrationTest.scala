@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
-import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
-import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
@@ -63,6 +61,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     .setLabelCardinality("User", 4)
     .setLabelCardinality("N", 6)
     .setLabelCardinality("NN", 5)
+    .setLabelCardinality("NNN", 100)
     .setRelationshipCardinality("()-[:R]->()", 10)
     .setRelationshipCardinality("()-[:S]->()", 10)
     .setRelationshipCardinality("()-[:T]->()", 10)
@@ -81,6 +80,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     .setRelationshipCardinality("(:User)-[:R]->()", 10)
     .setRelationshipCardinality("(:User)-[]->(:User)", 10)
     .setRelationshipCardinality("(:N)-[:R]->()", 10)
+    .setRelationshipCardinality("()-[]->(:NNN)", 10)
+    .setRelationshipCardinality("(:N)-[]->(:NNN)", 10)
     .build()
 
   test("should use correctly Namespaced variables") {
@@ -1486,7 +1487,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   test(
     "should not insert eager between QPP and CREATE of single node: QPPs internal nodes are connected and can therefore not overlap."
   ) {
-    val query = "MATCH (a:N)(()-[r]->())*(b {prop: 42}) MERGE (c:N {prop: 123})"
+    val query = "MATCH (a:N)(()-[r]->())*(b:NNN {prop: 42}) MERGE (c:N {prop: 123})"
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldEqual planner.subPlanBuilder()
@@ -1495,18 +1496,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.merge(List(createNodeWithProperties("c", List("N"), "{prop: 123}")), Nil, Nil, Nil, Set.empty)
       .|.filter("c.prop = 123")
       .|.nodeByLabelScan("c", "N")
-      .eager(ListSet(
-        LabelReadSetConflict(labelName("N")).withConflict(Conflict(Id(3), Id(8))),
-        PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(8)))
-      )) // Unnecessary but difficult to fix eager
-      .filter("b.prop = 42")
+      .filter("b.prop = 42", "b:NNN")
       .expandAll("(a)-[r*0..]->(b)")
       .nodeByLabelScan("a", "N")
       .build()
   }
 
   test(
-    "should not insert an unnecessary eager based solely on the predicates contained within the quantified path pattern"
+    "should not, but does insert an unnecessary eager based solely on the predicates contained within the quantified path pattern"
   ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -1519,7 +1516,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
 
     // This first MATCH expands to: (:A) | (:A)-->(:B) | (:A)-->(:B)-->(:B) | etc – all nodes have at least one label
-    // Although this will not produce an eager since only a node is created and it does not overlap with the leaf node. But above still stands
+    // This ideally should not produce an eager since only a node with no labels is created.
     val query = "MATCH (start:A)((a)-[r]->(b:B))*(end) CREATE (x)"
     val plan = planner.plan(query).stripProduceResults
 
