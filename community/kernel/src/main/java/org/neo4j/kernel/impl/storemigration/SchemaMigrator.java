@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.storemigration.SchemaStore44MigrationUtil.as
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
@@ -63,7 +64,7 @@ public class SchemaMigrator {
 
     private SchemaMigrator() {}
 
-    public static void migrateSchemaRules(
+    public static List<SchemaRule> migrateSchemaRules(
             StorageEngineFactory fromStorage,
             StorageEngineFactory toStorage,
             FileSystemAbstraction fs,
@@ -84,6 +85,8 @@ public class SchemaMigrator {
 
         var tokenHolders =
                 fromStorage.loadReadOnlyTokens(fs, from, config, pageCache, pageCacheTracer, true, contextFactory);
+
+        ArrayList<SchemaRule> skippedSchemaRules = new ArrayList<>();
 
         try (SchemaRuleMigrationAccessExtended schemaRuleMigrationAccess = toStorage.schemaRuleMigrationAccess(
                 fs,
@@ -115,9 +118,15 @@ public class SchemaMigrator {
                 if (schemaRule instanceof IndexDescriptor indexDescriptor) {
                     try {
                         if (indexDescriptor.isTokenIndex()) {
-                            // Skip since they have already been created by the copy operation
+                            // Skip token index since they have already been created by the copy operation
                             continue;
                         }
+                        if (shouldSkipSinceFiltered(readBehaviour, tokenHolders, indexDescriptor.schema())) {
+                            // Skip filtered out indexes
+                            skippedSchemaRules.add(indexDescriptor);
+                            continue;
+                        }
+
                         SchemaDescriptor schema = translateToNewSchema(
                                 indexDescriptor.schema(), tokenRead, schemaRuleMigrationAccess.tokenHolders());
 
@@ -147,6 +156,11 @@ public class SchemaMigrator {
                     }
                 } else if (schemaRule instanceof ConstraintDescriptor constraintDescriptor) {
                     try {
+                        if (shouldSkipSinceFiltered(readBehaviour, tokenHolders, constraintDescriptor.schema())) {
+                            // Skip filtered out constraint
+                            skippedSchemaRules.add(constraintDescriptor);
+                            continue;
+                        }
                         SchemaDescriptor schema = translateToNewSchema(
                                 constraintDescriptor.schema(), tokenRead, schemaRuleMigrationAccess.tokenHolders());
                         ConstraintDescriptor descriptor =
@@ -218,6 +232,70 @@ public class SchemaMigrator {
                         indexToConnect.prototype.materialise(schemaRuleMigrationAccess.nextId()));
             }
         }
+        return skippedSchemaRules;
+    }
+
+    // Should we skip this index in migration due to it being filtered in some way
+    private static boolean shouldSkipSinceFiltered(
+            ReadBehaviour readBehaviour, TokenHolders tokenHolders, SchemaDescriptor schemaDescriptor) {
+        String[] entityTokenNames =
+                tokenHolders.entityTokensGetNames(schemaDescriptor.entityType(), schemaDescriptor.getEntityTokenIds());
+        switch (schemaDescriptor.propertySchemaType()) {
+            case COMPLETE_ALL_TOKENS -> {
+                switch (schemaDescriptor.entityType()) {
+                    case NODE -> {
+                        for (int propertyTokenId : schemaDescriptor.getPropertyIds()) {
+                            var propertyKeyName = tokenHolders.propertyKeyGetName(propertyTokenId);
+                            if (!readBehaviour.shouldIncludeNodeProperty(propertyKeyName, entityTokenNames, true)) {
+                                return true;
+                            }
+                        }
+                    }
+                    case RELATIONSHIP -> {
+                        for (String entityTokenName : entityTokenNames) {
+                            for (int propertyTokenId : schemaDescriptor.getPropertyIds()) {
+                                var propertyKeyName = tokenHolders.propertyKeyGetName(propertyTokenId);
+                                if (!readBehaviour.shouldIncludeRelationshipProperty(
+                                        propertyKeyName, entityTokenName)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            case PARTIAL_ANY_TOKEN -> {
+                switch (schemaDescriptor.entityType()) {
+                    case NODE -> {
+                        for (int propertyTokenId : schemaDescriptor.getPropertyIds()) {
+                            var propertyKeyName = tokenHolders.propertyKeyGetName(propertyTokenId);
+                            // Something should be included, do not skip!
+                            if (readBehaviour.shouldIncludeNodeProperty(propertyKeyName, entityTokenNames, false)) {
+                                return false;
+                            }
+                        }
+                        // All has been filtered out we should skip
+                        return true;
+                    }
+                    case RELATIONSHIP -> {
+                        for (String entityTokenName : entityTokenNames) {
+                            for (int propertyTokenId : schemaDescriptor.getPropertyIds()) {
+                                var propertyKeyName = tokenHolders.propertyKeyGetName(propertyTokenId);
+                                if (readBehaviour.shouldIncludeRelationshipProperty(propertyKeyName, entityTokenName)) {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            case ENTITY_TOKENS -> {
+                // Are not copied
+                throw new IllegalArgumentException(
+                        schemaDescriptor.propertySchemaType().name());
+            }
+        }
+        return false;
     }
 
     private static List<SchemaRule> getSrcSchemaRules(

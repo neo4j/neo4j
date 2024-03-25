@@ -45,7 +45,7 @@ public interface ReadBehaviour {
 
     String[] filterLabels(String[] labels);
 
-    boolean shouldIncludeNodeProperty(String propertyKey, String[] labels);
+    boolean shouldIncludeNodeProperty(String propertyKey, String[] labels, boolean completeMatch);
 
     boolean shouldIncludeRelationshipProperty(String propertyKey, String relationshipType);
 
@@ -78,7 +78,7 @@ public interface ReadBehaviour {
         }
 
         @Override
-        public boolean shouldIncludeNodeProperty(String propertyKey, String[] labels) {
+        public boolean shouldIncludeNodeProperty(String propertyKey, String[] labels, boolean completeMatch) {
             return true;
         }
 

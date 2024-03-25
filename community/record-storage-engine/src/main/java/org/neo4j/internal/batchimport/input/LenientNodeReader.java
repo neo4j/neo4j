@@ -102,6 +102,6 @@ class LenientNodeReader extends LenientStoreInputChunk {
 
     @Override
     boolean shouldIncludeProperty(ReadBehaviour readBehaviour, String key, String[] owningEntityTokens) {
-        return readBehaviour.shouldIncludeNodeProperty(key, owningEntityTokens);
+        return readBehaviour.shouldIncludeNodeProperty(key, owningEntityTokens, true);
     }
 }
