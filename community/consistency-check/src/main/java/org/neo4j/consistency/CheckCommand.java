@@ -32,6 +32,8 @@ import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.cli.ExitCode;
 import org.neo4j.cli.PathOptions;
+import org.neo4j.cloud.storage.SchemeFileSystemAbstraction;
+import org.neo4j.cloud.storage.StoragePath;
 import org.neo4j.commandline.Util;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.LockChecker;
@@ -98,7 +100,6 @@ public class CheckCommand extends AbstractAdminCommand {
 
     protected Config config;
     private ConsistencyFlags flags;
-    private Source source;
 
     private static final class SourceOptions {
         @ArgGroup(exclusive = false)
@@ -107,10 +108,24 @@ public class CheckCommand extends AbstractAdminCommand {
         @ArgGroup(exclusive = false)
         private FromAndTemp fromAndTemp;
 
-        public Source toSource() {
-            return fromAndTemp != null
-                    ? new PathSource(fromAndTemp.fromPath(), fromAndTemp.tempPath())
-                    : new DataTxnSource(sourceOptions.dataPath(), sourceOptions.txnPath());
+        private PathSource toPathSource(SchemeFileSystemAbstraction fs) throws IOException {
+            final var fromPath =
+                    fs.resolve(fromAndTemp.fromPath).toAbsolutePath().normalize();
+
+            if (fromPath instanceof StoragePath && fromAndTemp.tempPath == null) {
+                throw new IOException(
+                        "Unable to check a cloud storage-based backup without a temporary path to unpack it into first");
+            }
+
+            final var tempPath = (fromAndTemp.tempPath == null)
+                    ? fromPath
+                    : fromAndTemp.tempPath.toAbsolutePath().normalize();
+
+            return new PathSource(fromPath, tempPath);
+        }
+
+        private DataTxnSource toDataTxnSource() {
+            return new DataTxnSource(sourceOptions.dataPath(), sourceOptions.txnPath());
         }
 
         private static final class FromAndTemp {
@@ -122,11 +137,7 @@ public class CheckCommand extends AbstractAdminCommand {
                             "Path to the directory containing dump/backup artifacts that need to be checked for consistency. "
                                     + "If the directory contains multiple backups, it will select the most recent backup chain, "
                                     + "based on the transaction IDs found, to perform the consistency check. ")
-            private Path fromPath;
-
-            public Path fromPath() {
-                return fromPath.toAbsolutePath().normalize();
-            }
+            private String fromPath;
 
             @Option(
                     names = "--temp-path",
@@ -135,10 +146,6 @@ public class CheckCommand extends AbstractAdminCommand {
                     description = "Path to directory to be used as a staging area to extract dump/backup artifacts, "
                             + "if needed.%n  Default:  <from-path>")
             private Path tempPath;
-
-            public Path tempPath() {
-                return tempPath != null ? tempPath.toAbsolutePath().normalize() : fromPath();
-            }
         }
     }
 
@@ -171,7 +178,6 @@ public class CheckCommand extends AbstractAdminCommand {
     protected void validateAndConstructArgs() {
         config = configBuilder().build();
         flags = options.toFlags();
-        source = sourceOptions != null ? sourceOptions.toSource() : new DataTxnSource(config);
     }
 
     protected Config.Builder configBuilder() {
@@ -179,12 +185,17 @@ public class CheckCommand extends AbstractAdminCommand {
     }
 
     protected Result checkWith(Config config, MemoryTracker memoryTracker) {
+        // use this for the actual checking - the scheme-based one is for pulling
+        final var localFileSystem = ctx.fs();
         try (var autoClosables = new AutoCloseables<>(IOException::new);
-                var logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
+                var logProvider = Util.configuredLogProvider(ctx.out(), verbose);
+                var fs = new SchemeFileSystemAbstraction(localFileSystem, config, logProvider)) {
+            final var source = toSource(fs);
+
             final DatabaseLayout layout;
             try {
                 layout = CheckDatabase.selectAndExtract(
-                        ctx.fs(), source, database, logProvider, verbose, config, force, autoClosables);
+                        fs, source, database, logProvider, verbose, config, force, autoClosables);
             } catch (IOException e) {
                 throw new CommandFailedException(
                         "Failed to prepare for consistency check: " + e.getMessage(), e, ExitCode.IOERR);
@@ -196,14 +207,14 @@ public class CheckCommand extends AbstractAdminCommand {
             }
 
             try (var ignored = LockChecker.checkDatabaseLock(layout)) {
-                checkDbState(ctx.fs(), layout, config, memoryTracker);
+                checkDbState(localFileSystem, layout, config, memoryTracker);
                 try {
                     Result result = consistencyCheckService
                             .with(layout)
                             .with(config)
                             .with(ctx.out())
                             .with(logProvider)
-                            .with(ctx.fs())
+                            .with(localFileSystem)
                             .verbose(verbose)
                             .with(options.reportPath())
                             .with(flags)
@@ -237,12 +248,23 @@ public class CheckCommand extends AbstractAdminCommand {
         }
     }
 
+    private Source toSource(SchemeFileSystemAbstraction fileSystem) throws IOException {
+        if (sourceOptions == null) {
+            return new DataTxnSource(config);
+        }
+
+        if (sourceOptions.fromAndTemp == null) {
+            return sourceOptions.toDataTxnSource();
+        }
+
+        return sourceOptions.toPathSource(fileSystem);
+    }
+
     private static void checkDbState(
             FileSystemAbstraction fs,
             DatabaseLayout databaseLayout,
             Config additionalConfiguration,
             MemoryTracker memoryTracker) {
-
         if (checkRecoveryState(fs, databaseLayout, additionalConfiguration, memoryTracker)) {
             throw new CommandFailedException(
                     """

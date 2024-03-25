@@ -156,12 +156,6 @@ public interface CheckDatabase {
 
     abstract sealed class Source permits PathSource, DataTxnSource {
 
-        public final Neo4jLayout layout;
-
-        public Source(Neo4jLayout layout) {
-            this.layout = layout;
-        }
-
         public static final class PathSource extends Source {
             public final Path path;
             public final Path tmpRoot;
@@ -171,7 +165,6 @@ public interface CheckDatabase {
             }
 
             public PathSource(Path path, Path tmpRoot) {
-                super(Neo4jLayout.ofFlat(path.toAbsolutePath().normalize()));
                 this.path = path.toAbsolutePath().normalize();
                 this.tmpRoot = tmpRoot != null ? tmpRoot.toAbsolutePath().normalize() : null;
             }
@@ -190,6 +183,9 @@ public interface CheckDatabase {
         }
 
         public static final class DataTxnSource extends Source {
+
+            public final Neo4jLayout layout;
+
             public DataTxnSource(Config config) {
                 this(
                         config.get(neo4j_home),
@@ -203,14 +199,14 @@ public interface CheckDatabase {
             }
 
             public DataTxnSource(Path neo4jHome, Path data, Path transactionLogsRoot, Path databasesRoot) {
-                super(Neo4jLayout.of(Config.newBuilder()
+                this.layout = Neo4jLayout.of(Config.newBuilder()
                         .set(neo4j_home, neo4jHome.toAbsolutePath().normalize())
                         .set(data_directory, data.toAbsolutePath().normalize())
                         .set(
                                 transaction_logs_root_path,
                                 transactionLogsRoot.toAbsolutePath().normalize())
                         .set(databases_root_path, databasesRoot.toAbsolutePath().normalize())
-                        .build()));
+                        .build());
             }
 
             @Override
