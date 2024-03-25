@@ -17,23 +17,31 @@
 package org.neo4j.cypher.internal.cst.factory.neo4j
 
 import org.antlr.v4.runtime.CharStream
+import org.antlr.v4.runtime.Parser
+import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.TokenFactory
 import org.antlr.v4.runtime.TokenSource
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.misc.Pair
+import org.antlr.v4.runtime.tree.ParseTree
+import org.antlr.v4.runtime.tree.ParseTreeVisitor
+import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.cst.factory.neo4j.CypherTokenFactory.Src
 import org.neo4j.cypher.internal.util.InputPosition
 
 import java.util
 
-trait CypherToken extends Token {
+/**
+ * Implementation of [[Token]] that provides [[position()]] to retrieve correct [[InputPosition]]s.
+ * Implements both [[Token]] and [[TerminalNode]] as a memory optimisation.
+ */
+trait CypherToken extends Token with TerminalNode {
   def position(): InputPosition
   protected def source: Pair[TokenSource, CharStream]
-  protected def text: String
+  protected def text: String = null
 
   final override def getText: String = {
-    if (text != null) return text
     val input = getInputStream
     if (input == null) null
     else if (getStopIndex < input.size) input.getText(Interval.of(getStartIndex, getStopIndex))
@@ -43,6 +51,17 @@ trait CypherToken extends Token {
   override def getTokenSource: TokenSource = if (source eq null) null else source.a
   override def getInputStream: CharStream = if (source eq null) null else source.b
   override def getTokenIndex: Int = -1
+
+  override def getSymbol: Token = this
+  override def getParent: ParseTree = null // Looks like this is not needed for our purposes
+  override def getChild(i: Int): ParseTree = null
+  override def setParent(parent: RuleContext): Unit = {}
+  override def accept[T](visitor: ParseTreeVisitor[_ <: T]): T = visitor.visitTerminal(this)
+  override def toStringTree(parser: Parser): String = toString
+  override def getSourceInterval: Interval = new Interval(getTokenIndex, getTokenIndex)
+  override def getPayload: AnyRef = this
+  override def getChildCount: Int = 0
+  override def toStringTree: String = getText
 }
 
 object CypherToken {
@@ -59,7 +78,6 @@ case class OffsetTable(offsets: Array[Int], start: Int) {
 final private class DefaultCypherToken(
   val source: Pair[TokenSource, CharStream],
   val getType: Int,
-  val text: String,
   val getChannel: Int,
   val getStartIndex: Int,
   val getStopIndex: Int,
@@ -73,7 +91,6 @@ final private class OffsetCypherToken(
   offsets: OffsetTable,
   val source: Pair[TokenSource, CharStream],
   val getType: Int,
-  val text: String,
   val getChannel: Int,
   val getStartIndex: Int,
   val getStopIndex: Int,
@@ -92,10 +109,10 @@ object CypherTokenFactory extends TokenFactory[CypherToken] {
   type Src = Pair[TokenSource, CharStream]
 
   override def create(src: Src, typ: Int, txt: String, ch: Int, start: Int, stop: Int, line: Int, charPos: Int)
-    : CypherToken = new DefaultCypherToken(src, typ, txt, ch, start, stop, line, charPos)
+    : CypherToken = new DefaultCypherToken(src, typ, ch, start, stop, line, charPos)
 
   override def create(typ: Int, text: String): CypherToken =
-    new DefaultCypherToken(null, typ, text, -1, -1, -1, -1, -1)
+    new DefaultCypherToken(null, typ, -1, -1, -1, -1, -1)
 }
 
 class OffsetCypherTokenFactory(offsetTable: OffsetTable) extends TokenFactory[CypherToken] {
@@ -103,12 +120,12 @@ class OffsetCypherTokenFactory(offsetTable: OffsetTable) extends TokenFactory[Cy
 
   override def create(src: Src, typ: Int, txt: String, ch: Int, start: Int, stop: Int, line: Int, charPos: Int)
     : CypherToken = {
-    if (start < offsetStart) new DefaultCypherToken(src, typ, txt, ch, start, stop, line, charPos)
-    else new OffsetCypherToken(offsetTable, src, typ, txt, ch, start, stop, line, charPos)
+    if (start < offsetStart) new DefaultCypherToken(src, typ, ch, start, stop, line, charPos)
+    else new OffsetCypherToken(offsetTable, src, typ, ch, start, stop, line, charPos)
   }
 
   override def create(typ: Int, text: String): CypherToken =
-    new DefaultCypherToken(null, typ, text, -1, -1, -1, -1, -1)
+    new DefaultCypherToken(null, typ, -1, -1, -1, -1, -1)
 
   override def toString: String = s"OffsetCypherTokenFactory($offsetTable)"
 }

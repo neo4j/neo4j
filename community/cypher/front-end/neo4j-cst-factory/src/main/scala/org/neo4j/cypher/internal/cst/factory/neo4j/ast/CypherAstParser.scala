@@ -27,6 +27,7 @@ import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.ReplaceUnicodeEscapeSequences
+import org.neo4j.cypher.internal.cst.factory.neo4j.DefaultCypherToken
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
@@ -70,6 +71,13 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
       if (_ctx == null && !matchedEOF && getTokenStream.LA(1) != Token.EOF) {
         throw eofNotReached(localCtx)
       }
+    }
+  }
+
+  override def createTerminalNode(parent: ParserRuleContext, t: Token): TerminalNode = {
+    t match {
+      case ct: DefaultCypherToken => ct
+      case _                      => super.createTerminalNode(parent, t)
     }
   }
 
