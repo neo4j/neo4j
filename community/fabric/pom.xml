@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>4.4.32-SNAPSHOT</version>
+        <version>4.4.33-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
