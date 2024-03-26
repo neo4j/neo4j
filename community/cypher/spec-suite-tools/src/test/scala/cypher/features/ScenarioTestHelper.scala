@@ -173,6 +173,47 @@ object ScenarioTestHelper {
       }
     }
 
+    def loadFile(denylistPathString: String, validate: String => Unit, resourceUri: URI) = {
+      val fs =
+        if ("jar".equalsIgnoreCase(resourceUri.getScheme)) {
+          Some(FileSystems.newFileSystem(resourceUri, new util.HashMap[String, String]))
+        } else None
+
+      try {
+        val denylistPath: Path = Paths.get(resourceUri)
+        val denylistPaths = Files.walk(denylistPath).filter {
+          (t: Path) => Files.isRegularFile(t)
+        }
+        val denylistPathsList: List[Path] = denylistPaths.iterator().asScala.toList
+        if (denylistPathsList.isEmpty) throw new NoSuchFileException(s"Denylist file not found at: $denylistPathString")
+        val lines = denylistPathsList.flatMap(f => Files.readAllLines(f, StandardCharsets.UTF_8).asScala.toList)
+
+        val scenarios =
+          lines.filterNot(line => line.startsWith("//") || line.isEmpty) // comments in denylist are being ignored
+        scenarios.foreach(validate)
+        scenarios.map(DenylistEntry(_))
+      } finally {
+        try {
+          fs.foreach(_.close())
+        } catch {
+          case _: UnsupportedOperationException => ()
+        }
+      }
+    }
+
+    def formatSpecificDenylistURL = {
+      val customFormat = System.getProperty("NEO4J_OVERRIDE_STORE_FORMAT")
+      val prefix = denylistPathString.lastIndexOf("/")
+      val formatSpecificDenyFile = denylistPathString.substring(0, prefix + 1) + customFormat + ".txt"
+      getClass.getResource("/" + formatSpecificDenyFile)
+    }
+
+    val formatSpecificDenyURL: URL = formatSpecificDenylistURL
+    var formatSpecificDenyList = List.empty[DenylistEntry]
+    if (formatSpecificDenyURL != null) {
+      formatSpecificDenyList = loadFile(denylistPathString, validate, formatSpecificDenyURL.toURI)
+    }
+
     /*
      * Find denylist no matter if thy are in the filesystem or in the a jar.
      * The code get executed from a jar, when the TCK on a public artifact of Neo4j.
@@ -180,31 +221,9 @@ object ScenarioTestHelper {
     val resourceUrl: URL = getClass.getResource("/" + denylistPathString)
     if (resourceUrl == null) throw new NoSuchFileException(s"Denylist file not found at: $denylistPathString")
     val resourceUri: URI = resourceUrl.toURI
-    val fs =
-      if ("jar".equalsIgnoreCase(resourceUri.getScheme)) {
-        Some(FileSystems.newFileSystem(resourceUri, new util.HashMap[String, String]))
-      } else None
 
-    try {
-      val denylistPath: Path = Paths.get(resourceUri)
-      val denylistPaths = Files.walk(denylistPath).filter {
-        (t: Path) => Files.isRegularFile(t)
-      }
-      val denylistPathsList: List[Path] = denylistPaths.iterator().asScala.toList
-      if (denylistPathsList.isEmpty) throw new NoSuchFileException(s"Denylist file not found at: $denylistPathString")
-      val lines = denylistPathsList.flatMap(f => Files.readAllLines(f, StandardCharsets.UTF_8).asScala.toList)
-
-      val scenarios =
-        lines.filterNot(line => line.startsWith("//") || line.isEmpty) // comments in denylist are being ignored
-      scenarios.foreach(validate)
-      scenarios.map(DenylistEntry(_))
-    } finally {
-      try {
-        fs.foreach(_.close())
-      } catch {
-        case _: UnsupportedOperationException => ()
-      }
-    }
+    val denyList = loadFile(denylistPathString, validate, resourceUri)
+    formatSpecificDenyList.diff(denyList) ::: denyList
   }
 
   /*
