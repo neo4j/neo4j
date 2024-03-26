@@ -23,4 +23,9 @@ public class DataTreeNotFoundException extends RuntimeException {
     DataTreeNotFoundException(Object rootKey) {
         super("No data tree found for " + rootKey);
     }
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this;
+    }
 }

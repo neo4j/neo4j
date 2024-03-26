@@ -195,6 +195,11 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
         return leafNode;
     }
 
+    @Override
+    public InternalNodeBehaviour<KEY> internalNode() {
+        return internalNode;
+    }
+
     /**
      * Prepare for starting over with new updates.
      * @param cursorAtRoot {@link PageCursor} pointing at root of tree.

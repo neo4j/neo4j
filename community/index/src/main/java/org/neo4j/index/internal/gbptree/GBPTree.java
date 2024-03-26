@@ -177,4 +177,9 @@ public class GBPTree<KEY, VALUE> extends MultiRootGBPTree<SingleRoot, KEY, VALUE
     public long estimateNumberOfEntriesInTree(CursorContext cursorContext) throws IOException {
         return access.estimateNumberOfEntriesInTree(cursorContext);
     }
+
+    @Override
+    public boolean exists(CursorContext cursorContext) {
+        return true;
+    }
 }

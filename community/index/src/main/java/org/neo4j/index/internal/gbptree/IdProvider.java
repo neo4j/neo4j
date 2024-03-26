@@ -26,7 +26,32 @@ import org.neo4j.io.pagecache.PageCursor;
  * Provide tree node (page) ids which can be used for storing tree node data.
  * Bytes on returned page ids must be empty (all zeros).
  */
-interface IdProvider {
+public interface IdProvider {
+
+    IdProvider NO_OP = new IdProvider() {
+        @Override
+        public long acquireNewId(long stableGeneration, long unstableGeneration, CursorCreator cursorCreator)
+                throws IOException {
+            throw new IllegalStateException("No-op provider");
+        }
+
+        @Override
+        public void releaseId(long stableGeneration, long unstableGeneration, long id, CursorCreator cursorCreator)
+                throws IOException {
+            throw new IllegalStateException("No-op provider");
+        }
+
+        @Override
+        public void visitFreelist(IdProviderVisitor visitor, CursorCreator cursorCreator) throws IOException {
+            throw new IllegalStateException("No-op provider");
+        }
+
+        @Override
+        public long lastId() {
+            throw new IllegalStateException("No-op provider");
+        }
+    };
+
     /**
      * Acquires a page id, guaranteed to currently not be used. The bytes on the page at this id
      * are all guaranteed to be zero at the point of returning from this method.

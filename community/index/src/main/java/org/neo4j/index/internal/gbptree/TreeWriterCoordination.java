@@ -84,6 +84,7 @@ public interface TreeWriterCoordination extends AutoCloseable {
      */
     boolean beforeAccessingRightSiblingLeaf(long siblingNodeId);
 
+    boolean pessimistic();
     /**
      * Called before a split of an internal node.
      * @param treeNodeId internal tree node id to split.
@@ -153,6 +154,11 @@ public interface TreeWriterCoordination extends AutoCloseable {
 
         @Override
         public boolean beforeAccessingRightSiblingLeaf(long siblingNodeId) {
+            return true;
+        }
+
+        @Override
+        public boolean pessimistic() {
             return true;
         }
 

@@ -233,6 +233,11 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
     }
 
     @Override
+    public boolean pessimistic() {
+        return pessimistic;
+    }
+
+    @Override
     public void beforeSplitInternal(long treeNodeId) {
         if (!pessimistic) {
             throw new IllegalStateException(

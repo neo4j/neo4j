@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
 import org.neo4j.internal.helpers.collection.LfuCache;
@@ -485,15 +486,23 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         @Override
         public Root getRoot(CursorContext context) {
-            var dataRoot = rootMappingCache.computeIfAbsent(dataRootKey, key -> getFromTree(key, context));
+            var dataRoot = rootMappingCache.computeIfAbsent(
+                    dataRootKey,
+                    key -> getFromTree(key, context, () -> {
+                        throw new DataTreeNotFoundException(dataRootKey);
+                    }));
             if (dataRoot.root() == NULL_ROOT) {
                 // Let's read from the tree to see if there is something here and not just a stale cache value!
-                return getFromTree(dataRootKey, context).root();
+                return getFromTree(dataRootKey, context, () -> {
+                            throw new DataTreeNotFoundException(dataRootKey);
+                        })
+                        .root();
             }
             return dataRoot.root();
         }
 
-        private DataTreeRoot<ROOT_KEY> getFromTree(ROOT_KEY key, CursorContext context) {
+        private DataTreeRoot<ROOT_KEY> getFromTree(
+                ROOT_KEY key, CursorContext context, Supplier<DataTreeRoot<ROOT_KEY>> orElse) {
             try (Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
                     support.internalAllocateSeeker(rootLayout, context, rootLeafNode, rootInternalNode),
                     c -> root,
@@ -503,12 +512,16 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                     LEAF_LEVEL,
                     SeekCursor.NO_MONITOR)) {
                 if (!seek.next()) {
-                    throw new DataTreeNotFoundException(key);
+                    return orElse.get();
                 }
                 return new DataTreeRoot<>(key, seek.value().asRoot());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
+        }
+
+        boolean exists(CursorContext context) {
+            return rootMappingCache.computeIfAbsent(dataRootKey, key -> getFromTree(key, context, () -> null)) != null;
         }
 
         @Override
@@ -591,6 +604,11 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         public long estimateNumberOfEntriesInTree(CursorContext cursorContext) throws IOException {
             return support.estimateNumberOfEntriesInTree(
                     dataLayout, dataLeafNode, dataInternalNode, rootMappingInteraction, cursorContext);
+        }
+
+        @Override
+        public boolean exists(CursorContext cursorContext) {
+            return rootMappingInteraction.exists(cursorContext);
         }
     }
 

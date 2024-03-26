@@ -248,5 +248,10 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
             return support.estimateNumberOfEntriesInTree(
                     layout, leafNode, internalNode, SingleRootLayer.this, cursorContext);
         }
+
+        @Override
+        public boolean exists(CursorContext cursorContext) {
+            return true;
+        }
     }
 }

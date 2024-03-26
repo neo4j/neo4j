@@ -359,6 +359,14 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         checkOutOfBounds(cursor);
     }
 
+    private void setRootUnchecked(long root) {
+        try {
+            setRoot(root);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private void executeWithRetryInPessimisticMode(TreeWriteOperation<K, V> operation) throws IOException {
         coordination.beginOperation();
         if (goToRoot()
@@ -369,7 +377,9 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                         structurePropagation,
                         stableGeneration,
                         unstableGeneration,
-                        cursorContext)) {
+                        cursorContext,
+                        this::setRootUnchecked,
+                        freeList)) {
             return;
         }
 
@@ -385,7 +395,9 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                         structurePropagation,
                         stableGeneration,
                         unstableGeneration,
-                        cursorContext)) {
+                        cursorContext,
+                        this::setRootUnchecked,
+                        freeList)) {
             return;
         }
         throw appendTreeInformation(

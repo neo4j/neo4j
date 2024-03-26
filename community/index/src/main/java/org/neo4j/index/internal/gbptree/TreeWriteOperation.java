@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
+import java.util.function.LongConsumer;
 import org.neo4j.index.internal.gbptree.StructurePropagation.StructureUpdate;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -52,6 +53,8 @@ public interface TreeWriteOperation<K, V> {
             StructurePropagation<K> structurePropagation,
             long stableGeneration,
             long unstableGeneration,
-            CursorContext cursorContext)
+            CursorContext cursorContext,
+            LongConsumer rootSetter,
+            IdProvider freeList)
             throws IOException;
 }

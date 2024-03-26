@@ -54,7 +54,7 @@ public final class TreeNodeUtil {
     static final byte NODE_TYPE_OFFLOAD = 3;
     static final byte LEAF_FLAG = 1;
     static final byte INTERNAL_FLAG = 0;
-    static final byte DATA_LAYER_FLAG = 0;
+    public static final byte DATA_LAYER_FLAG = 0;
     static final byte ROOT_LAYER_FLAG = 1;
     static final long NO_NODE_FLAG = 0;
     static final long NO_OFFLOAD_ID = -1;
@@ -128,7 +128,7 @@ public final class TreeNodeUtil {
         return (byte) ((cursor.getByte(BYTE_POS_TYPE) >>> LAYER_TYPE_SHIFT) & LAYER_TYPE_MASK);
     }
 
-    static boolean isLeaf(PageCursor cursor) {
+    public static boolean isLeaf(PageCursor cursor) {
         return treeNodeType(cursor) == LEAF_FLAG;
     }
 

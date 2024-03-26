@@ -62,4 +62,6 @@ public interface DataTree<KEY, VALUE> extends Seeker.Factory<KEY, VALUE> {
      * @return an estimate of number of keys in the tree.
      */
     long estimateNumberOfEntriesInTree(CursorContext cursorContext) throws IOException;
+
+    boolean exists(CursorContext cursorContext);
 }

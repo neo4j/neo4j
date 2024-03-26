@@ -69,4 +69,6 @@ public interface InternalAccess<KEY, VALUE> {
     TreeWriterCoordination coordination();
 
     LeafNodeBehaviour<KEY, VALUE> leafNode();
+
+    InternalNodeBehaviour<KEY> internalNode();
 }
