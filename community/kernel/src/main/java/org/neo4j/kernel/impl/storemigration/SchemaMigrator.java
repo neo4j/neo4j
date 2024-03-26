@@ -250,6 +250,9 @@ public class SchemaMigrator {
                                 return true;
                             }
                         }
+                        if (readBehaviour.filterLabels(entityTokenNames).length != entityTokenNames.length) {
+                            return true;
+                        }
                     }
                     case RELATIONSHIP -> {
                         for (String entityTokenName : entityTokenNames) {
@@ -273,6 +276,10 @@ public class SchemaMigrator {
                             if (readBehaviour.shouldIncludeNodeProperty(propertyKeyName, entityTokenNames, false)) {
                                 return false;
                             }
+                        }
+                        if (readBehaviour.filterLabels(entityTokenNames).length == 0) {
+                            // We have filtered everything out and we should skip this index
+                            return true;
                         }
                         // All has been filtered out we should skip
                         return true;
