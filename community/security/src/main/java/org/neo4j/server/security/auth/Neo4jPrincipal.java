@@ -19,47 +19,16 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.util.Objects;
 import java.util.Optional;
 
-public class Neo4jPrincipal {
-
-    private final String username;
-    private final Optional<String> id;
+public record Neo4jPrincipal(String username, Optional<String> id) {
 
     public Neo4jPrincipal(String username, String id) {
-        this.username = username;
-        this.id = Optional.ofNullable(id);
+        this(username, Optional.ofNullable(id));
     }
 
     public Neo4jPrincipal(String username) {
-        this.username = username;
-        this.id = Optional.empty();
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public Optional<String> getId() {
-        return id;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-        Neo4jPrincipal that = (Neo4jPrincipal) other;
-        return Objects.equals(username, that.username) && Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(username, id);
+        this(username, Optional.empty());
     }
 
     @Override
