@@ -309,6 +309,7 @@ public class UploadCommand extends AbstractAdminCommand {
             // Upload dumpFile
             verbose("Uploading data of %s to %s\n", sizeText(size()), consoleURL);
 
+            ctx.out().println("Generating crc32 of dump, this may take some time...");
             long crc32Sum;
             try {
                 crc32Sum = source.crc32Sum();
@@ -321,7 +322,6 @@ public class UploadCommand extends AbstractAdminCommand {
             SignedURIBodyResponse signedURIBodyResponse =
                     auraClient.initatePresignedUpload(crc32Sum, dumpSize, size(), bearerToken);
             SignedUpload signedUpload = uploadURLFactory.fromAuraResponse(signedURIBodyResponse, ctx, boltURI);
-
             signedUpload.copy(verbose, source);
 
             try {

@@ -28,6 +28,7 @@ import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
@@ -89,41 +90,37 @@ public class SignedUploadAWS implements SignedUpload {
     }
 
     public void upload(UploadCommand.Source src) throws IOException {
-        int uploadPosition = getUploadPosition();
         long fileSize;
         fileSize = IOCommon.getFileSize(src, ctx);
         ProgressListener progressListener = ProgressMonitorFactory.textual(ctx.out())
                 .singlePart(
                         "Uploading to AWS (This may take a some time depending on file size and connection speed)",
                         signedLinks.length);
-        long chunkSize = getChunkSize(fileSize);
-        long filePosition = chunkSize * uploadPosition;
-        long totalBytesCopied = copyToUrls(src, chunkSize, filePosition, progressListener);
+        long totalBytesCopied = copyToUrls(src, progressListener, fileSize);
         progressListener.close();
         ctx.out().println("Total bytes copied: " + totalBytesCopied);
     }
 
-    private long copyToUrls(
-            UploadCommand.Source src, long chunkSize, long filePosition, ProgressListener progressListener)
+    private long copyToUrls(UploadCommand.Source src, ProgressListener progressListener, long fileSize)
             throws IOException {
 
         Path source = src.path();
-        InputStream sourceStream = new BufferedInputStream(Files.newInputStream(source));
-        IOCommon.safeSkip(sourceStream, filePosition);
         long totalBytesCopied = 0;
+        int uploadPartPosition = getUploadPartPosition();
         for (int i = 0; i < signedLinks.length; i++) {
-            totalBytesCopied += copyToUrl(i, signedLinks[i], sourceStream, chunkSize, source, progressListener);
+            totalBytesCopied += copyToUrl(i, uploadPartPosition, signedLinks[i], source, progressListener, fileSize);
+            uploadPartPosition++;
         }
         return totalBytesCopied;
     }
 
     private long copyToUrl(
-            int i,
+            int currentPositionInArray,
+            int uploadPartPosition,
             String link,
-            InputStream sourceStream,
-            long chunkSize,
             Path source,
-            ProgressListener progressListener)
+            ProgressListener progressListener,
+            long filesize)
             throws IOException {
         int retries = 0;
         while (retries < RETRIES_COUNT) {
@@ -132,9 +129,22 @@ public class SignedUploadAWS implements SignedUpload {
             try (Closeable ignored = connection::disconnect) {
                 connection.setRequestMethod("PUT");
                 connection.setDoOutput(true);
-                try {
-                    sourceStream.mark((int) chunkSize);
-                    long bytesCopied = copyToMultiPartURL(i, sourceStream, chunkSize, connection);
+
+                long chunkSize = getChunkSize(filesize);
+                Path sourcePath = source.toAbsolutePath();
+                long skipAmount = uploadPartPosition * chunkSize;
+
+                if (currentPositionInArray == signedLinks.length - 1) {
+                    // We need chunkSize and last chunkSize
+                    chunkSize = filesize - ((totalParts - 1) * chunkSize);
+                }
+
+                connection.setFixedLengthStreamingMode(chunkSize);
+
+                try (InputStream sourceStream = new BufferedInputStream(Files.newInputStream(sourcePath))) {
+                    IOCommon.safeSkip(sourceStream, skipAmount);
+                    long bytesCopied =
+                            copyToMultiPartURL(currentPositionInArray, sourceStream, chunkSize, connection, filesize);
                     checkResponseOk(connection, source);
                     progressListener.add(1);
                     return bytesCopied;
@@ -142,9 +152,8 @@ public class SignedUploadAWS implements SignedUpload {
                     ctx.err()
                             .println(String.format(
                                     "%s Failed to upload part %d to multipart url. Retrying in case of connection issue",
-                                    e.getMessage(), i));
+                                    e.getMessage(), currentPositionInArray));
 
-                    sourceStream.reset();
                     waitBeforeNextAttempt(retries);
                     retries++;
                 }
@@ -197,14 +206,19 @@ public class SignedUploadAWS implements SignedUpload {
     }
 
     private long copyToMultiPartURL(
-            int currentPosition, InputStream sourceStream, long chunkSize, HttpURLConnection connection)
+            int currentPosition, InputStream sourceStream, long chunkSize, HttpURLConnection connection, long fileSize)
             throws RetryableHttpException {
         try {
-            if (currentPosition == signedLinks.length - 1) {
-                // for the last item we want to copy everything left over not just chunkSize
-                return IOUtils.copy(sourceStream, connection.getOutputStream());
+
+            try (OutputStream outputStream = connection.getOutputStream()) {
+
+                if (currentPosition == signedLinks.length - 1) {
+                    // for the last item we want to copy everything left over not just chunkSize
+                    return IOUtils.copy(sourceStream, connection.getOutputStream());
+                }
+                return IOUtils.copyRange(sourceStream, chunkSize, outputStream);
             }
-            return IOUtils.copyRange(sourceStream, chunkSize, connection.getOutputStream());
+
         } catch (IOException e) {
             ctx.err().println(e.getMessage());
             throw new RetryableHttpException(e);
@@ -224,7 +238,7 @@ public class SignedUploadAWS implements SignedUpload {
         return (long) Math.ceil(fileSize / (double) totalParts);
     }
 
-    private int getUploadPosition() {
+    private int getUploadPartPosition() {
         return totalParts - signedLinks.length;
     }
 }
