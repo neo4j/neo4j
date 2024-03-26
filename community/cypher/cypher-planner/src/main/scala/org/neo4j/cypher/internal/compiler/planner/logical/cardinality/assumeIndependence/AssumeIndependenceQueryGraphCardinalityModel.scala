@@ -140,7 +140,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
             // In case the node is passed as an argument in the query graph (or indeed the endpoint of a relationship passed as an argument),
             // then we apply the selectivity of the additional labels defined in this query graph but not in the previous ones.
             // For example: MATCH (n:A) OPTIONAL MATCH (n:B) <- we would apply the selectivity of label B here
-            Cardinality(getArgumentSelectivity(context, predicates.localLabelInfo, node).factor)
+            Cardinality(getArgumentSelectivity(context, predicates.localOnlyLabelInfo, node).factor)
           } else
             getNodeCardinality(context, predicates.allLabelInfo, node).getOrElse(nodeWithNoLabelsCardinality)
         }.product(NumericCardinality)
