@@ -1676,6 +1676,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return operations.propertyCursor();
     }
 
+    public void ensureValid() throws LeaseException {
+        leaseClient.ensureValid();
+    }
+
     private void registerConfigChangeListeners(LocalConfig config) {
         config.addListener(transaction_tracing_level, (before, after) -> traceProvider = getTraceProvider(config));
         config.addListener(

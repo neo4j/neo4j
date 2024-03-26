@@ -143,6 +143,8 @@ public class KernelToken extends KernelTokenRead implements Token {
             return id;
         }
         ktx.securityAuthorizationHandler().assertAllowsTokenCreates(ktx.securityContext(), action);
+        // ensures the registry has all applied transactions before attempting to create a new one
+        ktx.ensureValid();
         return tokens.getOrCreateId(name);
     }
 
@@ -154,6 +156,8 @@ public class KernelToken extends KernelTokenRead implements Token {
             ids[i] = tokenHolder.getIdByName(checkValidTokenName(names[i]));
             if (ids[i] == NO_TOKEN) {
                 ktx.securityAuthorizationHandler().assertAllowsTokenCreates(ktx.securityContext(), action);
+                // ensures the registry has all applied transactions before attempting to create any new ones
+                ktx.ensureValid();
                 tokenHolder.getOrCreateIds(names, ids);
                 return;
             }
