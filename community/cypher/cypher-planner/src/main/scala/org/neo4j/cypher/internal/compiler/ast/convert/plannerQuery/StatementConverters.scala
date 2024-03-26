@@ -201,7 +201,7 @@ object StatementConverters {
             anonymousVariableNameGenerator,
             cancellationChecker,
             importedVariables,
-            QueryProjection.Position.Intermediate
+            position
           )
         val rhs: SinglePlannerQuery =
           toSinglePlannerQuery(
@@ -210,7 +210,7 @@ object StatementConverters {
             anonymousVariableNameGenerator,
             cancellationChecker,
             importedVariables,
-            QueryProjection.Position.Intermediate
+            position
           )
 
         val distinct = unionQuery match {

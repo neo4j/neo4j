@@ -21,11 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.EagerAnalysisImplementation
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.assertIsNode
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.propName
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.relTypeName
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
@@ -42,6 +39,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.Unknown
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
@@ -57,7 +55,8 @@ class EagerLPPlanningIntegrationTest extends EagerPlanningIntegrationTest(EagerA
 class EagerIRPlanningIntegrationTest extends EagerPlanningIntegrationTest(EagerAnalysisImplementation.IR)
 
 abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) extends CypherFunSuite
-    with LogicalPlanningIntegrationTestSupport {
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
@@ -1367,6 +1366,161 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .deleteNode("resource")
         .filterExpression(existsPredicate)
         .nodeByLabelScan("resource", "Resource", IndexOrderNone)
+        .build()
+    )
+  }
+
+  test("should eagerize complex case of write-read-conflict with returned complete entity in UNION") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L0", 10)
+      .build()
+
+    val query =
+      """OPTIONAL MATCH (var0:L0)
+        |  WHERE id(var0) = $param0
+        |WITH var0
+        |  WHERE var0 IS NULL
+        |CREATE (var1:L0 {P0: 0})
+        |WITH var1
+        |SET var1 += $param1
+        |RETURN var1
+        |UNION
+        |MATCH (var1:L0)
+        |  WHERE id(var1) = $param0 AND var1.P0 = $param2
+        |SET var1.P0 = var1.P0 + 1
+        |WITH var1
+        |  WHERE var1.P0 = coalesce($param2, 0) + 1
+        |SET var1 += $param1
+        |RETURN var1""".stripMargin
+
+    val plan = planner.plan(query)
+    val expectedPlan = impl match {
+      case GraphDatabaseInternalSettings.EagerAnalysisImplementation.IR => planner.planBuilder()
+          .produceResults("var1")
+          .distinct("var1 AS var1")
+          .union()
+          .|.projection("var1 AS var1")
+          // IR eagerness interprets the conflict to be with the last projection
+          .|.eager(ListSet(EagernessReason.Unknown))
+          .|.setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
+          .|.eager(ListSet(EagernessReason.Unknown))
+          .|.filter("cacheN[var1.P0] = coalesce($param2, 0) + 1")
+          .|.eager(ListSet(EagernessReason.Unknown))
+          .|.setNodeProperty("var1", "P0", "var1.P0 + 1")
+          .|.eager(ListSet(EagernessReason.Unknown))
+          .|.filter("var1:L0", "cacheNFromStore[var1.P0] = $param2")
+          .|.nodeByIdSeek("var1", Set(), "$param0")
+          .projection("var1 AS var1")
+          // IR eagerness interprets the conflict to be with the last projection
+          .eager(ListSet(EagernessReason.Unknown))
+          .setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
+          .create(createNodeWithProperties("var1", Seq("L0"), "{P0: 0}"))
+          .filter("var0 IS NULL")
+          .eager(ListSet(EagernessReason.Unknown))
+          .optional()
+          .filter("var0:L0")
+          .nodeByIdSeek("var0", Set(), "$param0")
+          .build()
+      case GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP => planner.planBuilder()
+          .produceResults("var1")
+          // LP eagerness recognizes that the conflict is with produceResult
+          .eager(ListSet(
+            EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(5), Id(0))),
+            EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(14), Id(0)))
+          ))
+          .distinct("var1 AS var1")
+          .union()
+          .|.projection("var1 AS var1")
+          .|.setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
+          .|.eager(ListSet(EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(
+            Id(5),
+            Id(7)
+          ))))
+          .|.filter("cacheN[var1.P0] = coalesce($param2, 0) + 1")
+          .|.eager(ListSet(
+            EagernessReason.PropertyReadSetConflict(propName("P0")).withConflict(EagernessReason.Conflict(
+              Id(9),
+              Id(0)
+            )),
+            EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(5), Id(9))),
+            EagernessReason.PropertyReadSetConflict(propName("P0")).withConflict(EagernessReason.Conflict(Id(9), Id(7)))
+          ))
+          .|.setNodeProperty("var1", "P0", "var1.P0 + 1")
+          .|.eager(ListSet(
+            EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(5), Id(11))),
+            EagernessReason.PropertyReadSetConflict(propName("P0")).withConflict(EagernessReason.Conflict(
+              Id(9),
+              Id(11)
+            ))
+          ))
+          .|.filter("var1:L0", "cacheNFromStore[var1.P0] = $param2")
+          .|.nodeByIdSeek("var1", Set(), "$param0")
+          .projection("var1 AS var1")
+          .setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
+          .create(createNodeWithProperties("var1", Seq("L0"), "{P0: 0}"))
+          .filter("var0 IS NULL")
+          .optional()
+          .eager(ListSet(
+            EagernessReason.LabelReadSetConflict(labelName("L0"))
+              .withConflict(EagernessReason.Conflict(Id(15), Id(20)))
+          ))
+          .filter("var0:L0")
+          .nodeByIdSeek("var0", Set(), "$param0")
+          .build()
+    }
+    plan should equal(expectedPlan)
+  }
+
+  test("should eagerize simple case of write-read-conflict with returned complete entity in UNION") {
+    implicit class planRoot(val planRoot: LogicalPlanBuilder) {
+      def eagerizedProjection(): LogicalPlanBuilder = impl match {
+        case GraphDatabaseInternalSettings.EagerAnalysisImplementation.IR =>
+          planRoot
+            .projection("var1 AS var1")
+            .|.eager(ListSet(Unknown))
+        case GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP =>
+          planRoot
+            .eager(ListSet(EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(
+              Id(5),
+              Id(0)
+            ))))
+            .|.projection("var1 AS var1")
+      }
+    }
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L0", 10)
+      .setRelationshipCardinality("()-[]->()", 20)
+      .setRelationshipCardinality("(:L0)-[]->()", 8)
+      .setRelationshipCardinality("()-[]->(:L0)", 8)
+      .build()
+
+    val query =
+      """  CREATE (var1:L0 {P0: 0})-[:REL]->(:L0)
+        |  RETURN var1
+        |UNION
+        |  MATCH (var1:L0)--(var0)
+        |  SET var0 += $param2
+        |  RETURN var1;""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("var1")
+        .distinct("var1 AS var1")
+        .union()
+        .|.eagerizedProjection()
+        .|.setNodePropertiesFromMap("var0", "$param2", removeOtherProps = false)
+        .|.expandAll("(var1)-[anon_2]-(var0)")
+        .|.nodeByLabelScan("var1", "L0", IndexOrderNone)
+        .projection("var1 AS var1")
+        .create(
+          createNodeWithProperties("var1", Seq("L0"), "{P0: 0}"),
+          createNode("anon_1", "L0"),
+          createRelationship("anon_0", "var1", "REL", "anon_1", OUTGOING)
+        )
+        .argument()
         .build()
     )
   }

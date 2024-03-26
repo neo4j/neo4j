@@ -538,7 +538,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
-          horizon = RegularQueryProjection(Map(n -> n))
+          horizon = RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)
         ),
         RegularSinglePlannerQuery(
           QueryGraph(
@@ -548,7 +548,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
-          horizon = RegularQueryProjection(Map(n -> n))
+          horizon = RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)
         ),
         distinct = true,
         List(UnionMapping(n, n, n))
@@ -958,7 +958,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                     PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
                   )
               ),
-              horizon = RegularQueryProjection(Map(n -> n))
+              horizon = RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)
             ),
             RegularSinglePlannerQuery(
               QueryGraph(
@@ -969,7 +969,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                     PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
                   )
               ),
-              horizon = RegularQueryProjection(Map(n -> n))
+              horizon = RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)
             ),
             distinct = true,
             List(UnionMapping(n, n, n))
@@ -1612,7 +1612,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
-          horizon = RegularQueryProjection(Map(n -> n))
+          horizon = RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)
         ),
         RegularSinglePlannerQuery(
           QueryGraph(
@@ -1623,7 +1623,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
-          horizon = RegularQueryProjection(Map(n -> n))
+          horizon = RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)
         ),
         distinct = true,
         List(UnionMapping(n, n, n))

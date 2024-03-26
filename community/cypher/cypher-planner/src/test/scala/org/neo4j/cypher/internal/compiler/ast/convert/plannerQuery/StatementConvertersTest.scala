@@ -1817,7 +1817,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         argumentIds = Set(v"m", v"n"),
         selections = Selections(Set(Predicate(Set(v"n"), assertIsNode("n"))))
       ),
-      horizon = RegularQueryProjection(Map(v"name" -> v"n"))
+      horizon = RegularQueryProjection(Map(v"name" -> v"n"), position = QueryProjection.Position.Final)
     )
     val secondQuery = RegularSinglePlannerQuery(
       QueryGraph(
@@ -1826,7 +1826,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         argumentIds = Set(v"m", v"n"),
         selections = Selections(Set(Predicate(Set(v"m"), assertIsNode("m"))))
       ),
-      horizon = RegularQueryProjection(Map(v"name" -> v"m"))
+      horizon = RegularQueryProjection(Map(v"name" -> v"m"), position = QueryProjection.Position.Final)
     )
 
     query.queryGraph.selections.predicates.headOption.map(_.expr.asInstanceOf[ExistsIRExpression].query) shouldBe

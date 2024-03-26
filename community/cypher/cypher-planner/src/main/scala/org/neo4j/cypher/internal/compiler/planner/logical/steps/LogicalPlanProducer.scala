@@ -3213,13 +3213,21 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val produceResult = ProduceResult(inner, columns)
     if (columns.nonEmpty) {
-      val newSolved = solveds.get(inner.id) match {
-        case query: SinglePlannerQuery => query.updateTailOrSelf(
-            _.updateQueryProjection(_.markAsFinal)
+      def markTailAsFinal(query: SinglePlannerQuery): SinglePlannerQuery =
+        query.updateTailOrSelf(
+          _.updateQueryProjection(_.markAsFinal)
+        )
+
+      def markTailsAsFinal(oldSolved: PlannerQuery): PlannerQuery = oldSolved match {
+        case query: SinglePlannerQuery => markTailAsFinal(query)
+        case uq @ UnionQuery(lhs, rhs, _, _) =>
+          uq.copy(
+            lhs = markTailsAsFinal(lhs),
+            rhs = markTailAsFinal(rhs)
           )
-        case uq @ UnionQuery(_, _, _, _) =>
-          uq
       }
+
+      val newSolved = markTailsAsFinal(solveds.get(inner.id))
       solveds.set(produceResult.id, newSolved)
     } else {
       solveds.copy(inner.id, produceResult.id)

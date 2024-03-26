@@ -221,6 +221,9 @@ object QueryProjection {
       override def combine(other: Position): Position = Intermediate
     }
 
+    /**
+     * Signifies the last projection that will conclude the query.
+     */
     case object Final extends Position {
       override def isFinal: Boolean = true
       override def combine(other: Position): Position = other
