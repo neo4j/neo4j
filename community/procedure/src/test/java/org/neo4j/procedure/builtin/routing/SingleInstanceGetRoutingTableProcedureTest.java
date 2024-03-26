@@ -548,7 +548,8 @@ public class SingleInstanceGetRoutingTableProcedureTest {
                 config,
                 () -> false,
                 defaultDatabaseResolver,
-                databaseReferenceRepo);
+                databaseReferenceRepo,
+                true);
 
         return new GetRoutingTableProcedure(DEFAULT_NAMESPACE, routingService, logProvider);
     }

@@ -55,6 +55,7 @@ public class DefaultRoutingService implements RoutingService, PanicEventHandler 
     private final DefaultDatabaseResolver defaultDatabaseResolver;
 
     private final DatabaseReferenceRepository databaseReferenceRepo;
+    private final boolean echoRoutingContextAddressWhenAlone;
     private volatile PanicReason panicReason;
 
     public DefaultRoutingService(
@@ -66,7 +67,8 @@ public class DefaultRoutingService implements RoutingService, PanicEventHandler 
             Config config,
             InstanceClusterView instanceClusterView,
             DefaultDatabaseResolver defaultDatabaseResolver,
-            DatabaseReferenceRepository databaseReferenceRepo) {
+            DatabaseReferenceRepository databaseReferenceRepo,
+            boolean echoRoutingContextAddressWhenAlone) {
         this.log = logProvider.getLog(getClass());
         this.validator = validator;
         this.clientSideRoutingTableProvider = clientSideRoutingTableProvider;
@@ -77,6 +79,7 @@ public class DefaultRoutingService implements RoutingService, PanicEventHandler 
         this.instanceClusterView = instanceClusterView;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.databaseReferenceRepo = databaseReferenceRepo;
+        this.echoRoutingContextAddressWhenAlone = echoRoutingContextAddressWhenAlone;
     }
 
     @Override
@@ -134,7 +137,7 @@ public class DefaultRoutingService implements RoutingService, PanicEventHandler 
     private boolean configAllowsForClientSideRouting(
             GraphDatabaseSettings.RoutingMode defaultRouter, Optional<SocketAddress> clientProvidedAddress) {
 
-        if (instanceClusterView.amIAlone()) {
+        if (echoRoutingContextAddressWhenAlone && instanceClusterView.amIAlone()) {
             return false;
         }
 

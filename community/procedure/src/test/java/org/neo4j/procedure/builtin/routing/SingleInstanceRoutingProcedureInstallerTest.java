@@ -73,7 +73,8 @@ class SingleInstanceRoutingProcedureInstallerTest {
                 config,
                 () -> false,
                 defaultDatabaseResolver,
-                databaseReferenceRepo);
+                databaseReferenceRepo,
+                true);
 
         GlobalProcedures procedures = spy(new GlobalProceduresRegistry());
 

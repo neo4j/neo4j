@@ -289,7 +289,8 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 config,
                 () -> true,
                 defaultDatabaseResolver,
-                databaseReferenceRepo);
+                databaseReferenceRepo,
+                true);
     }
 
     @Override
