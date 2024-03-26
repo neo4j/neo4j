@@ -22,26 +22,26 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.VariableList
 import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.Selections
-
-import scala.collection.mutable
+import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 
 /**
  * Predicates of a query graph partitioned in order to calculate its cardinality.
  *
- * @param localLabelInfo node labels explicitly defined in HasLabels predicates inside of the query graph.
- * @param allLabelInfo previously known nodes labels, passed as an argument to [[QueryGraphPredicates.partitionSelections]], merged with [[localLabelInfo]].
- * @param externalLabelInfo previously known nodes labels, unless they are also present in [[localLabelInfo]].
+ * @param localLabelInfo      node labels explicitly defined in HasLabels predicates inside of the query graph.
+ * @param localOnlyLabelInfo  node labels that are in [[QueryGraphPredicates.localLabelInfo]] but not in previousLabelInfo
+ * @param allLabelInfo        previously known nodes labels, passed as an argument to [[QueryGraphPredicates.partitionSelections]], merged with [[localLabelInfo]].
+ * @param externalLabelInfo   previously known nodes labels, unless they are also present in [[localLabelInfo]].
  * @param uniqueRelationships relationships with Unique predicates as introduced by AddUniquenessPredicates.
- * @param otherPredicates kitchen sink, all the predicates that weren't picked up in the other parameters.
+ * @param otherPredicates     kitchen sink, all the predicates that weren't picked up in the other parameters.
  */
 case class QueryGraphPredicates(
   localLabelInfo: LabelInfo,
+  localOnlyLabelInfo: LabelInfo,
   allLabelInfo: LabelInfo,
   externalLabelInfo: LabelInfo,
   uniqueRelationships: Set[LogicalVariable],
@@ -50,36 +50,37 @@ case class QueryGraphPredicates(
 
 object QueryGraphPredicates {
 
-  def partitionSelections(labelInfo: LabelInfo, selections: Selections): QueryGraphPredicates = {
-    val allLabelInfoBuilder = mutable.Map.empty[LogicalVariable, mutable.Set[LabelName]]
-    val uniqueRelationshipsBuilder = Set.newBuilder[LogicalVariable]
-    val otherPredicatesBuilder = Set.newBuilder[Predicate]
-    selections.predicates.foreach {
-      case Predicate(_, HasLabels(v: Variable, labels)) =>
-        allLabelInfoBuilder.updateWith(v)(existingLabels =>
-          Some(existingLabels.getOrElse(mutable.Set.empty).addAll(labels))
-        )
-      case Predicate(_, Unique(VariableList(relationships))) =>
-        uniqueRelationshipsBuilder.addAll(relationships)
-      case otherPredicate =>
-        otherPredicatesBuilder.addOne(otherPredicate)
-    }
-    val localLabelInfo = allLabelInfoBuilder.view.mapValues(_.toSet).toMap
-    val externalLabelInfoBuilder = Map.newBuilder[LogicalVariable, Set[LabelName]]
-    labelInfo.foreach {
-      case (variable, labels) =>
-        val localLabels = localLabelInfo.getOrElse(variable, Set.empty)
-        allLabelInfoBuilder.updateWith(variable)(existingLabels =>
-          Some(existingLabels.getOrElse(mutable.Set.empty).addAll(labels))
-        )
-        externalLabelInfoBuilder.addOne(variable -> labels.diff(localLabels))
-    }
+  def partitionSelections(
+    previousLabelInfo: LabelInfo,
+    localLabelInfo: LabelInfo,
+    selections: Selections
+  ): QueryGraphPredicates = {
+    val (uniqueRelationships, otherPredicates) =
+      selections.predicates.foldLeft((Set.empty[LogicalVariable], Set.empty[Predicate])) {
+        case ((uniqueRelationships, otherPredicates), Predicate(_, HasLabels(_: Variable, _))) =>
+          (uniqueRelationships, otherPredicates)
+        case ((uniqueRelationships, otherPredicates), Predicate(_, Unique(VariableList(relationships)))) =>
+          (uniqueRelationships ++ relationships, otherPredicates)
+        case ((uniqueRelationships, otherPredicates), otherPred) => (uniqueRelationships, otherPredicates + otherPred)
+      }
+
+    val externalLabelInfo =
+      previousLabelInfo.map {
+        case (variable, labels) =>
+          (variable, labels -- localLabelInfo.getOrElse(variable, Set.empty))
+      }
+    val localOnlyLabelInfo =
+      localLabelInfo.map {
+        case (variable, labels) =>
+          (variable, labels -- previousLabelInfo.getOrElse(variable, Set.empty))
+      }
     QueryGraphPredicates(
       localLabelInfo = localLabelInfo,
-      allLabelInfo = allLabelInfoBuilder.view.mapValues(_.toSet).toMap,
-      externalLabelInfo = externalLabelInfoBuilder.result(),
-      uniqueRelationships = uniqueRelationshipsBuilder.result(),
-      otherPredicates = otherPredicatesBuilder.result()
+      localOnlyLabelInfo = localOnlyLabelInfo,
+      allLabelInfo = localLabelInfo.fuse(previousLabelInfo)(_ ++ _),
+      externalLabelInfo = externalLabelInfo,
+      uniqueRelationships = uniqueRelationships,
+      otherPredicates = otherPredicates
     )
   }
 }

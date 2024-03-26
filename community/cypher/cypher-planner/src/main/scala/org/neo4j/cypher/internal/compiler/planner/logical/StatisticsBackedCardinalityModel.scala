@@ -307,7 +307,7 @@ class StatisticsBackedCardinalityModel(
     val cardinality =
       queryGraphCardinalityModel(
         graph,
-        fusedLabelInfo,
+        labelInfo,
         fusedRelTypeInfo,
         semanticTable,
         indexPredicateProviderContext,

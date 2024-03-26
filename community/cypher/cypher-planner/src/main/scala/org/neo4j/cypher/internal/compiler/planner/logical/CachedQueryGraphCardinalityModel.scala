@@ -39,18 +39,18 @@ class CachedQueryGraphCardinalityModel(wrapped: QueryGraphCardinalityModel) exte
 
   override def apply(
     queryGraph: QueryGraph,
-    labelInfo: LabelInfo,
+    previousLabelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
     cardinalityModel: CardinalityModel
   ): Cardinality = {
     def cacheKey: QueryGraphCardinalityModelInput =
-      (queryGraph, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)
+      (queryGraph, previousLabelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext)
 
     def wrappedResult: Cardinality = wrapped(
       queryGraph,
-      labelInfo,
+      previousLabelInfo,
       relTypeInfo,
       semanticTable,
       indexPredicateProviderContext,

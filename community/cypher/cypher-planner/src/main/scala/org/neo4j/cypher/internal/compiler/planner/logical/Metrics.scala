@@ -153,12 +153,13 @@ object Metrics {
 
     /**
      * @param queryGraph       the query graph to estimate cardinality
+     * @param previousLabelInfo the node labels that have been previously taken care of by the cardinality estimator
      * @param cardinalityModel subquery expressions need to recursively call into the top-level cardinality model, so we pass it down.
      * @return the cardinality of the query graph
      */
     def apply(
       queryGraph: QueryGraph,
-      labelInfo: LabelInfo,
+      previousLabelInfo: LabelInfo,
       relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,

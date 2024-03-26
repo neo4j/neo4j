@@ -45,7 +45,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
 
   override def apply(
     queryGraph: QueryGraph,
-    labelInfo: LabelInfo,
+    previousLabelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
@@ -66,7 +66,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       queryGraph.argumentIds
     )
     // First calculate the cardinality of the "top-level" match query graph while keeping track of newly encountered node labels
-    val (moreLabelInfo, matchCardinality) = getBaseQueryGraphCardinality(context, labelInfo, queryGraph)
+    val (moreLabelInfo, matchCardinality) = getBaseQueryGraphCardinality(context, previousLabelInfo, queryGraph)
     val optionalMatchesCardinality =
       queryGraph
         .optionalMatches
@@ -84,10 +84,11 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
    */
   private def getBaseQueryGraphCardinality(
     context: QueryGraphCardinalityContext,
-    labelInfo: LabelInfo,
+    previousLabelInfo: LabelInfo,
     queryGraph: QueryGraph
   ): (LabelInfo, Cardinality) = {
-    val predicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
+    val predicates =
+      QueryGraphPredicates.partitionSelections(previousLabelInfo, queryGraph.patternNodeLabels, queryGraph.selections)
 
     val inferLabels: (QueryGraphCardinalityContext, LabelInfo) => (LabelInfo, QueryGraphCardinalityContext) =
       context.labelInferenceStrategy.inferLabels(_, _, queryGraph.nodeConnections.toSeq)

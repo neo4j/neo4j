@@ -135,7 +135,7 @@ trait SelectivePathPatternCardinalityModel
     selections: Selections,
     boundaryNodePredicates: Set[Predicate]
   ): Cardinality = {
-    val predicates = QueryGraphPredicates.partitionSelections(labelInfo, selections)
+    val predicates = QueryGraphPredicates.partitionSelections(labelInfo, selections.labelInfo, selections)
     val patternCardinality = pathPattern.connections match {
       case Fby(head, tail) =>
         val headCardinality =
@@ -150,13 +150,13 @@ trait SelectivePathPatternCardinalityModel
           val connectionCardinality =
             getExhaustiveNodeConnectionCardinality(
               context,
-              labelInfo,
+              predicates.allLabelInfo,
               predicates.uniqueRelationships,
               connection,
               boundaryNodePredicates
             )
           val leftNodeCardinality =
-            getNodeCardinality(context, labelInfo, connection.left).getOrElse(Cardinality.EMPTY)
+            getNodeCardinality(context, predicates.allLabelInfo, connection.left).getOrElse(Cardinality.EMPTY)
           val connectionMultiplier =
             Multiplier.ofDivision(
               dividend = connectionCardinality,

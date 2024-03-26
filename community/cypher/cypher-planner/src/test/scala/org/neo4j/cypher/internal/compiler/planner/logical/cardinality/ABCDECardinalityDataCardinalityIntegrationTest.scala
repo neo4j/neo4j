@@ -1053,6 +1053,26 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     expectCardinality(A * (1.0 - subquerySelectivity((A_T1_B_sel + B_T1_A_sel) * B)))
   }
 
+  test("MATCH (a:A) WITH * SKIP 0 MATCH (a:A)") {
+    expectCardinality(A)
+  }
+
+  test("MATCH (a:A) WITH * SKIP 0 MATCH (a:B)") {
+    expectCardinality(N * Asel * Bsel)
+  }
+
+  test("MATCH (a:A) WITH * SKIP 0 MATCH (a:A&B)") {
+    expectCardinality(N * Asel * Bsel)
+  }
+
+  test("MATCH (a:A&B) WITH * SKIP 0 MATCH (a:B)") {
+    expectCardinality(N * Asel * Bsel)
+  }
+
+  test("MATCH (a:A&B) WITH * SKIP 0 MATCH (a:A&B)") {
+    expectCardinality(N * Asel * Bsel)
+  }
+
   private def subquerySelectivity(cardinality: Double): Double = {
     subqueryCardinalityToExistsSelectivity(cardinality).factor
   }
