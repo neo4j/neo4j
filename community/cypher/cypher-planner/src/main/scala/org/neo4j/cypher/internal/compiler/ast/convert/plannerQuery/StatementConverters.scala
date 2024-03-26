@@ -140,8 +140,8 @@ object StatementConverters {
         toPlannerQuery(singleQuery, semanticTable, anonymousVariableNameGenerator, cancellationChecker, nonTerminating)
 
       case unionQuery: ast.ProjectingUnion =>
-        val part: PlannerQueryPart = toPlannerQueryPart(unionQuery.part, semanticTable, anonymousVariableNameGenerator, cancellationChecker, nonTerminating = true)
-        val query: SinglePlannerQuery = toPlannerQuery(unionQuery.query, semanticTable, anonymousVariableNameGenerator, cancellationChecker, nonTerminating = true)
+        val part: PlannerQueryPart = toPlannerQueryPart(unionQuery.part, semanticTable, anonymousVariableNameGenerator, cancellationChecker, nonTerminating)
+        val query: SinglePlannerQuery = toPlannerQuery(unionQuery.query, semanticTable, anonymousVariableNameGenerator, cancellationChecker, nonTerminating)
 
         val distinct = unionQuery match {
           case _: ProjectingUnionAll => false

@@ -36,11 +36,17 @@ class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTe
     unionQuery.part should be(a[SinglePlannerQuery])
     val q1 = unionQuery.part.asInstanceOf[SinglePlannerQuery]
     q1.queryGraph.patternNodes shouldBe empty
-    q1.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1))))
+    q1.horizon should equal(RegularQueryProjection(
+      Map("x" -> literalInt(1)),
+      isTerminating = true
+    ))
 
     val q2 = unionQuery.query
     q2.queryGraph.patternNodes shouldBe empty
-    q2.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(2))))
+    q2.horizon should equal(RegularQueryProjection(
+      Map("x" -> literalInt(2)),
+      isTerminating = true
+    ))
   }
 
   test("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x") {
@@ -56,15 +62,24 @@ class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTe
     innerUnion.part should be(a[SinglePlannerQuery])
     val q1 = innerUnion.part.asInstanceOf[SinglePlannerQuery]
     q1.queryGraph.patternNodes shouldBe empty
-    q1.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1))))
+    q1.horizon should equal(RegularQueryProjection(
+      Map("x" -> literalInt(1)),
+      isTerminating = true
+    ))
 
     val q2 = innerUnion.query
     q2.queryGraph.patternNodes shouldBe empty
-    q2.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(2))))
+    q2.horizon should equal(RegularQueryProjection(
+      Map("x" -> literalInt(2)),
+      isTerminating = true
+    ))
 
     val q3 = unionQuery.query
     q3.queryGraph.patternNodes shouldBe empty
-    q3.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(3))))
+    q3.horizon should equal(RegularQueryProjection(
+      Map("x" -> literalInt(3)),
+      isTerminating = true
+    ))
   }
 
 }

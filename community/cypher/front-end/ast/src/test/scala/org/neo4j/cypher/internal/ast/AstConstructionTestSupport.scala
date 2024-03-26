@@ -551,4 +551,24 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
 }
 
-object AstConstructionTestSupport extends AstConstructionTestSupport
+object AstConstructionTestSupport extends AstConstructionTestSupport {
+
+  implicit class VariableStringInterpolator(val sc: StringContext) extends AnyVal {
+
+    def v(args: Any*): Variable = {
+      val connectors = sc.parts.iterator
+      val expressions = args.iterator
+      val buf = new StringBuffer(connectors.next())
+      while (connectors.hasNext) {
+        val nextExp = expressions.next() match {
+          case s: String           => s
+          case lv: LogicalVariable => lv.name
+          case x                   => x.toString
+        }
+        buf.append(nextExp)
+        buf.append(connectors.next())
+      }
+      varFor(buf.toString)
+    }
+  }
+}

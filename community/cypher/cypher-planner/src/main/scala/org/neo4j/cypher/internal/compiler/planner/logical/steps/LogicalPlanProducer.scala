@@ -1667,13 +1667,21 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planProduceResult(inner: LogicalPlan, columns: Seq[String], lastInterestingOrders: Option[InterestingOrder]): LogicalPlan = {
     val produceResult = ProduceResult(inner, columns)
     if (columns.nonEmpty) {
-      val newSolved = solveds.get(inner.id) match {
-        case query: SinglePlannerQuery => query.updateTailOrSelf(
-            _.updateQueryProjection(_.withIsTerminating(true))
+      def markTailAsFinal(query: SinglePlannerQuery): SinglePlannerQuery =
+        query.updateTailOrSelf(
+          _.updateQueryProjection(_.withIsTerminating(true))
+        )
+
+      def markTailsAsFinal(oldSolved: PlannerQueryPart): PlannerQueryPart = oldSolved match {
+        case query: SinglePlannerQuery => markTailAsFinal(query)
+        case uq @ UnionQuery(lhs, rhs, _, _) =>
+          uq.copy(
+            part = markTailsAsFinal(lhs),
+            query = markTailAsFinal(rhs)
           )
-        case uq @ UnionQuery(_, _, _, _) =>
-          uq
       }
+
+      val newSolved = markTailsAsFinal(solveds.get(inner.id))
       solveds.set(produceResult.id, newSolved)
     } else {
       solveds.copy(inner.id, produceResult.id)

@@ -218,6 +218,7 @@ import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.graphdb.schema.IndexType
 
 import scala.collection.GenTraversableOnce
+import scala.collection.immutable.ListSet
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -321,6 +322,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
    */
   def | : IMPL = {
     indent += 1
+    self
+  }
+
+  def resetIndent(): IMPL = {
+    indent = 0
     self
   }
 
@@ -557,6 +563,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, literalInt(limit), Some(literalInt(skipSortingPrefixLength)))(_)))
     self
   }
+
   def eager(reasons: Seq[EagernessReason.Reason] = Seq(EagernessReason.Unknown)): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Eager(lp, reasons)(_)))
     self
