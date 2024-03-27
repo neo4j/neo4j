@@ -96,6 +96,21 @@ object NullExpressionConversionLogger extends ExpressionConversionLogger {
 
 }
 
+/**
+ * Converts or compiles expressions to executables.
+ *
+ * Uses a chained approach where if one converter responds with `None` when trying to compile an expression we try with
+ * the next one in the chain of fallBackExpressionConverters. If a 'main' converter is specified we try this one first but
+ * does not use that when falling back. That means for an expression-tree A(B(C(..)))) if the main converter cannot compile
+ * A we will not attempt to use the main converter for compiling B and C. However, for the fallback converters we will use
+ * the same chain for each expression, so if the first (fallback) converter fails to compile A we will still attempt
+ * to compile B and C with that converter.
+ *
+ * @param maybeMainConverter           if specified we will use try with this one first,
+ *                                     if it fails we will rely on fallback-converters for compilation.
+ * @param fallbackExpressionConverters A chain of converters where we try to use the converters in the specified order
+ *                                     for each expression of the expression-tree.
+ */
 class ExpressionConverters(
   maybeMainConverter: Option[ExpressionConverter],
   fallbackExpressionConverters: ExpressionConverter*
