@@ -37,8 +37,7 @@ import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
  *                            localLabelInfo \ previousLabelInfo
  * @param allLabelInfo        previously known nodes labels, passed as an argument to [[QueryGraphPredicates.partitionSelections]], merged with [[localLabelInfo]].
  *                            localLabelInfo U previousLabelInfo
- * @param externalLabelInfo   previously known nodes labels, unless they are also present in [[localLabelInfo]].
- *                            previousLabelInfo \ localLabelInfo
+ * @param previousLabelInfo   previously known nodes labels
  * @param uniqueRelationships relationships with Unique predicates as introduced by AddUniquenessPredicates.
  * @param otherPredicates     kitchen sink, all the predicates that weren't picked up in the other parameters.
  */
@@ -46,7 +45,7 @@ case class QueryGraphPredicates(
   localLabelInfo: LabelInfo,
   localOnlyLabelInfo: LabelInfo,
   allLabelInfo: LabelInfo,
-  externalLabelInfo: LabelInfo,
+  previousLabelInfo: LabelInfo,
   uniqueRelationships: Set[LogicalVariable],
   otherPredicates: Set[Predicate]
 )
@@ -67,14 +66,13 @@ object QueryGraphPredicates {
         case ((uniqueRelationships, otherPredicates), otherPred) => (uniqueRelationships, otherPredicates + otherPred)
       }
 
-    val externalLabelInfo = previousLabelInfo.fuseLeft(localLabelInfo)(_ -- _)
     val localOnlyLabelInfo = localLabelInfo.fuseLeft(previousLabelInfo)(_ -- _)
 
     QueryGraphPredicates(
       localLabelInfo = localLabelInfo,
       localOnlyLabelInfo = localOnlyLabelInfo,
       allLabelInfo = localLabelInfo.fuse(previousLabelInfo)(_ ++ _),
-      externalLabelInfo = externalLabelInfo,
+      previousLabelInfo = previousLabelInfo,
       uniqueRelationships = uniqueRelationships,
       otherPredicates = otherPredicates
     )

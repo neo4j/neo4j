@@ -450,7 +450,17 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
 
     queryShouldHaveCardinality(
       config,
+      s"MATCH (a:FOO) WITH a LIMIT 1 UNWIND range(1, $inboundCardinality) AS i MATCH (a)-[:TYPE]->(b:BAR)",
+      relCount / fooCount * inboundCardinality
+    )
+    queryShouldHaveCardinality(
+      config,
       s"MATCH (a:FOO) WITH a LIMIT 1 UNWIND range(1, $inboundCardinality) AS i MATCH (a:FOO)-[:TYPE]->(b:BAR)",
+      relCount / fooCount * inboundCardinality
+    )
+    queryShouldHaveCardinality(
+      config,
+      s"MATCH (a) WITH a LIMIT 1 UNWIND range(1, $inboundCardinality) AS i MATCH (a:FOO)-[:TYPE]->(b:BAR)",
       relCount / nodeCount * inboundCardinality
     )
   }

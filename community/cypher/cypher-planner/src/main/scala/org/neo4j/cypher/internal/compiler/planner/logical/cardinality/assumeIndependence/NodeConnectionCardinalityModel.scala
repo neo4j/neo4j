@@ -146,8 +146,8 @@ case class BoundNodesAndArguments(boundNodes: Set[LogicalVariable], argumentIds:
     if (boundNodes.contains(node))
       getNodeCardinality(context, predicates.allLabelInfo, node).getOrElse(Cardinality.EMPTY)
     else if (argumentIds.contains(node))
-      // if the endpoint is not bound but was passed as an argument, we calculate its cardinality solely based on external labels
-      getNodeCardinality(context, predicates.externalLabelInfo, node).getOrElse(Cardinality.EMPTY)
+      // if the endpoint is not bound but was passed as an argument, we calculate its cardinality solely based on previous labels
+      getNodeCardinality(context, predicates.previousLabelInfo, node).getOrElse(Cardinality.EMPTY)
     else
       Cardinality.SINGLE
 }
