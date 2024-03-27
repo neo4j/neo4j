@@ -33,9 +33,12 @@ import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
  * Predicates of a query graph partitioned in order to calculate its cardinality.
  *
  * @param localLabelInfo      node labels explicitly defined in HasLabels predicates inside of the query graph.
- * @param localOnlyLabelInfo  node labels that are in [[QueryGraphPredicates.localLabelInfo]] but not in previousLabelInfo
+ * @param localOnlyLabelInfo  node labels that are in [[QueryGraphPredicates.localLabelInfo]] but are not previously known nodes labels (in previousLabelInfo, passed as an argument to [[QueryGraphPredicates.partitionSelections]])
+ *                            localLabelInfo \ previousLabelInfo
  * @param allLabelInfo        previously known nodes labels, passed as an argument to [[QueryGraphPredicates.partitionSelections]], merged with [[localLabelInfo]].
+ *                            localLabelInfo U previousLabelInfo
  * @param externalLabelInfo   previously known nodes labels, unless they are also present in [[localLabelInfo]].
+ *                            previousLabelInfo \ localLabelInfo
  * @param uniqueRelationships relationships with Unique predicates as introduced by AddUniquenessPredicates.
  * @param otherPredicates     kitchen sink, all the predicates that weren't picked up in the other parameters.
  */
@@ -64,16 +67,9 @@ object QueryGraphPredicates {
         case ((uniqueRelationships, otherPredicates), otherPred) => (uniqueRelationships, otherPredicates + otherPred)
       }
 
-    val externalLabelInfo =
-      previousLabelInfo.map {
-        case (variable, labels) =>
-          (variable, labels -- localLabelInfo.getOrElse(variable, Set.empty))
-      }
-    val localOnlyLabelInfo =
-      localLabelInfo.map {
-        case (variable, labels) =>
-          (variable, labels -- previousLabelInfo.getOrElse(variable, Set.empty))
-      }
+    val externalLabelInfo = previousLabelInfo.fuseLeft(localLabelInfo)(_ -- _)
+    val localOnlyLabelInfo = localLabelInfo.fuseLeft(previousLabelInfo)(_ -- _)
+
     QueryGraphPredicates(
       localLabelInfo = localLabelInfo,
       localOnlyLabelInfo = localOnlyLabelInfo,

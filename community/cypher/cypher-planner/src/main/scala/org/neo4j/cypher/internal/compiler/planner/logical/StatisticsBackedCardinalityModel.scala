@@ -302,7 +302,6 @@ class StatisticsBackedCardinalityModel(
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
     cardinalityModel: CardinalityModel
   ): CardinalityAndInput = {
-    val fusedLabelInfo = labelInfo.fuse(graph.patternNodeLabels)(_ ++ _)
     val fusedRelTypeInfo = relTypeInfo ++ graph.patternRelationshipTypes
     val cardinality =
       queryGraphCardinalityModel(
@@ -313,6 +312,7 @@ class StatisticsBackedCardinalityModel(
         indexPredicateProviderContext,
         cardinalityModel
       )
+    val fusedLabelInfo = labelInfo.fuse(graph.patternNodeLabels)(_ ++ _)
     CardinalityAndInput(cardinality, fusedLabelInfo, fusedRelTypeInfo)
   }
 }

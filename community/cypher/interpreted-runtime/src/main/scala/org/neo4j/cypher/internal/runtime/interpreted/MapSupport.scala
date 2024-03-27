@@ -35,7 +35,6 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import java.util
 
-import scala.collection.immutable
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 object IsMap extends MapSupport {
@@ -120,18 +119,4 @@ class LazyMap[T, CURSOR](
     else throw new InternalException("properties must be loadable at this instant")
 
   override def estimatedHeapUsage(): Long = 0 // Turns out programmers are lazy too
-}
-
-object MapSupport {
-
-  implicit class PowerMap[A, B](m: immutable.Map[A, B]) {
-
-    def fuse(other: immutable.Map[A, B])(f: (B, B) => B): immutable.Map[A, B] = {
-      other.foldLeft(m) {
-        case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
-        case (acc, entry)                     => acc + entry
-      }
-    }
-  }
-
 }

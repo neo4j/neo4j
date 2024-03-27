@@ -28,6 +28,27 @@ object MapSupport {
         case (acc, entry)                     => acc + entry
       }
     }
+
+    /**
+     * For each (RHSKey, RHSValue)-pair on the RHS (RHS is called `other`),
+     *   if the LFS (called `m`) also contains the key RHSKey, then apply function `f` (f(LHSValue, RHSValue))
+     *   the value of the LHS is given as the first parameter to `f`
+     *   the value of the RHS is given as the second parameter to `f`
+     * Note that this function is asymmetric since `a.fuseLeft(b)` is not equivalent to `b.fuseLeft(a)`
+     *
+     * {{{
+     * Map(1 -> Set("a", "b"), 2 -> Set("c")).fuseLeft(Map(1 -> Set("b", "c"), 3 -> Set("d")))(_ -- _) gives Map(1 -> Set("a"), 2 -> Set("c"))
+     * }}}
+     * @param other RHS to be applied
+     * @param f     function over the map values (f(LHSValue, RHSValue)) to be applied when the LHS contains the key
+     * @return      the result of applying f for all RHSValues where the LHS has the RHSKey
+     */
+    def fuseLeft(other: immutable.Map[A, B])(f: (B, B) => B): immutable.Map[A, B] = {
+      other.foldLeft(m) {
+        case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
+        case (acc, _)                         => acc
+      }
+    }
   }
 
 }
