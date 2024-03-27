@@ -106,7 +106,6 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -1080,8 +1079,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private void addCorruptedCommandsToLastLogFile(LogEntryWriterWrapper logEntryWriterWrapper) throws IOException {
-        PositiveLogFilesBasedLogVersionRepository versionRepository =
-                new PositiveLogFilesBasedLogVersionRepository(logFiles);
+        var versionRepository = new SimpleLogVersionRepository(getInitialVersion(logFiles), 0);
         LogFiles internalLogFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(versionRepository)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
@@ -1104,6 +1102,10 @@ class RecoveryCorruptedTransactionLogIT {
                     commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
             writer.append(transaction, 1000, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM, LogPosition.UNSPECIFIED);
         }
+    }
+
+    private static long getInitialVersion(LogFiles logFiles) {
+        return logFiles == null ? 0 : logFiles.getLogFile().getHighestLogVersion();
     }
 
     private static long getLastClosedTransactionOffset(GraphDatabaseAPI database) {
@@ -1305,47 +1307,6 @@ class RecoveryCorruptedTransactionLogIT {
 
         int getNumberOfCorruptedCheckpointFiles() {
             return corruptedFileCounter.get();
-        }
-    }
-
-    private static class PositiveLogFilesBasedLogVersionRepository implements LogVersionRepository {
-        private long version;
-        private long checkpointVersion;
-
-        PositiveLogFilesBasedLogVersionRepository(LogFiles logFiles) {
-            this.version = (logFiles == null) ? 0 : logFiles.getLogFile().getHighestLogVersion();
-        }
-
-        @Override
-        public long getCurrentLogVersion() {
-            return version;
-        }
-
-        @Override
-        public void setCurrentLogVersion(long version) {
-            this.version = version;
-        }
-
-        @Override
-        public long incrementAndGetVersion() {
-            version++;
-            return version;
-        }
-
-        @Override
-        public long getCheckpointLogVersion() {
-            return checkpointVersion;
-        }
-
-        @Override
-        public void setCheckpointLogVersion(long version) {
-            checkpointVersion = version;
-        }
-
-        @Override
-        public long incrementAndGetCheckpointLogVersion() {
-            checkpointVersion++;
-            return checkpointVersion;
         }
     }
 
