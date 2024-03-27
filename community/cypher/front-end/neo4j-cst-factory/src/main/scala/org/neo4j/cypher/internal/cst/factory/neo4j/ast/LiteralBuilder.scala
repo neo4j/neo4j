@@ -65,7 +65,13 @@ trait LiteralBuilder extends CypherParserListener {
 
   final override def exitSignedIntegerLiteral(
     ctx: CypherParser.SignedIntegerLiteralContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = if (ctx.MINUS() != null) {
+      SignedDecimalIntegerLiteral("-" + ctx.UNSIGNED_DECIMAL_INTEGER().getText)(pos(ctx))
+    } else {
+      SignedDecimalIntegerLiteral(ctx.UNSIGNED_DECIMAL_INTEGER().getText)(pos(ctx))
+    }
+  }
 
   final override def exitListLiteral(
     ctx: CypherParser.ListLiteralContext

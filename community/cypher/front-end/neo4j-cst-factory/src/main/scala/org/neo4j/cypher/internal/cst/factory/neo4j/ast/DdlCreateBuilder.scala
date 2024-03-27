@@ -650,4 +650,9 @@ trait DdlCreateBuilder extends CypherParserListener {
     val waitUntilComplete = astOpt[WaitUntilComplete](c.waitClause(), NoWait)
     CreateCompositeDatabase(dbName, ifExistsDo(replace, ifNotExists), options, waitUntilComplete)(pos)
   }
+
+  final override def exitCreateConstraint(
+    ctx: CypherParser.CreateConstraintContext
+  ): Unit = {}
+
 }

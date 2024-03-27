@@ -259,6 +259,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitListLiteral(CypherParser.ListLiteralContext ctx);
 
+    void exitMapLiteral(CypherParser.MapLiteralContext ctx);
+
     void exitPropertyKeyName(CypherParser.PropertyKeyNameContext ctx);
 
     void exitParameter(CypherParser.ParameterContext ctx);
@@ -283,25 +285,33 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitShowCommand(CypherParser.ShowCommandContext ctx);
 
-    void exitTerminateCommand(CypherParser.TerminateCommandContext ctx);
-
-    void exitShowAllCommand(CypherParser.ShowAllCommandContext ctx);
-
-    void exitShowNodeCommand(CypherParser.ShowNodeCommandContext ctx);
-
-    void exitShowRelationshipCommand(CypherParser.ShowRelationshipCommandContext ctx);
-
-    void exitShowRelCommand(CypherParser.ShowRelCommandContext ctx);
-
-    void exitShowPropertyCommand(CypherParser.ShowPropertyCommandContext ctx);
+    void exitShowCommandYield(CypherParser.ShowCommandYieldContext ctx);
 
     void exitYieldItem(CypherParser.YieldItemContext ctx);
 
+    void exitYieldSkip(CypherParser.YieldSkipContext ctx);
+
+    void exitYieldLimit(CypherParser.YieldLimitContext ctx);
+
+    void exitYieldOrderBy(CypherParser.YieldOrderByContext ctx);
+
     void exitYieldClause(CypherParser.YieldClauseContext ctx);
+
+    void exitShowBriefAndYield(CypherParser.ShowBriefAndYieldContext ctx);
+
+    void exitShowIndexCommand(CypherParser.ShowIndexCommandContext ctx);
 
     void exitShowIndexesAllowBrief(CypherParser.ShowIndexesAllowBriefContext ctx);
 
     void exitShowIndexesNoBrief(CypherParser.ShowIndexesNoBriefContext ctx);
+
+    void exitShowConstraintCommand(CypherParser.ShowConstraintCommandContext ctx);
+
+    void exitConstraintAllowYieldType(CypherParser.ConstraintAllowYieldTypeContext ctx);
+
+    void exitConstraintExistType(CypherParser.ConstraintExistTypeContext ctx);
+
+    void exitConstraintBriefAndYieldType(CypherParser.ConstraintBriefAndYieldTypeContext ctx);
 
     void exitShowConstraintsAllowBriefAndYield(CypherParser.ShowConstraintsAllowBriefAndYieldContext ctx);
 
@@ -313,15 +323,23 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitShowFunctions(CypherParser.ShowFunctionsContext ctx);
 
+    void exitExecutableBy(CypherParser.ExecutableByContext ctx);
+
+    void exitShowFunctionsType(CypherParser.ShowFunctionsTypeContext ctx);
+
     void exitShowTransactions(CypherParser.ShowTransactionsContext ctx);
+
+    void exitTerminateCommand(CypherParser.TerminateCommandContext ctx);
 
     void exitTerminateTransactions(CypherParser.TerminateTransactionsContext ctx);
 
     void exitShowSettings(CypherParser.ShowSettingsContext ctx);
 
-    void exitTransactionClauses(CypherParser.TransactionClausesContext ctx);
+    void exitNamesAndClauses(CypherParser.NamesAndClausesContext ctx);
 
     void exitComposableCommandClauses(CypherParser.ComposableCommandClausesContext ctx);
+
+    void exitComposableShowCommandClauses(CypherParser.ComposableShowCommandClausesContext ctx);
 
     void exitStringsOrExpression(CypherParser.StringsOrExpressionContext ctx);
 
@@ -423,9 +441,9 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitShowCurrentUser(CypherParser.ShowCurrentUserContext ctx);
 
-    void exitShowSupportedPrivileges(CypherParser.ShowSupportedPrivilegesContext ctx);
-
     void exitShowPrivileges(CypherParser.ShowPrivilegesContext ctx);
+
+    void exitShowSupportedPrivileges(CypherParser.ShowSupportedPrivilegesContext ctx);
 
     void exitShowRolePrivileges(CypherParser.ShowRolePrivilegesContext ctx);
 
@@ -555,8 +573,6 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitGlobPart(CypherParser.GlobPartContext ctx);
 
-    void exitUnescapedLabelSymbolicNameString(CypherParser.UnescapedLabelSymbolicNameStringContext ctx);
-
     void exitStringList(CypherParser.StringListContext ctx);
 
     void exitStringLiteral(CypherParser.StringLiteralContext ctx);
@@ -574,6 +590,8 @@ public interface CypherParserListener extends ParseTreeListener {
     void exitUnescapedSymbolicNameString(CypherParser.UnescapedSymbolicNameStringContext ctx);
 
     void exitSymbolicLabelNameString(CypherParser.SymbolicLabelNameStringContext ctx);
+
+    void exitUnescapedLabelSymbolicNameString(CypherParser.UnescapedLabelSymbolicNameStringContext ctx);
 
     void exitEndOfFile(CypherParser.EndOfFileContext ctx);
 }

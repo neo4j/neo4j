@@ -34,47 +34,47 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   Seq("PROCEDURE", "PROCEDURES").foreach { procKeyword =>
     test(s"SHOW $procKeyword") {
-      assertAstNotAntlr(singleQuery(ShowProceduresClause(None, None, List.empty, yieldAll = false)(defaultPos)))
+      assertAst(singleQuery(ShowProceduresClause(None, None, List.empty, yieldAll = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ShowProceduresClause(Some(CurrentUser), None, List.empty, yieldAll = false)(defaultPos))
       )
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT USER") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ShowProceduresClause(Some(CurrentUser), None, List.empty, yieldAll = false)(defaultPos))
       )
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY user") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ShowProceduresClause(Some(User("user")), None, List.empty, yieldAll = false)(defaultPos))
       )
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ShowProceduresClause(Some(User("CURRENT")), None, List.empty, yieldAll = false)(defaultPos))
       )
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY SHOW") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ShowProceduresClause(Some(User("SHOW")), None, List.empty, yieldAll = false)(defaultPos))
       )
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY TERMINATE") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ShowProceduresClause(Some(User("TERMINATE")), None, List.empty, yieldAll = false)(defaultPos))
       )
     }
 
     test(s"USE db SHOW $procKeyword") {
-      assertAstNotAntlr(SingleQuery(
+      assertAst(SingleQuery(
         List(
           use(List("db")),
           ShowProceduresClause(None, None, List.empty, yieldAll = false)((1, 8, 7))
@@ -87,7 +87,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   // Filtering tests
 
   test("SHOW PROCEDURE WHERE name = 'my.proc'") {
-    assertAstNotAntlr(singleQuery(ShowProceduresClause(
+    assertAst(singleQuery(ShowProceduresClause(
       None,
       Some(Where(
         Equals(
@@ -101,7 +101,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD description") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -115,14 +115,14 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES EXECUTABLE BY user YIELD *") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(Some(User("user")), None, List.empty, yieldAll = true)(defaultPos),
       withFromYield(returnAllItems)
     ))
   }
 
   test("SHOW PROCEDURES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(None, None, List.empty, yieldAll = true)(defaultPos),
       withFromYield(
         returnAllItems((1, 25, 24)),
@@ -136,7 +136,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("USE db SHOW PROCEDURES YIELD name, description AS pp WHERE pp < 50.0 RETURN name") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         use(List.apply("db")),
         ShowProceduresClause(
@@ -161,7 +161,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   test(
     "USE db SHOW PROCEDURES EXECUTABLE YIELD name, description AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
   ) {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         use(List("db")),
         ShowProceduresClause(
@@ -187,7 +187,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD name AS PROCEDURE, mode AS OUTPUT") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ShowProceduresClause(
           None,
@@ -205,7 +205,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD a ORDER BY a WHERE a = 1") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -221,7 +221,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD a AS b ORDER BY b WHERE b = 1") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -237,7 +237,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD a AS b ORDER BY a WHERE a = 1") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -253,7 +253,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -269,7 +269,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -285,7 +285,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -301,7 +301,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -320,7 +320,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -336,7 +336,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,
@@ -359,7 +359,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD name as option, option as name where size(option) > 0 RETURN option as name") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ShowProceduresClause(
         None,
         None,

@@ -27,13 +27,13 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
 
   Seq("TRANSACTION", "TRANSACTIONS").foreach { transactionKeyword =>
     test(s"SHOW $transactionKeyword") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ast.ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = false)(defaultPos))
       )
     }
 
     test(s"SHOW $transactionKeyword 'db1-transaction-123'") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(
           ast.ShowTransactionsClause(
             Right(literalString("db1-transaction-123")),
@@ -46,7 +46,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"""SHOW $transactionKeyword "db1-transaction-123"""") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(
           ast.ShowTransactionsClause(
             Right(literalString("db1-transaction-123")),
@@ -59,7 +59,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"SHOW $transactionKeyword 'my.db-transaction-123'") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ast.ShowTransactionsClause(
           Right(literalString("my.db-transaction-123")),
           None,
@@ -70,7 +70,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"SHOW $transactionKeyword $$param") {
-      assertAstNotAntlr(singleQuery(ast.ShowTransactionsClause(
+      assertAst(singleQuery(ast.ShowTransactionsClause(
         Right(parameter("param", CTAny)),
         None,
         List.empty,
@@ -79,7 +79,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"SHOW $transactionKeyword $$where") {
-      assertAstNotAntlr(singleQuery(ast.ShowTransactionsClause(
+      assertAst(singleQuery(ast.ShowTransactionsClause(
         Right(parameter("where", CTAny)),
         None,
         List.empty,
@@ -88,7 +88,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"""SHOW $transactionKeyword 'db1 - transaction - 123', "db2-transaction-45a6"""") {
-      assertAstNotAntlr(singleQuery(ast.ShowTransactionsClause(
+      assertAst(singleQuery(ast.ShowTransactionsClause(
         Left(List("db1 - transaction - 123", "db2-transaction-45a6")),
         None,
         List.empty,
@@ -97,7 +97,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"SHOW $transactionKeyword 'yield-transaction-123'") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ast.ShowTransactionsClause(
           Right(literalString("yield-transaction-123")),
           None,
@@ -108,7 +108,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"SHOW $transactionKeyword 'where-transaction-123'") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(ast.ShowTransactionsClause(
           Right(literalString("where-transaction-123")),
           None,
@@ -119,7 +119,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     }
 
     test(s"USE db SHOW $transactionKeyword") {
-      assertAstNotAntlr(
+      assertAst(
         singleQuery(
           use(List("db")),
           ast.ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = false)(pos)
@@ -131,7 +131,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION db-transaction-123") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Right(subtract(subtract(varFor("db"), varFor("transaction")), literalInt(123))),
         None,
@@ -142,7 +142,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION 'neo4j'+'-transaction-'+3") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Right(add(add(literalString("neo4j"), literalString("-transaction-")), literalInt(3))),
         None,
@@ -153,7 +153,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION ('neo4j'+'-transaction-'+3)") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Right(add(add(literalString("neo4j"), literalString("-transaction-")), literalInt(3))),
         None,
@@ -164,7 +164,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456']") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Right(listOfString("db1-transaction-123", "db2-transaction-456")),
         None,
@@ -175,25 +175,25 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION foo") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(varFor("foo")), None, List.empty, yieldAll = false)(pos)
     ))
   }
 
   test("SHOW TRANSACTION x+2") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(add(varFor("x"), literalInt(2))), None, List.empty, yieldAll = false)(pos)
     ))
   }
 
   test("SHOW TRANSACTIONS YIELD") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(varFor("YIELD")), None, List.empty, yieldAll = false)(pos)
     ))
   }
 
   test("SHOW TRANSACTIONS YIELD (123 + xyz)") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Right(function("YIELD", add(literalInt(123), varFor("xyz")))),
         None,
@@ -204,7 +204,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS ALL") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(varFor("ALL")), None, List.empty, yieldAll = false)(pos)
     ))
   }
@@ -212,7 +212,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   // Filtering tests
 
   test("SHOW TRANSACTION WHERE transactionId = 'db1-transaction-123'") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
@@ -223,7 +223,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD database") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Left(List.empty),
@@ -238,7 +238,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS 'db1-transaction-123', 'db2-transaction-456' YIELD *") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List("db1-transaction-123", "db2-transaction-456")),
         None,
@@ -252,7 +252,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS 'db1-transaction-123', 'db2-transaction-456', 'yield' YIELD *") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Left(List("db1-transaction-123", "db2-transaction-456", "yield")),
@@ -267,7 +267,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD * ORDER BY transactionId SKIP 2 LIMIT 5") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = true)(pos),
         withFromYield(returnAllItems, Some(orderBy(sortItem(varFor("transactionId")))), Some(skip(2)), Some(limit(5)))
@@ -277,7 +277,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("USE db SHOW TRANSACTIONS YIELD transactionId, activeLockCount AS pp WHERE pp < 50 RETURN transactionId") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         use(List("db")),
         ast.ShowTransactionsClause(
@@ -302,7 +302,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test(
     "USE db SHOW TRANSACTIONS YIELD transactionId, activeLockCount AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50 RETURN transactionId"
   ) {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         use(List("db")),
         ast.ShowTransactionsClause(
@@ -328,7 +328,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS $param YIELD transactionId AS TRANSACTION, database AS OUTPUT") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(parameter("param", CTAny)),
@@ -343,7 +343,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS 'where' YIELD transactionId AS TRANSACTION, database AS OUTPUT") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(literalString("where")),
@@ -358,7 +358,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION 'db1-transaction-123' WHERE transactionId = 'db1-transaction-124'") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(ast.ShowTransactionsClause(
         Right(literalString("db1-transaction-123")),
         Some(where(equals(varFor("transactionId"), literalString("db1-transaction-124")))),
@@ -370,7 +370,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION 'yield' WHERE transactionId = 'where'") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(ast.ShowTransactionsClause(
         Right(literalString("yield")),
         Some(where(equals(varFor("transactionId"), literalString("where")))),
@@ -384,7 +384,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test(
     "SHOW TRANSACTION 'db1-transaction-123', 'db1-transaction-124' WHERE transactionId IN ['db1-transaction-124', 'db1-transaction-125']"
   ) {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(ast.ShowTransactionsClause(
         Left(List("db1-transaction-123", "db1-transaction-124")),
         Some(where(in(varFor("transactionId"), listOfString("db1-transaction-124", "db1-transaction-125")))),
@@ -398,7 +398,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test(
     "SHOW TRANSACTION db1-transaction-123 WHERE transactionId IN ['db1-transaction-124', 'db1-transaction-125']"
   ) {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(ast.ShowTransactionsClause(
         Right(subtract(subtract(varFor("db1"), varFor("transaction")), literalInt(123))),
         Some(where(in(varFor("transactionId"), listOfString("db1-transaction-124", "db1-transaction-125")))),
@@ -410,7 +410,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456'] YIELD *") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(listOfString("db1-transaction-123", "db2-transaction-456")),
@@ -425,7 +425,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS $x+'123' YIELD transactionId AS TRANSACTION, database AS SHOW") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(add(parameter("x", CTAny), literalString("123"))),
@@ -440,7 +440,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS where YIELD *") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("where")),
@@ -455,7 +455,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS yield YIELD *") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("yield")),
@@ -470,7 +470,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS show YIELD *") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("show")),
@@ -485,7 +485,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS terminate YIELD *") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("terminate")),
@@ -500,7 +500,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD yield") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Left(List.empty),
@@ -515,7 +515,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS where WHERE true") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("where")),
@@ -529,7 +529,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS yield WHERE true") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("yield")),
@@ -543,7 +543,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS show WHERE true") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("show")),
@@ -557,7 +557,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS terminate WHERE true") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("terminate")),
@@ -571,7 +571,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS `yield` YIELD *") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("yield")),
@@ -586,7 +586,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS `where` WHERE true") {
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         ast.ShowTransactionsClause(
           Right(varFor("where")),
@@ -600,7 +600,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD a ORDER BY a WHERE a = 1") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         None,
@@ -616,7 +616,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD a AS b ORDER BY b WHERE b = 1") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         None,
@@ -632,7 +632,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD a AS b ORDER BY a WHERE a = 1") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         None,
@@ -648,7 +648,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         None,
@@ -664,7 +664,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         None,
@@ -680,7 +680,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         None,
@@ -696,7 +696,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         None,
@@ -715,7 +715,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         None,
@@ -731,7 +731,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTIONS YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List.empty),
         None,
@@ -756,7 +756,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test(
     "SHOW TRANSACTIONS 'id', 'id' YIELD username as transactionId, transactionId as username WHERE size(transactionId) > 0 RETURN transactionId as username"
   ) {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Left(List("id", "id")),
         None,
@@ -779,59 +779,59 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   // Negative tests
 
   test("SHOW TRANSACTION db-transaction-123, abc") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS 'db-transaction-123', $param") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS $param, 'db-transaction-123'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS $param, $param2") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456'], abc") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTION foo, 'abc'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTION x+2, abc") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS YIELD * YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS YIELD (123 + xyz) AS foo") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS WHERE transactionId = 'db1-transaction-123' YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS WHERE transactionId = 'db1-transaction-123' RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS YIELD a b RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW CURRENT USER TRANSACTION") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW USER user TRANSACTION") {
@@ -842,11 +842,11 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION EXECUTED BY USER user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW ALL TRANSACTIONS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   // Invalid clause order
@@ -904,20 +904,20 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   // Brief/verbose not allowed
 
   test("SHOW TRANSACTION BRIEF") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(varFor("BRIEF")), None, List.empty, yieldAll = false)(pos)
     ))
   }
 
   test("SHOW TRANSACTIONS BRIEF YIELD *") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(varFor("BRIEF")), None, List.empty, yieldAll = true)(pos),
       withFromYield(returnAllItems)
     ))
   }
 
   test("SHOW TRANSACTIONS BRIEF WHERE transactionId = 'db1-transaction-123'") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Right(varFor("BRIEF")),
         Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
@@ -928,20 +928,20 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION VERBOSE") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(varFor("VERBOSE")), None, List.empty, yieldAll = false)(pos)
     ))
   }
 
   test("SHOW TRANSACTIONS VERBOSE YIELD *") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(varFor("VERBOSE")), None, List.empty, yieldAll = true)(pos),
       withFromYield(returnAllItems)
     ))
   }
 
   test("SHOW TRANSACTIONS VERBOSE WHERE transactionId = 'db1-transaction-123'") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(
         Right(varFor("VERBOSE")),
         Some(where(equals(varFor("transactionId"), literalString("db1-transaction-123")))),
@@ -952,25 +952,25 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION OUTPUT") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(varFor("OUTPUT")), None, List.empty, yieldAll = false)(pos)
     ))
   }
 
   test("SHOW TRANSACTION BRIEF OUTPUT") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS BRIEF RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTION VERBOSE OUTPUT") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW TRANSACTIONS VERBOSE RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
 }

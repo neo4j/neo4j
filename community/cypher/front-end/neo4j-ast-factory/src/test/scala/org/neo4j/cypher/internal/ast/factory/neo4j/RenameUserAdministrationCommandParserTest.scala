@@ -131,6 +131,6 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
   }
 
   test("RENAME USER foo TO bar SET PASSWORD 'secret'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 }

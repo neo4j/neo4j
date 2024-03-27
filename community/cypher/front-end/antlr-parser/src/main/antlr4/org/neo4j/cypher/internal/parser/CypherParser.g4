@@ -120,11 +120,11 @@ setClause
    ;
 
 setItem
-   : propertyExpression EQ expression   # SetProp
-   | variable EQ expression             # SetProps
-   | variable PLUSEQUAL expression      # AddProp
-   | variable nodeLabels                # SetLabels
-   | variable nodeLabelsIs              # SetLabelsIs
+   : propertyExpression EQ expression # SetProp
+   | variable EQ expression           # SetProps
+   | variable PLUSEQUAL expression    # AddProp
+   | variable nodeLabels              # SetLabels
+   | variable nodeLabelsIs            # SetLabelsIs
    ;
 
 removeClause
@@ -132,9 +132,9 @@ removeClause
    ;
 
 removeItem
-   : propertyExpression                 # RemoveProp
-   | variable nodeLabels                # RemoveLabels
-   | variable nodeLabelsIs              # RemoveLabelsIs
+   : propertyExpression    # RemoveProp
+   | variable nodeLabels   # RemoveLabels
+   | variable nodeLabelsIs # RemoveLabelsIs
    ;
 
 deleteClause
@@ -151,10 +151,15 @@ matchMode
    ;
 
 hint
-   : USING (
-      ((INDEX | (BTREE INDEX) | (TEXT INDEX) | (RANGE INDEX) | (POINT INDEX)) SEEK? variable labelOrRelType LPAREN nonEmptyNameList RPAREN)
-      | JOIN ON nonEmptyNameList
-      | SCAN variable labelOrRelType
+   : USING (((
+      INDEX
+      | BTREE INDEX
+      | TEXT INDEX
+      | RANGE INDEX
+      | POINT INDEX
+   ) SEEK? variable labelOrRelType LPAREN nonEmptyNameList RPAREN)
+   | JOIN ON nonEmptyNameList
+   | SCAN variable labelOrRelType
    )
    ;
 
@@ -295,7 +300,7 @@ labelOrRelTypes
    ;
 
 properties
-   : map
+   : mapLiteral
    | parameter["ANY"]
    ;
 
@@ -393,7 +398,15 @@ expression9
 
 // Making changes here? Consider looking at extendedWhen too.
 expression8
-   : expression7 ((EQ | INVALID_NEQ | NEQ | LE | GE | LT | GT) expression7)*
+   : expression7 ((
+      EQ
+      | INVALID_NEQ
+      | NEQ
+      | LE
+      | GE
+      | LT
+      | GT
+   ) expression7)*
    ;
 
 expression7
@@ -402,10 +415,16 @@ expression7
 
 // Making changes here? Consider looking at extendedWhen too.
 comparisonExpression6
-   : (REGEQ | STARTS WITH | ENDS WITH | CONTAINS | IN) expression6 # StringAndListComparison
-   | IS NOT? NULL                                                  # NullComparison
-   | (IS NOT? (TYPED | COLONCOLON) | COLONCOLON) type              # TypeComparison
-   | IS NOT? normalForm? NORMALIZED                                # NormalFormComparison
+   : (
+      REGEQ
+      | STARTS WITH
+      | ENDS WITH
+      | CONTAINS
+      | IN
+   ) expression6                                      # StringAndListComparison
+   | IS NOT? NULL                                     # NullComparison
+   | (IS NOT? (TYPED | COLONCOLON) | COLONCOLON) type # TypeComparison
+   | IS NOT? normalForm? NORMALIZED                   # NormalFormComparison
    ;
 
 normalForm
@@ -475,14 +494,14 @@ expression1
    ;
 
 literal
-   : numberLiteral  # NummericLiteral
-   | stringLiteral  # StringsLiteral
-   | map            # OtherLiteral
-   | TRUE           # BooleanLiteral
-   | FALSE          # BooleanLiteral
-   | INFINITY       # KeywordLiteral
-   | NAN            # KeywordLiteral
-   | NULL           # KeywordLiteral
+   : numberLiteral # NummericLiteral
+   | stringLiteral # StringsLiteral
+   | mapLiteral    # OtherLiteral
+   | TRUE          # BooleanLiteral
+   | FALSE         # BooleanLiteral
+   | INFINITY      # KeywordLiteral
+   | NAN           # KeywordLiteral
+   | NULL          # KeywordLiteral
    ;
 
 caseExpression
@@ -494,7 +513,7 @@ caseAlternative
    ;
 
 extendedCaseExpression
-   : CASE expression extendedCaseAlternative+ (ELSE elseExp=expression)? END
+   : CASE expression extendedCaseAlternative+ (ELSE elseExp = expression)? END
    ;
 
 extendedCaseAlternative
@@ -503,12 +522,20 @@ extendedCaseAlternative
 
 // Making changes here? Consider looking at comparisonExpression6 and expression8 too.
 extendedWhen
-   : (REGEQ | STARTS WITH | ENDS WITH) expression6           #WhenStringOrList
-   | IS NOT? NULL                                             #WhenNull
-   | (IS NOT? TYPED | COLONCOLON) type                        #WhenType
-   | IS NOT? normalForm? NORMALIZED                           #WhenForm
-   | (EQ | NEQ | INVALID_NEQ | LE | GE | LT | GT) expression7 #WhenComparator
-   | expression                                               #WhenEquals
+   : (REGEQ | STARTS WITH | ENDS WITH) expression6 # WhenStringOrList
+   | IS NOT? NULL                                  # WhenNull
+   | (IS NOT? TYPED | COLONCOLON) type             # WhenType
+   | IS NOT? normalForm? NORMALIZED                # WhenForm
+   | (
+      EQ
+      | NEQ
+      | INVALID_NEQ
+      | LE
+      | GE
+      | LT
+      | GT
+   ) expression7                                   # WhenComparator
+   | expression                                    # WhenEquals
    ;
 
 listComprehension
@@ -524,7 +551,12 @@ reduceExpression
    ;
 
 listItemsPredicate
-   : (ALL | ANY | NONE | SINGLE) LPAREN variable IN inExp = expression (WHERE whereExp = expression)? RPAREN
+   : (
+      ALL
+      | ANY
+      | NONE
+      | SINGLE
+   ) LPAREN variable IN inExp = expression (WHERE whereExp = expression)? RPAREN
    ;
 
 normalizeFunction
@@ -571,7 +603,12 @@ collectExpression
    ;
 
 numberLiteral
-   : MINUS? (DECIMAL_DOUBLE | UNSIGNED_DECIMAL_INTEGER | UNSIGNED_HEX_INTEGER | UNSIGNED_OCTAL_INTEGER)
+   : MINUS? (
+      DECIMAL_DOUBLE
+      | UNSIGNED_DECIMAL_INTEGER
+      | UNSIGNED_HEX_INTEGER
+      | UNSIGNED_OCTAL_INTEGER
+   )
    ;
 
 signedIntegerLiteral
@@ -580,6 +617,10 @@ signedIntegerLiteral
 
 listLiteral
    : LBRACKET expression? (COMMA expression)* RBRACKET
+   ;
+
+mapLiteral
+   : LCURLY (propertyKeyName COLON expression)? (COMMA propertyKeyName COLON expression)* RCURLY
    ;
 
 propertyKeyName
@@ -607,7 +648,21 @@ nonEmptyNameList
    ;
 
 command
-   : useClause? (createCommand | dropCommand | alterCommand | renameCommand | denyPrivilege | revokeCommand | grantCommand | startDatabase | stopDatabase | enableServerCommand | allocationCommand | showCommand | terminateCommand)
+   : useClause? (
+      createCommand
+      | dropCommand
+      | alterCommand
+      | renameCommand
+      | denyPrivilege
+      | revokeCommand
+      | grantCommand
+      | startDatabase
+      | stopDatabase
+      | enableServerCommand
+      | allocationCommand
+      | showCommand
+      | terminateCommand
+   )
    ;
 
 createCommand
@@ -623,11 +678,25 @@ createCommand
    ;
 
 dropCommand
-   : DROP (dropAlias | dropConstraint | dropDatabase | dropIndex  | dropRole | dropServer | dropUser)
+   : DROP (
+      dropAlias
+      | dropConstraint
+      | dropDatabase
+      | dropIndex
+      | dropRole
+      | dropServer
+      | dropUser
+   )
    ;
 
 alterCommand
-   : ALTER (alterAlias | alterCurrentUser | alterDatabase | alterUser | alterServer)
+   : ALTER (
+      alterAlias
+      | alterCurrentUser
+      | alterDatabase
+      | alterUser
+      | alterServer
+   )
    ;
 
 renameCommand
@@ -635,51 +704,106 @@ renameCommand
    ;
 
 showCommand
-   : SHOW (ALL showAllCommand | POPULATED (ROLES | ROLE) showRoles | BTREE showIndexesAllowBrief | RANGE showIndexesNoBrief | FULLTEXT showIndexesNoBrief | TEXT showIndexesNoBrief | POINT showIndexesNoBrief | VECTOR showIndexesNoBrief | LOOKUP showIndexesNoBrief | UNIQUE showConstraintsAllowBriefAndYield | UNIQUENESS showConstraintsAllowYield | KEY showConstraintsAllowYield | NODE showNodeCommand | PROPERTY showPropertyCommand | EXISTENCE showConstraintsAllowYield | EXISTS showConstraintsAllowBrief | EXIST showConstraintsAllowBriefAndYield | RELATIONSHIP showRelationshipCommand | REL showRelCommand | BUILT IN showFunctions | showIndexesAllowBrief | showDatabase | showCurrentUser | showConstraintsAllowBriefAndYield | showProcedures | showSettings | showFunctions | showTransactions | showAliases | showServers | showPrivileges | showSupportedPrivileges | (ROLES | ROLE) (showRolePrivileges | showRoles | showRolePrivileges) | USER DEFINED showFunctions | (USERS | USER) (showUserPrivileges | showUsers | showUserPrivileges))
+   : SHOW (
+      showAliases
+      | showConstraintCommand
+      | showCurrentUser
+      | showDatabase
+      | showFunctions
+      | showIndexCommand
+      | showPrivileges
+      | showProcedures
+      | showRolePrivileges
+      | showRoles
+      | showServers
+      | showSettings
+      | showSupportedPrivileges
+      | showTransactions
+      | showUserPrivileges
+      | showUsers
+   )
    ;
 
-terminateCommand
-   : TERMINATE terminateTransactions
-   ;
-
-showAllCommand
-   : ((ROLES | ROLE) showRoles | showIndexesAllowBrief | showConstraintsAllowBriefAndYield | showFunctions | showPrivileges)
-   ;
-
-showNodeCommand
-   : ((UNIQUE | UNIQUENESS) showConstraintsAllowYield | KEY showConstraintsAllowBriefAndYield | PROPERTY showPropertyCommand | EXISTENCE showConstraintsAllowYield | EXISTS showConstraintsAllowBrief | EXIST showConstraintsAllowBriefAndYield)
-   ;
-
-showRelationshipCommand
-   : ((UNIQUE | UNIQUENESS) showConstraintsAllowYield | KEY showConstraintsAllowYield | PROPERTY showPropertyCommand | EXISTENCE showConstraintsAllowYield | EXISTS showConstraintsAllowBrief | EXIST showConstraintsAllowBriefAndYield)
-   ;
-
-showRelCommand
-   : ((UNIQUE | UNIQUENESS) showConstraintsAllowYield | KEY showConstraintsAllowYield | PROPERTY showPropertyCommand | EXISTENCE showConstraintsAllowYield | EXIST showConstraintsAllowYield)
-   ;
-
-showPropertyCommand
-   : ((EXISTENCE | EXIST) | TYPE) showConstraintsAllowYield
+showCommandYield
+   : (yieldClause returnClause? | whereClause)?
    ;
 
 yieldItem
    : variable (AS variable)?
    ;
 
+yieldSkip
+   : (SKIPROWS signedIntegerLiteral)?
+   ;
+
+yieldLimit
+   : (LIMITROWS signedIntegerLiteral)?
+   ;
+
+yieldOrderBy
+   : (ORDER BY orderItem (COMMA orderItem)*)?
+   ;
+
 yieldClause
-   : YIELD (TIMES | yieldItem (COMMA yieldItem)*) (ORDER BY orderItem (COMMA orderItem)*)? (SKIPROWS signedIntegerLiteral)? (LIMITROWS signedIntegerLiteral)? whereClause?
+   : YIELD (TIMES | yieldItem (COMMA yieldItem)*) yieldOrderBy yieldSkip yieldLimit whereClause?
+   ;
+
+showBriefAndYield
+   : ((BRIEF | VERBOSE) OUTPUT? | yieldClause returnClause? | whereClause)?
+   ;
+
+showIndexCommand
+   : (
+      FULLTEXT
+      | LOOKUP
+      | POINT
+      | RANGE
+      | TEXT
+      | VECTOR
+   ) showIndexesNoBrief
+   | (ALL | BTREE)? showIndexesAllowBrief
    ;
 
 showIndexesAllowBrief
-   : (INDEX | INDEXES) ((BRIEF | VERBOSE) OUTPUT? | yieldClause returnClause? | whereClause)? composableCommandClauses?
+   : (INDEX | INDEXES) showBriefAndYield composableCommandClauses?
    ;
 
 showIndexesNoBrief
-   : (INDEX | INDEXES) (yieldClause returnClause? | whereClause)? composableCommandClauses?
+   : (INDEX | INDEXES) showCommandYield composableCommandClauses?
+   ;
+
+showConstraintCommand
+   : (NODE | RELATIONSHIP | REL)? constraintAllowYieldType showConstraintsAllowYield # ShowConstraintMulti
+   | (NODE | RELATIONSHIP | REL) UNIQUE showConstraintsAllowYield                    # ShowConstraintUnique
+   | (RELATIONSHIP | REL)? KEY showConstraintsAllowYield                             # ShowConstraintKey
+   | REL EXIST showConstraintsAllowYield                                             # ShowConstraintRelExist
+   | (NODE | RELATIONSHIP)? EXISTS showConstraintsAllowBrief                         # ShowConstraintOldExists
+   | constraintBriefAndYieldType? showConstraintsAllowBriefAndYield                  # ShowConstraintBriefAndYield
+   ;
+
+constraintAllowYieldType
+   : UNIQUENESS
+   | constraintExistType
+   | PROPERTY TYPE
+   ;
+
+constraintExistType
+   : EXISTENCE
+   | PROPERTY EXISTENCE
+   | PROPERTY EXIST
+   ;
+
+constraintBriefAndYieldType
+   : ALL
+   | UNIQUE
+   | EXIST
+   | NODE KEY
+   | NODE EXIST
+   | RELATIONSHIP EXIST
    ;
 
 showConstraintsAllowBriefAndYield
-   : (CONSTRAINT | CONSTRAINTS) ((BRIEF | VERBOSE) OUTPUT? | yieldClause returnClause? | whereClause)? composableCommandClauses?
+   : (CONSTRAINT | CONSTRAINTS) showBriefAndYield composableCommandClauses?
    ;
 
 showConstraintsAllowBrief
@@ -687,35 +811,59 @@ showConstraintsAllowBrief
    ;
 
 showConstraintsAllowYield
-   : (CONSTRAINT | CONSTRAINTS) (yieldClause returnClause? | whereClause)? composableCommandClauses?
+   : (CONSTRAINT | CONSTRAINTS) showCommandYield composableCommandClauses?
    ;
 
 showProcedures
-   : (PROCEDURE | PROCEDURES) (EXECUTABLE (BY (CURRENT USER | symbolicNameString))?)? (yieldClause returnClause? | whereClause)? composableCommandClauses?
+   : (PROCEDURE | PROCEDURES) executableBy showCommandYield composableCommandClauses?
    ;
 
 showFunctions
-   : (FUNCTION | FUNCTIONS) (EXECUTABLE (BY (CURRENT USER | symbolicNameString))?)? (yieldClause returnClause? | whereClause)? composableCommandClauses?
+   : showFunctionsType FUNCTIONS executableBy showCommandYield composableCommandClauses?
+   ;
+
+executableBy
+   : (EXECUTABLE (BY (CURRENT USER | symbolicNameString))?)?
+   ;
+
+showFunctionsType
+   : (ALL | BUILT IN | USER DEFINED)?
    ;
 
 showTransactions
-   : (TRANSACTION | TRANSACTIONS) transactionClauses
+   : (TRANSACTION | TRANSACTIONS) namesAndClauses
+   ;
+
+terminateCommand
+   : TERMINATE terminateTransactions
    ;
 
 terminateTransactions
-   : (TRANSACTION | TRANSACTIONS) transactionClauses
+   : (TRANSACTION | TRANSACTIONS) namesAndClauses
    ;
 
 showSettings
-   : (SETTING | SETTINGS) transactionClauses
+   : SETTING namesAndClauses
    ;
 
-transactionClauses
-   : stringsOrExpression? (yieldClause returnClause? | whereClause)? composableCommandClauses?
+namesAndClauses
+   : stringsOrExpression? showCommandYield composableCommandClauses?
    ;
 
 composableCommandClauses
-   : (TERMINATE terminateTransactions | SHOW (ALL (showConstraintsAllowBriefAndYield | showIndexesAllowBrief | showFunctions) | BTREE showIndexesAllowBrief | BUILT IN showFunctions | EXISTENCE showConstraintsAllowYield | EXISTS showConstraintsAllowBrief | EXIST showConstraintsAllowBriefAndYield | FULLTEXT showIndexesNoBrief | KEY showConstraintsAllowYield | LOOKUP showIndexesNoBrief | NODE showNodeCommand | POINT showIndexesNoBrief | PROPERTY showPropertyCommand | RANGE showIndexesNoBrief | RELATIONSHIP showRelationshipCommand | REL showRelCommand | TEXT showIndexesNoBrief | UNIQUENESS showConstraintsAllowYield | UNIQUE showConstraintsAllowBriefAndYield | USER DEFINED showFunctions | VECTOR showIndexesNoBrief | showConstraintsAllowBriefAndYield | showFunctions | showIndexesAllowBrief | showProcedures | showSettings | showTransactions))
+   : terminateCommand
+   | composableShowCommandClauses
+   ;
+
+composableShowCommandClauses
+   : SHOW (
+      showIndexCommand
+      | showConstraintCommand
+      | showFunctions
+      | showProcedures
+      | showSettings
+      | showTransactions
+   )
    ;
 
 stringsOrExpression
@@ -755,7 +903,16 @@ typeName
    | (LIST | ARRAY) LT type GT
    | PATH
    | PROPERTY VALUE
-   | ANY (NODE | VERTEX | RELATIONSHIP | EDGE | MAP | PROPERTY VALUE | VALUE? LT type GT | VALUE)?
+   | ANY (
+      NODE
+      | VERTEX
+      | RELATIONSHIP
+      | EDGE
+      | MAP
+      | PROPERTY VALUE
+      | VALUE? LT type GT
+      | VALUE
+   )?
    ;
 
 typeNullability
@@ -775,14 +932,11 @@ commandRelPattern
    ;
 
 createConstraint
-   : CONSTRAINT symbolicNameOrStringParameter? (IF NOT EXISTS)? (ON | FOR)
-   (commandNodePattern | commandRelPattern)
-   constraintType
-   commandOptions?
+   : CONSTRAINT symbolicNameOrStringParameter? (IF NOT EXISTS)? (ON | FOR) (commandNodePattern | commandRelPattern) constraintType commandOptions?
    ;
 
 constraintType
-   : ASSERT EXISTS propertyList # ConstraintExists
+   : ASSERT EXISTS propertyList                                                  # ConstraintExists
    | (REQUIRE | ASSERT) propertyList (COLONCOLON | IS (TYPED | COLONCOLON)) type # ConstraintTyped
    | (REQUIRE | ASSERT) propertyList IS (NODE | RELATIONSHIP | REL)? UNIQUE      # ConstraintIsUnique
    | (REQUIRE | ASSERT) propertyList IS (NODE | RELATIONSHIP | REL)? KEY         # ConstraintKey
@@ -794,7 +948,14 @@ dropConstraint
    ;
 
 createIndex
-   : (BTREE INDEX createIndex_ | RANGE INDEX createIndex_ | TEXT INDEX createIndex_ | POINT INDEX createIndex_ | VECTOR INDEX createIndex_ | LOOKUP INDEX createLookupIndex | FULLTEXT INDEX createFulltextIndex | INDEX (ON oldCreateIndex | createIndex_))
+   : BTREE INDEX createIndex_
+   | RANGE INDEX createIndex_
+   | TEXT INDEX createIndex_
+   | POINT INDEX createIndex_
+   | VECTOR INDEX createIndex_
+   | LOOKUP INDEX createLookupIndex
+   | FULLTEXT INDEX createFulltextIndex
+   | INDEX (ON oldCreateIndex | createIndex_)
    ;
 
 oldCreateIndex
@@ -802,18 +963,11 @@ oldCreateIndex
    ;
 
 createIndex_
-   : symbolicNameOrStringParameter? (IF NOT EXISTS)?
-     FOR (commandNodePattern | commandRelPattern)
-     ON propertyList
-     commandOptions?
+   : symbolicNameOrStringParameter? (IF NOT EXISTS)? FOR (commandNodePattern | commandRelPattern) ON propertyList commandOptions?
    ;
 
 createFulltextIndex
-   : symbolicNameOrStringParameter? (IF NOT EXISTS)?
-     FOR (fulltextNodePattern | fulltextRelPattern)
-     ON EACH
-     LBRACKET variable property (COMMA variable property)* RBRACKET
-     commandOptions?
+   : symbolicNameOrStringParameter? (IF NOT EXISTS)? FOR (fulltextNodePattern | fulltextRelPattern) ON EACH LBRACKET variable property (COMMA variable property)* RBRACKET commandOptions?
    ;
 
 fulltextNodePattern
@@ -825,11 +979,7 @@ fulltextRelPattern
    ;
 
 createLookupIndex
-   : symbolicNameOrStringParameter? (IF NOT EXISTS)?
-   FOR
-   (lookupIndexNodePattern | lookupIndexRelPattern)
-   symbolicNameString LPAREN variable RPAREN
-   commandOptions?
+   : symbolicNameOrStringParameter? (IF NOT EXISTS)? FOR (lookupIndexNodePattern | lookupIndexRelPattern) symbolicNameString LPAREN variable RPAREN commandOptions?
    ;
 
 lookupIndexNodePattern
@@ -853,7 +1003,12 @@ grantCommand
    ;
 
 revokeCommand
-   : REVOKE (DENY IMMUTABLE? (revokePrivilege | ROLE revokeRoleManagement) | GRANT IMMUTABLE? (revokePrivilege | ROLE revokeRoleManagement) | IMMUTABLE (revokePrivilege | ROLE revokeRoleManagement) | (revokePrivilege | ROLE revokeRoleManagement | (ROLE | ROLES) revokeRole))
+   : REVOKE (
+      DENY IMMUTABLE? (revokePrivilege | ROLE revokeRoleManagement)
+      | GRANT IMMUTABLE? (revokePrivilege | ROLE revokeRoleManagement)
+      | IMMUTABLE (revokePrivilege | ROLE revokeRoleManagement)
+      | (revokePrivilege | ROLE revokeRoleManagement | (ROLE | ROLES) revokeRole)
+   )
    ;
 
 enableServerCommand
@@ -873,7 +1028,7 @@ dropServer
    ;
 
 showServers
-   : (SERVERS | SERVER) (yieldClause returnClause? | whereClause)?
+   : (SERVER | SERVERS) showCommandYield
    ;
 
 allocationCommand
@@ -901,7 +1056,7 @@ renameRole
    ;
 
 showRoles
-   : (WITH (USERS | USER))? (yieldClause returnClause? | whereClause)?
+   : (ALL | POPULATED)? (ROLE | ROLES) (WITH (USER | USERS))? showCommandYield
    ;
 
 grantRole
@@ -929,7 +1084,12 @@ alterCurrentUser
    ;
 
 alterUser
-   : USER commandNameExpression (IF EXISTS)? ((SET (password | PASSWORD passwordChangeRequired | userStatus | homeDatabase))+ | REMOVE HOME DATABASE)
+   : USER commandNameExpression (IF EXISTS)? ((SET (
+      password
+      | PASSWORD passwordChangeRequired
+      | userStatus
+      | homeDatabase
+   ))+ | REMOVE HOME DATABASE)
    ;
 
 password
@@ -954,27 +1114,27 @@ homeDatabase
    ;
 
 showUsers
-   : (yieldClause returnClause? | whereClause)?
+   : (USER | USERS) showCommandYield
    ;
 
 showCurrentUser
-   : CURRENT USER (yieldClause returnClause? | whereClause)?
-   ;
-
-showSupportedPrivileges
-   : SUPPORTED (PRIVILEGE | PRIVILEGES) (yieldClause returnClause? | whereClause)?
+   : CURRENT USER showCommandYield
    ;
 
 showPrivileges
-   : (PRIVILEGE | PRIVILEGES) (AS REVOKE? (COMMAND | COMMANDS))? (yieldClause returnClause? | whereClause)?
+   : ALL? (PRIVILEGE | PRIVILEGES) (AS REVOKE? (COMMAND | COMMANDS))? showCommandYield
+   ;
+
+showSupportedPrivileges
+   : SUPPORTED (PRIVILEGE | PRIVILEGES) showCommandYield
    ;
 
 showRolePrivileges
-   : symbolicNameOrStringParameterList (PRIVILEGE | PRIVILEGES) (AS REVOKE? (COMMAND | COMMANDS))? (yieldClause returnClause? | whereClause)?
+   : (ROLE | ROLES) symbolicNameOrStringParameterList (PRIVILEGE | PRIVILEGES) (AS REVOKE? (COMMAND | COMMANDS))? showCommandYield
    ;
 
 showUserPrivileges
-   : (symbolicNameOrStringParameterList (PRIVILEGE | PRIVILEGES) | (PRIVILEGE | PRIVILEGES) | symbolicNameOrStringParameterList (PRIVILEGE | PRIVILEGES)) (AS REVOKE? (COMMAND | COMMANDS))? (yieldClause returnClause? | whereClause)?
+   : (USER | USERS) symbolicNameOrStringParameterList? (PRIVILEGE | PRIVILEGES) (AS REVOKE? (COMMAND | COMMANDS))? showCommandYield
    ;
 
 grantRoleManagement
@@ -1002,7 +1162,20 @@ revokePrivilege
    ;
 
 privilege
-   : (allPrivilege | createPrivilege | dropPrivilege | loadPrivilege | showPrivilege | setPrivilege | removePrivilege | databasePrivilege | dbmsPrivilege | writePrivilege | qualifiedGraphPrivileges | qualifiedGraphPrivilegesWithProperty)
+   : (
+      allPrivilege
+      | createPrivilege
+      | dropPrivilege
+      | loadPrivilege
+      | showPrivilege
+      | setPrivilege
+      | removePrivilege
+      | databasePrivilege
+      | dbmsPrivilege
+      | writePrivilege
+      | qualifiedGraphPrivileges
+      | qualifiedGraphPrivilegesWithProperty
+   )
    ;
 
 allPrivilege
@@ -1022,11 +1195,23 @@ allPrivilegeTarget
    ;
 
 createPrivilege
-   : CREATE (((INDEX | INDEXES) | (CONSTRAINT | CONSTRAINTS) | NEW (NODE? (LABEL | LABELS) | RELATIONSHIP? (TYPE | TYPES) | PROPERTY? (NAME | NAMES))) ON databaseScope | (DATABASE | ALIAS | ROLE | USER | COMPOSITE DATABASE) ON DBMS | ON graphScope graphQualifier)
+   : CREATE (((INDEX | INDEXES) | (CONSTRAINT | CONSTRAINTS) | NEW (NODE? (LABEL | LABELS) | RELATIONSHIP? (TYPE | TYPES) | PROPERTY? (NAME | NAMES))) ON databaseScope | (
+      DATABASE
+      | ALIAS
+      | ROLE
+      | USER
+      | COMPOSITE DATABASE
+   ) ON DBMS | ON graphScope graphQualifier)
    ;
 
 dropPrivilege
-   : DROP (((INDEX | INDEXES) | (CONSTRAINT | CONSTRAINTS)) ON databaseScope | (DATABASE | ALIAS | ROLE | USER | COMPOSITE DATABASE) ON DBMS)
+   : DROP (((INDEX | INDEXES) | (CONSTRAINT | CONSTRAINTS)) ON databaseScope | (
+      DATABASE
+      | ALIAS
+      | ROLE
+      | USER
+      | COMPOSITE DATABASE
+   ) ON DBMS)
    ;
 
 loadPrivilege
@@ -1034,7 +1219,15 @@ loadPrivilege
    ;
 
 showPrivilege
-   : SHOW (((INDEX | INDEXES) | (CONSTRAINT | CONSTRAINTS) | (TRANSACTION | TRANSACTIONS) (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?) ON databaseScope | (ALIAS | PRIVILEGE | ROLE | USER | (SERVER | SERVERS) | (SETTING | SETTINGS) settingQualifier) ON DBMS)
+   : SHOW (((INDEX | INDEXES) | (CONSTRAINT | CONSTRAINTS) | (TRANSACTION | TRANSACTIONS) (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?) ON databaseScope | (
+      ALIAS
+      | PRIVILEGE
+      | ROLE
+      | USER
+      | SERVER
+      | SERVERS
+      | SETTING settingQualifier
+   ) ON DBMS)
    ;
 
 setPrivilege
@@ -1050,11 +1243,37 @@ writePrivilege
    ;
 
 databasePrivilege
-   : (ACCESS | START | STOP | (INDEX | INDEXES) MANAGEMENT? | (CONSTRAINT | CONSTRAINTS) MANAGEMENT? | TRANSACTION MANAGEMENT? (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)? | TERMINATE (TRANSACTION | TRANSACTIONS) (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)? | NAME MANAGEMENT?) ON databaseScope
+   : (
+      ACCESS
+      | START
+      | STOP
+      | (INDEX | INDEXES) MANAGEMENT?
+      | (CONSTRAINT | CONSTRAINTS) MANAGEMENT?
+      | TRANSACTION MANAGEMENT? (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?
+      | TERMINATE (TRANSACTION | TRANSACTIONS) (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?
+      | NAME MANAGEMENT?
+   ) ON databaseScope
    ;
 
 dbmsPrivilege
-   : (ALTER (USER | DATABASE | ALIAS) | ASSIGN (PRIVILEGE | ROLE) | COMPOSITE DATABASE MANAGEMENT | DATABASE MANAGEMENT | ALIAS MANAGEMENT | EXECUTE ((ADMIN | ADMINISTRATOR) PROCEDURES | BOOSTED ((PROCEDURE | PROCEDURES) executeProcedureQualifier | (USER DEFINED?)? (FUNCTION | FUNCTIONS) executeFunctionQualifier) | (PROCEDURE | PROCEDURES) executeProcedureQualifier | (USER DEFINED?)? (FUNCTION | FUNCTIONS) executeFunctionQualifier) | PRIVILEGE MANAGEMENT | RENAME (ROLE | USER) | SERVER MANAGEMENT | USER MANAGEMENT | IMPERSONATE (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?) ON DBMS
+   : (
+      ALTER (USER | DATABASE | ALIAS)
+      | ASSIGN (PRIVILEGE | ROLE)
+      | COMPOSITE DATABASE MANAGEMENT
+      | DATABASE MANAGEMENT
+      | ALIAS MANAGEMENT
+      | EXECUTE (
+         (ADMIN | ADMINISTRATOR) PROCEDURES
+         | BOOSTED ((PROCEDURE | PROCEDURES) executeProcedureQualifier | (USER DEFINED?)? FUNCTIONS executeFunctionQualifier)
+         | (PROCEDURE | PROCEDURES) executeProcedureQualifier
+         | (USER DEFINED?)? FUNCTIONS executeFunctionQualifier
+      )
+      | PRIVILEGE MANAGEMENT
+      | RENAME (ROLE | USER)
+      | SERVER MANAGEMENT
+      | USER MANAGEMENT
+      | IMPERSONATE (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?
+   ) ON DBMS
    ;
 
 executeFunctionQualifier
@@ -1090,7 +1309,12 @@ propertyResource
    ;
 
 graphQualifier
-   : ((RELATIONSHIP | RELATIONSHIPS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (NODE | NODES) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (ELEMENT | ELEMENTS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | map RPAREN))?
+   : (
+      (RELATIONSHIP | RELATIONSHIPS) (TIMES | symbolicNameString (COMMA symbolicNameString)*)
+      | (NODE | NODES) (TIMES | symbolicNameString (COMMA symbolicNameString)*)
+      | (ELEMENT | ELEMENTS) (TIMES | symbolicNameString (COMMA symbolicNameString)*)
+      | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | mapLiteral RPAREN)
+   )?
    ;
 
 createCompositeDatabase
@@ -1098,10 +1322,7 @@ createCompositeDatabase
    ;
 
 createDatabase
-   : DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)?
-   (TOPOLOGY (primaryTopology | secondaryTopology)+)?
-   commandOptions?
-   waitClause?
+   : DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? (TOPOLOGY (primaryTopology | secondaryTopology)+)? commandOptions? waitClause?
    ;
 
 primaryTopology
@@ -1145,7 +1366,8 @@ waitClause
    ;
 
 showDatabase
-   : ((DATABASES | DATABASE) (symbolicAliasNameOrParameter (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | symbolicAliasNameOrParameter)? | (DEFAULT DATABASE | HOME DATABASE) (yieldClause returnClause? | whereClause)?)
+   : (DATABASE | DATABASES) symbolicAliasNameOrParameter? showCommandYield
+   | (DEFAULT DATABASE | HOME DATABASE) showCommandYield
    ;
 
 databaseScope
@@ -1162,19 +1384,18 @@ commandOptions
 
 // Should return an Expression
 commandNameExpression
-   : symbolicNameString | parameter["STRING"]
+   : symbolicNameString
+   | parameter["STRING"]
    ;
 
 // Should return an Either[String, Parameter]
 symbolicNameOrStringParameter
-   : symbolicNameString | parameter["STRING"]
+   : symbolicNameString
+   | parameter["STRING"]
    ;
 
 createAlias
-   : ALIAS symbolicAliasNameOrParameter (IF NOT EXISTS)?
-   FOR DATABASE symbolicAliasNameOrParameter
-   (AT stringOrParameter USER commandNameExpression PASSWORD passwordExpression (DRIVER mapOrParameter)?)?
-   (PROPERTIES mapOrParameter)?
+   : ALIAS symbolicAliasNameOrParameter (IF NOT EXISTS)? FOR DATABASE symbolicAliasNameOrParameter (AT stringOrParameter USER commandNameExpression PASSWORD passwordExpression (DRIVER mapOrParameter)?)? (PROPERTIES mapOrParameter)?
    ;
 
 dropAlias
@@ -1182,7 +1403,13 @@ dropAlias
    ;
 
 alterAlias
-   : ALIAS symbolicAliasNameOrParameter (IF EXISTS)? SET DATABASE (alterAliasTarget | alterAliasUser | alterAliasPassword | alterAliasDriver | alterAliasProperties)+
+   : ALIAS symbolicAliasNameOrParameter (IF EXISTS)? SET DATABASE (
+      alterAliasTarget
+      | alterAliasUser
+      | alterAliasPassword
+      | alterAliasDriver
+      | alterAliasProperties
+   )+
    ;
 
 alterAliasTarget
@@ -1206,7 +1433,7 @@ alterAliasProperties
    ;
 
 showAliases
-   : (ALIAS | ALIASES) symbolicAliasNameOrParameter? FOR (DATABASE | DATABASES) (yieldClause returnClause? | whereClause)?
+   : (ALIAS | ALIASES) symbolicAliasNameOrParameter? FOR (DATABASE | DATABASES) showCommandYield
    ;
 
 symbolicAliasNameList
@@ -1235,7 +1462,62 @@ globRecursive
    ;
 
 globPart
-   : (DOT escapedSymbolicNameString | QUESTION | TIMES | DOT | unescapedSymbolicNameString)
+   : (
+      DOT escapedSymbolicNameString
+      | QUESTION
+      | TIMES
+      | DOT
+      | unescapedSymbolicNameString
+   )
+   ;
+
+stringList
+   : stringLiteral (COMMA stringLiteral)+
+   ;
+
+stringLiteral
+   : STRING_LITERAL1
+   | STRING_LITERAL2
+   ;
+
+stringOrParameter
+   : stringLiteral
+   | parameter["STRING"]
+   ;
+
+mapOrParameter
+   : map
+   | parameter["MAP"]
+   ;
+
+map
+   : LCURLY (propertyKeyName COLON expression (COMMA propertyKeyName COLON expression)*)? RCURLY
+   ;
+
+symbolicNameString
+   : escapedSymbolicNameString
+   | unescapedSymbolicNameString
+   ;
+
+escapedSymbolicNameString
+   : ESCAPED_SYMBOLIC_NAME
+   ;
+
+unescapedSymbolicNameString
+   : unescapedLabelSymbolicNameString
+   | NOT
+   | NULL
+   | TYPED
+   | NORMALIZED
+   | NFC
+   | NFD
+   | NFKC
+   | NFKD
+   ;
+
+symbolicLabelNameString
+   : escapedSymbolicNameString
+   | unescapedLabelSymbolicNameString
    ;
 
 unescapedLabelSymbolicNameString
@@ -1329,7 +1611,6 @@ unescapedLabelSymbolicNameString
    | FOR
    | FROM
    | FULLTEXT
-   | FUNCTION
    | FUNCTIONS
    | GRANT
    | GRAPH
@@ -1384,13 +1665,11 @@ unescapedLabelSymbolicNameString
    | PASSWORD
    | PASSWORDS
    | PATH
-   | PATHS
    | PERIODIC
    | PLAINTEXT
    | POINT
    | POPULATED
    | PRIMARY
-   | PRIMARIES
    | PRIVILEGE
    | PRIVILEGES
    | PROCEDURE
@@ -1418,17 +1697,13 @@ unescapedLabelSymbolicNameString
    | ROW
    | ROWS
    | SCAN
-   | SEC
-   | SECOND
    | SECONDARY
-   | SECONDARIES
    | SECONDS
    | SEEK
    | SERVER
    | SERVERS
    | SET
    | SETTING
-   | SETTINGS
    | SHORTEST
    | SHORTEST_PATH
    | SHOW
@@ -1481,55 +1756,7 @@ unescapedLabelSymbolicNameString
    | ZONED
    ;
 
-stringList
-   : stringLiteral (COMMA stringLiteral)*
-   ;
-
-stringLiteral
-   : STRING_LITERAL1
-   | STRING_LITERAL2
-   ;
-
-stringOrParameter
-   : stringLiteral
-   | parameter["STRING"]
-   ;
-
-mapOrParameter
-   : map
-   | parameter["MAP"]
-   ;
-
-map
-   : LCURLY (propertyKeyName COLON expression)? (COMMA propertyKeyName COLON expression)* RCURLY
-   ;
-
-symbolicNameString
-   : escapedSymbolicNameString
-   | unescapedSymbolicNameString
-   ;
-
-escapedSymbolicNameString
-   : ESCAPED_SYMBOLIC_NAME
-   ;
-
-unescapedSymbolicNameString
-   : unescapedLabelSymbolicNameString
-   | NOT
-   | NULL
-   | TYPED
-   | NORMALIZED
-   | NFC
-   | NFD
-   | NFKC
-   | NFKD
-   ;
-
-symbolicLabelNameString
-   : escapedSymbolicNameString
-   | unescapedLabelSymbolicNameString
-   ;
-
 endOfFile
    : EOF
    ;
+

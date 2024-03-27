@@ -1138,65 +1138,65 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   // SHOW ALIAS
 
   test("SHOW ALIASES FOR DATABASE") {
-    assertAstNotAntlr(ShowAliases(None)(defaultPos))
+    assertAst(ShowAliases(None)(defaultPos))
   }
 
   test("SHOW ALIAS FOR DATABASES") {
-    assertAstNotAntlr(ShowAliases(None)(defaultPos))
+    assertAst(ShowAliases(None)(defaultPos))
   }
 
   test("SHOW ALIAS db FOR DATABASE") {
-    assertAstNotAntlr(ShowAliases(Some(namespacedName("db")), None)(defaultPos))
+    assertAst(ShowAliases(Some(namespacedName("db")), None)(defaultPos))
   }
 
   test("SHOW ALIASES db FOR DATABASE YIELD *") {
-    assertAstNotAntlr(
+    assertAst(
       ShowAliases(Some(namespacedName("db")), Some(Left((yieldClause(returnAllItems), None))))(defaultPos)
     )
   }
 
   test("SHOW ALIAS ns.db FOR DATABASES") {
-    assertAstNotAntlr(ShowAliases(Some(namespacedName("ns", "db")), None)(defaultPos))
+    assertAst(ShowAliases(Some(namespacedName("ns", "db")), None)(defaultPos))
   }
 
   test("SHOW ALIAS `ns.db` FOR DATABASE") {
-    assertAstNotAntlr(ShowAliases(Some(namespacedName("ns.db")), None)(defaultPos))
+    assertAst(ShowAliases(Some(namespacedName("ns.db")), None)(defaultPos))
   }
 
   test("SHOW ALIAS ns.`db.db` FOR DATABASE") {
-    assertAstNotAntlr(ShowAliases(Some(namespacedName("ns", "db.db")), None)(defaultPos))
+    assertAst(ShowAliases(Some(namespacedName("ns", "db.db")), None)(defaultPos))
   }
 
   test("SHOW ALIAS ns.`db.db` FOR DATABASE YIELD * RETURN *") {
-    assertAstNotAntlr(ShowAliases(
+    assertAst(ShowAliases(
       Some(namespacedName("ns", "db.db")),
       Some(Left((yieldClause(returnAllItems), Some(returnAll))))
     )(defaultPos))
   }
 
   test("SHOW ALIAS `ns.db`.`db` FOR DATABASE") {
-    assertAstNotAntlr(ShowAliases(Some(namespacedName("ns.db", "db")), None)(defaultPos))
+    assertAst(ShowAliases(Some(namespacedName("ns.db", "db")), None)(defaultPos))
   }
 
   test("SHOW ALIAS `ns.db`.db FOR DATABASE") {
-    assertAstNotAntlr(ShowAliases(Some(namespacedName("ns.db", "db")), None)(defaultPos))
+    assertAst(ShowAliases(Some(namespacedName("ns.db", "db")), None)(defaultPos))
   }
 
   test("SHOW ALIASES FOR DATABASE WHERE name = 'alias1'") {
-    assertAstNotAntlr(ShowAliases(Some(Right(where(equals(varFor("name"), literalString("alias1"))))))(defaultPos))
+    assertAst(ShowAliases(Some(Right(where(equals(varFor("name"), literalString("alias1"))))))(defaultPos))
   }
 
   test("SHOW ALIASES FOR DATABASE YIELD location") {
     val columns = yieldClause(returnItems(variableReturnItem("location")), None)
     val yieldOrWhere = Some(Left((columns, None)))
-    assertAstNotAntlr(ShowAliases(yieldOrWhere)(defaultPos))
+    assertAst(ShowAliases(yieldOrWhere)(defaultPos))
   }
 
   test("SHOW ALIASES FOR DATABASE YIELD location ORDER BY database") {
     val orderByClause = orderBy(sortItem(varFor("database")))
     val columns = yieldClause(returnItems(variableReturnItem("location")), Some(orderByClause))
     val yieldOrWhere = Some(Left((columns, None)))
-    assertAstNotAntlr(ShowAliases(yieldOrWhere)(defaultPos))
+    assertAst(ShowAliases(yieldOrWhere)(defaultPos))
   }
 
   test("SHOW ALIASES FOR DATABASE YIELD location ORDER BY database SKIP 1 LIMIT 2 WHERE name = 'alias1' RETURN *") {
@@ -1210,11 +1210,11 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       Some(whereClause)
     )
     val yieldOrWhere = Some(Left((columns, Some(returnAll))))
-    assertAstNotAntlr(ShowAliases(yieldOrWhere)(defaultPos))
+    assertAst(ShowAliases(yieldOrWhere)(defaultPos))
   }
 
   test("SHOW ALIASES FOR DATABASE YIELD *") {
-    assertAstNotAntlr(ShowAliases(Some(Left((yieldClause(returnAllItems), None))))(defaultPos))
+    assertAst(ShowAliases(Some(Left((yieldClause(returnAllItems), None))))(defaultPos))
   }
 
   test("SHOW ALIASES FOR DATABASE RETURN *") {

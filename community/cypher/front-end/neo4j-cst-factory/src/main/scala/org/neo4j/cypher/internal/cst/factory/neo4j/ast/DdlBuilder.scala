@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
 import org.neo4j.cypher.internal.ast.AlterDatabase
@@ -21,6 +22,7 @@ import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterServer
 import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DeallocateServers
 import org.neo4j.cypher.internal.ast.DestroyData
@@ -57,6 +59,7 @@ import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetOwnPassword
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StatementWithGraph
 import org.neo4j.cypher.internal.ast.StopDatabase
@@ -137,6 +140,22 @@ trait DdlBuilder extends CypherParserListener {
         c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
       case c: CypherParser.AllocationCommandContext =>
         c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
+      case c: CypherParser.ShowCommandContext =>
+        c.ast match {
+          case sQ: SingleQuery =>
+            if (ctx.useClause() != null) {
+              SingleQuery(ctx.useClause().ast[UseGraph]() +: sQ.clauses)(pos(ctx))
+            } else {
+              sQ
+            }
+          case a => a
+        }
+      case c: CypherParser.TerminateCommandContext =>
+        if (ctx.useClause() != null) {
+          SingleQuery(ctx.useClause().ast[UseGraph]() +: c.ast[Seq[Clause]]())(pos(ctx))
+        } else {
+          SingleQuery(c.ast[Seq[Clause]]())(pos(ctx))
+        }
       case _ => null
     }
   }
@@ -325,41 +344,11 @@ trait DdlBuilder extends CypherParserListener {
     ctx.ast = Map((ctx.symbolicNameString().ast[String], ctx.expression().ast[Expression]))
   }
 
-  final override def exitShowCommand(
-    ctx: CypherParser.ShowCommandContext
-  ): Unit = {}
-
   final override def exitTerminateCommand(
     ctx: CypherParser.TerminateCommandContext
-  ): Unit = {}
-
-  override def exitTransactionClauses(
-    ctx: CypherParser.TransactionClausesContext
-  ): Unit = {}
-
-  final override def exitShowAllCommand(
-    ctx: CypherParser.ShowAllCommandContext
-  ): Unit = {}
-
-  final override def exitShowNodeCommand(
-    ctx: CypherParser.ShowNodeCommandContext
-  ): Unit = {}
-
-  final override def exitShowRelationshipCommand(
-    ctx: CypherParser.ShowRelationshipCommandContext
-  ): Unit = {}
-
-  final override def exitShowRelCommand(
-    ctx: CypherParser.ShowRelCommandContext
-  ): Unit = {}
-
-  final override def exitShowPropertyCommand(
-    ctx: CypherParser.ShowPropertyCommandContext
-  ): Unit = {}
-
-  final override def exitComposableCommandClauses(
-    ctx: CypherParser.ComposableCommandClausesContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast
+  }
 
   final override def exitRenameCommand(
     ctx: CypherParser.RenameCommandContext
@@ -455,10 +444,6 @@ trait DdlBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitShowDatabase(
-    ctx: CypherParser.ShowDatabaseContext
-  ): Unit = {}
-
   final override def exitDatabaseScope(
     ctx: CypherParser.DatabaseScopeContext
   ): Unit = {}
@@ -477,10 +462,6 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitAlterAlias(
     ctx: CypherParser.AlterAliasContext
-  ): Unit = {}
-
-  final override def exitShowAliases(
-    ctx: CypherParser.ShowAliasesContext
   ): Unit = {}
 
   final override def exitSymbolicAliasNameList(
@@ -535,10 +516,6 @@ trait DdlBuilder extends CypherParserListener {
     ctx: CypherParser.DropServerContext
   ): Unit = {}
 
-  final override def exitShowServers(
-    ctx: CypherParser.ShowServersContext
-  ): Unit = {}
-
   final override def exitDeallocateDatabaseFromServers(
     ctx: CypherParser.DeallocateDatabaseFromServersContext
   ): Unit = {}
@@ -557,10 +534,6 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitRenameRole(
     ctx: CypherParser.RenameRoleContext
-  ): Unit = {}
-
-  final override def exitShowRoles(
-    ctx: CypherParser.ShowRolesContext
   ): Unit = {}
 
   final override def exitGrantRole(
@@ -623,30 +596,6 @@ trait DdlBuilder extends CypherParserListener {
     ctx.ast = SetHomeDatabaseAction(dbName)
   }
 
-  final override def exitShowUsers(
-    ctx: CypherParser.ShowUsersContext
-  ): Unit = {}
-
-  final override def exitShowCurrentUser(
-    ctx: CypherParser.ShowCurrentUserContext
-  ): Unit = {}
-
-  final override def exitShowSupportedPrivileges(
-    ctx: CypherParser.ShowSupportedPrivilegesContext
-  ): Unit = {}
-
-  final override def exitShowPrivileges(
-    ctx: CypherParser.ShowPrivilegesContext
-  ): Unit = {}
-
-  final override def exitShowRolePrivileges(
-    ctx: CypherParser.ShowRolePrivilegesContext
-  ): Unit = {}
-
-  final override def exitShowUserPrivileges(
-    ctx: CypherParser.ShowUserPrivilegesContext
-  ): Unit = {}
-
   final override def exitGrantRoleManagement(
     ctx: CypherParser.GrantRoleManagementContext
   ): Unit = {}
@@ -675,6 +624,10 @@ trait DdlBuilder extends CypherParserListener {
     ctx: CypherParser.PrivilegeContext
   ): Unit = {}
 
+  final override def exitShowPrivilege(
+    ctx: CypherParser.ShowPrivilegeContext
+  ): Unit = {}
+
   final override def exitAllPrivilege(
     ctx: CypherParser.AllPrivilegeContext
   ): Unit = {}
@@ -697,10 +650,6 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitLoadPrivilege(
     ctx: CypherParser.LoadPrivilegeContext
-  ): Unit = {}
-
-  final override def exitShowPrivilege(
-    ctx: CypherParser.ShowPrivilegeContext
   ): Unit = {}
 
   final override def exitSetPrivilege(

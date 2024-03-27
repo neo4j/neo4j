@@ -505,7 +505,7 @@ FULLTEXT
    ;
 
 FUNCTION
-   : F U N C T I O N
+   : F U N C T I O N -> type(FUNCTIONS)
    ;
 
 FUNCTIONS

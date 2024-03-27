@@ -206,7 +206,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
     assertSyntaxError("enable server", mismatch("", "a string value, '$'", 13))
     assertSyntaxError("enable server a", mismatch("a", "a string value, '$'", 14))
     assertSyntaxError("enable server 'a' options", mismatch("", "'{', '$'", 25))
-    assertSyntaxError("enable server 'a' options {", mismatch("", "an identifier, ',', '}'", 27))
+    assertSyntaxError("enable server 'a' options {", mismatch("", "an identifier, '}'", 27))
     assertSyntaxError("rename", mismatch("", "'ROLE', 'SERVER', 'USER'", 6))
     assertSyntaxError("alter", mismatch("", "'ALIAS', 'CURRENT', 'DATABASE', 'USER', 'SERVER'", 5))
     assertSyntaxError(

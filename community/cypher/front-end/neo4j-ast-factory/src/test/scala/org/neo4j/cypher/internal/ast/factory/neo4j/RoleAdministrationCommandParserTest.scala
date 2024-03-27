@@ -27,28 +27,28 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   Seq("ROLES", "ROLE").foreach(roleKeyword => {
     test(s"SHOW $roleKeyword") {
-      yields[Statements](ast.ShowRoles(withUsers = false, showAll = true, None))
+      parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
     }
 
     test(s"SHOW ALL $roleKeyword") {
-      yields[Statements](_ => ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
+      parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
     }
 
     test(s"SHOW POPULATED $roleKeyword") {
-      yields[Statements](_ => ast.ShowRoles(withUsers = false, showAll = false, None)(pos))
+      parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = false, None)(pos))
     }
 
     Seq("USERS", "USER").foreach(userKeyword => {
       test(s"SHOW $roleKeyword WITH $userKeyword") {
-        yields[Statements](ast.ShowRoles(withUsers = true, showAll = true, None))
+        parsesTo[Statements](ast.ShowRoles(withUsers = true, showAll = true, None)(pos))
       }
 
       test(s"SHOW ALL $roleKeyword WITH $userKeyword") {
-        yields[Statements](_ => ast.ShowRoles(withUsers = true, showAll = true, None)(pos))
+        parsesTo[Statements](ast.ShowRoles(withUsers = true, showAll = true, None)(pos))
       }
 
       test(s"SHOW POPULATED $roleKeyword WITH $userKeyword") {
-        yields[Statements](ast.ShowRoles(withUsers = true, showAll = false, None))
+        parsesTo[Statements](ast.ShowRoles(withUsers = true, showAll = false, None)(pos))
       }
 
     })
@@ -56,15 +56,15 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   })
 
   test("USE neo4j SHOW ROLES") {
-    yields[Statements](ast.ShowRoles(withUsers = false, showAll = true, None))
+    parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
   }
 
   test("USE GRAPH SYSTEM SHOW ROLES") {
-    yields[Statements](ast.ShowRoles(withUsers = false, showAll = true, None))
+    parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
   }
 
   test("SHOW ALL ROLES YIELD role") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.ShowRoles(
         withUsers = false,
         showAll = true,
@@ -74,7 +74,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLE YIELD role") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.ShowRoles(
         withUsers = false,
         showAll = true,
@@ -84,7 +84,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLES WHERE role='PUBLIC'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.ShowRoles(
         withUsers = false,
         showAll = true,
@@ -94,7 +94,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLE WHERE role='PUBLIC'") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.ShowRoles(
         withUsers = false,
         showAll = true,
@@ -104,29 +104,29 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLES YIELD role RETURN role") {
-    yields[Statements](ast.ShowRoles(
+    parsesTo[Statements](ast.ShowRoles(
       withUsers = false,
       showAll = true,
       Some(Left((
         yieldClause(returnItems(variableReturnItem(roleString))),
         Some(returnClause(returnItems(variableReturnItem(roleString))))
       )))
-    ))
+    )(pos))
   }
 
   test("SHOW ALL ROLES YIELD return, return RETURN return") {
-    yields[Statements](ast.ShowRoles(
+    parsesTo[Statements](ast.ShowRoles(
       withUsers = false,
       showAll = true,
       Some(Left((
         yieldClause(returnItems(variableReturnItem("return"), variableReturnItem("return"))),
         Some(returnClause(returnItems(variableReturnItem("return"))))
       )))
-    ))
+    )(pos))
   }
 
   test("SHOW POPULATED ROLES YIELD role WHERE role='PUBLIC' RETURN role") {
-    yields[Statements](ast.ShowRoles(
+    parsesTo[Statements](ast.ShowRoles(
       withUsers = false,
       showAll = false,
       Some(Left((
@@ -136,27 +136,27 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
         ),
         Some(returnClause(returnItems(variableReturnItem(roleString))))
       )))
-    ))
+    )(pos))
   }
 
   test("SHOW POPULATED ROLES YIELD * RETURN *") {
-    yields[Statements](ast.ShowRoles(
+    parsesTo[Statements](ast.ShowRoles(
       withUsers = false,
       showAll = false,
       Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
-    ))
+    )(pos))
   }
 
   test("SHOW POPULATED ROLE WITH USER YIELD * RETURN *") {
-    yields[Statements](ast.ShowRoles(
+    parsesTo[Statements](ast.ShowRoles(
       withUsers = true,
       showAll = false,
       Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
-    ))
+    )(pos))
   }
 
   test("SHOW ROLES WITH USERS YIELD * LIMIT 10 WHERE foo='bar' RETURN some,columns LIMIT 10") {
-    yields[Statements](ast.ShowRoles(
+    parsesTo[Statements](ast.ShowRoles(
       withUsers = true,
       showAll = true,
       Some(Left((
@@ -170,11 +170,11 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           limit = Some(limit(10))
         ))
       )))
-    ))
+    )(pos))
   }
 
   test("SHOW POPULATED ROLES YIELD role ORDER BY role SKIP -1") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.ShowRoles(
         withUsers = false,
         showAll = false,
@@ -191,7 +191,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW POPULATED ROLES YIELD role ORDER BY role LIMIT -1") {
-    yields[Statements](_ =>
+    parsesTo[Statements](
       ast.ShowRoles(
         withUsers = false,
         showAll = false,
@@ -208,7 +208,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW POPULATED ROLES YIELD role ORDER BY role SKIP -1*4 + 2") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW ROLE role") {
@@ -219,11 +219,11 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ROLES YIELD (123 + xyz)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW ROLES YIELD (123 + xyz) AS foo") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW ALL ROLES YIELD role RETURN") {

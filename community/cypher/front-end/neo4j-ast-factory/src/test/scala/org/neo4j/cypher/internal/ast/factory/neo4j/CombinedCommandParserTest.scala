@@ -517,14 +517,14 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
   commandCombinationsAll.foreach {
     case (firstCommand, firstClause, secondCommand, secondClause) =>
       test(s"$firstCommand $secondCommand") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, false, List.empty)(defaultPos),
           secondClause(None, false, List.empty)(pos)
         ))
       }
 
       test(s"USE db $firstCommand $secondCommand") {
-        assertAstNotAntlr(
+        assertAst(
           singleQuery(
             use(List("db")),
             firstClause(None, false, List.empty)(pos),
@@ -535,7 +535,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"$firstCommand WHERE transactionId = '123' $secondCommand") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Some((where(equals(varFor("transactionId"), literalString("123"))), getWherePosition())),
             false,
@@ -546,7 +546,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"$firstCommand $secondCommand WHERE transactionId = '123'") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, false, List.empty)(defaultPos),
           secondClause(
             Some((where(equals(varFor("transactionId"), literalString("123"))), getWherePosition())),
@@ -559,7 +559,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(s"$firstCommand WHERE transactionId = '123' $secondCommand WHERE transactionId = '123'") {
         val where1Pos = getWherePosition()
         val where2Pos = getWherePosition(where1Pos.offset + 1)
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Some((where(equals(varFor("transactionId"), literalString("123"))), where1Pos)),
             false,
@@ -574,7 +574,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"$firstCommand YIELD transactionId AS txId $secondCommand") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(None, false, List.empty)(pos)
@@ -582,7 +582,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"$firstCommand $secondCommand YIELD transactionId AS txId") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, false, List.empty)(defaultPos),
           secondClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(pos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId")))
@@ -592,7 +592,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand YIELD transactionId AS txId $secondCommand YIELD username"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(
@@ -607,7 +607,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand YIELD transactionId AS txId $secondCommand YIELD username RETURN txId, username"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(None, false, List(commandResultItem("username")))(pos),
@@ -619,7 +619,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand YIELD * $secondCommand YIELD username RETURN txId, username"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, true, List.empty)(defaultPos),
           withFromYield(returnAllItems),
           secondClause(None, false, List(commandResultItem("username")))(pos),
@@ -631,7 +631,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand YIELD transactionId AS txId $secondCommand YIELD * RETURN txId, username"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           secondClause(None, true, List.empty)(pos),
@@ -643,7 +643,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand YIELD * $secondCommand YIELD * RETURN txId, username"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, true, List.empty)(defaultPos),
           withFromYield(returnAllItems),
           secondClause(None, true, List.empty)(pos),
@@ -655,7 +655,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand YIELD transactionId AS txId RETURN txId $secondCommand YIELD username RETURN txId, username"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
           withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
           returnClause(returnItems(variableReturnItem("txId"))),
@@ -676,7 +676,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
            |YIELD username, message
            |RETURN *""".stripMargin
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             None,
             false,
@@ -706,7 +706,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
         test(
           s"$firstCommand $secondCommand $thirdCommand $fourthCommand"
         ) {
-          assertAstNotAntlr(singleQuery(
+          assertAst(singleQuery(
             firstClause(None, false, List.empty)(defaultPos),
             secondClause(None, false, List.empty)(pos),
             thirdClause(None, false, List.empty)(pos),
@@ -724,7 +724,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
              |$fourthCommand
              |YIELD *""".stripMargin
         ) {
-          assertAstNotAntlr(singleQuery(
+          assertAst(singleQuery(
             firstClause(None, true, List.empty)(defaultPos),
             withFromYield(returnAllItems),
             secondClause(None, true, List.empty)(pos),
@@ -747,7 +747,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
              |YIELD transactionId AS txId, message AS status
              |RETURN *""".stripMargin
         ) {
-          assertAstNotAntlr(singleQuery(
+          assertAst(singleQuery(
             firstClause(
               None,
               false,
@@ -793,7 +793,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
           val where2Pos = getWherePosition(where1Pos.offset + 1)
           val where3Pos = getWherePosition(where2Pos.offset + 1)
           val where4Pos = getWherePosition(where3Pos.offset + 1)
-          assertAstNotAntlr(singleQuery(
+          assertAst(singleQuery(
             firstClause(
               Some((where(equals(varFor("message"), literalString("Transaction terminated."))), where1Pos)),
               false,
@@ -822,21 +822,21 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
   commandCombinationsAllowingStringExpressions.foreach {
     case (firstCommand, firstClause, secondCommand, secondClause) =>
       test(s"$firstCommand ${secondCommand}S 'db1-transaction-123'") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Left(List.empty), None, false, List.empty)(defaultPos),
           secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos)
         ))
       }
 
       test(s"$firstCommand 'db1-transaction-123' $secondCommand") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(defaultPos),
           secondClause(Left(List.empty), None, false, List.empty)(pos)
         ))
       }
 
       test(s"$firstCommand 'db1-transaction-123' $secondCommand 'db1-transaction-123'") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(defaultPos),
           secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos)
         ))
@@ -845,21 +845,21 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand 'db1-transaction-123', 'db1-transaction-123' $secondCommand 'db1-transaction-123', 'db1-transaction-123'"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Left(List("db1-transaction-123", "db1-transaction-123")), None, false, List.empty)(defaultPos),
           secondClause(Left(List("db1-transaction-123", "db1-transaction-123")), None, false, List.empty)(pos)
         ))
       }
 
       test(s"$firstCommand $$txId $secondCommand $$txId") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Right(parameter("txId", CTAny)), None, false, List.empty)(defaultPos),
           secondClause(Right(parameter("txId", CTAny)), None, false, List.empty)(pos)
         ))
       }
 
       test(s"$firstCommand WHERE transactionId = '123' $secondCommand 'db1-transaction-123'") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Left(List.empty),
             Some((where(equals(varFor("transactionId"), literalString("123"))), getWherePosition())),
@@ -871,7 +871,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"$firstCommand $secondCommand 'db1-transaction-123' WHERE transactionId = '123'") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Left(List.empty), None, false, List.empty)(defaultPos),
           secondClause(
             Right(literalString("db1-transaction-123")),
@@ -887,7 +887,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       ) {
         val where1Pos = getWherePosition()
         val where2Pos = getWherePosition(where1Pos.offset + 1)
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Left(List.empty),
             Some((where(equals(varFor("transactionId"), literalString("123"))), where1Pos)),
@@ -904,7 +904,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"$firstCommand YIELD transactionId AS txId $secondCommand 'db1-transaction-123'") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(
             defaultPos
           ),
@@ -914,7 +914,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"$firstCommand $secondCommand 'db1-transaction-123' YIELD transactionId AS txId") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Left(List.empty), None, false, List.empty)(defaultPos),
           secondClause(
             Right(literalString("db1-transaction-123")),
@@ -929,7 +929,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand YIELD transactionId AS txId $secondCommand 'db1-transaction-123' YIELD username"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(
             defaultPos
           ),
@@ -947,7 +947,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand YIELD transactionId AS txId RETURN txId $secondCommand 'db1-transaction-123' YIELD username RETURN txId, username"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(
             defaultPos
           ),
@@ -967,7 +967,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"$firstCommand YIELD transactionId AS txId $secondCommand 'db1-transaction-123' YIELD username RETURN txId, username"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(
             defaultPos
           ),
@@ -990,7 +990,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
            |YIELD username, message
            |RETURN *""".stripMargin
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Right(literalString("db1-transaction-123")),
             None,
@@ -1026,7 +1026,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
                |$thirdCommand 'db1-transaction-123'
                |${fourthCommand}S 'db1-transaction-123'""".stripMargin
           ) {
-            assertAstNotAntlr(singleQuery(
+            assertAst(singleQuery(
               firstClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(defaultPos),
               secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos),
               thirdClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos),
@@ -1037,7 +1037,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
           test(
             s"${firstCommand}S $$txId $secondCommand $$txId ${thirdCommand}S $$txId $fourthCommand $$txId"
           ) {
-            assertAstNotAntlr(singleQuery(
+            assertAst(singleQuery(
               firstClause(Right(parameter("txId", CTAny)), None, false, List.empty)(defaultPos),
               secondClause(Right(parameter("txId", CTAny)), None, false, List.empty)(pos),
               thirdClause(Right(parameter("txId", CTAny)), None, false, List.empty)(pos),
@@ -1055,7 +1055,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
                |$fourthCommand 'db1-transaction-123'
                |YIELD *""".stripMargin
           ) {
-            assertAstNotAntlr(singleQuery(
+            assertAst(singleQuery(
               firstClause(Right(literalString("db1-transaction-123")), None, true, List.empty)(defaultPos),
               withFromYield(returnAllItems),
               secondClause(Right(literalString("db1-transaction-123")), None, true, List.empty)(pos),
@@ -1078,7 +1078,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
                |YIELD transactionId AS txId, message AS status
                |RETURN *""".stripMargin
           ) {
-            assertAstNotAntlr(singleQuery(
+            assertAst(singleQuery(
               firstClause(
                 Right(literalString("db1-transaction-123")),
                 None,
@@ -1128,7 +1128,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
             val where2Pos = getWherePosition(where1Pos.offset + 1)
             val where3Pos = getWherePosition(where2Pos.offset + 1)
             val where4Pos = getWherePosition(where3Pos.offset + 1)
-            assertAstNotAntlr(singleQuery(
+            assertAst(singleQuery(
               firstClause(
                 Right(literalString("db1-transaction-123")),
                 Some((where(equals(varFor("message"), literalString("Transaction terminated."))), where1Pos)),
@@ -1160,7 +1160,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       // general expression and not just string/param
 
       test(s"${firstCommand}S YIELD transactionId AS txId $secondCommand txId") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Left(List.empty),
             None,
@@ -1173,7 +1173,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"${firstCommand}S foo YIELD transactionId AS show $secondCommand show") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Right(varFor("foo")),
             None,
@@ -1188,7 +1188,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(
         s"${firstCommand}S ['db1-transaction-123', 'db2-transaction-456'] YIELD transactionId AS show $secondCommand show"
       ) {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Right(listOfString("db1-transaction-123", "db2-transaction-456")),
             None,
@@ -1201,7 +1201,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"${firstCommand}S YIELD transactionId AS txId $secondCommand txId + '123'") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Left(List.empty),
             None,
@@ -1214,7 +1214,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       }
 
       test(s"${firstCommand}S yield YIELD transactionId AS show $secondCommand show") {
-        assertAstNotAntlr(singleQuery(
+        assertAst(singleQuery(
           firstClause(
             Right(varFor("yield")),
             None,
@@ -1245,7 +1245,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
   ) {
     // From astGenerator, it wasn't a parsing problem
     // but now I have already added the test to check that so it can stay :shrug:
-    assertAstNotAntlr(
+    assertAst(
       singleQuery(
         use(List("test")),
         ast.ShowTransactionsClause(Right(literalString("")), None, List.empty, yieldAll = true)(pos),
@@ -1290,7 +1290,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       "SHOW CONSTRAINTS YIELD a7, b7 AS c7, d7 AS d7, e7 AS f7, g7 AS e7 ORDER BY a7, b7, d7, e7 WHERE a7 AND b7 AND d7 AND e7 " +
       "RETURN *"
   ) {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showTx(
         Left(List.empty),
         None,
@@ -1558,7 +1558,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       "SHOW CONSTRAINTS YIELD a " +
       "RETURN *"
   ) {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showTx(
         Left(List.empty),
         None,
@@ -1770,7 +1770,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       showTx(Left(List.empty), None, yieldAll = false, List(commandResultItem("a")))(pos),
       withFromYield(returnAllItems.withDefaultOrderOnColumns(List("a")))
     )).flatten
-    assertAstNotAntlr(singleQuery(clauses: _*))
+    assertAst(singleQuery(clauses: _*))
   }
 
   // show indexes/constraints brief/verbose when combined with other commands
@@ -1793,126 +1793,126 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
     ast.ShowIndexesClause(indexType, brief = brief, verbose = verbose, None, List.empty, yieldAll = false)(pos)
 
   test("SHOW CONSTRAINTS BRIEF SHOW CONSTRAINTS") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showConstraintsBriefVerbose(brief = true, verbose = false),
       showConstraintsBriefVerbose(brief = false, verbose = false)
     ))
   }
 
   test("SHOW CONSTRAINTS VERBOSE SHOW CONSTRAINTS") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showConstraintsBriefVerbose(brief = false, verbose = true),
       showConstraintsBriefVerbose(brief = false, verbose = false)
     ))
   }
 
   test("SHOW CONSTRAINTS SHOW CONSTRAINTS BRIEF") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showConstraintsBriefVerbose(brief = false, verbose = false),
       showConstraintsBriefVerbose(brief = true, verbose = false)
     ))
   }
 
   test("SHOW CONSTRAINTS SHOW CONSTRAINTS VERBOSE") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showConstraintsBriefVerbose(brief = false, verbose = false),
       showConstraintsBriefVerbose(brief = false, verbose = true)
     ))
   }
 
   test("SHOW CONSTRAINTS BRIEF SHOW CONSTRAINTS VERBOSE") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showConstraintsBriefVerbose(brief = true, verbose = false),
       showConstraintsBriefVerbose(brief = false, verbose = true)
     ))
   }
 
   test("SHOW CONSTRAINTS BRIEF SHOW PROCEDURES") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showConstraintsBriefVerbose(brief = true, verbose = false),
       showProcedure(None, None, yieldAll = false, List.empty)
     ))
   }
 
   test("SHOW CONSTRAINTS VERBOSE SHOW FUNCTIONS") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showConstraintsBriefVerbose(brief = false, verbose = true),
       showFunction(ast.AllFunctions, None, None, yieldAll = false, List.empty)
     ))
   }
 
   test("SHOW FUNCTIONS SHOW CONSTRAINTS BRIEF") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showFunction(ast.AllFunctions, None, None, yieldAll = false, List.empty),
       showConstraintsBriefVerbose(brief = true, verbose = false)
     ))
   }
 
   test("SHOW PROCEDURES SHOW CONSTRAINTS VERBOSE") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showProcedure(None, None, yieldAll = false, List.empty),
       showConstraintsBriefVerbose(brief = false, verbose = true)
     ))
   }
 
   test("SHOW INDEXES BRIEF SHOW INDEXES") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showIndexesBriefVerbose(brief = true, verbose = false),
       showIndexesBriefVerbose(brief = false, verbose = false)
     ))
   }
 
   test("SHOW INDEXES VERBOSE SHOW INDEXES") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showIndexesBriefVerbose(brief = false, verbose = true),
       showIndexesBriefVerbose(brief = false, verbose = false)
     ))
   }
 
   test("SHOW INDEXES SHOW INDEXES BRIEF") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showIndexesBriefVerbose(brief = false, verbose = false),
       showIndexesBriefVerbose(brief = true, verbose = false)
     ))
   }
 
   test("SHOW INDEXES SHOW INDEXES VERBOSE") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showIndexesBriefVerbose(brief = false, verbose = false),
       showIndexesBriefVerbose(brief = false, verbose = true)
     ))
   }
 
   test("SHOW BTREE INDEXES VERBOSE SHOW BTREE INDEXES BRIEF") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showIndexesBriefVerbose(brief = false, verbose = true, ast.BtreeIndexes),
       showIndexesBriefVerbose(brief = true, verbose = false, ast.BtreeIndexes)
     ))
   }
 
   test("SHOW INDEXES BRIEF SHOW PROCEDURES") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showIndexesBriefVerbose(brief = true, verbose = false),
       showProcedure(None, None, yieldAll = false, List.empty)
     ))
   }
 
   test("SHOW INDEXES VERBOSE SHOW FUNCTIONS") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showIndexesBriefVerbose(brief = false, verbose = true),
       showFunction(ast.AllFunctions, None, None, yieldAll = false, List.empty)
     ))
   }
 
   test("SHOW FUNCTIONS SHOW INDEXES BRIEF") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showFunction(ast.AllFunctions, None, None, yieldAll = false, List.empty),
       showIndexesBriefVerbose(brief = true, verbose = false)
     ))
   }
 
   test("SHOW PROCEDURES SHOW INDEXES VERBOSE") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       showProcedure(None, None, yieldAll = false, List.empty),
       showIndexesBriefVerbose(brief = false, verbose = true)
     ))
@@ -1985,7 +1985,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
   })
 
   test("SHOW TRANSACTIONS MATCH (n)") {
-    assertAstNotAntlr(singleQuery(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(function("MATCH", varFor("n"))), None, List.empty, yieldAll = false)(pos)
     ))
   }

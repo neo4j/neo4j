@@ -37,6 +37,7 @@ final class AstBuilder(
     with LabelExpressionBuilder
     with DdlBuilder
     with DdlCreateBuilder
+    with DdlShowBuilder
     with ExpressionBuilder
     with StatementBuilder {
   override def visitTerminal(node: TerminalNode): Unit = {}

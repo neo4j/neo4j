@@ -828,62 +828,6 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = Variable(name = ctx.symbolicNameString().ast())(pos(ctx))
   }
 
-  final override def exitYieldItem(
-    ctx: CypherParser.YieldItemContext
-  ): Unit = {}
-
-  final override def exitYieldClause(
-    ctx: CypherParser.YieldClauseContext
-  ): Unit = {}
-
-  final override def exitShowIndexesAllowBrief(
-    ctx: CypherParser.ShowIndexesAllowBriefContext
-  ): Unit = {}
-
-  final override def exitShowIndexesNoBrief(
-    ctx: CypherParser.ShowIndexesNoBriefContext
-  ): Unit = {}
-
-  final override def exitShowConstraintsAllowBriefAndYield(
-    ctx: CypherParser.ShowConstraintsAllowBriefAndYieldContext
-  ): Unit = {}
-
-  final override def exitShowConstraintsAllowBrief(
-    ctx: CypherParser.ShowConstraintsAllowBriefContext
-  ): Unit = {}
-
-  final override def exitShowConstraintsAllowYield(
-    ctx: CypherParser.ShowConstraintsAllowYieldContext
-  ): Unit = {}
-
-  final override def exitShowProcedures(
-    ctx: CypherParser.ShowProceduresContext
-  ): Unit = {}
-
-  final override def exitShowFunctions(
-    ctx: CypherParser.ShowFunctionsContext
-  ): Unit = {}
-
-  final override def exitShowTransactions(
-    ctx: CypherParser.ShowTransactionsContext
-  ): Unit = {}
-
-  final override def exitTerminateTransactions(
-    ctx: CypherParser.TerminateTransactionsContext
-  ): Unit = {}
-
-  final override def exitShowSettings(
-    ctx: CypherParser.ShowSettingsContext
-  ): Unit = {}
-
-  final override def exitStringsOrExpression(
-    ctx: CypherParser.StringsOrExpressionContext
-  ): Unit = {}
-
-  final override def exitCreateConstraint(
-    ctx: CypherParser.CreateConstraintContext
-  ): Unit = {}
-
   final override def exitType(ctx: CypherParser.TypeContext): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
     ctx.ast = ctx.children.size() match {
@@ -978,6 +922,9 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitTypeListSuffix(ctx: CypherParser.TypeListSuffixContext): Unit = {
     ctx.ast = ctx.typeNullability() == null
   }
+
+  override def exitMapLiteral(ctx: CypherParser.MapLiteralContext): Unit =
+    ctx.ast = MapExpression(astPairs(ctx.propertyKeyName(), ctx.expression()))(pos(ctx))
 
   final override def exitMap(ctx: CypherParser.MapContext): Unit =
     ctx.ast = MapExpression(astPairs(ctx.propertyKeyName(), ctx.expression()))(pos(ctx))

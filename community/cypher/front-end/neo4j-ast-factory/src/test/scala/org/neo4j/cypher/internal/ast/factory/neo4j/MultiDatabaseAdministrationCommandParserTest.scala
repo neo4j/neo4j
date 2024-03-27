@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.Topology
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.Explicit
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -74,27 +72,27 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   ).foreach { case (dbType, privilege) =>
     test(s"SHOW $dbType") {
-      yields[Statements](privilege(None))
+      parsesTo[Statements](privilege(None)(pos))
     }
 
     test(s"USE system SHOW $dbType") {
-      yields[Statements](privilege(None))
+      parsesTo[Statements](privilege(None)(pos))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED'") {
-      yields[Statements](privilege(Some(Right(where(equals(accessVar, grantedString))))))
+      parsesTo[Statements](privilege(Some(Right(where(equals(accessVar, grantedString)))))(pos))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED' AND action = 'match'") {
       val accessPredicate = equals(accessVar, grantedString)
       val matchPredicate = equals(varFor(actionString), literalString("match"))
-      yields[Statements](privilege(Some(Right(where(and(accessPredicate, matchPredicate))))))
+      parsesTo[Statements](privilege(Some(Right(where(and(accessPredicate, matchPredicate)))))(pos))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access") {
       val orderByClause = orderBy(sortItem(accessVar))
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause))
-      yields[Statements](privilege(Some(Left((columns, None)))))
+      parsesTo[Statements](privilege(Some(Left((columns, None))))(pos))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access WHERE access ='none'") {
@@ -102,7 +100,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       val whereClause = where(equals(accessVar, noneString))
       val columns =
         yieldClause(returnItems(variableReturnItem(accessString)), Some(orderByClause), where = Some(whereClause))
-      yields[Statements](privilege(Some(Left((columns, None)))))
+      parsesTo[Statements](privilege(Some(Left((columns, None))))(pos))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access SKIP 1 LIMIT 10 WHERE access ='none'") {
@@ -115,50 +113,52 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         Some(limit(10)),
         Some(whereClause)
       )
-      yields[Statements](privilege(Some(Left((columns, None)))))
+      parsesTo[Statements](privilege(Some(Left((columns, None))))(pos))
     }
 
     test(s"SHOW $dbType YIELD access SKIP -1") {
       val columns = yieldClause(returnItems(variableReturnItem(accessString)), skip = Some(skip(-1)))
-      yields[Statements](privilege(Some(Left((columns, None)))))
+      parsesTo[Statements](privilege(Some(Left((columns, None))))(pos))
     }
 
     test(s"SHOW $dbType YIELD access ORDER BY access RETURN access") {
-      yields[Statements](privilege(
+      parsesTo[Statements](privilege(
         Some(Left((
           yieldClause(returnItems(variableReturnItem(accessString)), Some(orderBy(sortItem(accessVar)))),
           Some(returnClause(returnItems(variableReturnItem(accessString))))
         )))
-      ))
+      )(pos))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED' RETURN action") {
-      failsToParse[Statements]
+      failsParsing[Statements]
     }
 
     test(s"SHOW $dbType YIELD * RETURN *") {
-      yields[Statements](privilege(Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))))
+      parsesTo[Statements](
+        privilege(Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems))))))(pos)
+      )
     }
   }
 
   test("SHOW DATABASE `foo.bar`") {
-    yields[Statements](ast.ShowDatabase(ast.SingleNamedDatabaseScope(namespacedName("foo.bar"))(pos), None))
+    parsesTo[Statements](ast.ShowDatabase(ast.SingleNamedDatabaseScope(namespacedName("foo.bar"))(pos), None)(pos))
   }
 
   test("SHOW DATABASE foo.bar") {
-    yields[Statements](ast.ShowDatabase(ast.SingleNamedDatabaseScope(namespacedName("foo", "bar"))(pos), None))
+    parsesTo[Statements](ast.ShowDatabase(ast.SingleNamedDatabaseScope(namespacedName("foo", "bar"))(pos), None)(pos))
   }
 
   test("SHOW DATABASE blah YIELD *,blah RETURN user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW DATABASE YIELD (123 + xyz)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW DATABASES YIELD (123 + xyz) AS foo") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW DEFAULT DATABASES") {
@@ -1191,8 +1191,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("ALTER DATABASE foo SET OPTION key1 1 SET OPTION key2 'two'") {
-    // TODO Antlr support
-    parsesTo[Statements](Explicit(JavaCc))(
+    parsesTo[Statements](
       ast.AlterDatabase(
         literalFoo,
         ifExists = false,
@@ -1223,8 +1222,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("ALTER DATABASE foo REMOVE OPTION key REMOVE OPTION key2") {
-    // TODO Fix antlr
-    parsesTo[Statements](Explicit(JavaCc))(
+    parsesTo[Statements](
       ast.AlterDatabase(
         literalFoo,
         ifExists = false,
