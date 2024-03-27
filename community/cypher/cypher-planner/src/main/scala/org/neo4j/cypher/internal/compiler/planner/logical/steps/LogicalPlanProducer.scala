@@ -1108,8 +1108,7 @@ case class LogicalPlanProducer(
             nodePredicates,
             relationshipPredicates,
             Set.empty,
-            context,
-            None
+            context
           )
         annotate(
           VarExpand(
@@ -1148,23 +1147,8 @@ case class LogicalPlanProducer(
     nodePredicates: Set[VariablePredicate],
     relationshipPredicates: Set[VariablePredicate],
     pathPredicates: Set[Expression],
-    context: LogicalPlanningContext,
-    maybePathVariable: Option[LogicalVariable]
+    context: LogicalPlanningContext
   ): (Set[VariablePredicate], Set[VariablePredicate], Set[Expression], LogicalPlan) = {
-    def splitPathPredsByIrExpressionContainingPathRef: (Set[Expression], Set[Expression]) = {
-      pathPredicates.partition(expr =>
-        expr.folder.findAllByClass[IRExpression]
-          .exists(irExpression =>
-            maybePathVariable.exists(pathVar =>
-              irExpression.dependencies.contains(pathVar)
-            )
-          )
-      )
-    }
-
-    val (predicateWithIrExpressionReferencingPath, otherPathPredicates) = splitPathPredsByIrExpressionContainingPathRef
-    val rewrittenPredicatesWithIrExpressionReferencingPath =
-      predicateWithIrExpressionReferencingPath.endoRewrite(irExpressionRewriter(source, context))
     val solver = SubqueryExpressionSolver.solverFor(source, context)
 
     def solveVariablePredicate(variablePredicate: VariablePredicate): VariablePredicate = {
@@ -1177,14 +1161,9 @@ case class LogicalPlanProducer(
 
     val rewrittenRelationshipPredicates = relationshipPredicates.map(solveVariablePredicate)
     val rewrittenNodePredicates = nodePredicates.map(solveVariablePredicate)
-    val rewrittenOtherPathPredicates = otherPathPredicates.map(solver.solve(_))
+    val rewrittenPathPredicates = pathPredicates.map(solver.solve(_))
     val rewrittenSource = solver.rewrittenPlan()
-    (
-      rewrittenRelationshipPredicates,
-      rewrittenNodePredicates,
-      rewrittenPredicatesWithIrExpressionReferencingPath ++ rewrittenOtherPathPredicates,
-      rewrittenSource
-    )
+    (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenPathPredicates, rewrittenSource)
   }
 
   def fixupTrailRhsPlan(
@@ -2430,19 +2409,29 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
+    val (predicateWithIrExpressionReferencingPath, otherPathPredicates) = shortestRelationship.maybePathVar match {
+      case Some(pathVariable) => pathPredicates.partition(_.folder.treeExists {
+          case ire: IRExpression => ire.dependencies.contains(pathVariable)
+        })
+      case None => (Set.empty[Expression], pathPredicates)
+    }
+
+    val rewrittenPredicatesWithIrExpressionReferencingPath =
+      predicateWithIrExpressionReferencingPath.endoRewrite(irExpressionRewriter(inner, context))
+
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
       _.addShortestRelationship(shortestRelationship).addPredicates(solvedPredicates.toSeq: _*)
     )
 
-    val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenPathPredicates, rewrittenSource) =
+    val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenOtherPathPredicates, rewrittenSource) =
       solveSubqueryExpressionsForExtractedPredicates(
         inner,
         nodePredicates,
         relPredicates,
-        pathPredicates,
-        context,
-        shortestRelationship.maybePathVar
+        otherPathPredicates,
+        context
       )
+    val rewrittenPathPredicates = rewrittenOtherPathPredicates ++ rewrittenPredicatesWithIrExpressionReferencingPath
 
     annotate(
       FindShortestPaths(
