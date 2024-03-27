@@ -57,7 +57,8 @@ object RuntimeConstant {
 
     override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
       case RuntimeConstant(_, inner) => ctx(inner)
-      case e                         => ctx(e)
+      case e if ctx ne STRINGIFIER   => ctx(e)
+      case e                         => e.asCanonicalStringVal
     }
   }
 }
