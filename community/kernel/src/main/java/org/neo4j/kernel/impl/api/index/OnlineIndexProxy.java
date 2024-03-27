@@ -186,7 +186,7 @@ public class OnlineIndexProxy implements IndexProxy {
     }
 
     @Override
-    public ResourceIterator<Path> snapshotFiles() {
+    public ResourceIterator<Path> snapshotFiles() throws IOException {
         return accessor.snapshotFiles();
     }
 

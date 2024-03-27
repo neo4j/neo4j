@@ -119,10 +119,10 @@ public class WritableDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, RE
      * {@inheritDoc}
      */
     @Override
-    public ResourceIterator<Path> snapshot() throws IOException {
+    public ResourceIterator<Path> snapshotFiles() throws IOException {
         commitCloseLock.lock();
         try {
-            return luceneIndex.snapshot();
+            return luceneIndex.snapshotFiles();
         } finally {
             commitCloseLock.unlock();
         }

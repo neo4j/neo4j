@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -42,6 +45,11 @@ public class LuceneMinimalIndexAccessor<READER extends ValueIndexReader> impleme
             throw new IllegalStateException("Cannot drop read-only index.");
         }
         index.drop();
+    }
+
+    @Override
+    public ResourceIterator<Path> snapshotFiles() throws IOException {
+        return index.snapshotFiles();
     }
 
     @Override

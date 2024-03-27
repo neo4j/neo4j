@@ -27,6 +27,7 @@ import org.apache.lucene.store.Directory;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.IndexFileSnapshotter;
 import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -37,7 +38,7 @@ import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
  * Lucene index that may consist of one or multiple separate lucene indexes that are represented as independent
  * {@link AbstractIndexPartition partitions}.
  */
-public interface DatabaseIndex<READER extends ValueIndexReader> extends Closeable {
+public interface DatabaseIndex<READER extends ValueIndexReader> extends IndexFileSnapshotter, Closeable {
     /**
      * Creates new index.
      * As part of creation process index will allocate all required folders, index failure storage
@@ -118,7 +119,8 @@ public interface DatabaseIndex<READER extends ValueIndexReader> extends Closeabl
      * @throws IOException
      * @see WritableIndexSnapshotFileIterator
      */
-    ResourceIterator<Path> snapshot() throws IOException;
+    @Override
+    ResourceIterator<Path> snapshotFiles() throws IOException;
 
     /**
      * Refresh all partitions to make newly inserted data visible for readers.

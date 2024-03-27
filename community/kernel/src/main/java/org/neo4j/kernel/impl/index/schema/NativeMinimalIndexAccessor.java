@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Map;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.values.storable.Value;
@@ -57,6 +59,11 @@ public class NativeMinimalIndexAccessor implements MinimalIndexAccessor {
             }
         }
         indexFiles.clear();
+    }
+
+    @Override
+    public ResourceIterator<Path> snapshotFiles() {
+        return indexFiles.snapshot();
     }
 
     @Override

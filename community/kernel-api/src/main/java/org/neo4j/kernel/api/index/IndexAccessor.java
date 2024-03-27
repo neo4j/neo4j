@@ -23,6 +23,7 @@ import static java.util.Collections.emptyIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -176,13 +177,6 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         };
         return new IndexEntriesReader[] {reader};
     }
-
-    /**
-     * Should return a full listing of all files needed by this index accessor to work with the index. The files
-     * need to remain available until the resource iterator returned here is closed. This is used to duplicate created
-     * indexes across clusters, among other things.
-     */
-    ResourceIterator<Path> snapshotFiles();
 
     /**
      * Validates the {@link Value value tuple} before transaction determines that it can commit.
@@ -380,7 +374,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public ResourceIterator<Path> snapshotFiles() {
+        public ResourceIterator<Path> snapshotFiles() throws IOException {
             return delegate.snapshotFiles();
         }
 

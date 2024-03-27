@@ -23,11 +23,13 @@ import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRAC
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import org.apache.lucene.document.Document;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -66,6 +68,11 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
     @Override
     public void drop() {
         luceneIndex.drop();
+    }
+
+    @Override
+    public ResourceIterator<Path> snapshotFiles() throws IOException {
+        return luceneIndex.snapshotFiles();
     }
 
     @Override

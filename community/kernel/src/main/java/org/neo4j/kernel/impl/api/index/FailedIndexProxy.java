@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
-
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -93,8 +92,8 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy {
     public void validateBeforeCommit(Value[] tuple, long entityId) {}
 
     @Override
-    public ResourceIterator<Path> snapshotFiles() {
-        return emptyResourceIterator();
+    public ResourceIterator<Path> snapshotFiles() throws IOException {
+        return minimalIndexAccessor.snapshotFiles();
     }
 
     @Override

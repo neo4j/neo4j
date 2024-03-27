@@ -558,21 +558,24 @@ class IndexingServiceTest {
     }
 
     @Test
-    void shouldSnapshotOnlineIndexes() throws Exception {
+    void shouldSnapshotOnlineAndFailedIndexes() throws Exception {
         // GIVEN
-        int indexId = 1;
+        int indexId1 = 1;
         int indexId2 = 2;
-        IndexDescriptor rule1 = storeIndex(indexId, 2, 3, PROVIDER_DESCRIPTOR);
+        int indexId3 = 3;
+        IndexDescriptor rule1 = storeIndex(indexId1, 2, 3, PROVIDER_DESCRIPTOR);
         IndexDescriptor rule2 = storeIndex(indexId2, 4, 5, PROVIDER_DESCRIPTOR);
+        IndexDescriptor rule3 = storeIndex(indexId3, 7, 9, PROVIDER_DESCRIPTOR);
 
         IndexAccessor indexAccessor = mock(IndexAccessor.class);
         IndexingService indexing = newIndexingServiceWithMockedDependencies(
-                mock(IndexPopulator.class), indexAccessor, new DataUpdates(), rule1, rule2);
+                mock(IndexPopulator.class), indexAccessor, new DataUpdates(), rule1, rule2, rule3);
         Path theFile = Path.of("Blah");
 
         when(indexAccessor.snapshotFiles()).thenAnswer(newResourceIterator(theFile));
         when(indexProvider.getInitialState(eq(rule1), any(), any())).thenReturn(ONLINE);
         when(indexProvider.getInitialState(eq(rule2), any(), any())).thenReturn(ONLINE);
+        when(indexProvider.getInitialState(eq(rule3), any(), any())).thenReturn(FAILED);
         when(indexStatisticsStore.indexSample(anyLong())).thenReturn(new IndexSample(100L, 32L, 32L));
 
         life.start();
@@ -581,9 +584,9 @@ class IndexingServiceTest {
         ResourceIterator<Path> files = indexing.snapshotIndexFiles();
 
         // THEN
-        // We get a snapshot per online index
+        // We get a snapshot per online / failed index
         assertThat(asCollection(files))
-                .isEqualTo(asCollection(iterator(indexStatisticsStore.storeFile(), theFile, theFile)));
+                .isEqualTo(asCollection(iterator(indexStatisticsStore.storeFile(), theFile, theFile, theFile)));
     }
 
     @Test

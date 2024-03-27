@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -191,6 +195,11 @@ public interface IndexPopulator extends MinimalIndexAccessor {
         public void drop() {}
 
         @Override
+        public ResourceIterator<Path> snapshotFiles() {
+            return emptyResourceIterator();
+        }
+
+        @Override
         public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {}
 
         @Override
@@ -235,6 +244,11 @@ public interface IndexPopulator extends MinimalIndexAccessor {
         @Override
         public void drop() {
             delegate.drop();
+        }
+
+        @Override
+        public ResourceIterator<Path> snapshotFiles() throws IOException {
+            return delegate.snapshotFiles();
         }
 
         @Override

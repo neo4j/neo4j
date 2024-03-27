@@ -27,6 +27,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -37,10 +38,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.IndexFileSnapshotter;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 
-abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements ConsistencyCheckable {
+abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements ConsistencyCheckable, IndexFileSnapshotter {
     final PageCache pageCache;
     final IndexFiles indexFiles;
     final IndexLayout<KEY> layout;
@@ -141,5 +143,10 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
             int numThreads,
             ProgressMonitorFactory progressMonitorFactory) {
         return tree.consistencyCheck(reporterFactory, contextFactory, numThreads, progressMonitorFactory);
+    }
+
+    @Override
+    public ResourceIterator<Path> snapshotFiles() {
+        return indexFiles.snapshot();
     }
 }

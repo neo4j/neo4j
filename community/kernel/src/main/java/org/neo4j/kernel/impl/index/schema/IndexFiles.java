@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -87,5 +91,9 @@ public class IndexFiles {
 
     private static String indexFileName(long indexId) {
         return INDEX_FILE_PREFIX + indexId;
+    }
+
+    public ResourceIterator<Path> snapshot() {
+        return asResourceIterator(iterator(getStoreFile()));
     }
 }

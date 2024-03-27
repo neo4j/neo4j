@@ -111,7 +111,7 @@ abstract class IndexAccessorTests<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE>>
     }
 
     @Test
-    void snapshotFilesShouldReturnIndexFile() {
+    void snapshotFilesShouldReturnIndexFile() throws IOException {
         // when
         ResourceIterator<Path> files = accessor.snapshotFiles();
 

@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -121,8 +119,6 @@ public interface IndexProxy extends MinimalIndexAccessor {
      * @param entityId id of the entity being validated
      */
     void validateBeforeCommit(Value[] tuple, long entityId);
-
-    ResourceIterator<Path> snapshotFiles() throws IOException;
 
     /**
      * Reports usage statistics since last reported, to the {@code consumer}.

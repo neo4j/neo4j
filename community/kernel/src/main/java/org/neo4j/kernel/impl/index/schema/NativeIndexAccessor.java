@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -32,7 +30,6 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,7 +38,6 @@ import java.util.function.LongPredicate;
 import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.Subject;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -277,11 +273,6 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     public BoundedIterable<Long> newAllEntriesValueReader(
             long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
         return new NativeAllEntriesReader<>(tree, layout, fromIdInclusive, toIdExclusive, cursorContext);
-    }
-
-    @Override
-    public ResourceIterator<Path> snapshotFiles() {
-        return asResourceIterator(iterator(indexFiles.getStoreFile()));
     }
 
     @Override

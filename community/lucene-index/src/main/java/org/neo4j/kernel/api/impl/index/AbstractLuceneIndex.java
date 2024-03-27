@@ -40,6 +40,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.IndexFileSnapshotter;
 import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -58,7 +59,7 @@ import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
  * @see WritableDatabaseIndex
  * @see MinimalDatabaseIndex
  */
-public abstract class AbstractLuceneIndex<READER extends IndexReader> {
+public abstract class AbstractLuceneIndex<READER extends IndexReader> implements IndexFileSnapshotter {
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
     private static final Set<Map.Entry<String, String>> ONLINE_COMMIT_USER_DATA = Set.of(Map.entry(KEY_STATUS, ONLINE));
@@ -252,7 +253,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
      * @return iterator over all index files.
      * @see WritableIndexSnapshotFileIterator
      */
-    public ResourceIterator<Path> snapshot() throws IOException {
+    public ResourceIterator<Path> snapshotFiles() throws IOException {
         ensureOpen();
         List<ResourceIterator<Path>> snapshotIterators = null;
         try {

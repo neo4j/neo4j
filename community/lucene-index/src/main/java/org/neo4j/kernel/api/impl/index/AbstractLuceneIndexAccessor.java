@@ -203,12 +203,8 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     }
 
     @Override
-    public ResourceIterator<Path> snapshotFiles() {
-        try {
-            return luceneIndex.snapshot();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    public ResourceIterator<Path> snapshotFiles() throws IOException {
+        return luceneIndex.snapshotFiles();
     }
 
     @Override

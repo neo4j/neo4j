@@ -27,6 +27,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -38,11 +39,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.IndexFileSnapshotter;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.util.Preconditions;
 
-public class TokenIndex implements ConsistencyCheckable {
+public class TokenIndex implements ConsistencyCheckable, IndexFileSnapshotter {
     /**
      * Written in header to indicate native token index is clean
      *
@@ -224,5 +226,10 @@ public class TokenIndex implements ConsistencyCheckable {
             throw new UnsupportedOperationException(
                     "Database currently is in read only mode and can not perform writes");
         }
+    }
+
+    @Override
+    public ResourceIterator<Path> snapshotFiles() {
+        return indexFiles.snapshot();
     }
 }

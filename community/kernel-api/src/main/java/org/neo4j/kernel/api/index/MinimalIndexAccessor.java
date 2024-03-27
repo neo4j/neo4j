@@ -19,13 +19,26 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
+
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.IndexFileSnapshotter;
 
 /**
  * Minimal index accessor used for dropping failed indexes and provide index configuration.
  */
-public interface MinimalIndexAccessor extends IndexConfigProvider {
-    MinimalIndexAccessor EMPTY = () -> {};
+public interface MinimalIndexAccessor extends IndexConfigProvider, IndexFileSnapshotter {
+    MinimalIndexAccessor EMPTY = new MinimalIndexAccessor() {
+        @Override
+        public void drop() {}
+
+        @Override
+        public ResourceIterator<Path> snapshotFiles() {
+            return emptyResourceIterator();
+        }
+    };
 
     /**
      * Deletes this index as well as closes all used external resources.

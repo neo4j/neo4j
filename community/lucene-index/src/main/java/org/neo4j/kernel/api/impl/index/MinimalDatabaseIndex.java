@@ -84,8 +84,8 @@ public class MinimalDatabaseIndex<READER extends ValueIndexReader>
      * {@inheritDoc}
      */
     @Override
-    public ResourceIterator<Path> snapshot() throws IOException {
-        return luceneIndex.snapshot();
+    public ResourceIterator<Path> snapshotFiles() throws IOException {
+        return luceneIndex.snapshotFiles();
     }
 
     /**
