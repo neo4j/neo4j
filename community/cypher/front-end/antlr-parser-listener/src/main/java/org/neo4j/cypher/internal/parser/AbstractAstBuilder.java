@@ -153,33 +153,18 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_literal -> exitLiteral((CypherParser.LiteralContext) ctx);
             case CypherParser.RULE_caseExpression -> exitCaseExpression((CypherParser.CaseExpressionContext) ctx);
             case CypherParser.RULE_caseAlternative -> exitCaseAlternative((CypherParser.CaseAlternativeContext) ctx);
-            case CypherParser.RULE_extendedCaseExpression -> {
-                final var subCtx = (CypherParser.ExtendedCaseExpressionContext) ctx;
-                exitExtendedCaseExpression(subCtx);
-                subCtx.elseExp = null;
-            }
+            case CypherParser.RULE_extendedCaseExpression -> exitExtendedCaseExpression(
+                    (CypherParser.ExtendedCaseExpressionContext) ctx);
             case CypherParser.RULE_extendedCaseAlternative -> exitExtendedCaseAlternative(
                     (CypherParser.ExtendedCaseAlternativeContext) ctx);
             case CypherParser.RULE_extendedWhen -> exitExtendedWhen((CypherParser.ExtendedWhenContext) ctx);
-            case CypherParser.RULE_listComprehension -> {
-                final var subCtx = (CypherParser.ListComprehensionContext) ctx;
-                exitListComprehension(subCtx);
-                subCtx.whereExp = null;
-                subCtx.barExp = null;
-            }
-            case CypherParser.RULE_patternComprehension -> {
-                final var subCtx = (CypherParser.PatternComprehensionContext) ctx;
-                exitPatternComprehension(subCtx);
-                subCtx.whereExp = null;
-                subCtx.barExp = null;
-            }
+            case CypherParser.RULE_listComprehension -> exitListComprehension(
+                    (CypherParser.ListComprehensionContext) ctx);
+            case CypherParser.RULE_patternComprehension -> exitPatternComprehension(
+                    (CypherParser.PatternComprehensionContext) ctx);
             case CypherParser.RULE_reduceExpression -> exitReduceExpression((CypherParser.ReduceExpressionContext) ctx);
-            case CypherParser.RULE_listItemsPredicate -> {
-                final var subCtx = (CypherParser.ListItemsPredicateContext) ctx;
-                exitListItemsPredicate(subCtx);
-                subCtx.inExp = null;
-                subCtx.whereExp = null;
-            }
+            case CypherParser.RULE_listItemsPredicate -> exitListItemsPredicate(
+                    (CypherParser.ListItemsPredicateContext) ctx);
             case CypherParser.RULE_normalizeFunction -> exitNormalizeFunction(
                     (CypherParser.NormalizeFunctionContext) ctx);
             case CypherParser.RULE_patternExpression -> exitPatternExpression(
