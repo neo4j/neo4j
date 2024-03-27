@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
-import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.internal.recordstorage.SchemaRuleAccess.getSchemaRuleAccess;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
@@ -116,10 +115,8 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
             IndexPrototype prototype = forSchema(forAnyEntityTokens(entityType))
                     .withIndexType(LOOKUP)
                     .withIndexProvider(providerDescriptor);
-            String name = defaultIfEmpty(
-                    config.indexName(entityType), generateName(prototype, EMPTY_STRING_ARRAY, EMPTY_STRING_ARRAY));
             IndexDescriptor descriptor = prototype
-                    .withName(name)
+                    .withName(generateName(prototype, EMPTY_STRING_ARRAY, EMPTY_STRING_ARRAY))
                     .materialise(schemaStore.getIdGenerator().nextId(cursorContext));
             schemaRule.writeSchemaRule(
                     descriptor,
