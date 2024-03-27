@@ -18,12 +18,20 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 
 class UnionParserTest extends AstParsingTestBase {
 
   test("RETURN 1 AS a UNION RETURN 2 AS a") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
+      union(
+        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+        singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+      )
+    )
+  }
+
+  test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS a") {
+    parsesTo[Statement](
       union(
         singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
         singleQuery(return_(aliasedReturnItem(literal(2), "a")))
@@ -32,7 +40,7 @@ class UnionParserTest extends AstParsingTestBase {
   }
 
   test("RETURN 1 AS a UNION ALL RETURN 2 AS a") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
       union(
         singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
         singleQuery(return_(aliasedReturnItem(literal(2), "a")))
@@ -40,8 +48,19 @@ class UnionParserTest extends AstParsingTestBase {
     )
   }
 
+  // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION RETURN 2 AS b") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
+      union(
+        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+        singleQuery(return_(aliasedReturnItem(literal(2), "b")))
+      )
+    )
+  }
+
+  // invalid Cypher accepted by parser
+  test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS b") {
+    parsesTo[Statement](
       union(
         singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
         singleQuery(return_(aliasedReturnItem(literal(2), "b")))
@@ -51,7 +70,7 @@ class UnionParserTest extends AstParsingTestBase {
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION ALL RETURN 2 AS b") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
       union(
         singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
         singleQuery(return_(aliasedReturnItem(literal(2), "b")))
@@ -61,7 +80,17 @@ class UnionParserTest extends AstParsingTestBase {
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION FINISH") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
+      union(
+        singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+        singleQuery(finish())
+      )
+    )
+  }
+
+  // invalid Cypher accepted by parser
+  test("RETURN 1 AS a UNION DISTINCT FINISH") {
+    parsesTo[Statement](
       union(
         singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
         singleQuery(finish())
@@ -71,7 +100,7 @@ class UnionParserTest extends AstParsingTestBase {
 
   // invalid Cypher accepted by parser
   test("RETURN 1 AS a UNION ALL FINISH") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
       union(
         singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
         singleQuery(finish())
@@ -80,7 +109,16 @@ class UnionParserTest extends AstParsingTestBase {
   }
 
   test("FINISH UNION FINISH") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
+      union(
+        singleQuery(finish()),
+        singleQuery(finish())
+      )
+    )
+  }
+
+  test("FINISH UNION DISTINCT FINISH") {
+    parsesTo[Statement](
       union(
         singleQuery(finish()),
         singleQuery(finish())
@@ -89,7 +127,7 @@ class UnionParserTest extends AstParsingTestBase {
   }
 
   test("FINISH UNION ALL FINISH") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
       union(
         singleQuery(finish()),
         singleQuery(finish())
@@ -99,7 +137,17 @@ class UnionParserTest extends AstParsingTestBase {
 
   // invalid Cypher accepted by parser
   test("FINISH UNION RETURN 2 AS a") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
+      union(
+        singleQuery(finish()),
+        singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+      )
+    )
+  }
+
+  // invalid Cypher accepted by parser
+  test("FINISH UNION DISTINCT RETURN 2 AS a") {
+    parsesTo[Statement](
       union(
         singleQuery(finish()),
         singleQuery(return_(aliasedReturnItem(literal(2), "a")))
@@ -109,7 +157,7 @@ class UnionParserTest extends AstParsingTestBase {
 
   // invalid Cypher accepted by parser
   test("FINISH UNION ALL RETURN 2 AS a") {
-    parsesTo[Statement](NotAnyAntlr)(
+    parsesTo[Statement](
       union(
         singleQuery(finish()),
         singleQuery(return_(aliasedReturnItem(literal(2), "a")))
@@ -117,11 +165,119 @@ class UnionParserTest extends AstParsingTestBase {
     )
   }
 
-  test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS a") {
-    failsParsing[Statement](NotAnyAntlr)
+  test("RETURN 1 AS a UNION UNION RETURN 2 AS a") {
+    failsParsing[Statement]
   }
 
-  test("RETURN 1 AS a UNION UNION RETURN 2 AS a") {
-    failsParsing[Statement](NotAnyAntlr)
+  test("RETURN 1 AS a UNION RETURN 2 AS a UNION RETURN 3 AS a") {
+    parsesTo[Statement](
+      union(
+        union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ),
+        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+      )
+    )
+  }
+
+  test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS a UNION RETURN 3 AS a") {
+    parsesTo[Statement](
+      union(
+        union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ),
+        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+      )
+    )
+  }
+
+  test("RETURN 1 AS a UNION RETURN 2 AS a UNION DISTINCT RETURN 3 AS a") {
+    parsesTo[Statement](
+      union(
+        union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ),
+        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+      )
+    )
+  }
+
+  test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS a UNION DISTINCT RETURN 3 AS a") {
+    parsesTo[Statement](
+      union(
+        union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ),
+        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+      )
+    )
+  }
+
+  test("RETURN 1 AS a UNION ALL RETURN 2 AS a UNION ALL RETURN 3 AS a") {
+    parsesTo[Statement](
+      union(
+        union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ).all,
+        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+      ).all
+    )
+  }
+
+  // invalid Cypher accepted by parser
+  test("RETURN 1 AS a UNION RETURN 2 AS a UNION ALL RETURN 3 AS a") {
+    parsesTo[Statement](
+      union(
+        union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ),
+        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+      ).all
+    )
+  }
+
+  // invalid Cypher accepted by parser
+  test("RETURN 1 AS a UNION DISTINCT RETURN 2 AS a UNION ALL RETURN 3 AS a") {
+    parsesTo[Statement](
+      union(
+        union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ),
+        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+      ).all
+    )
+  }
+
+  // invalid Cypher accepted by parser
+  test("RETURN 1 AS a UNION ALL RETURN 2 AS a UNION RETURN 3 AS a") {
+    parsesTo[Statement](
+      union(
+        union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ).all,
+        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+      )
+    )
+  }
+
+  // invalid Cypher accepted by parser
+  test("RETURN 1 AS a UNION ALL RETURN 2 AS a UNION DISTINCT RETURN 3 AS a") {
+    parsesTo[Statement](
+      union(
+        union(
+          singleQuery(return_(aliasedReturnItem(literal(1), "a"))),
+          singleQuery(return_(aliasedReturnItem(literal(2), "a")))
+        ).all,
+        singleQuery(return_(aliasedReturnItem(literal(3), "a")))
+      )
+    )
   }
 }

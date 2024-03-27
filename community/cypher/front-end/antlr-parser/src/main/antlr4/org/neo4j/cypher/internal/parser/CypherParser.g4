@@ -31,7 +31,7 @@ periodicCommitQueryHintFailure
    ;
 
 regularQuery
-   : singleQuery (UNION ALL? singleQuery)*
+   : singleQuery (UNION (ALL | DISTINCT)? singleQuery)*
    ;
 
 singleQuery

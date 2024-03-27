@@ -1680,7 +1680,7 @@ QUERY Union( QUERY lhs ) throws Exception :
     boolean all = false;
 }
 {
-    t=<UNION> ( <ALL> { all = true; } )? rhs=SingleQuery()
+    t=<UNION> ( <ALL> { all = true; } | <DISTINCT> )? rhs=SingleQuery()
     {
         return astFactory.newUnion( pos( t ), lhs, rhs, all );
     }

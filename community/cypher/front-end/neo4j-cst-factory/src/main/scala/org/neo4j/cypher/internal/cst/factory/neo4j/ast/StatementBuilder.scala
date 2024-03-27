@@ -134,9 +134,10 @@ trait StatementBuilder extends CypherParserListener {
             result = if (all) UnionAll(result, rhs)(p) else UnionDistinct(result, rhs)(p)
             all = false
           case node: TerminalNode => node.getSymbol.getType match {
-              case CypherParser.ALL   => all = true
-              case CypherParser.UNION => p = pos(node)
-              case _                  => throw new IllegalStateException(s"Unexpected token $node")
+              case CypherParser.ALL      => all = true
+              case CypherParser.DISTINCT => all = false
+              case CypherParser.UNION    => p = pos(node)
+              case _                     => throw new IllegalStateException(s"Unexpected token $node")
             }
           case _ => throw new IllegalStateException(s"Unexpected ctx $ctx")
         }

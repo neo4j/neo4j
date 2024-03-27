@@ -1551,90 +1551,118 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     }
   }
 
-  test("UNION with incomplete first part") {
-    val query = "MATCH (a) WITH a UNION MATCH (a) RETURN a"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "Query cannot conclude with WITH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
-          InputPosition(10, 1, 11)
-        ),
-        SemanticError(
-          "All sub queries in an UNION must have the same return column names",
-          InputPosition(17, 1, 18)
+  Seq("", " DISTINCT", " ALL").foreach { setQuantifier =>
+    test(s"UNION$setQuantifier with incomplete first part") {
+      val query = s"MATCH (a) WITH a UNION$setQuantifier MATCH (a) RETURN a"
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            "Query cannot conclude with WITH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
+            InputPosition(10, 1, 11)
+          ),
+          SemanticError(
+            "All sub queries in an UNION must have the same return column names",
+            InputPosition(17, 1, 18)
+          )
         )
       )
-    )
+    }
+
+    test(s"UNION$setQuantifier with incomplete second part") {
+      val query = s"MATCH (a) RETURN a UNION$setQuantifier MATCH (a) WITH a"
+      val extraLength = setQuantifier.length
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            "Query cannot conclude with WITH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
+            InputPosition(35 + extraLength, 1, 36 + extraLength)
+          ),
+          SemanticError(
+            "All sub queries in an UNION must have the same return column names",
+            InputPosition(19, 1, 20)
+          )
+        )
+      )
+    }
+
+    test(s"UNION$setQuantifier with missing return in first part") {
+      val query = s"CALL db.labels() YIELD label UNION$setQuantifier CALL db.labels() YIELD label RETURN label"
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            "All sub queries in an UNION must have the same return column names",
+            InputPosition(29, 1, 30)
+          )
+        )
+      )
+    }
+
+    test(s"UNION$setQuantifier with missing return in second part") {
+      val query = s"CALL db.labels() YIELD label RETURN label UNION$setQuantifier CALL db.labels() YIELD label"
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            "All sub queries in an UNION must have the same return column names",
+            InputPosition(42, 1, 43)
+          )
+        )
+      )
+    }
+
+    test(s"UNION$setQuantifier with finish in first part") {
+      val query = s"UNWIND [1,2] AS a FINISH UNION$setQuantifier UNWIND [2,3] AS a RETURN a"
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            "All sub queries in an UNION must have the same return column names",
+            InputPosition(25, 1, 26)
+          )
+        )
+      )
+    }
+
+    test(s"UNION$setQuantifier with finish in second part") {
+      val query = s"UNWIND [1,2] AS a RETURN a UNION$setQuantifier UNWIND [2,3] AS a FINISH"
+      expectErrorsFrom(
+        query,
+        Set(
+          SemanticError(
+            "All sub queries in an UNION must have the same return column names",
+            InputPosition(27, 1, 28)
+          )
+        )
+      )
+    }
   }
 
-  test("UNION with incomplete second part") {
-    val query = "MATCH (a) RETURN a UNION MATCH (a) WITH a"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "Query cannot conclude with WITH (must be a RETURN clause, a FINISH clause, an update clause, a unit subquery call, or a procedure call with no YIELD).",
-          InputPosition(35, 1, 36)
-        ),
-        SemanticError(
-          "All sub queries in an UNION must have the same return column names",
-          InputPosition(19, 1, 20)
-        )
-      )
-    )
-  }
-
-  test("UNION with missing return in first part") {
-    val query = "CALL db.labels() YIELD label UNION CALL db.labels() YIELD label RETURN label"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "All sub queries in an UNION must have the same return column names",
-          InputPosition(29, 1, 30)
-        )
-      )
-    )
-  }
-
-  test("UNION with missing return in second part") {
-    val query = "CALL db.labels() YIELD label RETURN label UNION CALL db.labels() YIELD label"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "All sub queries in an UNION must have the same return column names",
-          InputPosition(42, 1, 43)
-        )
-      )
-    )
-  }
-
-  test("UNION with finish in first part") {
-    val query = "UNWIND [1,2] AS a FINISH UNION UNWIND [2,3] AS a RETURN a"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "All sub queries in an UNION must have the same return column names",
-          InputPosition(25, 1, 26)
-        )
-      )
-    )
-  }
-
-  test("UNION with finish in second part") {
-    val query = "UNWIND [1,2] AS a RETURN a UNION UNWIND [2,3] AS a FINISH"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "All sub queries in an UNION must have the same return column names",
-          InputPosition(27, 1, 28)
-        )
-      )
-    )
+  Seq("", " DISTINCT", " ALL").foreach { setQuantifier1 =>
+    Seq("", " DISTINCT", " ALL").foreach { setQuantifier2 =>
+      if (setQuantifier1 != setQuantifier2 && setQuantifier1 + setQuantifier2 != " DISTINCT") {
+        test(s"Invalid combination of UNION$setQuantifier1 and UNION$setQuantifier2") {
+          val query =
+            s"""RETURN 1 AS a
+               |UNION$setQuantifier1
+               |RETURN 2 AS a
+               |UNION$setQuantifier2
+               |RETURN 3 AS a""".stripMargin
+          val extraLength = setQuantifier1.length
+          expectErrorsFrom(
+            query,
+            Set(
+              SemanticError(
+                "Invalid combination of UNION and UNION ALL",
+                InputPosition(34 + extraLength, 4, 1)
+              )
+            )
+          )
+        }
+      }
+    }
   }
 
   test("Query ending in CALL ... YIELD ...") {
