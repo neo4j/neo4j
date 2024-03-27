@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -42,7 +43,7 @@ abstract class SimulatedPlansTestBase[CONTEXT <: RuntimeContext](
       .simulatedNodeScan("x", n)
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime)
+    val runtimeResult = executeWithoutValuePopulation(logicalQuery, runtime, NoInput, Map.empty)
 
     // then
     val expected = (0 until n).map {
@@ -64,7 +65,7 @@ abstract class SimulatedPlansTestBase[CONTEXT <: RuntimeContext](
       .simulatedNodeScan("x", n)
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime)
+    val runtimeResult = executeWithoutValuePopulation(logicalQuery, runtime, NoInput, Map.empty)
 
     // then
     val expected = (0 until n).map {
@@ -86,7 +87,7 @@ abstract class SimulatedPlansTestBase[CONTEXT <: RuntimeContext](
       .simulatedNodeScan("x", n)
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime)
+    val runtimeResult = executeWithoutValuePopulation(logicalQuery, runtime, NoInput, Map.empty)
 
     // then
     val expected = for {

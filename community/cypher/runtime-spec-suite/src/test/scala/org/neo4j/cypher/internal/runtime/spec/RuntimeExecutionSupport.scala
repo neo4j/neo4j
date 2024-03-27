@@ -132,6 +132,13 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     parameters: Map[String, Any]
   ): RecordingRuntimeResult
 
+  def executeWithoutValuePopulation(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputStream: InputDataStream,
+    parameters: Map[String, Any]
+  ): RecordingRuntimeResult
+
   /**
    * Execute a Logical query with a custom subscriber.
    */
@@ -168,7 +175,8 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     parameters: Map[String, Any] = Map.empty,
-    profileAssertion: Option[QueryProfile => Unit] = None
+    profileAssertion: Option[QueryProfile => Unit] = None,
+    prePopulateResults: Boolean = true
   ): IndexedSeq[Array[AnyValue]]
 
   /**
@@ -178,7 +186,8 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     parameters: Map[String, Any] = Map.empty,
-    profileAssertion: Option[QueryProfile => Unit] = None
+    profileAssertion: Option[QueryProfile => Unit] = None,
+    prePopulateResults: Boolean = true
   ): Long
 
   /**

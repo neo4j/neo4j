@@ -56,7 +56,6 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
-import org.neo4j.kernel.api.AssertOpen
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.query.CompilerInfo
@@ -366,7 +365,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       (_, result) => result,
       subscriber,
       profile = false,
-      readOnly,
+      prePopulateResults = true,
       implicitTx = implicitTx
     )
     newRecordingRuntimeResult(result, subscriber)
@@ -380,7 +379,37 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   ): RecordingRuntimeResult = {
     val subscriber = newRecordingQuerySubscriber
     val result =
-      runLogical(logicalQuery, runtime, inputStream, (_, result) => result, subscriber, profile = false, parameters)
+      runLogical(
+        logicalQuery,
+        runtime,
+        inputStream,
+        (_, result) => result,
+        subscriber,
+        profile = false,
+        prePopulateResults = true,
+        parameters
+      )
+    newRecordingRuntimeResult(result, subscriber)
+  }
+
+  override def executeWithoutValuePopulation(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputStream: InputDataStream,
+    parameters: Map[String, Any]
+  ): RecordingRuntimeResult = {
+    val subscriber = newRecordingQuerySubscriber
+    val result =
+      runLogical(
+        logicalQuery,
+        runtime,
+        inputStream,
+        (_, result) => result,
+        subscriber,
+        profile = false,
+        prePopulateResults = false,
+        parameters
+      )
     newRecordingRuntimeResult(result, subscriber)
   }
 
@@ -397,6 +426,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     (_, result) => result,
     subscriber,
     profile = false,
+    prePopulateResults = true,
     testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
   )
 
@@ -470,10 +500,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         },
         subscriber,
         profile = false,
-        logicalQuery.readOnly,
         Map.empty,
         tx,
-        txContext
+        txContext,
+        prePopulateResults = true
       )
     } finally {
       queryContext.resources.close()
@@ -486,7 +516,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     parameters: Map[String, Any] = Map.empty,
-    profileAssertion: Option[QueryProfile => Unit] = None
+    profileAssertion: Option[QueryProfile => Unit] = None,
+    prePopulateResults: Boolean = true
   ): IndexedSeq[Array[AnyValue]] = {
     val subscriber = newRecordingQuerySubscriber
     runTransactionally(
@@ -502,7 +533,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       },
       subscriber,
       parameters,
-      profile = profileAssertion.isDefined
+      profile = profileAssertion.isDefined,
+      prePopulateResults
     )
   }
 
@@ -510,7 +542,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     parameters: Map[String, Any] = Map.empty,
-    profileAssertion: Option[QueryProfile => Unit] = None
+    profileAssertion: Option[QueryProfile => Unit] = None,
+    prePopulateResults: Boolean = true
   ): Long = {
     val subscriber = newNonRecordingQuerySubscriber
     runTransactionallyAndRollback[Long](
@@ -526,7 +559,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       },
       subscriber,
       parameters,
-      profile = profileAssertion.isDefined
+      profile = profileAssertion.isDefined,
+      prePopulateResults
     )
   }
 
@@ -544,6 +578,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       (_, result) => result,
       subscriber,
       profile = true,
+      prePopulateResults = true,
       testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
     )
     newRecordingRuntimeResult(result, subscriber)
@@ -555,7 +590,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     readOnly: Boolean
   ): RecordingRuntimeResult = {
     val subscriber = newRecordingQuerySubscriber
-    val result = run(executionPlan, inputDataStream, (_, result) => result, subscriber, profile = true, readOnly)
+    val result =
+      run(executionPlan, inputDataStream, (_, result) => result, subscriber, profile = true, prePopulateResults = true)
     newRecordingRuntimeResult(result, subscriber)
   }
 
@@ -565,7 +601,15 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     inputDataStream: InputDataStream = NoInput
   ): NonRecordingRuntimeResult = {
     val subscriber = newNonRecordingQuerySubscriber
-    val result = runLogical(logicalQuery, runtime, inputDataStream, (_, result) => result, subscriber, profile = true)
+    val result = runLogical(
+      logicalQuery,
+      runtime,
+      inputDataStream,
+      (_, result) => result,
+      subscriber,
+      profile = true,
+      prePopulateResults = true
+    )
     newNonRecordingRuntimeResult(result, subscriber)
   }
 
@@ -575,7 +619,15 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     subscriber: QuerySubscriber,
     inputDataStream: InputDataStream = NoInput
   ): RuntimeResult = {
-    runLogical(logicalQuery, runtime, inputDataStream, (_, result) => result, subscriber, profile = true)
+    runLogical(
+      logicalQuery,
+      runtime,
+      inputDataStream,
+      (_, result) => result,
+      subscriber,
+      profile = true,
+      prePopulateResults = true
+    )
   }
 
   override def executeAndContext(
@@ -590,7 +642,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       input.stream(),
       (context, result) => (result, context),
       subscriber,
-      profile = false
+      profile = false,
+      prePopulateResults = true
     )
     (newRecordingRuntimeResult(result, subscriber), context)
   }
@@ -607,7 +660,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       input.stream(),
       (context, result) => (result, context),
       subscriber,
-      profile = false
+      profile = false,
+      prePopulateResults = true
     )
     (newNonRecordingRuntimeResult(result, subscriber), context)
   }
@@ -625,7 +679,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       (_, result) => result,
       subscriber,
       profile = false,
-      logicalQuery.readOnly,
+      prePopulateResults = true,
       parameters = Map.empty
     )
     val executionPlanDescription = {
@@ -655,6 +709,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     resultMapper: (CONTEXT, RuntimeResult) => RESULT,
     subscriber: QuerySubscriber,
     profile: Boolean,
+    prePopulateResults: Boolean,
     parameters: Map[String, Any] = Map.empty,
     testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
   ): RESULT = {
@@ -664,7 +719,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       resultMapper,
       subscriber,
       profile,
-      logicalQuery.readOnly,
+      prePopulateResults,
       parameters
     )
   }
@@ -676,7 +731,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     resultMapper: (CONTEXT, RuntimeResult) => RESULT,
     subscriber: QuerySubscriber,
     parameters: Map[String, Any],
-    profile: Boolean
+    profile: Boolean,
+    prePopulateResults: Boolean
   ): RESULT = {
     val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
     val txContext = contextFactory.newContext(
@@ -694,10 +750,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         resultMapper,
         subscriber,
         profile = profile,
-        logicalQuery.readOnly,
         parameters,
         tx,
-        txContext
+        txContext,
+        prePopulateResults
       )
     } finally {
       queryContext.resources.close()
@@ -713,7 +769,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     resultMapper: (CONTEXT, RuntimeResult) => RESULT,
     subscriber: QuerySubscriber,
     parameters: Map[String, Any],
-    profile: Boolean
+    profile: Boolean,
+    prePopulateResults: Boolean
   ): RESULT = {
     val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
     val txContext = contextFactory.newContext(
@@ -731,10 +788,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         resultMapper,
         subscriber,
         profile = profile,
-        logicalQuery.readOnly,
         parameters,
         tx,
-        txContext
+        txContext,
+        prePopulateResults
       )
     } finally {
       queryContext.resources.close()
@@ -750,14 +807,24 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     resultMapper: (CONTEXT, RuntimeResult) => RESULT,
     subscriber: QuerySubscriber,
     profile: Boolean,
-    readOnly: Boolean,
+    prePopulateResults: Boolean,
     parameters: Map[String, Any] = Map.empty,
     implicitTx: Boolean = false
   ): RESULT = {
     if (implicitTx) {
       restartImplicitTx()
     }
-    runWithTx(executableQuery, input, resultMapper, subscriber, profile, readOnly, parameters, _tx, _txContext)
+    runWithTx(
+      executableQuery,
+      input,
+      resultMapper,
+      subscriber,
+      profile,
+      parameters,
+      _tx,
+      _txContext,
+      prePopulateResults
+    )
   }
 
   private def runWithTx[RESULT](
@@ -766,10 +833,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     resultMapper: (CONTEXT, RuntimeResult) => RESULT,
     subscriber: QuerySubscriber,
     profile: Boolean,
-    readOnly: Boolean,
     parameters: Map[String, Any],
     tx: InternalTransaction,
-    txContext: TransactionalContext
+    txContext: TransactionalContext,
+    prePopulateResults: Boolean
   ): RESULT = {
     txContext.executingQuery().setCompilerInfoForTesting(new CompilerInfo(
       "NO PLANNER",
@@ -784,7 +851,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       parameters.mapValues(Values.of).unzip match { case (a, b) => (a.toArray, b.toArray[AnyValue]) }
     val paramsMap = VirtualValues.map(keys, values)
     val result =
-      executableQuery.run(queryContext, executionMode, paramsMap, prePopulateResults = true, input, subscriber)
+      executableQuery.run(queryContext, executionMode, paramsMap, prePopulateResults, input, subscriber)
     val assertAllReleased =
       if (!workloadMode) {
         () =>

@@ -70,21 +70,43 @@ trait RuntimeTestSupportExecution[CONTEXT <: RuntimeContext] extends RuntimeExec
     parameters: Map[String, Any]
   ): RecordingRuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, inputStream, parameters)
 
+  override def executeWithoutValuePopulation(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    inputStream: InputDataStream,
+    parameters: Map[String, Any]
+  ): RecordingRuntimeResult =
+    runtimeTestSupport.executeWithoutValuePopulation(logicalQuery, runtime, inputStream, parameters)
+
   override def executeAndConsumeTransactionally(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     parameters: Map[String, Any] = Map.empty,
-    profileAssertion: Option[QueryProfile => Unit] = None
+    profileAssertion: Option[QueryProfile => Unit] = None,
+    prePopulateResults: Boolean = true
   ): IndexedSeq[Array[AnyValue]] =
-    runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime, parameters, profileAssertion)
+    runtimeTestSupport.executeAndConsumeTransactionally(
+      logicalQuery,
+      runtime,
+      parameters,
+      profileAssertion,
+      prePopulateResults
+    )
 
   override def executeAndConsumeTransactionallyNonRecording(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     parameters: Map[String, Any] = Map.empty,
-    profileAssertion: Option[QueryProfile => Unit] = None
+    profileAssertion: Option[QueryProfile => Unit] = None,
+    prePopulateResults: Boolean = true
   ): Long =
-    runtimeTestSupport.executeAndConsumeTransactionallyNonRecording(logicalQuery, runtime, parameters, profileAssertion)
+    runtimeTestSupport.executeAndConsumeTransactionallyNonRecording(
+      logicalQuery,
+      runtime,
+      parameters,
+      profileAssertion,
+      prePopulateResults
+    )
 
   override def execute(executablePlan: ExecutionPlan, readOnly: Boolean, implicitTx: Boolean): RecordingRuntimeResult =
     runtimeTestSupport.execute(executablePlan, readOnly, implicitTx)
