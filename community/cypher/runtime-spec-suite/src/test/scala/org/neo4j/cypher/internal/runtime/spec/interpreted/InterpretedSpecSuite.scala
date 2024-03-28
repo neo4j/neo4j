@@ -161,6 +161,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.StatefulShortestPathPropagat
 import org.neo4j.cypher.internal.runtime.spec.tests.StatefulShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubqueryForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SubtractionLabelScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.Top1WithTiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TopTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailProfileRowsTestBase
@@ -257,6 +258,9 @@ class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITI
 
 class InterpretedIntersectionLabelScanTest
     extends IntersectionLabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedSubtractionLabelScanTest
+    extends SubtractionLabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedNodeIndexContainsScanTest
     extends NodeIndexContainsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

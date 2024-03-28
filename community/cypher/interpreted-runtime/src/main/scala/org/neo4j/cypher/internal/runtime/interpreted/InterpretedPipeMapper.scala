@@ -171,6 +171,7 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
+import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
@@ -321,6 +322,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.StatefulShortestPathPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SubqueryForeachPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SubtractionNodeByLabelsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
@@ -425,6 +427,12 @@ case class InterpretedPipeMapper(
       case PartitionedIntersectionNodeByLabelsScan(ident, labels, _) =>
         indexRegistrator.registerLabelScan()
         IntersectionNodeByLabelsScanPipe(ident.name, labels.map(l => LazyLabel(l)), IndexOrderNone)(id = id)
+
+      case SubtractionNodeByLabelsScan(ident, positiveLabel, negativeLabel, _, indexOrder) =>
+        indexRegistrator.registerLabelScan()
+        SubtractionNodeByLabelsScanPipe(ident.name, LazyLabel(positiveLabel), LazyLabel(negativeLabel), indexOrder)(id =
+          id
+        )
 
       case NodeByIdSeek(ident, nodeIdExpr, _) =>
         NodeByIdSeekPipe(ident.name, expressionConverters.toCommandSeekArgs(id, nodeIdExpr))(id = id)

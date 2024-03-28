@@ -20,28 +20,20 @@
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.PrimitiveCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.slotted.pipes.SubtractionNodesByLabelsScanSlottedPipe.subtractionIterator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SubtractionNodeByLabelsScanPipe.subtractionIterator
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.internal.kernel.api.TokenReadSession
-import org.neo4j.internal.kernel.api.helpers.SubtractionNodeLabelIndexCursor.ascendingSubtractionNodeLabelIndexCursor
-import org.neo4j.internal.kernel.api.helpers.SubtractionNodeLabelIndexCursor.descendingSubtractionNodeLabelIndexCursor
-import org.neo4j.io.IOUtils
 
 case class SubtractionNodesByLabelsScanSlottedPipe(
-                                                    nodeOffset: Int,
-                                                    positiveLabel: LazyLabel,
-                                                    negativeLabel: LazyLabel,
-                                                    indexOrder: IndexOrder
+  nodeOffset: Int,
+  positiveLabel: LazyLabel,
+  negativeLabel: LazyLabel,
+  indexOrder: IndexOrder
 )(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
@@ -53,47 +45,5 @@ case class SubtractionNodesByLabelsScanSlottedPipe(
         context
       }
     )
-  }
-}
-
-object SubtractionNodesByLabelsScanSlottedPipe {
-  def subtractionIterator(query: QueryContext, positiveLabel: LazyLabel,
-                          negativeLabel: LazyLabel,
-                          indexOrder: IndexOrder,
-                          tokenReadSession: TokenReadSession
-                       ): ClosingLongIterator = {
-    val posToken = positiveLabel.getId(query)
-    val negToken = negativeLabel.getId(query)
-    val posCursor = query.nodeLabelIndexCursor()
-    query.resources.trace(posCursor)
-    val negCursor = query.nodeLabelIndexCursor()
-    query.resources.trace(negCursor)
-    val cursor = indexOrder match {
-      case IndexOrderDescending =>
-        descendingSubtractionNodeLabelIndexCursor(query.dataRead,
-          tokenReadSession,
-          query.transactionalContext.cursorContext,
-          Array(posToken),
-          Array(negToken),
-          Array(posCursor),
-          Array(negCursor)
-        )
-      case _ =>
-        ascendingSubtractionNodeLabelIndexCursor(query.dataRead,
-          tokenReadSession,
-          query.transactionalContext.cursorContext,
-          Array(posToken),
-          Array(negToken),
-          Array(posCursor),
-          Array(negCursor)
-        )
-    }
-
-    new PrimitiveCursorIterator {
-      override protected def fetchNext(): Long = if (cursor.next()) cursor.reference() else -1L
-
-      override def close(): Unit = IOUtils.closeAll(posCursor, negCursor)
-    }
-
   }
 }
