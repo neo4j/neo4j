@@ -238,6 +238,27 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     )) // union label scan
   }
 
+  test("should profile dbHits of subtraction label scan") {
+    givenGraph {
+      nodeGraph(3, "A")
+      nodeGraph(sizeHint, "B")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filter("true") // here to make sure we fuse
+      .subtractionNodeByLabelsScan("x", "A", "B", IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(2).dbHits() should equal(6L +- 4L)
+  }
+
   test("should profile dbHits of node index seek with range predicate") {
     givenGraph {
       nodeIndex("Language", "difficulty")

@@ -2071,6 +2071,32 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
     queryProfile.operatorProfile(1).rows() shouldBe sizeHint // unionLabelScan
   }
+
+  test("should profile rows with subtraction label scan") {
+    // given
+    givenGraph {
+      nodeGraph(sizeHint, "A")
+      nodeGraph(sizeHint, "B")
+      nodeGraph(sizeHint, "A", "B")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filter("true")
+      .subtractionNodeByLabelsScan("x", "A", "B", IndexOrderNone)
+      .build()
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // filter
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // unionLabelScan
+  }
 }
 
 trait EagerLimitProfileRowsTestBase[CONTEXT <: RuntimeContext] {
