@@ -80,6 +80,11 @@ final class SyntaxChecker extends ParseTreeListener {
     }
   }
 
+  def check(ctx: ParserRuleContext): Boolean = {
+    exitEveryRule(ctx)
+    errors.isEmpty
+  }
+
   def getErrors: Seq[Exception] = errors
 
   def hasErrors: Boolean = errors.nonEmpty

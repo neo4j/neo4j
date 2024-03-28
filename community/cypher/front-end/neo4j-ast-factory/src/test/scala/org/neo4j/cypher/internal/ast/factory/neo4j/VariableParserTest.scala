@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions
@@ -23,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
+import org.neo4j.exceptions.SyntaxException
 
 class VariableParserTest extends AstParsingTestBase
     with CypherScalaCheckDrivenPropertyChecks {
@@ -67,22 +69,35 @@ class VariableParserTest extends AstParsingTestBase
     "`````abc```" should parseTo[Variable](varFor("``abc`"))
   }
 
-  // TODO Fix antlr error messages later
-
   test("variables are not allowed uneven number of backticks") {
     "`a`b`" should notParse[Variable]
       .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"b\"\""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Failed to parse query, extraneous input (line 1, column 4 (offset: 3))
+          |"`a`b`"
+          |    ^""".stripMargin
+      ))
   }
 
   test("variables are now allowed start with number") {
     "1bcd" should notParse[Variable]
       .parseIn(JavaCc)(_.withMessageContaining("Was expecting one of:"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '1bcd': expected a variable name (line 1, column 1 (offset: 0))
+          |"1bcd"
+          | ^""".stripMargin
+      ))
   }
 
   test("variables are not allowed to start with currency symbols") {
     Seq("$", "¢", "£", "₲", "₶", "\u20BD", "＄", "﹩").foreach { curr =>
       s"${curr}var" should notParse[Variable]
         .parseIn(JavaCc)(_.withMessageContaining("Was expecting one of:"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+          s"""Extraneous input '$curr': expected a variable name (line 1, column 1 (offset: 0))
+             |"${curr}var"
+             | ^""".stripMargin
+        ))
     }
   }
 

@@ -20,12 +20,8 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 
 class LoadCsvParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
-
-  private val fileExpressionFailed =
-    "Failed to parse the file expression. Please remember to use quotes for string literals."
 
   test("LOAD CSV WITH HEADERS FROM 'file:///ALL_PLANT_RMs_2.csv' AS l") {
     parsesTo[Clause](LoadCSV(withHeaders = true, literalString("file:///ALL_PLANT_RMs_2.csv"), varFor("l"), None)(pos))
@@ -47,20 +43,27 @@ class LoadCsvParserTest extends AstParsingTestBase with LegacyAstParsingTestSupp
     parsesTo[Clause](LoadCSV(withHeaders = true, add(literalInt(1), literalInt(2)), varFor("l"), None)(pos))
   }
 
-  // TODO ANTLR ERRORS
   test("LOAD CSV WITH HEADERS FROM file:///ALL_PLANT_RMs_2.csv AS l") {
-    failsParsing[Clause](NotAnyAntlr).withMessageStart(fileExpressionFailed)
+    // Message is asserted in org.neo4j.internal.cypher.acceptance.ParsingErrorsAcceptanceTest
+    // The exception caught in this unit test do not reflect what the user gets
+    failsParsing[Clause]
   }
 
   test("LOAD CSV WITH HEADERS FROM 'file:///ALL_PLANT_RMs_2.csv AS l") {
-    failsParsing[Clause](NotAnyAntlr).withMessageStart(fileExpressionFailed)
+    // Message is asserted in org.neo4j.internal.cypher.acceptance.ParsingErrorsAcceptanceTest
+    // The exception caught in this unit test do not reflect what the user gets
+    failsParsing[Clause]
   }
 
   test("""LOAD CSV WITH HEADERS FROM "file:///ALL_PLANT_RMs_2.csv AS l""") {
-    failsParsing[Clause](NotAnyAntlr).withMessageStart(fileExpressionFailed)
+    // Message is asserted in org.neo4j.internal.cypher.acceptance.ParsingErrorsAcceptanceTest
+    // The exception caught in this unit test do not reflect what the user gets
+    failsParsing[Clause]
   }
 
   test("LOAD CSV WITH HEADERS FROM `var AS l") {
-    failsParsing[Clause](NotAnyAntlr).withMessageStart(fileExpressionFailed)
+    // Message is asserted in org.neo4j.internal.cypher.acceptance.ParsingErrorsAcceptanceTest
+    // The exception caught in this unit test do not reflect what the user gets
+    failsParsing[Clause]
   }
 }

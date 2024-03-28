@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.PathPatternPart
@@ -340,14 +339,14 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
     Seq("+", "").foreach { quantifier =>
       test(s"MATCH ($selector (a)-[r]->(b))$quantifier") {
         val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
-        failsParsing[Clause](NotAnyAntlr).withMessageStart(
+        failsParsing[Clause].withMessageStart(
           s"Path selectors such as `${astSelector.prettified}` are not supported within $pathPatternKind path patterns."
         )
       }
 
       if (quantifier == "+") {
         test(s"MATCH (() ($selector (a)-[r]->(b))$quantifier ()--())") {
-          failsParsing[Clause](NotAnyAntlr).withMessageStart(
+          failsParsing[Clause].withMessageStart(
             s"Path selectors such as `${astSelector.prettified}` are not supported within quantified path patterns."
           )
         }
