@@ -50,4 +50,12 @@ class FunctionInvocationParserTest extends AstParsingTestBase with LegacyAstPars
   test("sum(ALL foo)") {
     parsesTo[FunctionInvocation](function("sum", varFor("foo")))
   }
+
+  test("function parameters without comma separation should not parse") {
+    "foo('test' 42)" should notParse[FunctionInvocation]
+  }
+
+  test("function parameters with invalid start comma should not parse") {
+    "foo(, 'test', 42)" should notParse[FunctionInvocation]
+  }
 }

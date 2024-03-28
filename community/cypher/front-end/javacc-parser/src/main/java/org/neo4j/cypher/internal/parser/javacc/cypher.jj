@@ -4188,7 +4188,7 @@ FUNCTION_INVOCATION FunctionInvocation(boolean calledFromUseClause)  throws Exce
     namespace=Namespace() nameToken=SymbolicNameString()
     <LPAREN>
         ( LOOKAHEAD( 2 ) <DISTINCT> { distinct = true; } | <ALL> )?
-        ( e=Expression() { arguments.add( e ); } )? ( <COMMA> e=Expression() { arguments.add( e ); } )*
+        ( e=Expression() { arguments.add( e ); } ( <COMMA> e=Expression() { arguments.add( e ); } )* )?
     <RPAREN>
     {
         return astFactory.functionInvocation( pos( before.next ), pos( nameToken ), namespace, nameToken.image, distinct, arguments, calledFromUseClause );

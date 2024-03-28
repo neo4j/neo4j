@@ -628,7 +628,7 @@ parameter[String paramType]
    ;
 
 functionInvocation
-   : namespace symbolicNameString LPAREN (DISTINCT | ALL)? expression? (COMMA expression)* RPAREN
+   : namespace symbolicNameString LPAREN (DISTINCT | ALL)? (expression (COMMA expression)* )? RPAREN
    ;
 
 namespace
