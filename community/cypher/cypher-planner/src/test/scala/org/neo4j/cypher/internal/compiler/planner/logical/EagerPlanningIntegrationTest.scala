@@ -64,6 +64,16 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       // This makes it deterministic which plans ends up on what side of a CartesianProduct.
       .setExecutionModel(Volcano)
 
+  /**
+   * LP Eagerness analysis provides reasons in a lot of cases where IR Eagerness analysis simply returns `Unknown`.
+   *
+   * This method is to cater for these cases, only returning the provided reasons for impl == LP.
+   */
+  def lpReasons(reasons: EagernessReason*): ListSet[EagernessReason] = impl match {
+    case GraphDatabaseInternalSettings.EagerAnalysisImplementation.IR => ListSet(Unknown)
+    case GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP => ListSet.from(reasons)
+  }
+
   implicit class OptionallyEagerPlannerBuilder(b: LogicalPlanBuilder) {
 
     def irEager(reasons: ListSet[EagernessReason] = ListSet(Unknown)): LogicalPlanBuilder = impl match {
@@ -620,13 +630,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     val plan = planner.plan(query)
 
-    val reason: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(TypeReadSetConflict(relTypeName("BAR")).withConflict(Conflict(Id(5), Id(2))))
-    }
-
     plan should equal(
       planner.planBuilder()
         .produceResults("`count(*)`")
@@ -635,7 +638,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           HasDegreeGreaterThan(v"c", Some(relTypeName("BAR")), OUTGOING, literalInt(0))(InputPosition.NONE),
           assertIsNode("c")
         )
-        .eager(reason)
+        .eager(lpReasons(TypeReadSetConflict(relTypeName("BAR")).withConflict(Conflict(Id(5), Id(2)))))
         .apply()
         .|.merge(
           Seq(createNode("b", "B")),
@@ -670,13 +673,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     val plan = planner.plan(query)
 
-    val reason: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(TypeReadSetConflict(relTypeName("BAR")).withConflict(Conflict(Id(5), Id(2))))
-    }
-
     plan should equal(
       planner.planBuilder()
         .produceResults("`count(*)`")
@@ -685,7 +681,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           HasDegreeGreaterThan(v"c", None, OUTGOING, literalInt(0))(InputPosition.NONE),
           assertIsNode("c")
         )
-        .eager(reason)
+        .eager(lpReasons(TypeReadSetConflict(relTypeName("BAR")).withConflict(Conflict(Id(5), Id(2)))))
         .apply()
         .|.merge(
           Seq(createNode("b", "B")),
@@ -802,23 +798,16 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
-    val reason: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(
-          ReadCreateConflict.withConflict(Conflict(Id(1), Id(3))),
-          TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(1), Id(3)))
-        )
-    }
-
     val query = "MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) CREATE (end)-[s:S]->() RETURN end"
     val plan = planner.plan(query)
 
     val expectedPlan = planner.planBuilder()
       .produceResults("end")
       .create(createNode("anon_0"), createRelationship("s", "end", "S", "anon_0", OUTGOING))
-      .eager(reason)
+      .eager(lpReasons(
+        ReadCreateConflict.withConflict(Conflict(Id(1), Id(3))),
+        TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(1), Id(3)))
+      ))
       .statefulShortestPath(`(start)-[r]->(end)`)
       .filter("start.prop = 5")
       .allNodeScan("start")
@@ -838,21 +827,14 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val query = "MATCH ANY SHORTEST (start {prop: 5})-[r:R]->(end) CREATE (end)-[s:S]->() RETURN end"
     val plan = planner.plan(query)
 
-    val reason: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(
-          ReadCreateConflict.withConflict(Conflict(Id(1), Id(3))),
-          TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(1), Id(3)))
-        )
-    }
-
     val expectedPlan = planner.planBuilder()
       .produceResults("end")
       .create(createNode("anon_0"), createRelationship("s", "end", "S", "anon_0", OUTGOING))
       // Unnecessary Eager
-      .lpEager(reason)
+      .lpEager(ListSet(
+        ReadCreateConflict.withConflict(Conflict(Id(1), Id(3))),
+        TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(1), Id(3)))
+      ))
       .statefulShortestPath(`(start)-[r:R]->(end)`)
       .filter("start.prop = 5")
       .allNodeScan("start")
@@ -870,13 +852,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     val query =
       "MATCH (a) SET a.prop = 1 WITH a MATCH ANY SHORTEST (start)-[r]->(end) WHERE start.prop = 1 RETURN end.prop2"
-
-    val reason: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(7), Id(3))))
-    }
 
     val plan = planner.plan(query)
     plan should equal(
@@ -902,7 +877,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .filter("start.prop = 1")
         .apply()
         .|.allNodeScan("start", "a")
-        .eager(reason)
+        .eager(lpReasons(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(7), Id(3)))))
         .setNodeProperty("a", "prop", "1")
         .allNodeScan("a")
         .build()
@@ -918,24 +893,17 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     val query = "CREATE (a)-[s:S]->(b) WITH b MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) RETURN end"
 
-    val reason: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(
-          ReadCreateConflict.withConflict(Conflict(Id(6), Id(1))),
-          TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(6), Id(1)))
-        )
-    }
-
     val expected = planner.planBuilder()
       .produceResults("end")
       .statefulShortestPath(`(start)-[r]->(end)`)
-      .lpEager(reason)
+      .lpEager(ListSet(
+        ReadCreateConflict.withConflict(Conflict(Id(6), Id(1))),
+        TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(6), Id(1)))
+      ))
       .filter("start.prop = 5")
       .apply()
       .|.allNodeScan("start", "b")
-      .irEager(reason)
+      .irEager()
       .create(createNode("a"), createNode("b"), createRelationship("s", "a", "S", "b", OUTGOING))
       .argument()
       .build()
@@ -1048,26 +1016,13 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     val query = "MATCH ANY SHORTEST (start{prop:1})-[r:R]->(end) SET end.prop = 1 RETURN end"
 
-    val reason1: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(0))))
-    }
-    val reason2: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(5))))
-    }
-
     val plan = planner.plan(query)
     plan should equal(
       planner.planBuilder()
         .produceResults("end")
-        .eager(reason1)
+        .eager(lpReasons(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(0)))))
         .setNodeProperty("end", "prop", "1")
-        .eager(reason2)
+        .eager(lpReasons(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(5)))))
         .statefulShortestPath(
           "start",
           "end",
@@ -1099,23 +1054,17 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
     val query = "MATCH ANY SHORTEST (start {prop: 5})-[r:R]->(end) DETACH DELETE end RETURN 1"
 
-    val reason: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(
-          ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(4))),
-          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(4))),
-          ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(4))),
-          ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(5)))
-        )
-    }
-
     val expected = planner.planBuilder()
       .produceResults("1")
       .projection("1 AS 1")
       .detachDeleteNode("end")
-      .eager(reason) // This eager is unnecessary since we are limited to one shortest
+      // This eager is unnecessary since we are limited to one shortest
+      .eager(lpReasons(
+        ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(4))),
+        ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(4))),
+        ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(4))),
+        ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(5)))
+      ))
       .statefulShortestPath(`(start)-[r:R]->(end)`)
       .filter("start.prop = 5")
       .allNodeScan("start")
@@ -1166,22 +1115,13 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val query =
       "MATCH ANY SHORTEST ((start {prop: 5})((a{prop: 5})-[r:R]->(b))+(end)) MERGE (start)-[t:R]-(end) RETURN end"
 
-    val reason: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(
-          TypeReadSetConflict(relTypeName("R")).withConflict(Conflict(Id(2), Id(6)))
-        )
-    }
-
     val expected = planner.planBuilder()
       .produceResults("end")
       .apply()
       .|.merge(Seq(), Seq(createRelationship("t", "start", "R", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
       .|.expandInto("(start)-[t:R]-(end)")
       .|.argument("start", "end")
-      .eager(reason)
+      .eager(lpReasons(TypeReadSetConflict(relTypeName("R")).withConflict(Conflict(Id(2), Id(6)))))
       .statefulShortestPath(`((start)((a{prop: 5})-[r:R]->(b))+(end))`)
       .filter("start.prop = 5")
       .allNodeScan("start")
@@ -1395,77 +1335,55 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         |RETURN var1""".stripMargin
 
     val plan = planner.plan(query)
-    val expectedPlan = impl match {
-      case GraphDatabaseInternalSettings.EagerAnalysisImplementation.IR => planner.planBuilder()
-          .produceResults("var1")
-          .distinct("var1 AS var1")
-          .union()
-          .|.projection("var1 AS var1")
-          // IR eagerness interprets the conflict to be with the last projection
-          .|.eager(ListSet(EagernessReason.Unknown))
-          .|.setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
-          .|.eager(ListSet(EagernessReason.Unknown))
-          .|.filter("cacheN[var1.P0] = coalesce($param2, 0) + 1")
-          .|.eager(ListSet(EagernessReason.Unknown))
-          .|.setNodeProperty("var1", "P0", "var1.P0 + 1")
-          .|.eager(ListSet(EagernessReason.Unknown))
-          .|.filter("var1:L0", "cacheNFromStore[var1.P0] = $param2")
-          .|.nodeByIdSeek("var1", Set(), "$param0")
-          .projection("var1 AS var1")
-          // IR eagerness interprets the conflict to be with the last projection
-          .eager(ListSet(EagernessReason.Unknown))
-          .setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
-          .create(createNodeWithProperties("var1", Seq("L0"), "{P0: 0}"))
-          .filter("var0 IS NULL")
-          .eager(ListSet(EagernessReason.Unknown))
-          .optional()
-          .filter("var0:L0")
-          .nodeByIdSeek("var0", Set(), "$param0")
-          .build()
-      case GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP => planner.planBuilder()
-          .produceResults("var1")
-          // LP eagerness recognizes that the conflict is with produceResult
-          .eager(ListSet(
-            EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(5), Id(0))),
-            EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(14), Id(0)))
-          ))
-          .distinct("var1 AS var1")
-          .union()
-          .|.projection("var1 AS var1")
-          .|.setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
-          .|.eager(ListSet(
-            EagernessReason.UnknownPropertyReadSetConflict
-              .withConflict(EagernessReason.Conflict(Id(5), Id(7)))
-          ))
-          .|.filter("cacheN[var1.P0] = coalesce($param2, 0) + 1")
-          .|.eager(ListSet(
-            EagernessReason.PropertyReadSetConflict(propName("P0"))
-              .withConflict(EagernessReason.Conflict(Id(9), Id(0))),
-            EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(5), Id(9))),
-            EagernessReason.PropertyReadSetConflict(propName("P0")).withConflict(EagernessReason.Conflict(Id(9), Id(7)))
-          ))
-          .|.setNodeProperty("var1", "P0", "var1.P0 + 1")
-          .|.eager(ListSet(
-            EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(5), Id(11))),
-            EagernessReason.PropertyReadSetConflict(propName("P0"))
-              .withConflict(EagernessReason.Conflict(Id(9), Id(11)))
-          ))
-          .|.filter("var1:L0", "cacheNFromStore[var1.P0] = $param2")
-          .|.nodeByIdSeek("var1", Set(), "$param0")
-          .projection("var1 AS var1")
-          .setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
-          .create(createNodeWithProperties("var1", Seq("L0"), "{P0: 0}"))
-          .filter("var0 IS NULL")
-          .optional()
-          .eager(ListSet(
-            EagernessReason.LabelReadSetConflict(labelName("L0"))
-              .withConflict(EagernessReason.Conflict(Id(15), Id(20)))
-          ))
-          .filter("var0:L0")
-          .nodeByIdSeek("var0", Set(), "$param0")
-          .build()
-    }
-    plan should equal(expectedPlan)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("var1")
+        // LP eagerness recognizes that the conflict is with produceResult
+        .lpEager(ListSet(
+          EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(5), Id(0))),
+          EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(14), Id(0)))
+        ))
+        .distinct("var1 AS var1")
+        .union()
+        .|.projection("var1 AS var1")
+        // IR eagerness interprets the conflict to be with the last projection
+        .|.irEager()
+        .|.setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
+        .|.eager(lpReasons(
+          EagernessReason.UnknownPropertyReadSetConflict
+            .withConflict(EagernessReason.Conflict(Id(5), Id(7)))
+        ))
+        .|.filter("cacheN[var1.P0] = coalesce($param2, 0) + 1")
+        .|.eager(lpReasons(
+          EagernessReason.PropertyReadSetConflict(propName("P0"))
+            .withConflict(EagernessReason.Conflict(Id(9), Id(0))),
+          EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(5), Id(9))),
+          EagernessReason.PropertyReadSetConflict(propName("P0")).withConflict(EagernessReason.Conflict(Id(9), Id(7)))
+        ))
+        .|.setNodeProperty("var1", "P0", "var1.P0 + 1")
+        .|.eager(lpReasons(
+          EagernessReason.UnknownPropertyReadSetConflict.withConflict(EagernessReason.Conflict(Id(5), Id(11))),
+          EagernessReason.PropertyReadSetConflict(propName("P0"))
+            .withConflict(EagernessReason.Conflict(Id(9), Id(11)))
+        ))
+        .|.filter("var1:L0", "cacheNFromStore[var1.P0] = $param2")
+        .|.nodeByIdSeek("var1", Set(), "$param0")
+        .projection("var1 AS var1")
+        // IR eagerness interprets the conflict to be with the last projection
+        .irEager()
+        .setNodePropertiesFromMap("var1", "$param1", removeOtherProps = false)
+        .create(createNodeWithProperties("var1", Seq("L0"), "{P0: 0}"))
+        .filter("var0 IS NULL")
+        .irEager()
+        .optional()
+        .lpEager(ListSet(
+          EagernessReason.LabelReadSetConflict(labelName("L0"))
+            .withConflict(EagernessReason.Conflict(Id(15), Id(20)))
+        ))
+        .filter("var0:L0")
+        .nodeByIdSeek("var0", Set(), "$param0")
+        .build()
+    )
   }
 
   test("should eagerize simple case of write-read-conflict with returned complete entity in UNION") {
@@ -1496,7 +1414,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .withConflict(EagernessReason.Conflict(Id(5), Id(0)))
         ))
         .|.projection("var1 AS var1")
-        .|.irEager(ListSet(Unknown))
+        .|.irEager()
         .|.setNodePropertiesFromMap("var0", "$param2", removeOtherProps = false)
         .|.expandAll("(var1)-[anon_2]-(var0)")
         .|.nodeByLabelScan("var1", "L0", IndexOrderNone)
@@ -1536,7 +1454,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("var1")
-        .irEager(ListSet(Unknown))
+        .irEager()
         .distinct("var1 AS var1")
         .union()
         .|.lpEager(ListSet(
