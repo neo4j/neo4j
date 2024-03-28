@@ -4129,7 +4129,7 @@ EXPRESSION ListLiteral() throws Exception:
     List<EXPRESSION> list = new ArrayList<>();
 }
 {
-    t=<LBRACKET> ( e=Expression() { list.add( e ); } )? ( <COMMA> e=Expression() { list.add( e ); } )* <RBRACKET>
+    t=<LBRACKET> ( e=Expression() { list.add( e ); } ( <COMMA> e=Expression() { list.add( e ); } )* )? <RBRACKET>
     {
         return astFactory.listLiteral( pos( t ), list );
     }

@@ -12310,7 +12310,7 @@ public class CypherParser extends Parser {
             {
                 setState(1706);
                 match(LBRACKET);
-                setState(1708);
+                setState(1715);
                 _errHandler.sync(this);
                 _la = _input.LA(1);
                 if ((((_la) & ~0x3f) == 0 && ((1L << _la) & -1924162125832L) != 0)
@@ -12321,25 +12321,25 @@ public class CypherParser extends Parser {
                     {
                         setState(1707);
                         expression();
+                        setState(1712);
+                        _errHandler.sync(this);
+                        _la = _input.LA(1);
+                        while (_la == COMMA) {
+                            {
+                                {
+                                    setState(1708);
+                                    match(COMMA);
+                                    setState(1709);
+                                    expression();
+                                }
+                            }
+                            setState(1714);
+                            _errHandler.sync(this);
+                            _la = _input.LA(1);
+                        }
                     }
                 }
 
-                setState(1714);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                while (_la == COMMA) {
-                    {
-                        {
-                            setState(1710);
-                            match(COMMA);
-                            setState(1711);
-                            expression();
-                        }
-                    }
-                    setState(1716);
-                    _errHandler.sync(this);
-                    _la = _input.LA(1);
-                }
                 setState(1717);
                 match(RBRACKET);
             }
@@ -35055,7 +35055,7 @@ public class CypherParser extends Parser {
                     + "q\u0001q\u0001q\u0001q\u0003q\u0692\bq\u0001q\u0001q\u0003q\u0696\bq\u0003"
                     + "q\u0698\bq\u0001q\u0001q\u0001r\u0001r\u0001r\u0001r\u0001r\u0001s\u0003"
                     + "s\u06a2\bs\u0001s\u0001s\u0001t\u0003t\u06a7\bt\u0001t\u0001t\u0001u\u0001"
-                    + "u\u0003u\u06ad\bu\u0001u\u0001u\u0005u\u06b1\bu\nu\fu\u06b4\tu\u0001u"
+                    + "u\u0001u\u0001u\u0005u\u06af\bu\nu\fu\u06b2\tu\u0003u\u06b4\bu\u0001u"
                     + "\u0001u\u0001v\u0001v\u0001w\u0001w\u0001w\u0003w\u06bd\bw\u0001x\u0001"
                     + "x\u0001x\u0001x\u0003x\u06c3\bx\u0001x\u0001x\u0001x\u0005x\u06c8\bx\n"
                     + "x\fx\u06cb\tx\u0003x\u06cd\bx\u0001x\u0001x\u0001y\u0001y\u0001y\u0005"
@@ -36196,23 +36196,23 @@ public class CypherParser extends Parser {
                     + "\u0000\u0000\u06a5\u06a7\u0005\u0092\u0000\u0000\u06a6\u06a5\u0001\u0000"
                     + "\u0000\u0000\u06a6\u06a7\u0001\u0000\u0000\u0000\u06a7\u06a8\u0001\u0000"
                     + "\u0000\u0000\u06a8\u06a9\u0005\u0004\u0000\u0000\u06a9\u00e9\u0001\u0000"
-                    + "\u0000\u0000\u06aa\u06ac\u0005\u0084\u0000\u0000\u06ab\u06ad\u0003\u009c"
-                    + "N\u0000\u06ac\u06ab\u0001\u0000\u0000\u0000\u06ac\u06ad\u0001\u0000\u0000"
-                    + "\u0000\u06ad\u06b2\u0001\u0000\u0000\u0000\u06ae\u06af\u0005(\u0000\u0000"
-                    + "\u06af\u06b1\u0003\u009cN\u0000\u06b0\u06ae\u0001\u0000\u0000\u0000\u06b1"
-                    + "\u06b4\u0001\u0000\u0000\u0000\u06b2\u06b0\u0001\u0000\u0000\u0000\u06b2"
-                    + "\u06b3\u0001\u0000\u0000\u0000\u06b3\u06b5\u0001\u0000\u0000\u0000\u06b4"
-                    + "\u06b2\u0001\u0000\u0000\u0000\u06b5\u06b6\u0005\u00c4\u0000\u0000\u06b6"
-                    + "\u00eb\u0001\u0000\u0000\u0000\u06b7\u06b8\u0003\u022e\u0117\u0000\u06b8"
-                    + "\u00ed\u0001\u0000\u0000\u0000\u06b9\u06bc\u0005F\u0000\u0000\u06ba\u06bd"
-                    + "\u0003\u022e\u0117\u0000\u06bb\u06bd\u0005\u0004\u0000\u0000\u06bc\u06ba"
-                    + "\u0001\u0000\u0000\u0000\u06bc\u06bb\u0001\u0000\u0000\u0000\u06bd\u00ef"
-                    + "\u0001\u0000\u0000\u0000\u06be\u06bf\u0003\u00f2y\u0000\u06bf\u06c0\u0003"
-                    + "\u022e\u0117\u0000\u06c0\u06c2\u0005\u008c\u0000\u0000\u06c1\u06c3\u0007"
-                    + "\u0000\u0000\u0000\u06c2\u06c1\u0001\u0000\u0000\u0000\u06c2\u06c3\u0001"
-                    + "\u0000\u0000\u0000\u06c3\u06cc\u0001\u0000\u0000\u0000\u06c4\u06c9\u0003"
-                    + "\u009cN\u0000\u06c5\u06c6\u0005(\u0000\u0000\u06c6\u06c8\u0003\u009cN"
-                    + "\u0000\u06c7\u06c5\u0001\u0000\u0000\u0000\u06c8\u06cb\u0001\u0000\u0000"
+                    + "\u0000\u0000\u06aa\u06b3\u0005\u0084\u0000\u0000\u06ab\u06b0\u0003\u009c"
+                    + "N\u0000\u06ac\u06ad\u0005(\u0000\u0000\u06ad\u06af\u0003\u009cN\u0000"
+                    + "\u06ae\u06ac\u0001\u0000\u0000\u0000\u06af\u06b2\u0001\u0000\u0000\u0000"
+                    + "\u06b0\u06ae\u0001\u0000\u0000\u0000\u06b0\u06b1\u0001\u0000\u0000\u0000"
+                    + "\u06b1\u06b4\u0001\u0000\u0000\u0000\u06b2\u06b0\u0001\u0000\u0000\u0000"
+                    + "\u06b3\u06ab\u0001\u0000\u0000\u0000\u06b3\u06b4\u0001\u0000\u0000\u0000"
+                    + "\u06b4\u06b5\u0001\u0000\u0000\u0000\u06b5\u06b6\u0005\u00c4\u0000\u0000"
+                    + "\u06b6\u00eb\u0001\u0000\u0000\u0000\u06b7\u06b8\u0003\u022e\u0117\u0000"
+                    + "\u06b8\u00ed\u0001\u0000\u0000\u0000\u06b9\u06bc\u0005F\u0000\u0000\u06ba"
+                    + "\u06bd\u0003\u022e\u0117\u0000\u06bb\u06bd\u0005\u0004\u0000\u0000\u06bc"
+                    + "\u06ba\u0001\u0000\u0000\u0000\u06bc\u06bb\u0001\u0000\u0000\u0000\u06bd"
+                    + "\u00ef\u0001\u0000\u0000\u0000\u06be\u06bf\u0003\u00f2y\u0000\u06bf\u06c0"
+                    + "\u0003\u022e\u0117\u0000\u06c0\u06c2\u0005\u008c\u0000\u0000\u06c1\u06c3"
+                    + "\u0007\u0000\u0000\u0000\u06c2\u06c1\u0001\u0000\u0000\u0000\u06c2\u06c3"
+                    + "\u0001\u0000\u0000\u0000\u06c3\u06cc\u0001\u0000\u0000\u0000\u06c4\u06c9"
+                    + "\u0003\u009cN\u0000\u06c5\u06c6\u0005(\u0000\u0000\u06c6\u06c8\u0003\u009c"
+                    + "N\u0000\u06c7\u06c5\u0001\u0000\u0000\u0000\u06c8\u06cb\u0001\u0000\u0000"
                     + "\u0000\u06c9\u06c7\u0001\u0000\u0000\u0000\u06c9\u06ca\u0001\u0000\u0000"
                     + "\u0000\u06ca\u06cd\u0001\u0000\u0000\u0000\u06cb\u06c9\u0001\u0000\u0000"
                     + "\u0000\u06cc\u06c4\u0001\u0000\u0000\u0000\u06cc\u06cd\u0001\u0000\u0000"
@@ -37314,7 +37314,7 @@ public class CypherParser extends Parser {
                     + "\u0596\u059a\u059d\u05a7\u05bd\u05c7\u05cd\u05d1\u05df\u05e3\u05ed\u05f8"
                     + "\u05fd\u0602\u0606\u060b\u060e\u0614\u061c\u0624\u0627\u062d\u0632\u064c"
                     + "\u0655\u0668\u066b\u0678\u0683\u0687\u0689\u0691\u0695\u0697\u06a1\u06a6"
-                    + "\u06ac\u06b2\u06bc\u06c2\u06c9\u06cc\u06d5\u06df\u06e3\u06f2\u06f7\u0700"
+                    + "\u06b0\u06b3\u06bc\u06c2\u06c9\u06cc\u06d5\u06df\u06e3\u06f2\u06f7\u0700"
                     + "\u070a\u0712\u0718\u072b\u072f\u0732\u0737\u073b\u073f\u0748\u074b\u0754"
                     + "\u0757\u075d\u0761\u0765\u0768\u076d\u0770\u0775\u077a\u077d\u0786\u078e"
                     + "\u0793\u0796\u079c\u07a3\u07ae\u07b3\u07b8\u07ba\u07bd\u07c2\u07c8\u07cf"
