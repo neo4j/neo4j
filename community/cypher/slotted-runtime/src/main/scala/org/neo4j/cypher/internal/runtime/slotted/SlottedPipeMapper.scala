@@ -141,6 +141,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
@@ -296,6 +297,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPro
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertyOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SortSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.StatefulShortestPathSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.SubtractionNodesByLabelsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TrailSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionForeachSlottedPipe
@@ -435,19 +437,19 @@ class SlottedPipeMapper(
 
       case NodeByLabelScan(column, label, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
-        NodesByLabelScanSlottedPipe(column.name, LazyLabel(label), slots, indexOrder)(id)
+        NodesByLabelScanSlottedPipe(column.name, LazyLabel(label)(semanticTable), slots, indexOrder)(id)
 
       // Note: this plan shouldn't really be used here, but having it mapped here helps
       //      fallback and makes testing easier
       case PartitionedNodeByLabelScan(column, label, _) =>
         indexRegistrator.registerLabelScan()
-        NodesByLabelScanSlottedPipe(column.name, LazyLabel(label), slots, IndexOrderNone)(id)
+        NodesByLabelScanSlottedPipe(column.name, LazyLabel(label)(semanticTable), slots, IndexOrderNone)(id)
 
       case UnionNodeByLabelsScan(column, labels, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
         UnionNodesByLabelsScanSlottedPipe(
           slots.getLongOffsetFor(column),
-          labels.map(label => LazyLabel(label)),
+          labels.map(label => LazyLabel(label)(semanticTable)),
           indexOrder
         )(id)
 
@@ -455,7 +457,7 @@ class SlottedPipeMapper(
         indexRegistrator.registerLabelScan()
         UnionNodesByLabelsScanSlottedPipe(
           slots.getLongOffsetFor(column),
-          labels.map(label => LazyLabel(label)),
+          labels.map(label => LazyLabel(label)(semanticTable)),
           IndexOrderNone
         )(id)
 
@@ -463,7 +465,7 @@ class SlottedPipeMapper(
         indexRegistrator.registerLabelScan()
         IntersectionNodesByLabelsScanSlottedPipe(
           slots.getLongOffsetFor(column),
-          labels.map(label => LazyLabel(label)),
+          labels.map(label => LazyLabel(label)(semanticTable)),
           indexOrder
         )(id)
 
@@ -471,8 +473,17 @@ class SlottedPipeMapper(
         indexRegistrator.registerLabelScan()
         IntersectionNodesByLabelsScanSlottedPipe(
           slots.getLongOffsetFor(column),
-          labels.map(label => LazyLabel(label)),
+          labels.map(label => LazyLabel(label)(semanticTable)),
           IndexOrderNone
+        )(id)
+
+      case SubtractionNodeByLabelsScan(column, positiveLabel, negativeLabel, _, indexOrder) =>
+        indexRegistrator.registerLabelScan()
+        SubtractionNodesByLabelsScanSlottedPipe(
+          slots.getLongOffsetFor(column),
+          LazyLabel(positiveLabel)(semanticTable),
+          LazyLabel(negativeLabel)(semanticTable),
+          indexOrder
         )(id)
 
       case DirectedRelationshipUniqueIndexSeek(
@@ -937,7 +948,7 @@ class SlottedPipeMapper(
             CreateSlottedNode(
               CreateNodeSlottedCommand(
                 slots.getLongOffsetFor(node),
-                labels.toSeq.map(LazyLabel.apply),
+                labels.toSeq.map(l => LazyLabel(l)(semanticTable)),
                 properties.map(convertExpressions)
               ),
               allowNullOrNaNProperty = true
@@ -960,9 +971,9 @@ class SlottedPipeMapper(
       case org.neo4j.cypher.internal.ir.DeleteExpression(expression, forced) =>
         Seq(DeleteOperation(convertExpressions(expression), forced))
       case SetLabelPattern(node, labelNames) =>
-        Seq(SlottedSetLabelsOperation(slots(node), labelNames.map(LazyLabel.apply)))
+        Seq(SlottedSetLabelsOperation(slots(node), labelNames.map(l => LazyLabel(l)(semanticTable))))
       case RemoveLabelPattern(node, labelNames) =>
-        Seq(SlottedRemoveLabelsOperation(slots(node), labelNames.map(LazyLabel.apply)))
+        Seq(SlottedRemoveLabelsOperation(slots(node), labelNames.map(l => LazyLabel(l)(semanticTable))))
       case SetNodePropertyPattern(node, propertyKey, value) =>
         val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(node, value, propertyKey)
         Seq(SlottedSetNodePropertyOperation(
@@ -1362,7 +1373,7 @@ class SlottedPipeMapper(
             case n: CreateNode =>
               CreateNodeSlottedCommand(
                 slots.getLongOffsetFor(n.variable),
-                n.labels.toSeq.map(LazyLabel.apply),
+                n.labels.toSeq.map(l => LazyLabel(l)(semanticTable)),
                 n.properties.map(convertExpressions)
               )
 
@@ -1386,7 +1397,7 @@ class SlottedPipeMapper(
             CreateSlottedNode(
               CreateNodeSlottedCommand(
                 slots.getLongOffsetFor(node),
-                labels.toSeq.map(LazyLabel.apply),
+                labels.toSeq.map(l => LazyLabel(l)(semanticTable)),
                 properties.map(convertExpressions)
               ),
               allowNullOrNaNProperty = false
