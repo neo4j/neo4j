@@ -176,7 +176,7 @@ unwindClause
    ;
 
 callClause
-   : CALL namespace symbolicNameString (LPAREN procedureArgument? (COMMA procedureArgument)* RPAREN)? (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?
+   : CALL namespace symbolicNameString (LPAREN (procedureArgument (COMMA procedureArgument)*)? RPAREN)? (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?
    ;
 
 procedureArgument

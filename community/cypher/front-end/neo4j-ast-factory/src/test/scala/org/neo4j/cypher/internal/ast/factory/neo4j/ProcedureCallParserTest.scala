@@ -57,4 +57,12 @@ class ProcedureCallParserTest extends AstParsingTestBase with LegacyAstParsingTe
   test("CALL foo() YIELD bar, baz") {
     parsesTo[Clause](call(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar"), varFor("baz")))))
   }
+
+  test("procedure parameters without comma separation should not parse") {
+    "CALL foo('test' 42)" should notParse[Clause]
+  }
+
+  test("procedure parameters with invalid start comma should not parse") {
+    "CALL foo(, 'test', 42)" should notParse[Clause]
+  }
 }

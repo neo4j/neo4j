@@ -2168,7 +2168,7 @@ CLAUSE CallClause() throws Exception:
 {
     t=<CALL> namespace=Namespace() {procedureNamePosition = token;} name=ProcedureName()
     ( <LPAREN> { arguments = new ArrayList<>(); }
-        ( LOOKAHEAD( 2 ) e=Expression() { arguments.add( e ); })? ( <COMMA> e=Expression() { arguments.add( e ); })*
+        ( e=Expression() { arguments.add( e ); } ( <COMMA> e=Expression() { arguments.add( e ); })* )?
         <RPAREN>
     )?
     ( procedureResultPosition=<YIELD> (
