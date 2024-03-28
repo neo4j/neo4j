@@ -113,8 +113,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.OrderedConditionalApplyTestB
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedDistinctTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedTrailTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedUnionTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.PGShortestPathPropagationTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.PGShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialTop1TestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialTopNTestBase
@@ -159,6 +157,8 @@ import org.neo4j.cypher.internal.runtime.spec.tests.SetRelationshipPropertyTestB
 import org.neo4j.cypher.internal.runtime.spec.tests.ShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SkipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SortTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.StatefulShortestPathPropagationTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.StatefulShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubqueryForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.Top1WithTiesTestBase
@@ -375,10 +375,12 @@ class InterpretedExpressionTest extends ExpressionTestBase(COMMUNITY.EDITION, In
     with ExpressionWithTxStateChangesTests[CommunityRuntimeContext]
 class InterpretedProcedureCallTest extends ProcedureCallTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedShortestPathTest extends ShortestPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-class InterpretedPGShortestPathTest extends PGShortestPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
-class InterpretedPGShortestPathPropagationTest
-    extends PGShortestPathPropagationTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedStatefulShortestPathTest
+    extends StatefulShortestPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedStatefulShortestPathPropagationTest
+    extends StatefulShortestPathPropagationTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedUnionTest extends UnionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedOrderedUnionTest extends OrderedUnionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSemiApplyTest extends SemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

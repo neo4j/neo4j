@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSH
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
 import org.neo4j.values.virtual.VirtualValues.pathReference
 
-abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
+abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   protected val sizeHint: Int
@@ -1802,6 +1802,96 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     runtimeResult should beColumns(vars: _*).withNoRows()
+  }
+
+  test("cached node properties on NFA predicate expression variables") {
+    val (n1, n2) = givenGraph {
+      val graph = fromTemplate("""
+        (:S)-->(n1)-->(n2:T)
+      """)
+
+      (graph node "n1", graph node "n2")
+    }
+    n1.setProperty("prop", 1)
+    n2.setProperty("prop", 2)
+
+    // the cacheNFromStore should not persist
+    val nfa = new TestNFABuilder(0, "s")
+      .addTransition(0, 1, "(s) (n1_inner)")
+      .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner WHERE cacheNFromStore[n2_inner.prop] = 1)")
+      .addTransition(2, 1, "(n2_inner) (n1_inner)")
+      .addTransition(2, 3, "(n2_inner) (t_inner)")
+      .setFinalState(3)
+      .build()
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("t")
+      .statefulShortestPath(
+        "s",
+        "t",
+        "(s) ((n1)-[r]->(n2))+ (t)",
+        None,
+        Set("n1_inner" -> "n1", "n2_inner" -> "n2"),
+        Set("r_inner" -> "r"),
+        Set("t_inner" -> "t"),
+        Set.empty,
+        Selector.Shortest(Int.MaxValue),
+        nfa,
+        ExpandInto
+      )
+      .cartesianProduct()
+      .|.nodeByLabelScan("s", "S")
+      .nodeByLabelScan("t", "T")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("t").withNoRows()
+  }
+
+  test("cached relationship properties on NFA predicate expression variables") {
+    val (r1, r2) = givenGraph {
+      val graph = fromTemplate("""
+        (:S)-[r1]->()-[r2]->(:T)
+      """)
+
+      (graph rel "r1", graph rel "r2")
+    }
+    r1.setProperty("prop", 1)
+    r2.setProperty("prop", 2)
+
+    // the cacheNFromStore should not persist
+    val nfa = new TestNFABuilder(0, "s")
+      .addTransition(0, 1, "(s) (n1_inner)")
+      .addTransition(1, 2, "(n1_inner)-[r_inner WHERE cacheRFromStore[r_inner.prop] = 1]->(n2_inner)")
+      .addTransition(2, 1, "(n2_inner) (n1_inner)")
+      .addTransition(2, 3, "(n2_inner) (t_inner)")
+      .setFinalState(3)
+      .build()
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("t")
+      .statefulShortestPath(
+        "s",
+        "t",
+        "(s) ((n1)-[r]->(n2))+ (t)",
+        None,
+        Set("n1_inner" -> "n1", "n2_inner" -> "n2"),
+        Set("r_inner" -> "r"),
+        Set("t_inner" -> "t"),
+        Set.empty,
+        Selector.Shortest(Int.MaxValue),
+        nfa,
+        ExpandInto
+      )
+      .cartesianProduct()
+      .|.nodeByLabelScan("s", "S")
+      .nodeByLabelScan("t", "T")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("t").withNoRows()
   }
 
   test("two hop undirected pattern - negative, duplicate relationships, one hop graph - ExpandInto") {

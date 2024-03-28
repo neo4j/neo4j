@@ -47,7 +47,7 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
  * These tests only test the propagation part of PGShortestPath, not the product graph part. That is why all patterns
  * look like ordinary var expands. The tests are essentially copied from PPBFS.
  */
-abstract class PGShortestPathPropagationTestBase[CONTEXT <: RuntimeContext](
+abstract class StatefulShortestPathPropagationTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   protected val sizeHint: Int
