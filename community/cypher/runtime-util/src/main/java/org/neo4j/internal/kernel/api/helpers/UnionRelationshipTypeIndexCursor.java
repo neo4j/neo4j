@@ -144,8 +144,8 @@ public abstract class UnionRelationshipTypeIndexCursor extends UnionTokenIndexCu
         }
 
         @Override
-        boolean compare(long current, long other) {
-            return other < current;
+        int compare(long current, long other) {
+            return Long.compare(current, other);
         }
 
         @Override
@@ -160,8 +160,8 @@ public abstract class UnionRelationshipTypeIndexCursor extends UnionTokenIndexCu
         }
 
         @Override
-        boolean compare(long current, long other) {
-            return other > current;
+        int compare(long current, long other) {
+            return -Long.compare(current, other);
         }
 
         @Override

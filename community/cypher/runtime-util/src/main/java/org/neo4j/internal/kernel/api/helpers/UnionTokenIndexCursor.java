@@ -39,7 +39,7 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
         this.cursors = Arrays.copyOf(cursors, cursors.length);
     }
 
-    abstract boolean compare(long current, long other);
+    abstract int compare(long current, long other);
 
     abstract long reference(CURSOR cursor);
 
@@ -73,10 +73,11 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
                 if (cursor != null) {
                     long otherReference = reference(cursor);
                     if (otherReference != StatementConstants.NO_SUCH_NODE) {
-                        if (compare(currentReference, otherReference)) {
+                        int compare = compare(currentReference, otherReference);
+                        if (compare > 0) {
                             currentReference = otherReference;
                             currentCursorIndex = i;
-                        } else if (otherReference == currentReference) {
+                        } else if (compare == 0) {
                             if (!cursor.next()) {
                                 cursors[i] = null;
                             }
@@ -93,10 +94,11 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
             final var cursor = cursors[i];
             if (cursor != null && cursor.next()) {
                 long otherReference = reference(cursor);
-                if (compare(currentReference, otherReference)) {
+                int compare = compare(currentReference, otherReference);
+                if (compare > 0) {
                     currentReference = otherReference;
                     currentCursorIndex = i;
-                } else if (otherReference == currentReference) {
+                } else if (compare == 0) {
                     if (!cursor.next()) {
                         cursors[i] = null;
                     }
