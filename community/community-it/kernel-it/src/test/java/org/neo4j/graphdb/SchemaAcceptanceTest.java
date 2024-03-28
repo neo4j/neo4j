@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
@@ -1271,16 +1272,23 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void indexNamesCanContainBackTicks() {
         final String BACK_TICK_NAME = "`a`b``";
+        assertThatCode(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        IndexCreator indexCreator = tx.schema()
+                                .indexFor(label)
+                                .withName(BACK_TICK_NAME)
+                                .on(propertyKey);
+                        indexCreator.create();
+                        tx.commit();
+                    }
+                })
+                .doesNotThrowAnyException();
 
         try (Transaction tx = db.beginTx()) {
-            IndexCreator indexCreator =
-                    tx.schema().indexFor(label).withName(BACK_TICK_NAME).on(propertyKey);
-            indexCreator.create();
-            tx.commit();
-        }
-        try (Transaction tx = db.beginTx()) {
-            var index = tx.schema().getIndexByName(BACK_TICK_NAME);
-            assertThat(index.getName()).isEqualTo(BACK_TICK_NAME);
+            assertThat(tx.schema().getIndexes())
+                    .map(IndexDefinition::getName)
+                    .as("index exists")
+                    .contains(BACK_TICK_NAME);
             tx.commit();
         }
     }
@@ -1288,12 +1296,18 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void indexTokensCanContainBackTicks() {
         final String NAME = "abc";
-        try (Transaction tx = db.beginTx()) {
-            IndexCreator indexCreator =
-                    tx.schema().indexFor(labelWithBackticks).withName(NAME).on(propertyKeyWithBackticks);
-            indexCreator.create();
-            tx.commit();
-        }
+        assertThatCode(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        IndexCreator indexCreator = tx.schema()
+                                .indexFor(labelWithBackticks)
+                                .withName(NAME)
+                                .on(propertyKeyWithBackticks);
+                        indexCreator.create();
+                        tx.commit();
+                    }
+                })
+                .doesNotThrowAnyException();
+
         try (Transaction tx = db.beginTx()) {
             var index = tx.schema().getIndexByName(NAME);
             assertThat(index.getName()).isEqualTo(NAME);
@@ -1306,16 +1320,28 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
 
     @Test
     void constraintNamesCanContainBackTicks() {
-        final String BACKTICK_NAME = "`a`b``";
+        final String BACK_TICK_NAME = "`a`b``";
+        assertThatCode(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        ConstraintCreator constraintCreator = tx.schema()
+                                .constraintFor(label)
+                                .withName(BACK_TICK_NAME)
+                                .assertPropertyIsUnique(propertyKey);
+                        constraintCreator.create();
+                        tx.commit();
+                    }
+                })
+                .doesNotThrowAnyException();
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator constraintCreator =
-                    tx.schema().constraintFor(label).withName(BACKTICK_NAME).assertPropertyIsUnique(propertyKey);
-            constraintCreator.create();
-            tx.commit();
-        }
-        try (Transaction tx = db.beginTx()) {
-            assertThat(tx.schema().getIndexByName(BACKTICK_NAME).getName()).isEqualTo(BACKTICK_NAME);
-            assertThat(tx.schema().getConstraintByName(BACKTICK_NAME).getName()).isEqualTo(BACKTICK_NAME);
+            assertThat(tx.schema().getIndexes())
+                    .map(IndexDefinition::getName)
+                    .as("index exists")
+                    .contains(BACK_TICK_NAME);
+
+            assertThat(tx.schema().getConstraints())
+                    .map(ConstraintDefinition::getName)
+                    .as("constraint exists")
+                    .contains(BACK_TICK_NAME);
             tx.commit();
         }
     }
@@ -1323,14 +1349,19 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void constraintTokensCanContainBackTicks() {
         String name = "abc";
-        try (Transaction tx = db.beginTx()) {
-            ConstraintCreator constraintCreator = tx.schema()
-                    .constraintFor(labelWithBackticks)
-                    .withName(name)
-                    .assertPropertyIsUnique(propertyKeyWithBackticks);
-            constraintCreator.create();
-            tx.commit();
-        }
+
+        assertThatCode(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        ConstraintCreator constraintCreator = tx.schema()
+                                .constraintFor(labelWithBackticks)
+                                .withName(name)
+                                .assertPropertyIsUnique(propertyKeyWithBackticks);
+                        constraintCreator.create();
+                        tx.commit();
+                    }
+                })
+                .doesNotThrowAnyException();
+
         try (Transaction tx = db.beginTx()) {
             final IndexDefinition index = tx.schema().getIndexByName(name);
             assertThat(index.getName()).isEqualTo(name);
