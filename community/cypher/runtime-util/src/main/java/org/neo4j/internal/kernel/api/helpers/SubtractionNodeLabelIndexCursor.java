@@ -34,7 +34,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
 
     private final CompositeCursor positiveCursor;
     private final CompositeCursor negativeCursor;
-    private boolean negativeCursorIsExhausted;
+    private boolean negativeCursorHasData;
 
     public static SubtractionNodeLabelIndexCursor ascendingSubtractionNodeLabelIndexCursor(
             Read read,
@@ -71,7 +71,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
     SubtractionNodeLabelIndexCursor(CompositeCursor positiveCursor, CompositeCursor negativeCursor) {
         this.positiveCursor = positiveCursor;
         this.negativeCursor = negativeCursor;
-        this.negativeCursorIsExhausted = !negativeCursor.next();
+        this.negativeCursorHasData = negativeCursor.next();
     }
 
     @Override
@@ -91,12 +91,14 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
 
     abstract int compare(long a, long b);
 
+    abstract boolean seek(CompositeCursor cursor, long seek);
+
     @Override
     public boolean next() {
         boolean shouldContinue = positiveCursor.next();
-        boolean localNegativeExhausted = negativeCursorIsExhausted;
+        boolean localNegativeCursorHasData = negativeCursorHasData;
         while (shouldContinue) {
-            if (localNegativeExhausted) {
+            if (!localNegativeCursorHasData) {
                 return true;
             }
             long positiveId = positiveCursor.reference();
@@ -104,14 +106,14 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
             if (compare < 0) {
                 return true;
             } else if (compare > 0) {
-                while (!localNegativeExhausted && compare(positiveId, negativeCursor.reference()) > 0) {
-                    localNegativeExhausted = !negativeCursor.next();
-                }
+                localNegativeCursorHasData = seek(negativeCursor, positiveId);
             } else {
                 shouldContinue = positiveCursor.next();
-                localNegativeExhausted = !negativeCursor.next();
+                if (shouldContinue) {
+                    localNegativeCursorHasData = seek(negativeCursor, positiveCursor.reference());
+                }
             }
-            negativeCursorIsExhausted = localNegativeExhausted;
+            negativeCursorHasData = localNegativeCursorHasData;
         }
         return shouldContinue;
     }
@@ -137,6 +139,11 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
         int compare(long current, long other) {
             return Long.compare(current, other);
         }
+
+        @Override
+        boolean seek(CompositeCursor cursor, long seek) {
+            return Cursors.seekAscending(cursor, seek);
+        }
     }
 
     private static final class DescendingSubtractionLabelIndexCursor extends SubtractionNodeLabelIndexCursor {
@@ -147,6 +154,11 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
         @Override
         int compare(long current, long other) {
             return -Long.compare(current, other);
+        }
+
+        @Override
+        boolean seek(CompositeCursor cursor, long seek) {
+            return Cursors.seekDescending(cursor, seek);
         }
     }
 }
