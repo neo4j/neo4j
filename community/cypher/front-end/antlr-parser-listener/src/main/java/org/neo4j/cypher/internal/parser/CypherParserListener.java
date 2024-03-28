@@ -259,8 +259,6 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitListLiteral(CypherParser.ListLiteralContext ctx);
 
-    void exitMapLiteral(CypherParser.MapLiteralContext ctx);
-
     void exitPropertyKeyName(CypherParser.PropertyKeyNameContext ctx);
 
     void exitParameter(CypherParser.ParameterContext ctx);

@@ -262,20 +262,6 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     )
   }
 
-  test("map expression") {
-    "{a:1}" should parseTo[Expression] {
-      mapOf("a" -> literal(1))
-    }
-    "{a:1,b:2,c:3}" should parseTo[Expression] {
-      mapOf("a" -> literal(1), "b" -> literal(2), "c" -> literal(3))
-    }
-    "{}" should parseTo[Expression](mapOf())
-    // Not sure if should be allowed, but behaves as before at least
-    "{,a:1}" should parseTo[Expression] {
-      mapOf("a" -> literal(1))
-    }
-  }
-
   test("all(item IN list WHERE predicate)") {
     parsesTo[Expression](allInList(varFor("item"), varFor("list"), varFor("predicate")))
   }

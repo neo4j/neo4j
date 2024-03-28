@@ -4144,8 +4144,8 @@ EXPRESSION MapLiteral() throws Exception:
     List<EXPRESSION> values = new ArrayList<>();
 }
 {
-    t=<LCURLY> ( key=PropertyKeyName() <COLON> value=Expression() { keys.add( key ); values.add( value ); } )?
-           ( <COMMA> key=PropertyKeyName() <COLON> value=Expression() { keys.add( key ); values.add( value ); } )* <RCURLY>
+    t=<LCURLY> ( key=PropertyKeyName() <COLON> value=Expression() { keys.add( key ); values.add( value ); }
+           ( <COMMA> key=PropertyKeyName() <COLON> value=Expression() { keys.add( key ); values.add( value ); } )* )? <RCURLY>
     {
         return astFactory.mapLiteral( pos( t ), keys, values);
     }

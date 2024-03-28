@@ -923,9 +923,6 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = ctx.typeNullability() == null
   }
 
-  override def exitMapLiteral(ctx: CypherParser.MapLiteralContext): Unit =
-    ctx.ast = MapExpression(astPairs(ctx.propertyKeyName(), ctx.expression()))(pos(ctx))
-
   final override def exitMap(ctx: CypherParser.MapContext): Unit =
     ctx.ast = MapExpression(astPairs(ctx.propertyKeyName(), ctx.expression()))(pos(ctx))
 

@@ -300,7 +300,7 @@ labelOrRelTypes
    ;
 
 properties
-   : mapLiteral
+   : map
    | parameter["ANY"]
    ;
 
@@ -496,7 +496,7 @@ expression1
 literal
    : numberLiteral # NummericLiteral
    | stringLiteral # StringsLiteral
-   | mapLiteral    # OtherLiteral
+   | map           # OtherLiteral
    | TRUE          # BooleanLiteral
    | FALSE         # BooleanLiteral
    | INFINITY      # KeywordLiteral
@@ -617,10 +617,6 @@ signedIntegerLiteral
 
 listLiteral
    : LBRACKET expression? (COMMA expression)* RBRACKET
-   ;
-
-mapLiteral
-   : LCURLY (propertyKeyName COLON expression)? (COMMA propertyKeyName COLON expression)* RCURLY
    ;
 
 propertyKeyName
@@ -1313,7 +1309,7 @@ graphQualifier
       (RELATIONSHIP | RELATIONSHIPS) (TIMES | symbolicNameString (COMMA symbolicNameString)*)
       | (NODE | NODES) (TIMES | symbolicNameString (COMMA symbolicNameString)*)
       | (ELEMENT | ELEMENTS) (TIMES | symbolicNameString (COMMA symbolicNameString)*)
-      | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | mapLiteral RPAREN)
+      | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | map RPAREN)
    )?
    ;
 
