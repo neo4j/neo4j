@@ -81,7 +81,9 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         this.cursors = cursors;
     }
 
-    abstract boolean compare(long current, long other);
+    abstract int compare(long current, long other);
+
+    abstract boolean seek(NodeLabelIndexCursor cursor, long seek);
 
     @Override
     public boolean next() {
@@ -101,23 +103,26 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         for (int i = 0; ; ) {
             var first = cursors[i];
             var second = cursors[i + 1];
-            if (first.nodeReference() == second.nodeReference()) {
+            long firstReference = first.nodeReference();
+            long secondReference = second.nodeReference();
+            int compare = compare(firstReference, secondReference);
+            if (compare == 0) {
                 // we found a match, advance
                 i++;
                 if (i == cursors.length - 1) {
                     return true;
                 }
-            } else if (compare(first.nodeReference(), second.nodeReference())) {
+            } else if (compare < 0) {
                 // advance all cursors up to first and retry
                 for (int j = 0; j <= i; j++) {
-                    if (!cursors[j].next()) {
+                    if (!seek(cursors[i], secondReference)) {
                         return false;
                     }
                 }
                 i = 0;
             } else {
                 // advance second, and retry
-                if (!second.next()) {
+                if (!seek(second, firstReference)) {
                     return false;
                 }
             }
@@ -163,8 +168,13 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         }
 
         @Override
-        boolean compare(long current, long other) {
-            return current < other;
+        int compare(long current, long other) {
+            return Long.compare(current, other);
+        }
+
+        @Override
+        boolean seek(NodeLabelIndexCursor cursor, long seek) {
+            return Cursors.seekAscending(cursor, seek);
         }
     }
 
@@ -174,8 +184,13 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         }
 
         @Override
-        boolean compare(long current, long other) {
-            return current > other;
+        int compare(long current, long other) {
+            return -Long.compare(current, other);
+        }
+
+        @Override
+        boolean seek(NodeLabelIndexCursor cursor, long seek) {
+            return Cursors.seekDescending(cursor, seek);
         }
     }
 }

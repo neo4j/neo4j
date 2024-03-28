@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+
 public final class Cursors {
 
     private Cursors() {
@@ -39,9 +41,31 @@ public final class Cursors {
     /**
      * This is a stand in for a future kernel improvement where we hopefully can push this seek to the index.
      */
+    public static boolean seekAscending(NodeLabelIndexCursor cursor, long seek) {
+        boolean hasMore = true;
+        while (hasMore && cursor.nodeReference() < seek) {
+            hasMore = cursor.next();
+        }
+        return hasMore;
+    }
+
+    /**
+     * This is a stand in for a future kernel improvement where we hopefully can push this seek to the index.
+     */
     public static boolean seekDescending(CompositeCursor cursor, long seek) {
         boolean hasMore = true;
         while (hasMore && cursor.reference() > seek) {
+            hasMore = cursor.next();
+        }
+        return hasMore;
+    }
+
+    /**
+     * This is a stand in for a future kernel improvement where we hopefully can push this seek to the index.
+     */
+    public static boolean seekDescending(NodeLabelIndexCursor cursor, long seek) {
+        boolean hasMore = true;
+        while (hasMore && cursor.nodeReference() > seek) {
             hasMore = cursor.next();
         }
         return hasMore;
