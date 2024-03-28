@@ -1198,6 +1198,11 @@
         <artifactId>jose4j</artifactId>
         <version>0.9.5</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-configuration2</artifactId>
+        <version>2.10.1</version>
+      </dependency>
       <!--
        - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
        - needs updating.
