@@ -74,4 +74,16 @@ class MapProjectionParserTest extends AstParsingTestBase with LegacyAstParsingTe
       )(t)
     )
   }
+
+  test("map with non-string key should not parse") {
+    "abc {42: 'value'}" should notParse[MapProjection]
+  }
+
+  test("map without comma separation should not parse") {
+    "abc {key1: 'value' key2: 42}" should notParse[MapProjection]
+  }
+
+  test("map with invalid start comma should not parse") {
+    "abc {, key: 'value'}" should notParse[MapProjection]
+  }
 }

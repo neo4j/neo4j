@@ -576,7 +576,7 @@ parenthesizedExpression
    ;
 
 mapProjection
-   : variable LCURLY mapProjectionElement? (COMMA mapProjectionElement)* RCURLY
+   : variable LCURLY (mapProjectionElement (COMMA mapProjectionElement)* )? RCURLY
    ;
 
 mapProjectionElement

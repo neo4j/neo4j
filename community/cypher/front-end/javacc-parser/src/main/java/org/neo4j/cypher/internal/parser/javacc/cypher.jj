@@ -4013,7 +4013,7 @@ EXPRESSION MapProjection() throws Exception:
     List<MAP_PROJECTION_ITEM> items = new ArrayList<>();
 }
 {
-    v=Variable() t=<LCURLY> ( x=MapProjectionItem() { items.add( x ); } )? ( <COMMA> x=MapProjectionItem() { items.add( x ); } )* <RCURLY>
+    v=Variable() t=<LCURLY> ( x=MapProjectionItem() { items.add( x ); } ( <COMMA> x=MapProjectionItem() { items.add( x ); } )* )? <RCURLY>
     {
         return astFactory.mapProjection( pos( t ), v, items );
     }
