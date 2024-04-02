@@ -57,7 +57,7 @@ abstract class StatefulShortestPathPropagationTestBase[CONTEXT <: RuntimeContext
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    PPBFSHooks.setInstance(if (ENABLE_LOGS) LoggingPPBFSHooks else PPBFSHooks.NULL)
+    PPBFSHooks.setInstance(if (ENABLE_LOGS) LoggingPPBFSHooks.debug else PPBFSHooks.NULL)
   }
 
   override protected def afterEach(): Unit = {

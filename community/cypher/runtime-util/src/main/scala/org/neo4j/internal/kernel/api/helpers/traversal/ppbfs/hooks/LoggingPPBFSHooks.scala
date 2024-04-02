@@ -26,6 +26,9 @@ import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeData
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TwoWaySignpost
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks.Debug
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks.Info
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks.Level
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.language.implicitConversions
@@ -33,11 +36,12 @@ import scala.language.implicitConversions
 /**
  * A debugging tool for following the weaving path of the PPBFS algorithm - not for production use!
  * */
-object LoggingPPBFSHooks extends PPBFSHooks {
+class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
   private val PADDING = 34
 
   override def addSourceSignpost(signpost: TwoWaySignpost, lengthFromSource: Int): Unit = {
     log(
+      Debug,
       "signpost" -> signpost,
       "lengthFromSource" -> lengthFromSource
     )
@@ -45,6 +49,7 @@ object LoggingPPBFSHooks extends PPBFSHooks {
 
   override def addTargetSignpost(signpost: TwoWaySignpost, lengthToTarget: Int): Unit = {
     log(
+      Debug,
       "signpost" -> signpost,
       "lengthToTarget" -> lengthToTarget
     )
@@ -52,6 +57,7 @@ object LoggingPPBFSHooks extends PPBFSHooks {
 
   override def propagateLengthPair(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {
     log(
+      Debug,
       "nodeData" -> nodeData,
       "lengthFromSource" -> lengthFromSource,
       "lengthToTarget" -> lengthToTarget
@@ -60,6 +66,7 @@ object LoggingPPBFSHooks extends PPBFSHooks {
 
   override def propagateAllAtLengths(lengthFromSource: Int, lengthToTarget: Int): Unit = {
     log(
+      Debug,
       "lengthFromSource" -> lengthFromSource,
       "lengthToTarget" -> lengthToTarget
     )
@@ -67,6 +74,7 @@ object LoggingPPBFSHooks extends PPBFSHooks {
 
   override def validateLengthState(nodeData: NodeData, lengthFromSource: Int, tracedLengthToTarget: Int): Unit = {
     log(
+      Debug,
       "nodeData" -> nodeData,
       "lengthFromSource" -> lengthFromSource,
       "tracedLengthToTarget" -> tracedLengthToTarget
@@ -75,6 +83,7 @@ object LoggingPPBFSHooks extends PPBFSHooks {
 
   override def decrementTargetCount(nodeData: NodeData, remainingTargetCount: Int): Unit = {
     log(
+      Debug,
       "node" -> nodeData,
       "prior remainingTargetCount" -> remainingTargetCount
     )
@@ -82,6 +91,7 @@ object LoggingPPBFSHooks extends PPBFSHooks {
 
   override def pruneSourceLength(sourceSignpost: TwoWaySignpost, lengthFromSource: Int): Unit = {
     log(
+      Debug,
       "lengthFromSource" -> lengthFromSource,
       "sourceSignpost" -> sourceSignpost
     )
@@ -89,25 +99,27 @@ object LoggingPPBFSHooks extends PPBFSHooks {
 
   override def setVerified(sourceSignpost: TwoWaySignpost, lengthFromSource: Int): Unit = {
     log(
+      Debug,
       "lengthFromSource" -> lengthFromSource,
       "sourceSignpost" -> sourceSignpost
     )
   }
 
   override def skippingDuplicateRelationship(getTracedPath: () => PathTracer.TracedPath): Unit = {
-    log("duplicate rels skipped" -> getTracedPath().toString)
+    log(Debug, "duplicate rels skipped" -> getTracedPath().toString)
   }
 
   override def returnPath(tracedPath: PathTracer.TracedPath): Unit = {
-    log("tracedPath" -> tracedPath.toString)
+    log(Info, "tracedPath" -> tracedPath.toString)
   }
 
   override def invalidTrail(getTracedPath: () => PathTracer.TracedPath): Unit = {
-    log("invalidTrail" -> getTracedPath().toString)
+    log(Info, "invalidTrail" -> getTracedPath().toString)
   }
 
   override def schedulePropagation(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {
     log(
+      Debug,
       "nodeData" -> nodeData,
       "lengthFromSource" -> lengthFromSource,
       "lengthToTarget" -> lengthToTarget
@@ -139,11 +151,11 @@ object LoggingPPBFSHooks extends PPBFSHooks {
       str.append("(none)")
     }
 
-    log("nodesToPropagate" -> str)
+    log(Debug, "nodesToPropagate" -> str)
   }
 
   override def addTarget(nodeData: NodeData): Unit = {
-    log("targetNode" -> nodeData)
+    log(Debug, "targetNode" -> nodeData)
   }
 
   private var color = DebugSupport.Blue
@@ -155,7 +167,7 @@ object LoggingPPBFSHooks extends PPBFSHooks {
 
   override def nextLevel(currentDepth: Int): Unit = {
     toggleColor()
-    log("level" -> currentDepth)
+    log(Info, "level" -> currentDepth)
   }
 
   override def newRow(nodeId: Long): Unit = {
@@ -164,11 +176,12 @@ object LoggingPPBFSHooks extends PPBFSHooks {
   }
 
   override def finishedPropagation(targets: HeapTrackingArrayList[NodeData]): Unit = {
-    log("targets" -> targets.asScala.mkString("[", ", ", "]"))
+    log(Debug, "targets" -> targets.asScala.mkString("[", ", ", "]"))
   }
 
   override def activateSignpost(currentLength: Int, signpost: TwoWaySignpost): Unit = {
     log(
+      Debug,
       "currentLength" -> currentLength,
       "signpost" -> signpost
     )
@@ -176,6 +189,7 @@ object LoggingPPBFSHooks extends PPBFSHooks {
 
   override def deactivateSignpost(currentLength: Int, signpost: TwoWaySignpost): Unit = {
     log(
+      Debug,
       "currentLength" -> currentLength,
       "signpost" -> signpost
     )
@@ -184,26 +198,35 @@ object LoggingPPBFSHooks extends PPBFSHooks {
   implicit private def pairToString(pair: (String, Any)): String = pair._1 + ": " + pair._2
   private def list(pairs: (String, Any)*): String = pairs.map(pairToString).mkString(", ")
 
-  private def log(items: String*) = logMsg(items.mkString(", ") + "\n", 4)
+  private def log(level: Level, items: String*) = logMsg(level, items.mkString(", ") + "\n", 4)
 
-  private def logMsg(message: String, offset: Int): Unit = {
+  private def logMsg(level: Level, message: String, offset: Int): Unit =
+    if (level.value >= minLevel.value) {
+      val builder = new StringBuilder().append(color).append(DebugSupport.Bold)
 
-    val builder = new StringBuilder().append(color).append(DebugSupport.Bold)
+      val stack = Thread.currentThread.getStackTrace()
+      val outerFrame = stack(offset)
+      val qualifiedName = outerFrame.getClassName.split("\\.")
+      val simpleClassName = qualifiedName(qualifiedName.length - 1)
+      val simpleName = simpleClassName + '.' + outerFrame.getMethodName
+      builder.append(simpleName)
+      val paddingSize = (PADDING - simpleName.length).max(1)
+      builder.append(" ".repeat(paddingSize))
 
-    val stack = Thread.currentThread.getStackTrace()
-    val outerFrame = stack(offset)
-    val qualifiedName = outerFrame.getClassName.split("\\.")
-    val simpleClassName = qualifiedName(qualifiedName.length - 1)
-    val simpleName = simpleClassName + '.' + outerFrame.getMethodName
-    builder.append(simpleName)
-    val paddingSize = (PADDING - simpleName.length).max(1)
-    builder.append(" ".repeat(paddingSize))
-
-    val innerFrame = stack(offset - 1)
-    if (innerFrame.getMethodName != outerFrame.getMethodName) {
-      builder.append(innerFrame.getMethodName).append(' ')
+      val innerFrame = stack(offset - 1)
+      if (innerFrame.getMethodName != outerFrame.getMethodName) {
+        builder.append(innerFrame.getMethodName).append(' ')
+      }
+      builder.append(DebugSupport.Reset).append(message)
+      System.out.print(builder)
     }
-    builder.append(DebugSupport.Reset).append(message)
-    System.out.print(builder)
-  }
+}
+
+object LoggingPPBFSHooks {
+  sealed abstract class Level(val value: Int)
+  case object Info extends Level(2)
+  case object Debug extends Level(1)
+
+  val info = new LoggingPPBFSHooks(Info)
+  val debug = new LoggingPPBFSHooks(Debug)
 }

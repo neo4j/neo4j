@@ -1082,7 +1082,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
 
     def toList: Seq[A] = build().asScala.toList
 
-    def logged: FixtureBuilder[A] = copy(hooks = LoggingPPBFSHooks)
+    def logged: FixtureBuilder[A] = copy(hooks = LoggingPPBFSHooks.debug)
 
     /** Run the iterator with event hooks attached */
     def events(): Seq[EventRecorder.Event] = {
