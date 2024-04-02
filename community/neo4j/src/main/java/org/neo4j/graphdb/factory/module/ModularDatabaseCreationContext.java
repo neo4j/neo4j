@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.StorageEngineFactorySupplier;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -68,7 +69,6 @@ import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
 import org.neo4j.kernel.monitoring.DatabaseHealthEventGenerator;
-import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.logging.internal.LogService;
@@ -98,7 +98,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final PageCache pageCache;
     private final ConstraintSemantics constraintSemantics;
     private final Monitors parentMonitors;
-    private final Tracers tracers;
+    private final DatabaseTracers tracers;
     private final GlobalProcedures globalProcedures;
     private final IOControllerService ioControllerService;
     private final LongFunction<DatabaseAvailabilityGuard> databaseAvailabilityGuardFactory;
@@ -150,7 +150,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             TokenHolders tokenHolders,
             DatabaseStartupController databaseStartupController,
             ReadOnlyDatabases readOnlyDatabases,
-            IOControllerService ioControllerService) {
+            IOControllerService ioControllerService,
+            DatabaseTracers tracers) {
         this.serverIdentity = serverIdentity;
         this.namedDatabaseId = namedDatabaseId;
         this.databaseConfig = databaseConfig;
@@ -179,7 +180,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.commitProcessFactory = commitProcessFactory;
         this.pageCache = globalModule.getPageCache();
         this.constraintSemantics = constraintSemantics;
-        this.tracers = globalModule.getTracers();
+        this.tracers = tracers;
         this.globalProcedures = globalDependencies.resolveDependency(GlobalProcedures.class);
         this.ioControllerService = ioControllerService;
         this.clock = globalModule.getGlobalClock();
@@ -293,7 +294,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     }
 
     @Override
-    public Tracers getTracers() {
+    public DatabaseTracers getTracers() {
         return tracers;
     }
 

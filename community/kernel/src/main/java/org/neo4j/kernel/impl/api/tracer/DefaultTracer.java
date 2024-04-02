@@ -72,6 +72,11 @@ public class DefaultTracer implements DatabaseTracer {
     }
 
     @Override
+    public TransactionWriteEvent beginAsyncCommit() {
+        return transactionWriteEvent;
+    }
+
+    @Override
     public long appendedBytes() {
         return appendedBytes.longValue();
     }

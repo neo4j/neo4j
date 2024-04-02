@@ -32,6 +32,7 @@ import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -115,7 +116,8 @@ public class DefaultDatabaseContextFactory
                     createTokenHolderProvider(this::kernel),
                     new GlobalAvailabilityGuardController(globalModule.getGlobalAvailabilityGuard()),
                     components.readOnlyDatabases(),
-                    controllerService);
+                    controllerService,
+                    new DatabaseTracers(globalModule.getTracers(), namedDatabaseId));
             kernelDatabase = new Database(creationContext);
             context = new StandaloneDatabaseContext(kernelDatabase);
         }

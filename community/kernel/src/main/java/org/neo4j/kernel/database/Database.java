@@ -302,7 +302,7 @@ public class Database extends AbstractDatabase {
 
         this.databaseFacade = new GraphDatabaseFacade(this, databaseConfig, dbmsInfo, mode, databaseAvailabilityGuard);
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory(databaseConfig, databaseFacade);
-        this.tracers = new DatabaseTracers(context.getTracers(), context.getNamedDatabaseId());
+        this.tracers = context.getTracers();
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
