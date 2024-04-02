@@ -47,6 +47,7 @@ import org.neo4j.internal.helpers.Exceptions
 class CypherAstParser private (
   input: TokenStream,
   createAst: Boolean,
+  exceptionFactory: CypherExceptionFactory,
   notificationLogger: Option[InternalNotificationLogger]
 ) extends CypherParser(input) {
   // These could be added using `addParseListener` too, but this is faster
@@ -104,7 +105,7 @@ class CypherAstParser private (
   override def reset(): Unit = {
     super.reset()
     astBuilder = if (createAst) new AstBuilder(notificationLogger) else NoOpParseTreeListener
-    checker = new SyntaxChecker
+    checker = new SyntaxChecker(exceptionFactory)
     hasFailed = false
   }
 
@@ -141,7 +142,7 @@ object CypherAstParser {
     f: CypherAstParser => T
   ): T = {
     val tokens = preparsedTokens(query)
-    val parser = new CypherAstParser(tokens, true, notificationLogger)
+    val parser = new CypherAstParser(tokens, true, exceptionFactory, notificationLogger)
 
     // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
     // See https://github.com/antlr/antlr4/blob/dev/doc/faq/general.md#why-is-my-expression-parser-slow
@@ -206,12 +207,6 @@ object CypherAstParser {
 
     result
   }
-
-  def apply(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), true, None)
-  def apply(input: TokenStream): CypherAstParser = new CypherAstParser(input, true, None)
-
-  // Only needed during development
-  def withoutAst(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), false, None)
 
   private def preparsedTokens(cypher: String) = new CommonTokenStream(ReplaceUnicodeEscapeSequences.fromString(cypher))
 }

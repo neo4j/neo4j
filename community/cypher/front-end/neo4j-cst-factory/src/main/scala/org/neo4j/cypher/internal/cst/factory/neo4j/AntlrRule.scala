@@ -50,7 +50,6 @@ import scala.reflect.ClassTag
 
 trait AntlrRule[+T <: AstRuleCtx] {
   def apply(queryText: String): Cst[T]
-  def parseWithoutAst(cypher: String): Cst[T]
 }
 
 object AntlrRule {
@@ -67,15 +66,6 @@ object AntlrRule {
       new Cst(ctx) {
         val parsingErrors: List[Exception] = List.empty
         override def ast: Option[ASTNode] = theAst
-      }
-    }
-
-    // Should only be needed during development of antlr parser
-    override def parseWithoutAst(cypher: String): Cst[T] = {
-      val parser = CypherAstParser.withoutAst(cypher)
-      new Cst(runParser(parser)) {
-        val parsingErrors: List[Exception] = List.empty
-        override def ast: Option[ASTNode] = None
       }
     }
   }

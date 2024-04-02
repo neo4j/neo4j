@@ -18,9 +18,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.test.util
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.AstConstructionError
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseError
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseFailure
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResult
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResults
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseSuccess
@@ -47,16 +46,13 @@ trait AstParsing {
         val javaCcRule = JavaccRule.from[T]
         Try(javaCcRule(cypher)) match {
           case Success(ast)       => ParseSuccess(ast)
-          case Failure(throwable) => ParseError(throwable)
+          case Failure(throwable) => ParseFailure(throwable)
         }
       case Antlr =>
         val antlrRule = AntlrRule.from[T]
         Try(antlrRule(cypher).ast) match {
-          case Success(ast) => ParseSuccess(ast.orNull)
-          case Failure(throwable) => Try(antlrRule.parseWithoutAst(cypher)) match {
-              case Success(_)              => AstConstructionError(throwable)
-              case Failure(parseThrowable) => ParseError(parseThrowable)
-            }
+          case Success(ast)       => ParseSuccess(ast.orNull)
+          case Failure(throwable) => ParseFailure(throwable)
         }
     }
   }
@@ -84,15 +80,7 @@ object AstParsing extends AstParsing {
   }
   case class ParseSuccess[T](ast: T) extends ParseResult
 
-  sealed trait ParseFailure extends ParseResult {
-    def throwable: Throwable
-
+  case class ParseFailure(throwable: Throwable) extends ParseResult {
     override def toString: String = s"Failed parsing:\n${Exceptions.stringify(throwable)}"
   }
-
-  object ParseFailure {
-    def unapply(f: ParseFailure): Option[Throwable] = Some(f.throwable)
-  }
-  case class ParseError(throwable: Throwable) extends ParseFailure
-  case class AstConstructionError(throwable: Throwable) extends ParseFailure
 }

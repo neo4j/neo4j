@@ -25,14 +25,14 @@ class PeriodicCommitParserTest extends AstParsingTestBase {
     "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead. (line 1, column 7 (offset: 6))"
 
   test("USING PERIODIC COMMIT LOAD CSV FROM 'foo' AS l RETURN l") {
-    failsParsing[Statements].withMessage(message)
+    failsParsing[Statements].withMessageStart(message)
   }
 
   test("USING PERIODIC COMMIT 200 LOAD CSV FROM 'foo' AS l RETURN l") {
-    failsParsing[Statements].withMessage(message)
+    failsParsing[Statements].withMessageStart(message)
   }
 
   test("USING PERIODIC COMMIT RETURN 1") {
-    failsParsing[Statements].withMessage(message)
+    failsParsing[Statements].withMessageStart(message)
   }
 }

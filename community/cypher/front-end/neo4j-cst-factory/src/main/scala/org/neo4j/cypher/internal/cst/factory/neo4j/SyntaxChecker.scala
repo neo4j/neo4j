@@ -41,14 +41,13 @@ import org.neo4j.cypher.internal.parser.CypherParser.ConstraintTypedContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobRecursiveContext
 import org.neo4j.cypher.internal.parser.CypherParser.SymbolicAliasNameOrParameterContext
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-final class SyntaxChecker extends ParseTreeListener {
-  private val exceptionFactory = new OpenCypherExceptionFactory(None)
+final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends ParseTreeListener {
   private var errors: Seq[Exception] = Seq.empty
 
   override def visitTerminal(node: TerminalNode): Unit = {}
