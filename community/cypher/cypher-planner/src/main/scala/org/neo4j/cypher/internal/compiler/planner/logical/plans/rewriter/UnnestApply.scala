@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.UnaryPlansOnTopOfArgument
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.UnnestableUnaryPlan
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.UnnestingRewriter
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -178,57 +181,63 @@ case class UnnestApply(
   override def apply(input: AnyRef): AnyRef = fixedPoint(instance).apply(input)
 }
 
-object UnnestableUnaryPlan {
+object UnnestApply {
 
-  /**
-   * Plans whose behavior (result) would not change, if they were moved from RHS of Apply to LHS of same Apply.
-   * E.g., Distinct is NOT unnestable because on RHS of Apply it returns distinct rows PER ARGUMENT, where on LHS they are globally distinct.
-   */
-  def unapply(p: LogicalPlan): Option[LogicalUnaryPlan] = p match {
-    case p: Selection            => Some(p)
-    case p: Projection           => Some(p)
-    case p: Expand               => Some(p)
-    case p: VarExpand            => Some(p)
-    case p: StatefulShortestPath => Some(p)
-    case _                       => None
-  }
-}
+  object UnnestableUnaryPlan {
 
-object UnaryPlansOnTopOfArgument {
-
-  def unapply(p: LogicalPlan): Boolean = p match {
-    case LogicalUnaryPlan(UnaryPlansOnTopOfArgument()) => true
-    case _: Argument                                   => true
-    case _                                             => false
-  }
-}
-
-trait UnnestingRewriter {
-  def solveds: Solveds
-  def cardinalities: Cardinalities
-  def providedOrders: ProvidedOrders
-  def attributes: Attributes[LogicalPlan]
-
-  // L Ax (UP R) => UP (L Ax R)
-  protected def unnestRightUnary(apply: Apply, lhs: LogicalPlan, rhs: LogicalUnaryPlan): LogicalPlan = {
-    val newApply = apply.copy(right = rhs.source)(attributes.copy(apply.id))
-    solveds.copy(apply.id, newApply.id)
-    cardinalities.set(newApply.id, cardinalities(lhs.id) * cardinalities(rhs.source.id))
-    providedOrders.copy(apply.id, newApply.id)
-
-    val res = rhs.withLhs(newApply)(attributes.copy(rhs.id))
-    solveds.copy(apply.id, res.id)
-    cardinalities.set(res.id, cardinalities(lhs.id) * cardinalities(rhs.id))
-    providedOrders.copy(apply.id, res.id)
-    res
+    /**
+     * Plans whose behavior (result) would not change, if they were moved from RHS of Apply to LHS of same Apply.
+     * E.g., Distinct is NOT unnestable because on RHS of Apply it returns distinct rows PER ARGUMENT, where on LHS they are globally distinct.
+     */
+    def unapply(p: LogicalPlan): Option[LogicalUnaryPlan] = p match {
+      case p: Selection            => Some(p)
+      case p: Projection           => Some(p)
+      case p: Expand               => Some(p)
+      case p: VarExpand            => Some(p)
+      case p: StatefulShortestPath => Some(p)
+      case _                       => None
+    }
   }
 
-  protected def assertArgumentHasCardinality1(arg: Argument): Unit = {
-    // Argument plans are always supposed to have a Cardinality of 1.
-    // If this should not hold, we would need to multiply Cardinality for this rewrite rule.
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      cardinalities(arg.id) == Cardinality.SINGLE,
-      s"Argument plans should always have Cardinality 1. Had: ${cardinalities(arg.id)}"
-    )
+  object UnaryPlansOnTopOfArgument {
+
+    def unapply(p: LogicalPlan): Boolean = p match {
+      case LogicalUnaryPlan(UnaryPlansOnTopOfArgument()) => true
+      case _: Argument                                   => true
+      case _                                             => false
+    }
+  }
+
+  trait UnnestingRewriter {
+    def solveds: Solveds
+
+    def cardinalities: Cardinalities
+
+    def providedOrders: ProvidedOrders
+
+    def attributes: Attributes[LogicalPlan]
+
+    // L Ax (UP R) => UP (L Ax R)
+    protected def unnestRightUnary(apply: Apply, lhs: LogicalPlan, rhs: LogicalUnaryPlan): LogicalPlan = {
+      val newApply = apply.copy(right = rhs.source)(attributes.copy(apply.id))
+      solveds.copy(apply.id, newApply.id)
+      cardinalities.set(newApply.id, cardinalities(lhs.id) * cardinalities(rhs.source.id))
+      providedOrders.copy(apply.id, newApply.id)
+
+      val res = rhs.withLhs(newApply)(attributes.copy(rhs.id))
+      solveds.copy(apply.id, res.id)
+      cardinalities.set(res.id, cardinalities(lhs.id) * cardinalities(rhs.id))
+      providedOrders.copy(apply.id, res.id)
+      res
+    }
+
+    protected def assertArgumentHasCardinality1(arg: Argument): Unit = {
+      // Argument plans are always supposed to have a Cardinality of 1.
+      // If this should not hold, we would need to multiply Cardinality for this rewrite rule.
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        cardinalities(arg.id) == Cardinality.SINGLE,
+        s"Argument plans should always have Cardinality 1. Had: ${cardinalities(arg.id)}"
+      )
+    }
   }
 }
