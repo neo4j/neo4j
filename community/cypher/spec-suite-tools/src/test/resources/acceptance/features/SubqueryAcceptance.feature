@@ -1283,3 +1283,32 @@ Feature: SubqueryAcceptance
       | invariant |
       | true      |
     And no side effects
+
+
+  Scenario: Each execution of a CALL subquery can observe changes from previous executions, projections should capture the state of the current execution
+    When having executed:
+      """
+      CREATE (:Counter {count: 0})
+      """
+    And executing query:
+      """
+      UNWIND [0, 1, 2] AS x
+      CALL {
+        MATCH (n:Counter)
+          SET n.count = n.count + 1
+        RETURN n.count AS innerCount
+      }
+      WITH innerCount
+      MATCH (n:Counter)
+      RETURN
+        innerCount,
+        n.count AS totalCount
+    """
+    Then the result should be, in any order:
+      | innerCount | totalCount |
+      | 1          | 3          |
+      | 2          | 3          |
+      | 3          | 3          |
+    And the side effects should be:
+      | -properties | 1 |
+      | +properties | 1 |
