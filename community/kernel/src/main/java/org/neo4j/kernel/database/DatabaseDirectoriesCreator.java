@@ -32,7 +32,7 @@ public class DatabaseDirectoriesCreator {
         this.databaseLayout = databaseLayout;
     }
 
-    void createDirectories() throws IOException {
+    public void createDirectories() throws IOException {
         fs.mkdirs(databaseLayout.databaseDirectory());
         fs.mkdirs(databaseLayout.getTransactionLogsDirectory());
     }
