@@ -39,13 +39,13 @@ import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewri
 import org.neo4j.io.ByteUnit
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.api.KernelTransactions
+import org.neo4j.kernel.impl.util.ReadAndDeleteTransactionConflictException
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.UUID
-
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.util.Random
@@ -1054,7 +1054,13 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       case _            => restartTx()
     }
     val runtimeResult = profile(query, runtime, input())
-    consume(runtimeResult)
+    try {
+      consume(runtimeResult)
+    } catch {
+      case _: ReadAndDeleteTransactionConflictException =>
+        //some node is missing, ignore
+    }
+
     if (isParallel) {
       // TODO: Parallel runtime does not yet support heap high watermark through query profile
       //       For now, create a very rough estimate from how much heap was grabbed from the transaction memory pool
