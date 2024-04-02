@@ -91,7 +91,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
           otherAttributes.withAlso(solveds, cardinalities, effectiveCardinalities, providedOrders)
         ),
         fuseSelections,
-        unnestApply(
+        UnnestApply(
           solveds,
           cardinalities,
           providedOrders,

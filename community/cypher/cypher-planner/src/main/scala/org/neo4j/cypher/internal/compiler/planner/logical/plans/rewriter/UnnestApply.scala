@@ -44,7 +44,7 @@ import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
 
-case class unnestApply(
+case class UnnestApply(
   override val solveds: Solveds,
   override val cardinalities: Cardinalities,
   override val providedOrders: ProvidedOrders,

@@ -791,7 +791,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     idGen: IdGen
   ): LogicalPlan = {
     val solveds = new StubSolveds
-    val unnest = unnestApply(solveds, cardinalities, providedOrders, Attributes(idGen))
+    val unnest = UnnestApply(solveds, cardinalities, providedOrders, Attributes(idGen))
 
     p.endoRewrite(unnest)
   }
