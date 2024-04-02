@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -2926,5 +2927,49 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .|.argument("a")
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build())
+  }
+
+  test("should plan Sort after projected expression that invalidates provided order (Pipelined runtime)") {
+    val query =
+      """MATCH (a:A)
+        |WITH a ORDER BY a.prop
+        |RETURN COUNT {
+        |  MATCH (a)-[r:REL]->(b) RETURN b
+        |  UNION // invalidates provided order in Pipelined
+        |  MATCH (a)-[r:OTHER_REL]->(b) RETURN b
+        |} AS result
+        |ORDER BY a.prop
+        |""".stripMargin
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 100)
+      .setAllRelationshipsCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 200)
+      .setRelationshipCardinality("()-[:OTHER_REL]->()", 500)
+      .setRelationshipCardinality("(:A)-[:REL]->()", 150)
+      .setRelationshipCardinality("(:A)-[:OTHER_REL]->()", 400)
+      .setExecutionModel(ExecutionModel.BatchedSingleThreaded(1, 2))
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("`a.prop` ASC")
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS result"))
+      .|.distinct("b AS b", "a AS a")
+      .|.union()
+      .|.|.projection("b AS b")
+      .|.|.expandAll("(a)-[r:OTHER_REL]->(b)")
+      .|.|.argument("a")
+      .|.projection("b AS b")
+      .|.expandAll("(a)-[r:REL]->(b)")
+      .|.argument("a")
+      .sort("`a.prop` ASC")
+      .projection("cacheNFromStore[a.prop] AS `a.prop`")
+      .nodeByLabelScan("a", "A")
+      .build()
   }
 }

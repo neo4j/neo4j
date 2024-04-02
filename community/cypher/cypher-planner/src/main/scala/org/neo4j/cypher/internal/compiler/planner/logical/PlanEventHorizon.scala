@@ -201,11 +201,21 @@ case object PlanEventHorizon extends EventHorizonPlanner {
           sortFirst
         ))
 
+        def sortFirstWithFallback(initialPlan: LogicalPlan): LogicalPlan = {
+          val sortedPlan = sortFirst(initialPlan)
+          SortPlanner.orderSatisfaction(interestingOrderConfig, context, sortedPlan) match {
+            case InterestingOrder.FullSatisfaction() => sortedPlan
+            case _                                   =>
+              // Some subquery expression invalidated the ordering, start over.
+              projectSubqueryExpressionsFirst(initialPlan)
+          }
+        }
+
         // Normally, we will first sort and then apply projections. This is cheaper in the the case of a LIMIT,
         // where the projection only needs to be applied to fewer rows.
         // If the runtime is not order preserving, we should do subquery expression projections (which can break an incoming order)
         // before sorting.
-        if (context.settings.executionModel.providedOrderPreserving) sortFirst(selectedPlan)
+        if (context.settings.executionModel.providedOrderPreserving) sortFirstWithFallback(selectedPlan)
         else projectSubqueryExpressionsFirst(selectedPlan)
 
       case distinctProjection: DistinctQueryProjection =>
