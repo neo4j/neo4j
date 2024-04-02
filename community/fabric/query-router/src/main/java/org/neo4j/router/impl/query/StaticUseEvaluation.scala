@@ -34,7 +34,7 @@ class StaticUseEvaluation {
   private def evaluateStaticOption(graphSelection: GraphSelection): Option[CatalogName] =
     graphSelection.graphReference match {
       case s: GraphDirectReference => Some(s.catalogName)
-      case _           => None
+      case _                       => None
     }
 
   private def evaluateStatic(graphSelection: GraphSelection): CatalogName =

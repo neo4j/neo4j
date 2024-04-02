@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.DateTimeValue
 import org.neo4j.values.storable.DateValue
@@ -193,11 +195,20 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
       s"MATCH (n:Label) WHERE n.nonIndexed $operator $$prop RETURN n, n.nonIndexed AS prop ORDER BY id(n)"
     val queryUsingIndex = s"MATCH (n:Label) WHERE n.indexed $operator $$prop RETURN n, n.indexed AS prop ORDER BY id(n)"
 
-    case object behaveEqualWithAndWithoutIndex extends Matcher[Value] {
+    case class behaveEqualWithAndWithoutIndex(tx: Option[InternalTransaction]) extends Matcher[Value] {
       def apply(value: Value): MatchResult = {
         val valueObject = value.asObject()
-        val indexedResult = execute(queryUsingIndex, "prop" -> valueObject)
-        val nonIndexedResult = execute(queryNotUsingIndex, "prop" -> valueObject)
+        val (indexedResult, nonIndexedResult) = tx match {
+          case Some(tx) => (
+              execute(queryUsingIndex, Map("prop" -> valueObject), tx, QueryExecutionConfiguration.DEFAULT_CONFIG),
+              execute(queryNotUsingIndex, Map("prop" -> valueObject), tx, QueryExecutionConfiguration.DEFAULT_CONFIG)
+            )
+          case None => (
+              execute(queryUsingIndex, "prop" -> valueObject),
+              execute(queryNotUsingIndex, "prop" -> valueObject)
+            )
+        }
+
         indexedResult.executionPlanDescription().toString should include("NodeIndexSeek")
         val result = nonIndexedResult.toList.equals(indexedResult.toList)
 
@@ -211,18 +222,23 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
 
     test(s"testing ${setup.name} with n.prop $operator $$argument") {
       forAll(setup.generator) { (propertyValue: T) =>
-        createLabeledNode(Map("nonIndexed" -> propertyValue.asObject(), "indexed" -> propertyValue.asObject()), "Label")
+        givenTx {
+          createLabeledNode(
+            Map("nonIndexed" -> propertyValue.asObject(), "indexed" -> propertyValue.asObject()),
+            "Label"
+          )
 
-        withClue("with TxState\n") {
-          propertyValue should behaveEqualWithAndWithoutIndex
-          setup.lessThan(propertyValue) should behaveEqualWithAndWithoutIndex
-          setup.moreThan(propertyValue) should behaveEqualWithAndWithoutIndex
+          withClue("with TxState\n") {
+            propertyValue should behaveEqualWithAndWithoutIndex(tx = Some(tx))
+            setup.lessThan(propertyValue) should behaveEqualWithAndWithoutIndex(tx = Some(tx))
+            setup.moreThan(propertyValue) should behaveEqualWithAndWithoutIndex(tx = Some(tx))
+          }
         }
 
         withClue("without TxState\n") {
-          propertyValue should behaveEqualWithAndWithoutIndex
-          setup.lessThan(propertyValue) should behaveEqualWithAndWithoutIndex
-          setup.moreThan(propertyValue) should behaveEqualWithAndWithoutIndex
+          propertyValue should behaveEqualWithAndWithoutIndex(tx = None)
+          setup.lessThan(propertyValue) should behaveEqualWithAndWithoutIndex(tx = None)
+          setup.moreThan(propertyValue) should behaveEqualWithAndWithoutIndex(tx = None)
         }
       }
     }
@@ -232,7 +248,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
     val str = in.stringValue()
     if (str.isEmpty) in
     else
-      Values.stringValue(str.substring(0, in.length - 1) + (str.last - 1).toChar)
+      Values.stringValue(str.substring(0, in.length - 1) + f((str.last - 1).toChar))
   }
 
   private def modifyPoint(f: Double => Double)(in: PointValue): PointValue =
