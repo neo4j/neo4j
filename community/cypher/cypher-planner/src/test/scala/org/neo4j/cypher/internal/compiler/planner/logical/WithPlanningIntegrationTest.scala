@@ -503,8 +503,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite
     plan should equal(
       planner.planBuilder()
         .produceResults("n1", "prop", "prop2")
-        .projection("n2.prop AS prop2")
         .apply()
+        .|.projection("n2.prop AS prop2")
         .|.create(
           createNodeWithProperties("n2", Seq(), "{prop: n1.x}"),
           createRelationship("anon_0", "n1", "LIKES", "n2", OUTGOING)

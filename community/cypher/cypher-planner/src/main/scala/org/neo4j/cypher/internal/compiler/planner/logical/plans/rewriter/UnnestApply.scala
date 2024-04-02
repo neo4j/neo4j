@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.ApplyWithReadonlyRhs
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.UnaryPlansOnTopOfArgument
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.UnnestableUnaryPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.UnnestingRewriter
@@ -103,11 +104,11 @@ case class UnnestApply(
     // L Ax (π R) => π(L Ax R)
     // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
     // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
-    case apply @ Apply(lhs, UnnestableUnaryPlan(p)) =>
+    case apply @ ApplyWithReadonlyRhs(lhs, UnnestableUnaryPlan(p)) =>
       unnestRightUnary(apply, lhs, p)
 
     // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L2
-    case original @ Apply(lhs, Apply(sel @ Selection(predicate, lhs2), rhs))
+    case original @ ApplyWithReadonlyRhs(lhs, Apply(sel @ Selection(predicate, lhs2), rhs))
       if predicate.exprs.forall(lhs.satisfiesExpressionDependencies) =>
       val maybeSelectivity = cardinalities(sel.id) / cardinalities(lhs2.id)
       val selectionLHS = Selection(predicate, lhs)(attributes.copy(sel.id))
@@ -123,11 +124,11 @@ case class UnnestApply(
       Apply(selectionLHS, apply2)(SameId(original.id))
 
     // L Ax (OEX Arg) => OEX (L Ax Arg)
-    case apply @ Apply(lhs, oex @ OptionalExpand(_: Argument, _, _, _, _, _, _, _)) =>
+    case apply @ ApplyWithReadonlyRhs(lhs, oex @ OptionalExpand(_: Argument, _, _, _, _, _, _, _)) =>
       unnestRightUnary(apply, lhs, oex)
 
     // π (Arg) Ax R => π (R) // if projections are simple and R is leaf and R is not using columns from π
-    case apply @ Apply(projection @ Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan)
+    case apply @ ApplyWithReadonlyRhs(projection @ Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan)
       if !projections.keys.exists(rhsLeaf.usedVariables.contains) && projections.values.forall(_.isSimple) =>
       val dependencies = projections.values.flatMap(_.dependencies).toSet
       val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet).addArgumentIds(dependencies)
@@ -138,7 +139,7 @@ case class UnnestApply(
       res
 
     // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree
-    case apply @ Apply(lhs1, Apply(lhs2, rhs2)) if !apply.hasUpdatingRhs && isUnnestableUnaryPlanTree(lhs2) =>
+    case apply @ ApplyWithReadonlyRhs(lhs1, Apply(lhs2, rhs2)) if isUnnestableUnaryPlanTree(lhs2) =>
       val res = Apply(putOnTopOf(lhs1, lhs2), rhs2)(attributes.copy(apply.id))
       solveds.copy(apply.id, res.id)
       cardinalities.set(res.id, cardinalities(apply.id))
@@ -146,8 +147,8 @@ case class UnnestApply(
       res
 
     // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree
-    case apply @ Apply(lhs1, innerApplyPlan @ ApplyPlan(lhs2, _))
-      if !apply.hasUpdatingRhs && isUnnestableUnaryPlanTree(lhs2) =>
+    case apply @ ApplyWithReadonlyRhs(lhs1, innerApplyPlan @ ApplyPlan(lhs2, _))
+      if isUnnestableUnaryPlanTree(lhs2) =>
       val res = innerApplyPlan.withLhs(putOnTopOf(lhs1, lhs2))(attributes.copy(apply.id))
       solveds.copy(apply.id, res.id)
       cardinalities.set(res.id, cardinalities(apply.id))
@@ -182,6 +183,12 @@ case class UnnestApply(
 }
 
 object UnnestApply {
+
+  object ApplyWithReadonlyRhs {
+
+    def unapply(apply: Apply): Option[(LogicalPlan, LogicalPlan)] =
+      Option.when(!apply.hasUpdatingRhs)((apply.left, apply.right))
+  }
 
   object UnnestableUnaryPlan {
 

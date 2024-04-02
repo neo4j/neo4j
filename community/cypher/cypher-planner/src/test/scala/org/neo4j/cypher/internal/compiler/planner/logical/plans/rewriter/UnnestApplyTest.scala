@@ -612,6 +612,19 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     rewrite(input) should equal(input)
   }
 
+  test("should not unnest non-updating plan if RHS contains updates") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("n", "prop")
+      .apply()
+      .|.projection("m.prop AS prop")
+      .|.setLabels("m", "Label")
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+      .build()
+
+    rewrite(input) should equal(input)
+  }
+
   test("should unnest nested applies") {
     val input = new LogicalPlanBuilder()
       .produceResults("n", "m", "o")
