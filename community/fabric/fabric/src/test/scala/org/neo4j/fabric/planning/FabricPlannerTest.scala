@@ -59,7 +59,6 @@ import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
 import org.neo4j.fabric.cache.FabricQueryCache
 import org.neo4j.fabric.config.FabricConfig
 import org.neo4j.fabric.eval.Catalog
-import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.util.Folded.Descend
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.kernel.database.DatabaseIdFactory
@@ -634,7 +633,7 @@ class FabricPlannerTest
           |""".stripMargin
 
       val q2 =
-        """CYPHER debug=fabriclogplan
+        """CYPHER debug=rawCardinalities
           |WITH 1 AS x
           |RETURN x
           |""".stripMargin
@@ -953,19 +952,6 @@ class FabricPlannerTest
 
       the[InvalidSemanticsException].thrownBy(plan(q, params, sessionDatabaseName = fabricName))
         .check(_.getMessage.should(include("'PROFILE' is not supported on composite databases.")))
-    }
-
-    "allow fabric debug options" in {
-      val q =
-        """CYPHER debug=fabriclogplan debug=fabriclogrecords
-          |RETURN 1 AS x
-          |""".stripMargin
-
-      plan(q)
-        .check(_.debugOptions.shouldEqual(DebugOptions(logPlan = true, logRecords = true)))
-        .check(_.query.withoutLocalAndRemote.shouldEqual(
-          init(defaultUse).exec(singleQuery(return_(literal(1).as("x"))), Seq("x"))
-        ))
     }
 
     "passes options on in remote and local parts" in {

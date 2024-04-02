@@ -22,7 +22,6 @@ package org.neo4j.fabric.planning
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.graphdb.Notification
@@ -50,9 +49,9 @@ object FabricPlan {
 
   object DebugOptions {
 
-    def from(debugOptions: CypherDebugOptions): DebugOptions = DebugOptions(
-      logPlan = debugOptions.fabricLogPlanEnabled,
-      logRecords = debugOptions.fabricLogRecordsEnabled
+    def noLogging(): DebugOptions = DebugOptions(
+      logPlan = false,
+      logRecords = false
     )
   }
 

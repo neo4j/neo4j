@@ -563,8 +563,6 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object ast extends CypherDebugOption("ast")
   case object semanticState extends CypherDebugOption("semanticstate")
   case object logicalPlan extends CypherDebugOption("logicalplan")
-  case object fabricLogPlan extends CypherDebugOption("fabriclogplan")
-  case object fabricLogRecords extends CypherDebugOption("fabriclogrecords")
   case object logicalPlanBuilder extends CypherDebugOption("logicalplanbuilder")
   case object rawCardinalities extends CypherDebugOption("rawcardinalities")
   case object renderDistinctness extends CypherDebugOption("renderdistinctness")
@@ -587,8 +585,6 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     ast,
     semanticState,
     logicalPlan,
-    fabricLogPlan,
-    fabricLogRecords,
     logicalPlanBuilder,
     rawCardinalities,
     renderDistinctness,
@@ -648,8 +644,6 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val astEnabled: Boolean = isEnabled(CypherDebugOption.ast)
   val semanticStateEnabled: Boolean = isEnabled(CypherDebugOption.semanticState)
   val logicalPlanEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlan)
-  val fabricLogPlanEnabled: Boolean = isEnabled(CypherDebugOption.fabricLogPlan)
-  val fabricLogRecordsEnabled: Boolean = isEnabled(CypherDebugOption.fabricLogRecords)
   val logicalPlanBuilderEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlanBuilder)
   val rawCardinalitiesEnabled: Boolean = isEnabled(CypherDebugOption.rawCardinalities)
   val renderDistinctnessEnabled: Boolean = isEnabled(CypherDebugOption.renderDistinctness)
