@@ -888,6 +888,37 @@ class FreeIdScannerTest {
         assertThat(scanner.hasMoreFreeIds(true)).isFalse();
     }
 
+    /**
+     * This is mostly a scenario where there are multiple different slots and there are IDs in the tree
+     * to be found, but only (or mostly) of sizes that are already full in cache.
+     */
+    @Test
+    void shouldAvoidUnnecessaryReserveAndUncacheWhenScanningMoreThanWhatFitsInCache() throws IOException {
+        // given
+        int[] slotSizes = {1, 2, 4, 8};
+        int cacheCapacity = 256;
+        var cache = new IdCache(evenSlotDistribution(slotSizes).slots(cacheCapacity));
+        int cacheCapacityPerSlot = cacheCapacity / slotSizes.length;
+        long generation = 1;
+        var scanner = scanner(IDS_PER_ENTRY, cache, generation, true);
+        try (var marker = marker(generation, true)) {
+            for (int i = 0; i < cacheCapacityPerSlot * 2; i++) {
+                marker.markDeletedAndFree(i * 2, 1);
+            }
+        }
+        scanner.tryLoadFreeIdsIntoCache(true, true, NULL_CONTEXT);
+        assertThat(cache.availableSpaceBySlotIndex()[0]).isZero();
+        assertThat(reuser.reservedIds.size()).isEqualTo(cacheCapacityPerSlot);
+        assertThat(reuser.unreservedIds.size()).isZero();
+
+        // when
+        scanner.tryLoadFreeIdsIntoCache(true, true, NULL_CONTEXT);
+
+        // then
+        assertThat(reuser.reservedIds.size()).isEqualTo(cacheCapacityPerSlot);
+        assertThat(reuser.unreservedIds.size()).isZero();
+    }
+
     private FreeIdScanner scanner(int idsPerEntry, int cacheSize, long generation, boolean strict) {
         return scanner(idsPerEntry, new IdCache(new Slot(cacheSize, 1)), generation, strict);
     }

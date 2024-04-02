@@ -28,7 +28,6 @@ import java.io.UncheckedIOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -77,7 +76,7 @@ class FreeIdScanner {
     private final ConcurrentLinkedQueue<Long> queuedWastedCachedIds = new ConcurrentLinkedQueue<>();
     /**
      * State for whether there's an ongoing scan, and if so where it should begin from. This is used in
-     * {@link #findSomeIdsToCache(MutableLongList, MutableInt, CursorContext)}  both to know where to initiate a scan from and to
+     * {@link #findSomeIdsToCache(MutableLongList, int[], CursorContext)}  both to know where to initiate a scan from and to
      * set it, if the cache got full before scan completed, or set it to null of the scan ended. The actual {@link Seeker} itself is local to the scan method.
      */
     private volatile Long ongoingScanRangeIndex;
@@ -135,10 +134,10 @@ class FreeIdScanner {
                 }
                 handleQueuedIds(cursorContext);
                 if (shouldFindFreeIdsByScan()) {
-                    var availableSpaceById = new MutableInt(cache.availableSpaceById());
-                    if (availableSpaceById.intValue() > 0) {
+                    var availableSpace = cache.availableSpaceBySlotIndex();
+                    if (hasAny(availableSpace)) {
                         var pendingIdQueue = LongLists.mutable.empty();
-                        if (findSomeIdsToCache(pendingIdQueue, availableSpaceById, cursorContext)) {
+                        if (findSomeIdsToCache(pendingIdQueue, availableSpace, cursorContext)) {
                             // Get a writer and mark the found ids as reserved
                             reserveAndOfferToCache(pendingIdQueue, cursorContext);
                         }
@@ -259,6 +258,7 @@ class FreeIdScanner {
                 var combinedId = iterator.next();
                 var id = idFromCombinedId(combinedId);
                 var numberOfIds = numberOfIdsFromCombinedId(combinedId);
+
                 // Mark as reserved before placing into cache. This prevents a race which could otherwise allow
                 // the ID to be allocated, used and (again) deleted and freed before marked as reserved here,
                 // and therefore "lost" until next restart.
@@ -287,18 +287,16 @@ class FreeIdScanner {
     }
 
     private boolean findSomeIdsToCache(
-            MutableLongList pendingIdQueue, MutableInt availableSpaceById, CursorContext cursorContext)
-            throws IOException {
+            MutableLongList pendingIdQueue, int[] availableSpace, CursorContext cursorContext) throws IOException {
         boolean startedNow = ongoingScanRangeIndex == null;
         IdRangeKey from = ongoingScanRangeIndex == null ? LOW_KEY : new IdRangeKey(ongoingScanRangeIndex);
         boolean seekerExhausted = false;
         int freeIdsNotificationBeforeScan = freeIdsNotifier.get();
-        IdRange.FreeIdVisitor visitor =
-                (id, numberOfIds) -> queueId(pendingIdQueue, availableSpaceById, id, numberOfIds);
+        IdRange.FreeIdVisitor visitor = (id, numberOfIds) -> queueId(pendingIdQueue, availableSpace, id, numberOfIds);
 
         try (Seeker<IdRangeKey, IdRange> scanner = tree.seek(from, HIGH_KEY, cursorContext)) {
             // Continue scanning until the cache is full or there's nothing more to scan
-            while (availableSpaceById.intValue() > 0) {
+            while (hasAny(availableSpace)) {
                 if (!scanner.next()) {
                     seekerExhausted = true;
                     break;
@@ -322,10 +320,56 @@ class FreeIdScanner {
         return somethingWasCached;
     }
 
-    private boolean queueId(MutableLongList pendingIdQueue, MutableInt availableSpaceById, long id, int numberOfIds) {
+    private static boolean hasAny(int[] availableSpace) {
+        for (int i : availableSpace) {
+            if (i > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean queueId(MutableLongList pendingIdQueue, int[] availableSpace, long id, int numberOfIds) {
         assert layout.idRangeIndex(id) == layout.idRangeIndex(id + numberOfIds - 1);
-        pendingIdQueue.add(combinedIdAndNumberOfIds(id, numberOfIds, false));
-        return availableSpaceById.addAndGet(-numberOfIds) > 0;
+        if (trackSpaceUsageOfQueuedId(availableSpace, numberOfIds)) {
+            pendingIdQueue.add(combinedIdAndNumberOfIds(id, numberOfIds, false));
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Given the {@code availableSpace} array with available space per slot, check if an ID of size {@code numberOfIds}
+     * fits, either partly or entirely. Also the {@code availableSpace} values will decrease equivalent to the size of
+     * {@code numberOfIds} and which slot(s) it fits into.
+     *
+     * @param availableSpace array of number of IDs that can fit into each slot.
+     * @param numberOfIds the size of the ID to try and fit into the cache.
+     * @return {@code true} if there's space for an ID of size {@code numberOfIds}, or at least parts of it and
+     * otherwise {@code false}.
+     */
+    private boolean trackSpaceUsageOfQueuedId(int[] availableSpace, int numberOfIds) {
+        int trackedNumberOfIds = numberOfIds;
+        int slotIndex = cache.largestSlotIndex(trackedNumberOfIds);
+        while (trackedNumberOfIds > 0) {
+            if (availableSpace[slotIndex] > 0) {
+                if (slotIndex == 0) {
+                    availableSpace[slotIndex] = Math.max(0, availableSpace[slotIndex] - trackedNumberOfIds);
+                    trackedNumberOfIds = 0;
+                } else {
+                    availableSpace[slotIndex]--;
+                    trackedNumberOfIds -= cache.slotSizeSlotIndex(slotIndex);
+                }
+                if (trackedNumberOfIds > 0) {
+                    slotIndex = cache.largestSlotIndex(trackedNumberOfIds);
+                }
+            } else if (slotIndex > 0) {
+                slotIndex--;
+            } else {
+                break;
+            }
+        }
+        return trackedNumberOfIds < numberOfIds;
     }
 
     boolean allocationEnabled() {

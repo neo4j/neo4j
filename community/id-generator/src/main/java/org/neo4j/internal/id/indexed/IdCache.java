@@ -95,8 +95,12 @@ class IdCache {
         throw new IllegalArgumentException("Must have a slot for single IDs");
     }
 
-    private int largestSlotIndex(int slotSize) {
+    int largestSlotIndex(int slotSize) {
         return slotIndexBySize[min(slotSize, slotIndexBySize.length) - 1];
+    }
+
+    int slotSizeSlotIndex(int slotIndex) {
+        return slotSizes[slotIndex];
     }
 
     int offer(long id, int numberOfIds, IndexedIdGenerator.Monitor monitor) {
@@ -163,6 +167,14 @@ class IdCache {
             space += queues[i].availableSpace() * slotSizes[i];
         }
         return space;
+    }
+
+    int[] availableSpaceBySlotIndex() {
+        int[] availableSpace = new int[slotSizes.length];
+        for (int i = 0; i < availableSpace.length; i++) {
+            availableSpace[i] = queues[i].availableSpace();
+        }
+        return availableSpace;
     }
 
     IdSlotDistribution.Slot[] slotsByAvailableSpace() {
