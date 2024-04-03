@@ -473,7 +473,6 @@ public abstract class Command implements StorageCommand {
         public NodeCountsCommand(LogCommandSerialization serialization, int labelId, long delta) {
             super(serialization);
             setup(labelId, Mode.UPDATE);
-            assert delta != 0 : "Tried to create a NodeCountsCommand for something that didn't change any count";
             this.labelId = labelId;
             this.delta = delta;
         }
@@ -514,8 +513,6 @@ public abstract class Command implements StorageCommand {
                 LogCommandSerialization serialization, int startLabelId, int typeId, int endLabelId, long delta) {
             super(serialization);
             setup(typeId, Mode.UPDATE);
-            assert delta != 0
-                    : "Tried to create a RelationshipCountsCommand for something that didn't change any count";
             this.startLabelId = startLabelId;
             this.typeId = typeId;
             this.endLabelId = endLabelId;
@@ -571,7 +568,6 @@ public abstract class Command implements StorageCommand {
                 LogCommandSerialization serialization, long groupId, RelationshipDirection direction, long delta) {
             super(serialization);
             setup(combinedKeyOnGroupAndDirection(groupId, direction), Mode.UPDATE);
-            assert delta != 0 : "Tried to create a GroupDegreeCommand for something that didn't change any count";
             this.groupId = groupId;
             this.direction = direction;
             this.delta = delta;
