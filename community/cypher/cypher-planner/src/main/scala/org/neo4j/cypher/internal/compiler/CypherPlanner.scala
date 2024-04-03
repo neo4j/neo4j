@@ -21,10 +21,8 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
-import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.systemPipeLine
@@ -56,45 +54,38 @@ object CypherPlanner {
 
   def apply[Context <: PlannerContext](
     monitors: Monitors,
-    config: CypherPlannerConfiguration,
+    parsingConfig: CypherParsingConfig,
+    plannerConfig: CypherPlannerConfiguration,
     clock: Clock,
     internalSyntaxUsageStats: InternalSyntaxUsageStats
   ): CypherPlanner[Context] = {
     val metricsFactory = CachedSimpleMetricsFactory
-    CypherPlanner(monitors, metricsFactory, config, clock, internalSyntaxUsageStats)
+    CypherPlanner(monitors, metricsFactory, parsingConfig, plannerConfig, clock, internalSyntaxUsageStats)
   }
 }
 
 case class CypherPlanner[Context <: PlannerContext](
   monitors: Monitors,
   metricsFactory: MetricsFactory,
-  config: CypherPlannerConfiguration,
+  parsingConfig: CypherParsingConfig,
+  plannerConfig: CypherPlannerConfiguration,
   clock: Clock,
   internalSyntaxUsageStats: InternalSyntaxUsageStats
 ) {
 
-  private val parsingConfig = CypherParsingConfig.fromCypherPlannerConfiguration(config)
-
-  private val parsing =
-    new CypherParsing(
-      monitors,
-      parsingConfig,
-      config.queryRouterEnabled,
-      config.queryRouterForCompositeQueriesEnabled,
-      internalSyntaxUsageStats
-    )
+  private val parsing = new CypherParsing(monitors, parsingConfig, internalSyntaxUsageStats)
 
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
   def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {
     val features: Seq[SemanticFeature] = CypherParsingConfig.getEnabledFeatures(
-      context.config.enabledSemanticFeatures.apply(),
+      parsingConfig.semanticFeatures,
       context.config.targetsComposite,
-      config.queryRouterEnabled,
-      config.queryRouterForCompositeQueriesEnabled
+      parsingConfig.queryRouterEnabled,
+      parsingConfig.queryRouterForCompositeEnabled
     )
     val pipeLine =
-      if (config.planSystemCommands)
+      if (plannerConfig.planSystemCommands)
         systemPipeLine
       else if (context.debugOptions.toStringEnabled) {
         planPipeLine(semanticFeatures = features) andThen DebugPrinter
@@ -233,11 +224,6 @@ class CypherPlannerConfiguration(
     () => cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue()
   }
 
-  val obfuscateLiterals: () => Boolean = {
-    // Is dynamic, but documented to not affect caching.
-    () => config.obfuscateLiterals
-  }
-
   val pipelinedBatchSizeSmall: () => Int = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small.dynamic()
@@ -250,19 +236,6 @@ class CypherPlannerConfiguration(
       !GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.dynamic()
     )
     () => config.pipelinedBatchSizeBig
-  }
-
-  val enabledSemanticFeatures: () => Seq[SemanticFeature] = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      !GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features.dynamic()
-    )
-    () => {
-      CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures ++ config.toggledFeatures(Map(
-        GraphDatabaseInternalSettings.show_setting -> SemanticFeature.ShowSetting.productPrefix,
-        GraphDatabaseInternalSettings.property_value_access_rules -> SemanticFeature.PropertyValueAccessRules.productPrefix,
-        GraphDatabaseInternalSettings.composable_commands -> SemanticFeature.ComposableCommands.productPrefix
-      )))
-    }
   }
 
   val planningIntersectionScansEnabled: () => Boolean = {
@@ -279,20 +252,6 @@ class CypherPlannerConfiguration(
     () => config.predicatesAsUnionMaxSize
   }
 
-  val extractLiterals: () => ExtractLiteral = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      !GraphDatabaseInternalSettings.extract_literals.dynamic()
-    )
-    () => config.extractLiterals
-  }
-
-  val useParameterSizeHint: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      !GraphDatabaseInternalSettings.cypher_size_hint_parameters.dynamic()
-    )
-    () => config.useParameterSizeHint
-  }
-
   val eagerAnalyzer: () => CypherEagerAnalyzerOption = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_eager_analysis_implementation.dynamic()
@@ -300,7 +259,6 @@ class CypherPlannerConfiguration(
     () => config.eagerAnalyzer
   }
 
-  val queryRouterEnabled: Boolean = config.useQueryRouterForRegularQueries
   val queryRouterForCompositeQueriesEnabled: Boolean = config.allowCompositeQueries
 
   val statefulShortestPlanningMode: () => CypherStatefulShortestPlanningModeOption = {

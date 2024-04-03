@@ -278,6 +278,7 @@ SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
+  ANTLR 4 Runtime
   JLine Bundle
   scalacheck
   test-interface

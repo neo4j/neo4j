@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.CombinedQueryCacheStatistics;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
+import org.neo4j.cypher.internal.compiler.CypherParsingConfig;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.config.ObservableSetting;
@@ -55,11 +56,18 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
     protected CompilerFactory makeCompilerFactory(
             GraphDatabaseCypherService queryService,
             SPI spi,
+            CypherParsingConfig parsingConfig,
             CypherPlannerConfiguration plannerConfig,
             CypherRuntimeConfiguration runtimeConfig,
             CypherQueryCaches queryCaches) {
         return new CommunityCompilerFactory(
-                queryService, spi.monitors(), spi.logProvider(), plannerConfig, runtimeConfig, queryCaches);
+                queryService,
+                spi.monitors(),
+                spi.logProvider(),
+                parsingConfig,
+                plannerConfig,
+                runtimeConfig,
+                queryCaches);
     }
 
     protected CacheFactory getCacheFactory(Dependencies deps, SPI spi) {
@@ -76,6 +84,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
         GraphDatabaseCypherService queryService = deps.satisfyDependency(new GraphDatabaseCypherService(graphAPI));
         deps.satisfyDependency(Neo4jTransactionalContextFactory.create(queryService));
         CypherConfiguration cypherConfig = CypherConfiguration.fromConfig(spi.config());
+        CypherParsingConfig parsingConfig = CypherParsingConfig.fromCypherConfiguration(cypherConfig);
         CypherPlannerConfiguration plannerConfig =
                 CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), isSystemDatabase, false);
         CypherRuntimeConfiguration runtimeConfig = CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig);
@@ -87,7 +96,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
         CypherQueryCaches queryCaches =
                 makeCypherQueryCaches(spi, queryService, cypherConfig, cacheSize, cacheFactory, clock);
         CompilerFactory compilerFactory =
-                makeCompilerFactory(queryService, spi, plannerConfig, runtimeConfig, queryCaches);
+                makeCompilerFactory(queryService, spi, parsingConfig, plannerConfig, runtimeConfig, queryCaches);
         QueryCacheStatistics cacheStatistics = queryCaches.statistics();
         if (!isSystemDatabase) {
             deps.satisfyDependency(cacheStatistics);
@@ -102,8 +111,8 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
             CombinedQueryCacheStatistics combinedCacheStatistics =
                     new CombinedQueryCacheStatistics(cacheStatistics, innerCacheStatistics);
             deps.satisfyDependency(combinedCacheStatistics);
-            CompilerFactory innerCompilerFactory =
-                    makeCompilerFactory(queryService, spi, innerPlannerConfig, runtimeConfig, innerQueryCaches);
+            CompilerFactory innerCompilerFactory = makeCompilerFactory(
+                    queryService, spi, parsingConfig, innerPlannerConfig, runtimeConfig, innerQueryCaches);
             return new SystemExecutionEngine(
                     queryService,
                     spi.logProvider(),

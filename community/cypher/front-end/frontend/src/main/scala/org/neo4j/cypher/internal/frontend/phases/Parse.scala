@@ -19,24 +19,34 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.util.CrossCompilation
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Parse text into an AST object.
  */
-case object Parse extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
+case class Parse(useAntlr: Boolean) extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
     with ParsePipelineTransformerFactory {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    in.withStatement(JavaCCParser.parse(
-      in.queryText,
-      context.cypherExceptionFactory,
-      context.notificationLogger
-    ))
+    if (useAntlr && !CrossCompilation.isTeaVM) {
+      in.withStatement(CypherAstParser.parseStatements(
+        in.queryText,
+        context.cypherExceptionFactory,
+        Some(context.notificationLogger)
+      ).get(0))
+    } else {
+      in.withStatement(JavaCCParser.parse(
+        in.queryText,
+        context.cypherExceptionFactory,
+        context.notificationLogger
+      ))
+    }
   }
 
   override val phase = PARSING

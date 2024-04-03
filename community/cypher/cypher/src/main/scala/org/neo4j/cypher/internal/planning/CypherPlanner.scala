@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches.AstCache.AstCacheValue
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache.CacheableLogicalPlan
 import org.neo4j.cypher.internal.compiler
+import org.neo4j.cypher.internal.compiler.CypherParsingConfig
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
@@ -178,7 +179,8 @@ object CypherPlanner {
  * Cypher planner, which either parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]] or just plans [[FullyParsedQuery]].
  */
 case class CypherPlanner(
-  config: CypherPlannerConfiguration,
+  parsingConfig: CypherParsingConfig,
+  plannerConfig: CypherPlannerConfiguration,
   clock: Clock,
   kernelMonitors: monitoring.Monitors,
   log: InternalLog,
@@ -194,7 +196,7 @@ case class CypherPlanner(
   private val monitors: Monitors = WrappedMonitors(kernelMonitors)
 
   private val planner: compiler.CypherPlanner[PlannerContext] =
-    compiler.CypherPlanner(monitors, config, clock, internalSyntaxUsageStats)
+    compiler.CypherPlanner(monitors, parsingConfig, plannerConfig, clock, internalSyntaxUsageStats)
 
   private val schemaStateKey: SchemaStateKey = SchemaStateKey.newKey()
 
@@ -220,7 +222,7 @@ case class CypherPlanner(
     cancellationChecker: CancellationChecker,
     targetsComposite: Boolean
   ): BaseState = {
-    val key = AstCache.key(preParsedQuery, params, config.useParameterSizeHint())
+    val key = AstCache.key(preParsedQuery, params, parsingConfig.useParameterSizeHint)
     val maybeValue = caches.astCache.get(key)
     val value = maybeValue.getOrElse {
       val parsedQuery = planner.parseQuery(
@@ -235,7 +237,7 @@ case class CypherPlanner(
         targetsComposite
       )
       val value = AstCache.AstCacheValue(parsedQuery, notificationLogger.notifications)
-      if (!config.planSystemCommands) caches.astCache.put(key, value)
+      if (!plannerConfig.planSystemCommands) caches.astCache.put(key, value)
       value
     }
     value.notifications.foreach(notificationLogger.log)
@@ -248,10 +250,10 @@ case class CypherPlanner(
     parsedQuery: BaseState,
     parsingNotifications: Set[InternalNotification]
   ): Unit = {
-    if (config.planSystemCommands) {
+    if (plannerConfig.planSystemCommands) {
       return
     }
-    val key = AstCache.key(preParsedQuery, params, config.useParameterSizeHint())
+    val key = AstCache.key(preParsedQuery, params, parsingConfig.useParameterSizeHint)
     caches.astCache.put(key, AstCacheValue(parsedQuery, parsingNotifications))
   }
 
@@ -352,9 +354,9 @@ case class CypherPlanner(
     val containsUpdates: Boolean = syntacticQuery.statement().containsUpdates
     val executionModel = inferredRuntime match {
       case CypherRuntimeOption.pipelined =>
-        BatchedSingleThreaded(config.pipelinedBatchSizeSmall(), config.pipelinedBatchSizeBig())
+        BatchedSingleThreaded(plannerConfig.pipelinedBatchSizeSmall(), plannerConfig.pipelinedBatchSizeBig())
       case CypherRuntimeOption.parallel if !containsUpdates =>
-        BatchedParallel(config.pipelinedBatchSizeSmall(), config.pipelinedBatchSizeBig())
+        BatchedParallel(plannerConfig.pipelinedBatchSizeSmall(), plannerConfig.pipelinedBatchSizeBig())
       case _ => Volcano
     }
     val maybeUpdateStrategy: Option[UpdateStrategy] = options.queryOptions.updateStrategy match {
@@ -374,13 +376,13 @@ case class CypherPlanner(
       monitors,
       CachedSimpleMetricsFactory,
       createQueryGraphSolver(
-        config,
+        plannerConfig,
         plannerOption,
         options.queryOptions.connectComponentsPlanner,
         options.queryOptions.debugOptions.disableExistsSubqueryCaching,
         monitors
       ),
-      config,
+      plannerConfig,
       maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
       clock,
       new SequentialIdGen(),
@@ -444,7 +446,7 @@ case class CypherPlanner(
           syntacticQuery.statement(),
           options,
           filteredParams,
-          config.useParameterSizeHint(),
+          parsingConfig.useParameterSizeHint,
           transactionalContextWrapper.kernelTransaction.dataRead().transactionStateHasChanges()
         )
 
@@ -528,7 +530,7 @@ case class CypherPlanner(
     }.nonEmpty
     val logicalPlanState = logicalPlanStateOld.copy(hasLoadCSV = hasLoadCsv)
     notification.LogicalPlanNotifications
-      .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
+      .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, plannerConfig)
       .foreach(notificationLogger.log)
     if (missingParameterNames.nonEmpty) {
       notificationLogger.log(MissingParametersNotification(missingParameterNames))

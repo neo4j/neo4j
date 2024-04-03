@@ -40,7 +40,8 @@ trait FrontEndCompilationPhases {
     /* TODO: This is not part of configuration - Move to BaseState */
     parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
-    obfuscateLiterals: Boolean = false
+    obfuscateLiterals: Boolean = false,
+    antlrParserEnabled: Boolean = false
   ) {
 
     def literalExtractionStrategy: LiteralExtractionStrategy = extractLiterals match {
@@ -52,7 +53,7 @@ trait FrontEndCompilationPhases {
   }
 
   def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
-    Parse andThen
+    Parse(config.antlrParserEnabled) andThen
       CollectSyntaxUsageMetrics andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeatures) andThen
       PreparatoryRewriting andThen

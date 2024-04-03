@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
-import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.planning.WrappedMonitors
@@ -133,7 +132,8 @@ case class FabricFrontEnd(
             GraphDatabaseInternalSettings.composable_commands -> SemanticFeature.ComposableCommands.productPrefix
           ))
         ) ++ semanticFeatures,
-      obfuscateLiterals = cypherConfig.obfuscateLiterals
+      obfuscateLiterals = cypherConfig.obfuscateLiterals,
+      antlrParserEnabled = cypherConfig.cypherParserAntlrEnabled
     )
 
     object parseAndPrepare {
@@ -185,8 +185,4 @@ case class FabricFrontEnd(
       context.notificationLogger.notifications
         .toSeq.map(NotificationWrapping.asKernelNotification(Some(query.options.offset)))
   }
-}
-
-abstract class TransformerChain(parts: Transformer[BaseContext, BaseState, BaseState]*) {
-  val transformer: Transformer[BaseContext, BaseState, BaseState] = parts.reduce(_ andThen _)
 }

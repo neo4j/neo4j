@@ -54,6 +54,7 @@ BSD - Scala License
   Scala Library
 
 BSD License
+  ANTLR 4 Runtime
   JLine Bundle
   scalacheck
   test-interface

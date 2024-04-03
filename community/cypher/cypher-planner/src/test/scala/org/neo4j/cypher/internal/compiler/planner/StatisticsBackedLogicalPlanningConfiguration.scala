@@ -1140,8 +1140,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
     )
     val state = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
     val parsingConfig = {
-      val cypherCompilerConfig = LogicalPlanningTestSupport2.defaultCypherCompilerConfig
-      val cfg = LogicalPlanningTestSupport2.defaultParsingConfig(cypherCompilerConfig)
+      val cfg = LogicalPlanningTestSupport2.defaultParsingConfig
       cfg.copy(semanticFeatures = cfg.semanticFeatures ++ options.semanticFeatures)
     }
 

@@ -442,7 +442,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
   lazy val cnfNormalizerTransformer = CNFNormalizerTest.getTransformer(semanticFeatures)
 
   lazy val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
-    Parse andThen
+    Parse(useAntlr = false) andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, semanticFeatures: _*) andThen
       AstRewriting() andThen

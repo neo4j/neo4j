@@ -37,6 +37,9 @@ Apache Software License, Version 2.0
 BSD - Scala License
   Scala Library
 
+BSD License
+  ANTLR 4 Runtime
+
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library

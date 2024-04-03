@@ -182,13 +182,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     Map(GraphDatabaseInternalSettings.planning_intersection_scans_enabled -> java.lang.Boolean.TRUE)
   )
 
-  def defaultParsingConfig(cypherCompilerConfig: CypherPlannerConfiguration): ParsingConfig =
-    ParsingConfig(
-      extractLiterals = ExtractLiteral.NEVER,
-      parameterTypeMapping = Map.empty,
-      semanticFeatures = cypherCompilerConfig.enabledSemanticFeatures(),
-      obfuscateLiterals = cypherCompilerConfig.obfuscateLiterals()
-    )
+  val defaultParsingConfig: ParsingConfig = ParsingConfig(extractLiterals = ExtractLiteral.NEVER)
 
   def pipeLine(
     parsingConfig: ParsingConfig,
@@ -227,7 +221,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
 
   def pipeLine(deduplicateNames: Boolean = deduplicateNames)
     : Transformer[PlannerContext, BaseState, LogicalPlanState] = {
-    val parsingConfig = LogicalPlanningTestSupport2.defaultParsingConfig(cypherCompilerConfig)
+    val parsingConfig = LogicalPlanningTestSupport2.defaultParsingConfig
     LogicalPlanningTestSupport2.pipeLine(
       parsingConfig,
       pushdownPropertyReads = pushdownPropertyReads,

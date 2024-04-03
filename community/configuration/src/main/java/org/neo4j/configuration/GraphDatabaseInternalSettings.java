@@ -1362,4 +1362,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> gpm_shortest_to_legacy_shortest_enabled = newBuilder(
                     "internal.cypher.enable_shortest_to_legacy_shortest", BOOL, true)
             .build();
+
+    @Internal
+    @Description(
+            "Feature flag to enable/disable the ANTLR parser as opposed to Javacc. If changed dynamically, query caches need to be cleared for it to take effect.")
+    public static final Setting<Boolean> cypher_parser_antlr_enabled = newBuilder(
+                    "internal.cypher.parser.antlr_enabled", BOOL, false)
+            .dynamic()
+            .build();
 }

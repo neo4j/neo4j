@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
+import org.neo4j.cypher.internal.compiler.CypherParsingConfig
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.options.CypherPlannerOption
@@ -40,6 +41,7 @@ class CommunityCompilerFactory(
   graph: GraphDatabaseQueryService,
   kernelMonitors: monitoring.Monitors,
   logProvider: InternalLogProvider,
+  parsingConfig: CypherParsingConfig,
   plannerConfig: CypherPlannerConfiguration,
   runtimeConfig: CypherRuntimeConfiguration,
   queryCaches: CypherQueryCaches
@@ -60,6 +62,7 @@ class CommunityCompilerFactory(
 
     val planner =
       CypherPlanner(
+        parsingConfig,
         plannerConfig,
         MasterCompiler.CLOCK,
         kernelMonitors,

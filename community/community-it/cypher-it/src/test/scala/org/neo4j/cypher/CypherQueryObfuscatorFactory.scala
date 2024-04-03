@@ -76,7 +76,7 @@ class CypherQueryObfuscatorFactory {
   )
 
   private val pipeline =
-    Parse andThen
+    Parse(useAntlr = false) andThen
       RewriteProcedureCalls andThen
       ObfuscationMetadataCollection
 

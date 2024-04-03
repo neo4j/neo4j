@@ -162,6 +162,7 @@ BSD - Scala License
   Scala Library
 
 BSD License
+  ANTLR 4 Runtime
   antlr4
   asm
   asm-analysis

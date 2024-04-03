@@ -68,6 +68,12 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-cst-factory</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-rewriting</artifactId>
             <version>${project.version}</version>
         </dependency>

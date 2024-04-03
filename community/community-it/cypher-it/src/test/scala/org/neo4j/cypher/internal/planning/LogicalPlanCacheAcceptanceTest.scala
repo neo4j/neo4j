@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
+import org.neo4j.cypher.internal.compiler.CypherParsingConfig
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -96,6 +97,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     val log = logProvider.getLog(getClass)
 
     val planner = CypherPlanner(
+      CypherParsingConfig.fromCypherConfiguration(config),
       CypherPlannerConfiguration.fromCypherConfiguration(config, Config.defaults(), planSystemCommands = false, false),
       clock,
       kernelMonitors,
@@ -539,6 +541,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
         graph,
         monitors,
         nullLogProvider,
+        CypherParsingConfig.fromCypherConfiguration(cypherConfig),
         CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, config, planSystemCommands = false, false),
         CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig),
         queryCaches

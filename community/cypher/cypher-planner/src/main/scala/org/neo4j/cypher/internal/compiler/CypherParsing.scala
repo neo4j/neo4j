@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
@@ -26,12 +27,14 @@ import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.defaultSemanticFeatures
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -43,8 +46,6 @@ import org.neo4j.values.virtual.MapValue
 class CypherParsing(
   monitors: Monitors,
   config: CypherParsingConfig,
-  queryRouterEnabled: Boolean,
-  queryRouterForCompositeEnabled: Boolean,
   internalSyntaxUsageStats: InternalSyntaxUsageStats
 ) {
 
@@ -71,20 +72,21 @@ class CypherParsing(
       cancellationChecker,
       internalSyntaxUsageStats
     )
-    val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint())
+    val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint)
 
     val features = CypherParsingConfig.getEnabledFeatures(
-      config.semanticFeatures(),
+      config.semanticFeatures,
       targetsComposite,
-      queryRouterEnabled,
-      queryRouterForCompositeEnabled
+      config.queryRouterEnabled,
+      config.queryRouterForCompositeEnabled
     )
     CompilationPhases.parsing(
       ParsingConfig(
-        extractLiterals = config.extractLiterals(),
+        extractLiterals = config.extractLiterals,
         parameterTypeMapping = paramTypes,
         semanticFeatures = features,
-        obfuscateLiterals = config.obfuscateLiterals()
+        obfuscateLiterals = config.obfuscateLiterals(),
+        antlrParserEnabled = config.cypherParserAntlrEnabled()
       ),
       resolver = resolver
     ).transform(startState, context)
@@ -93,29 +95,69 @@ class CypherParsing(
 }
 
 case class CypherParsingConfig(
-  extractLiterals: () => ExtractLiteral = () => ExtractLiteral.ALWAYS,
-  useParameterSizeHint: () => Boolean = () => true,
-  semanticFeatures: () => Seq[SemanticFeature] = () => defaultSemanticFeatures,
-  obfuscateLiterals: () => Boolean = () => false
-) {
-
-  def this() = this(
-    () => ExtractLiteral.ALWAYS,
-    () => true,
-    () => defaultSemanticFeatures,
-    () => false
-  )
-}
+  extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
+  useParameterSizeHint: Boolean = true,
+  semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
+  obfuscateLiterals: () => Boolean = () => false,
+  cypherParserAntlrEnabled: () => Boolean = () => false,
+  queryRouterEnabled: Boolean = true,
+  queryRouterForCompositeEnabled: Boolean = false
+)
 
 object CypherParsingConfig {
 
-  def fromCypherPlannerConfiguration(plannerConfiguration: CypherPlannerConfiguration): CypherParsingConfig =
+  def fromCypherConfiguration(cypherConfiguration: CypherConfiguration): CypherParsingConfig = {
+    def obfuscateLiterals(): Boolean = {
+      // Is dynamic, but documented to not affect caching.
+      cypherConfiguration.obfuscateLiterals
+    }
+
+    val extractLiterals: ExtractLiteral = {
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        !GraphDatabaseInternalSettings.extract_literals.dynamic()
+      )
+      cypherConfiguration.extractLiterals
+    }
+
+    val useParameterSizeHint: Boolean = {
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        !GraphDatabaseInternalSettings.cypher_size_hint_parameters.dynamic()
+      )
+      cypherConfiguration.useParameterSizeHint
+    }
+
+    val enabledSemanticFeatures: Seq[SemanticFeature] = {
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        !GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features.dynamic()
+      )
+      CompilationPhases.enabledSemanticFeatures(
+        cypherConfiguration.enableExtraSemanticFeatures ++ cypherConfiguration.toggledFeatures(Map(
+          GraphDatabaseInternalSettings.show_setting -> SemanticFeature.ShowSetting.productPrefix,
+          GraphDatabaseInternalSettings.property_value_access_rules -> SemanticFeature.PropertyValueAccessRules.productPrefix,
+          GraphDatabaseInternalSettings.composable_commands -> SemanticFeature.ComposableCommands.productPrefix
+        ))
+      )
+    }
+
+    def cypherParserAntlrEnabled(): Boolean = {
+      // Is dynamic, note that it needs to be combined with clearing query caches to take effect.
+      cypherConfiguration.cypherParserAntlrEnabled
+    }
+
+    val queryRouterEnabled: Boolean = cypherConfiguration.useQueryRouterForRegularQueries
+
+    val queryRouterForCompositeQueriesEnabled: Boolean = cypherConfiguration.allowCompositeQueries
+
     CypherParsingConfig(
-      extractLiterals = plannerConfiguration.extractLiterals,
-      useParameterSizeHint = plannerConfiguration.useParameterSizeHint,
-      semanticFeatures = plannerConfiguration.enabledSemanticFeatures,
-      obfuscateLiterals = plannerConfiguration.obfuscateLiterals
+      extractLiterals,
+      useParameterSizeHint,
+      enabledSemanticFeatures,
+      () => obfuscateLiterals(),
+      () => cypherParserAntlrEnabled(),
+      queryRouterEnabled,
+      queryRouterForCompositeQueriesEnabled
     )
+  }
 
   def getEnabledFeatures(
     semanticFeatures: Seq[SemanticFeature],
