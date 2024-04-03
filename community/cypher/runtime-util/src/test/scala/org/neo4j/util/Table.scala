@@ -27,6 +27,8 @@ import scala.language.implicitConversions
 
 trait AnyValueConversions {
   implicit def fromInt(int: Int): AnyValue = Values.intValue(int)
+  implicit def fromLong(long: Long): AnyValue = Values.longValue(long)
+  implicit def fromString(str: String): AnyValue = Values.stringValue(str)
 }
 
 case class Table(header: Seq[String], rows: Seq[Seq[AnyValue]]) {
@@ -39,6 +41,22 @@ case class Table(header: Seq[String], rows: Seq[Seq[AnyValue]]) {
   def asRows: Seq[CypherRow] =
     rows.map(header zip _)
       .map(x => CypherRow.from(x: _*))
+
+  override def toString: String = {
+    val widths = (header +: rows).transpose.map(_.map(_.toString.length).max)
+    val sb = new scala.collection.mutable.StringBuilder("Table: \n")
+    def appendLine(line: Seq[Object]) = {
+      sb.append(line.zip(widths).map { case (h, w) =>
+        h.toString.padTo(w, ' ')
+      }.mkString(" | "))
+        .append('\n')
+    }
+
+    appendLine(header)
+    rows.foreach(appendLine)
+
+    sb.toString()
+  }
 }
 
 object Table {

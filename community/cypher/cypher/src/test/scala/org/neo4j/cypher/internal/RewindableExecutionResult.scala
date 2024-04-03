@@ -34,6 +34,8 @@ import org.neo4j.graphdb.Result
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.util.Table
+import org.neo4j.values.storable.Values
 
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -71,6 +73,9 @@ trait RewindableExecutionResult extends AutoCloseable {
   protected def closeable: AutoCloseable
 
   def close(): Unit = closeable.close()
+
+  def asTable: Table =
+    Table(columns, result.map(m => columns.map(c => Values.of(m(c)))))
 }
 
 /**
