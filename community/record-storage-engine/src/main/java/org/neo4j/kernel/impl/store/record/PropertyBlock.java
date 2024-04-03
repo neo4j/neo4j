@@ -189,52 +189,57 @@ public class PropertyBlock {
 
     public String toString(Mask mask) {
         StringBuilder result = new StringBuilder("PropertyBlock[");
-        PropertyType type = getType();
-        if (valueBlocks != null) {
-            result.append("blocks=").append(valueBlocks.length).append(',');
-        }
-        result.append(type == null ? "<unknown type>" : type.name()).append(',');
-        result.append("key=").append(valueBlocks == null ? "?" : Integer.toString(getKeyIndexId()));
-        if (type != null) {
-            switch (type) {
-                case STRING:
-                case ARRAY:
-                    result.append(",firstDynamic=").append(getSingleValueLong());
-                    break;
-                default:
-                    Object value = type.value(this, null, null).asObject();
-                    if (value != null && value.getClass().isArray()) {
-                        int length = Array.getLength(value);
-                        StringBuilder buf = new StringBuilder(
-                                        value.getClass().getComponentType().getSimpleName())
-                                .append('[');
-                        for (int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++) {
-                            if (i != 0) {
-                                buf.append(',');
-                            }
-                            buf.append(Array.get(value, i));
-                        }
-                        if (length > MAX_ARRAY_TOSTRING_SIZE) {
-                            buf.append(",...");
-                        }
-                        value = buf.append(']');
-                    }
-                    result.append(",value=").append(mask.filter(value));
-                    break;
+        try {
+            PropertyType type = getType();
+            if (valueBlocks != null) {
+                result.append("blocks=").append(valueBlocks.length).append(',');
             }
-        }
-        if (!isLight()) {
-            result.append(",ValueRecords[");
-            Iterator<DynamicRecord> recIt = valueRecords.iterator();
-            while (recIt.hasNext()) {
-                result.append(recIt.next().toString(mask));
-                if (recIt.hasNext()) {
-                    result.append(',');
+            result.append(type == null ? "<unknown type>" : type.name()).append(',');
+            result.append("key=").append(valueBlocks == null ? "?" : Integer.toString(getKeyIndexId()));
+            if (type != null) {
+                switch (type) {
+                    case STRING, ARRAY -> result.append(",firstDynamic=").append(getSingleValueLong());
+                    default -> {
+                        Object value = type.value(this, null, null).asObject();
+                        if (value != null && value.getClass().isArray()) {
+                            int length = Array.getLength(value);
+                            StringBuilder buf = new StringBuilder(
+                                            value.getClass().getComponentType().getSimpleName())
+                                    .append('[');
+                            for (int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++) {
+                                if (i != 0) {
+                                    buf.append(',');
+                                }
+                                buf.append(Array.get(value, i));
+                            }
+                            if (length > MAX_ARRAY_TOSTRING_SIZE) {
+                                buf.append(",...");
+                            }
+                            value = buf.append(']');
+                        }
+                        if (value != null) {
+                            result.append(",value=").append(mask.filter(value));
+                        }
+                    }
                 }
             }
+            if (!isLight()) {
+                result.append(",ValueRecords[");
+                Iterator<DynamicRecord> recIt = valueRecords.iterator();
+                while (recIt.hasNext()) {
+                    result.append(recIt.next().toString(mask));
+                    if (recIt.hasNext()) {
+                        result.append(',');
+                    }
+                }
+                result.append(']');
+            }
             result.append(']');
+        } catch (Exception e) {
+            result.append("... Exception encountered when building string] { ")
+                    .append(e)
+                    .append(" } ");
         }
-        result.append(']');
         return result.toString();
     }
 

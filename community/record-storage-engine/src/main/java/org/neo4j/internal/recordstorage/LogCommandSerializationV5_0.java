@@ -498,13 +498,14 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4 {
     private static PropertyBlock readPropertyBlock(ReadableChannel channel) throws IOException {
         var toReturn = new PropertyBlock();
         byte blockSize = channel.get(); // the size is stored in bytes // 1
-        assert blockSize > 0 && blockSize % 8 == 0 : blockSize + " is not a valid block size value";
         // Read in blocks
         long[] blocks = readLongs(channel, blockSize / 8);
         assert blocks.length == blockSize / 8
                 : blocks.length + " longs were read in while i asked for what corresponds to " + blockSize;
 
-        assert PropertyType.getPropertyTypeOrThrow(blocks[0]).calculateNumberOfBlocksUsed(blocks[0]) == blocks.length
+        assert blocks.length == 0
+                        || PropertyType.getPropertyTypeOrThrow(blocks[0]).calculateNumberOfBlocksUsed(blocks[0])
+                                == blocks.length
                 : blocks.length + " is not a valid number of blocks for type "
                         + PropertyType.getPropertyTypeOrThrow(blocks[0]);
         /*
