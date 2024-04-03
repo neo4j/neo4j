@@ -2314,6 +2314,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       ForeachApply(lhs, rhs, varFor(variable), parseExpression(expression))(_)
     ))
 
+  def foreachApply(variable: String, expression: Expression): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      ForeachApply(lhs, rhs, varFor(variable), expression)(_)
+    ))
+
   def foreach(variable: String, expression: String, mutations: Seq[SimpleMutatingPattern]): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => Foreach(lp, varFor(variable), parseExpression(expression), mutations)(_)))
 

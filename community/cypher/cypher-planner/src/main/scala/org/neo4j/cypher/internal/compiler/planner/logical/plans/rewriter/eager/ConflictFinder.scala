@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.Foreach
+import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
@@ -543,6 +544,17 @@ sealed trait ConflictFinder {
     // a merge plan can never conflict with its children
     def mergeConflictWithChild = writePlan.isInstanceOf[Merge] && planChildrenLookup.hasChild(writePlan, readPlan)
 
+    // a ForeachApply can conflict with its RHS children.
+    // For now, we ignore those conflicts, to ensure side-effect visibility.
+    def foreachConflictWithRHS = Seq(writePlan, readPlan).permutations.exists {
+      case Seq(planA, planB) => planA match {
+          case ForeachApply(_, rhs, _, _) =>
+            (rhs eq planB) || planChildrenLookup.hasChild(rhs, planB)
+          case _ => false
+        }
+      case _ => throw new IllegalStateException()
+    }
+
     // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
     def conflictsWithUnstablePlan =
       (readPlan ne wholePlan.leftmostLeaf) ||
@@ -560,6 +572,7 @@ sealed trait ConflictFinder {
     !simpleDeletingPlansConflict &&
     !conflictsWithItself &&
     !mergeConflictWithChild &&
+    !foreachConflictWithRHS &&
     conflictsWithUnstablePlan &&
     !nonConflictingReadPlan()
   }

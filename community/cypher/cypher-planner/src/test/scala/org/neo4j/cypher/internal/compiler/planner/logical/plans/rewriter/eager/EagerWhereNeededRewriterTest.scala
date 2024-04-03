@@ -977,6 +977,32 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(plan)
   }
 
+  test("inserts no Eager between ForeachApply and its RHS") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .filter("m:N")
+      .projection("x.prop AS xp")
+      .argument("x")
+      .build()
+
+    val nestedPlanExpression = NestedPlanCollectExpression(
+      nestedPlan,
+      v"xp",
+      s"COLLECT { MATCH (x) RETURN x.prop }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      .foreachApply("i", nestedPlanExpression)
+      .|.setNodeProperty("n", "prop", "5")
+      .|.argument("n", "i")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
   test("inserts no eager between label create and label read (Filter) after stable AllNodeScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
