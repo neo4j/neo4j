@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.exceptions.MergeConstraintConflictException
@@ -50,8 +51,13 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int,
-  useWritesWithProfiling: Boolean = false
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  useWritesWithProfiling: Boolean = false,
+  testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
+) extends RuntimeTestSuite[CONTEXT](
+      edition,
+      runtime,
+      testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
+    ) {
 
   test("merge should create node with empty all node scan") {
     // given no nodes

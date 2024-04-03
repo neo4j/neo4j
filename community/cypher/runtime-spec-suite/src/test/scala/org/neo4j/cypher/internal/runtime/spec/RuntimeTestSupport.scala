@@ -400,6 +400,45 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
   )
 
+  def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+  ): RecordingRuntimeResult = {
+    val subscriber = newRecordingQuerySubscriber
+    val result =
+      runLogical(
+        logicalQuery,
+        runtime,
+        NoInput,
+        (_, result) => result,
+        subscriber,
+        profile = false,
+        testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
+      )
+    newRecordingRuntimeResult(result, subscriber)
+  }
+
+  override def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues,
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+  ): RecordingRuntimeResult = {
+    val subscriber = newRecordingQuerySubscriber
+    val result =
+      runLogical(
+        logicalQuery,
+        runtime,
+        input.stream(),
+        (_, result) => result,
+        subscriber,
+        profile = false,
+        testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
+      )
+    newRecordingRuntimeResult(result, subscriber)
+  }
+
   override def executeAs(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],

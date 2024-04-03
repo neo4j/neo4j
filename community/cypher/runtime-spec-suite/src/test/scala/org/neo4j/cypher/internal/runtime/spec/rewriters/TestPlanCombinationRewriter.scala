@@ -166,6 +166,16 @@ object TestPlanCombinationRewriterConfig {
     PlanRewriterStep(classOf[LimitOnTop], repetitions = 1, weight = 1.0)
   )
 
+  def cartesianProductNoUpdatingRhs: Seq[PlanRewriterStep] = defaultSteps.filterNot(r =>
+    r.rewriter.isAssignableFrom(classOf[RhsOfCartesianProductOnTop]) ||
+      r.rewriter.isAssignableFrom(
+        classOf[LhsOfCartesianProductOnTop]
+      )
+  ) ++ Seq(
+    PlanRewriterStep(classOf[LhsOfCartesianProductOnTopNoUpdatingRhs], repetitions = 1, weight = 1.0),
+    PlanRewriterStep(classOf[RhsOfCartesianProductOnTopNoUpdatingRhs], repetitions = 1, weight = 1.0)
+  )
+
   def default: TestPlanCombinationRewriterConfig = {
     TestPlanCombinationRewriterConfig(
       preSteps = Seq(
@@ -180,6 +190,15 @@ object TestPlanCombinationRewriterConfig {
         PlanRewriterStep(classOf[LimitOnTop], repetitions = 1, weight = 1.0)
       )
     )
+  }
+
+  def pipelined: TestPlanCombinationRewriterConfig = {
+    TestPlanCombinationRewriterConfig(
+      preSteps = default.preSteps,
+      middleSteps = cartesianProductNoUpdatingRhs,
+      postSteps = default.postSteps
+    )
+
   }
 }
 
@@ -205,6 +224,14 @@ case class TestPlanCombinationRewriterConfig(
        |  ${if (postSteps.nonEmpty) s"postSteps = Seq(${postSteps.mkString(s"$nl    ", s"$nl    ", "")}$nl  )" else ""}
        |  ${if (hints.nonEmpty) s"hints = Set(${hints.mkString(s"$nl    ", s"$nl    ", "")}$nl  )" else ""}
        |)""".stripMargin
+  }
+
+  def withHints(hints: Set[TestPlanCombinationRewriterHint]): TestPlanCombinationRewriterConfig = {
+    this.copy(hints = this.hints.union(hints))
+  }
+
+  def withSeed(seed: Long): TestPlanCombinationRewriterConfig = {
+    this.copy(seed = Some(seed))
   }
 }
 

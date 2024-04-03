@@ -53,6 +53,19 @@ trait RuntimeTestSupportExecution[CONTEXT <: RuntimeContext] extends RuntimeExec
   override def execute(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+  ): RecordingRuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, testPlanCombinationRewriterHints)
+
+  override def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues,
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+  ): RecordingRuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, input, testPlanCombinationRewriterHints)
+
+  override def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
     inputStream: InputDataStream,
     parameters: Map[String, Any]
   ): RecordingRuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, inputStream, parameters)

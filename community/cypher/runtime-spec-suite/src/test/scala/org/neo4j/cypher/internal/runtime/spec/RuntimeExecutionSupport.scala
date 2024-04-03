@@ -76,7 +76,13 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
    * Execute a Logical query.
    */
   def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): RecordingRuntimeResult =
-    execute(logicalQuery, runtime, NoInput, Map.empty)
+    execute(logicalQuery, runtime, NoInput, Map.empty[String, Any])
+
+  def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+  ): RecordingRuntimeResult
 
   def executeAs(
     logicalQuery: LogicalQuery,
@@ -100,8 +106,15 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     runtime: CypherRuntime[CONTEXT],
     input: InputValues
   ): RecordingRuntimeResult = {
-    execute(logicalQuery, runtime, input.stream(), Map.empty)
+    execute(logicalQuery, runtime, input.stream(), Map.empty[String, Any])
   }
+
+  def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues,
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+  ): RecordingRuntimeResult
 
   /**
    * Execute a Logical query with some input stream.
@@ -110,7 +123,7 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     inputStream: InputDataStream
-  ): RecordingRuntimeResult = execute(logicalQuery, runtime, inputStream, Map.empty)
+  ): RecordingRuntimeResult = execute(logicalQuery, runtime, inputStream, Map.empty[String, Any])
 
   def execute(
     logicalQuery: LogicalQuery,

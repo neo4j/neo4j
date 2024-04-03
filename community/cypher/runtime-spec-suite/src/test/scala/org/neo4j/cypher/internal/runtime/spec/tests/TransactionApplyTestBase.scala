@@ -40,13 +40,13 @@ import org.neo4j.cypher.internal.runtime.IteratorInputStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation.ComplexGraph
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
-import org.neo4j.cypher.internal.runtime.spec.QueryStatisticsProbe
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.cypher.internal.runtime.spec.rewriters.RussianRoulette
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionForEachTests.genRandomTestSetup
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionApplyTestBase.ComplexRhsTestSetup
 import org.neo4j.cypher.internal.util.RewriterWithParent
@@ -56,7 +56,6 @@ import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
-import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
@@ -78,7 +77,6 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
-import org.scalatest.Assertion
 import org.scalatest.LoneElement
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -93,7 +91,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime)
+) extends RuntimeTestSuite[CONTEXT](edition, runtime, testPlanCombinationRewriterHints = Set(NoRewrites))
     with SideEffectingInputStream[CONTEXT]
     with RandomisedTransactionApplyTests[CONTEXT]
     with RandomValuesTestSupport

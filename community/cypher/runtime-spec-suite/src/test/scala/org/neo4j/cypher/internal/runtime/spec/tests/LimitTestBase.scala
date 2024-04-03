@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType.withName
@@ -1368,7 +1369,8 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(Array[Any](1)))
+    val runtimeResult =
+      execute(logicalQuery, runtime, inputValues(Array[Any](1)), testPlanCombinationRewriterHints = Set(NoRewrites))
     runtimeResult should beColumns("c").withNoRows()
   }
 }

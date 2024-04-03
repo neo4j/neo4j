@@ -86,7 +86,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
         )
       ),
       runtime,
-      testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)
+      testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoRewrites)
     )
     with InputStreams[CONTEXT]
     with RandomValuesTestSupport {

@@ -28,13 +28,19 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 
 import scala.util.Random
 
 abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
-  runtime: CypherRuntime[CONTEXT]
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  runtime: CypherRuntime[CONTEXT],
+  testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
+) extends RuntimeTestSuite[CONTEXT](
+      edition,
+      runtime,
+      testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
+    ) {
   private val ITERATIONS = 20
   private val PROP_KEY = "id"
   private val VAR_TO_FIND = "idA"

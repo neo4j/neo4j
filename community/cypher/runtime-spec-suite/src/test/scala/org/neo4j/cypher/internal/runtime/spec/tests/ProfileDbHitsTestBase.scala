@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
@@ -68,7 +69,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
   val canReuseAllScanLookup: Boolean, // operator following AllNodesScan or RelationshipScan does not need to lookup node again
   val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+) extends RuntimeTestSuite[CONTEXT](edition, runtime, testPlanCombinationRewriterHints = Set(NoRewrites)) {
 
   test("HasLabel on top of AllNodesScan") {
     val cost = if (canReuseAllScanLookup) costOfLabelCheck - 1 else costOfLabelCheck

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.rewriters
 
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -101,8 +102,8 @@ object TestPlanRewriterTemplates {
 
   def isParentOkToInterject(parent: Option[LogicalPlan]): Boolean = {
     parent match {
-      case Some(_: AssertSameNode) =>
-        // AssertSameNode is only supported by rewriter in pipelined, and it relies on assumptions about the possible plans,
+      case Some(_: AssertSameNode | _: AssertSameRelationship) =>
+        // AssertSameNode and AssertSameRelationship are only supported by rewriter in pipelined, and it relies on assumptions about the possible plans,
         // so we cannot insert a plan between it and its children
         false
       case _ =>

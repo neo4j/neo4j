@@ -59,3 +59,22 @@ case class LhsOfCartesianProductOnTop(
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }
+
+case class LhsOfCartesianProductOnTopNoUpdatingRhs(
+  ctx: PlanRewriterContext,
+  config: PlanRewriterStepConfig
+) extends Rewriter {
+
+  private val instance: Rewriter = topDown(
+    Rewriter.lift {
+      case pr @ ProduceResult(source, columns) if randomShouldApply(config) =>
+        val argument = Argument()(ctx.idGen)
+        val cartesianProduct = CartesianProduct(source, argument)(ctx.idGen)
+        if (cartesianProduct.hasUpdatingRhs) pr
+        else ProduceResult(cartesianProduct, columns)(SameId(pr.id))
+    },
+    onlyRewriteLogicalPlansStopper
+  )
+
+  override def apply(input: AnyRef): AnyRef = instance.apply(input)
+}

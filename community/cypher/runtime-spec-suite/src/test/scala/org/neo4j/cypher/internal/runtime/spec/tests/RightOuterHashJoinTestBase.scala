@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.graphdb.Label
 import org.neo4j.values.storable.Values.stringValue
 
@@ -686,7 +687,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("n")
       .build()
 
-    val result = execute(logicalQuery, runtime)
+    val result = execute(logicalQuery, runtime, testPlanCombinationRewriterHints = Set(NoRewrites))
 
     result should beColumns("lhsKeep", "rhsKeep", "rhsDiscard")
       .withRows(inAnyOrder(Range(0, size).map(i => Array(s"$i", s"${i + 2}", s"${i + 3}"))))
