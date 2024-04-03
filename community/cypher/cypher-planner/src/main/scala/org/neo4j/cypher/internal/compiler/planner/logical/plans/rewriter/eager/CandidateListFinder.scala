@@ -397,6 +397,7 @@ object CandidateListFinder {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.openConflicts.isEmpty)
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.currentLayer == 0)
     val candidateLists = sequencesAcc.candidateLists
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(candidateLists.forall(_.candidates.nonEmpty))
 
     // Remove CandidateLists that traverse an EagerLogicalPlan coming from the LHS.
     // These do not need to be eagerized.
