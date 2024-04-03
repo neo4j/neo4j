@@ -100,7 +100,7 @@ class CandidateListFinderTest extends CypherFunSuite {
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     the[IllegalStateException] thrownBy CandidateListFinder.findCandidateLists(p.plan, conflicts) should have message (
-      "Eagerness analysis does not support if the RHS of a SingleFromRightLogicalPlan contains writes"
+      "Eagerness analysis does not support if the RHS of a SemiApply contains writes."
     )
   }
 

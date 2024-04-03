@@ -3186,7 +3186,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  test("does not support when apply plan is conflicting with the RHS") {
+  test("does not support when SingleFromRightLogicalPlan is conflicting with the RHS") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults()
       .selectOrSemiApply("a:A")
@@ -3197,6 +3197,30 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val plan = planBuilder.build()
 
     // Currently the RHS of any SemiApply variant must be read-only
+    an[IllegalStateException] should be thrownBy {
+      EagerWhereNeededRewriter(
+        planBuilder.cardinalities,
+        Attributes(planBuilder.idGen),
+        shouldCompressReasons = false
+      ).eagerize(
+        plan,
+        planBuilder.getSemanticTable,
+        new AnonymousVariableNameGenerator
+      )
+    }
+  }
+
+  test("does not support when RollUpApply has writes on the RHS") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .rollUpApply("as", "a")
+      .|.setLabels("n", "A")
+      .|.expand("(a)-[r]->(n)")
+      .|.argument("a")
+      .allNodeScan("a")
+    val plan = planBuilder.build()
+
+    // Currently the RHS of any RollUpApply variant must be read-only
     an[IllegalStateException] should be thrownBy {
       EagerWhereNeededRewriter(
         planBuilder.cardinalities,
@@ -3271,9 +3295,9 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts eager on top in a conflict between RHS and Top of a CartesianProduct") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("foo")
-      .projection("n.prop AS foo")
+      .setNodeProperty("n", "prop", "5")
       .cartesianProduct().withCardinality(10)
-      .|.setNodeProperty("n", "prop", "5").withCardinality(1) // Eager must be on Top anyway
+      .|.projection("n.prop AS foo").withCardinality(1) // Eager must be on Top anyway
       .|.allNodeScan("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -3282,10 +3306,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
-        .projection("n.prop AS foo")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(1)))))
+        .setNodeProperty("n", "prop", "5")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(1), Id(3)))))
         .cartesianProduct()
-        .|.setNodeProperty("n", "prop", "5")
+        .|.projection("n.prop AS foo")
         .|.allNodeScan("n")
         .allNodeScan("n")
         .build()

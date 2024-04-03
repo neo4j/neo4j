@@ -360,7 +360,6 @@ sealed trait ConflictFinder {
   ): Iterable[ConflictingPlanPair] = {
     if (readsAndWrites.reads.callInTxPlans.nonEmpty) {
       for {
-        // FIXME
         updatingPlan <- wholePlan.folder.findAllByClass[UpdatingPlan].filterNot(isInTransactionalApply(_, wholePlan))
         txPlan <- readsAndWrites.reads.callInTxPlans
       } yield {

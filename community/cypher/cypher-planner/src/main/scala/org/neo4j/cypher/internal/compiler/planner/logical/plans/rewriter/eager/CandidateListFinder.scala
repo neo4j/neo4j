@@ -21,18 +21,30 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.ConflictingPlanPair
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.PlanChildrenLookup
+import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
+import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
+import org.neo4j.cypher.internal.logical.plans.BidirectionalRepeatTrail
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
+import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
+import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
+import org.neo4j.cypher.internal.logical.plans.Trail
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
+import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Ref
@@ -93,39 +105,86 @@ object CandidateListFinder {
       false
     }
 
-    def forPlan(plan: LogicalBinaryPlan, hasLhsVsRhsConflicts: Boolean): BinaryPlanEagerizationStrategy = plan match {
-      case _: EagerLogicalPlan => BinaryPlanEagerizationStrategy(
-          eagerizeLHSvsRHSConflicts = false,
-          emptyCandidateListsForRHSvsTopConflicts = false
+    private def assertHasReadOnlyRHS(plan: LogicalBinaryPlan): Boolean = {
+      if (!plan.right.readOnly) {
+        throw new IllegalStateException(
+          s"Eagerness analysis does not support if the RHS of a ${plan.getClass.getSimpleName} contains writes."
         )
-      case _: Union => BinaryPlanEagerizationStrategy(
-          eagerizeLHSvsRHSConflicts = false,
-          emptyCandidateListsForRHSvsTopConflicts = false
-        )
-      case _: OrderedUnion => BinaryPlanEagerizationStrategy(
-          eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
-          emptyCandidateListsForRHSvsTopConflicts = false
-        )
-      case _: AssertSameNode => BinaryPlanEagerizationStrategy(
-          eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
-          emptyCandidateListsForRHSvsTopConflicts = true
-        )
-      case _: AssertSameRelationship => BinaryPlanEagerizationStrategy(
-          eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
-          emptyCandidateListsForRHSvsTopConflicts = true
-        )
-      case _: CartesianProduct => BinaryPlanEagerizationStrategy(
-          eagerizeLHSvsRHSConflicts = true,
-          emptyCandidateListsForRHSvsTopConflicts = true
-        )
-      case _: RepeatOptions => BinaryPlanEagerizationStrategy(
-          eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
-          emptyCandidateListsForRHSvsTopConflicts = true
-        )
-      case _: ApplyPlan => BinaryPlanEagerizationStrategy(
-          eagerizeLHSvsRHSConflicts = true,
-          emptyCandidateListsForRHSvsTopConflicts = true
-        )
+      }
+      true
+    }
+
+    def forPlan(plan: LogicalBinaryPlan, hasLhsVsRhsConflicts: Boolean): BinaryPlanEagerizationStrategy = {
+      // In all places where `emptyCandidateListsForRHSvsTopConflicts = true`,
+      // we must be sure that plan does not conflict with its RHS.
+      // Otherwise we will get empty candidate lists.
+      plan match {
+        case _: EagerLogicalPlan => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = false,
+            emptyCandidateListsForRHSvsTopConflicts = false
+          )
+        case _: Union => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = false,
+            emptyCandidateListsForRHSvsTopConflicts = false
+          )
+        case _: OrderedUnion => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+            emptyCandidateListsForRHSvsTopConflicts = false
+          )
+        case _: AssertSameNode => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+            emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
+          )
+        case _: AssertSameRelationship => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+            emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
+          )
+        case _: CartesianProduct => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = true,
+            emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
+          )
+        case _: RepeatOptions => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+            emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
+          )
+        case ap: ApplyPlan => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = true,
+            emptyCandidateListsForRHSvsTopConflicts =
+              // Most Apply variants must have read-only RHSs
+              // If this changes in the future, the correct way to eagerize, e.g. a SemiApply variant
+              // that conflicts with its RHS is like this:
+              // .selectOrSemiApply("var1")
+              // .|.setLabel("n:A")
+              // .|. ...
+              // .eager()
+              // .projection("a:A AS var1")
+              // . ...
+              // Extra match for exhaustiveness check
+              ap match {
+                case _: SingleFromRightLogicalPlan |
+                  _: AntiConditionalApply |
+                  _: ConditionalApply |
+                  _: BidirectionalRepeatTrail |
+                  _: PathPropagatingBFS |
+                  _: RollUpApply |
+                  _: Trail |
+                  _: TriadicSelection =>
+                  assertHasReadOnlyRHS(plan)
+                case _: ForeachApply =>
+                  // Do nothing.
+                  // For now, we accept that ForeachApply can conflict with its RHS, and simply don't solve such conflicts.
+                  // We first need to define side-effect visibility of FOREACH before making changes to this.
+                  true
+                case _: SubqueryForeach | _: TransactionApply | _: TransactionForeach | _: Apply =>
+                  // Do nothing.
+                  // These plans can have writes on the RHS, but they should not be able to conflict with their RHS,
+                  // given the things that they allow. E.g. a TransactionApply can have an Expression in `batchSize`,
+                  // but that expression needs to be a literal int, so it cannot be a CASE expression performing
+                  // any reads that could conflict with the RHS.
+                  true
+              }
+          )
+      }
     }
   }
 
@@ -197,26 +256,6 @@ object CandidateListFinder {
         openSequences = newOpenSequences,
         candidateLists = candidateLists
       )
-    }
-  }
-
-  private def checkConstraints(p: LogicalPlan): Unit = {
-    p match {
-      // All Semi Apply variants must have read-only RHSs
-      // If this changes in the future, the correct way to eagerize a SemiApply variant
-      // that conflicts with its RHS is like this:
-      // .selectOrSemiApply("var1")
-      // .|.setLabel("n:A")
-      // .|. ...
-      // .eager()
-      // .projection("a:A AS var1")
-      // . ...
-      case s: SingleFromRightLogicalPlan if !s.right.readOnly =>
-        throw new IllegalStateException(
-          "Eagerness analysis does not support if the RHS of a SingleFromRightLogicalPlan contains writes"
-        )
-
-      case _ =>
     }
   }
 
@@ -321,7 +360,6 @@ object CandidateListFinder {
     acc: SequencesAcc,
     plan: LogicalPlan
   )(implicit planChildrenLookup: PlanChildrenLookup): SequencesAcc = {
-    checkConstraints(plan)
 
     Function.chain[SequencesAcc](Seq(
       plan match {
