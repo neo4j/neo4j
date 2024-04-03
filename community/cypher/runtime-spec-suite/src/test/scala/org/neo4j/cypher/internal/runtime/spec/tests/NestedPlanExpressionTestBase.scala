@@ -30,6 +30,8 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Collections
 
@@ -463,4 +465,23 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(Vector.fill(size)(0)))
   }
 
+  test("should support nested plan within list comprehension with aggregation and distinct on RHS") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanGetByNameExpressionInListComprehensionProjection("j", Seq("a", "b"), "count", "x")
+      .|.aggregation(Seq("j AS j"), Seq("count(*) AS count"))
+      .|.distinct("i as i", "j as j")
+      .|.argument()
+      .unwind("[1, 2, 3] AS i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedList = VirtualValues.list(Values.longValue(1L), Values.longValue(1L))
+    val expected = Array(Array(expectedList), Array(expectedList), Array(expectedList))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
 }

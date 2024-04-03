@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -2641,6 +2642,28 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         Map(varFor(resultName) -> NestedPlanGetByNameExpression(rhs, varFor(columnNameToGet), "getByName(...)")(NONE))
       )(_)
     ))
+  }
+
+  /**
+   * The right-hand side is a nested plan of a NestedPlanGetByNameExpression that is placed inside of
+   * the extract expression of a list comprehension on a literal list of strings.
+   */
+  def nestedPlanGetByNameExpressionInListComprehensionProjection(
+    listElementVariable: String,
+    list: Seq[String],
+    columnNameToGet: String,
+    resultName: String
+  ): IMPL = {
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
+      val nestedPlanExpression = NestedPlanGetByNameExpression(rhs, varFor(columnNameToGet), "getByName(...)")(NONE)
+      val literalList = ListLiteral(list.map(StringLiteral(_)(NONE, NONE)))(NONE)
+      val listComprehension =
+        ListComprehension(varFor(listElementVariable), literalList, None, Some(nestedPlanExpression))(NONE)
+      Projection(
+        lhs,
+        Map(varFor(resultName) -> listComprehension)
+      )(_)
+    }))
   }
 
   def triadicSelection(positivePredicate: Boolean, sourceId: String, seenId: String, targetId: String): IMPL =
