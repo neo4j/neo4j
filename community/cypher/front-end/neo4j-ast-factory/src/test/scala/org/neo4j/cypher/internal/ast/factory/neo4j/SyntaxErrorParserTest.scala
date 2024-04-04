@@ -144,7 +144,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
 
     // RETURN
 
-    assertSyntaxError("return `a`b`", extraneous("b", "';', <EOF>", 10))
+    assertSyntaxError("return `a`b`", mismatch("b", "';', <EOF>", 10))
     assertSyntaxError("return [1,", mismatch("", "an expression", 10))
     assertSyntaxError("return [1", mismatch("", "',', ']'", 9))
     assertSyntaxError("return [", notViable("an expression", 8))

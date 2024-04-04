@@ -492,7 +492,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     failsParsing[Statements](Explicit(Antlr))
       .throws[SyntaxException]
       .withMessage(
-        """Mismatched input ''hell': expected 'DISTINCT', '*', an expression (line 1, column 8 (offset: 7))
+        """Extraneous input ''': expected 'DISTINCT', '*', an expression (line 1, column 8 (offset: 7))
           |"RETURN 'hell"
           |        ^""".stripMargin
       )

@@ -84,16 +84,16 @@ UNSIGNED_OCTAL_INTEGER
    : '0' ('o')? (PART_LETTER)*
    ;
 
-STRING1_OPEN
-   : '\'' -> more , mode (STRING1)
+STRING_LITERAL1
+   : '\'' ( ~'\'' | '\\\'' )* '\''
    ;
 
-STRING2_OPEN
-   : '"' -> more , mode (STRING2)
+STRING_LITERAL2
+   : '"' ( ~'"' | '\\"' )* '"'
    ;
 
-ESCAPED_SYMBOLIC_NAME_OPEN
-   : '`' -> more , mode (ESC_SYMB_NAME)
+ESCAPED_SYMBOLIC_NAME
+   : '`' ( ~'`' | '``' )* '`'
    ;
 
 ACCESS
@@ -1381,96 +1381,6 @@ MORE2
    : . -> more
    ;
 
-mode STRING1;
-MORE3
-   : '\\\\' -> more
-   ;
-
-MORE4
-   : '\\\'' -> more
-   ;
-
-MORE5
-   : '\\"' -> more
-   ;
-
-MORE6
-   : '\\b' -> more
-   ;
-
-MORE7
-   : '\\f' -> more
-   ;
-
-MORE8
-   : '\\n' -> more
-   ;
-
-MORE9
-   : '\\r' -> more
-   ;
-
-MORE10
-   : '\\t' -> more
-   ;
-
-MORE11
-   : '\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]' -> more
-   ;
-
-MORE12
-   : ~ ['] -> more
-   ;
-
-STRING_LITERAL1
-   : '\'' -> mode (DEFAULT_MODE)
-   ;
-
-mode STRING2;
-MORE13
-   : '\\\\' -> more
-   ;
-
-MORE14
-   : '\\\'' -> more
-   ;
-
-MORE15
-   : '\\"' -> more
-   ;
-
-MORE16
-   : '\\b' -> more
-   ;
-
-MORE17
-   : '\\f' -> more
-   ;
-
-MORE18
-   : '\\n' -> more
-   ;
-
-MORE19
-   : '\\r' -> more
-   ;
-
-MORE20
-   : '\\t' -> more
-   ;
-
-MORE21
-   : '\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]' -> more
-   ;
-
-MORE22
-   : ~ ["] -> more
-   ;
-
-STRING_LITERAL2
-   : '"' -> mode (DEFAULT_MODE)
-   ;
-
 mode IN_MULTI_LINE_COMMENT;
 MULTI_LINE_COMMENT
    : '*/' -> channel (HIDDEN) , mode (DEFAULT_MODE)
@@ -1478,19 +1388,6 @@ MULTI_LINE_COMMENT
 
 IN_MULTI_LINE_COMMENT_MORE2
    : MORE2 -> more
-   ;
-
-mode ESC_SYMB_NAME;
-MORE23
-   : ~ [`] -> more
-   ;
-
-MORE24
-   : '``' -> more
-   ;
-
-ESCAPED_SYMBOLIC_NAME
-   : '`' -> mode (DEFAULT_MODE)
    ;
 
 mode IN_SINGLE_LINE_COMMENT;

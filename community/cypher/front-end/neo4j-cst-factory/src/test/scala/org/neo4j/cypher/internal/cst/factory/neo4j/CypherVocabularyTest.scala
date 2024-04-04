@@ -333,19 +333,6 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.STRING_LITERAL2 -> "a string value",
     CypherParser.MULTI_LINE_COMMENT -> "'/*'",
     CypherParser.ESCAPED_SYMBOLIC_NAME -> "an identifier",
-    CypherParser.MORE1 -> "'/*'",
-    CypherParser.STRING1_OPEN -> "'''",
-    CypherParser.STRING2_OPEN -> "'\"'",
-    CypherParser.ESCAPED_SYMBOLIC_NAME_OPEN -> "an escaped symbolic name",
-    CypherParser.MORE3 -> "'MORE3'",
-    CypherParser.MORE4 -> "'MORE4'",
-    CypherParser.MORE5 -> "'MORE5'",
-    CypherParser.MORE6 -> "'MORE6'",
-    CypherParser.MORE7 -> "'MORE7'",
-    CypherParser.MORE8 -> "'MORE8'",
-    CypherParser.MORE9 -> "'MORE9'",
-    CypherParser.MORE10 -> "'MORE10'",
-    CypherParser.MORE11 -> "'MORE11'",
-    CypherParser.MORE24 -> "'``'"
+    CypherParser.MORE1 -> "'/*'"
   )
 }

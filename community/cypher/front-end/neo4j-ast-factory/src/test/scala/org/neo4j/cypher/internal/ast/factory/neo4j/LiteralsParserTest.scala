@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
+import org.neo4j.exceptions.SyntaxException
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
 
@@ -148,9 +149,11 @@ class LiteralsParserTest extends AstParsingTestBase
     }
 
     s"'${toCypherHex('\\')}'" should notParse[Literal]
-    s"'${toCypherHex('\'')}'" should parseAs[Literal]
-      .parseIn(JavaCc)(_.withAnyFailure)
-      .parseIn(Antlr)(_.toAst(literalString("")))
+    s"'${toCypherHex('\'')}'" should notParse[Literal]
+      .parseIn(JavaCc)(_.withMessageStart("Lexical error"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Failed to parse query, extraneous input (line 1, column 8 (offset: 7))"
+      ))
 
     "'\\U1'" should parseTo[Literal](literalString("\\U1"))
     "'\\U12'" should parseTo[Literal](literalString("\\U12"))
