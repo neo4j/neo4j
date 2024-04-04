@@ -50,8 +50,6 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 
-import scala.annotation.tailrec
-
 /**
  * Given conflicts between plans, computes candidate lists that describe where Eager can be planned to solve the conflicts.
  */
@@ -64,24 +62,57 @@ object CandidateListFinder {
    */
   private[eager] case class CandidateList(candidates: List[Ref[LogicalPlan]], conflict: ConflictingPlanPair)
 
+  private object OpenSequence {
+
+    def apply(firstCandidate: Ref[LogicalPlan], layer: Int, conflict: ConflictingPlanPair): OpenSequence =
+      OpenSequence(List(firstCandidate), layer, conflict, traversesEagerPlanFromLeft = false)
+  }
+
   /**
    * Represents a growing (therefore open) list of candidate plans on which an eager could be planned to solve the given conflict.
    *
-   * @param candidates candidates for an eager operator found so far.
-   *                   The candidates are in an order such that `candidates(n).children.contains(candidates(n+1))`.
-   * @param layer      layer of the conflicting plan that was already traversed.
-   * @param conflict   the conflict that should be solved by planning an eager on either of the candidate plans
+   * @param candidates                 candidates for an eager operator found so far.
+   *                                   The candidates are in an order such that `candidates(n).children.contains(candidates(n+1))`.
+   * @param layer                      layer of the conflicting plan that was already traversed.
+   * @param conflict                   the conflict that should be solved by planning an eager on either of the candidate plans
+   * @param traversesEagerPlanFromLeft `true` if, traversing `candidates` a [[EagerLogicalPlan]] is traversed from left.
+   *                                   Kept as a field for performance reasons.
    */
-  private case class OpenSequence(candidates: List[Ref[LogicalPlan]], layer: Int, conflict: ConflictingPlanPair) {
+  private case class OpenSequence(
+    candidates: List[Ref[LogicalPlan]],
+    layer: Int,
+    conflict: ConflictingPlanPair,
+    traversesEagerPlanFromLeft: Boolean
+  ) {
 
     /**
-     * @return a [[CandidateList]] with the current candidates and the reason of the conflict.
+     * Filters out CandidateLists that traverse an EagerLogicalPlan coming from the LHS.
+     * These do not need to be eagerized.
+     *
+     * @return a [[CandidateList]] with the current candidates and the reason of the conflict, if traversesEagerPlanFromLeft == `false`. `None`, otherwise.
      */
-    def candidateListWithConflict: CandidateList =
-      CandidateList(candidates = candidates, conflict = conflict)
+    def candidateListWithConflict: Option[CandidateList] = {
+      if (!traversesEagerPlanFromLeft)
+        Some(CandidateList(candidates = candidates, conflict = conflict))
+      else
+        None
+    }
 
-    def withAddedCandidate(candidate: Ref[LogicalPlan]): OpenSequence =
-      copy(candidates = candidate :: candidates)
+    /**
+     * Adds a candidate and also updates `traversesEagerPlanFromLeft`.
+     */
+    def withAddedCandidate(candidate: Ref[LogicalPlan]): OpenSequence = {
+      copy(
+        candidates = candidate :: candidates,
+        traversesEagerPlanFromLeft = traversesEagerPlanFromLeft || ((candidate, candidates) match {
+          case (Ref(first: EagerLogicalPlan), Ref(second) :: _) if first.lhs.contains(second) => true
+          case _                                                                              => false
+        })
+      )
+    }
+
+    def withEmptyCandidates(): OpenSequence =
+      copy(candidates = Nil, traversesEagerPlanFromLeft = false)
   }
 
   /**
@@ -232,7 +263,7 @@ object CandidateListFinder {
     ): SequencesAcc = {
       val oS = openSequences.getOrElse(end, Seq.empty)
       copy(openSequences =
-        openSequences.updated(end, oS :+ OpenSequence(List(start), layer, conflict))
+        openSequences.updated(end, oS :+ OpenSequence(start, layer, conflict))
       )
     }
 
@@ -245,9 +276,12 @@ object CandidateListFinder {
       // This is because a conflict between a plan on the RHS and on top of, e.g. an Apply must be solved with an Eager on top of the Apply.
       val newOpenSequences = openSequences.view.mapValues {
         _.map {
-          case OpenSequence(candidates, layer, conflict) if layer == currentLayer =>
-            val newCandidates = if (emptyCandidateListsForRHSvsTopConflicts) List.empty else candidates
-            OpenSequence(newCandidates, newLayer, conflict)
+          case os @ OpenSequence(_, layer, _, _) if layer == currentLayer =>
+            val osWithNewLayer = os.copy(layer = newLayer)
+            if (emptyCandidateListsForRHSvsTopConflicts)
+              osWithNewLayer.withEmptyCandidates()
+            else
+              osWithNewLayer
           case x => x
         }
       }.toMap
@@ -287,13 +321,13 @@ object CandidateListFinder {
       }
 
     // Find open sequences that are closed by this plan
-    val newCandidateLists = acc.openSequences.getOrElse(p, Seq.empty).map(_.candidateListWithConflict)
+    val newCandidateLists = acc.openSequences.getOrElse(p, Seq.empty).flatMap(_.candidateListWithConflict)
 
     val remainingOpenSequences = {
       // All sequences that do not end in p
       (acc.openSequences - p)
         .view.mapValues(_.map {
-          case os @ OpenSequence(_, layer, _) if acc.currentLayer == layer =>
+          case os @ OpenSequence(_, layer, _, _) if acc.currentLayer == layer =>
             // Add p to all remaining open sequences on the same layer
             os.withAddedCandidate(p)
           case os => os
@@ -399,15 +433,6 @@ object CandidateListFinder {
     val candidateLists = sequencesAcc.candidateLists
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(candidateLists.forall(_.candidates.nonEmpty))
 
-    // Remove CandidateLists that traverse an EagerLogicalPlan coming from the LHS.
-    // These do not need to be eagerized.
-    candidateLists.filterNot(cl => traversesEagerPlanFromLeft(cl.candidates))
-  }
-
-  @tailrec
-  private def traversesEagerPlanFromLeft(candidates: List[Ref[LogicalPlan]]): Boolean = candidates match {
-    case Ref(first: EagerLogicalPlan) :: Ref(second) :: _ if first.lhs.contains(second) => true
-    case _ :: tail => traversesEagerPlanFromLeft(tail)
-    case Nil       => false
+    candidateLists
   }
 }
