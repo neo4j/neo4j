@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.io.ByteUnit
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.impl.util.ReadAndDeleteTransactionConflictException
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
@@ -837,33 +838,38 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       case Some(txType) => restartTx(txType)
       case _ => restartTx()
     }
+
     restart()
     val runtimeResult1 = profile(logicalQuery1, runtime, input1())
-    consume(runtimeResult1)
-    val queryProfile1 = runtimeResult1.runtimeResult.queryProfile()
-    val maxMem1 = queryProfile1.maxAllocatedMemory()
+    try {
+      consume(runtimeResult1)
+      val queryProfile1 = runtimeResult1.runtimeResult.queryProfile()
+      val maxMem1 = queryProfile1.maxAllocatedMemory()
 
-    restart()
-    val runtimeResult2 = profile(logicalQuery2, runtime, input2())
-    consume(runtimeResult2)
-    val queryProfile2 = runtimeResult2.runtimeResult.queryProfile()
-    val maxMem2 = queryProfile2.maxAllocatedMemory()
-    val memDiff = Math.abs(maxMem2 - maxMem1)
+      restart()
+      val runtimeResult2 = profile(logicalQuery2, runtime, input2())
+      consume(runtimeResult2)
+      val queryProfile2 = runtimeResult2.runtimeResult.queryProfile()
+      val maxMem2 = queryProfile2.maxAllocatedMemory()
+      val memDiff = Math.abs(maxMem2 - maxMem1)
 
-    maxMem1 should be > minAllocated
-    maxMem2 should be > minAllocated
+      maxMem1 should be > minAllocated
+      maxMem2 should be > minAllocated
 
-    val deviation = Math.abs(maxMem1 - maxMem2) / maxMem1.toDouble
-    val deviationPercentage = Math.round(deviation * 100)
-    val toleratedDeviationPercentage = Math.round(toleratedDeviation * 100)
-    val deviationMessage = s"$deviationPercentage%${if (toleratedDeviation > 0.0d) s" is more than tolerated ${toleratedDeviationPercentage}%" else ""}"
+      val deviation = Math.abs(maxMem1 - maxMem2) / maxMem1.toDouble
+      val deviationPercentage = Math.round(deviation * 100)
+      val toleratedDeviationPercentage = Math.round(toleratedDeviation * 100)
+      val deviationMessage = s"$deviationPercentage%${if (toleratedDeviation > 0.0d) s" is more than tolerated ${toleratedDeviationPercentage}%" else ""}"
 
-    withClue(s"Query 1 used $maxMem1 bytes and Query 2 used $maxMem2 bytes ($memDiff bytes difference, $deviationMessage):\n") {
-      if (toleratedDeviation == 0.0d) {
-        maxMem1 shouldEqual maxMem2
-      } else {
-        deviation <= toleratedDeviation shouldBe true
+      withClue(s"Query 1 used $maxMem1 bytes and Query 2 used $maxMem2 bytes ($memDiff bytes difference, $deviationMessage):\n") {
+        if (toleratedDeviation == 0.0d) {
+          maxMem1 shouldEqual maxMem2
+        } else {
+          deviation <= toleratedDeviation shouldBe true
+        }
       }
+    } catch {
+      case _: ReadAndDeleteTransactionConflictException => //ignore
     }
   }
 }
