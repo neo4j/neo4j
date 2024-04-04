@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -90,11 +91,19 @@ case class ForAllRepetitionsPredicateRewriter(
 
     val npeRewriter = topDown(Rewriter.lift {
       case nestedPlanExpression: NestedPlanExpression =>
-        val singletonReplacements = nestedPlanExpression.dependencies.flatMap(far.variableGroupingForSingleton)
+        val newVariableGroupings = nestedPlanExpression.dependencies.flatMap { singletonDependency =>
+          far.variableGroupings.collectFirst {
+            case VariableGrouping(`singletonDependency`, group) =>
+              // outside of QPPs, singletons are out of scope. Therefore, we have to replace them with fresh variables.
+              val newName = Namespacer.genName(anonymousVariableNameGenerator, singletonDependency.name)
+              val newSingleton = UnPositionedVariable.varFor(newName)
+              singletonDependency -> VariableGrouping(newSingleton, group)(pos)
+          }
+        }.toMap
         val prependedPlan = prependGroupVariableProjection(
           originalInnerPredicate,
           iterVar,
-          singletonReplacements,
+          newVariableGroupings,
           nestedPlanExpression.plan
         )
 
@@ -155,28 +164,26 @@ case class ForAllRepetitionsPredicateRewriter(
    *
    * @param solvedPredicate the predicate that we want to solve
    * @param iterVar the index of the group variable to project
-   * @param relevantVariableGroupings the variable groupings to project
+   * @param newVariableGroupings for each singleton that the plan depends on, the new variable grouping to project
    * @param plan the logical plan to hang on the RHS.
    **/
   private def prependGroupVariableProjection(
     solvedPredicate: Expression,
     iterVar: LogicalVariable,
-    relevantVariableGroupings: Set[VariableGrouping],
+    newVariableGroupings: Map[LogicalVariable, VariableGrouping],
     plan: LogicalPlan
   ): Apply = {
     // Argument
-    val argumentIds = relevantVariableGroupings.map(_.group.copyId) + iterVar.copyId
+    val argumentIds = newVariableGroupings.values.map(_.group.copyId).toSet + iterVar.copyId
     val argument = Argument(argumentIds)
     solveds.set(argument.id, solveds.get(plan.leftmostLeaf.id))
     cardinalities.set(argument.id, Cardinality.SINGLE)
     providedOrders.set(argument.id, ProvidedOrder.empty)
 
     // Projection
-    val projectExpressions = relevantVariableGroupings.map {
-      case VariableGrouping(singletonVar, groupVar) =>
-        def indexedGroupVar: Expression = ContainerIndex(groupVar.copyId, iterVar.copyId)(InputPosition.NONE)
-
-        singletonVar -> indexedGroupVar
+    val projectExpressions = newVariableGroupings.values.map {
+      case VariableGrouping(newSingleton, groupVar) =>
+        newSingleton -> ContainerIndex(groupVar.copyId, iterVar.copyId)(InputPosition.NONE)
     }.toMap
     val projection = Projection(argument, projectExpressions)
     val projectionSolveds = solveds.get(plan.leftmostLeaf.id).asSinglePlannerQuery.updateTailOrSelf(
@@ -187,7 +194,10 @@ case class ForAllRepetitionsPredicateRewriter(
     providedOrders.set(projection.id, ProvidedOrder.empty)
 
     // Apply
-    val connectingPlan = Apply(projection, plan)
+    val planWithNewVars = plan.endoRewrite(topDown(Rewriter.lift {
+      case v: Variable => newVariableGroupings.get(v).map(_.singleton).getOrElse(v)
+    }))
+    val connectingPlan = Apply(projection, planWithNewVars)
     val previousTopPlanId = plan.id
     solveds.set(connectingPlan.id, solveds.get(previousTopPlanId))
     cardinalities.set(connectingPlan.id, cardinalities.get(previousTopPlanId))

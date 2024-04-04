@@ -1722,8 +1722,8 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val nestedPlan = planner.subPlanBuilder()
       .filter("`  UNNAMED1`:N")
-      .expand("(`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)")
-      .projection("`  m@5`[`  UNNAMED2`] AS `  m@2`")
+      .expand("(`  m@7`)-[`  UNNAMED0`]->(`  UNNAMED1`)")
+      .projection("`  m@5`[`  UNNAMED2`] AS `  m@7`")
       .argument("  m@5", "  UNNAMED2")
       .build()
 
@@ -3929,5 +3929,70 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     plan.folder.treeFind[StatefulShortestPath] {
       case ssp: StatefulShortestPath if ssp.mode == ExpandAll => true
     } should be(empty)
+  }
+
+  test("nested plan expression in non-inlined predicate") {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
+    val query = """
+      MATCH p = ANY SHORTEST (s) ((a)-[r1]->(b)-[r2]->(c) WHERE EXISTS { (c)-->(a) })+ (t)
+      RETURN s.id as s, t.id as t
+    """
+
+    val planner = plannerBase
+      .enableDeduplicateNames(false)
+      .build()
+
+    val indexVar = "  UNNAMED1"
+
+    val nestedPlan = planner.subPlanBuilder()
+      .expandInto("(`  c@13`)-[`  UNNAMED0`]->(`  a@12`)")
+      .projection(s"`  a@6`[`$indexVar`] AS `  a@12`", s"`  c@7`[`$indexVar`] AS `  c@13`")
+      .argument("  a@6", "  c@7", indexVar)
+      .build()
+
+    val solvedNestedExpressionAsString =
+      """EXISTS { MATCH (`  c@5`)-[`  UNNAMED0`]->(`  a@1`) }""".stripMargin
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      plan = nestedPlan,
+      solvedExpressionAsString =
+        solvedNestedExpressionAsString
+    )(pos)
+
+    val nonInlineablePredicate = allInList(
+      varFor(indexVar),
+      function("range", literalInt(0), subtract(function("size", v"  a@6"), literalInt(1))),
+      nestedPlanExpression
+    )
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`  s@9`", "`  t@10`")
+        .projection("`  s@0`.id AS `  s@9`", "`  t@8`.id AS `  t@10`")
+        .statefulShortestPathExpr(
+          "  s@0",
+          "  t@8",
+          "SHORTEST 1 ((`  s@0`) ((`  a@1`)-[`  r1@2`]->(`  b@3`)-[`  r2@4`]->(`  c@5`)){1, } (`  t@8`) WHERE EXISTS { MATCH (`  c@5`)-[`  UNNAMED0`]->(`  a@1`) } AND NOT `  r2@4` = `  r1@2` AND unique(`  r1@10` + `  r2@7`))",
+          Some(nonInlineablePredicate),
+          Set(("  a@1", "  a@6"), ("  c@5", "  c@7")),
+          Set(),
+          Set(("  t@11", "  t@8")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          new TestNFABuilder(0, "  s@0")
+            .addTransition(0, 1, "(`  s@0`) (`  a@1`)")
+            .addTransition(1, 2, "(`  a@1`)-[`  r1@2`]->(`  b@3`)")
+            .addTransition(2, 3, "(`  b@3`)-[`  r2@4`]->(`  c@5`)")
+            .addTransition(3, 1, "(`  c@5`) (`  a@1`)")
+            .addTransition(3, 4, "(`  c@5`) (`  t@11`)")
+            .setFinalState(4)
+            .build(),
+          ExpandAll
+        )
+        .allNodeScan("`  s@0`")
+        .build()
+    )
   }
 }

@@ -21,6 +21,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.StubCardinalities
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.StubProvidedOrders
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.StubSolveds
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeBinding
@@ -29,9 +33,7 @@ import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
@@ -181,12 +183,41 @@ class ForAllRepetitionsPredicateRewriterTest extends CypherFunSuite with AstCons
     }
   }
 
+  test("nested plan expression") {
+
+    val previousNestedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .expandInto("(x)-[s]->(z)")
+      .argument("x", "z")
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      plan = previousNestedPlan,
+      solvedExpressionAsString = ""
+    )(pos)
+    val far = ForAllRepetitions(qpp, nestedPlanExpression)
+
+    far.dependencies shouldBe Set(v"xGroup", v"zGroup", v"s")
+    val iterVar = v"  UNNAMED0"
+
+    val expectedNestedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .apply()
+      .|.expandInto("(`  x@1`)-[s]->(`  z@2`)")
+      .|.argument("  x@1", "  z@2")
+      .projection(s"xGroup[`${iterVar.name}`] AS `  x@1`", s"zGroup[`${iterVar.name}`] AS `  z@2`")
+      .argument("xGroup", "zGroup", iterVar.name)
+      .build()
+
+    getRewriter.rewriteToAllIterablePredicate(far) shouldBe {
+      allInList(iterVar, rangeForGroupVariable("xGroup"), NestedPlanExistsExpression(expectedNestedPlan, "")(pos))
+    }
+  }
+
   private def getRewriter =
     ForAllRepetitionsPredicateRewriter(
       new AnonymousVariableNameGenerator,
-      new Solveds,
-      new Cardinalities,
-      new ProvidedOrders,
+      new StubSolveds,
+      new StubCardinalities,
+      new StubProvidedOrders,
       SameId(Id(0))
     )
 }
