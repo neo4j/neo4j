@@ -117,7 +117,7 @@ case object countStorePlanner {
   ): Option[LogicalPlan] =
     exp match {
       case // COUNT(<id>)
-        func @ FunctionInvocation(_, _, false, Vector(v: Variable), _, _) if func.function == functions.Count =>
+        func @ FunctionInvocation(_, _, false, IndexedSeq(v: Variable), _, _) if func.function == functions.Count =>
         trySolveNodeOrRelationshipAggregation(
           query,
           columnName,
@@ -145,7 +145,7 @@ case object countStorePlanner {
         )
 
       case // COUNT(n.prop)
-        func @ FunctionInvocation(_, _, false, Vector(prop @ Property(v: Variable, propKeyName)), _, _)
+        func @ FunctionInvocation(_, _, false, IndexedSeq(prop @ Property(v: Variable, propKeyName)), _, _)
         if func.function == functions.Count =>
         trySolveNodeOrRelationshipAggregation(
           query,
