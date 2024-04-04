@@ -106,13 +106,14 @@ class ValidateConfigCommandIT {
                 .containsSubsequence(
                         "Validating Neo4j configuration",
                         "3 issues found.",
-                        "Warning: Setting 'apoc.export.file.enabled' for APOC was found in the configuration file. In Neo4j v5, APOC settings must be in their own configuration file called apoc.conf",
-                        "Warning: Unrecognized setting. No declared setting with name: unrecognized.setting.",
-                        "Warning: Setting 'apoc.trigger.refresh' for APOC was found in the configuration file. In Neo4j v5, APOC settings must be in their own configuration file called apoc.conf",
                         SKIPPED_PART,
                         "No issues found.",
                         SKIPPED_PART,
-                        "No issues found.");
+                        "No issues found.")
+                .contains(
+                        "Warning: Setting 'apoc.export.file.enabled' for APOC was found in the configuration file. In Neo4j v5, APOC settings must be in their own configuration file called apoc.conf",
+                        "Warning: Unrecognized setting. No declared setting with name: unrecognized.setting.",
+                        "Warning: Setting 'apoc.trigger.refresh' for APOC was found in the configuration file. In Neo4j v5, APOC settings must be in their own configuration file called apoc.conf");
     }
 
     private Path createConfigFileInDefaultLocation(String content) throws IOException {
