@@ -489,7 +489,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Enable fallback to updateStrategy=alwaysEager for LP eager analyzer")
     public static final Setting<Boolean> cypher_lp_eager_analysis_fallback_enabled = newBuilder(
-                    "internal.cypher.lp_eager_analysis_fallback.enabled", BOOL, true)
+                    "internal.cypher.lp_eager_analysis_fallback_enabled", BOOL, true)
             .build();
 
     @Internal
