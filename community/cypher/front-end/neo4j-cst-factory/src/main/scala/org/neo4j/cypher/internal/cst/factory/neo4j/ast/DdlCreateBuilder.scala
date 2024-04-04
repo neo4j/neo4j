@@ -158,11 +158,11 @@ trait DdlCreateBuilder extends CypherParserListener {
   }
 
   final override def exitPrimaryTopology(ctx: CypherParser.PrimaryTopologyContext): Unit = {
-    ctx.ast = nodeChild(ctx, 0).getText.toLong
+    ctx.ast = nodeChild(ctx, 0).getText.toInt
   }
 
   final override def exitSecondaryTopology(ctx: CypherParser.SecondaryTopologyContext): Unit = {
-    ctx.ast = nodeChild(ctx, 0).getText.toLong
+    ctx.ast = nodeChild(ctx, 0).getText.toInt
   }
 
   private def createConstraintBuilder(
