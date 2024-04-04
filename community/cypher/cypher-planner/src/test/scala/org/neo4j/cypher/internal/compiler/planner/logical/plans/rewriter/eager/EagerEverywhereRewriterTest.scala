@@ -32,10 +32,19 @@ import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps with ProcedureTestSupport {
+class EagerEverywhereRewriterTest extends EagerEverywhereRewriterTestBase {
+
+  override protected def rewriter(planBuilder: LogicalPlanBuilder): EagerRewriter = {
+    EagerEverywhereRewriter(Attributes(planBuilder.idGen))
+  }
+}
+
+trait EagerEverywhereRewriterTestBase extends CypherFunSuite with LogicalPlanTestOps with ProcedureTestSupport {
+
+  protected def rewriter(planBuilder: LogicalPlanBuilder): EagerRewriter
 
   private def eagerizePlan(planBuilder: LogicalPlanBuilder, plan: LogicalPlan): LogicalPlan =
-    EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(
+    rewriter(planBuilder).eagerize(
       plan,
       planBuilder.getSemanticTable,
       new AnonymousVariableNameGenerator

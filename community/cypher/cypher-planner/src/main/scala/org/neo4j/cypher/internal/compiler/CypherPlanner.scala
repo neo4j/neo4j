@@ -269,4 +269,6 @@ class CypherPlannerConfiguration(
   }
 
   val gpmShortestToLegacyShortestEnabled: Boolean = config.gpmShortestToLegacyShortestEnabled
+
+  val lpEagerFallbackEnabled: Boolean = config.lpEagerFallbackEnabled
 }

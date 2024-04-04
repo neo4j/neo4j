@@ -157,6 +157,9 @@ class CypherConfiguration private (val config: Config) {
   val freeMemoryOfUnusedColumns: Boolean =
     config.get(GraphDatabaseInternalSettings.cypher_free_memory_of_unused_columns)
 
+  val lpEagerFallbackEnabled: Boolean =
+    config.get(GraphDatabaseInternalSettings.cypher_lp_eager_analysis_fallback_enabled)
+
   // dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
   private var _renderPlanDescription: Boolean = config.get(GraphDatabaseSettings.cypher_render_plan_descriptions)

@@ -76,8 +76,15 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
           lPStateWithEagerProcedureCall.anonymousVariableNameGenerator
         )
       case `defaultUpdateStrategy` =>
-        val shouldCompressReasons = !context.debugOptions.verboseEagernessReasons
-        EagerWhereNeededRewriter(cardinalities, attributes, shouldCompressReasons).eagerize(
+        val rewriter = {
+          val shouldCompressReasons = !context.debugOptions.verboseEagernessReasons
+          if (context.config.lpEagerFallbackEnabled)
+            defaultRewriterWithFallback(cardinalities, attributes, shouldCompressReasons)
+          else
+            defaultRewriter(cardinalities, attributes, shouldCompressReasons)
+        }
+
+        rewriter.eagerize(
           lPStateWithEagerProcedureCall.logicalPlan,
           lPStateWithEagerProcedureCall.semanticTable(),
           lPStateWithEagerProcedureCall.anonymousVariableNameGenerator
@@ -85,6 +92,26 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     }
 
     lPStateWithEagerProcedureCall.withMaybeLogicalPlan(Some(newPlan))
+  }
+
+  def defaultRewriter(
+    cardinalities: Cardinalities,
+    attributes: Attributes[LogicalPlan],
+    shouldCompressReasons: Boolean
+  ): EagerWhereNeededRewriter = {
+    EagerWhereNeededRewriter(cardinalities, attributes, shouldCompressReasons)
+  }
+
+  def defaultRewriterWithFallback(
+    cardinalities: Cardinalities,
+    attributes: Attributes[LogicalPlan],
+    shouldCompressReasons: Boolean
+  ): EagerRewriterWithFallback = {
+    EagerRewriterWithFallback(
+      defaultRewriter(cardinalities, attributes, shouldCompressReasons),
+      EagerEverywhereRewriter(attributes),
+      attributes
+    )
   }
 
   private def eagerizeProcedureCalls(

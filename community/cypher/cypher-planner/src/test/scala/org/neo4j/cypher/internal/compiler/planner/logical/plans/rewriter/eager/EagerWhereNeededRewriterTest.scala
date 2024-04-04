@@ -217,6 +217,37 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     }
   }
 
+  test("does support conflict between LHS and RHS of an OrderedUnion with fallback rewriter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("foo")
+      .orderedUnion("n ASC")
+      .|.projection("n.prop AS foo")
+      .|.allNodeScan("n")
+      .setNodeProperty("n", "prop", "5")
+      .unwind("[1,2] AS x")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val rewriter = EagerRewriter.defaultRewriterWithFallback(
+      planBuilder.cardinalities,
+      Attributes(planBuilder.idGen),
+      shouldCompressReasons = false
+    )
+
+    val result = rewriter.eagerize(plan, planBuilder.getSemanticTable, new AnonymousVariableNameGenerator)
+    result shouldEqual new LogicalPlanBuilder()
+      .produceResults("foo")
+      .orderedUnion("n ASC")
+      .|.projection("n.prop AS foo")
+      .|.allNodeScan("n")
+      .eager(ListSet(UpdateStrategyEager))
+      .setNodeProperty("n", "prop", "5")
+      .eager(ListSet(UpdateStrategyEager))
+      .unwind("[1, 2] AS x")
+      .allNodeScan("n")
+      .build()
+  }
+
   test("does not support if there is a conflict between LHS and RHS of an AssertSameNode.") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("foo")
@@ -240,6 +271,42 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         new AnonymousVariableNameGenerator
       )
     }
+  }
+
+  test("does conflict between LHS and RHS of an AssertSameNode with fallback rewriter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("foo")
+      .assertSameNode("n")
+      .|.projection("n.prop AS foo")
+      .|.allNodeScan("n")
+      .setNodeProperty("n", "prop", "5")
+      .unwind("[1,2] AS x")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val rewriter = EagerRewriter.defaultRewriterWithFallback(
+      planBuilder.cardinalities,
+      Attributes(planBuilder.idGen),
+      shouldCompressReasons = false
+    )
+
+    val result = rewriter.eagerize(
+      plan,
+      planBuilder.getSemanticTable,
+      new AnonymousVariableNameGenerator
+    )
+
+    result shouldEqual new LogicalPlanBuilder()
+      .produceResults("foo")
+      .assertSameNode("n")
+      .|.projection("n.prop AS foo")
+      .|.allNodeScan("n")
+      .eager(ListSet(UpdateStrategyEager))
+      .setNodeProperty("n", "prop", "5")
+      .eager(ListSet(UpdateStrategyEager))
+      .unwind("[1, 2] AS x")
+      .allNodeScan("n")
+      .build()
   }
 
   // Property Read/Set conflicts
@@ -3234,6 +3301,42 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         new AnonymousVariableNameGenerator
       )
     }
+  }
+
+  test("does support apply plan conflicting with the RHS with fallback rewriter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .selectOrSemiApply("a:A")
+      .|.setLabels("n", "A")
+      .|.expand("(a)-[r]->(n)")
+      .|.argument("a")
+      .allNodeScan("a")
+    val plan = planBuilder.build()
+
+    val rewriter = EagerRewriter.defaultRewriterWithFallback(
+      planBuilder.cardinalities,
+      Attributes(planBuilder.idGen),
+      shouldCompressReasons = false
+    )
+
+    val res = rewriter.eagerize(
+      plan,
+      planBuilder.getSemanticTable,
+      new AnonymousVariableNameGenerator
+    )
+
+    res shouldEqual new LogicalPlanBuilder()
+      .produceResults()
+      .eager(ListSet(UpdateStrategyEager))
+      .selectOrSemiApply("a:A")
+      .|.eager(ListSet(UpdateStrategyEager))
+      .|.setLabels("n", "A")
+      .|.eager(ListSet(UpdateStrategyEager))
+      .|.expandAll("(a)-[r]->(n)")
+      .|.argument("a")
+      .eager(ListSet(UpdateStrategyEager))
+      .allNodeScan("a")
+      .build()
   }
 
   test("does not support when RollUpApply has writes on the RHS") {

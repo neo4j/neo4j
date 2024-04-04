@@ -487,6 +487,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Enable fallback to updateStrategy=alwaysEager for LP eager analyzer")
+    public static final Setting<Boolean> cypher_lp_eager_analysis_fallback_enabled = newBuilder(
+                    "internal.cypher.lp_eager_analysis_fallback.enabled", BOOL, true)
+            .build();
+
+    @Internal
     @Description("Enables extra SemanticFeature:s during cypher semantic checking")
     public static final Setting<Set<String>> cypher_enable_extra_semantic_features = newBuilder(
                     "internal.cypher.enable_extra_semantic_features", setOf(STRING), Set.of())
