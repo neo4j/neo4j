@@ -48,7 +48,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
-import org.neo4j.fabric.bootstrap.CommonQueryRouterBoostrap;
+import org.neo4j.fabric.bootstrap.CommonQueryRouterBootstrap;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
@@ -83,14 +83,14 @@ import org.neo4j.router.transaction.TransactionLookup;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
-public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
+public class CommunityQueryRouterBootstrap extends CommonQueryRouterBootstrap {
 
     private final LogService logService;
     private final DatabaseContextProvider<? extends DatabaseContext> databaseProvider;
     private final DatabaseReferenceRepository databaseReferenceRepo;
     private final AbstractSecurityLog securityLog;
 
-    public CommunityQueryRouterBoostrap(
+    public CommunityQueryRouterBootstrap(
             LifeSupport lifeSupport,
             Dependencies dependencies,
             LogService logService,

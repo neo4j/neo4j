@@ -97,7 +97,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeAlwaysAllowed;
 import org.neo4j.procedure.impl.ProcedureConfig;
-import org.neo4j.router.CommunityQueryRouterBoostrap;
+import org.neo4j.router.CommunityQueryRouterBootstrap;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
@@ -399,7 +399,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         DatabaseContextProvider<? extends DatabaseContext> databaseRepository =
                 globalModule.getGlobalDependencies().resolveDependency(DatabaseContextProvider.class);
         if (globalModule.getGlobalConfig().get(GraphDatabaseInternalSettings.query_router_new_stack)) {
-            var queryRouterBoostrap = new CommunityQueryRouterBoostrap(
+            var queryRouterBootstrap = new CommunityQueryRouterBootstrap(
                     globalModule.getGlobalLife(),
                     globalModule.getGlobalDependencies(),
                     globalModule.getLogService(),
@@ -408,7 +408,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                     CommunitySecurityLog.NULL_LOG);
             globalModule
                     .getGlobalDependencies()
-                    .satisfyDependency(queryRouterBoostrap.bootstrapServices(databaseManagementService));
+                    .satisfyDependency(queryRouterBootstrap.bootstrapServices(databaseManagementService));
         } else {
             var fabricServicesBootstrap = new FabricServicesBootstrap.Community(
                     globalModule.getGlobalLife(),

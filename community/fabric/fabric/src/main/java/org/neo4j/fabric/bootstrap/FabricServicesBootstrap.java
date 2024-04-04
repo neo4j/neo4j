@@ -66,7 +66,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 
-public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap {
+public abstract class FabricServicesBootstrap extends CommonQueryRouterBootstrap {
 
     private final FabricConfig fabricConfig;
     protected final LogService logService;

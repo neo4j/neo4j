@@ -33,13 +33,13 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
-public class CommonQueryRouterBoostrap {
+public class CommonQueryRouterBootstrap {
 
     private final ServiceBootstrapper serviceBootstrapper;
     protected final Dependencies dependencies;
     private final DatabaseContextProvider<? extends DatabaseContext> databaseProvider;
 
-    public CommonQueryRouterBoostrap(
+    public CommonQueryRouterBootstrap(
             LifeSupport lifeSupport,
             Dependencies dependencies,
             DatabaseContextProvider<? extends DatabaseContext> databaseProvider) {
