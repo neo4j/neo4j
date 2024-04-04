@@ -194,13 +194,14 @@ sealed trait ConflictFinder {
       readPlans = plansThatIntroduceVariable.filter(ref => canConflictWithCreateOrDelete(ref.value))
       if readPlans.nonEmpty
 
-      createdEntity <- createdEntities
-
-      entitySet = createdEntity.getCreatedLabelsOrTypes
       // We need to split the expression in order to filter single predicates.
       // We only want to keep the predicates that depend on only variable, since that is a requirement of CreateOverlaps.overlap
       expressionsDependantOnlyOnVariable =
         Expressions.splitExpression(expression).filter(_.dependencies == Set(variable))
+
+      createdEntity <- createdEntities
+
+      entitySet = createdEntity.getCreatedLabelsOrTypes
 
       overlap =
         CreateOverlaps.overlap(
