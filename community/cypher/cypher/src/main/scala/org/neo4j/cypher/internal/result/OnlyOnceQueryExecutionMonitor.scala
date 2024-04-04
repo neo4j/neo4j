@@ -19,22 +19,23 @@
  */
 package org.neo4j.cypher.internal.result
 
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 
 case class OnlyOnceQueryExecutionMonitor(monitor: QueryExecutionMonitor) extends QueryExecutionMonitor {
   private var closed = false
 
-  override def endFailure(query: ExecutingQuery, failure: Throwable = null): Unit =
+  override def endFailure(query: ExecutingQuery, failure: Throwable): Unit =
     if (!closed) {
       closed = true
       monitor.endFailure(query, failure)
     }
 
-  override def endFailure(query: ExecutingQuery, reason: String): Unit =
+  override def endFailure(query: ExecutingQuery, reason: String, status: Status): Unit =
     if (!closed) {
       closed = true
-      monitor.endFailure(query, reason)
+      monitor.endFailure(query, reason, status)
     }
 
   override def endSuccess(query: ExecutingQuery): Unit =

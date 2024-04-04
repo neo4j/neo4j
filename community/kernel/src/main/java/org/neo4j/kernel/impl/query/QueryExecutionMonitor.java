@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 
 public interface QueryExecutionMonitor {
@@ -28,7 +29,7 @@ public interface QueryExecutionMonitor {
 
     void endFailure(ExecutingQuery query, Throwable failure);
 
-    void endFailure(ExecutingQuery query, String reason);
+    void endFailure(ExecutingQuery query, String reason, Status status);
 
     void endSuccess(ExecutingQuery query);
 
@@ -45,7 +46,7 @@ public interface QueryExecutionMonitor {
         public void endFailure(ExecutingQuery query, Throwable failure) {}
 
         @Override
-        public void endFailure(ExecutingQuery query, String reason) {}
+        public void endFailure(ExecutingQuery query, String reason, Status status) {}
 
         @Override
         public void endSuccess(ExecutingQuery query) {}

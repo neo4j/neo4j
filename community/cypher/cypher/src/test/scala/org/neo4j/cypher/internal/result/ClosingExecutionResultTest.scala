@@ -225,7 +225,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
       nEndCalls += 1
     }
 
-    override def endFailure(query: ExecutingQuery, reason: String): Unit = {
+    override def endFailure(query: ExecutingQuery, reason: String, status: Status): Unit = {
       this.query = query
       endReason = Failure
       nEndCalls += 1

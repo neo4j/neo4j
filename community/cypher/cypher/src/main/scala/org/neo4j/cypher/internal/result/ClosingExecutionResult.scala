@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.Notification
 import org.neo4j.internal.helpers.Exceptions
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -82,7 +83,7 @@ class ClosingExecutionResult private (
       inner.close(reason)
       reason match {
         case Success  => monitor.endSuccess(query)
-        case Failure  => monitor.endFailure(query)
+        case Failure  => monitor.endFailure(query, null, Failure.status)
         case Error(t) => monitor.endFailure(query, t)
       }
     } catch {
@@ -160,8 +161,10 @@ class ClosingExecutionResult private (
       inner.cancel()
       if (errorDeliveredToSubscriber == null && inner.getError.isEmpty) {
         monitor.endSuccess(query)
+      } else if (errorDeliveredToSubscriber != null && errorDeliveredToSubscriber.isInstanceOf[HasStatus]) {
+        monitor.endFailure(query, null, errorDeliveredToSubscriber.asInstanceOf[HasStatus].status())
       } else {
-        monitor.endFailure(query)
+        monitor.endFailure(query, null)
       }
     } catch {
       case NonFatalCypherError(e) => closeAndCallOnError(e)

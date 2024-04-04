@@ -1267,6 +1267,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Log the classification of the error status.")
+    public static final Setting<Boolean> log_status_classification = newBuilder(
+                    "internal.dbms.logs.query.log_status_category", BOOL, false)
+            .build();
+
+    @Internal
     @Description("The maximum period of time to wait for changes to the transaction log (specifically to get the "
             + "position after the last committed transaction). This is an upper bound as further subscriber requests "
             + "will always lead to fetching the latest transaction details.")

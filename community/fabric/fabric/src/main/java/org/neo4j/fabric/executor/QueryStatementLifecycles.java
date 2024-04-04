@@ -30,6 +30,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.transaction.StatementLifecycleTransactionInfo;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.ExecutingQueryFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
@@ -137,8 +138,9 @@ public class QueryStatementLifecycles {
 
         public void endFailure(Throwable failure) {
             QueryExecutionMonitor monitor = getQueryExecutionMonitor();
+            Status status = (failure instanceof Status.HasStatus) ? ((Status.HasStatus) failure).status() : null;
             monitor.beforeEnd(executingQuery, false);
-            monitor.endFailure(executingQuery, failure.getMessage());
+            monitor.endFailure(executingQuery, failure.getMessage(), status);
         }
 
         private QueryExecutionMonitor getQueryExecutionMonitor() {

@@ -20,12 +20,16 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.internal.helpers.Exceptions
+import org.neo4j.kernel.api.exceptions.Status
 
 import scala.collection.mutable.ArrayBuffer
 
 sealed trait CloseReason
 case object Success extends CloseReason
-case object Failure extends CloseReason
+
+case object Failure extends CloseReason {
+  val status = Status.Transaction.QueryExecutionFailedOnTransaction
+}
 case class Error(t: Throwable) extends CloseReason
 
 class TaskCloser {

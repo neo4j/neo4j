@@ -392,7 +392,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
         if (isOutermostQuery) {
           taskCloser.addTask {
             case Failure =>
-              val status = Status.Transaction.QueryExecutionFailedOnTransaction
+              val status = Failure.status
               exceptionTranslatingContext.markForTermination(status)
             case Error(e) =>
               val status = getTerminationStatus(e)

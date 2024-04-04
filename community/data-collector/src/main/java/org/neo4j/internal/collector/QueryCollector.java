@@ -109,7 +109,7 @@ class QueryCollector extends CollectorStateMachine<Iterator<TruncatedQuerySnapsh
     public void endFailure(ExecutingQuery query, Throwable failure) {}
 
     @Override
-    public void endFailure(ExecutingQuery query, String reason) {}
+    public void endFailure(ExecutingQuery query, String reason, org.neo4j.kernel.api.exceptions.Status status) {}
 
     @Override
     public void endSuccess(ExecutingQuery query) {

@@ -37,6 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.DeadlockDetectedException
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
@@ -249,6 +250,6 @@ case object DummyQueryExecutionMonitor extends QueryExecutionMonitor {
   override def startProcessing(query: ExecutingQuery): Unit = {}
   override def startExecution(query: ExecutingQuery): Unit = {}
   override def endFailure(query: ExecutingQuery, failure: Throwable): Unit = {}
-  override def endFailure(query: ExecutingQuery, reason: String): Unit = {}
+  override def endFailure(query: ExecutingQuery, reason: String, status: Status): Unit = {}
   override def endSuccess(query: ExecutingQuery): Unit = {}
 }

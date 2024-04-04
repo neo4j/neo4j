@@ -226,8 +226,13 @@ abstract class ExecutionEngine(
         getOrCompile(context, query, tracer, params, notificationLogger)
       } catch {
         case up: Throwable =>
-          if (isOutermostQuery)
-            queryMonitor.endFailure(context.executingQuery(), up.getMessage)
+          if (isOutermostQuery) {
+            val status = up match {
+              case withStatus: HasStatus => withStatus.status()
+              case _                     => null
+            }
+            queryMonitor.endFailure(context.executingQuery(), up.getMessage, status)
+          }
           throw up
       }
     if (query.options.queryOptions.executionMode.name != "explain") {
