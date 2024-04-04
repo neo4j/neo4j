@@ -60,28 +60,24 @@ object BestPositionFinder {
     cardinalities: Cardinalities,
     candidateLists: Seq[CandidateList]
   ): Map[Id, ListSet[EagernessReason]] = {
-    // Find the minimum of each candidate set
-    val csWithMinima = candidateLists.map(cl =>
-      CandidateSetWithMinimum(
-        cl.candidates.toSet,
-        cl.candidates.minBy(plan => cardinalities.get(plan.value.id)),
-        cl.conflict.reasons
+    val results = if (candidateLists.size > SIZE_LIMIT) {
+      candidateLists.map(cl =>
+        cl.candidates.minBy(plan => cardinalities.get(plan.value.id)) -> cl.conflict.reasons
       )
-    )
-    pickPlansToEagerize(csWithMinima)
-  }
-
-  private[eager] def pickPlansToEagerize(
-    csWithMinima: Seq[CandidateSetWithMinimum]
-  ): Map[Id, ListSet[EagernessReason]] = {
-    val results = if (csWithMinima.size > SIZE_LIMIT) {
-      csWithMinima
     } else {
+      // Find the minimum of each candidate set
+      val csWithMinima = candidateLists.map(cl =>
+        CandidateSetWithMinimum(
+          cl.candidates.toSet,
+          cl.candidates.minBy(plan => cardinalities.get(plan.value.id)),
+          cl.conflict.reasons
+        )
+      )
       mergeCandidateSets(csWithMinima)
+        .map(cl => cl.minimum -> cl.reasons)
     }
 
     results
-      .map(cl => cl.minimum -> cl.reasons)
       .groupBy(_._1.value.id)
       .view
       .mapValues(_.view.flatMap(_._2).to(ListSet))
