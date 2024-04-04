@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.neo4j.cypher.internal.NonFatalCypherError
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -38,11 +39,11 @@ case class EagerRewriterWithFallback(
     try {
       primaryRewriter.eagerize(plan, semanticTable, anonymousVariableNameGenerator)
     } catch {
-      case primaryThrowable: Throwable =>
+      case NonFatalCypherError(primaryThrowable) =>
         try {
           fallbackRewriter.eagerize(plan, semanticTable, anonymousVariableNameGenerator)
         } catch {
-          case fallbackThrowable: Throwable =>
+          case NonFatalCypherError(fallbackThrowable) =>
             fallbackThrowable.addSuppressed(primaryThrowable)
             throw fallbackThrowable
         }

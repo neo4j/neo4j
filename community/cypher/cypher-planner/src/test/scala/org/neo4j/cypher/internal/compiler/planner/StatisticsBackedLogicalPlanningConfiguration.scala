@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.PropertyTypeDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.defaultSettingsOverrides
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
@@ -117,6 +118,10 @@ trait StatisticsBackedLogicalPlanningSupport {
 }
 
 object StatisticsBackedLogicalPlanningConfigurationBuilder {
+
+  private val defaultSettingsOverrides: Map[Setting[_], AnyRef] = Map(
+    GraphDatabaseInternalSettings.cypher_lp_eager_analysis_fallback_enabled -> Boolean.box(false)
+  )
 
   def newBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     StatisticsBackedLogicalPlanningConfigurationBuilder()
@@ -1090,7 +1095,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       resolver,
       planContext,
       options,
-      settings
+      defaultSettingsOverrides ++ settings
     )
   }
 }
