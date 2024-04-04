@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.Writer;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -45,6 +47,7 @@ public class NeoJettyErrorHandler extends ErrorHandler {
             throws IOException {
         // Overriding to generate HTTP API V2's error format
         // todo should be filter out other endpoints here?
+        response.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
 
         var jsonGenerator = DefaultJsonFactory.INSTANCE
                 .get()

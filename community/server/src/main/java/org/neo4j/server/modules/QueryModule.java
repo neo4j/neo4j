@@ -23,6 +23,8 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.httpv2.QueryResource;
+import org.neo4j.server.httpv2.metrics.QueryAPIMetricsFilter;
+import org.neo4j.server.httpv2.metrics.QueryAPIMetricsMonitor;
 import org.neo4j.server.httpv2.request.JsonMessageBodyReader;
 import org.neo4j.server.httpv2.request.TypedJsonMessageBodyReader;
 import org.neo4j.server.httpv2.response.PlainJsonDriverResultWriter;
@@ -37,15 +39,22 @@ public class QueryModule implements ServerModule {
     private final WebServer webServer;
     private final Config config;
 
-    public QueryModule(WebServer webServer, Config config) {
+    private final QueryAPIMetricsMonitor metricsMonitor;
+
+    public QueryModule(WebServer webServer, Config config, QueryAPIMetricsMonitor metricsMonitor) {
         this.webServer = webServer;
         this.config = config;
+        this.metricsMonitor = metricsMonitor;
     }
 
     @Override
     public void start() {
         webServer.addJAXRSClasses(
                 jaxRsClasses(), config.get(ServerSettings.db_api_path).toString(), null);
+        webServer.addFilter(
+                new QueryAPIMetricsFilter(
+                        metricsMonitor, config.get(ServerSettings.db_api_path).toString()),
+                "/*");
     }
 
     @Override

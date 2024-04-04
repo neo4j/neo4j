@@ -31,6 +31,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.EnumSet;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -82,6 +84,7 @@ class QueryResourceErrorIT {
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Bad Request\"}]}");
@@ -93,6 +96,7 @@ class QueryResourceErrorIT {
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(405);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Method Not Allowed\"}]}");
@@ -110,6 +114,7 @@ class QueryResourceErrorIT {
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(415);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Unsupported Media Type\"}]}");
@@ -127,6 +132,7 @@ class QueryResourceErrorIT {
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(415);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Unsupported Media Type\"}]}");
@@ -143,6 +149,7 @@ class QueryResourceErrorIT {
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(415);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Unsupported Media Type\"}]}");
@@ -156,6 +163,7 @@ class QueryResourceErrorIT {
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\","
                         + "\"message\":\"Bad Request\"}]}");
@@ -173,6 +181,7 @@ class QueryResourceErrorIT {
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(406);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo(
                         "{\"errors\":[{\"error\":\"Neo.ClientError.Request.Invalid\",\"message\":\"Not Acceptable\"}]}");
@@ -186,6 +195,7 @@ class QueryResourceErrorIT {
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(404);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Database.DatabaseNotFound\","
                         + "\"message\":\"Graph not found: thisdbisalie\"}]}");
@@ -196,6 +206,7 @@ class QueryResourceErrorIT {
         var response = simpleRequest(client, queryEndpoint, "{\"statement\": \"MATCH (n)\"}");
 
         assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .startsWith("{\"errors\":[{\"error\":\"Neo.ClientError.Statement.SyntaxError\","
                         + "\"message\":\"Query cannot conclude with MATCH");
@@ -239,6 +250,7 @@ class QueryResourceErrorIT {
         var response = simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE DATABASE foo\"}");
 
         assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
         assertThat(response.body())
                 .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Statement.UnsupportedAdministrationCommand\","
                         + "\"message\":\"Unsupported administration command: CREATE DATABASE foo\"}]}");

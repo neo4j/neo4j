@@ -53,7 +53,7 @@ public class QueryResource {
 
     public static final String NAME = "query";
     private static final String DB_PATH_PARAM_NAME = "databaseName";
-    private static final String API_PATH_FRAGMENT = "query/v2";
+    public static final String API_PATH_FRAGMENT = "query/v2";
     static final String FULL_PATH = "/{" + DB_PATH_PARAM_NAME + "}/" + API_PATH_FRAGMENT;
 
     private final Driver driver;
@@ -70,7 +70,6 @@ public class QueryResource {
             QueryRequest request,
             @Context HttpServletRequest rawRequest,
             @Context HttpHeaders headers) {
-
         var sessionConfig = buildSessionConfig(request, databaseName);
         // The session will be closed after the result set has been serialized, it must not be closed in a
         // try-with-resources block here

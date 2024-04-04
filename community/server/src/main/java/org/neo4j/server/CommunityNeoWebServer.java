@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
@@ -56,6 +57,7 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer {
             InternalLogProvider userLogProvider,
             DbmsInfo dbmsInfo,
             MemoryPools memoryPools,
+            Monitors monitors,
             SystemNanoClock clock) {
         super(
                 managementService,
@@ -65,6 +67,7 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer {
                 dbmsInfo,
                 memoryPools,
                 transactionManager,
+                monitors,
                 clock);
     }
 
@@ -86,7 +89,7 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer {
                 serverModules.add(new Neo4jBrowserModule(webServer));
             }
             if (enabledModules.contains(ConfigurableServerModules.QUERY_API_ENDPOINTS)) {
-                serverModules.add(new QueryModule(webServer, config));
+                serverModules.add(new QueryModule(webServer, config, metricsMonitor));
             }
 
             serverModules.add(createAuthorizationModule());

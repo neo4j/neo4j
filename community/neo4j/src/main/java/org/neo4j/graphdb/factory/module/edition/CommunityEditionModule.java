@@ -252,6 +252,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 userLogProvider,
                 dbmsInfo,
                 globalModule.getMemoryPools(),
+                globalModule.getGlobalMonitors(),
                 globalModule.getGlobalClock());
     }
 

@@ -27,15 +27,23 @@ import java.net.http.HttpResponse;
 import java.util.Base64;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.server.httpv2.response.TypedJsonDriverResultWriter;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-final class HttpV2ClientUtil {
+public final class HttpV2ClientUtil {
 
     public static HttpRequest.Builder baseRequestBuilder(String endpoint, String databaseName) {
         return HttpRequest.newBuilder()
                 .uri(URI.create(endpoint.replace("{databaseName}", databaseName)))
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json");
+    }
+
+    public static HttpRequest.Builder baseTypedRequestBuilder(String endpoint, String databaseName) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(endpoint.replace("{databaseName}", databaseName)))
+                .header("Content-Type", TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE)
+                .header("Accept", TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE);
     }
 
     static HttpResponse<String> simpleRequest(HttpClient client, String endpoint, String database, String requestBody)
@@ -52,7 +60,7 @@ final class HttpV2ClientUtil {
         return simpleRequest(client, endpoint, "neo4j", requestBody);
     }
 
-    static HttpResponse<String> simpleRequest(HttpClient client, String endpoint)
+    public static HttpResponse<String> simpleRequest(HttpClient client, String endpoint)
             throws IOException, InterruptedException {
         return simpleRequest(client, endpoint, "neo4j", "{\"statement\": \"RETURN 1\"}");
     }

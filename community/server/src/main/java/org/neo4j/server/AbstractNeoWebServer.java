@@ -61,6 +61,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.configuration.ServerSettings;
@@ -69,6 +70,7 @@ import org.neo4j.server.http.HttpTransactionMemoryPool;
 import org.neo4j.server.http.cypher.HttpTransactionManager;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 import org.neo4j.server.httpv2.driver.LocalChannelDriverFactory;
+import org.neo4j.server.httpv2.metrics.QueryAPIMetricsMonitor;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.repr.RepresentationBasedMessageBodyWriter;
 import org.neo4j.server.web.RotatingRequestLog;
@@ -116,6 +118,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     private final HttpTransactionManager httpTransactionManager;
 
     private volatile Driver driver;
+    protected final QueryAPIMetricsMonitor metricsMonitor;
+
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     protected final SystemNanoClock clock;
 
@@ -134,6 +138,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
             DbmsInfo dbmsInfo,
             MemoryPools memoryPools,
             TransactionManager transactionManager,
+            Monitors monitors,
             SystemNanoClock clock) {
         this.databaseManagementService = databaseManagementService;
         this.globalDependencies = globalDependencies;
@@ -142,6 +147,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         this.userLogProvider = userLogProvider;
         this.log = userLogProvider.getLog(getClass());
         this.dbmsInfo = dbmsInfo;
+        this.metricsMonitor = monitors.newMonitor(QueryAPIMetricsMonitor.class);
         this.clock = clock;
         log.info(NEO4J_IS_STARTING_MESSAGE);
 
