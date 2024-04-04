@@ -63,6 +63,9 @@ object Metrics {
     def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty, Map.empty)
   }
 
+  /**
+   * @param labelInfo label info of outer context, use this for cardinality estimation
+   */
   case class QueryGraphSolverInput(
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
@@ -71,7 +74,7 @@ object Metrics {
   ) {
 
     def withUpdatedLabelInfo(fromPlan: LogicalPlan, solveds: Solveds): QueryGraphSolverInput = {
-      val newLabels = (labelInfo fuse solveds.get(fromPlan.id).asSinglePlannerQuery.lastLabelInfo)(_ ++ _)
+      val newLabels = labelInfo.fuse(solveds.get(fromPlan.id).asSinglePlannerQuery.allLabelInfo)(_ ++ _)
       copy(labelInfo = newLabels)
     }
 
@@ -117,7 +120,9 @@ object Metrics {
      * This metric estimates how many rows of data a query produces
      * (e.g. by asking the database for statistics)
      *
-     * @param query        the query to estimate cardinality for
+     * @param query            the query to estimate cardinality for
+     * @param labelInfo        Case: plannerQuery is not a subquery, then labelInfo should be empty
+     *                         Case: plannerQuery is a subquery, then labelInfo should contain all labels from the outer query
      * @param cardinalityModel subquery expressions need to recursively call into the top-level cardinality model, so we pass it down.
      * @return the cardinality of the query
      */
@@ -132,6 +137,9 @@ object Metrics {
 
     /**
      * Passes down this CardinalityModel for recursive calls.
+     *
+     * @param labelInfo Case: plannerQuery is not a subquery, then labelInfo should be empty
+     *                  Case: plannerQuery is a subquery, then labelInfo should contain all labels from the outer query
      */
     final def apply(
       plannerQuery: PlannerQuery,

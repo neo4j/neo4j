@@ -37,8 +37,11 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -527,6 +530,48 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
         Selectivity.ONE,
         Selectivity(limit / nodes.toDouble)
       )
+    }
+  }
+
+  test("Limit selectivity of inner query should correctly use label info") {
+    val nodes = 1000.0
+    val nodesA = 200.0
+    new givenConfig {
+      knownLabels = Set("A")
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
+
+        override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelId match {
+          case Some(LabelId(0)) => nodesA
+          case _                => throw new IllegalStateException()
+        }
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      // MATCH (a)
+      // WITH a LIMIT 10
+      // MATCH (a:A)
+      // RETURN a LIMIT 1
+      val query = RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(patternNodes = Set(v"a")),
+        horizon = RegularQueryProjection(Map(v"a" -> v"a"), QueryPagination(limit = Some(literalInt(10)))),
+        tail = Some(RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(
+            patternNodes = Set(v"a"),
+            argumentIds = Set(v"a"),
+            selections = Selections.from(hasLabels(v"a", "A"))
+          ),
+          horizon = RegularQueryProjection(Map(v"a" -> v"a"), QueryPagination(limit = Some(literalInt(1))))
+        ))
+      )
+
+      // correct limit selectivity of the inner query: 1 / (10 * Asel)
+      // incorrect: 1 / 10 (which happens if the label :A is not taken into account
+      //                    or when it has already been taken into account in the outer query)
+      // WHEN
+      val result = LimitSelectivity.forLastPart(query, context, Selectivity.ONE)
+
+      // THEN
+      result shouldBe Selectivity(1 / (10.0 * (nodesA / nodes)))
     }
   }
 }

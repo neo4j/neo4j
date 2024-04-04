@@ -622,6 +622,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setLabelCardinality("B", 50)
       .setRelationshipCardinality("()-[:BAR]->()", 10)
       .setRelationshipCardinality("(:A)-[:BAR]->()", 10)
+      .setRelationshipCardinality("()-[:BAR]->(:B)", 10)
       .setRelationshipCardinality("(:A)-[:BAR]->(:B)", 10)
       .build()
 
@@ -665,6 +666,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .setLabelCardinality("B", 50)
       .setRelationshipCardinality("()-[:BAR]->()", 10)
       .setRelationshipCardinality("(:A)-[:BAR]->()", 10)
+      .setRelationshipCardinality("()-[:BAR]->(:B)", 10)
       .setRelationshipCardinality("(:A)-[:BAR]->(:B)", 10)
       .build()
 

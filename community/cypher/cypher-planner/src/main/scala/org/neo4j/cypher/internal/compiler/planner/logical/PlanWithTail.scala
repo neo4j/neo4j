@@ -44,8 +44,14 @@ case class PlanWithTail(
     val updatedContext = context.withModifiedPlannerState(_
       .withAccessedProperties(PropertyAccessHelper.findLocalPropertyAccesses(tailQuery)))
 
-    val rhsPlan = planRhs(tailQuery, updatedContext.withModifiedPlannerState(_.withOuterPlan(lhsPlans.bestResult)))
-    planApply(lhsPlans, rhsPlan, previousInterestingOrder, tailQuery, updatedContext)
+    val rhsPlan = planRhs(
+      tailQuery,
+      updatedContext
+        .withModifiedPlannerState(_
+          .withOuterPlan(lhsPlans.bestResult)
+          .withUpdatedLabelInfo(lhsPlans.bestResult, context.staticComponents.planningAttributes.solveds))
+    )
+    (planApply(lhsPlans, rhsPlan, previousInterestingOrder, tailQuery, updatedContext), updatedContext)
   }
 
   private def planRhs(tailQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
@@ -63,24 +69,13 @@ case class PlanWithTail(
     rhsPlan: LogicalPlan,
     previousInterestingOrder: Option[InterestingOrder],
     tailQuery: SinglePlannerQuery,
-    lhsContext: LogicalPlanningContext
-  ): (BestPlans, LogicalPlanningContext) = {
-    val applyPlans = lhsPlans.map(lhsContext.staticComponents.logicalPlanProducer.planTailApply(_, rhsPlan, lhsContext))
-    val applyContext = lhsContext.withModifiedPlannerState(_.withUpdatedLabelInfo(
-      applyPlans.bestResult,
-      lhsContext.staticComponents.planningAttributes.solveds
-    ))
+    context: LogicalPlanningContext
+  ): BestPlans = {
+    val applyPlans = lhsPlans.map(context.staticComponents.logicalPlanProducer.planTailApply(_, rhsPlan, context))
 
     val plansWithUpdates =
-      applyPlans.map(p => updatesPlanner.plan(tailQuery, p, firstPlannerQuery = false, applyContext))
+      applyPlans.map(p => updatesPlanner.plan(tailQuery, p, firstPlannerQuery = false, context))
 
-    val horizonPlans =
-      eventHorizonPlanner.planHorizon(tailQuery, plansWithUpdates, previousInterestingOrder, applyContext)
-    val contextForTail =
-      applyContext.withModifiedPlannerState(_.withUpdatedLabelInfo(
-        horizonPlans.bestResult,
-        applyContext.staticComponents.planningAttributes.solveds
-      )) // cardinality should be the same for all plans, let's use the first one
-    (horizonPlans, contextForTail)
+    eventHorizonPlanner.planHorizon(tailQuery, plansWithUpdates, previousInterestingOrder, context)
   }
 }

@@ -44,8 +44,8 @@ trait NodeConnectionCardinalityModel
         if (boundNodesAndArguments.argumentIds.contains(relationship.variable)) {
           val additionalLabelsSelectivity =
             // arguably we should check whether the two nodes are the same instead of applying the selectivity twice
-            getArgumentSelectivity(context, predicates.localLabelInfo, relationship.left) *
-              getArgumentSelectivity(context, predicates.localLabelInfo, relationship.right)
+            getArgumentSelectivity(context, predicates.localOnlyLabelInfo, relationship.left) *
+              getArgumentSelectivity(context, predicates.localOnlyLabelInfo, relationship.right)
           val newBoundNodesAndArguments =
             boundNodesAndArguments.addArgumentIdsMarkedAsBound(Set(relationship.left, relationship.right))
           val multiplier = Multiplier(additionalLabelsSelectivity.factor)

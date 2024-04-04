@@ -201,6 +201,7 @@ trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
   val A_T1_ANY_sel: Double = A_T1_ANY / (N * A)
   val A_T2_ANY: Double = A_T2_A + A_T2_B + A_T2_C + A_T2_D + A_T2_E
   val A_ANY_ANY: Double = A_T1_ANY + A_T2_ANY
+  val A_ANY_B: Double = A_T1_B + A_T2_B
   val ANY_T1_A: Double = A_T1_A + B_T1_A + C_T1_A + D_T1_A + E_T1_A
   val ANY_T1_A_sel: Double = ANY_T1_A / (N * A)
   val ANY_T2_A: Double = A_T2_A + B_T2_A + C_T2_A + D_T2_A + E_T2_A
@@ -299,6 +300,7 @@ trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
       .setRelationshipCardinality("()-[:T2]->(:E)", ANY_T2_E)
 
       .setRelationshipCardinality("(:A)-[]->()", A_ANY_ANY)
+      .setRelationshipCardinality("(:A)-[]->(:B)", A_ANY_B)
       .setRelationshipCardinality("(:A)-[:T1]->()", A_T1_ANY)
       .setRelationshipCardinality("(:A)-[:T2]->()", A_T2_ANY)
       .setRelationshipCardinality("(:A)-[:T1]->(:A)", A_T1_A)

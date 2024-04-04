@@ -185,7 +185,7 @@ case object SelectPatternPredicates extends SelectionCandidateGenerator {
     // We compute LabelInfo here instead of using plannerQueryPlanner.planSubqueryWithLabelInfo
     // This has the benefit of a smaller cache key (just the labelInfo, and not the whole plan).
     val labelInfo =
-      context.staticComponents.planningAttributes.solveds.get(lhs.id).asSinglePlannerQuery.lastLabelInfo
+      context.staticComponents.planningAttributes.solveds.get(lhs.id).asSinglePlannerQuery.allLabelInfo
         // We only retain the relevant label infos to get more cache hits.
         .view.filterKeys(arguments).toMap
     context.staticComponents.queryGraphSolver.planInnerOfExistsSubquery(subquery, labelInfo, context)

@@ -246,9 +246,11 @@ case object plannerQueryPlanner {
     subqueryExpression: IRExpression,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val labelInfo =
-      context.staticComponents.planningAttributes.solveds.get(outerPlan.id).asSinglePlannerQuery.lastLabelInfo
-    planSubquery(subqueryExpression, context.withModifiedPlannerState(_.withFusedLabelInfo(labelInfo)))
+    planSubquery(
+      subqueryExpression,
+      context.withModifiedPlannerState(_
+        .withUpdatedLabelInfo(outerPlan, context.staticComponents.planningAttributes.solveds))
+    )
   }
 
   /**

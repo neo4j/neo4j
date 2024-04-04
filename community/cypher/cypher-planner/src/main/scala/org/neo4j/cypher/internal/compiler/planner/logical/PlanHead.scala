@@ -61,12 +61,7 @@ case class PlanHead(
         ))
     }
 
-    val contextForTail =
-      updatedContext.withModifiedPlannerState(_.withUpdatedLabelInfo(
-        plans.bestResult,
-        updatedContext.staticComponents.planningAttributes.solveds
-      )) // cardinality should be the same for all plans, let's use the first one
-    (plans, contextForTail)
+    (plans, updatedContext)
   }
 
   /**

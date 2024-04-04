@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery.extractLabelInfo
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery.reverseProjectedInterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
@@ -336,8 +337,10 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
   lazy val firstLabelInfo: Map[LogicalVariable, Set[LabelName]] =
     extractLabelInfo(this)
 
-  lazy val lastLabelInfo: Map[LogicalVariable, Set[LabelName]] =
-    extractLabelInfo(last)
+  lazy val allLabelInfo: Map[LogicalVariable, Set[LabelName]] =
+    fold(Map.empty[LogicalVariable, Set[LabelName]]) {
+      case (labelInfo, singlePlannerQuery) => labelInfo.fuse(singlePlannerQuery.firstLabelInfo)(_ ++ _)
+    }
 
   override def returns: Set[LogicalVariable] = {
     lastQueryHorizon match {

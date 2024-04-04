@@ -142,7 +142,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
             // For example: MATCH (n:A) OPTIONAL MATCH (n:B) <- we would apply the selectivity of label B here
             Cardinality(getArgumentSelectivity(context, predicates.localOnlyLabelInfo, node).factor)
           } else
-            getNodeCardinality(context, predicates.allLabelInfo, node).getOrElse(nodeWithNoLabelsCardinality)
+            getNodeCardinality(context, predicates.localOnlyLabelInfo, node).getOrElse(nodeWithNoLabelsCardinality)
         }.product(NumericCardinality)
 
     val otherPredicatesSelectivity =

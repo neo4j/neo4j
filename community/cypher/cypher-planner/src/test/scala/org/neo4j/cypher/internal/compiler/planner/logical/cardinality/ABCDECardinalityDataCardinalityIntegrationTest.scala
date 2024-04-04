@@ -22,14 +22,20 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.RepetitionCardinalityModel
+import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.util.Cardinality.lift
 import org.neo4j.cypher.internal.util.Selectivity
@@ -1071,6 +1077,127 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
 
   test("MATCH (a:A&B) WITH * SKIP 0 MATCH (a:A&B)") {
     expectCardinality(N * Asel * Bsel)
+  }
+
+  test("MATCH (a:A) WITH a LIMIT 1 MATCH (a)") {
+    expectCardinality(1)
+  }
+
+  test("MATCH (a) WITH a LIMIT 1 MATCH (a:A)") {
+    expectCardinality(Asel)
+  }
+
+  /**
+   * If the A-label selectivity is applied in the right place, then we have 20 (Asel=0.2) rows before the second LIMIT.
+   * Otherwise, when the label is applied already on the first query graph, then we have 100 rows before the second LIMIT.
+   */
+  test("MATCH (a) WITH a LIMIT 100 MATCH (a:A) WITH a SKIP 8 LIMIT 42") {
+    expectPlanCardinality(
+      {
+        case Limit(_, Add(SignedDecimalIntegerLiteral("42"), SignedDecimalIntegerLiteral("8"))) => true
+      },
+      100 * Asel
+    )
+  }
+
+  test("Cardinality should take the label info of the outer query into account within the CALL subquery") {
+    val query =
+      """
+        |MATCH (a:A)
+        |CALL {
+        |  WITH a
+        |  MATCH (a {prop: 1})
+        |  RETURN a as b
+        |}
+        |""".stripMargin
+    planShouldHaveCardinality(
+      query,
+      {
+        case _: Selection => true
+      },
+      A * Aprop
+    )
+  }
+
+  test("Cardinality should take the label info of the outer query into account within the tail query") {
+    val query =
+      """
+        |MATCH (a:A)
+        |WITH a SKIP 0
+        |MATCH (a {prop: 1})
+        |""".stripMargin
+
+    planShouldHaveCardinality(
+      query,
+      {
+        case _: Selection => true
+      },
+      A * Aprop
+    )
+  }
+
+  test("Cardinality should take the label info of the outer query into account within the inner MERGE clause") {
+    val query =
+      """
+        |MATCH (a:A)
+        |MERGE (a)-[:T1]->(b)
+        |""".stripMargin
+
+    planShouldHaveCardinality(
+      query,
+      {
+        case _: Expand => true
+      },
+      A_T1_ANY
+    )
+  }
+
+  test("Cardinality should take the label info of the outer query into account within the inner IRExpression") {
+    val query =
+      """
+        |MATCH (a:A)
+        |WITH COUNT {
+        |  MATCH (a)-[:T1]->(b:B)
+        |} AS aCount
+        |""".stripMargin
+    planShouldHaveCardinality(
+      query,
+      {
+        case _: Expand => true
+      },
+      A_T1_ANY
+    )
+  }
+
+  test(
+    "Cardinality should take the label info of the outer query into account within the inner OPTIONAL MATCH clause"
+  ) {
+    val query =
+      """
+        |MATCH (a:A)
+        |OPTIONAL MATCH (a)-[:T1]->(b)-[:T1]->(c)
+        |""".stripMargin
+    planShouldHaveCardinality(
+      query,
+      {
+        case Expand(_, LogicalVariable("a"), _, _, _, _, _) => true
+      },
+      A_T1_ANY
+    )
+  }
+
+  test("Selectivity of argument labels should not be applied multiple times") {
+    val query = """MATCH (a:A)-[r:T1]->(b) WITH a, r, b SKIP 0 MATCH (a:A)-[r]->(b:B)"""
+    println(plannerBuilder().build().plan(query + " RETURN a, r, b"))
+
+    planShouldHaveCardinality(
+      query,
+      {
+        case _: ProjectEndpoints => true
+      },
+      A_T1_ANY * Bsel
+      // Wrong would be applying label A twice: A_T1_ANY * Asel * Bsel
+    )
   }
 
   private def subquerySelectivity(cardinality: Double): Double = {
