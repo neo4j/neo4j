@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.util.UnicodeHelper
@@ -44,7 +45,7 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase with LegacyAstPa
           )
         )
       } else if (Character.getType(c) != Character.SURROGATE) { // Surrogate characters fail completely so can't test
-        s"RETURN $$${c}abc AS `$paramWithCharName`" should notParse[Statement]
+        s"RETURN $$${c}abc AS `$paramWithCharName`" should notParse[Statements]
       }
     }
   }
@@ -64,7 +65,7 @@ class ParameterIdentifiersParserTest extends AstParsingTestBase with LegacyAstPa
         Character.getType(c) != Character.SURROGATE &&
         !List('"', '\'', '/', '*', '%', '+', '-', ',', '.', ':', '<', '>', '=', '^', '`').contains(c)
       ) {
-        s"RETURN $$a${c}abc AS `$paramWithCharName`" should notParse[Statement]
+        s"RETURN $$a${c}abc AS `$paramWithCharName`" should notParse[Statements]
       }
     }
   }

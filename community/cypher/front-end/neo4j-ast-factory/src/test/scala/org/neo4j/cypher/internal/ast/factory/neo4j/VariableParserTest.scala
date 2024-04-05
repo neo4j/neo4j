@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
@@ -70,12 +71,12 @@ class VariableParserTest extends AstParsingTestBase
   }
 
   test("variables are not allowed uneven number of backticks") {
-    "`a`b`" should notParse[Variable]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"b\"\""))
+    "RETURN `a`b`" should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'b'"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Failed to parse query, extraneous input (line 1, column 4 (offset: 3))
-          |"`a`b`"
-          |    ^""".stripMargin
+        """Mismatched input 'b': expected ';', <EOF> (line 1, column 11 (offset: 10))
+          |"RETURN `a`b`"
+          |           ^""".stripMargin
       ))
   }
 

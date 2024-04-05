@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class FinishParserTest extends AstParsingTestBase {
@@ -40,26 +41,26 @@ class FinishParserTest extends AstParsingTestBase {
   //  Invalid use of any projection-like items after FINISH
 
   test("FINISH *") {
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("FINISH a, b") {
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("FINISH DISTINCT *") {
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("FINISH DISTINCT a, b") {
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("FINISH n:A") {
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("FINISH n:A&B") {
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 }

@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.TypePredicateExpressionParserTest.allCombinations
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
@@ -52,52 +53,52 @@ import org.scalatest.prop.Tables
 class TypePredicateExpressionParserTest extends AstParsingTestBase
     with TableDrivenPropertyChecks {
 
-  test("x :: BOOLEAN NOT NULL NOT NULL") {
-    failsParsing[Expression]
+  test("RETURN x :: BOOLEAN NOT NULL NOT NULL") {
+    failsParsing[Statements]
   }
 
-  test("x :: BOOLEAN! NOT NULL") {
-    failsParsing[Expression]
+  test("RETURN x :: BOOLEAN! NOT NULL") {
+    failsParsing[Statements]
   }
 
-  test("x :: BOOLEAN NOT NULL!") {
-    failsParsing[Expression]
+  test("RETURN x :: BOOLEAN NOT NULL!") {
+    failsParsing[Statements]
   }
 
-  test("x :: BOOLEAN!!") {
-    failsParsing[Expression]
+  test("RETURN x :: BOOLEAN!!") {
+    failsParsing[Statements]
   }
 
-  test("x :: LIST<BOOLEAN> NOT NULL NOT NULL") {
-    failsParsing[Expression]
+  test("RETURN x :: LIST<BOOLEAN> NOT NULL NOT NULL") {
+    failsParsing[Statements]
   }
 
-  test("x :: LIST<BOOLEAN>! NOT NULL") {
-    failsParsing[Expression]
+  test("RETURN x :: LIST<BOOLEAN>! NOT NULL") {
+    failsParsing[Statements]
   }
 
-  test("x :: LIST<BOOLEAN> NOT NULL!") {
-    failsParsing[Expression]
+  test("RETURN x :: LIST<BOOLEAN> NOT NULL!") {
+    failsParsing[Statements]
   }
 
-  test("x :: LIST<BOOLEAN>!!") {
-    failsParsing[Expression]
+  test("RETURN x :: LIST<BOOLEAN>!!") {
+    failsParsing[Statements]
   }
 
-  test("x :: BOOLEAN LIST NOT NULL NOT NULL") {
-    failsParsing[Expression]
+  test("RETURN x :: BOOLEAN LIST NOT NULL NOT NULL") {
+    failsParsing[Statements]
   }
 
-  test("x :: BOOLEAN LIST! NOT NULL") {
-    failsParsing[Expression]
+  test("RETURN x :: BOOLEAN LIST! NOT NULL") {
+    failsParsing[Statements]
   }
 
-  test("x :: BOOLEAN LIST NOT NULL !") {
-    failsParsing[Expression]
+  test("RETURN x :: BOOLEAN LIST NOT NULL !") {
+    failsParsing[Statements]
   }
 
-  test("x :: BOOLEAN LIST!!") {
-    failsParsing[Expression]
+  test("RETURN x :: BOOLEAN LIST!!") {
+    failsParsing[Statements]
   }
 
   // The code that throws these next 2 errors is not inside of Cypher.jj, so the ANTLR parser doesn't know about it
@@ -145,12 +146,12 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
     failsParsing[Expression]
   }
 
-  test("x :: ANY VALUE<> NOT NULL") {
-    failsParsing[Expression]
+  test("RETURN x :: ANY VALUE<> NOT NULL") {
+    failsParsing[Statements]
   }
 
-  test("x :: ANY <> NOT NULL") {
-    failsParsing[Expression]
+  test("RETURN x :: ANY <> NOT NULL") {
+    failsParsing[Statements]
   }
 
   test("x :: NOT NULL") {
@@ -200,7 +201,7 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
       }
 
       // This should not be supported according to CIP-87
-      s"x NOT :: $typeString" should notParse[Expression]
+      s"RETURN x NOT :: $typeString" should notParse[Statements]
     }
   }
 }

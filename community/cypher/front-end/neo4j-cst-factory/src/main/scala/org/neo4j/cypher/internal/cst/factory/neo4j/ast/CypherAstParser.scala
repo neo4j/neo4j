@@ -29,7 +29,6 @@ import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.ReplaceUnicodeEscapeSequences
-import org.neo4j.cypher.internal.cst.factory.neo4j.CypherToken
 import org.neo4j.cypher.internal.cst.factory.neo4j.DefaultCypherToken
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
@@ -37,7 +36,6 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.internal.helpers.Exceptions
 
@@ -152,7 +150,7 @@ object CypherAstParser {
     parser.setErrorHandler(new BailErrorStrategy)
 
     try {
-      doParse(parser, exceptionFactory, f)
+      doParse(parser, f)
     } catch {
       case _: Exception =>
         // The fast route failed, now try again with full error handling and prediction mode
@@ -168,13 +166,12 @@ object CypherAstParser {
         parser.setErrorHandler(new CypherErrorStrategy)
         parser.addErrorListener(new SyntaxErrorListener(exceptionFactory))
 
-        doParse(parser, exceptionFactory, f)
+        doParse(parser, f)
     }
   }
 
   private def doParse[T <: AstRuleCtx](
     parser: CypherAstParser,
-    exceptionFactory: CypherExceptionFactory,
     f: CypherAstParser => T
   ): T = {
     val result = f(parser)
@@ -190,19 +187,6 @@ object CypherAstParser {
       if (errorListener.syntaxErrors.nonEmpty) {
         throw errorListener.syntaxErrors.reduce(Exceptions.chain)
       }
-    }
-
-    // Throw exception if EOF is not reached
-    if (!parser.isMatchedEOF && parser.getTokenStream.LA(1) != Token.EOF) {
-      val nextToken = parser.getTokenStream.LT(1)
-      val position = Option(nextToken).collect {
-        case cypherToken: CypherToken => cypherToken.position()
-        case t                        => InputPosition(t.getStartIndex, t.getLine, t.getCharPositionInLine + 1)
-      }
-      throw exceptionFactory.syntaxException(
-        "Failed to parse query, extraneous input",
-        position.getOrElse(InputPosition.NONE)
-      )
     }
 
     result

@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.escapeSequences
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.genCodepoint
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.genCypherUnicodeEscape
@@ -86,10 +87,24 @@ class LiteralsParserTest extends AstParsingTestBase
     "- 1.4" should parseTo[NumberLiteral](DecimalDoubleLiteral("-1.4")(pos))
     "--1.0" should notParse[NumberLiteral]
 
-    val invalid = Seq("NaN", "Infinity", "Ox", "0_.0", "1_._1", "._2", "1_.0001", "1._0001")
-    for (i <- invalid) {
-      i should notParse[NumberLiteral]
-    }
+    "RETURN NaN" should parseTo[Statements](
+      Statements(Seq(singleQuery(return_(returnItem(NaN()(pos), "NaN")))))
+    )
+    "RETURN Infinity" should parseTo[Statements](
+      Statements(Seq(singleQuery(return_(returnItem(Infinity()(pos), "Infinity")))))
+    )
+    "RETURN Ox" should parseTo[Statements](
+      Statements(Seq(singleQuery(return_(returnItem(varFor("Ox"), "Ox")))))
+    )
+    "RETURN 0_.0" should notParse[Statements]
+    "RETURN 1_._1" should parseTo[Statements](
+      Statements(Seq(singleQuery(return_(returnItem(prop(SignedDecimalIntegerLiteral("1_")(pos), "_1"), "1_._1")))))
+    )
+    "RETURN ._2" should notParse[Statements]
+    "RETURN 1_.0001" should notParse[Statements]
+    "RETURN 1._0001" should parseTo[Statements](
+      Statements(Seq(singleQuery(return_(returnItem(prop(SignedDecimalIntegerLiteral("1")(pos), "_0001"), "1._0001")))))
+    )
   }
 
   test("can parse parameter syntax") {
@@ -149,10 +164,10 @@ class LiteralsParserTest extends AstParsingTestBase
     }
 
     s"'${toCypherHex('\\')}'" should notParse[Literal]
-    s"'${toCypherHex('\'')}'" should notParse[Literal]
+    s"return '${toCypherHex('\'')}'" should notParse[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Lexical error"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Failed to parse query, extraneous input (line 1, column 8 (offset: 7))"
+        "Extraneous input ''': expected ';', <EOF> (line 1, column 15 (offset: 14))"
       ))
 
     "'\\U1'" should parseTo[Literal](literalString("\\U1"))

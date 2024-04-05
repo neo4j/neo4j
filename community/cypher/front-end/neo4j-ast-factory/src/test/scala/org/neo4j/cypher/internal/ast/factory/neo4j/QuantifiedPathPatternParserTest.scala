@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
@@ -387,13 +388,13 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   }
 
   // pattern expressions are not implemented, yet
-  test("MATCH (n) WITH [ p = (n)--(m) ((a)-->(b))+ | p ] as paths") {
-    failsToParse[Clause]()
+  test("MATCH (n) WITH [ p = (n)--(m) ((a)-->(b))+ | p ] as paths RETURN *") {
+    failsToParse[Statements]()
   }
 
   // pattern expression are not implemented, yet
-  test("MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m)") {
-    failsToParse[Clause]()
+  test("MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m) RETURN *") {
+    failsToParse[Statements]()
   }
 
   // node abbreviations are not implemented, yet

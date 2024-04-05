@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
@@ -92,7 +93,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("precedence 9 vs 8 - negative") {
-    "1 = NOT 2" should notParse[Expression] // TODO Assert message
+    "RETURN 1 = NOT 2" should notParse[Statements] // TODO Assert message
   }
 
   test("precedence 8 vs 7") {
@@ -148,10 +149,10 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("precedence 7 - negative") {
-    "'parse' ENDS WITH 'se' CONTAINS 'e'" should notParse[Expression]
-    "'ab' STARTS WITH 'a' IS NOT TYPED BOOLEAN" should notParse[Expression]
-    "RETURN [1] IS :: LIST<INT> IS :: BOOLEAN" should notParse[Expression]
-    "RETURN 'string' IS :: STRING IS NORMALIZED" should notParse[Expression]
+    "RETURN 'parse' ENDS WITH 'se' CONTAINS 'e'" should notParse[Statements]
+    "RETURN 'ab' STARTS WITH 'a' IS NOT TYPED BOOLEAN" should notParse[Statements]
+    "RETURN [1] IS :: LIST<INT> IS :: BOOLEAN" should notParse[Statements]
+    "RETURN 'string' IS :: STRING IS NORMALIZED" should notParse[Statements]
   }
 
   test("precedence 7 vs 6") {

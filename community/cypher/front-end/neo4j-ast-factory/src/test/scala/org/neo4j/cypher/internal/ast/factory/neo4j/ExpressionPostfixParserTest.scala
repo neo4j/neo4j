@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListSlice
@@ -43,8 +44,8 @@ class ExpressionPostfixParserTest extends AstParsingTestBase {
     parsesTo[Expression](prop(prop(prop(prop(prop(prop("v", "ab"), "c"), "d"), "e"), "f"), "g"))
   }
 
-  test("v.1") {
-    failsParsing[Expression]
+  test("return v.1") {
+    failsParsing[Statements]
   }
 
   test("a[0]") {

@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
@@ -106,7 +107,7 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   //  Invalid use of other label expression symbols than :
 
   test("REMOVE n:A|B") {
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("REMOVE n:!A") {
@@ -118,11 +119,11 @@ class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("REMOVE n:A&B") {
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("REMOVE n IS A&B") {
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("REMOVE :A") {
