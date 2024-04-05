@@ -49,6 +49,10 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
 
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 object Parser {
 
   val injectCachedProperties: Rewriter = topDown(Rewriter.lift {
@@ -115,13 +119,23 @@ object Parser {
   }
 
   def parseExpression(text: String): Expression = {
-    val expression = JavaccRule.Expression.apply(text)
-    Parser.cleanup(expression)
+    Try(JavaccRule.Expression.apply(text)) match {
+      case Success(expression) =>
+        Parser.cleanup(expression)
+      case Failure(exception) =>
+        println(s"Failed parsing expression `$text``")
+        throw exception
+    }
   }
 
   def parsePatternElement(text: String): PatternElement = {
-    val patternElement = JavaccRule.PatternElement.apply(text)
-    Parser.cleanup(patternElement)
+    Try(JavaccRule.PatternElement.apply(text)) match {
+      case Success(patternElement) =>
+        Parser.cleanup(patternElement)
+      case Failure(exception) =>
+        println(s"Failed parsing pattern element `$text``")
+        throw exception
+    }
   }
 
   def parseProcedureCall(text: String): UnresolvedCall = {
