@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>5.19.0-SNAPSHOT</version>
+        <version>5.20.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -65,7 +65,7 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>test-utils</artifactId>
-            <version>5.19.0-SNAPSHOT</version>
+            <version>5.20.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
