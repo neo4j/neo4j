@@ -106,7 +106,7 @@ class CachingPreParser(
     } else if (targetsComposite) {
       preParsedQuery.copy(options =
         preParsedQuery.options.copy(
-          queryOptions = QueryOptions.default.queryOptions.copy(
+          queryOptions = preParsedQuery.options.queryOptions.copy(
             runtime = CypherRuntimeOption.slotted,
             expressionEngine = CypherExpressionEngineOption.interpreted
           ),
