@@ -115,7 +115,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
             } else if (compare < 0) {
                 // advance all cursors up to first and retry
                 for (int j = 0; j <= i; j++) {
-                    if (!seek(cursors[i], secondReference)) {
+                    if (!seek(cursors[j], secondReference)) {
                         return false;
                     }
                 }
