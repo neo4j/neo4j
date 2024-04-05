@@ -115,26 +115,77 @@ object CandidateListFinder {
       copy(candidates = Nil, traversesEagerPlanFromLeft = false)
   }
 
+  sealed trait LHSvsRHSEagerization {
+
+    /**
+     * Given the candidate lists accumulated so far, filter them out based
+     * on if this strategy should eagerite LHS vs RHS conflicts.
+     */
+    def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
+    planChildrenLookup: PlanChildrenLookup): Vector[CandidateList]
+  }
+
+  object LHSvsRHSEagerization {
+
+    /**
+     * Eagerize conflicts between the LHS and the RHS of the plan.
+     */
+    case object Yes extends LHSvsRHSEagerization {
+
+      override def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
+      planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
+        candidateLists
+      }
+    }
+
+    /**
+     * Do not eagerize conflicts between the LHS and the RHS of the plan.
+     */
+    case object No extends LHSvsRHSEagerization {
+
+      override def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
+      planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
+        val otherCandidateListsBuilder = Vector.newBuilder[CandidateList]
+        candidateLists.foreach { cl =>
+          if (!isLhsVsRhsConflict(plan, cl))
+            otherCandidateListsBuilder.addOne(cl)
+        }
+        otherCandidateListsBuilder.result()
+      }
+    }
+
+    /**
+     * Assert there are no conflicts between the LHS and the RHS of the plan.
+     */
+    case object AssertNoConflicts extends LHSvsRHSEagerization {
+
+      override def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
+      planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
+        val otherCandidateListsBuilder = Vector.newBuilder[CandidateList]
+        candidateLists.foreach { cl =>
+          if (!isLhsVsRhsConflict(plan, cl))
+            otherCandidateListsBuilder.addOne(cl)
+          else
+            throw new IllegalStateException(
+              s"We do not expect conflicts between the two branches of a ${plan.getClass.getSimpleName} yet."
+            )
+        }
+        otherCandidateListsBuilder.result()
+      }
+    }
+  }
+
   /**
-   * @param eagerizeLHSvsRHSConflicts               if `true` a conflict between the LHS and the RHS needs an Eager on the LHS
+   * @param eagerizeLHSvsRHSConflicts               if `Yes` a conflict between the LHS and the RHS needs an Eager on the LHS
    * @param emptyCandidateListsForRHSvsTopConflicts if `true` a conflict between the RHS and the Top can only be solved by
    *                                                an Eager on Top
    */
   private case class BinaryPlanEagerizationStrategy(
-    eagerizeLHSvsRHSConflicts: Boolean,
+    eagerizeLHSvsRHSConflicts: LHSvsRHSEagerization,
     emptyCandidateListsForRHSvsTopConflicts: Boolean
   )
 
   private object BinaryPlanEagerizationStrategy {
-
-    private def assertNoLhsVsRHSConflicts(plan: LogicalPlan, hasLhsVsRhsConflicts: Boolean): Boolean = {
-      if (hasLhsVsRhsConflicts) {
-        throw new IllegalStateException(
-          s"We do not expect conflicts between the two branches of a ${plan.getClass.getSimpleName} yet."
-        )
-      }
-      false
-    }
 
     private def assertHasReadOnlyRHS(plan: LogicalBinaryPlan): Boolean = {
       if (!plan.right.readOnly) {
@@ -145,41 +196,41 @@ object CandidateListFinder {
       true
     }
 
-    def forPlan(plan: LogicalBinaryPlan, hasLhsVsRhsConflicts: Boolean): BinaryPlanEagerizationStrategy = {
+    def forPlan(plan: LogicalBinaryPlan): BinaryPlanEagerizationStrategy = {
       // In all places where `emptyCandidateListsForRHSvsTopConflicts = true`,
       // we must be sure that plan does not conflict with its RHS.
       // Otherwise we will get empty candidate lists.
       plan match {
         case _: EagerLogicalPlan => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = false,
+            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.No,
             emptyCandidateListsForRHSvsTopConflicts = false
           )
         case _: Union => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = false,
+            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.No,
             emptyCandidateListsForRHSvsTopConflicts = false
           )
         case _: OrderedUnion => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.AssertNoConflicts,
             emptyCandidateListsForRHSvsTopConflicts = false
           )
         case _: AssertSameNode => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.AssertNoConflicts,
             emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
           )
         case _: AssertSameRelationship => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.AssertNoConflicts,
             emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
           )
         case _: CartesianProduct => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = true,
+            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.Yes,
             emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
           )
         case _: RepeatOptions => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts(plan, hasLhsVsRhsConflicts),
+            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.AssertNoConflicts,
             emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
           )
         case ap: ApplyPlan => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = true,
+            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.Yes,
             emptyCandidateListsForRHSvsTopConflicts =
               // Most Apply variants must have read-only RHSs
               // If this changes in the future, the correct way to eagerize, e.g. a SemiApply variant
@@ -363,27 +414,9 @@ object CandidateListFinder {
     acc: SequencesAcc,
     plan: LogicalBinaryPlan
   )(implicit planChildrenLookup: PlanChildrenLookup): SequencesAcc = {
-    // Partition all candidate lists into whether they solve a lhs vs rhs conflict of the given binary plan,
-    // or some other conflict.
-    val (hasLhsVsRhsCandidateLists, otherCandidateLists) = {
-      val otherCandidateListsBuilder = Vector.newBuilder[CandidateList]
-      var hasLhsVsRhsCandidateLists = false
-      acc.candidateLists.foreach { cl =>
-        if (isLhsVsRhsConflict(plan, cl))
-          hasLhsVsRhsCandidateLists = true
-        else
-          otherCandidateListsBuilder.addOne(cl)
-      }
-      (hasLhsVsRhsCandidateLists, otherCandidateListsBuilder.result())
-    }
-
-    val eagerizationStrategy = BinaryPlanEagerizationStrategy.forPlan(plan, hasLhsVsRhsCandidateLists)
-
-    val newCandidateLists = if (eagerizationStrategy.eagerizeLHSvsRHSConflicts) {
-      acc.candidateLists
-    } else {
-      otherCandidateLists
-    }
+    val eagerizationStrategy = BinaryPlanEagerizationStrategy.forPlan(plan)
+    val newCandidateLists =
+      eagerizationStrategy.eagerizeLHSvsRHSConflicts.filterCandidateLists(acc.candidateLists, plan)
 
     acc.copy(
       candidateLists = newCandidateLists
