@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -41,9 +42,9 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
@@ -51,6 +52,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.IndexingTestUtil;
@@ -225,13 +227,11 @@ class IndexRecoveryIT {
     }
 
     @Test
-    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex()
-            throws IOException, ExecutionException, InterruptedException, KernelException {
+    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex() throws Exception {
         // Given
-        Semaphore populationSemaphore = new Semaphore(1);
+        final Semaphore populationSemaphore = new Semaphore(0);
         try {
             startDb();
-
             when(mockedIndexProvider.getPopulator(
                             any(IndexDescriptor.class),
                             any(IndexSamplingConfig.class),
@@ -243,32 +243,30 @@ class IndexRecoveryIT {
                     .thenReturn(indexPopulatorWithControlledCompletionTiming(populationSemaphore));
             createSomeData();
             createIndex();
-
-            // And Given
-            Future<Void> killFuture = killDbInSeparateThread();
-            populationSemaphore.release();
-            killFuture.get();
+            killDb(populationSemaphore);
         } finally {
             populationSemaphore.release();
         }
 
         // When
-        when(mockedIndexProvider.getInitialState(any(IndexDescriptor.class), any(CursorContext.class), any()))
-                .thenReturn(InternalIndexState.POPULATING);
-        populationSemaphore = new Semaphore(1);
+        doReturn(InternalIndexState.POPULATING)
+                .when(mockedIndexProvider)
+                .getInitialState(any(IndexDescriptor.class), any(CursorContext.class), any());
+        // Start on one permit to let recovery through
+        final Semaphore recoverySemaphore = new Semaphore(1);
         try {
-            when(mockedIndexProvider.getPopulator(
+            doReturn(indexPopulatorWithControlledCompletionTiming(recoverySemaphore))
+                    .when(mockedIndexProvider)
+                    .getPopulator(
                             any(IndexDescriptor.class),
                             any(IndexSamplingConfig.class),
                             any(),
                             any(),
                             any(TokenNameLookup.class),
                             any(),
-                            any()))
-                    .thenReturn(indexPopulatorWithControlledCompletionTiming(populationSemaphore));
+                            any());
             var minimalIndexAccessor = mock(MinimalIndexAccessor.class);
-            when(mockedIndexProvider.getMinimalIndexAccessor(any(), anyBoolean()))
-                    .thenReturn(minimalIndexAccessor);
+            doReturn(minimalIndexAccessor).when(mockedIndexProvider).getMinimalIndexAccessor(any(), anyBoolean());
             startDb();
 
             try (Transaction transaction = db.beginTx()) {
@@ -297,7 +295,7 @@ class IndexRecoveryIT {
             verify(mockedIndexProvider, times(2)).getMinimalIndexAccessor(any(), anyBoolean());
             verify(minimalIndexAccessor, times(2)).drop();
         } finally {
-            populationSemaphore.release();
+            recoverySemaphore.release();
         }
     }
 
@@ -428,7 +426,7 @@ class IndexRecoveryIT {
         verify(mockedIndexProvider).getMinimalIndexAccessor(any(IndexDescriptor.class), anyBoolean());
     }
 
-    private void startDb() {
+    private void startDb() throws IOException {
         if (db != null) {
             managementService.shutdown();
         }
@@ -438,9 +436,23 @@ class IndexRecoveryIT {
                 .addExtension(mockedIndexProviderFactory)
                 .noOpSystemGraphInitializer()
                 .setMonitors(monitors)
+                .setConfig(GraphDatabaseSettings.check_point_interval_time, Duration.ofDays(1))
+                .setConfig(GraphDatabaseSettings.check_point_interval_tx, Integer.MAX_VALUE)
                 .build();
 
         db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+    }
+
+    private void killDb(Semaphore populationSemaphore) {
+        if (db != null) {
+            Path snapshotDir = testDirectory.directory("snapshot");
+            snapshotFs(snapshotDir);
+            // The index population is waiting for this semaphore, and shutting down the database will
+            // wait for the index population, so release the semaphore here.
+            populationSemaphore.release();
+            managementService.shutdown();
+            restoreSnapshot(snapshotDir);
+        }
     }
 
     private void killDb() {
@@ -562,13 +574,7 @@ class IndexRecoveryIT {
         };
     }
 
-    private static class MyRecoveryMonitor implements RecoveryMonitor {
-        private final Semaphore recoverySemaphore;
-
-        MyRecoveryMonitor(Semaphore recoverySemaphore) {
-            this.recoverySemaphore = recoverySemaphore;
-        }
-
+    private record MyRecoveryMonitor(Semaphore recoverySemaphore) implements RecoveryMonitor {
         @Override
         public void recoveryCompleted(long recoveryTimeInMilliseconds, RecoveryMode mode) {
             recoverySemaphore.release();
