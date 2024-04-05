@@ -23,6 +23,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlanner.CacheKeyInner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlanner.CacheKeyOuter
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractQPPPredicates.ExtractedPredicates
@@ -52,12 +53,14 @@ trait QPPInnerPlanner {
    * @param qpp                   The QPP pattern containing the inner pattern to plan
    * @param fromLeft              The QPP node we can use as argument
    * @param extractedPredicates   The predicates inlineable for this inner pattern
+   * @param labelInfoOuter        The label info of the nodes on the outer query where this QPP is enclosed
    * @return
    */
   def planQPP(
     qpp: QuantifiedPathPattern,
     fromLeft: Boolean,
-    extractedPredicates: ExtractedPredicates
+    extractedPredicates: ExtractedPredicates,
+    labelInfoOuter: LabelInfo
   ): LogicalPlan
 
   /**
@@ -108,7 +111,8 @@ class CacheBackedQPPInnerPlanner(planner: => QPPInnerPlanner) extends QPPInnerPl
   override def planQPP(
     qpp: QuantifiedPathPattern,
     fromLeft: Boolean,
-    extractedPredicates: ExtractedPredicates = ExtractedPredicates(Set.empty, Seq.empty)
+    extractedPredicates: ExtractedPredicates = ExtractedPredicates(Set.empty, Seq.empty),
+    labelInfoOuter: LabelInfo = Map.empty
   ): LogicalPlan = {
     val cacheKeyOuter = CacheKeyOuter(qpp, fromLeft)
     val cacheMaxSize = CacheSize.Static(CACHE_MAX_SIZE)
@@ -122,7 +126,8 @@ class CacheBackedQPPInnerPlanner(planner: => QPPInnerPlanner) extends QPPInnerPl
         val qppInnerPlan = planner.planQPP(
           qpp,
           fromLeft,
-          extractedPredicates
+          extractedPredicates,
+          labelInfoOuter
         )
         cache.put(cacheKeyInner, qppInnerPlan)
         caches = caches.updated(cacheKeyOuter, cache)
@@ -152,7 +157,8 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
   override def planQPP(
     qpp: QuantifiedPathPattern,
     fromLeft: Boolean,
-    extractedPredicates: ExtractedPredicates
+    extractedPredicates: ExtractedPredicates,
+    labelInfoOuter: LabelInfo
   ): LogicalPlan = {
     val argumentsIntroducedByExtractedPredicates =
       extractedPredicates.requiredSymbols -- qpp.argumentIds
@@ -162,9 +168,44 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
       .addArgumentIds(additionalArguments)
       .addPredicates(additionalPredicates: _*)
 
+    val labelInfoInner = qg.patternNodeLabels
+
+    val qppLeftOuterLabels = labelInfoOuter(qpp.leftBinding.outer)
+    val qppRightOuterLabels = labelInfoOuter(qpp.rightBinding.outer)
+
+    val qppLeftInnerLabels = labelInfoInner(qpp.leftBinding.inner)
+    val qppRightInnerLabels = labelInfoInner(qpp.rightBinding.inner)
+
+    // If the same label is present on the left outer node
+    //   and on right inner node,
+    //   then that label can be inferred for the left inner node.
+    // The reason is that the left inner node will be juxtaposted with the left
+    // outer node during the first iteration and with the right inner node for
+    // the remaining iterations. Therefore, if those nodes must have a certain label,
+    // then the left inner node must have that label too.
+    val labelsForLeftInner0 = qppLeftOuterLabels.intersect(qppRightInnerLabels)
+    // If the same label is present on the left inner node
+    //   and the right outer node,
+    //   then that label can be inferred for the right inner node.
+    //  The right inner node is juxtaposed with the left inner node for all
+    //  iterations except the last one where it is juxtaposed with the right outer node.
+    val labelsForRightInner0 = qppLeftInnerLabels.intersect(qppRightOuterLabels)
+
+    // The newly inferred labels above might lead to more inferences
+    val labelsForLeftInner = qppLeftOuterLabels.intersect(labelsForRightInner0)
+    val labelsForRightInner = labelsForLeftInner0.intersect(qppRightOuterLabels)
+
+    val qppLabelInfoMap = Map(
+      qpp.leftBinding.inner -> labelsForLeftInner.union(labelsForLeftInner0),
+      qpp.rightBinding.inner -> labelsForRightInner.union(labelsForRightInner0)
+    )
+
+    val updatedContext = context.withModifiedPlannerState(_.withFusedLabelInfo(qppLabelInfoMap))
+
     // We use InterestingOrderConfig.empty because the order from a RHS of Trail is not propagated anyway
-    val plan = context.staticComponents.queryGraphSolver.plan(qg, InterestingOrderConfig.empty, context).result
-    context.staticComponents.logicalPlanProducer.fixupTrailRhsPlan(
+    val plan =
+      updatedContext.staticComponents.queryGraphSolver.plan(qg, InterestingOrderConfig.empty, updatedContext).result
+    updatedContext.staticComponents.logicalPlanProducer.fixupTrailRhsPlan(
       plan,
       additionalArguments,
       additionalPredicates.toSet

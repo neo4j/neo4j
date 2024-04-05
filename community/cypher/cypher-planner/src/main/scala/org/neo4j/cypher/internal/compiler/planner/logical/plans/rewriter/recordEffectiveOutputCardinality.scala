@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.WorkReduction
@@ -80,8 +81,7 @@ case class recordEffectiveOutputCardinality(
                 effectiveBatchSize.numBatchesFor(lhsEffectiveCardinality)
               case t: Trail =>
                 val repetitions = RepetitionCardinalityModel.quantifiedPathPatternRepetitionAsRange(t.repetition).end
-                val repetitionsFedBackToRHS = Cardinality(repetitions - 1)
-                lhsEffectiveCardinality + rhsEffectiveCardinality * repetitionsFedBackToRHS
+                (0 until repetitions).map(rhsEffectiveCardinality ^ _).sum(NumericCardinality) * lhsEffectiveCardinality
               case _: ApplyPlan =>
                 // The RHS is executed for each LHS row
                 lhsEffectiveCardinality

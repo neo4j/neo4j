@@ -349,8 +349,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // WHEN
     val (plan, cardinalities) = rewrite(initial, Volcano)
 
-    val rowsFedBackToRHS = expandCardinality * (upperBound - 1)
-    val expectedRHS = lhsCardinality + rowsFedBackToRHS
+    val expectedRHS = (0 until upperBound).map(Math.pow(expandCardinality, _)).sum * lhsCardinality
     // THEN
     val expected = new LogicalPlanBuilder(false)
       .trail(trailParameters).withEffectiveCardinality(20)
@@ -394,7 +393,8 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val (plan, cardinalities) = rewrite(initial, Volcano)
 
     val rowsFedBackToRHS = expandCardinality * (RepetitionCardinalityModel.MAX_VAR_LENGTH - 1)
-    val expectedRHS = lhsCardinality + rowsFedBackToRHS
+    val expectedRHS =
+      (0 until RepetitionCardinalityModel.MAX_VAR_LENGTH).map(Math.pow(expandCardinality, _)).sum * lhsCardinality
     // THEN
     val expected = new LogicalPlanBuilder(false)
       .trail(trailParameters).withEffectiveCardinality(20)
@@ -498,8 +498,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val (plan, cardinalities) = rewrite(initial, Volcano)
 
     val expectedLHS = lhsCardinality * reductionFactor
-    val rowsFedBackToRHS = expandCardinality * (upperBound - 1)
-    val expectedRHS = expectedLHS + rowsFedBackToRHS
+    val expectedRHS = (0 until upperBound).map(Math.pow(expandCardinality, _)).sum * lhsCardinality * reductionFactor
     // THEN
     val expected = new LogicalPlanBuilder(false)
       .limit(limitCount).withEffectiveCardinality(limitCount)
@@ -516,9 +515,8 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
 
   test("Should multiply RHS cardinality of Trail and apply WorkReduction to RHS if there is a Limit") {
     val lhsCardinality = 1
-    val expandCardinality = 9
+    val expandCardinality = 10
     val upperBound = 5
-    val limitCount = 16
     val reductionFactor = 1 / 3.0
 
     // GIVEN
@@ -537,9 +535,14 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
       reverseGroupVariableProjections = false
     )
 
+    val trailCardinality = (0 to upperBound).map(Math.pow(expandCardinality, _)).sum * lhsCardinality
+    val limitCount = (trailCardinality * reductionFactor).toInt
+    // We need to have an integer number for limit
+    assert(limitCount == trailCardinality * reductionFactor)
+
     val initial = new LogicalPlanBuilder(false)
       .limit(limitCount).withCardinality(limitCount)
-      .trail(trailParameters).withCardinality(limitCount / reductionFactor)
+      .trail(trailParameters).withCardinality(trailCardinality)
       .|.expandAll("(n)-[r]->(m)").withCardinality(expandCardinality)
       .|.argument("n").withCardinality(1)
       .allNodeScan("u").withCardinality(lhsCardinality)
@@ -547,16 +550,15 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // WHEN
     val (plan, cardinalities) = rewrite(initial, Volcano)
 
-    val expectedLHS = 1.0
-    val rowsFedBackToRHS = expandCardinality * (upperBound - 1) * reductionFactor
-    val expectedRHS = (expectedLHS + rowsFedBackToRHS) * reductionFactor
+    val expectedRHS =
+      (0 until upperBound).map(Math.pow(expandCardinality * reductionFactor, _)).sum * lhsCardinality * reductionFactor
     // THEN
     val expected = new LogicalPlanBuilder(false)
       .limit(limitCount).withEffectiveCardinality(limitCount)
-      .trail(trailParameters).withEffectiveCardinality(limitCount)
+      .trail(trailParameters).withEffectiveCardinality(trailCardinality * reductionFactor)
       .|.expandAll("(n)-[r]->(m)").withEffectiveCardinality(expandCardinality * expectedRHS)
       .|.argument("n").withEffectiveCardinality(expectedRHS)
-      .allNodeScan("u").withEffectiveCardinality(1)
+      .allNodeScan("u").withEffectiveCardinality(lhsCardinality)
 
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
@@ -566,9 +568,8 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
 
   test("Should multiply RHS cardinality of Trail and apply WorkReduction to both LHS and RHS if there is a Limit") {
     val lhsCardinality = 2
-    val expandCardinality = 9
+    val expandCardinality = 10
     val upperBound = 5
-    val limitCount = 16
 
     val reductionFactor = 1 / 3.0
     //  Cannot apply whole reduction, since we only have 2 rows.
@@ -592,9 +593,14 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
       reverseGroupVariableProjections = false
     )
 
+    val trailCardinality = (0 to upperBound).map(Math.pow(expandCardinality, _)).sum * lhsCardinality
+    val limitCount = (trailCardinality * reductionFactor).toInt
+    // We need to have an integer number for limit
+    assert(limitCount == trailCardinality * reductionFactor)
+
     val initial = new LogicalPlanBuilder(false)
       .limit(limitCount).withCardinality(limitCount)
-      .trail(trailParameters).withCardinality(limitCount / reductionFactor)
+      .trail(trailParameters).withCardinality(trailCardinality)
       .|.expandAll("(n)-[r]->(m)").withCardinality(expandCardinality)
       .|.argument("n").withCardinality(1)
       .allNodeScan("u").withCardinality(lhsCardinality)
@@ -603,8 +609,9 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val (plan, cardinalities) = rewrite(initial, Volcano)
 
     val expectedLHS = lhsCardinality * lhsReductionFactor
-    val rowsFedBackToRHS = expandCardinality * (upperBound - 1) * rhsReductionFactor
-    val expectedRHS = (expectedLHS + rowsFedBackToRHS) * rhsReductionFactor
+    val expectedRHS = (0 until upperBound).map(
+      Math.pow(expandCardinality * rhsReductionFactor, _)
+    ).sum * expectedLHS * rhsReductionFactor
     // THEN
     val expected = new LogicalPlanBuilder(false)
       .limit(limitCount).withEffectiveCardinality(limitCount)

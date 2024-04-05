@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.ConvertToNFA
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.LogicalPlanWithSSPHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
@@ -201,7 +202,8 @@ object expandSolverStep {
           availableSymbols,
           context,
           qppInnerPlanner,
-          unsolvedPredicates(context.staticComponents.planningAttributes.solveds, qg.selections, sourcePlan)
+          unsolvedPredicates(context.staticComponents.planningAttributes.solveds, qg.selections, sourcePlan),
+          qg.patternNodeLabels
         )
       case spp: SelectivePathPattern =>
         produceStatefulShortestLogicalPlan(
@@ -298,13 +300,14 @@ object expandSolverStep {
     availableVars: Set[LogicalVariable],
     context: LogicalPlanningContext,
     qppInnerPlanner: QPPInnerPlanner,
-    predicates: Seq[Expression]
+    predicates: Seq[Expression],
+    labelInfo: LabelInfo
   ): LogicalPlan = {
     val fromLeft = startNode == quantifiedPathPattern.left
 
     // Get the QPP inner plan
     val extractedPredicates = extractQPPPredicates(predicates, quantifiedPathPattern.variableGroupings, availableVars)
-    val innerPlan = qppInnerPlanner.planQPP(quantifiedPathPattern, fromLeft, extractedPredicates)
+    val innerPlan = qppInnerPlanner.planQPP(quantifiedPathPattern, fromLeft, extractedPredicates, labelInfo)
     val innerPlanPredicates = extractedPredicates.predicates.map(_.original)
 
     // Update the QPP for Trail planning

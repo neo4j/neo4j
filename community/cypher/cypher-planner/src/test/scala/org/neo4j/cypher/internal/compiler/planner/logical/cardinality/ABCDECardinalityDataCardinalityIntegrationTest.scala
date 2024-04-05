@@ -1200,6 +1200,57 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     )
   }
 
+  test("MATCH (nOuterLeft:A)((nInnerLeft:A)-[:T1]->(nInnerRight:A)){1}(nOuterRight:A)") {
+    expectCardinality(A_T1_A)
+  }
+
+  test(
+    "Label A should be inferred on the inner right node of the QPP because it is also on the inner left node and the outer right node"
+  ) {
+    val query = "MATCH (nOuterLeft:A)((nInnerLeft:A)-[:T1]->(nInnerRight)){1}(nOuterRight:A)"
+    println(plannerBuilder().enablePrintCostComparisons().build().plan(query + " RETURN *"))
+    planShouldHaveCardinality(
+      query,
+      {
+        case Selection(_, _: Expand) => true
+      },
+      A_T1_A
+    )
+  }
+
+  test(
+    "Label A should be inferred on the inner left node of the QPP because it is also on the inner right node and the outer left node"
+  ) {
+    val query = "MATCH (nOuterLeft:A)((nInnerLeft)-[:T1]->(nInnerRight:A)){1}(nOuterRight:A)"
+    println(plannerBuilder().enablePrintCostComparisons().build().plan(query + " RETURN *"))
+    planShouldHaveCardinality(
+      query,
+      {
+        case Selection(_, _: Expand) => true
+      },
+      A_T1_A
+    )
+  }
+
+  test(
+    "Label A should be inferred on the inner right node of the QPP and which should be used for estimating the cardinality of the QPP"
+  ) {
+    val query = "MATCH (nOuterLeft:A)((nInnerLeft)-[:T1]->(nInnerRight:A)){1,3}(nOuterRight:A)"
+    println(plannerBuilder().enablePrintCostComparisons().build().plan(query + " RETURN *"))
+    // effective cardinality on the RHS of Trail cannot take uniqueness selectivity into account
+    val inputIter1 = A
+    val outputIter1 = inputIter1 * A_T1_A_sel * A
+    val outputIter2 = outputIter1 * A_T1_A_sel * A // * uniquenessSelectivityForNRels(2).factor
+    val outputIter3 = outputIter2 * A_T1_A_sel * A // * uniquenessSelectivityForNRels(3).factor
+    planShouldHaveCardinality(
+      query,
+      {
+        case Selection(_, _: Expand) => true
+      },
+      outputIter1 + outputIter2 + outputIter3
+    )
+  }
+
   private def subquerySelectivity(cardinality: Double): Double = {
     subqueryCardinalityToExistsSelectivity(cardinality).factor
   }

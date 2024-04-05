@@ -144,7 +144,8 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite with AstConstructio
       verify(planner, mode).planQPP(
         qpp,
         fromLeft,
-        ExtractedPredicates(Set.empty, Seq.empty)
+        ExtractedPredicates(Set.empty, Seq.empty),
+        Map.empty
       )
   }
 
@@ -166,7 +167,7 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite with AstConstructio
 
   def mockPlanner(): QPPInnerPlanner = {
     val planner = mock[QPPInnerPlanner]
-    when(planner.planQPP(any, any, any)).thenReturn(dummyPlan)
+    when(planner.planQPP(any, any, any, any)).thenReturn(dummyPlan)
     planner
   }
 
