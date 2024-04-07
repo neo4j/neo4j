@@ -51,6 +51,7 @@ Apache Software License, Version 2.0
   Arrow Format
   Arrow Memory - Core
   Arrow Vectors
+  Byte Buddy (without dependencies)
   Caffeine cache
   fastinfoset
   FindBugs-jsr305

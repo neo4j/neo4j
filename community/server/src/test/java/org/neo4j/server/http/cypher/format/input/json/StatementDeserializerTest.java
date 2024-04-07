@@ -183,7 +183,7 @@ class StatementDeserializerTest {
                 "Could not parse the incoming JSON",
                 "Unexpected close marker ']': " + "expected '}' "
                         + "(for Object starting at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 2])\n "
-                        + "at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 4]");
+                        + "at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 3]");
 
         assertYieldsErrors(
                 "{ \"statements\" : \"ITS A STRING\" }",

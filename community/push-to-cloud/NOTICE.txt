@@ -19,6 +19,7 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Codec
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons IO
@@ -32,6 +33,7 @@ Apache Software License, Version 2.0
   Apache Lucene (module: common)
   Apache Lucene (module: core)
   Apache Lucene (module: queryparser)
+  Byte Buddy (without dependencies)
   Caffeine cache
   IPAddress
   Jackson-annotations

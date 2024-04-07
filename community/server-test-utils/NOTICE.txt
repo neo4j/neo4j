@@ -53,6 +53,7 @@ Apache Software License, Version 2.0
   Arrow Memory - Core
   Arrow Vectors
   AssertJ Core
+  Byte Buddy (without dependencies)
   Caffeine cache
   fastinfoset
   FindBugs-jsr305

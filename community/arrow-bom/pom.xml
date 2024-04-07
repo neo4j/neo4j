@@ -13,7 +13,7 @@
 
     <properties>
         <moduleName>org.neo4j.arrow.bom</moduleName>
-        <arrow.version>15.0.0</arrow.version>
+        <arrow.version>15.0.2</arrow.version>
         <grpc.version>1.62.2</grpc.version>
     </properties>
 
