@@ -104,7 +104,7 @@ class CypherAstParser private (
 
   override def reset(): Unit = {
     super.reset()
-    astBuilder = if (createAst) new AstBuilder(notificationLogger) else NoOpParseTreeListener
+    astBuilder = if (createAst) new AstBuilder(notificationLogger, exceptionFactory) else NoOpParseTreeListener
     checker = new SyntaxChecker(exceptionFactory)
     hasFailed = false
   }

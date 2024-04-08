@@ -106,6 +106,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreE
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 
@@ -113,6 +114,8 @@ import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 trait StatementBuilder extends CypherParserListener {
+
+  protected def exceptionFactory: CypherExceptionFactory
 
   final override def exitStatements(ctx: CypherParser.StatementsContext): Unit = {
     ctx.ast = Statements(astSeq(ctx.statement()))
@@ -243,8 +246,9 @@ trait StatementBuilder extends CypherParserListener {
     val patternList = ctx.patternList()
     val nonPrefixedPatternPartList = patternList.ast[ArraySeq[PatternPart]]().map {
       case p: NonPrefixedPatternPart => p
-      case p: PatternPartWithSelector => throw new RuntimeException(
-          s"Path selectors such as `${p.selector.prettified}` cannot be used in a CREATE clause, but only in a MATCH clause. (${pos(patternList)})"
+      case p: PatternPartWithSelector => throw exceptionFactory.syntaxException(
+          s"Path selectors such as `${p.selector.prettified}` cannot be used in a CREATE clause, but only in a MATCH clause.",
+          pos(patternList)
         )
     }
     ctx.ast = Create(Pattern.ForUpdate(nonPrefixedPatternPartList)(pos(patternList)))(pos(ctx))
@@ -309,7 +313,7 @@ trait StatementBuilder extends CypherParserListener {
     val patternPartsWithSelector = patternParts.ast[ArraySeq[PatternPart]]().map {
       case part: PatternPartWithSelector => part
       case part: NonPrefixedPatternPart  => PatternPartWithSelector(PatternPart.AllPaths()(part.position), part)
-      case other                         => throw new RuntimeException() // TODO Error handling
+      case other => throw new IllegalStateException(s"Expected pattern part but was ${other.getClass}")
     }
 
     val position = pos(ctx)
@@ -383,9 +387,9 @@ trait StatementBuilder extends CypherParserListener {
     val patternPart = ctxChild(ctx, 1)
     val nonPrefixedPatternPart = patternPart.ast[PatternPart]() match {
       case p: NonPrefixedPatternPart => p
-      // TODO Error handling in Antlr
-      case p: PatternPartWithSelector => throw new RuntimeException(
-          s"Path selectors such as `${p.selector.prettified}` cannot be used in a MERGE clause, but only in a MATCH clause. (${pos(patternPart)})"
+      case p: PatternPartWithSelector => throw exceptionFactory.syntaxException(
+          s"Path selectors such as `${p.selector.prettified}` cannot be used in a MERGE clause, but only in a MATCH clause.",
+          pos(patternPart)
         )
     }
 

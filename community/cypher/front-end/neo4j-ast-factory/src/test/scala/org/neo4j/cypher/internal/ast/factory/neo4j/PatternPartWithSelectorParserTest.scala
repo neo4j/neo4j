@@ -327,7 +327,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   test("ANY (a)-[:Rel]->(b)") {
     val clausesToTest = Seq(("CREATE", InputPosition(7, 1, 8)), ("MERGE", InputPosition(6, 1, 7)))
     for ((clause, pos) <- clausesToTest) withClue(clause) {
-      s"$clause $testName" should notParse[Clause].withMessage(
+      s"$clause $testName" should notParse[Clause].withMessageStart(
         s"Path selectors such as `ANY 1 PATHS` cannot be used in a $clause clause, but only in a MATCH clause. ($pos)"
       )
     }
