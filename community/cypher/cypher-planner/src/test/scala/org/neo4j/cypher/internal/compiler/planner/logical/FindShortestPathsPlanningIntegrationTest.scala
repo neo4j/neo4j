@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
@@ -474,6 +476,10 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should plan count predicate with path reference inside the shortestPath operator as a prefilter") {
+    // We compare "solvedExpressionString" nested inside LogicalPlans.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(50)
@@ -612,6 +618,10 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should plan exists predicate with path reference inside the shortestPath operator as a prefilter") {
+    // We compare "solvedExpressionString" nested inside LogicalPlans.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(50)
@@ -678,6 +688,11 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("should plan collect predicate with path reference inside the shortestPath operator as a prefilter") {
+
+    // We compare "solvedExpressionString" nested inside LogicalPlans.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(50)
