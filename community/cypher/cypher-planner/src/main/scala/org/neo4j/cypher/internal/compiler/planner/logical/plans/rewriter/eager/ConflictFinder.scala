@@ -98,6 +98,7 @@ sealed trait ConflictFinder {
   private def propertyConflicts(
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan,
+    leftMostLeaf: LogicalPlan,
     writtenProperties: ReadsAndWritesFinder.Sets => Seq[(Option[PropertyKeyName], Seq[PlanWithAccessor])],
     plansReadingProperty: (ReadsAndWritesFinder.Reads, Option[PropertyKeyName]) => Seq[PlanWithAccessor]
   )(implicit planChildrenLookup: PlanChildrenLookup): Seq[ConflictingPlanPair] = {
@@ -126,7 +127,7 @@ sealed trait ConflictFinder {
         // invoke distinctConflictOnSameSymbol with swapped read and write to check that the write is unique.
         !distinctConflictOnSameSymbol(write, read, wholePlan)
 
-      if isValidConflict(readPlan, writePlan, wholePlan)
+      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
       val reasons = Set[EagernessReason](prop.map(PropertyReadSetConflict(_).withConflict(conflict))
@@ -136,14 +137,14 @@ sealed trait ConflictFinder {
     }
   }
 
-  private def labelConflicts(readsAndWrites: ReadsAndWrites, wholePlan: LogicalPlan)(implicit
+  private def labelConflicts(readsAndWrites: ReadsAndWrites, wholePlan: LogicalPlan, leftMostLeaf: LogicalPlan)(implicit
   planChildrenLookup: PlanChildrenLookup): Iterable[ConflictingPlanPair] = {
     for {
       (label, writePlans) <- readsAndWrites.writes.sets.writtenLabels
       read @ PlanWithAccessor(readPlan, _) <- readsAndWrites.reads.plansReadingLabel(label)
       write @ PlanWithAccessor(writePlan, _) <- writePlans
       if !distinctConflictOnSameSymbol(read, write, wholePlan)
-      if isValidConflict(readPlan, writePlan, wholePlan)
+      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
       writePlan match {
@@ -172,6 +173,7 @@ sealed trait ConflictFinder {
   private def createConflicts[T <: LabelExpressionLeafName, C <: WriteFinder.CreatedEntity[T]](
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan,
+    leftMostLeaf: LogicalPlan,
     createdEntities: ReadsAndWritesFinder.Creates => Map[Ref[LogicalPlan], Set[C]],
     filterExpressionSnapshots: (
       ReadsAndWritesFinder.Creates,
@@ -216,7 +218,7 @@ sealed trait ConflictFinder {
       })
 
       Ref(readPlan) <- readPlans
-      if isValidConflict(readPlan, writePlan, wholePlan)
+      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
       // If no labels are read or written this is a ReadCreateConflict, otherwise a LabelReadSetConflict
@@ -283,6 +285,7 @@ sealed trait ConflictFinder {
   private def deleteVariableConflicts(
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan,
+    leftMostLeaf: LogicalPlan,
     deletedEntities: ReadsAndWritesFinder.Deletes => Map[Ref[LogicalPlan], Set[Variable]],
     filterExpressions: ReadsAndWritesFinder.Reads => Map[LogicalVariable, FilterExpressions],
     possibleDeleteConflictPlans: ReadsAndWritesFinder.Reads => Map[LogicalVariable, PossibleDeleteConflictPlans],
@@ -319,7 +322,7 @@ sealed trait ConflictFinder {
         PlanWithAccessor(writePlan, Some(deletedEntity)),
         wholePlan
       )
-      if isValidConflict(readPlan, writePlan, wholePlan)
+      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
     } yield {
       deleteConflict(variable, readPlan, writePlan)
     }
@@ -328,6 +331,7 @@ sealed trait ConflictFinder {
   private def deleteExpressionConflicts(
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan,
+    leftMostLeaf: LogicalPlan,
     deleteExpressions: ReadsAndWritesFinder.Deletes => Seq[LogicalPlan],
     possibleDeleteConflictPlans: ReadsAndWritesFinder.Reads => Map[LogicalVariable, PossibleDeleteConflictPlans],
     possibleDeleteConflictPlanSnapshots: (
@@ -350,7 +354,7 @@ sealed trait ConflictFinder {
         case ReadWriteConflict => plansThatReferenceVariable
         case WriteReadConflict => plansThatIntroduceVar.map(_.plan)
       }
-      if isValidConflict(readPlan, writePlan, wholePlan)
+      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
     } yield {
       deleteConflict(variable, readPlan, writePlan)
     }
@@ -420,6 +424,7 @@ sealed trait ConflictFinder {
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan
   )(implicit planChildrenLookup: PlanChildrenLookup): Seq[ConflictingPlanPair] = {
+    val leftMostLeaf = wholePlan.leftmostLeaf
     val map = mutable.Map[Set[Ref[LogicalPlan]], Set[EagernessReason]]()
 
     def addConflict(conflictingPlanPair: ConflictingPlanPair): Unit = {
@@ -433,6 +438,7 @@ sealed trait ConflictFinder {
     propertyConflicts(
       readsAndWrites,
       wholePlan,
+      leftMostLeaf,
       _.writtenNodeProperties.nodeEntries,
       _.plansReadingNodeProperty(_)
     ).foreach(addConflict)
@@ -441,17 +447,19 @@ sealed trait ConflictFinder {
     propertyConflicts(
       readsAndWrites,
       wholePlan,
+      leftMostLeaf,
       _.writtenRelProperties.relEntries,
       _.plansReadingRelProperty(_)
     ).foreach(addConflict)
 
     // Conflicts between a label read and a label SET
-    labelConflicts(readsAndWrites, wholePlan).foreach(addConflict)
+    labelConflicts(readsAndWrites, wholePlan, leftMostLeaf).foreach(addConflict)
 
     // Conflicts between a label read (determined by a snapshot filterExpressions) and a label CREATE
     createConflicts[LabelName, CreatedNode](
       readsAndWrites,
       wholePlan,
+      leftMostLeaf,
       _.createdNodes,
       _.nodeFilterExpressionsSnapshots(_),
       _.nodeFilterExpressions,
@@ -462,6 +470,7 @@ sealed trait ConflictFinder {
     createConflicts[RelTypeName, CreatedRelationship](
       readsAndWrites,
       wholePlan,
+      leftMostLeaf,
       _.createdRelationships,
       _.relationshipFilterExpressionsSnapshots(_),
       _.relationshipFilterExpressions,
@@ -472,6 +481,7 @@ sealed trait ConflictFinder {
     deleteVariableConflicts(
       readsAndWrites,
       wholePlan,
+      leftMostLeaf,
       _.deletedNodeVariables,
       _.nodeFilterExpressions,
       _.possibleNodeDeleteConflictPlans,
@@ -482,6 +492,7 @@ sealed trait ConflictFinder {
     deleteVariableConflicts(
       readsAndWrites,
       wholePlan,
+      leftMostLeaf,
       _.deletedRelationshipVariables,
       _.relationshipFilterExpressions,
       _.possibleRelDeleteConflictPlans,
@@ -492,6 +503,7 @@ sealed trait ConflictFinder {
     deleteExpressionConflicts(
       readsAndWrites,
       wholePlan,
+      leftMostLeaf,
       _.plansThatDeleteNodeExpressions,
       _.possibleNodeDeleteConflictPlans,
       _.possibleNodeDeleteConflictPlanSnapshots(_)
@@ -501,6 +513,7 @@ sealed trait ConflictFinder {
     deleteExpressionConflicts(
       readsAndWrites,
       wholePlan,
+      leftMostLeaf,
       _.plansThatDeleteRelationshipExpressions,
       _.possibleRelDeleteConflictPlans,
       _.possibleRelationshipDeleteConflictPlanSnapshots(_)
@@ -537,8 +550,12 @@ sealed trait ConflictFinder {
     }
   }
 
-  private def isValidConflict(readPlan: LogicalPlan, writePlan: LogicalPlan, wholePlan: LogicalPlan)(implicit
-  planChildrenLookup: PlanChildrenLookup): Boolean = {
+  private def isValidConflict(
+    readPlan: LogicalPlan,
+    writePlan: LogicalPlan,
+    wholePlan: LogicalPlan,
+    leftMostLeaf: LogicalPlan
+  )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
     // A plan can never conflict with itself
     def conflictsWithItself = writePlan eq readPlan
 
@@ -558,7 +575,7 @@ sealed trait ConflictFinder {
 
     // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
     def conflictsWithUnstablePlan =
-      (readPlan ne wholePlan.leftmostLeaf) ||
+      (readPlan ne leftMostLeaf) ||
         !readPlan.isInstanceOf[StableLeafPlan] ||
         isInTransactionalApply(writePlan, wholePlan)
 
