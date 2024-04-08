@@ -1123,11 +1123,12 @@ class StatisticsBackedLogicalPlanningConfiguration(
     )).result
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
+    val labelInferenceStrategy = LabelInferenceStrategy.fromConfig(planContext, labelInference)
     val metrics = SimpleMetricsFactory.newMetrics(
       planContext,
       simpleExpressionEvaluator,
       options.executionModel,
-      LabelInferenceStrategy.fromConfig(planContext, labelInference)
+      labelInferenceStrategy
     )
 
     val context = ContextHelper.create(
@@ -1141,7 +1142,8 @@ class StatisticsBackedLogicalPlanningConfiguration(
       executionModel = options.executionModel,
       eagerAnalyzer = plannerConfiguration.eagerAnalyzer(),
       statefulShortestPlanningMode = plannerConfiguration.statefulShortestPlanningMode(),
-      databaseReferenceRepository = options.databaseReferenceRepository
+      databaseReferenceRepository = options.databaseReferenceRepository,
+      labelInferenceStrategy = labelInferenceStrategy
     )
     val state = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
     val parsingConfig = {

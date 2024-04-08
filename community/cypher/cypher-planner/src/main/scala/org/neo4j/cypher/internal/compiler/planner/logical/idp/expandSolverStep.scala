@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.ConvertToNFA
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.LogicalPlanWithSSPHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.planSinglePatternSide
@@ -203,7 +202,7 @@ object expandSolverStep {
           context,
           qppInnerPlanner,
           unsolvedPredicates(context.staticComponents.planningAttributes.solveds, qg.selections, sourcePlan),
-          qg.patternNodeLabels
+          qg
         )
       case spp: SelectivePathPattern =>
         produceStatefulShortestLogicalPlan(
@@ -301,15 +300,21 @@ object expandSolverStep {
     context: LogicalPlanningContext,
     qppInnerPlanner: QPPInnerPlanner,
     predicates: Seq[Expression],
-    labelInfo: LabelInfo
+    queryGraph: QueryGraph
   ): LogicalPlan = {
     val fromLeft = startNode == quantifiedPathPattern.left
 
     // Get the QPP inner plan
     val extractedPredicates = extractQPPPredicates(predicates, quantifiedPathPattern.variableGroupings, availableVars)
 
+    val (updatedLabelInfo, updatedContext) = context.staticComponents.labelInferenceStrategy.inferLabels(
+      context,
+      queryGraph.patternNodeLabels,
+      queryGraph.nodeConnections.toIndexedSeq
+    )
+
     // We only retain the relevant label infos to get more cache hits.
-    val filteredLabelInfo = labelInfo.view.filterKeys(Set(
+    val filteredLabelInfo = updatedLabelInfo.view.filterKeys(Set(
       quantifiedPathPattern.leftBinding.outer,
       quantifiedPathPattern.rightBinding.outer
     )).toMap
@@ -371,13 +376,13 @@ object expandSolverStep {
     val previouslyBoundRelationships = uniquenessPredicates.flatMap(_.previouslyBoundRelationships).toSet
     val previouslyBoundRelationshipGroups = uniquenessPredicates.flatMap(_.previouslyBoundRelationshipGroups).toSet
 
-    context.staticComponents.logicalPlanProducer.planTrail(
+    updatedContext.staticComponents.logicalPlanProducer.planTrail(
       source = sourcePlan,
       pattern = quantifiedPathPattern,
       startBinding = startBinding,
       endBinding = endBinding,
       maybeHiddenFilter = maybeHiddenFilter,
-      context = context,
+      context = updatedContext,
       innerPlan = innerPlan,
       predicates = solvedPredicates,
       previouslyBoundRelationships,

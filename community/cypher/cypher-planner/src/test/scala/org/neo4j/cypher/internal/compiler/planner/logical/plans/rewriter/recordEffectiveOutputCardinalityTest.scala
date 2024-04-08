@@ -392,7 +392,6 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // WHEN
     val (plan, cardinalities) = rewrite(initial, Volcano)
 
-    val rowsFedBackToRHS = expandCardinality * (RepetitionCardinalityModel.MAX_VAR_LENGTH - 1)
     val expectedRHS =
       (0 until RepetitionCardinalityModel.MAX_VAR_LENGTH).map(Math.pow(expandCardinality, _)).sum * lhsCardinality
     // THEN

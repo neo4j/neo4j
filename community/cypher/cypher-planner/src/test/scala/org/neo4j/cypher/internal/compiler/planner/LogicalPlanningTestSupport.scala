@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy.NoInference
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
@@ -325,7 +326,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
       cancellationChecker = CancellationChecker.NeverCancelled,
       semanticTable = semanticTable,
       costComparisonListener = costComparisonListener,
-      readOnly = false
+      readOnly = false,
+      labelInferenceStrategy = NoInference
     )
 
     val settings = Settings(

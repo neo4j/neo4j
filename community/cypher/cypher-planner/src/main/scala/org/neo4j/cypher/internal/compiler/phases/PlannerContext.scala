@@ -115,7 +115,8 @@ class PlannerContext(
   val databaseId: NamedDatabaseId,
   val log: Log,
   val internalNotificationStats: InternalNotificationStats,
-  internalSyntaxUsageStats: InternalSyntaxUsageStats
+  internalSyntaxUsageStats: InternalSyntaxUsageStats,
+  val labelInferenceStrategy: LabelInferenceStrategy
 ) extends BaseContextImpl(
       cypherExceptionFactory,
       tracer,
@@ -153,7 +154,8 @@ class PlannerContext(
       databaseId,
       log,
       internalNotificationStats,
-      internalSyntaxUsageStats
+      internalSyntaxUsageStats,
+      labelInferenceStrategy
     )
   }
 }
@@ -190,11 +192,13 @@ object PlannerContext {
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
+    val labelInferenceStrategy = LabelInferenceStrategy.fromConfig(planContext, labelInference)
+
     val metrics = metricsFactory.newMetrics(
       planContext,
       evaluator,
       executionModel,
-      LabelInferenceStrategy.fromConfig(planContext, labelInference)
+      labelInferenceStrategy
     )
 
     new PlannerContext(
@@ -220,7 +224,8 @@ object PlannerContext {
       databaseId,
       log,
       internalNotificationStats,
-      internalSyntaxUsageStats
+      internalSyntaxUsageStats,
+      labelInferenceStrategy
     )
   }
 }

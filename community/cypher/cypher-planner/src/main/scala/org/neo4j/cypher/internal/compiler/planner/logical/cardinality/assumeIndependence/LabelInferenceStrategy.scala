@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -29,12 +30,26 @@ import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.options.LabelInferenceOption
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 
 trait LabelInferenceStrategy {
+
+  def inferLabels(
+    semanticTable: SemanticTable,
+    graphStatistics: GraphStatistics,
+    labelInfo: LabelInfo,
+    nodeConnections: Seq[NodeConnection]
+  ): (LabelInfo, SemanticTable)
+
+  def inferLabels(
+    context: LogicalPlanningContext,
+    labelInfo: LabelInfo,
+    nodeConnections: Seq[NodeConnection]
+  ): (LabelInfo, LogicalPlanningContext)
 
   def inferLabels(
     context: QueryGraphCardinalityContext,
@@ -55,6 +70,23 @@ object LabelInferenceStrategy {
   case object NoInference extends LabelInferenceStrategy {
 
     override def inferLabels(
+      semanticTable: SemanticTable,
+      graphStatistics: GraphStatistics,
+      labelInfo: LabelInfo,
+      nodeConnections: Seq[NodeConnection]
+    ): (LabelInfo, SemanticTable) = {
+      (labelInfo, semanticTable)
+    }
+
+    override def inferLabels(
+      context: LogicalPlanningContext,
+      labelInfo: LabelInfo,
+      nodeConnections: Seq[NodeConnection]
+    ): (LabelInfo, LogicalPlanningContext) = {
+      (labelInfo, context)
+    }
+
+    override def inferLabels(
       context: QueryGraphCardinalityContext,
       labelInfo: LabelInfo,
       nodeConnections: Seq[NodeConnection]
@@ -64,28 +96,27 @@ object LabelInferenceStrategy {
   private class InferOnlyIfNoOtherLabel(planContext: PlanContext) extends LabelInferenceStrategy {
 
     def inferLabels(
-      context: QueryGraphCardinalityContext,
+      semanticTable: SemanticTable,
+      graphStatistics: GraphStatistics,
       labelInfo: LabelInfo,
       nodeConnections: Seq[NodeConnection]
-    ): (LabelInfo, QueryGraphCardinalityContext) = {
+    ): (LabelInfo, SemanticTable) = {
 
       val allInferredLabels = for {
         nodeConnection <- nodeConnections
-        simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, context.semanticTable).iterator
+        simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, semanticTable).iterator
         inferredLabel <- simpleRelationship.inferLabels(planContext)
       } yield inferredLabel
 
       val inferredLabels: Seq[SimpleRelationship.InferredLabel] = allInferredLabels
         .sequentiallyGroupBy(_.node)
         .map { case (_, inferredLabels) =>
-          inferredLabels.minBy(x => context.graphStatistics.nodesWithLabelCardinality(Some(x.labelId)))
+          inferredLabels.minBy(x => graphStatistics.nodesWithLabelCardinality(Some(x.labelId)))
         }
 
       // Update the semantic table with newly resolved label names.
-      val newContext = context.copy(
-        semanticTable = context.semanticTable.addResolvedLabelNames(
-          inferredLabels.map(il => il.labelName -> il.labelId)
-        )
+      val updatedSemanticTable = semanticTable.addResolvedLabelNames(
+        inferredLabels.map(il => il.labelName -> il.labelId)
       )
 
       def addInferredLabelOnlyIfNoOtherLabel(labelInfo: LabelInfo): LabelInfo = {
@@ -100,7 +131,27 @@ object LabelInferenceStrategy {
         }
       }
 
-      (addInferredLabelOnlyIfNoOtherLabel(labelInfo), newContext)
+      (addInferredLabelOnlyIfNoOtherLabel(labelInfo), updatedSemanticTable)
+    }
+
+    def inferLabels(
+      context: QueryGraphCardinalityContext,
+      labelInfo: LabelInfo,
+      nodeConnections: Seq[NodeConnection]
+    ): (LabelInfo, QueryGraphCardinalityContext) = {
+      val (updatedLabelInfo, updatedSemanticTable) =
+        inferLabels(context.semanticTable, context.graphStatistics, labelInfo, nodeConnections)
+      (updatedLabelInfo, context.copy(semanticTable = updatedSemanticTable))
+    }
+
+    def inferLabels(
+      context: LogicalPlanningContext,
+      labelInfo: LabelInfo,
+      nodeConnections: Seq[NodeConnection]
+    ): (LabelInfo, LogicalPlanningContext) = {
+      val (updatedLabelInfo, updatedSemanticTable) =
+        inferLabels(context.semanticTable, context.statistics, labelInfo, nodeConnections)
+      (updatedLabelInfo, context.withUpdatedSemanticTable(updatedSemanticTable))
     }
   }
 

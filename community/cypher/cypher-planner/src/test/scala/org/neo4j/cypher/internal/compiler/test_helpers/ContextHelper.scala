@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy.NoInference
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
@@ -78,7 +80,8 @@ object ContextHelper extends MockitoSugar {
     databaseReferenceRepository: DatabaseReferenceRepository = mockDatabaseReferenceRepository,
     databaseId: NamedDatabaseId = mock[NamedDatabaseId],
     internalNotificationStats: InternalNotificationStats = new InternalNotificationStats(),
-    internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStats.newImpl()
+    internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStats.newImpl(),
+    labelInferenceStrategy: LabelInferenceStrategy = NoInference
   ): PlannerContext = {
     new PlannerContext(
       cypherExceptionFactory,
@@ -103,7 +106,8 @@ object ContextHelper extends MockitoSugar {
       databaseId,
       NullLog.getInstance(),
       internalNotificationStats,
-      internalSyntaxUsageStats
+      internalSyntaxUsageStats,
+      labelInferenceStrategy
     )
   }
 

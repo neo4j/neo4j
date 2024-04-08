@@ -170,37 +170,46 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
 
     val labelInfoInner = qg.patternNodeLabels
 
-    val qppLeftOuterLabels = labelInfoOuter(qpp.leftBinding.outer)
-    val qppRightOuterLabels = labelInfoOuter(qpp.rightBinding.outer)
-
-    val qppLeftInnerLabels = labelInfoInner(qpp.leftBinding.inner)
-    val qppRightInnerLabels = labelInfoInner(qpp.rightBinding.inner)
-
-    // If the same label is present on the left outer node
-    //   and on right inner node,
-    //   then that label can be inferred for the left inner node.
-    // The reason is that the left inner node will be juxtaposted with the left
-    // outer node during the first iteration and with the right inner node for
-    // the remaining iterations. Therefore, if those nodes must have a certain label,
-    // then the left inner node must have that label too.
-    val labelsForLeftInner0 = qppLeftOuterLabels.intersect(qppRightInnerLabels)
-    // If the same label is present on the left inner node
-    //   and the right outer node,
-    //   then that label can be inferred for the right inner node.
-    //  The right inner node is juxtaposed with the left inner node for all
-    //  iterations except the last one where it is juxtaposed with the right outer node.
-    val labelsForRightInner0 = qppLeftInnerLabels.intersect(qppRightOuterLabels)
-
-    // The newly inferred labels above might lead to more inferences
-    val labelsForLeftInner = qppLeftOuterLabels.intersect(labelsForRightInner0)
-    val labelsForRightInner = labelsForLeftInner0.intersect(qppRightOuterLabels)
-
-    val qppLabelInfoMap = Map(
-      qpp.leftBinding.inner -> labelsForLeftInner.union(labelsForLeftInner0),
-      qpp.rightBinding.inner -> labelsForRightInner.union(labelsForRightInner0)
+    var (updatedLabelInfoInner, updatedContext) = context.staticComponents.labelInferenceStrategy.inferLabels(
+      context,
+      labelInfoInner,
+      qpp.patternRelationships.toIndexedSeq
     )
 
-    val updatedContext = context.withModifiedPlannerState(_.withFusedLabelInfo(qppLabelInfoMap))
+    def inferLabelInfoFromJuxtaposedNodes(): LabelInfo = {
+      val qppLeftOuterLabels = labelInfoOuter(qpp.leftBinding.outer)
+      val qppRightOuterLabels = labelInfoOuter(qpp.rightBinding.outer)
+
+      val qppLeftInnerLabels = updatedLabelInfoInner(qpp.leftBinding.inner)
+      val qppRightInnerLabels = updatedLabelInfoInner(qpp.rightBinding.inner)
+
+      // If the same label is present on the left outer node
+      //   and on right inner node,
+      //   then that label can be inferred for the left inner node.
+      // The reason is that the left inner node will be juxtaposted with the left
+      // outer node during the first iteration and with the right inner node for
+      // the remaining iterations. Therefore, if those nodes must have a certain label,
+      // then the left inner node must have that label too.
+      val labelsForLeftInner0 = qppLeftOuterLabels.intersect(qppRightInnerLabels)
+      // If the same label is present on the left inner node
+      //   and the right outer node,
+      //   then that label can be inferred for the right inner node.
+      //  The right inner node is juxtaposed with the left inner node for all
+      //  iterations except the last one where it is juxtaposed with the right outer node.
+      val labelsForRightInner0 = qppLeftInnerLabels.intersect(qppRightOuterLabels)
+
+      // The newly inferred labels above might lead to more inferences
+      val labelsForLeftInner = qppLeftOuterLabels.intersect(labelsForRightInner0)
+      val labelsForRightInner = labelsForLeftInner0.intersect(qppRightOuterLabels)
+
+      Map(
+        qpp.leftBinding.inner -> labelsForLeftInner.union(labelsForLeftInner0),
+        qpp.rightBinding.inner -> labelsForRightInner.union(labelsForRightInner0)
+      )
+    }
+
+    val inferredLabelInfo = inferLabelInfoFromJuxtaposedNodes()
+    updatedContext = updatedContext.withModifiedPlannerState(_.withFusedLabelInfo(inferredLabelInfo))
 
     // We use InterestingOrderConfig.empty because the order from a RHS of Trail is not propagated anyway
     val plan =

@@ -20,14 +20,17 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.LabelInference
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.RepetitionCardinalityModel
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -1118,6 +1121,67 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     for (query <- queries) withClue(query) {
       queryShouldHaveCardinality(config, query, expectedCardinality)
     }
+  }
+
+  test(
+    "the pattern within the QPP should infer labels from the relationship statistics"
+  ) {
+    val n = 100
+    val r = 50
+    val a = 10
+    val r1 = 40
+
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(n)
+      .setAllRelationshipsCardinality(r)
+      .setLabelCardinality("A", a)
+      .setRelationshipCardinality("()-[:R1]->()", r1)
+      .setRelationshipCardinality("()-[:R1]->(:A)", r1)
+      .setRelationshipCardinality("(:A)-[:R1]->()", r1)
+      .setRelationshipCardinality("(:A)-[:R1]->(:A)", r1)
+      .withSetting(GraphDatabaseInternalSettings.label_inference, LabelInference.ENABLED)
+
+    val query = "MATCH (nOuterLeft:A)(()-[:R1]->()-[:R1]->()){1}(nOuterRight:A)"
+    planShouldHaveCardinality(
+      builder.build(),
+      query,
+      {
+        case Expand(_: Argument, _, _, _, _, _, _) => true
+      },
+      a * r1 / a.toDouble
+    )
+  }
+
+  test(
+    "the outer nodes of the QPP should infer labels from the relationship statistics"
+  ) {
+    val n = 100
+    val r = 50
+    val a = 60
+    val r1 = 40
+
+    val builder = plannerBuilder()
+      .setAllNodesCardinality(n)
+      .setAllRelationshipsCardinality(r)
+      .setLabelCardinality("A", a)
+      .setRelationshipCardinality("()-[:R1]->()", r1)
+      .setRelationshipCardinality("()-[:R1]->(:A)", r1)
+      .setRelationshipCardinality("(:A)-[:R1]->()", r1)
+      .setRelationshipCardinality("(:A)-[:R1]->(:A)", r1)
+      .setRelationshipCardinality("(:A)-[]->()", r1)
+      .setRelationshipCardinality("()-[]->(:A)", r1)
+      .withSetting(GraphDatabaseInternalSettings.label_inference, LabelInference.ENABLED)
+
+    val query = "MATCH ()-[:R1]->(nOuterLeft)((testNode)-[]->()-[]->(:A)){1}(nOuterRight)"
+
+    planShouldHaveCardinality(
+      builder.build(),
+      query,
+      {
+        case Expand(_: Argument, _, _, _, _, _, _) => true
+      },
+      r1 * r1 / a.toDouble
+    )
   }
 
   private def uniquenessSelectivityForNRels(n: Int): Double = {

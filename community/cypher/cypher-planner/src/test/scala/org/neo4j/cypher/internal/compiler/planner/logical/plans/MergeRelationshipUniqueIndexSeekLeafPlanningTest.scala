@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfigur
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy.NoInference
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
@@ -112,7 +113,8 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
       cancellationChecker = CancellationChecker.NeverCancelled,
       semanticTable = config.semanticTable,
       costComparisonListener = devNullListener,
-      readOnly = false
+      readOnly = false,
+      labelInferenceStrategy = NoInference
     )
 
     val settings = Settings(

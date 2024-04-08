@@ -91,7 +91,8 @@ case object QueryPlanner
       cancellationChecker = context.cancellationChecker,
       semanticTable = from.semanticTable(),
       costComparisonListener = CostComparisonListener.givenDebugOptions(context.debugOptions, context.log),
-      readOnly = from.query.readOnly
+      readOnly = from.query.readOnly,
+      labelInferenceStrategy = context.labelInferenceStrategy
     )
 
     val settings = Settings(

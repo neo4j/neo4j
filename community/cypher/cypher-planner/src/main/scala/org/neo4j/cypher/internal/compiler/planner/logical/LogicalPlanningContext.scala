@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityMod
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
@@ -77,6 +78,7 @@ object LogicalPlanningContext {
    * @param anonymousVariableNameGenerator a mutable generator for anonymous variable names.
    * @param cancellationChecker used to abort long computations if the transaction has been killed.
    * @param semanticTable the semantic table
+   * @param labelInferenceStrategy the strategy to infer labels for cardinality estimation
    *
    */
   case class StaticComponents(
@@ -91,7 +93,8 @@ object LogicalPlanningContext {
     cancellationChecker: CancellationChecker,
     semanticTable: SemanticTable,
     costComparisonListener: CostComparisonListener,
-    readOnly: Boolean
+    readOnly: Boolean,
+    labelInferenceStrategy: LabelInferenceStrategy
   )
 
   /**
@@ -271,6 +274,9 @@ case class LogicalPlanningContext(
 
   def withModifiedSettings(f: Settings => Settings): LogicalPlanningContext =
     copy(settings = f(settings))
+
+  def withUpdatedSemanticTable(semanticTable: SemanticTable): LogicalPlanningContext =
+    copy(staticComponents.copy(semanticTable = semanticTable))
 
   def statistics: GraphStatistics = staticComponents.planContext.statistics
 

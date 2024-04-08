@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy.NoInference
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
@@ -520,7 +521,8 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
         cancellationChecker = CancellationChecker.NeverCancelled,
         semanticTable = semanticTable,
         costComparisonListener = devNullListener,
-        readOnly = false
+        readOnly = false,
+        labelInferenceStrategy = NoInference
       )
 
       val settings = Settings(
