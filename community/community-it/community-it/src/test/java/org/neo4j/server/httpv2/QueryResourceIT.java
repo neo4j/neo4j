@@ -207,13 +207,15 @@ class QueryResourceIT {
 
     @Test
     void shouldWaitForUpdatedBookmark() throws IOException, InterruptedException {
+        var lastTxId = getLastClosedTransactionId(dbms);
+        var nextTxId = lastTxId + 1;
         var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
                 List.of(new QueryRouterBookmark.InternalGraphState(
                         resolveDependency(dbms, Database.class)
                                 .getNamedDatabaseId()
                                 .databaseId()
                                 .uuid(),
-                        getLastClosedTransactionId(dbms) + 1)),
+                        nextTxId)),
                 List.of()));
 
         var responseA = simpleRequest(
@@ -222,10 +224,10 @@ class QueryResourceIT {
         // initial request times out
         assertThat(responseA.statusCode()).isEqualTo(400);
         assertThat(responseA.body())
-                .isEqualTo(
-                        "{\"errors\":[{\"error\":\"Neo.TransientError.Transaction.BookmarkTimeout\","
-                                + "\"mes"
-                                + "sage\":\"Database 'neo4j' not up to the requested version: 4. Latest database version is 3\"}]}");
+                .isEqualTo("{\"errors\":[{\"error\":\"Neo.TransientError.Transaction.BookmarkTimeout\","
+                        + "\"mes"
+                        + "sage\":\"Database 'neo4j' not up to the requested version: " + nextTxId
+                        + ". Latest database version is " + lastTxId + "\"}]}");
 
         var createNodeRequest = simpleRequest(client, queryEndpoint, "{\"statement\": \"CREATE (n)\"}");
         assertThat(createNodeRequest.statusCode()).isEqualTo(202);
