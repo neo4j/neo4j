@@ -307,7 +307,14 @@ object expandSolverStep {
 
     // Get the QPP inner plan
     val extractedPredicates = extractQPPPredicates(predicates, quantifiedPathPattern.variableGroupings, availableVars)
-    val innerPlan = qppInnerPlanner.planQPP(quantifiedPathPattern, fromLeft, extractedPredicates, labelInfo)
+
+    // We only retain the relevant label infos to get more cache hits.
+    val filteredLabelInfo = labelInfo.view.filterKeys(Set(
+      quantifiedPathPattern.leftBinding.outer,
+      quantifiedPathPattern.rightBinding.outer
+    )).toMap
+
+    val innerPlan = qppInnerPlanner.planQPP(quantifiedPathPattern, fromLeft, extractedPredicates, filteredLabelInfo)
     val innerPlanPredicates = extractedPredicates.predicates.map(_.original)
 
     // Update the QPP for Trail planning
