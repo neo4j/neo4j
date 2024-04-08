@@ -261,9 +261,12 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
       Set(
         SemanticError(
           "Invalid input. 'foo' is not a valid value. Must be a positive integer.",
-          InputPosition(40, 3, 22)
+          InputPosition(40, 3, 22).withInputLength(5)
         ),
-        SemanticError("Type mismatch: expected Integer but was String", InputPosition(40, 3, 22))
+        SemanticError(
+          "Type mismatch: expected Integer but was String",
+          InputPosition(40, 3, 22).withInputLength(5)
+        )
       )
     )
   }
@@ -436,9 +439,12 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
       Set(
         SemanticError(
           "Invalid input. 'foo' is not a valid value. Must be a positive integer.",
-          InputPosition(24, 3, 6)
+          InputPosition(24, 3, 6).withInputLength(5)
         ),
-        SemanticError("Type mismatch: expected Integer but was String", InputPosition(24, 3, 6))
+        SemanticError(
+          "Type mismatch: expected Integer but was String",
+          InputPosition(24, 3, 6).withInputLength(5)
+        )
       )
     )
   }

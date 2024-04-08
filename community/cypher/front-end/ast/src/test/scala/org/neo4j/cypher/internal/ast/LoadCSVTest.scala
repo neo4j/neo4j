@@ -73,7 +73,7 @@ class LoadCSVTest extends CypherFunSuite {
     val result = loadCSV.semanticCheck.run(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(
       "CSV field terminator can only be one character wide",
-      DummyPosition(0)
+      DummyPosition(0).withInputLength(2)
     )))
   }
 }
