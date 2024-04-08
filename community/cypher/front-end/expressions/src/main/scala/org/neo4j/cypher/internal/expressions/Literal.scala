@@ -127,6 +127,7 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
     }
 }
 
+// Note, the inputLength of the input position is not always equal to value.length because of escape characters.
 case class StringLiteral(value: String)(val position: InputPosition.Range) extends Literal {
 
   override def asCanonicalStringVal: String = value

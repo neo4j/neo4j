@@ -47,6 +47,11 @@ sealed trait InputPosition {
 
 object InputPosition {
   case class Simple(offset: Int, line: Int, column: Int) extends InputPosition
+
+  /**
+   * Input position with input length.
+   * Input length is the character length in the input string that is represented by the associated ast node.
+   */
   case class Range(offset: Int, line: Int, column: Int, inputLength: Int) extends InputPosition
 
   implicit val byOffset: Ordering[InputPosition] = Ordering.by(_.offset)
