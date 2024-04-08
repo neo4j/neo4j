@@ -175,6 +175,12 @@ object Util {
     ctx.stop.getTokenSource.asInstanceOf[CypherAstLexer].inputText(ctx.start, ctx.stop)
   }
 
+  @inline def rangePos(ctx: ParserRuleContext): InputPosition.Range = {
+    val start = pos(ctx)
+    val stopToken = ctx.stop.asInstanceOf[CypherToken]
+    start.withInputLength(stopToken.inputOffset(stopToken.getStopIndex) - start.offset + 1)
+  }
+
   def ifExistsDo(replace: Boolean, ifNotExists: Boolean): IfExistsDo = {
     (replace, ifNotExists) match {
       case (true, true)   => IfExistsInvalidSyntax

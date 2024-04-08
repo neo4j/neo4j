@@ -974,19 +974,15 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.NormalizeFunctionContext
   ): Unit = {
     val expression = ctx.expression().ast[Expression]()
-    val normalForm = astOpt[NormalForm](ctx.normalForm, NFCNormalForm).formName
+    val normalFormCtx = ctx.normalForm()
+    val normalForm = astOpt[NormalForm](normalFormCtx, NFCNormalForm).formName
 
     ctx.ast =
       FunctionInvocation(
         FunctionName("normalize")(pos(ctx)),
         distinct = false,
-        IndexedSeq(
-          expression,
-          StringLiteral(normalForm)(pos(ctx), pos(ctx))
-        )
-      )(
-        pos(ctx)
-      )
+        IndexedSeq(expression, StringLiteral(normalForm)(pos(ctx).withInputLength(0)))
+      )(pos(ctx))
   }
 
   final override def exitTrimFunction(

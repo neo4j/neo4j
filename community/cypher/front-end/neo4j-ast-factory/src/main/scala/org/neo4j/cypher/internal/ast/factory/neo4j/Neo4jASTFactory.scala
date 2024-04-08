@@ -864,7 +864,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     v: Variable,
     fieldTerminator: String
   ): Clause = {
-    LoadCSV.fromUrl(headers, source, v, Option(fieldTerminator).map(StringLiteral(_)(p, p)))(p)
+    LoadCSV.fromUrl(headers, source, v, Option(fieldTerminator).map(StringLiteral(_)(p.withInputLength(0))))(p)
   }
 
   override def foreachClause(p: InputPosition, v: Variable, list: Expression, clauses: util.List[Clause]): Clause =
@@ -1239,7 +1239,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     if (negated) SignedOctalIntegerLiteral("-" + image)(p)
     else SignedOctalIntegerLiteral(image)(p)
 
-  override def newString(s: InputPosition, e: InputPosition, image: String): Expression = StringLiteral(image)(s, e)
+  override def newString(s: InputPosition, e: InputPosition, image: String): Expression =
+    StringLiteral(image)(s.withInputLength(e.offset - s.offset + 1))
 
   override def newTrueLiteral(p: InputPosition): Expression = True()(p)
 
@@ -1434,7 +1435,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     FunctionInvocation(
       FunctionName(Normalize.name)(p),
       distinct = false,
-      IndexedSeq(i, newString(p, p, normalForm.description()))
+      IndexedSeq(i, StringLiteral(normalForm.description())(p.withInputLength(0)))
     )(p)
   }
 
@@ -2386,22 +2387,25 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     removeHome: Boolean
   ): AlterUser = {
     val maybePassword = Option(password)
-    val isEncrypted = if (maybePassword.isDefined) Some(encrypted) else None
     val homeAction =
       if (removeHome) Some(RemoveHomeDatabaseAction)
       else if (homeDatabase == null) None
       else Some(SetHomeDatabaseAction(homeDatabase))
     val userOptions = UserOptions(asBooleanOption(changeRequired), asBooleanOption(suspended), homeAction)
-    AlterUser(stringLiteralOrParameterExpression(username.asScala), isEncrypted, maybePassword, userOptions, ifExists)(
-      p
-    )
+    AlterUser(
+      stringLiteralOrParameterExpression(username.asScala),
+      if (maybePassword.isDefined) Some(encrypted) else None,
+      Option(password),
+      userOptions,
+      ifExists
+    )(p)
   }
 
   override def passwordExpression(password: Parameter): Expression =
     new ExplicitParameter(password.name, CTString)(password.position) with SensitiveParameter
 
   override def passwordExpression(s: InputPosition, e: InputPosition, password: String): Expression =
-    SensitiveStringLiteral(password.getBytes(StandardCharsets.UTF_8))(s, e)
+    SensitiveStringLiteral(password.getBytes(StandardCharsets.UTF_8))(s.withInputLength(e.offset - s.offset + 1))
 
   override def showUsers(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Where): ShowUsers = {
     ShowUsers(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
@@ -3136,8 +3140,9 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   private def stringLiteralOrParameterExpression(name: Either[StringPos[InputPosition], Parameter]): Expression =
     name match {
-      case Left(literal) => StringLiteral(literal.string)(literal.pos, literal.endPos)
-      case Right(param)  => param
+      case Left(literal) =>
+        StringLiteral(literal.string)(literal.pos.withInputLength(literal.endPos.offset - literal.pos.offset + 1))
+      case Right(param) => param
     }
 
   override def labelConjunction(

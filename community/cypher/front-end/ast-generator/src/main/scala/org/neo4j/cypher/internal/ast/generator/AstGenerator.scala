@@ -642,12 +642,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     const(Null.NULL)
 
   def _stringLit: Gen[StringLiteral] =
-    string.flatMap(StringLiteral(_)(pos, pos))
+    string.flatMap(StringLiteral(_)(pos.withInputLength(0)))
 
   def _sensitiveStringLiteral: Gen[SensitiveStringLiteral] =
     // Needs to be '******' since all sensitive strings get rendered as such
     // Would normally get rewritten as SensitiveAutoParameter which can be generated as parameter when needed
-    const(SensitiveStringLiteral("******".getBytes(StandardCharsets.UTF_8))(pos, pos))
+    const(SensitiveStringLiteral("******".getBytes(StandardCharsets.UTF_8))(pos.withInputLength(0)))
 
   def _booleanLit: Gen[BooleanLiteral] =
     oneOf(True()(pos), False()(pos))

@@ -144,7 +144,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     when(semanticTable.typeFor("r")).thenReturn(relTypeGetter)
     when(semanticTable.typeFor(v"r")).thenReturn(relTypeGetter)
 
-    when(semanticTable.typeFor(StringLiteral("test")(InputPosition.NONE, InputPosition.NONE))).thenReturn(
+    when(semanticTable.typeFor(StringLiteral("test")(InputPosition.NONE.withInputLength(0)))).thenReturn(
       stringTypeGetter
     )
 

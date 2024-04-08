@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LoadCSVTest extends CypherFunSuite {
 
-  val literalURL = StringLiteral("file:///tmp/foo.csv")(DummyPosition(4), DummyPosition(5))
+  val literalURL = StringLiteral("file:///tmp/foo.csv")(DummyPosition(4).withInputLength(1))
   val variable = Variable("a")(DummyPosition(4))
 
   test("cannot overwrite existing variable") {
@@ -55,9 +55,9 @@ class LoadCSVTest extends CypherFunSuite {
   }
 
   test("should accept one-character wide field terminators") {
-    val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4), DummyPosition(5))
+    val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4).withInputLength(2))
     val loadCSV =
-      LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("\t")(DummyPosition(0), DummyPosition(1))))(
+      LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("\t")(DummyPosition(0).withInputLength(2))))(
         DummyPosition(6)
       )
     val result = loadCSV.semanticCheck.run(SemanticState.clean)
@@ -65,9 +65,9 @@ class LoadCSVTest extends CypherFunSuite {
   }
 
   test("should reject more-than-one-character wide field terminators") {
-    val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4), DummyPosition(5))
+    val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4).withInputLength(2))
     val loadCSV =
-      LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("  ")(DummyPosition(0), DummyPosition(1))))(
+      LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("  ")(DummyPosition(0).withInputLength(2))))(
         DummyPosition(6)
       )
     val result = loadCSV.semanticCheck.run(SemanticState.clean)

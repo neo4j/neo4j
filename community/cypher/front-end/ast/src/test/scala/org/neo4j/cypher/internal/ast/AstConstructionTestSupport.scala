@@ -295,7 +295,7 @@ trait AstConstructionTestSupport {
     greaterThan(prop(variable, propKey), literalInt(intValue))
 
   def literalString(stringValue: String): StringLiteral =
-    StringLiteral(stringValue)(pos, pos)
+    StringLiteral(stringValue)(pos.withInputLength(0))
 
   def literalBoolean(booleanValue: Boolean): BooleanLiteral = if (booleanValue) {
     True()(pos)
@@ -313,7 +313,7 @@ trait AstConstructionTestSupport {
     DecimalDoubleLiteral(floatValue.toString)(pos)
 
   def sensitiveLiteral(stringVal: String): SensitiveStringLiteral =
-    SensitiveStringLiteral(stringVal.getBytes(StandardCharsets.UTF_8))(pos, pos)
+    SensitiveStringLiteral(stringVal.getBytes(StandardCharsets.UTF_8))(pos.withInputLength(0))
 
   def listOf(expressions: Expression*): ListLiteral =
     ListLiteral(expressions)(pos)

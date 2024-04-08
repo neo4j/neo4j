@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.escapeSequences
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.genCodepoint
@@ -25,9 +26,12 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.NaN
+import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -41,6 +45,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropert
 import org.neo4j.exceptions.SyntaxException
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
+
+import scala.collection.compat.immutable.ArraySeq
 
 class LiteralsParserTest extends AstParsingTestBase
     with CypherScalaCheckDrivenPropertyChecks {
@@ -202,11 +208,80 @@ class LiteralsParserTest extends AstParsingTestBase
 
   test("position with unicode") {
     "\\u0009\\u2003'hello'" should parse[Literal].toAstPositioned(
-      StringLiteral("hello")(InputPosition(12, 1, 13), InputPosition(18, 1, 19))
+      StringLiteral("hello")(InputPosition(12, 1, 13).withInputLength(7))
     )
     "/* \uD80C\uDCDF */'hello'" should parse[Literal].toAstPositioned(
-      StringLiteral("hello")(InputPosition(8, 1, 9), InputPosition(18, 1, 19))
+      StringLiteral("hello")(InputPosition(8, 1, 9).withInputLength(7))
     )
+  }
+
+  test("correct position length of string literals") {
+    "return \n''\n AS res" should parse[Statements].toAstPositioned {
+      Statements(Seq(singleQuery(return_(
+        AliasedReturnItem(
+          StringLiteral("")(InputPosition(8, 2, 1).withInputLength(2)),
+          varFor("res")
+        )(pos)
+      ))))
+    }
+
+    "return \n'\na\nb\nc\n'\n AS res" should parse[Statements].toAstPositioned {
+      Statements(Seq(singleQuery(return_(
+        AliasedReturnItem(
+          StringLiteral("\na\nb\nc\n")(InputPosition(8, 2, 1).withInputLength(9)),
+          varFor("res")
+        )(pos)
+      ))))
+    }
+
+    "return 'abc\\u000A' AS res" should parse[Statements].toAstPositioned {
+      Statements(Seq(singleQuery(return_(
+        AliasedReturnItem(
+          StringLiteral("abc\n")(InputPosition(7, 1, 8).withInputLength(11)),
+          varFor("res")
+        )(pos)
+      ))))
+    }
+
+    "return 'abc\uD80C\uDCDF' AS res" should parse[Statements].toAstPositioned {
+      Statements(Seq(singleQuery(return_(
+        AliasedReturnItem(
+          StringLiteral("abc\uD80C\uDCDF")(InputPosition(7, 1, 8).withInputLength(7)),
+          varFor("res")
+        )(pos)
+      ))))
+    }
+
+    "\\u000A return \\u000A\n\\u000A" +
+      "'\\u000A\n\\u000Aa" +
+      "\\u000A\n\\u000Ab" +
+      "\\u000A\n\\u000Ac" +
+      "\\u000A\n\\u000A'" +
+      "\\u000A\n\\u000A AS res" should parse[Statements].toAstPositioned {
+        Statements(Seq(singleQuery(return_(
+          AliasedReturnItem(
+            StringLiteral("\n\n\na\n\n\nb\n\n\nc\n\n\n")(InputPosition(27, 2, 7).withInputLength(57)),
+            varFor("res")
+          )(pos)
+        ))))
+      }
+
+    "return test.function('hello', 'hallåhallå') as res" should parse[Statements].toAstPositioned {
+      Statements(Seq(singleQuery(return_(
+        AliasedReturnItem(
+          FunctionInvocation(
+            Namespace(List("test"))(pos),
+            FunctionName("function")(pos),
+            distinct = false,
+            ArraySeq(
+              StringLiteral("hello")(InputPosition(21, 1, 22).withInputLength(7)),
+              StringLiteral("hallåhallå")(InputPosition(30, 1, 31).withInputLength(12))
+            )
+          )(pos),
+          varFor("res")
+        )(pos)
+      ))))
+    }
   }
 }
 

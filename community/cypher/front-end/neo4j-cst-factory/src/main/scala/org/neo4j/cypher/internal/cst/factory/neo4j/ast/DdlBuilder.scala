@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.rangePos
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -570,7 +571,7 @@ trait DdlBuilder extends CypherParserListener {
     val str = ctx.stringLiteral()
     ctx.ast = if (str != null) {
       val pass = str.ast[StringLiteral]()
-      SensitiveStringLiteral(pass.value.getBytes(StandardCharsets.UTF_8))(pass.position, pass.endPosition)
+      SensitiveStringLiteral(pass.value.getBytes(StandardCharsets.UTF_8))(pass.position)
     } else {
       val pass = ctx.parameter().ast[Parameter]()
       new ExplicitParameter(pass.name, CTString)(pass.position) with SensitiveParameter
@@ -727,11 +728,9 @@ trait DdlBuilder extends CypherParserListener {
   final override def exitCommandNameExpression(
     ctx: CypherParser.CommandNameExpressionContext
   ): Unit = {
-    ctx.ast = if (ctx.symbolicNameString() != null) {
-      StringLiteral(ctx.symbolicNameString().ast[String]())(
-        pos(ctx.symbolicNameString.start),
-        pos(ctx.symbolicNameString.stop)
-      )
+    val name = ctx.symbolicNameString()
+    ctx.ast = if (name != null) {
+      StringLiteral(ctx.symbolicNameString().ast[String]())(rangePos(name))
     } else {
       ctx.parameter().ast[Parameter]()
     }

@@ -68,7 +68,7 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
     case x: LabelOrRelTypeName   => LabelOrRelTypeName(anonymizer.labelOrRelationshipType(x.name))(x.position)
     case x: PropertyKeyName      => PropertyKeyName(anonymizer.propertyKey(x.name))(x.position)
     case x: Parameter            => ExplicitParameter(anonymizer.parameter(x.name), x.parameterType)(x.position)
-    case x: StringLiteral        => StringLiteral(anonymizer.literal(x.value))(x.position, x.endPosition)
+    case x: StringLiteral        => StringLiteral(anonymizer.literal(x.value))(x.position)
     case x: CreateIndex          => x.withName(x.name.map(n => anonymizeSchemaName(n, anonymizer.indexName)))
     case x: DropIndexOnName      => x.copy(name = anonymizeSchemaName(x.name, anonymizer.indexName))(x.position)
     case x: CreateConstraint     => x.withName(x.name.map(n => anonymizeSchemaName(n, anonymizer.constraintName)))

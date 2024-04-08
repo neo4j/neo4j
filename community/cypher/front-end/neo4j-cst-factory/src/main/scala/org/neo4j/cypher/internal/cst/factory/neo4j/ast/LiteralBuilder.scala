@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.LiteralBuilder.cypherStri
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.rangePos
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
@@ -81,7 +82,7 @@ trait LiteralBuilder extends CypherParserListener {
 
   override def exitStringLiteral(ctx: CypherParser.StringLiteralContext): Unit = {
     val text = ctx.start.getInputStream.getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1))
-    ctx.ast = StringLiteral(cypherStringToString(text))(pos(ctx), pos(ctx.stop))
+    ctx.ast = StringLiteral(cypherStringToString(text))(rangePos(ctx))
   }
 }
 

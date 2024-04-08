@@ -582,7 +582,7 @@ class IndexSeekTest extends CypherFunSuite {
 
   private def variable(name: String) = SingleQueryExpression(Variable(name)(pos))
 
-  private def string(x: String) = StringLiteral(x)(pos, pos)
+  private def string(x: String) = StringLiteral(x)(pos.withInputLength(0))
   private def intLiteral(x: Int) = SignedDecimalIntegerLiteral(x.toString)(pos)
 
   private def lt(x: Literal) =

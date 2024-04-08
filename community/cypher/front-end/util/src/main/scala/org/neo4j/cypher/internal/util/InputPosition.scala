@@ -38,6 +38,10 @@ sealed trait InputPosition {
     case _ => this
   }
 
+  def withInputLength(length: Int): InputPosition.Range = {
+    InputPosition.withLength(offset, line, column, length)
+  }
+
   override def toString = s"line $line, column $column (offset: $offset)"
 }
 

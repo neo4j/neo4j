@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class LimitNestedPlanExpressionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val rewriter = limitNestedPlanExpressions(new StubCardinalities, Attributes[LogicalPlan](idGen))
 
-  private val aLit: StringLiteral = StringLiteral("a")(pos, pos)
+  private val aLit: StringLiteral = StringLiteral("a")(pos.withInputLength(0))
 
   test("should rewrite Nested plan in Head function") {
     val argument: LogicalPlan = Argument(Set(v"a"))

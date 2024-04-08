@@ -127,26 +127,26 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
     }
 }
 
-case class StringLiteral(value: String)(val position: InputPosition, val endPosition: InputPosition) extends Literal {
+case class StringLiteral(value: String)(val position: InputPosition.Range) extends Literal {
 
   override def asCanonicalStringVal: String = value
 
   override def dup(children: Seq[AnyRef]): this.type = {
-    StringLiteral(children.head.asInstanceOf[String])(position, endPosition).asInstanceOf[this.type]
+    StringLiteral(children.head.asInstanceOf[String])(position).asInstanceOf[this.type]
   }
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral =
-    new StringLiteral(value)(position, endPosition) with SensitiveLiteral {
-      override def literalLength: Int = endPosition.offset - position.offset + 1
+    new StringLiteral(value)(position) with SensitiveLiteral {
+      override def literalLength: Int = position.inputLength
     }
 }
 
-final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition, val endPosition: InputPosition)
+final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition.Range)
     extends Expression
     with SensitiveLiteral {
 
   override def dup(children: Seq[AnyRef]): this.type = {
-    SensitiveStringLiteral(children.head.asInstanceOf[Array[Byte]])(position, endPosition).asInstanceOf[this.type]
+    SensitiveStringLiteral(children.head.asInstanceOf[Array[Byte]])(position).asInstanceOf[this.type]
   }
 
   override def equals(obj: Any): Boolean = obj match {
@@ -156,7 +156,7 @@ final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputP
 
   override def hashCode(): Int = util.Arrays.hashCode(value)
 
-  override def literalLength: Int = endPosition.offset - position.offset + 1
+  override def literalLength: Int = position.inputLength
 
   override def isConstantForQuery: Boolean = true
 }

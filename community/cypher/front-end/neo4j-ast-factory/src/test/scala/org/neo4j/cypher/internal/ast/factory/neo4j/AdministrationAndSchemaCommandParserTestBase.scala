@@ -94,7 +94,7 @@ class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase wi
   def toUtf8Bytes(pw: String): Array[Byte] = pw.getBytes(StandardCharsets.UTF_8)
 
   def pw(password: String): InputPosition => SensitiveStringLiteral =
-    p => SensitiveStringLiteral(toUtf8Bytes(password))(p, p)
+    p => SensitiveStringLiteral(toUtf8Bytes(password))(p.withInputLength(0))
 
   def pwParam(name: String): Parameter = parameter(name, CTString)
 

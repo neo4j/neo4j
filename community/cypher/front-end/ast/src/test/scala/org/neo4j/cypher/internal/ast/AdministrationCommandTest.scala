@@ -59,7 +59,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks._
 class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestSupport {
 
   // Privilege command tests
-  private val p = InputPosition(0, 0, 0)
+  private val p = InputPosition.withLength(0, 0, 0, 0)
   private val initialState = SemanticState.clean
 
   test("it should not be possible to administer privileges pertaining to an unassignable action") {
@@ -162,8 +162,8 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           qualifierFn(
             None,
             MapExpression(Seq(
-              (PropertyKeyName("prop1")(p), StringLiteral("val1")(p, p)),
-              (PropertyKeyName("prop2")(p), StringLiteral("val2")(p, p))
+              (PropertyKeyName("prop1")(p), StringLiteral("val1")(p)),
+              (PropertyKeyName("prop2")(p), StringLiteral("val2")(p))
             ))(p)
           ),
           Seq(literalString("role1"))
@@ -950,7 +950,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
             qualifierFn(
               None,
               MapExpression(Seq(
-                (PropertyKeyName("prop1")(p), StringLiteral("val1")(p, p))
+                (PropertyKeyName("prop1")(p), StringLiteral("val1")(p.withInputLength(0)))
               ))(p)
             ),
             Seq(literalString("role1"))

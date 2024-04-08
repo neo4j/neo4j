@@ -1472,7 +1472,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             try {
               Parser.parseExpression(x)
             } catch {
-              case _: Exception => StringLiteral(x)(pos, pos)
+              case _: Exception => StringLiteral(x)(pos.withInputLength(0))
             }
           case x @ (_: Long | _: Int)     => SignedDecimalIntegerLiteral(x.toString)(pos)
           case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
@@ -2661,7 +2661,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   ): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
       val nestedPlanExpression = NestedPlanGetByNameExpression(rhs, varFor(columnNameToGet), "getByName(...)")(NONE)
-      val literalList = ListLiteral(list.map(StringLiteral(_)(NONE, NONE)))(NONE)
+      val literalList = ListLiteral(list.map(StringLiteral(_)(NONE.withInputLength(0))))(NONE)
       val listComprehension =
         ListComprehension(varFor(listElementVariable), literalList, None, Some(nestedPlanExpression))(NONE)
       Projection(
@@ -2973,7 +2973,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   private def literalFloat(value: Double): DecimalDoubleLiteral =
     DecimalDoubleLiteral(value.toString)(pos)
-  def literalString(str: String): StringLiteral = StringLiteral(str)(pos, pos)
+  def literalString(str: String): StringLiteral = StringLiteral(str)(pos.withInputLength(0))
 
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)

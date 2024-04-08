@@ -45,12 +45,15 @@ class CountTest extends SemanticFunSuite {
   private val pattern: Pattern.ForMatch = patternForMatch(relChain)
 
   private val nodePredicate =
-    Equals(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos), StringLiteral("test")(pos, pos))(pos)
+    Equals(
+      Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos),
+      StringLiteral("test")(pos.withInputLength(0))
+    )(pos)
   private val property: Property = Property(variable("x"), PropertyKeyName("prop")(pos))(pos)
   private val failingProperty: Property = Property(variable("missing"), PropertyKeyName("prop")(pos))(pos)
 
   private val nodeProperties: Expression =
-    MapExpression(ArraySeq((PropertyKeyName("name")(pos), StringLiteral("test")(pos, pos))))(pos)
+    MapExpression(ArraySeq((PropertyKeyName("name")(pos), StringLiteral("test")(pos.withInputLength(0)))))(pos)
 
   test("valid count expression passes semantic check") {
     val expression = simpleCountExpression(pattern, Some(where(property)))

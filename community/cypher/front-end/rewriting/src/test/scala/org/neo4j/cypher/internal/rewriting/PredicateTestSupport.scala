@@ -55,7 +55,7 @@ trait PredicateTestSupport {
     }
   }
 
-  def anExp(s: String): Expression = StringLiteral(s)(pos, pos)
+  def anExp(s: String): Expression = StringLiteral(s)(pos.withInputLength(0))
   def and(p1: Expression, p2: Expression): Expression = And(p1, p2)(pos)
   def ands(predicates: Expression*): Expression = Ands(predicates)(pos)
   def or(p1: Expression, p2: Expression): Or = Or(p1, p2)(pos)

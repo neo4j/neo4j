@@ -549,10 +549,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         NamespacedName("foo")((1, 17, 16)),
         ast.IfExistsThrowError,
         ast.OptionsMap(Map(
-          "existingData" -> StringLiteral("use")((1, 44, 43), (1, 47, 46)),
+          "existingData" -> StringLiteral("use")((1, 44, 43).withInputLength(5)),
           "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(
-            (1, 77, 76),
-            (1, 113, 112)
+            (1, 77, 76).withInputLength(38)
           )
         )),
         ast.NoWait,
@@ -569,10 +568,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         NamespacedName("foo")((1, 17, 16)),
         ast.IfExistsThrowError,
         ast.OptionsMap(Map(
-          "existingData" -> StringLiteral("use")((1, 44, 43), (1, 47, 46)),
+          "existingData" -> StringLiteral("use")((1, 44, 43).withInputLength(5)),
           "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(
-            (1, 77, 76),
-            (1, 113, 112)
+            (1, 77, 76).withInputLength(38)
           )
         )),
         ast.IndefiniteWait,
@@ -1352,7 +1350,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         ifExists = false,
         None,
         None,
-        OptionsMap(Map("txLogEnrichment" -> StringLiteral("FULL")(pos, pos))),
+        OptionsMap(Map("txLogEnrichment" -> StringLiteral("FULL")(pos.withInputLength(0)))),
         Set.empty,
         ast.NoWait
       )(pos)
@@ -1410,7 +1408,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         None,
         OptionsMap(Map(
           "key1" -> SignedDecimalIntegerLiteral("1")(pos),
-          "key2" -> StringLiteral("two")(pos, pos)
+          "key2" -> StringLiteral("two")(pos.withInputLength(0))
         )),
         Set.empty,
         ast.NoWait
@@ -1425,7 +1423,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         ifExists = false,
         Some(ReadOnlyAccess),
         Some(Topology(Some(1), None)),
-        OptionsMap(Map("txLogEnrichment" -> StringLiteral("FULL")(pos, pos))),
+        OptionsMap(Map("txLogEnrichment" -> StringLiteral("FULL")(pos.withInputLength(0)))),
         Set.empty,
         ast.NoWait
       )(pos)
