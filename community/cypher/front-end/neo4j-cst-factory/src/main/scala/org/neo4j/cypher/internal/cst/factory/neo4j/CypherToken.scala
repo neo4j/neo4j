@@ -38,6 +38,14 @@ import java.util
  */
 trait CypherToken extends Token with TerminalNode {
   def position(): InputPosition
+
+  /**
+   * Converts character offset from the parser (in codepoints) to offset in the input query string.
+   * Note! The query input string do normally NOT include pre-parser options (explain/profile/cypher),
+   * but do include whitespace and comments.
+   */
+  def inputOffset(parserOffset: Int): Int
+
   protected def source: Pair[TokenSource, CharStream]
   protected def text: String = null
 
@@ -85,6 +93,7 @@ final private class DefaultCypherToken(
   val getCharPositionInLine: Int
 ) extends CypherToken {
   override def position(): InputPosition = InputPosition(getStartIndex, getLine, getCharPositionInLine + 1)
+  override def inputOffset(parserOffset: Int): Int = parserOffset
 }
 
 final private class OffsetCypherToken(
@@ -99,9 +108,22 @@ final private class OffsetCypherToken(
 ) extends CypherToken {
 
   override def position(): InputPosition = {
-    val i = (getStartIndex - offsets.start) * 3
-    val o = offsets.offsets
-    InputPosition(o(i), o(i + 1), o(i + 2))
+    val start = getStartIndex
+    if (start >= offsets.start) {
+      val i = (start - offsets.start) * 3
+      val o = offsets.offsets
+      InputPosition(o(i), o(i + 1), o(i + 2))
+    } else {
+      InputPosition(getStartIndex, getLine, getCharPositionInLine + 1)
+    }
+  }
+
+  override def inputOffset(parserOffset: Int): Int = {
+    if (parserOffset >= offsets.start) {
+      offsets.offsets((parserOffset - offsets.start) * 3)
+    } else {
+      parserOffset
+    }
   }
 }
 
@@ -116,12 +138,10 @@ object CypherTokenFactory extends TokenFactory[CypherToken] {
 }
 
 class OffsetCypherTokenFactory(offsetTable: OffsetTable) extends TokenFactory[CypherToken] {
-  private[this] val offsetStart = offsetTable.start
 
   override def create(src: Src, typ: Int, txt: String, ch: Int, start: Int, stop: Int, line: Int, charPos: Int)
     : CypherToken = {
-    if (start < offsetStart) new DefaultCypherToken(src, typ, ch, start, stop, line, charPos)
-    else new OffsetCypherToken(offsetTable, src, typ, ch, start, stop, line, charPos)
+    new OffsetCypherToken(offsetTable, src, typ, ch, start, stop, line, charPos)
   }
 
   override def create(typ: Int, text: String): CypherToken =
