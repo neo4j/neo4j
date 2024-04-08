@@ -90,7 +90,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   def hasErrors: Boolean = errors.nonEmpty
 
   private def inputPosition(symbol: Token): InputPosition = {
-    new InputPosition(symbol.getStartIndex, symbol.getLine, symbol.getCharPositionInLine + 1)
+    InputPosition(symbol.getStartIndex, symbol.getLine, symbol.getCharPositionInLine + 1)
   }
 
   private def errorOnDuplicate(

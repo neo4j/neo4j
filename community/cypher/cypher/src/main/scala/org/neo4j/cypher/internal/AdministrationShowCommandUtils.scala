@@ -46,7 +46,7 @@ object AdministrationShowCommandUtils {
       case Seq() => None
       case columns => Some(OrderBy(columns.zipWithIndex.map {
           case (col, i) =>
-            val pos = new InputPosition(i, 1, 0)
+            val pos = InputPosition(i, 1, 0)
             ast.AscSortItem(Variable(col)(pos))(pos)
         })(InputPosition.NONE))
     }

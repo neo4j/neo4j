@@ -60,12 +60,12 @@ public class CypherPreParser {
     }
 
     private InputPosition pos(Token t) {
-        return new InputPosition(t.beginOffset, t.beginLine, t.beginColumn);
+        return InputPosition.apply(t.beginOffset, t.beginLine, t.beginColumn);
     }
 
     private InputPosition getPosition() {
         PreParserCharStream stream = (PreParserCharStream) token_source.input_stream;
-        return new InputPosition( stream.getBeginOffset(), stream.getBeginLine(), stream.getBeginColumn() );
+        return InputPosition.apply( stream.getBeginOffset(), stream.getBeginLine(), stream.getBeginColumn() );
     }
 }
 PARSER_END(CypherPreParser)
@@ -1028,7 +1028,7 @@ PreParserResult parse() throws Exception:
                  throw exceptionFactory.syntaxException( new IllegalStateException( PreParserResult.getEmptyQueryExceptionMsg() ),
                     token.endOffset + 1, token.endLine, token.endColumn + 1 );
             }
-            return new PreParserResult( options, queryStart != null ? pos(queryStart) : new InputPosition(1, 0, 0) );
+            return new PreParserResult( options, queryStart != null ? pos(queryStart) : InputPosition.apply(1, 0, 0) );
         }
     }
     catch ( ParseException e )
@@ -1074,7 +1074,7 @@ void CypherOption(List<PreParserOption> options) throws Exception :
     (
         LOOKAHEAD(<IDENTIFIER> <EQ>) key=<IDENTIFIER> <EQ> value=<IDENTIFIER>
         {
-            InputPosition position = new InputPosition(key.beginOffset, key.beginLine, key.beginColumn);
+            InputPosition position = InputPosition.apply(key.beginOffset, key.beginLine, key.beginColumn);
             PreParserOption option = PreParserOption.generic( key.image, value.image, position );
             options.add( option );
         }
@@ -1089,7 +1089,7 @@ void ExplainOption(List<PreParserOption> options):
 {
     t=<EXPLAIN>
     {
-        InputPosition position = new InputPosition(t.beginOffset, t.beginLine, t.beginColumn);
+        InputPosition position = InputPosition.apply(t.beginOffset, t.beginLine, t.beginColumn);
         options.add( PreParserOption.explain(position) );
     }
 }
@@ -1101,7 +1101,7 @@ void ProfileOption(List<PreParserOption> options):
 {
     t=<PROFILE>
     {
-        InputPosition position = new InputPosition(t.beginOffset, t.beginLine, t.beginColumn);
+        InputPosition position = InputPosition.apply(t.beginOffset, t.beginLine, t.beginColumn);
         options.add( PreParserOption.profile(position) );
     }
 }

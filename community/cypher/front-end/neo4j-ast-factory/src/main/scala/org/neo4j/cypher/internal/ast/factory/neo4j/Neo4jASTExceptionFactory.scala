@@ -49,9 +49,9 @@ class Neo4jASTExceptionFactory(inner: CypherExceptionFactory) extends ASTExcepti
             System.lineSeparator() + exp.map("  " + _).mkString(System.lineSeparator())
         ).result()
 
-    inner.syntaxException(message, new InputPosition(offset, line, column))
+    inner.syntaxException(message, InputPosition(offset, line, column))
   }
 
   override def syntaxException(source: Exception, offset: Int, line: Int, column: Int): Exception =
-    inner.syntaxException(source.getMessage, new InputPosition(offset, line, column))
+    inner.syntaxException(source.getMessage, InputPosition(offset, line, column))
 }

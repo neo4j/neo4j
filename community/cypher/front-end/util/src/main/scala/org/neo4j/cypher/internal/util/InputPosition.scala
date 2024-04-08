@@ -16,30 +16,40 @@
  */
 package org.neo4j.cypher.internal.util
 
-/**
- * The position of an AST node.
- *
- * @param offset the offset in characters from the beginning of the query string
- * @param line   the line in the query string
- * @param column the column in the query string
- */
-case class InputPosition(offset: Int, line: Int, column: Int) {
+/** The position of an AST node. */
+sealed trait InputPosition {
 
-  override def toString = s"line $line, column $column (offset: $offset)"
+  /** The offset in characters (not codepoints!) from the beginning of the query string */
+  def offset: Int
+
+  /** The line in the query string */
+  def line: Int
+
+  /** The column in the query string */
+  def column: Int
 
   /**
    * Offset this position by a number of characters and return the new position.
    */
   def withOffset(pos: Option[InputPosition]): InputPosition = pos match {
-    case Some(p) =>
+    case Some(p) if p.offset != 0 =>
       val newColumn = if (line == p.line) column + p.column - 1 else column
       InputPosition(offset + p.offset, line + p.line - 1, newColumn)
-    case None => this
+    case _ => this
   }
+
+  override def toString = s"line $line, column $column (offset: $offset)"
 }
 
 object InputPosition {
+  case class Simple(offset: Int, line: Int, column: Int) extends InputPosition
+  case class Range(offset: Int, line: Int, column: Int, inputLength: Int) extends InputPosition
+
   implicit val byOffset: Ordering[InputPosition] = Ordering.by(_.offset)
 
-  val NONE: InputPosition = InputPosition(0, 0, 0)
+  val NONE: InputPosition = Simple(0, 0, 0)
+
+  def apply(offset: Int, line: Int, column: Int): InputPosition = Simple(offset, line, column)
+
+  def withLength(offset: Int, line: Int, column: Int, length: Int): Range = Range(offset, line, column, length)
 }

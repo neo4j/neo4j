@@ -152,7 +152,7 @@ class UnicodeEscapeReader extends Reader {
             }
             col += 1;
         }
-        return new InputPosition(pos, line, col);
+        return InputPosition.apply(pos, line, col);
     }
 
     private char parseUnicodeReplacement(int charPos) {
