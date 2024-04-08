@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.parser.javacc.InvalidUnicodeLiteral
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -162,7 +163,7 @@ object CypherAstParser {
     notificationLogger: Option[InternalNotificationLogger],
     f: CypherAstParser => T
   ): T = {
-    val tokens = preparsedTokens(query)
+    val tokens = preparsedTokens(query, exceptionFactory)
     val parser = new CypherAstParser(tokens, true, exceptionFactory, notificationLogger)
 
     // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
@@ -215,7 +216,13 @@ object CypherAstParser {
     result
   }
 
-  private def preparsedTokens(cypher: String) = new CommonTokenStream(CypherAstLexer.fromString(cypher))
+  private def preparsedTokens(cypher: String, exceptionFactory: CypherExceptionFactory) =
+    try {
+      new CommonTokenStream(CypherAstLexer.fromString(cypher))
+    } catch {
+      case e: InvalidUnicodeLiteral =>
+        throw exceptionFactory.syntaxException(e.getMessage, InputPosition(e.offset, e.line, e.column))
+    }
 }
 
 object NoOpParseTreeListener extends ParseTreeListener {

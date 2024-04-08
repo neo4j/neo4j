@@ -270,6 +270,8 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_ARGUMENT_EXPRESSION
     else if (msg.startsWith("Invalid input '—':"))
       INVALID_UNICODE_CHARACTER
+    else if (msg.startsWith("Mismatched input '—':"))
+      INVALID_UNICODE_CHARACTER
     else if (msg.matches(semanticError("Can't use aggregating expressions inside of expressions executing over lists")))
       INVALID_AGGREGATION
     else if (
@@ -308,12 +310,28 @@ object Neo4jExceptionToExecutionFailed {
       msg.matches(s"${DOTALL}Invalid input '.*': expected.*or.*\\].*\\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*")
     )
       INVALID_RELATIONSHIP_PATTERN
+    else if (
+      msg.matches(
+        s"${DOTALL}Mismatched input '.*': expected '\\{', .* \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"
+      )
+    )
+      INVALID_RELATIONSHIP_PATTERN
+    else if (
+      msg.matches(
+        s"${DOTALL}Extraneous input '.*': expected (?:'.*',)* '\\{', (?:'.*',)* '.*' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"
+      )
+    )
+      INVALID_RELATIONSHIP_PATTERN
     else if (msg.matches(semanticError("invalid literal number")))
       INVALID_NUMBER_LITERAL
     else if (msg.matches(semanticError("Unknown function '.+'")))
       UNKNOWN_FUNCTION
     else if (
       msg.matches(semanticError("Invalid input '.+': expected four hexadecimal digits specifying a unicode character"))
+    )
+      INVALID_UNICODE_LITERAL
+    else if (
+      msg.matches(semanticError("Invalid input '.+'': expected four hexadecimal digits specifying a unicode character"))
     )
       INVALID_UNICODE_LITERAL
     else if (msg.matches(semanticError("Invalid use of aggregating function count\\(\\.\\.\\.\\) in this context")))
@@ -371,6 +389,12 @@ object Neo4jExceptionToExecutionFailed {
     else if (msg.startsWith("A pattern expression should only be used in order to test the existence of a pattern"))
       UNEXPECTED_SYNTAX
     else if (msg.startsWith("Invalid input"))
+      UNEXPECTED_SYNTAX
+    else if (msg.startsWith("Mismatched input"))
+      UNEXPECTED_SYNTAX
+    else if (msg.startsWith("No viable alternative"))
+      UNEXPECTED_SYNTAX
+    else if (msg.startsWith("Extraneous input"))
       UNEXPECTED_SYNTAX
     else if (msg.startsWith("Query cannot conclude with"))
       INVALID_CLAUSE_COMPOSITION
