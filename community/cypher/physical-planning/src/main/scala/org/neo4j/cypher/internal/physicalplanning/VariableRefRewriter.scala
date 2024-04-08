@@ -109,6 +109,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabe
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedSubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
@@ -213,6 +214,8 @@ object VariableRefRewriter extends Rewriter {
             case s @ IntersectionNodeByLabelsScan(node, _, args, _) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ PartitionedIntersectionNodeByLabelsScan(node, _, args) =>
+              s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
+            case s @ PartitionedSubtractionNodeByLabelsScan(node, _, _, args) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ NodeByElementIdSeek(node, _, args) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))

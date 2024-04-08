@@ -129,6 +129,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabe
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedSubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
@@ -430,7 +431,23 @@ case class InterpretedPipeMapper(
 
       case SubtractionNodeByLabelsScan(ident, positiveLabels, negativeLabels, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
-        SubtractionNodeByLabelsScanPipe(ident.name, positiveLabels.map(l => LazyLabel(l)), negativeLabels.map(l => LazyLabel(l)), indexOrder)(id =
+        SubtractionNodeByLabelsScanPipe(
+          ident.name,
+          positiveLabels.map(l => LazyLabel(l)),
+          negativeLabels.map(l => LazyLabel(l)),
+          indexOrder
+        )(id =
+          id
+        )
+
+      case PartitionedSubtractionNodeByLabelsScan(ident, positiveLabels, negativeLabels, _) =>
+        indexRegistrator.registerLabelScan()
+        SubtractionNodeByLabelsScanPipe(
+          ident.name,
+          positiveLabels.map(l => LazyLabel(l)),
+          negativeLabels.map(l => LazyLabel(l)),
+          IndexOrderNone
+        )(id =
           id
         )
 

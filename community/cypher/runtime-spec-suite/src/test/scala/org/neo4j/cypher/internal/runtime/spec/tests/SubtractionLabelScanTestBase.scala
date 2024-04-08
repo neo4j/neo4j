@@ -46,7 +46,7 @@ abstract class SubtractionLabelScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .subtractionNodeByLabelsScan("x", "A", "B", IndexOrderNone)
+      .subtractionNodeByLabelsScan("x", "A", "B")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -105,7 +105,7 @@ abstract class SubtractionLabelScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .subtractionNodeByLabelsScan("x", "A", "B", IndexOrderNone)
+      .subtractionNodeByLabelsScan("x", "A", "B")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -127,10 +127,10 @@ abstract class SubtractionLabelScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y", "z", "x")
       .apply()
-      .|.subtractionNodeByLabelsScan("x", "A", "B", IndexOrderNone)
+      .|.subtractionNodeByLabelsScan("x", "A", "B")
       .apply()
-      .|.subtractionNodeByLabelsScan("y", "A", "B", IndexOrderNone)
-      .subtractionNodeByLabelsScan("z", "A", "B", IndexOrderNone)
+      .|.subtractionNodeByLabelsScan("y", "A", "B")
+      .subtractionNodeByLabelsScan("z", "A", "B")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -144,7 +144,7 @@ abstract class SubtractionLabelScanTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .subtractionNodeByLabelsScan("x", "A", "B", IndexOrderNone)
+      .subtractionNodeByLabelsScan("x", "A", "B")
       .build()
 
     // empty db
@@ -185,8 +185,8 @@ abstract class SubtractionLabelScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .apply()
-      .|.subtractionNodeByLabelsScan("y", "C", "D", IndexOrderNone, "x")
-      .subtractionNodeByLabelsScan("x", "A", "B", IndexOrderNone)
+      .|.subtractionNodeByLabelsScan("y", "C", "D", "x")
+      .subtractionNodeByLabelsScan("x", "A", "B")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -207,7 +207,7 @@ abstract class SubtractionLabelScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .subtractionNodeByLabelsScan("x", Seq("A", "B"), Seq("X", "Y"), IndexOrderNone)
+      .subtractionNodeByLabelsScan("x", Seq("A", "B"), Seq("X", "Y"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

@@ -113,6 +113,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabe
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedSubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
@@ -484,6 +485,15 @@ class SlottedPipeMapper(
           positiveLabels.map(l => LazyLabel(l)(semanticTable)),
           negativeLabels.map(l => LazyLabel(l)(semanticTable)),
           indexOrder
+        )(id)
+
+      case PartitionedSubtractionNodeByLabelsScan(column, positiveLabels, negativeLabels, _) =>
+        indexRegistrator.registerLabelScan()
+        SubtractionNodesByLabelsScanSlottedPipe(
+          slots.getLongOffsetFor(column),
+          positiveLabels.map(l => LazyLabel(l)(semanticTable)),
+          negativeLabels.map(l => LazyLabel(l)(semanticTable)),
+          IndexOrderNone
         )(id)
 
       case DirectedRelationshipUniqueIndexSeek(

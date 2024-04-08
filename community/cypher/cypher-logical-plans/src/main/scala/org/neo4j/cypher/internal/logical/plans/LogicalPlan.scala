@@ -4784,6 +4784,25 @@ case class SubtractionNodeByLabelsScan(
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
 
+case class PartitionedSubtractionNodeByLabelsScan(
+  idName: LogicalVariable,
+  positiveLabels: Seq[LabelName],
+  negativeLabels: Seq[LabelName],
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen)
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedSubtractionNodeByLabelsScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
 /**
  * For each source row, evaluate 'expression'. If 'expression' evaluates to a list, produce one row per list
  * element, containing the source row and the element assigned to 'variable'.

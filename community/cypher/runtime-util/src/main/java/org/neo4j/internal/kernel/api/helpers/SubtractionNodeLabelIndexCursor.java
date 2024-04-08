@@ -35,6 +35,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
     private final CompositeCursor positiveCursor;
     private final CompositeCursor negativeCursor;
     private boolean negativeCursorHasData;
+    private boolean first = true;
 
     public static SubtractionNodeLabelIndexCursor ascendingSubtractionNodeLabelIndexCursor(
             Read read,
@@ -68,10 +69,16 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
                         read, tokenReadSession, cursorContext, negativeLabels, negativeCursors));
     }
 
+    public static SubtractionNodeLabelIndexCursor subtractionNodeLabelIndexCursor(
+            NodeLabelIndexCursor[] positiveCursors, NodeLabelIndexCursor[] negativeCursor) {
+        return new AscendingSubtractionLabelIndexCursor(
+                IntersectionNodeLabelIndexCursor.intersectionNodeLabelIndexCursor(positiveCursors),
+                IntersectionNodeLabelIndexCursor.intersectionNodeLabelIndexCursor(negativeCursor));
+    }
+
     SubtractionNodeLabelIndexCursor(CompositeCursor positiveCursor, CompositeCursor negativeCursor) {
         this.positiveCursor = positiveCursor;
         this.negativeCursor = negativeCursor;
-        this.negativeCursorHasData = negativeCursor.next();
     }
 
     @Override
@@ -95,6 +102,10 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
 
     @Override
     public boolean next() {
+        if (first) {
+            negativeCursorHasData = negativeCursor.next();
+            first = false;
+        }
         boolean shouldContinue = positiveCursor.next();
         boolean localNegativeCursorHasData = negativeCursorHasData;
         while (shouldContinue) {

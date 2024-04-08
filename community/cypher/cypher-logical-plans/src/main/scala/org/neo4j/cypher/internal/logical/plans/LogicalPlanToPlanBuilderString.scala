@@ -472,7 +472,17 @@ object LogicalPlanToPlanBuilderString {
         val positiveLabels = ps.map(l => wrapInQuotations(l.name)).mkString(", ")
         val negativeLabels = ns.map(l => wrapInQuotations(l.name)).mkString(", ")
         val args =
-          Seq(wrapInQuotations(idName), s"Seq($positiveLabels)",  s"Seq($negativeLabels)") ++ Seq(objectName(indexOrder)) ++
+          Seq(wrapInQuotations(idName), s"Seq($positiveLabels)", s"Seq($negativeLabels)") ++ Seq(
+            objectName(indexOrder)
+          ) ++
+            argumentIds.map(wrapInQuotations)
+        args.mkString(", ")
+
+      case PartitionedSubtractionNodeByLabelsScan(idName, ps, ns, argumentIds) =>
+        val positiveLabels = ps.map(l => wrapInQuotations(l.name)).mkString(", ")
+        val negativeLabels = ns.map(l => wrapInQuotations(l.name)).mkString(", ")
+        val args =
+          Seq(wrapInQuotations(idName), s"Seq($positiveLabels)", s"Seq($negativeLabels)") ++
             argumentIds.map(wrapInQuotations)
         args.mkString(", ")
 

@@ -192,6 +192,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabe
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedSubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
@@ -477,7 +478,26 @@ case class LogicalPlan2PlanDescription(
       case SubtractionNodeByLabelsScan(idName, positiveLabels, negativeLabels, _, _) =>
         val prettyDetails =
           pretty"${asPrettyString(idName)}:${positiveLabels.map(l => asPrettyString(l.name)).mkPrettyString(
-              "", "&", "&"
+              "",
+              "&",
+              "&"
+            )}${negativeLabels.map(l => pretty"!${asPrettyString(l.name)}").mkPrettyString("&")}"
+        PlanDescriptionImpl(
+          id,
+          "SubtractionNodeByLabelsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case PartitionedSubtractionNodeByLabelsScan(idName, positiveLabels, negativeLabels, _) =>
+        val prettyDetails =
+          pretty"${asPrettyString(idName)}:${positiveLabels.map(l => asPrettyString(l.name)).mkPrettyString(
+              "",
+              "&",
+              "&"
             )}${negativeLabels.map(l => pretty"!${asPrettyString(l.name)}").mkPrettyString("&")}"
         PlanDescriptionImpl(
           id,

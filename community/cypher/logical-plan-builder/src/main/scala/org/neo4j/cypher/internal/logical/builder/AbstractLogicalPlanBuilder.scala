@@ -186,6 +186,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTy
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedSubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
@@ -1231,19 +1232,37 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     node: String,
     positiveLabel: String,
     negativeLabel: String,
-    indexOrder: IndexOrder,
     args: String*
   ): IMPL = {
-   subtractionNodeByLabelsScan(node, Seq(positiveLabel), Seq(negativeLabel), indexOrder, args:_*)
+    subtractionNodeByLabelsScan(node, Seq(positiveLabel), Seq(negativeLabel), args: _*)
   }
 
   def subtractionNodeByLabelsScan(
-                                   node: String,
-                                   positiveLabels: Seq[String],
-                                   negativeLabels: Seq[String],
-                                   indexOrder: IndexOrder,
-                                   args: String*
-                                 ): IMPL = {
+    node: String,
+    positiveLabel: String,
+    negativeLabel: String,
+    indexOrder: IndexOrder,
+    args: String*
+  ): IMPL = {
+    subtractionNodeByLabelsScan(node, Seq(positiveLabel), Seq(negativeLabel), indexOrder, args: _*)
+  }
+
+  def subtractionNodeByLabelsScan(
+    node: String,
+    positiveLabels: Seq[String],
+    negativeLabels: Seq[String],
+    args: String*
+  ): IMPL = {
+    subtractionNodeByLabelsScan(node, positiveLabels, negativeLabels, IndexOrderNone, args: _*)
+  }
+
+  def subtractionNodeByLabelsScan(
+    node: String,
+    positiveLabels: Seq[String],
+    negativeLabels: Seq[String],
+    indexOrder: IndexOrder,
+    args: String*
+  ): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     appendAtCurrentIndent(LeafOperator(SubtractionNodeByLabelsScan(
@@ -1252,6 +1271,22 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       negativeLabels.map(labelName),
       args.map(a => varFor(VariableParser.unescaped(a))).toSet,
       indexOrder
+    )(_)))
+  }
+
+  def partitionedSubtractionNodeByLabelsScan(
+    node: String,
+    positiveLabels: Seq[String],
+    negativeLabels: Seq[String],
+    args: String*
+  ): IMPL = {
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(PartitionedSubtractionNodeByLabelsScan(
+      varFor(n),
+      positiveLabels.map(labelName),
+      negativeLabels.map(labelName),
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet
     )(_)))
   }
 

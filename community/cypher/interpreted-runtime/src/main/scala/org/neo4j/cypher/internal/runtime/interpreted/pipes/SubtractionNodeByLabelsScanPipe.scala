@@ -101,8 +101,8 @@ object SubtractionNodeByLabelsScanPipe {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.reference() else -1L
 
       override def close(): Unit = {
-        IOUtils.closeAll(posCursors:_*)
-        IOUtils.closeAll(negCursors:_*)
+        IOUtils.closeAll(posCursors: _*)
+        IOUtils.closeAll(negCursors: _*)
       }
     }
 
