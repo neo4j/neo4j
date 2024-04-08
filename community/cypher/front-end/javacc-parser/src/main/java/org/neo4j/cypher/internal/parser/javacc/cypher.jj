@@ -66,6 +66,7 @@ import org.neo4j.cypher.internal.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName;
 import org.neo4j.cypher.internal.ast.factory.ParserNormalForm;
+import org.neo4j.cypher.internal.ast.factory.ParserTrimSpecification;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
@@ -432,6 +433,7 @@ TOKEN [IGNORE_CASE] :
     | < BOOL: "BOOL" >
     | < BOOLEAN: "BOOLEAN" >
     | < BOOSTED: "BOOSTED" >
+    | < BOTH: "BOTH" >
     | < BREAK: "BREAK" >
     | < BRIEF: "BRIEF" >
     | < BTREE: "BTREE" >
@@ -543,6 +545,7 @@ TOKEN [IGNORE_CASE] :
     | < LBRACKET: "[" >
     | < LCURLY: "{" >
     | < LE: "<=" >
+    | < LEADING: "LEADING" >
     | < LIMITROWS: "LIMIT" >
     | < LIST: "LIST" >
     | < LOAD: "LOAD" >
@@ -665,9 +668,11 @@ TOKEN [IGNORE_CASE] :
     | < TIMEZONE: "TIMEZONE" >
     | < TO: "TO" >
     | < TOPOLOGY: "TOPOLOGY" >
+    | < TRAILING: "TRAILING" >
     | < TRANSACTION: "TRANSACTION" >
     | < TRANSACTIONS: "TRANSACTIONS" >
     | < TRAVERSE: "TRAVERSE" >
+    | < TRIM: "TRIM" >
     | < TRUE: "true">
     | < TYPE: "TYPE">
     | < TYPED: "TYPED">
@@ -3717,6 +3722,7 @@ EXPRESSION Expression1() throws Exception:
         | LOOKAHEAD( 3 ) e=NoneExpression()
         | LOOKAHEAD( 3 ) e=SingleExpression()
         | LOOKAHEAD( 2 ) e=NormalizeExpression()
+        | LOOKAHEAD( 2 ) e=TrimFunction()
         | LOOKAHEAD( NodePattern() RelationshipPattern() ) e=PatternExpression()
         | LOOKAHEAD( 2 ) e=ShortestPathExpression()
         | <LPAREN>
@@ -3978,6 +3984,34 @@ EXPRESSION NormalizeExpression() throws Exception:
         return astFactory.normalizeExpression( pos( t ), e, normalForm );
     }
 }
+
+
+EXPRESSION TrimFunction() throws Exception:
+{
+    Token t;
+    EXPRESSION trimCharacterString = null;
+    EXPRESSION trimSource = null;
+    EXPRESSION expression = null;
+    ParserTrimSpecification trimSpec = ParserTrimSpecification.BOTH;
+}
+{
+    t=<TRIM> <LPAREN>
+    // TRIM(FROM <expr>)
+    (LOOKAHEAD(<FROM>) <FROM> trimSource=Expression() <RPAREN> { return astFactory.trimFunction( pos( t ), trimSpec, trimCharacterString, trimSource ); }
+    // TRIM(BOTH/LEADING/TRAILING FROM <expr>)
+    | LOOKAHEAD((<BOTH> | <LEADING> | <TRAILING>) <FROM>)
+        ( <BOTH> | <LEADING> { trimSpec = ParserTrimSpecification.LEADING; } | <TRAILING> { trimSpec = ParserTrimSpecification.TRAILING; })
+            <FROM> trimSource=Expression() <RPAREN> { return astFactory.trimFunction( pos( t ), trimSpec, trimCharacterString, trimSource ); }
+    // TRIM(BOTH/LEADING/TRAILING <expr> FROM <expr>)
+    | LOOKAHEAD(<BOTH> | <LEADING> | <TRAILING>)
+        ( <BOTH> | <LEADING> { trimSpec = ParserTrimSpecification.LEADING; } | <TRAILING> { trimSpec = ParserTrimSpecification.TRAILING; })
+        trimCharacterString = Expression() <FROM> trimSource=Expression() <RPAREN> { return astFactory.trimFunction( pos( t ), trimSpec, trimCharacterString, trimSource ); }
+    // TRIM(<expr> FROM <expr>) or TRIM(<expr>)
+    | expression = Expression()
+        (LOOKAHEAD(<RPAREN>) (<RPAREN> { return astFactory.trimFunction( pos( t ), trimSpec, trimCharacterString, expression ); })
+        | <FROM> trimSource=Expression() <RPAREN> { return astFactory.trimFunction( pos( t ), trimSpec, expression, trimSource ); }))
+}
+
 
 EXPRESSION PatternExpression() throws Exception:
 {
@@ -7364,6 +7398,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<BOOL>
         | t=<BOOLEAN>
         | t=<BOOSTED>
+        | t=<BOTH>
         | t=<BREAK>
         | t=<BRIEF>
         | t=<BTREE>
@@ -7459,6 +7494,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<KEY>
         | t=<LABEL>
         | t=<LABELS>
+        | t=<LEADING>
         | t=<LIMITROWS>
         | t=<LIST>
         | t=<LOAD>
@@ -7558,9 +7594,11 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<TIMEZONE>
         | t=<TO>
         | t=<TOPOLOGY>
+        | t=<TRAILING>
         | t=<TRANSACTION>
         | t=<TRANSACTIONS>
         | t=<TRAVERSE>
+        | t=<TRIM>
         | t=<TRUE>
         | t=<TYPE>
         | t=<TYPES>

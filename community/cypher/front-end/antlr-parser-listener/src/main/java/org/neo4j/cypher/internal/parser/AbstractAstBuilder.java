@@ -167,6 +167,7 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
                     (CypherParser.ListItemsPredicateContext) ctx);
             case CypherParser.RULE_normalizeFunction -> exitNormalizeFunction(
                     (CypherParser.NormalizeFunctionContext) ctx);
+            case CypherParser.RULE_trimFunction -> exitTrimFunction((CypherParser.TrimFunctionContext) ctx);
             case CypherParser.RULE_patternExpression -> exitPatternExpression(
                     (CypherParser.PatternExpressionContext) ctx);
             case CypherParser.RULE_shortestPathExpression -> exitShortestPathExpression(

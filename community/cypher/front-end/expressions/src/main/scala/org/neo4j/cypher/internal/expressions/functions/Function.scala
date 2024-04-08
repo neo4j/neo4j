@@ -51,6 +51,7 @@ object Function {
     Atan,
     Atan2,
     Avg,
+    BTrim,
     Ceil,
     CharLength,
     CharacterLength,

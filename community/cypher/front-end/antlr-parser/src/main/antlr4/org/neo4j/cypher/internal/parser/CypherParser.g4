@@ -486,6 +486,7 @@ expression1
    | reduceExpression
    | listItemsPredicate
    | normalizeFunction
+   | trimFunction
    | patternExpression
    | shortestPathExpression
    | parenthesizedExpression
@@ -561,6 +562,10 @@ listItemsPredicate
 
 normalizeFunction
    : NORMALIZE LPAREN expression (COMMA normalForm)? RPAREN
+   ;
+
+trimFunction
+   : TRIM LPAREN ((BOTH | LEADING | TRAILING)? (trimCharacterString = expression)? FROM)? trimSource = expression RPAREN
    ;
 
 patternExpression
@@ -1538,6 +1543,7 @@ unescapedLabelSymbolicNameString
    | BINDINGS
    | BOOLEAN
    | BOOSTED
+   | BOTH
    | BREAK
    | BRIEF
    | BTREE
@@ -1629,6 +1635,7 @@ unescapedLabelSymbolicNameString
    | KEY
    | LABEL
    | LABELS
+   | LEADING
    | LIMITROWS
    | LIST
    | LOAD
@@ -1722,9 +1729,11 @@ unescapedLabelSymbolicNameString
    | TIMEZONE
    | TO
    | TOPOLOGY
+   | TRAILING
    | TRANSACTION
    | TRANSACTIONS
    | TRAVERSE
+   | TRIM
    | TRUE
    | TYPE
    | TYPES

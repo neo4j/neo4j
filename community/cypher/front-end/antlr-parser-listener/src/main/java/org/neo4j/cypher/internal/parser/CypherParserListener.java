@@ -235,6 +235,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitNormalizeFunction(CypherParser.NormalizeFunctionContext ctx);
 
+    void exitTrimFunction(CypherParser.TrimFunctionContext ctx);
+
     void exitPatternExpression(CypherParser.PatternExpressionContext ctx);
 
     void exitShortestPathExpression(CypherParser.ShortestPathExpressionContext ctx);

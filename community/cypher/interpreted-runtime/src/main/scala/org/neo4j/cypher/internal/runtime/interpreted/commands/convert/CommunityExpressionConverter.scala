@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.expressions.functions.Asin
 import org.neo4j.cypher.internal.expressions.functions.Atan
 import org.neo4j.cypher.internal.expressions.functions.Atan2
 import org.neo4j.cypher.internal.expressions.functions.Avg
+import org.neo4j.cypher.internal.expressions.functions.BTrim
 import org.neo4j.cypher.internal.expressions.functions.Ceil
 import org.neo4j.cypher.internal.expressions.functions.CharacterLength
 import org.neo4j.cypher.internal.expressions.functions.Coalesce
@@ -512,6 +513,10 @@ case class CommunityExpressionConverter(
           commands.expressions.Distinct(command, inner, invocation.isOrdered)
         else
           command
+      case BTrim => commands.expressions.BTrimFunction(
+          self.toCommandExpression(id, invocation.arguments.head),
+          toCommandExpression(id, invocation.arguments.lift(1), self)
+        )
       case Ceil => commands.expressions.CeilFunction(self.toCommandExpression(id, invocation.arguments.head))
       case CharacterLength =>
         commands.expressions.CharacterLengthFunction(self.toCommandExpression(id, invocation.arguments.head))
@@ -575,7 +580,10 @@ case class CommunityExpressionConverter(
       case Linenumber => commands.expressions.Linenumber()
       case Log        => commands.expressions.LogFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Log10      => commands.expressions.Log10Function(self.toCommandExpression(id, invocation.arguments.head))
-      case LTrim      => commands.expressions.LTrimFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case LTrim => commands.expressions.LTrimFunction(
+          self.toCommandExpression(id, invocation.arguments.head),
+          toCommandExpression(id, invocation.arguments.lift(1), self)
+        )
       case Max =>
         val inner = self.toCommandExpression(id, invocation.arguments.head)
         val command = commands.expressions.Max(inner)
@@ -682,10 +690,13 @@ case class CommunityExpressionConverter(
           mode,
           commands.expressions.Literal(Values.booleanValue(explicitMode))
         )
-      case RTrim => commands.expressions.RTrimFunction(self.toCommandExpression(id, invocation.arguments.head))
-      case Sign  => commands.expressions.SignFunction(self.toCommandExpression(id, invocation.arguments.head))
-      case Sin   => commands.expressions.SinFunction(self.toCommandExpression(id, invocation.arguments.head))
-      case Size  => commands.expressions.SizeFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case RTrim => commands.expressions.RTrimFunction(
+          self.toCommandExpression(id, invocation.arguments.head),
+          toCommandExpression(id, invocation.arguments.lift(1), self)
+        )
+      case Sign => commands.expressions.SignFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Sin  => commands.expressions.SinFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Size => commands.expressions.SizeFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Split =>
         commands.expressions.SplitFunction(
           self.toCommandExpression(id, invocation.arguments.head),
@@ -752,7 +763,19 @@ case class CommunityExpressionConverter(
       case ToUpper => commands.expressions.ToUpperFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Properties =>
         commands.expressions.PropertiesFunction(self.toCommandExpression(id, invocation.arguments.head))
-      case Trim => commands.expressions.TrimFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Trim => if (invocation.arguments.size == 2) {
+          commands.expressions.TrimFunction(
+            self.toCommandExpression(id, invocation.arguments.head),
+            self.toCommandExpression(id, invocation.arguments(1)),
+            None
+          )
+        } else {
+          commands.expressions.TrimFunction(
+            self.toCommandExpression(id, invocation.arguments.head),
+            self.toCommandExpression(id, invocation.arguments(2)),
+            Some(self.toCommandExpression(id, invocation.arguments(1)))
+          )
+        }
       case Type =>
         commands.expressions.RelationshipTypeFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ValueType => commands.expressions.ValueTypeFunction(self.toCommandExpression(id, invocation.arguments.head))

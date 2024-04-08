@@ -83,7 +83,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       ("left", "'param1', 4"),
       ("right", "'param1', 4"),
       ("reverse", "'param1'"),
-      ("trim", "'param1'"),
+      ("ltrim", "'param1'"),
       ("ceil", "0.1"),
       ("floor", "0.1"),
       ("sign", "0.1"),

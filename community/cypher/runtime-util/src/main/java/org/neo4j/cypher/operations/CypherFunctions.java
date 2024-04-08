@@ -724,33 +724,121 @@ public final class CypherFunctions {
         }
     }
 
-    public static AnyValue ltrim(AnyValue in) {
-        if (in == NO_VALUE) {
+    public static AnyValue ltrim(AnyValue trimSource) {
+        if (trimSource == NO_VALUE) {
             return NO_VALUE;
-        } else if (in instanceof TextValue) {
-            return ((TextValue) in).ltrim();
+        } else if (trimSource instanceof TextValue) {
+            return ((TextValue) trimSource).ltrim();
         } else {
-            throw notAString("ltrim", in);
+            throw notAString("ltrim", trimSource);
         }
     }
 
-    public static AnyValue rtrim(AnyValue in) {
-        if (in == NO_VALUE) {
+    public static AnyValue ltrim(AnyValue trimSource, AnyValue trimCharacterString) {
+        if (trimSource == NO_VALUE || trimCharacterString == NO_VALUE) {
             return NO_VALUE;
-        } else if (in instanceof TextValue) {
-            return ((TextValue) in).rtrim();
+        } else if (trimSource instanceof TextValue trimSourceText) {
+            if (trimCharacterString instanceof TextValue trimCharacterStringText) {
+                return trimSourceText.ltrim(trimCharacterStringText);
+            } else {
+                throw notAString("ltrim", trimCharacterString);
+            }
         } else {
-            throw notAString("rtrim", in);
+            throw notAString("ltrim", trimSource);
         }
     }
 
-    public static AnyValue trim(AnyValue in) {
-        if (in == NO_VALUE) {
+    public static AnyValue rtrim(AnyValue trimSource) {
+        if (trimSource == NO_VALUE) {
             return NO_VALUE;
-        } else if (in instanceof TextValue) {
-            return ((TextValue) in).trim();
+        } else if (trimSource instanceof TextValue) {
+            return ((TextValue) trimSource).rtrim();
         } else {
-            throw notAString("trim", in);
+            throw notAString("rtrim", trimSource);
+        }
+    }
+
+    public static AnyValue rtrim(AnyValue trimSource, AnyValue trimCharacterString) {
+        if (trimSource == NO_VALUE || trimCharacterString == NO_VALUE) {
+            return NO_VALUE;
+        } else if (trimSource instanceof TextValue trimSourceText) {
+            if (trimCharacterString instanceof TextValue trimCharacterStringText) {
+                return trimSourceText.rtrim(trimCharacterStringText);
+            } else {
+                throw notAString("rtrim", trimCharacterString);
+            }
+        } else {
+            throw notAString("rtrim", trimSource);
+        }
+    }
+
+    public static AnyValue btrim(AnyValue trimSource) {
+        if (trimSource == NO_VALUE) {
+            return NO_VALUE;
+        } else if (trimSource instanceof TextValue) {
+            return ((TextValue) trimSource).trim();
+        } else {
+            throw notAString("btrim", trimSource);
+        }
+    }
+
+    public static AnyValue btrim(AnyValue trimSource, AnyValue trimCharacterString) {
+        if (trimSource == NO_VALUE || trimCharacterString == NO_VALUE) {
+            return NO_VALUE;
+        } else if (trimSource instanceof TextValue trimSourceText) {
+            if (trimCharacterString instanceof TextValue trimCharacterStringText) {
+                return trimSourceText.trim(trimCharacterStringText);
+            } else {
+                throw notAString("btrim", trimCharacterString);
+            }
+        } else {
+            throw notAString("btrim", trimSource);
+        }
+    }
+
+    public static AnyValue trim(AnyValue trimSpecification, AnyValue trimSource) {
+        if (trimSource == NO_VALUE) {
+            return NO_VALUE;
+        }
+
+        if (!(trimSource instanceof TextValue)) {
+            throw notAString("trim", trimSource);
+        }
+
+        if (trimSpecification instanceof TextValue trimSpec) {
+            return switch (trimSpec.stringValue()) {
+                case "LEADING" -> ltrim(trimSource);
+                case "TRAILING" -> rtrim(trimSource);
+                default -> btrim(trimSource);
+            };
+        } else {
+            throw notAString("trim", trimSpecification);
+        }
+    }
+
+    public static AnyValue trim(AnyValue trimSpecification, AnyValue trimSource, AnyValue trimCharacterString) {
+        if (trimSource == NO_VALUE) {
+            return NO_VALUE;
+        }
+
+        if (!(trimSource instanceof TextValue)) {
+            throw notAString("trim", trimSource);
+        }
+
+        if (trimSpecification instanceof TextValue trimSpec) {
+            if (trimCharacterString instanceof TextValue trimCharString) {
+                if (trimCharString.length() != 1) {
+                    throw new InvalidArgumentException(
+                            "The argument `trimCharacterString` in the `trim()` function must be of length 1.");
+                }
+            }
+            return switch (trimSpec.stringValue()) {
+                case "LEADING" -> ltrim(trimSource, trimCharacterString);
+                case "TRAILING" -> rtrim(trimSource, trimCharacterString);
+                default -> btrim(trimSource, trimCharacterString);
+            };
+        } else {
+            throw notAString("trim", trimSpecification);
         }
     }
 

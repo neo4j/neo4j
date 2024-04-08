@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object RTrim extends Function {
-  def name = "rtrim"
+case object BTrim extends Function {
+  def name = "btrim"
 
   override val signatures = Vector(
     FunctionTypeSignature(
@@ -28,7 +28,7 @@ case object RTrim extends Function {
       names = Vector("input"),
       argumentTypes = Vector(CTString),
       outputType = CTString,
-      description = "Returns the given `STRING` with trailing whitespace removed.",
+      description = "Returns the given `STRING` with leading and trailing whitespace removed.",
       category = Category.STRING
     ),
     FunctionTypeSignature(
@@ -36,7 +36,7 @@ case object RTrim extends Function {
       names = Vector("input", "trimCharacterString"),
       argumentTypes = Vector(CTString, CTString),
       outputType = CTString,
-      description = "Returns the given `STRING` with trailing `trimCharacterString` characters removed.",
+      description = "Returns the given `STRING` with leading and trailing `trimCharacterString` characters removed.",
       category = Category.STRING
     )
   )

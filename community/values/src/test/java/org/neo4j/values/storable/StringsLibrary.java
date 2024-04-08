@@ -40,7 +40,9 @@ class StringsLibrary {
         ";먵�?裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩�?� ",
         "\u001cӳ",
         "abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ 1234567890-´!\"@#$%^&*()_+",
-        "йцукенгшщзхъфывапролджэячсмитьбю"
+        "йцукенгшщзхъфывапролджэячсмитьбю",
+        "abc--hi--abc--abc",
+        "𓅀abc--hi--abc--abc𓅀𓅀"
         // TODO longer lorem ipsum string?
     };
 }

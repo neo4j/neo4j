@@ -25,6 +25,7 @@ import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.hashing.HashFunction;
 
 /**
@@ -116,20 +117,39 @@ final class StringWrappingStringValue extends StringValue {
 
     @Override
     public TextValue trim() {
-        int start = ltrimIndex(value);
-        int end = rtrimIndex(value);
+        int start = ltrimIndexWhitespace(value);
+        int end = rtrimIndexWhitespace(value);
         return Values.stringValue(value.substring(start, Math.max(end, start)));
     }
 
     @Override
     public TextValue ltrim() {
-        int start = ltrimIndex(value);
+        int start = ltrimIndexWhitespace(value);
         return Values.stringValue(value.substring(start));
     }
 
     @Override
     public TextValue rtrim() {
-        int end = rtrimIndex(value);
+        int end = rtrimIndexWhitespace(value);
+        return Values.stringValue(value.substring(0, end));
+    }
+
+    @Override
+    public TextValue trim(TextValue trimCharacterString) {
+        int start = ltrimIndex(value, trimCharacterString);
+        int end = rtrimIndex(value, trimCharacterString);
+        return Values.stringValue(value.substring(start, Math.max(end, start)));
+    }
+
+    @Override
+    public TextValue ltrim(TextValue trimCharacterString) {
+        int start = ltrimIndex(value, trimCharacterString);
+        return Values.stringValue(value.substring(start));
+    }
+
+    @Override
+    public TextValue rtrim(TextValue trimCharacterString) {
+        int end = rtrimIndex(value, trimCharacterString);
         return Values.stringValue(value.substring(0, end));
     }
 
@@ -174,7 +194,7 @@ final class StringWrappingStringValue extends StringValue {
         return ValueRepresentation.UTF16_TEXT;
     }
 
-    private static int ltrimIndex(String value) {
+    private static int ltrimIndexWhitespace(String value) {
         int start = 0, length = value.length();
         while (start < length) {
             int codePoint = value.codePointAt(start);
@@ -187,7 +207,23 @@ final class StringWrappingStringValue extends StringValue {
         return start;
     }
 
-    private static int rtrimIndex(String value) {
+    private static int ltrimIndex(String value, TextValue trimCharacterString) {
+        int start = 0, length = value.length();
+        int[] trimCharacterStringCodePointArray =
+                trimCharacterString.stringValue().codePoints().toArray();
+        if (trimCharacterStringCodePointArray.length == 0) return start;
+        while (start < length) {
+            int codePoint = value.codePointAt(start);
+            if (!ArrayUtils.contains(trimCharacterStringCodePointArray, codePoint)) {
+                break;
+            }
+            start += Character.charCount(codePoint);
+        }
+
+        return start;
+    }
+
+    private static int rtrimIndexWhitespace(String value) {
         int end = value.length();
         while (end > 0) {
             int codePoint = value.codePointBefore(end);
@@ -195,6 +231,21 @@ final class StringWrappingStringValue extends StringValue {
                 break;
             }
             end--;
+        }
+        return end;
+    }
+
+    private static int rtrimIndex(String value, TextValue trimCharacterString) {
+        int end = value.length();
+        int[] trimCharacterStringCodePointArray =
+                trimCharacterString.stringValue().codePoints().toArray();
+        if (trimCharacterStringCodePointArray.length == 0) return end;
+        while (end > 0) {
+            int codePoint = value.codePointBefore(end);
+            if (!ArrayUtils.contains(trimCharacterStringCodePointArray, codePoint)) {
+                break;
+            }
+            end -= Character.charCount(codePoint);
         }
         return end;
     }

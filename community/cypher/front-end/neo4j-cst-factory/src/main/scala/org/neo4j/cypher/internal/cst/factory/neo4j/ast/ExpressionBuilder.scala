@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.factory.ParserTrimSpecification
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astBinaryFold
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChildListSet
@@ -130,6 +131,7 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.expressions.functions.Trim
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.parser.AstRuleCtx
@@ -985,6 +987,41 @@ trait ExpressionBuilder extends CypherParserListener {
       )(
         pos(ctx)
       )
+  }
+
+  final override def exitTrimFunction(
+    ctx: CypherParser.TrimFunctionContext
+  ): Unit = {
+    val trimSource: Expression = ctx.trimSource.ast[Expression]()
+    val trimCharacterString: Option[Expression] = astOpt[Expression](ctx.trimCharacterString)
+    var trimSpecification = ParserTrimSpecification.BOTH.description()
+    if (ctx.LEADING() != null) trimSpecification = ParserTrimSpecification.LEADING.description()
+    if (ctx.TRAILING() != null) trimSpecification = ParserTrimSpecification.TRAILING.description()
+
+    ctx.ast = if (trimCharacterString.isEmpty) {
+      FunctionInvocation(
+        FunctionName(Trim.name)(pos(ctx)),
+        distinct = false,
+        args = IndexedSeq(
+          StringLiteral(trimSpecification)(pos(ctx), pos(ctx)),
+          trimSource
+        )
+      )(
+        pos(ctx)
+      )
+    } else {
+      FunctionInvocation(
+        FunctionName(Trim.name)(pos(ctx)),
+        distinct = false,
+        args = IndexedSeq(
+          StringLiteral(trimSpecification)(pos(ctx), pos(ctx)),
+          trimCharacterString.get,
+          trimSource
+        )
+      )(
+        pos(ctx)
+      )
+    }
   }
 
 }

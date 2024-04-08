@@ -135,6 +135,25 @@ public final class CharValue extends TextValue {
     }
 
     @Override
+    public TextValue trim(TextValue trimCharacterString) {
+        if (trimCharacterString.contains(this)) {
+            return StringValue.EMPTY;
+        } else {
+            return this;
+        }
+    }
+
+    @Override
+    public TextValue ltrim(TextValue trimCharacterString) {
+        return trim(trimCharacterString);
+    }
+
+    @Override
+    public TextValue rtrim(TextValue trimCharacterString) {
+        return trim(trimCharacterString);
+    }
+
+    @Override
     public TextValue toLower() {
         return new CharValue(Character.toLowerCase(value));
     }

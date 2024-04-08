@@ -364,6 +364,7 @@ import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName
 import org.neo4j.cypher.internal.ast.factory.ParserNormalForm
+import org.neo4j.cypher.internal.ast.factory.ParserTrimSpecification
 import org.neo4j.cypher.internal.ast.factory.ScopeType
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
 import org.neo4j.cypher.internal.ast.factory.SimpleEither
@@ -480,6 +481,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.Normalize
+import org.neo4j.cypher.internal.expressions.functions.Trim
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
@@ -1434,6 +1436,34 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       distinct = false,
       IndexedSeq(i, newString(p, p, normalForm.description()))
     )(p)
+  }
+
+  override def trimFunction(
+    p: InputPosition,
+    trimSpec: ParserTrimSpecification,
+    trimCharacterString: Expression,
+    trimSource: Expression
+  ): Expression = {
+    if (trimCharacterString == null) {
+      FunctionInvocation(
+        FunctionName(Trim.name)(p),
+        distinct = false,
+        IndexedSeq(
+          StringLiteral(trimSpec.description())(p, p),
+          trimSource
+        )
+      )(p)
+    } else {
+      FunctionInvocation(
+        FunctionName(Trim.name)(p),
+        distinct = false,
+        IndexedSeq(
+          StringLiteral(trimSpec.description())(p, p),
+          trimCharacterString,
+          trimSource
+        )
+      )(p)
+    }
   }
 
   override def patternExpression(p: InputPosition, pattern: PatternPart): Expression =

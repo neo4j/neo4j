@@ -19,10 +19,12 @@
  */
 package org.neo4j.values.storable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.charValue;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 import org.junit.jupiter.api.Test;
@@ -55,19 +57,37 @@ class CharValueTest {
     @Test
     void shouldTrim() {
         assertThat(charValue('a').trim()).isEqualTo(charValue('a'));
+        assertThat(charValue('a').trim(charValue('a'))).isEqualTo(EMPTY_STRING);
         assertThat(charValue(' ').trim()).isEqualTo(EMPTY_STRING);
+        assertThat(charValue(' ').trim(charValue('a'))).isEqualTo(charValue(' '));
+        assertThat(charValue('x').trim(stringValue("abcx"))).isEqualTo(EMPTY_STRING);
+        String string = "abcx";
+        byte[] bytes = string.getBytes(UTF_8);
+        assertThat(charValue('x').trim(utf8Value(bytes, 0, 4))).isEqualTo(EMPTY_STRING);
     }
 
     @Test
     void shouldLTrim() {
         assertThat(charValue('a').ltrim()).isEqualTo(charValue('a'));
+        assertThat(charValue('a').ltrim(charValue('a'))).isEqualTo(EMPTY_STRING);
         assertThat(charValue(' ').ltrim()).isEqualTo(EMPTY_STRING);
+        assertThat(charValue(' ').ltrim(charValue('a'))).isEqualTo(charValue(' '));
+        assertThat(charValue('x').ltrim(stringValue("abcx"))).isEqualTo(EMPTY_STRING);
+        String string = "abcx";
+        byte[] bytes = string.getBytes(UTF_8);
+        assertThat(charValue('x').ltrim(utf8Value(bytes, 0, 4))).isEqualTo(EMPTY_STRING);
     }
 
     @Test
     void shouldRTrim() {
         assertThat(charValue('a').rtrim()).isEqualTo(charValue('a'));
+        assertThat(charValue('a').rtrim(charValue('a'))).isEqualTo(EMPTY_STRING);
         assertThat(charValue(' ').rtrim()).isEqualTo(EMPTY_STRING);
+        assertThat(charValue(' ').rtrim(charValue('a'))).isEqualTo(charValue(' '));
+        assertThat(charValue('x').rtrim(stringValue("abcx"))).isEqualTo(EMPTY_STRING);
+        String string = "abcx";
+        byte[] bytes = string.getBytes(UTF_8);
+        assertThat(charValue('x').rtrim(utf8Value(bytes, 0, 4))).isEqualTo(EMPTY_STRING);
     }
 
     @Test

@@ -83,34 +83,88 @@ case class ToUpperFunction(argument: Expression) extends StringFunction(argument
   override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
-case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
+case class LTrimFunction(trimSource: Expression, trimCharacterString: Option[Expression] = None) extends Expression {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.ltrim(argument(ctx, state))
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = trimCharacterString match {
+    case Some(e) => CypherFunctions.ltrim(trimSource(ctx, state), e(ctx, state))
+    case None    => CypherFunctions.ltrim(trimSource(ctx, state))
+  }
 
-  override def rewrite(f: Expression => Expression): Expression = f(LTrimFunction(argument.rewrite(f)))
+  override def arguments: Seq[Expression] = trimCharacterString match {
+    case Some(e) => Seq(trimSource, e)
+    case None    => Seq(trimSource)
+  }
 
-  override def children: Seq[AstNode[_]] = Seq(argument)
+  override def rewrite(f: Expression => Expression): Expression = trimCharacterString match {
+    case Some(e) => f(LTrimFunction(trimSource.rewrite(f), Some(e.rewrite(f))))
+    case None    => f(LTrimFunction(trimSource.rewrite(f)))
+  }
+
+  override def children: Seq[AstNode[_]] = arguments
 }
 
-case class RTrimFunction(argument: Expression) extends StringFunction(argument) {
+case class RTrimFunction(trimSource: Expression, trimCharacterString: Option[Expression] = None) extends Expression {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.rtrim(argument(ctx, state))
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = trimCharacterString match {
+    case Some(e) => CypherFunctions.rtrim(trimSource(ctx, state), e(ctx, state))
+    case None    => CypherFunctions.rtrim(trimSource(ctx, state))
+  }
 
-  override def rewrite(f: Expression => Expression): Expression = f(RTrimFunction(argument.rewrite(f)))
+  override def arguments: Seq[Expression] = trimCharacterString match {
+    case Some(e) => Seq(trimSource, e)
+    case None    => Seq(trimSource)
+  }
 
-  override def children: Seq[AstNode[_]] = Seq(argument)
+  override def rewrite(f: Expression => Expression): Expression = trimCharacterString match {
+    case Some(e) => f(RTrimFunction(trimSource.rewrite(f), Some(e.rewrite(f))))
+    case None    => f(RTrimFunction(trimSource.rewrite(f)))
+  }
+
+  override def children: Seq[AstNode[_]] = arguments
 }
 
-case class TrimFunction(argument: Expression) extends StringFunction(argument) {
+case class BTrimFunction(trimSource: Expression, trimCharacterString: Option[Expression] = None) extends Expression {
 
-  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.trim(argument(ctx, state))
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = trimCharacterString match {
+    case Some(e) => CypherFunctions.btrim(trimSource(ctx, state), e(ctx, state))
+    case None    => CypherFunctions.btrim(trimSource(ctx, state))
+  }
 
-  override def rewrite(f: Expression => Expression): Expression = f(TrimFunction(argument.rewrite(f)))
+  override def arguments: Seq[Expression] = trimCharacterString match {
+    case Some(e) => Seq(trimSource, e)
+    case None    => Seq(trimSource)
+  }
 
-  override def children: Seq[AstNode[_]] = Seq(argument)
+  override def rewrite(f: Expression => Expression): Expression = trimCharacterString match {
+    case Some(e) => f(BTrimFunction(trimSource.rewrite(f), Some(e.rewrite(f))))
+    case None    => f(BTrimFunction(trimSource.rewrite(f)))
+  }
+
+  override def children: Seq[AstNode[_]] = arguments
+}
+
+case class TrimFunction(
+  trimSpecification: Expression,
+  trimSource: Expression,
+  trimCharacterString: Option[Expression] = None
+) extends Expression {
+
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = trimCharacterString match {
+    case Some(e) => CypherFunctions.trim(trimSpecification(ctx, state), trimSource(ctx, state), e(ctx, state))
+    case None    => CypherFunctions.trim(trimSpecification(ctx, state), trimSource(ctx, state))
+  }
+
+  override def arguments: Seq[Expression] = trimCharacterString match {
+    case Some(e) => Seq(trimSpecification, trimSource, e)
+    case None    => Seq(trimSpecification, trimSource)
+  }
+
+  override def rewrite(f: Expression => Expression): Expression = trimCharacterString match {
+    case Some(e) => f(TrimFunction(trimSpecification.rewrite(f), trimSource.rewrite(f), Some(e.rewrite(f))))
+    case None    => f(TrimFunction(trimSpecification.rewrite(f), trimSource.rewrite(f)))
+  }
+
+  override def children: Seq[AstNode[_]] = Seq(trimSource)
 }
 
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])

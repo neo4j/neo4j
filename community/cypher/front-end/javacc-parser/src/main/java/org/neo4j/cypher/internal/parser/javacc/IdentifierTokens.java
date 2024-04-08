@@ -38,6 +38,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BINDINGS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOLEAN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOSTED;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOTH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BREAK;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BRIEF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BTREE;
@@ -135,6 +136,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.JOIN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.KEY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LABEL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LABELS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LEADING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LIMITROWS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LIST;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOAD;
@@ -241,9 +243,11 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TIMESTAMP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TIMEZONE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TO;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TOPOLOGY;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRAILING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRANSACTION;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRANSACTIONS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRAVERSE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRIM;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRUE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TYPE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TYPED;
@@ -302,6 +306,7 @@ public class IdentifierTokens {
             BOOL,
             BOOLEAN,
             BOOSTED,
+            BOTH,
             BREAK,
             BRIEF,
             BTREE,
@@ -398,6 +403,7 @@ public class IdentifierTokens {
             KEY,
             LABEL,
             LABELS,
+            LEADING,
             LIMITROWS,
             LIST,
             LOAD,
@@ -504,9 +510,11 @@ public class IdentifierTokens {
             TIMEZONE,
             TO,
             TOPOLOGY,
+            TRAILING,
             TRANSACTION,
             TRANSACTIONS,
             TRAVERSE,
+            TRIM,
             TRUE,
             TYPE,
             TYPED,

@@ -25,10 +25,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.lite
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.values.storable.UTF8StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.EMPTY_STRING
 import org.neo4j.values.storable.Values.stringArray
 import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.storable.Values.utf8Value
+
+import java.nio.charset.StandardCharsets
 
 class StringFunctionsTest extends CypherFunSuite {
 
@@ -120,29 +124,75 @@ class StringFunctionsTest extends CypherFunSuite {
 
   test("ltrimTests") {
     def ltrim(x: Any) = LTrimFunction(literal(x))(CypherRow.empty, QueryStateHelper.empty)
+    def ltrimWithTrimString(x: Any, y: Any) =
+      LTrimFunction(literal(x), Some(literal(y)))(CypherRow.empty, QueryStateHelper.empty)
 
     ltrim("  HELLO") should equal(stringValue("HELLO"))
+    ltrimWithTrimString("  HELLO", " ") should equal(stringValue("HELLO"))
     ltrim(" Hello") should equal(stringValue("Hello"))
     ltrim("  hello") should equal(stringValue("hello"))
+    ltrimWithTrimString("  hello", " ") should equal(stringValue("hello"))
     ltrim("  hello  ") should equal(stringValue("hello  "))
+    ltrimWithTrimString("  hello  ", " ") should equal(stringValue("hello  "))
+    ltrimWithTrimString("xyxyxrxxxxhelloxxx", "xy") should equal(stringValue("rxxxxhelloxxx"))
     ltrim(null) should equal(expectedNull)
+    ltrimWithTrimString(null, " ") should equal(expectedNull)
+    ltrimWithTrimString(null, null) should equal(expectedNull)
+    ltrimWithTrimString("  HELLO", null) should equal(expectedNull)
     ltrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠\u2009")) // Contains `thin space`
+    ltrimWithTrimString("\u2009㺂࿝鋦毠\u2009", "\u2009") should equal(stringValue("㺂࿝鋦毠\u2009")) // Contains `thin space`
     intercept[CypherTypeException](ltrim(1024))
+    intercept[CypherTypeException](ltrimWithTrimString(1024, "1"))
   }
 
   test("rtrimTests") {
     def rtrim(x: Any) = RTrimFunction(literal(x))(CypherRow.empty, QueryStateHelper.empty)
+    def rtrimWithTrimString(x: Any, y: Any) =
+      RTrimFunction(literal(x), Some(literal(y)))(CypherRow.empty, QueryStateHelper.empty)
 
     rtrim("HELLO  ") should equal(stringValue("HELLO"))
+    rtrimWithTrimString("HELLO  ", " ") should equal(stringValue("HELLO"))
     rtrim("Hello   ") should equal(stringValue("Hello"))
+    rtrimWithTrimString("Hello   ", " ") should equal(stringValue("Hello"))
     rtrim("  hello   ") should equal(stringValue("  hello"))
+    rtrimWithTrimString("  hello   ", " ") should equal(stringValue("  hello"))
+    rtrimWithTrimString("xyxyxhelloyyyxxrxyxyx", "xy") should equal(stringValue("xyxyxhelloyyyxxr"))
     rtrim(null) should equal(expectedNull)
+    rtrimWithTrimString(null, " ") should equal(expectedNull)
+    rtrimWithTrimString(null, null) should equal(expectedNull)
+    rtrimWithTrimString("hi", null) should equal(expectedNull)
     rtrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("\u2009㺂࿝鋦毠")) // Contains `thin space`
+    rtrimWithTrimString("\u2009㺂࿝鋦毠\u2009", "\u2009") should equal(stringValue("\u2009㺂࿝鋦毠")) // Contains `thin space`
     intercept[CypherTypeException](rtrim(1024))
+    intercept[CypherTypeException](rtrimWithTrimString(1024, "1"))
+  }
+
+  test("btrimTests") {
+    def btrim(x: Any) = BTrimFunction(literal(x))(CypherRow.empty, QueryStateHelper.empty)
+    def btrimWithTrimString(x: Any, y: Any) =
+      BTrimFunction(literal(x), Some(literal(y)))(CypherRow.empty, QueryStateHelper.empty)
+
+    btrim("  hello  ") should equal(stringValue("hello"))
+    btrimWithTrimString("  hello  ", " ") should equal(stringValue("hello"))
+    btrim("  hello ") should equal(stringValue("hello"))
+    btrim("hello  ") should equal(stringValue("hello"))
+    btrimWithTrimString("hello  ", " ") should equal(stringValue("hello"))
+    btrim("  hello  ") should equal(stringValue("hello"))
+    btrim("  hello") should equal(stringValue("hello"))
+    btrimWithTrimString("  hello", " ") should equal(stringValue("hello"))
+    btrimWithTrimString("xyxyxrxxyhelloyyyxxrxyxyx", "xy") should equal(stringValue("rxxyhelloyyyxxr"))
+    btrim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠")) // Contains `thin space`
+    btrimWithTrimString("\u2009㺂࿝鋦毠\u2009", "\u2009") should equal(stringValue("㺂࿝鋦毠")) // Contains `thin space`
+    btrim(null) should equal(expectedNull)
+    btrimWithTrimString(null, " ") should equal(expectedNull)
+    btrimWithTrimString(null, null) should equal(expectedNull)
+    btrimWithTrimString("hi", null) should equal(expectedNull)
+    intercept[CypherTypeException](btrim(1042))
+    intercept[CypherTypeException](btrimWithTrimString(1042, "1"))
   }
 
   test("trimTests") {
-    def trim(x: Any) = TrimFunction(literal(x))(CypherRow.empty, QueryStateHelper.empty)
+    def trim(x: Any) = TrimFunction(literal("BOTH"), literal(x))(CypherRow.empty, QueryStateHelper.empty)
 
     trim("  hello  ") should equal(stringValue("hello"))
     trim("  hello ") should equal(stringValue("hello"))
@@ -152,6 +202,21 @@ class StringFunctionsTest extends CypherFunSuite {
     trim("\u2009㺂࿝鋦毠\u2009") should equal(stringValue("㺂࿝鋦毠")) // Contains `thin space`
     trim(null) should equal(expectedNull)
     intercept[CypherTypeException](trim(1042))
+
+    trim("  hello  ") should equal(stringValue("hello"))
+
+    // Trim with utf8Values
+    val source = "  helloworld  ".getBytes(StandardCharsets.UTF_8)
+    val trimCharString = " ".getBytes(StandardCharsets.UTF_8)
+    val state = QueryStateHelper.emptyWith(params = Array(utf8Value(source), utf8Value(trimCharString)))
+    val result = TrimFunction(literal("BOTH"), ParameterFromSlot(0, "p1"), Some(ParameterFromSlot(1, "p2")))(
+      CypherRow.empty,
+      state
+    )
+    // Then
+    result shouldBe a[UTF8StringValue]
+    result should equal(utf8Value("helloworld".getBytes(StandardCharsets.UTF_8)))
+    result should equal(Values.stringValue("helloworld"))
   }
 
   test("reverse function test") {

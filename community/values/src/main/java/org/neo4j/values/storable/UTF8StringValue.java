@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.hashing.HashFunction;
 
 /*
@@ -193,6 +194,41 @@ public final class UTF8StringValue extends StringValue {
         }
     }
 
+    public static final class ReverseCodePointCursor {
+        private final byte[] values;
+        private int i;
+
+        public ReverseCodePointCursor(byte[] values, int offset, int byteLength) {
+            this.values = values;
+            this.i = offset + byteLength - 1;
+        }
+
+        public long previousCodePoint() {
+            byte b = values[i];
+            // If high bit is zero (equivalent to the byte being positive in two's complement)
+            // we are dealing with an ascii value and use a single byte for storing the value.
+            if (b >= 0) {
+                i--;
+                return b;
+            }
+
+            // We can now have one of three situations.
+            // Byte1    Byte2    Byte3    Byte4
+            // 110xxxxx 10xxxxxx
+            // 1110xxxx 10xxxxxx 10xxxxxx
+            // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            // Figure out how many bytes we need by reading the number of leading bytes
+            int bytesNeeded = 1;
+            while ((b & NON_CONTINUATION_BIT_MASK) == 0) {
+                bytesNeeded++;
+                b = values[--i];
+            }
+            int codePoint = codePoint(values, (byte) (b << bytesNeeded), i, bytesNeeded);
+            i -= 1;
+            return codePoint;
+        }
+    }
+
     @Override
     public TextValue substring(int start, int length) {
         if (start < 0 || length < 0) {
@@ -243,8 +279,8 @@ public final class UTF8StringValue extends StringValue {
             return this;
         }
 
-        int startIndex = trimLeftIndex();
-        int endIndex = trimRightIndex();
+        int startIndex = trimLeftIndexWhitespace();
+        int endIndex = trimRightIndexWhitespace();
         if (startIndex > endIndex) {
             return StringValue.EMPTY;
         }
@@ -259,7 +295,7 @@ public final class UTF8StringValue extends StringValue {
             return this;
         }
 
-        int startIndex = trimLeftIndex();
+        int startIndex = trimLeftIndexWhitespace();
         assert (startIndex <= values.length);
         if (startIndex == offset) {
             return this;
@@ -275,7 +311,53 @@ public final class UTF8StringValue extends StringValue {
             return this;
         }
 
-        int endIndex = trimRightIndex();
+        int endIndex = trimRightIndexWhitespace();
+        if (endIndex < 0) {
+            return StringValue.EMPTY;
+        }
+        return new UTF8StringValue(values, offset, endIndex + 1 - offset);
+    }
+
+    @Override
+    public TextValue trim(TextValue trimCharacterString) {
+        byte[] values = bytes;
+
+        if (values.length == 0 || byteLength == 0) {
+            return this;
+        }
+        int startIndex = trimLeftIndex(trimCharacterString);
+        int endIndex = trimRightIndex(trimCharacterString);
+        if (startIndex > endIndex) {
+            return StringValue.EMPTY;
+        }
+
+        return new UTF8StringValue(values, startIndex, Math.max(endIndex + 1 - startIndex, 0));
+    }
+
+    @Override
+    public TextValue ltrim(TextValue trimCharacterString) {
+        byte[] values = bytes;
+        if (values.length == 0 || byteLength == 0) {
+            return this;
+        }
+
+        int startIndex = trimLeftIndex(trimCharacterString);
+        assert (startIndex <= values.length);
+        if (startIndex == offset) {
+            return this;
+        } else {
+            return new UTF8StringValue(values, startIndex, byteLength - (startIndex - offset));
+        }
+    }
+
+    @Override
+    public TextValue rtrim(TextValue trimCharacterString) {
+        byte[] values = bytes;
+        if (values.length == 0 || byteLength == 0) {
+            return this;
+        }
+
+        int endIndex = trimRightIndex(trimCharacterString);
         if (endIndex < 0) {
             return StringValue.EMPTY;
         }
@@ -446,7 +528,7 @@ public final class UTF8StringValue extends StringValue {
     /**
      * Returns the left-most index into the underlying byte array that does not belong to a whitespace code point
      */
-    private int trimLeftIndex() {
+    private int trimLeftIndexWhitespace() {
         int i = offset, len = offset + byteLength;
         while (i < len) {
             byte b = bytes[i];
@@ -481,9 +563,29 @@ public final class UTF8StringValue extends StringValue {
     }
 
     /**
+     * Returns the left-most index into the underlying byte array that does not exist in the given trimCharList
+     */
+    private int trimLeftIndex(TextValue trimCharacterString) {
+        int pos = offset;
+        int[] trimCharacterStringCodePointArray =
+                trimCharacterString.stringValue().codePoints().toArray();
+        if (trimCharacterString.isEmpty()) return pos;
+        var cpc = new CodePointCursor(bytes, offset);
+        while (cpc.i < byteLength + offset) {
+            pos = cpc.i;
+            var cp = cpc.nextCodePoint();
+            if (!ArrayUtils.contains(trimCharacterStringCodePointArray, (int) cp)) {
+                return pos;
+            }
+            pos = cpc.i;
+        }
+        return pos;
+    }
+
+    /**
      * Returns the right-most index into the underlying byte array that does not belong to a whitespace code point
      */
-    private int trimRightIndex() {
+    private int trimRightIndexWhitespace() {
         int index = offset + byteLength - 1;
         while (index >= offset) {
             byte b = bytes[index];
@@ -515,6 +617,26 @@ public final class UTF8StringValue extends StringValue {
             index--;
         }
         return index;
+    }
+
+    /**
+     * Returns the right-most index into the underlying byte array that does not exist in the given trimCharList
+     */
+    private int trimRightIndex(TextValue trimCharacterString) {
+        int pos = offset + byteLength - 1;
+        int[] trimCharacterStringCodePointArray =
+                trimCharacterString.stringValue().codePoints().toArray();
+        if (trimCharacterString.isEmpty()) return pos;
+        var cpc = new ReverseCodePointCursor(bytes, offset, byteLength);
+        while (cpc.i > 0) {
+            pos = cpc.i;
+            var cp = cpc.previousCodePoint();
+            if (!ArrayUtils.contains(trimCharacterStringCodePointArray, (int) cp)) {
+                return pos;
+            }
+            pos = cpc.i;
+        }
+        return pos;
     }
 
     @Override

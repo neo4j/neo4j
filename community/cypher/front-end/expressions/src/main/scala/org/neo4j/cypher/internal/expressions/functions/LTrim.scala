@@ -16,19 +16,28 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 case object LTrim extends Function {
   def name = "ltrim"
 
   override val signatures = Vector(
-    TypeSignature(
-      this,
-      CTString,
-      CTString,
-      "Returns the given `STRING` with leading whitespace removed.",
-      Category.STRING
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("input"),
+      argumentTypes = Vector(CTString),
+      outputType = CTString,
+      description = "Returns the given `STRING` with leading whitespace removed.",
+      category = Category.STRING
+    ),
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("input", "trimCharacterString"),
+      argumentTypes = Vector(CTString, CTString),
+      outputType = CTString,
+      description = "Returns the given `STRING` with leading `trimCharacterString` characters removed.",
+      category = Category.STRING
     )
   )
 }

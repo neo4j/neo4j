@@ -19,11 +19,13 @@
  */
 package org.neo4j.values.storable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.values.storable.Values.charArray;
+import static org.neo4j.values.storable.Values.charValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.utf8Value;
 
@@ -100,6 +102,12 @@ class TextValueTest {
         assertThat(value.apply(" Hello").ltrim()).isEqualTo(value.apply("Hello"));
         assertThat(value.apply("  hello  ").ltrim()).isEqualTo(value.apply("hello  "));
         assertThat(value.apply("\u2009㺂࿝鋦毠\u2009").ltrim()).isEqualTo(value.apply("㺂࿝鋦毠\u2009"));
+
+        assertThat(value.apply("xxxHELLO").ltrim(charValue('x'))).isEqualTo(value.apply("HELLO"));
+        assertThat(value.apply("xyxyxxxHELLO").ltrim(value.apply("xy"))).isEqualTo(value.apply("HELLO"));
+        String string = "abcx";
+        byte[] bytes = string.getBytes(UTF_8);
+        assertThat(value.apply("xxxHELLO").ltrim(utf8Value(bytes, 0, 4))).isEqualTo(value.apply("HELLO"));
     }
 
     @ParameterizedTest
@@ -109,6 +117,12 @@ class TextValueTest {
         assertThat(value.apply("Hello  ").rtrim()).isEqualTo(value.apply("Hello"));
         assertThat(value.apply("  hello  ").rtrim()).isEqualTo(value.apply("  hello"));
         assertThat(value.apply("\u2009㺂࿝鋦毠\u2009").rtrim()).isEqualTo(value.apply("\u2009㺂࿝鋦毠"));
+
+        assertThat(value.apply("HELLOxxx").rtrim(charValue('x'))).isEqualTo(value.apply("HELLO"));
+        assertThat(value.apply("HELLOxyxyxxx").rtrim(value.apply("xy"))).isEqualTo(value.apply("HELLO"));
+        String string = "abcx";
+        byte[] bytes = string.getBytes(UTF_8);
+        assertThat(value.apply("HELLOxxx").rtrim(utf8Value(bytes, 0, 4))).isEqualTo(value.apply("HELLO"));
     }
 
     @ParameterizedTest
@@ -119,6 +133,12 @@ class TextValueTest {
         assertThat(value.apply("hello ").trim()).isEqualTo(value.apply("hello"));
         assertThat(value.apply("  hello").trim()).isEqualTo(value.apply("hello"));
         assertThat(value.apply("\u2009㺂࿝鋦毠\u2009").trim()).isEqualTo(value.apply("㺂࿝鋦毠"));
+
+        assertThat(value.apply("xxxHELLOxxx").trim(charValue('x'))).isEqualTo(value.apply("HELLO"));
+        assertThat(value.apply("xyxyxxxHELLOxyxyxxx").trim(value.apply("xy"))).isEqualTo(value.apply("HELLO"));
+        String string = "abcx";
+        byte[] bytes = string.getBytes(UTF_8);
+        assertThat(value.apply("xxxHELLOxxx").trim(utf8Value(bytes, 0, 4))).isEqualTo(value.apply("HELLO"));
     }
 
     @ParameterizedTest

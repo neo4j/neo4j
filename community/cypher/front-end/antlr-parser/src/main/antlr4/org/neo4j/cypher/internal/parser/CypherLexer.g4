@@ -188,6 +188,10 @@ BOOSTED
    : B O O S T E D
    ;
 
+BOTH
+   : B O T H
+   ;
+
 BREAK
    : B R E A K
    ;
@@ -630,6 +634,10 @@ LCURLY
 
 LE
    : '<='
+   ;
+
+LEADING
+   : L E A D I N G
    ;
 
 LIMITROWS
@@ -1120,6 +1128,10 @@ TOPOLOGY
    : T O P O L O G Y
    ;
 
+TRAILING
+   : T R A I L I N G
+   ;
+
 TRANSACTION
    : T R A N S A C T I O N
    ;
@@ -1130,6 +1142,10 @@ TRANSACTIONS
 
 TRAVERSE
    : T R A V E R S E
+   ;
+
+TRIM
+   : T R I M
    ;
 
 TRUE

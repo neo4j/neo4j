@@ -234,6 +234,65 @@
     "isDeprecated": false
   },
   {
+    "name": "btrim",
+    "category": "String",
+    "description": "Returns the given `STRING` with leading and trailing whitespace removed.",
+    "signature": "btrim(input :: STRING) :: STRING",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "STRING",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
+    "name": "btrim",
+    "category": "String",
+    "description": "Returns the given `STRING` with leading and trailing `trimCharacterString` characters removed.",
+    "signature": "btrim(input :: STRING, trimCharacterString :: STRING) :: STRING",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }, {
+        "name" : "trimCharacterString",
+        "description" : "trimCharacterString :: STRING",
+        "isDeprecated" : false,
+        "type" : "STRING"
+      }
+    ],
+    "returnDescription": "STRING",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
     "name": "ceil",
     "category": "Numeric",
     "description": "Returns the smallest `FLOAT` that is greater than or equal to a number and equal to an `INTEGER`.",
@@ -1993,6 +2052,38 @@
     "isDeprecated": false
   },
   {
+    "name": "ltrim",
+    "category": "String",
+    "description": "Returns the given `STRING` with leading `trimCharacterString` characters removed.",
+    "signature": "ltrim(input :: STRING, trimCharacterString :: STRING) :: STRING",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }, {
+        "name" : "trimCharacterString",
+        "description" : "trimCharacterString :: STRING",
+        "isDeprecated" : false,
+        "type" : "STRING"
+      }
+    ],
+    "returnDescription": "STRING",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
     "name": "max",
     "category": "Aggregating",
     "description": "Returns the maximum value in a set of values.",
@@ -2820,6 +2911,38 @@
         "description": "input :: STRING",
         "type": "STRING",
         "isDeprecated": false
+      }
+    ],
+    "returnDescription": "STRING",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
+    "name": "rtrim",
+    "category": "String",
+    "description": "Returns the given `STRING` with trailing `trimCharacterString` characters removed.",
+    "signature": "rtrim(input :: STRING, trimCharacterString :: STRING) :: STRING",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }, {
+        "name" : "trimCharacterString",
+        "description" : "trimCharacterString :: STRING",
+        "isDeprecated" : false,
+        "type" : "STRING"
       }
     ],
     "returnDescription": "STRING",
@@ -3800,13 +3923,54 @@
     "description": "Returns the given `STRING` with leading and trailing whitespace removed.",
     "signature": "trim(input :: STRING) :: STRING",
     "isBuiltIn": true,
-    "argumentDescription": [
+    "argumentDescription": [ {
+        "name" : "trimSpecification",
+        "description" : "trimSpecification :: [LEADING, TRAILING, BOTH]",
+        "isDeprecated" : false,
+        "type" : "[LEADING, TRAILING, BOTH]"
+      },
       {
         "name": "input",
         "description": "input :: STRING",
         "type": "STRING",
         "isDeprecated": false
       }
+    ],
+    "returnDescription": "STRING",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
+    "name": "trim",
+    "category": "String",
+    "description": "Returns the given `STRING` with leading and/or trailing `trimCharacterString` removed.",
+    "signature": "trim([[LEADING | TRAILING | BOTH] [trimCharacterString :: STRING] FROM] input :: STRING) :: STRING",
+    "isBuiltIn": true,
+    "argumentDescription": [ {
+      "name" : "trimSpecification",
+      "description" : "trimSpecification :: [LEADING, TRAILING, BOTH]",
+      "isDeprecated" : false,
+      "type" : "[LEADING, TRAILING, BOTH]"
+    }, {
+      "name" : "trimCharacterString",
+      "description" : "trimCharacterString :: STRING",
+      "isDeprecated" : false,
+      "type" : "STRING"
+    }, {
+      "name" : "input",
+      "description" : "input :: STRING",
+      "isDeprecated" : false,
+      "type" : "STRING"
+    }
     ],
     "returnDescription": "STRING",
     "aggregating": false,

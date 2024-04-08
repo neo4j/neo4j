@@ -279,6 +279,21 @@ public abstract class StringValue extends TextValue {
         }
 
         @Override
+        public TextValue trim(TextValue trimCharacterString) {
+            return this;
+        }
+
+        @Override
+        public TextValue ltrim(TextValue trimCharacterString) {
+            return this;
+        }
+
+        @Override
+        public TextValue rtrim(TextValue trimCharacterString) {
+            return this;
+        }
+
+        @Override
         public TextValue reverse() {
             return this;
         }

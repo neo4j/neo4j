@@ -56,6 +56,12 @@ public abstract class TextValue extends HashMemoizingScalarValue {
 
     public abstract TextValue rtrim();
 
+    public abstract TextValue trim(TextValue trimCharacterString);
+
+    public abstract TextValue ltrim(TextValue trimCharacterString);
+
+    public abstract TextValue rtrim(TextValue trimCharacterString);
+
     public abstract TextValue toLower();
 
     public abstract TextValue toUpper();

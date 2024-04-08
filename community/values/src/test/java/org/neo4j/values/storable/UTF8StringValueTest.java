@@ -24,6 +24,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
+import static org.neo4j.values.storable.Values.charValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
@@ -71,10 +72,36 @@ class UTF8StringValueTest {
     }
 
     @Test
+    void shouldTrimDifferentTypesOfString() {
+        String string = "xyxyHelloxyxy";
+        byte[] bytes = string.getBytes(UTF_8);
+
+        assertThat(utf8Value(bytes, 0, 13).ltrim(charValue('x'))).isEqualTo(stringValue("yxyHelloxyxy"));
+        assertThat(utf8Value(bytes, 0, 13).rtrim(charValue('y'))).isEqualTo(stringValue("xyxyHelloxyx"));
+        assertThat(utf8Value(bytes, 0, 13).trim(charValue('x'))).isEqualTo(stringValue("yxyHelloxyxy"));
+
+        String trimCharString = "xy";
+        byte[] trimCharStringBytes = trimCharString.getBytes(UTF_8);
+        assertThat(utf8Value(bytes, 0, 13).ltrim(utf8Value(trimCharStringBytes, 0, 2)))
+                .isEqualTo(stringValue("Helloxyxy"));
+        assertThat(utf8Value(bytes, 0, 13).rtrim(utf8Value(trimCharStringBytes, 0, 2)))
+                .isEqualTo(stringValue("xyxyHello"));
+        assertThat(utf8Value(bytes, 0, 13).trim(utf8Value(trimCharStringBytes, 0, 2)))
+                .isEqualTo(stringValue("Hello"));
+
+        assertThat(utf8Value(bytes, 0, 13).ltrim(stringValue("xy"))).isEqualTo(stringValue("Helloxyxy"));
+        assertThat(utf8Value(bytes, 0, 13).rtrim(stringValue("xy"))).isEqualTo(stringValue("xyxyHello"));
+        assertThat(utf8Value(bytes, 0, 13).trim(stringValue("xy"))).isEqualTo(stringValue("Hello"));
+    }
+
+    @Test
     void trimShouldBeSameAsLtrimAndRtrim() {
         for (String string : STRINGS) {
             TextValue utf8 = utf8Value(string.getBytes(UTF_8));
             assertSame(utf8.trim(), utf8.ltrim().rtrim());
+            assertSame(utf8.trim(stringValue("a")), utf8.ltrim(stringValue("a")).rtrim(stringValue("a")));
+            assertSame(
+                    utf8.trim(stringValue("𓅀")), utf8.ltrim(stringValue("𓅀")).rtrim(stringValue("𓅀")));
         }
     }
 

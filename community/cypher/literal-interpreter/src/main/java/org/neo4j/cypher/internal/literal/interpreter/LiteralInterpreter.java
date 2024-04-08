@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName;
 import org.neo4j.cypher.internal.ast.factory.ParserNormalForm;
+import org.neo4j.cypher.internal.ast.factory.ParserTrimSpecification;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
@@ -1646,6 +1647,12 @@ public class LiteralInterpreter
     @Override
     public Object normalizeExpression(NULL p, Object i, ParserNormalForm normalForm) {
         throw new UnsupportedOperationException("normalizeExpression is not a literal");
+    }
+
+    @Override
+    public Object trimFunction(
+            NULL p, ParserTrimSpecification trimSpec, Object trimCharacterString, Object trimSource) {
+        throw new UnsupportedOperationException("trimFunction is not a literal");
     }
 
     @Override

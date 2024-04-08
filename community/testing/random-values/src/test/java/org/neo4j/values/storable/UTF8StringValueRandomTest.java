@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.RandomSupport;
@@ -54,6 +56,38 @@ class UTF8StringValueRandomTest {
             String string1 = random.nextBasicMultilingualPlaneString();
             String string2 = random.nextBasicMultilingualPlaneString();
             UTF8StringValueTest.assertCompareTo(string1, string2);
+        }
+    }
+
+    @Test
+    void trimTest() {
+        for (int i = 0; i < 10000; ++i) {
+            final var string = random.nextString();
+            final var originalStringCodepoints = string.codePoints().toArray();
+            if (string.length() > 1) {
+                final var utf8StringValue = Values.utf8Value(string);
+                final var stringWrappingValue = Values.stringValue(string);
+                final var from = random.nextInt(string.length() - 1);
+                final var length = random.nextInt(string.length() - from);
+                final var trim = new String(new int[] {random.among(originalStringCodepoints)}, 0, 1);
+                final var trimA = Values.utf8Value(trim);
+                final var trimB = Values.stringValue(trim);
+                final var utfString = utf8StringValue.substring(from, length);
+                final var wrappedString = stringWrappingValue.substring(from, length);
+
+                final var resultA = utfString.trim(trimA);
+                final var resultB = utfString.trim(trimB);
+                final var resultC = wrappedString.trim(trimA);
+                final var resultD = wrappedString.trim(trimB);
+
+                assertThat(resultA)
+                        .describedAs(
+                                "trimA=%s, trimB=%s, results: %s, %s, %s, %s",
+                                trimA, trimB, resultA, resultB, resultC, resultD)
+                        .isEqualTo(resultB)
+                        .isEqualTo(resultC)
+                        .isEqualTo(resultD);
+            }
         }
     }
 }

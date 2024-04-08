@@ -16,19 +16,33 @@
  */
 package org.neo4j.cypher.internal.expressions.functions
 
-import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 case object Trim extends Function {
   def name = "trim"
 
   override val signatures = Vector(
-    TypeSignature(
-      this,
-      CTString,
-      CTString,
-      "Returns the given `STRING` with leading and trailing whitespace removed.",
-      Category.STRING
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("trimSpecification", "input"),
+      argumentTypes = Vector(CTString, CTString),
+      outputType = CTString,
+      description = "Returns the given `STRING` with leading and trailing whitespace removed.",
+      category = Category.STRING,
+      overrideDefaultAsString = Some(name + "(input :: STRING) :: STRING"),
+      overriddenArgumentTypeName = Some(Map("trimSpecification" -> "[LEADING, TRAILING, BOTH]"))
+    ),
+    FunctionTypeSignature(
+      function = this,
+      names = Vector("trimSpecification", "trimCharacterString", "input"),
+      argumentTypes = Vector(CTString, CTString, CTString),
+      outputType = CTString,
+      description = "Returns the given `STRING` with leading and/or trailing `trimCharacterString` removed.",
+      category = Category.STRING,
+      overrideDefaultAsString =
+        Some(name + "([[LEADING | TRAILING | BOTH] [trimCharacterString :: STRING] FROM] input :: STRING) :: STRING"),
+      overriddenArgumentTypeName = Some(Map("trimSpecification" -> "[LEADING, TRAILING, BOTH]"))
     )
   )
 }
