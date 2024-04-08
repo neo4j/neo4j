@@ -57,7 +57,6 @@ import org.neo4j.cypher.internal.physicalplanning.ast.RelationshipFromSlot
 import org.neo4j.cypher.internal.physicalplanning.ast.RelationshipPropertyLate
 import org.neo4j.cypher.internal.physicalplanning.ast.SlottedCachedPropertyWithPropertyToken
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
-import org.neo4j.cypher.internal.runtime.ast.VariableRef
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
