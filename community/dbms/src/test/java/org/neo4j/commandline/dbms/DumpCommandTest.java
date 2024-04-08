@@ -81,8 +81,9 @@ class DumpCommandTest {
                                           Overwrite any existing dump file in the destination
                                             folder.
                                             Default: false
-                      --to-path=<path>    Destination folder of database dump.
-                      --to-stdout         Use standard output as destination for database dump.
+                      --to-path=<path>    Destination folder of a database dump.
+                      --to-stdout         Use standard output as the destination for the
+                                            database dump.
                       --verbose           Enable verbose output.""");
     }
 }

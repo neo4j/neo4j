@@ -86,10 +86,10 @@ public class DumpCommand extends AbstractAdminCommand {
     private TargetOption target = new TargetOption();
 
     private static class TargetOption {
-        @Option(names = "--to-path", paramLabel = "<path>", description = "Destination folder of database dump.")
+        @Option(names = "--to-path", paramLabel = "<path>", description = "Destination folder of a database dump.")
         private String toDir;
 
-        @Option(names = "--to-stdout", description = "Use standard output as destination for database dump.")
+        @Option(names = "--to-stdout", description = "Use standard output as the destination for the database dump.")
         private boolean toStdout;
     }
 
