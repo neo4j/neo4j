@@ -18,9 +18,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class ProcedureCallParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class ProcedureCallParserTest extends AstParsingTestBase {
 
   test("CALL foo") {
     parsesTo[Clause](call(Seq.empty, "foo", None))

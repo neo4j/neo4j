@@ -18,11 +18,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.scalatest.LoneElement
 
-class StatementReturnColumnsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
-    with LoneElement {
+class StatementReturnColumnsParserTest extends AstParsingTestBase with LoneElement {
 
   private def columns(cols: String*)(statement: Statement) =
     statement.returnColumns.map(_.name) shouldBe cols

@@ -18,10 +18,13 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.exceptions.SyntaxException
 
 /* Tests for terminating transactions */
 class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -773,60 +776,119 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     test(s"$prefix TERMINATE TRANSACTIONS WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after TERMINATE
       // parses varFor("WITH") * function("MATCH", varFor("n"))
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'RETURN': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Fails on different places
     test(s"$prefix TERMINATE TRANSACTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after TERMINATE
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'RETURN': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix UNWIND range(1,10) as b TERMINATE TRANSACTIONS YIELD * RETURN *") {
       // Can't parse TERMINATE  after UNWIND
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'TERMINATE': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'TERMINATE': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'TERMINATE': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after TERMINATE
       // parses varFor("WITH")
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'name': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'name': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'name': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix WITH 'n' as n TERMINATE TRANSACTIONS YIELD name RETURN name as numIndexes") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'TERMINATE': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'TERMINATE': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'TERMINATE': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS RETURN name as numIndexes") {
       // parses varFor("RETURN")
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'name': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'name': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'name': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
       // parses varFor("WITH")
-      assertFailsWithMessageStart[Statements](testName, "Invalid input '1': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input '1': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input '1': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c") {
       // parses varFor("WITH")
-      assertFailsWithMessageStart[Statements](testName, "Invalid input '1': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input '1': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input '1': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS YIELD a WITH a RETURN a") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS UNWIND as as a RETURN a") {
       // parses varFor("UNWIND")
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'as': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'as': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'as': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS YIELD as UNWIND as as a RETURN a") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'UNWIND': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'UNWIND': expected ';', <EOF>"""
+        ))
     }
 
+    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS RETURN id2 YIELD id2") {
       // parses varFor("RETURN")
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'id2': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'id2': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'id2': expected ';', <EOF>"""
+        ))
     }
   }
 

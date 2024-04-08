@@ -20,9 +20,12 @@ import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.exceptions.SyntaxException
 
 class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -520,61 +523,100 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   // Negative tests
 
+  // TODO Potential Loss of information
   test("SHOW ALL SETTINGS") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input 'SETTINGS': expected
-        |  "CONSTRAINT"
-        |  "CONSTRAINTS"
-        |  "FUNCTION"
-        |  "FUNCTIONS"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "PRIVILEGE"
-        |  "PRIVILEGES"
-        |  "ROLE"
-        |  "ROLES"""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'SETTINGS': expected
+          |  "CONSTRAINT"
+          |  "CONSTRAINTS"
+          |  "FUNCTION"
+          |  "FUNCTIONS"
+          |  "INDEX"
+          |  "INDEXES"
+          |  "PRIVILEGE"
+          |  "PRIVILEGES"
+          |  "ROLE"
+          |  "ROLES"""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 10 (offset: 9))
+          |"SHOW ALL SETTINGS"
+          |          ^""".stripMargin
+      ))
   }
 
+  // TODO Check message, potential loss of information
   test("SHOW SETTING $foo, $bar") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input ',': expected
-        |  "!="
-        |  "%"""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input ',': expected
+          |  "!="
+          |  "%"""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input ',': expected ';', <EOF> (line 1, column 18 (offset: 17))
+          |"SHOW SETTING $foo, $bar"
+          |                  ^""".stripMargin
+      ))
   }
 
+  // TODO Check message, potential loss of information
   test("SHOW SETTING $foo $bar") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input '$': expected
-        |  "!="
-        |  "%"""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '$': expected
+          |  "!="
+          |  "%"""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '$': expected ';', <EOF> (line 1, column 19 (offset: 18))
+          |"SHOW SETTING $foo $bar"
+          |                   ^""".stripMargin
+      ))
   }
 
+  // TODO Unhelpful message, matching on statements could we escape it?
   test("SHOW SETTING 'bar', $foo") {
-    assertFailsWithMessageStart[Statements](testName, """Invalid input '$': expected "\"" or "\'" """)
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '$': expected "\"" or "\'" """
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '$': expected a string value (line 1, column 21 (offset: 20))
+          |"SHOW SETTING 'bar', $foo"
+          |                     ^""".stripMargin
+      ))
   }
 
+  // TODO Check message, potential loss of information
   test("SHOW SETTING $foo, 'bar'") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input ',': expected
-        |  "!="
-        |  "%"""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input ',': expected
+          |  "!="
+          |  "%"""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input ',': expected ';', <EOF> (line 1, column 18 (offset: 17))
+          |"SHOW SETTING $foo, 'bar'"
+          |                  ^""".stripMargin
+      ))
   }
 
+  // TODO Check message, potential loss of information
   test("SHOW SETTING 'foo' 'bar'") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input 'bar': expected
-        |  "!="
-        |  "%"""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'bar': expected
+          |  "!="
+          |  "%"""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input ''bar'': expected ';', <EOF> (line 1, column 20 (offset: 19))
+          |"SHOW SETTING 'foo' 'bar'"
+          |                    ^""".stripMargin
+      ))
   }
 
   test("SHOW SETTINGS YIELD (123 + xyz) AS foo") {

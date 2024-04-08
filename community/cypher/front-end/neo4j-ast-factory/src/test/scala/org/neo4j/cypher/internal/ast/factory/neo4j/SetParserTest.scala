@@ -19,9 +19,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class SetParserTest extends AstParsingTestBase {
 
   test("SET n:A") {
     parsesTo[Clause](
@@ -117,30 +116,30 @@ class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
   //  Invalid use of other label expression symbols than :
 
   test("SET n:A|B") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("SET n:!A") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("SET n:%") {
-    failsToParse[Clause]()
+    failsParsing[Statements]
   }
 
   test("SET n:A&B") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("SET n IS A&B") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("SET :A") {
-    failsToParse[Clause]()
+    failsParsing[Statements]
   }
 
   test("SET IS A") {
-    failsToParse[Clause]()
+    failsParsing[Statements]
   }
 }

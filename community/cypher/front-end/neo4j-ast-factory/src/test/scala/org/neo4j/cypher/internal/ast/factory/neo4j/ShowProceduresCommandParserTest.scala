@@ -24,10 +24,13 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.exceptions.SyntaxException
 
 /* Tests for listing procedures */
 class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -382,173 +385,196 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   // Negative tests
 
   test("SHOW PROCEDURES YIELD (123 + xyz)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES YIELD (123 + xyz) AS foo") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES YIELD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES YIELD * YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES WHERE name = 'my.proc' YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES WHERE name = 'my.proc' RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES YIELD a b RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW EXECUTABLE PROCEDURE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'EXECUTABLE': expected
-        |  "ALIAS"
-        |  "ALIASES"
-        |  "ALL"
-        |  "BTREE"
-        |  "BUILT"
-        |  "CONSTRAINT"
-        |  "CONSTRAINTS"
-        |  "CURRENT"
-        |  "DATABASE"
-        |  "DATABASES"
-        |  "DEFAULT"
-        |  "EXIST"
-        |  "EXISTENCE"
-        |  "EXISTS"
-        |  "FULLTEXT"
-        |  "FUNCTION"
-        |  "FUNCTIONS"
-        |  "HOME"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "KEY"
-        |  "LOOKUP"
-        |  "NODE"
-        |  "POINT"
-        |  "POPULATED"
-        |  "PRIVILEGE"
-        |  "PRIVILEGES"
-        |  "PROCEDURE"
-        |  "PROCEDURES"
-        |  "PROPERTY"
-        |  "RANGE"
-        |  "REL"
-        |  "RELATIONSHIP"
-        |  "ROLE"
-        |  "ROLES"
-        |  "SERVER"
-        |  "SERVERS"
-        |  "SETTING"
-        |  "SETTINGS"
-        |  "SUPPORTED"
-        |  "TEXT"
-        |  "TRANSACTION"
-        |  "TRANSACTIONS"
-        |  "UNIQUE"
-        |  "UNIQUENESS"
-        |  "USER"
-        |  "USERS"
-        |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'EXECUTABLE': expected
+          |  "ALIAS"
+          |  "ALIASES"
+          |  "ALL"
+          |  "BTREE"
+          |  "BUILT"
+          |  "CONSTRAINT"
+          |  "CONSTRAINTS"
+          |  "CURRENT"
+          |  "DATABASE"
+          |  "DATABASES"
+          |  "DEFAULT"
+          |  "EXIST"
+          |  "EXISTENCE"
+          |  "EXISTS"
+          |  "FULLTEXT"
+          |  "FUNCTION"
+          |  "FUNCTIONS"
+          |  "HOME"
+          |  "INDEX"
+          |  "INDEXES"
+          |  "KEY"
+          |  "LOOKUP"
+          |  "NODE"
+          |  "POINT"
+          |  "POPULATED"
+          |  "PRIVILEGE"
+          |  "PRIVILEGES"
+          |  "PROCEDURE"
+          |  "PROCEDURES"
+          |  "PROPERTY"
+          |  "RANGE"
+          |  "REL"
+          |  "RELATIONSHIP"
+          |  "ROLE"
+          |  "ROLES"
+          |  "SERVER"
+          |  "SERVERS"
+          |  "SETTING"
+          |  "SETTINGS"
+          |  "SUPPORTED"
+          |  "TEXT"
+          |  "TRANSACTION"
+          |  "TRANSACTIONS"
+          |  "UNIQUE"
+          |  "UNIQUENESS"
+          |  "USER"
+          |  "USERS"
+          |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'EXECUTABLE': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DATABASE', 'DATABASES', 'DEFAULT', 'HOME', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+          |"SHOW EXECUTABLE PROCEDURE"
+          |      ^""".stripMargin
+      ))
   }
 
   test("SHOW PROCEDURE EXECUTABLE user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE CURRENT USER") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
+  // TODO Potential loss of information
   test("SHOW PROCEDURE EXEC") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'EXEC': expected
-        |  "EXECUTABLE"
-        |  "SHOW"
-        |  "TERMINATE"
-        |  "WHERE"
-        |  "YIELD"
-        |  <EOF> (line 1, column 16 (offset: 15))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'EXEC': expected
+          |  "EXECUTABLE"
+          |  "SHOW"
+          |  "TERMINATE"
+          |  "WHERE"
+          |  "YIELD"
+          |  <EOF> (line 1, column 16 (offset: 15))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'EXEC': expected ';', <EOF> (line 1, column 16 (offset: 15))
+          |"SHOW PROCEDURE EXEC"
+          |                ^""".stripMargin
+      ))
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY user1, user2") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY CURRENT USER user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY CURRENT USER, user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY user CURRENT USER") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY user, CURRENT USER") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE CURRENT USER") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW CURRENT USER PROCEDURE") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
+  // TODO Check message, potential loss of information
   test("SHOW user PROCEDURE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Missing 'PRIVILEGE', 'PRIVILEGES' at '' (line 1, column 20 (offset: 19))
+          |"SHOW user PROCEDURE"
+          |                    ^""".stripMargin
+      ))
   }
 
+  // TODO Check message, potential loss of information
   test("SHOW USER user PROCEDURE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'PROCEDURE': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'PROCEDURE': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'PROCEDURE': expected ',', 'PRIVILEGE', 'PRIVILEGES' (line 1, column 16 (offset: 15))
+          |"SHOW USER user PROCEDURE"
+          |                ^""".stripMargin
+      ))
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY USER user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE USER user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE USER user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   // Invalid clause order
@@ -556,134 +582,190 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW PROCEDURES YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
+
     }
 
     test(s"$prefix UNWIND range(1,10) as b SHOW PROCEDURES YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'SHOW': expected ';', <EOF>""".stripMargin
+        ))
+
     }
 
     test(s"$prefix SHOW PROCEDURES WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
+
     }
 
     test(s"$prefix WITH 'n' as n SHOW PROCEDURES YIELD name RETURN name as numIndexes") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'SHOW': expected ';', <EOF>""".stripMargin
+        ))
+
     }
 
     test(s"$prefix SHOW PROCEDURES RETURN name as numIndexes") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'RETURN': expected ';', <EOF>""".stripMargin
+        ))
+
     }
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c RETURN name as numIndexes") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
+
     }
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
+
     }
 
     test(s"$prefix SHOW PROCEDURES YIELD a WITH a RETURN a") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
+
     }
 
     test(s"$prefix SHOW PROCEDURES YIELD as UNWIND as as a RETURN a") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'UNWIND': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'UNWIND': expected ';', <EOF>""".stripMargin
+        ))
+
     }
 
     test(s"$prefix SHOW PROCEDURES RETURN name2 YIELD name2") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'RETURN': expected ';', <EOF>""".stripMargin
+        ))
+
     }
   }
 
   // Brief/verbose not allowed
 
   test("SHOW PROCEDURE BRIEF") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE BRIEF OUTPUT") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES BRIEF YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES BRIEF RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES BRIEF WHERE name = 'my.proc'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE VERBOSE") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE VERBOSE OUTPUT") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES VERBOSE YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES VERBOSE RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURES VERBOSE WHERE name = 'my.proc'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW PROCEDURE OUTPUT") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
+  // TODO Check message, potential loss of information
   test("SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'AST': expected
-        |  "!="
-        |  "%"
-        |  "*"
-        |  "+"
-        |  ","
-        |  "-"
-        |  "/"
-        |  "::"
-        |  "<"
-        |  "<="
-        |  "<>"
-        |  "="
-        |  "=~"
-        |  ">"
-        |  ">="
-        |  "AND"
-        |  "ASC"
-        |  "ASCENDING"
-        |  "CONTAINS"
-        |  "DESC"
-        |  "DESCENDING"
-        |  "ENDS"
-        |  "IN"
-        |  "IS"
-        |  "LIMIT"
-        |  "OR"
-        |  "RETURN"
-        |  "SHOW"
-        |  "SKIP"
-        |  "STARTS"
-        |  "TERMINATE"
-        |  "WHERE"
-        |  "XOR"
-        |  "^"
-        |  "||"
-        |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'AST': expected
+          |  "!="
+          |  "%"
+          |  "*"
+          |  "+"
+          |  ","
+          |  "-"
+          |  "/"
+          |  "::"
+          |  "<"
+          |  "<="
+          |  "<>"
+          |  "="
+          |  "=~"
+          |  ">"
+          |  ">="
+          |  "AND"
+          |  "ASC"
+          |  "ASCENDING"
+          |  "CONTAINS"
+          |  "DESC"
+          |  "DESCENDING"
+          |  "ENDS"
+          |  "IN"
+          |  "IS"
+          |  "LIMIT"
+          |  "OR"
+          |  "RETURN"
+          |  "SHOW"
+          |  "SKIP"
+          |  "STARTS"
+          |  "TERMINATE"
+          |  "WHERE"
+          |  "XOR"
+          |  "^"
+          |  "||"
+          |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'AST': expected ';', <EOF> (line 1, column 41 (offset: 40))
+          |"SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *"
+          |                                         ^""".stripMargin
+      ))
   }
 }

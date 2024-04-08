@@ -380,11 +380,11 @@ class NodePatternParserTest extends PatternParserTestBase {
   // Edge cases
 
   test("MATCH (n) WHERE n IS :A|B RETURN n") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test("MATCH (n) WHERE n IS :A:B RETURN n") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test(s"MATCH (n IS IS)") {
@@ -432,7 +432,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (n) WHERE n IS NOT AND n IS NOT NULL") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   test(s"MATCH (n) WHERE n IS NULL AND n.prop IS NOT NULL") {
@@ -487,7 +487,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (n IS NOT NULL WHERE n IS NOT NULL)") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
   }
 
   // Labels NOT, NULL and TYPED are not allowed together with IS keyword unless escaped
@@ -521,7 +521,7 @@ class NodePatternParserTest extends PatternParserTestBase {
     }
 
     test(s"MATCH (n IS $label)") {
-      failsToParse[Statements]()
+      failsParsing[Statements]
     }
 
     test(s"MATCH (n IS `$label`)") {

@@ -39,6 +39,8 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.internal.helpers.Exceptions
 
+import scala.util.control.NonFatal
+
 /**
  * Parses Neo4j AST using antlr. Fails fast. Optimised for memory by removing the parse as we go.
  */
@@ -86,7 +88,7 @@ class CypherAstParser private (
       astBuilder.exitEveryRule(ctx)
       if (DEBUG) println(s"Exit ${ctx.getClass.getSimpleName} AST=${ctx.asInstanceOf[AstRuleCtx].ast}")
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         if (DEBUG) println(s"Exit ${ctx.getClass.getSimpleName} FAILED! $e")
         hasFailed = true
         throw e
@@ -152,7 +154,7 @@ object CypherAstParser {
     try {
       doParse(parser, f)
     } catch {
-      case _: Exception =>
+      case NonFatal(_) =>
         // The fast route failed, now try again with full error handling and prediction mode
 
         // Reset parser and token stream

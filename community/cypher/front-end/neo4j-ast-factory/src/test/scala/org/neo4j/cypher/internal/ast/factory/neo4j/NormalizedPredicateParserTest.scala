@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NFCNormalForm
 import org.neo4j.cypher.internal.expressions.NFDNormalForm
 import org.neo4j.cypher.internal.expressions.NFKCNormalForm
 import org.neo4j.cypher.internal.expressions.NFKDNormalForm
 
-class NormalizedPredicateParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class NormalizedPredicateParserTest extends AstParsingTestBase {
 
   test("'string' IS NORMALIZED") {
     parsesTo[Expression] {

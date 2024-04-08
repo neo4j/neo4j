@@ -18,9 +18,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class SubqueryCallParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class SubqueryCallParserTest extends AstParsingTestBase {
 
   test("CALL { RETURN 1 }") {
     parsesTo(subqueryCall(return_(literalInt(1).unaliased)))

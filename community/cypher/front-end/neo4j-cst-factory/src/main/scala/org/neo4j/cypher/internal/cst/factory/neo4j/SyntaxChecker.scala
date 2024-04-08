@@ -69,6 +69,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       case CypherParser.RULE_allPrivilege                     => checkAllPrivilege(cast(ctx))
       case CypherParser.RULE_createDatabase                   => checkCreateDatabase(cast(ctx))
       case CypherParser.RULE_alterDatabase                    => checkAlterDatabase(cast(ctx))
+      case CypherParser.RULE_alterDatabaseTopology            => checkAlterDatabaseTopology(cast(ctx))
       case CypherParser.RULE_createAlias                      => checkCreateAlias(cast(ctx))
       case CypherParser.RULE_alterAlias                       => checkAlterAlias(cast(ctx))
       case CypherParser.RULE_globPart                         => checkGlobPart(cast(ctx))
@@ -373,7 +374,8 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
 
     if (!ctx.alterDatabaseOption().isEmpty) {
       val optionCtxs = astSeq[Map[String, Expression]](ctx.alterDatabaseOption())
-      val keyNames = optionCtxs.flatMap(m => m.keys)
+      // TODO odd why can m be null, shouldn't it fail before this.
+      val keyNames = optionCtxs.flatMap(m => if (m != null) m.keys else Seq.empty)
       val keySet = mutable.Set.empty[String]
       var i = 0
       keyNames.foreach(k =>
@@ -393,10 +395,11 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
 
     val topology = ctx.alterDatabaseTopology()
     errorOnDuplicateCtx(topology, "TOPOLOGY")
-    if (!topology.isEmpty) {
-      errorOnDuplicateRule[CypherParser.PrimaryTopologyContext](topology.get(0).primaryTopology(), "PRIMARY")
-      errorOnDuplicateRule[CypherParser.SecondaryTopologyContext](topology.get(0).secondaryTopology(), "SECONDARY")
-    }
+  }
+
+  private def checkAlterDatabaseTopology(ctx: CypherParser.AlterDatabaseTopologyContext): Unit = {
+    errorOnDuplicateRule[CypherParser.PrimaryTopologyContext](ctx.primaryTopology(), "PRIMARY")
+    errorOnDuplicateRule[CypherParser.SecondaryTopologyContext](ctx.secondaryTopology(), "SECONDARY")
   }
 
   private def checkPeriodicCommitQueryHintFailure(ctx: CypherParser.PeriodicCommitQueryHintFailureContext): Unit = {

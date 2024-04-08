@@ -19,9 +19,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class ProjectionClauseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class ProjectionClauseParserTest extends AstParsingTestBase {
 
   test("WITH *") {
     parsesTo[Clause](ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos))(pos))
@@ -64,10 +63,10 @@ class ProjectionClauseParserTest extends AstParsingTestBase with LegacyAstParsin
   }
 
   test("RETURN ") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 
   test("RETURN GRAPH *") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 }

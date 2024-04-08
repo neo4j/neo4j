@@ -19,11 +19,10 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.util.UnicodeHelper
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class ParameterIdentifiersParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class ParameterIdentifiersParserTest extends AstParsingTestBase {
 
   test("Identifier Start characters are allowed in first position") {
     for (c <- Character.MIN_VALUE to Character.MAX_VALUE) {

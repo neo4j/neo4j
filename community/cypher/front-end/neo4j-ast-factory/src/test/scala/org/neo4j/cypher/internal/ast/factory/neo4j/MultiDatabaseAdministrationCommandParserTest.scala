@@ -23,11 +23,14 @@ import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.Topology
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.exceptions.SyntaxException
 
 class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   // SHOW DATABASE
@@ -162,45 +165,75 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("SHOW DEFAULT DATABASES") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'DATABASES': expected 'DATABASE' (line 1, column 14 (offset: 13))
+          |"SHOW DEFAULT DATABASES"
+          |              ^""".stripMargin
+      ))
   }
 
   test("SHOW DEFAULT DATABASES YIELD *") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'DATABASES': expected 'DATABASE' (line 1, column 14 (offset: 13))
+          |"SHOW DEFAULT DATABASES YIELD *"
+          |              ^""".stripMargin
+      ))
   }
 
   test("SHOW DEFAULT DATABASES WHERE name STARTS WITH 'foo'") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'DATABASES': expected 'DATABASE' (line 1, column 14 (offset: 13))
+          |"SHOW DEFAULT DATABASES WHERE name STARTS WITH 'foo'"
+          |              ^""".stripMargin
+      ))
   }
 
   test("SHOW HOME DATABASES") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'DATABASES': expected 'DATABASE' (line 1, column 11 (offset: 10))
+          |"SHOW HOME DATABASES"
+          |           ^""".stripMargin
+      ))
   }
 
   test("SHOW HOME DATABASES YIELD *") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'DATABASES': expected 'DATABASE' (line 1, column 11 (offset: 10))
+          |"SHOW HOME DATABASES YIELD *"
+          |           ^""".stripMargin
+      ))
   }
 
   test("SHOW HOME DATABASES WHERE name STARTS WITH 'foo'") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'DATABASES': expected 'DATABASE' (line 1, column 11 (offset: 10))
+          |"SHOW HOME DATABASES WHERE name STARTS WITH 'foo'"
+          |           ^""".stripMargin
+      ))
   }
 
   // CREATE DATABASE
@@ -414,10 +447,16 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE") {
     // missing db name but parses as 'normal' cypher CREATE...
-    assertFailsWithMessage[Statements](
-      testName,
-      s"""Invalid input '': expected a parameter or an identifier (line 1, column 16 (offset: 15))"""
-    )
+    // TODO DOUBLE CHECK THIS ERROR MESSAGE, would be great if it proposed database name
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        s"""Invalid input '': expected a parameter or an identifier (line 1, column 16 (offset: 15))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 16 (offset: 15))
+          |"CREATE DATABASE"
+          |                ^""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE \"foo.bar\"") {
@@ -441,6 +480,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE DATABASE  IF NOT EXISTS") {
+    // TODO DOUBLE CHECK THIS ERROR MESSAGE, LOSS OF HELPFULNESS
     val exceptionMessage =
       s"""Invalid input 'NOT': expected
          |  "."
@@ -451,7 +491,13 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
          |  "WAIT"
          |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
 
-    assertFailsWithMessage[Statements](testName, exceptionMessage)
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(exceptionMessage))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'NOT': expected ';', <EOF> (line 1, column 21 (offset: 20))
+          |"CREATE DATABASE  IF NOT EXISTS"
+          |                     ^""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo IF EXISTS") {
@@ -462,11 +508,17 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     failsParsing[Statements]
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo WAIT 3.14") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input '3.14': expected <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 26 (offset: 25))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '3.14': expected <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 26 (offset: 25))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input '3.14': expected ';', <EOF> (line 1, column 26 (offset: 25))
+          |"CREATE DATABASE foo WAIT 3.14"
+          |                          ^""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo WAIT bar") {
@@ -478,10 +530,15 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE OR REPLACE DATABASE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      s"""Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        s"""Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected an identifier, '$' (line 1, column 27 (offset: 26))
+          |"CREATE OR REPLACE DATABASE"
+          |                           ^""".stripMargin
+      ))
   }
 
   test(
@@ -536,53 +593,76 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo SET OPTION key value") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'SET': expected
-        |  "."
-        |  "IF"
-        |  "NOWAIT"
-        |  "OPTIONS"
-        |  "TOPOLOGY"
-        |  "WAIT"
-        |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'SET': expected
+          |  "."
+          |  "IF"
+          |  "NOWAIT"
+          |  "OPTIONS"
+          |  "TOPOLOGY"
+          |  "WAIT"
+          |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'SET': expected ';', <EOF> (line 1, column 21 (offset: 20))
+          |"CREATE DATABASE foo SET OPTION key value"
+          |                     ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo OPTION {key: value}") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'OPTION': expected
-        |  "."
-        |  "IF"
-        |  "NOWAIT"
-        |  "OPTIONS"
-        |  "TOPOLOGY"
-        |  "WAIT"
-        |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'OPTION': expected
+          |  "."
+          |  "IF"
+          |  "NOWAIT"
+          |  "OPTIONS"
+          |  "TOPOLOGY"
+          |  "WAIT"
+          |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'OPTION': expected ';', <EOF> (line 1, column 21 (offset: 20))
+          |"CREATE DATABASE foo OPTION {key: value}"
+          |                     ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo SET OPTIONS key value") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'SET': expected
-        |  "."
-        |  "IF"
-        |  "NOWAIT"
-        |  "OPTIONS"
-        |  "TOPOLOGY"
-        |  "WAIT"
-        |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'SET': expected
+          |  "."
+          |  "IF"
+          |  "NOWAIT"
+          |  "OPTIONS"
+          |  "TOPOLOGY"
+          |  "WAIT"
+          |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'SET': expected ';', <EOF> (line 1, column 21 (offset: 20))
+          |"CREATE DATABASE foo SET OPTIONS key value"
+          |                     ^""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo OPTIONS key value") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'key': expected "{" or a parameter (line 1, column 29 (offset: 28))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'key': expected "{" or a parameter (line 1, column 29 (offset: 28))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'key': expected '{', '$' (line 1, column 29 (offset: 28))
+          |"CREATE DATABASE foo OPTIONS key value"
+          |                             ^""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY") {
@@ -645,77 +725,116 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY TOPOLOGY 1 SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'TOPOLOGY': expected
-        |  "NOWAIT"
-        |  "OPTIONS"
-        |  "WAIT"
-        |  <EOF>
-        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'TOPOLOGY': expected
+          |  "NOWAIT"
+          |  "OPTIONS"
+          |  "WAIT"
+          |  <EOF>
+          |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'TOPOLOGY': expected ';', <EOF> (line 1, column 40 (offset: 39))
+          |"CREATE DATABASE foo TOPOLOGY 1 PRIMARY TOPOLOGY 1 SECONDARY"
+          |                                        ^""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate PRIMARY clause (line 1, column 42 (offset: 41))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 42 (offset: 41))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 40 (offset: 39))""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo TOPOLOGY 2 PRIMARIES 1 PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate PRIMARY clause (line 1, column 44 (offset: 43))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 44 (offset: 43))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 42 (offset: 41))"""
+      ))
   }
 
   test("CREATE DATABASE foo TOPOLOGY 2 SECONDARIES 1 SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate SECONDARY clause (line 1, column 46 (offset: 45))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 46 (offset: 45))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 44 (offset: 43))""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate SECONDARY clause (line 1, column 54 (offset: 53))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 54 (offset: 53))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 52 (offset: 51))""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo TOPOLOGY -1 PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input '-': expected an integer value (line 1, column 30 (offset: 29))
+          |"CREATE DATABASE foo TOPOLOGY -1 PRIMARY"
+          |                              ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY -1 SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '-': expected
-        |  "NOWAIT"
-        |  "OPTIONS"
-        |  "WAIT"
-        |  <EOF>
-        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '-': expected
+          |  "NOWAIT"
+          |  "OPTIONS"
+          |  "WAIT"
+          |  <EOF>
+          |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '-': expected ';', <EOF> (line 1, column 40 (offset: 39))
+          |"CREATE DATABASE foo TOPOLOGY 1 PRIMARY -1 SECONDARY"
+          |                                        ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE -1 is an integer...
   test("CREATE DATABASE foo TOPOLOGY -1 SECONDARY 1 PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input '-': expected an integer value (line 1, column 30 (offset: 29))
+          |"CREATE DATABASE foo TOPOLOGY -1 SECONDARY 1 PRIMARY"
+          |                              ^""".stripMargin
+      ))
   }
 
+  // TODO Wrong position
   test("CREATE DATABASE foo TOPOLOGY 1 SECONDARY 1 SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate SECONDARY clause (line 1, column 44 (offset: 43))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 44 (offset: 43))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 42 (offset: 41))""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo TOPOLOGY 1 SECONDARY") {
@@ -731,29 +850,45 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE DATABASE foo TOPOLOGY $param PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '$': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '$': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '$': expected an integer value (line 1, column 30 (offset: 29))
+          |"CREATE DATABASE foo TOPOLOGY $param PRIMARY"
+          |                              ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY $param SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '$': expected
-        |  "NOWAIT"
-        |  "OPTIONS"
-        |  "WAIT"
-        |  <EOF>
-        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '$': expected
+          |  "NOWAIT"
+          |  "OPTIONS"
+          |  "WAIT"
+          |  <EOF>
+          |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 40 (offset: 39))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '$': expected ';', <EOF> (line 1, column 40 (offset: 39))
+          |"CREATE DATABASE foo TOPOLOGY 1 PRIMARY $param SECONDARY"
+          |                                        ^""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE foo TOPOLOGY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 29 (offset: 28))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 29 (offset: 28))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected an integer value (line 1, column 29 (offset: 28))
+          |"CREATE DATABASE foo TOPOLOGY"
+          |                             ^""".stripMargin
+      ))
   }
 
   test("CREATE DATABASE alias") {
@@ -951,10 +1086,15 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("DROP DATABASE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      s"""Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        s"""Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected an identifier, '$' (line 1, column 14 (offset: 13))
+          |"DROP DATABASE"
+          |              ^""".stripMargin
+      ))
   }
 
   test("DROP DATABASE  IF EXISTS") {
@@ -965,6 +1105,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     failsParsing[Statements]
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("DROP DATABASE KEEP DATA") {
     val exceptionMessage =
       s"""Invalid input 'DATA': expected
@@ -976,7 +1117,13 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
          |  "WAIT"
          |  <EOF> (line 1, column 20 (offset: 19))""".stripMargin
 
-    assertFailsWithMessage[Statements](testName, exceptionMessage)
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(exceptionMessage))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'DATA': expected ';', <EOF> (line 1, column 20 (offset: 19))
+          |"DROP DATABASE KEEP DATA"
+          |                    ^""".stripMargin
+      ))
   }
 
   // ALTER DATABASE
@@ -1050,88 +1197,152 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("ALTER DATABASE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected an identifier, '$' (line 1, column 15 (offset: 14))
+          |"ALTER DATABASE"
+          |               ^""".stripMargin
+      ))
   }
 
+  // TODO technically missing the . alternative
   test("ALTER DATABASE foo") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input '': expected \".\", \"IF\", \"REMOVE\" or \"SET\" (line 1, column 19 (offset: 18))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '': expected \".\", \"IF\", \"REMOVE\" or \"SET\" (line 1, column 19 (offset: 18))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected 'IF', 'SET', 'REMOVE' (line 1, column 19 (offset: 18))
+          |"ALTER DATABASE foo"
+          |                   ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET READ ONLY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'READ': expected \"ACCESS\", \"OPTION\" or \"TOPOLOGY\" (line 1, column 24 (offset: 23))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'READ': expected \"ACCESS\", \"OPTION\" or \"TOPOLOGY\" (line 1, column 24 (offset: 23))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'READ': expected 'ACCESS', 'TOPOLOGY', 'OPTION' (line 1, column 24 (offset: 23))
+          |"ALTER DATABASE foo SET READ ONLY"
+          |                        ^""".stripMargin
+      ))
   }
 
+  // TODO technically missing the . alternative
   test("ALTER DATABASE foo ACCESS READ WRITE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'ACCESS': expected \".\", \"IF\", \"REMOVE\" or \"SET\" (line 1, column 20 (offset: 19))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'ACCESS': expected \".\", \"IF\", \"REMOVE\" or \"SET\" (line 1, column 20 (offset: 19))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'ACCESS': expected 'IF', 'SET', 'REMOVE' (line 1, column 20 (offset: 19))
+          |"ALTER DATABASE foo ACCESS READ WRITE"
+          |                    ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET ACCESS READ") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input '': expected \"ONLY\" or \"WRITE\" (line 1, column 35 (offset: 34))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '': expected \"ONLY\" or \"WRITE\" (line 1, column 35 (offset: 34))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Missing 'ONLY', 'WRITE' at '' (line 1, column 35 (offset: 34))
+          |"ALTER DATABASE foo SET ACCESS READ"
+          |                                   ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET ACCESS READWRITE'") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'READWRITE': expected \"READ\" (line 1, column 31 (offset: 30))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'READWRITE': expected \"READ\" (line 1, column 31 (offset: 30))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'READWRITE': expected 'READ' (line 1, column 31 (offset: 30))
+          |"ALTER DATABASE foo SET ACCESS READWRITE'"
+          |                               ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET ACCESS READ_ONLY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'READ_ONLY': expected \"READ\" (line 1, column 31 (offset: 30))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'READ_ONLY': expected \"READ\" (line 1, column 31 (offset: 30))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'READ_ONLY': expected 'READ' (line 1, column 31 (offset: 30))
+          |"ALTER DATABASE foo SET ACCESS READ_ONLY"
+          |                               ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET ACCESS WRITE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'WRITE': expected \"READ\" (line 1, column 31 (offset: 30))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'WRITE': expected \"READ\" (line 1, column 31 (offset: 30))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Missing 'READ' at 'WRITE' (line 1, column 31 (offset: 30))
+          |"ALTER DATABASE foo SET ACCESS WRITE"
+          |                               ^""".stripMargin
+      ))
   }
 
   // Set ACCESS multiple times in the same command
+  // TODO Wrong position
   test("ALTER DATABASE foo SET ACCESS READ ONLY SET ACCESS READ WRITE") {
-    assertFailsWithMessage[Statements](testName, "Duplicate SET ACCESS clause (line 1, column 41 (offset: 40))")
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Duplicate SET ACCESS clause (line 1, column 41 (offset: 40))"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate ACCESS clause (line 1, column 45 (offset: 44))"""
+      ))
   }
 
   // Wrong order between IF EXISTS and SET
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET ACCESS READ ONLY IF EXISTS") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'IF': expected \"NOWAIT\", \"SET\", \"WAIT\" or <EOF> (line 1, column 41 (offset: 40))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'IF': expected \"NOWAIT\", \"SET\", \"WAIT\" or <EOF> (line 1, column 41 (offset: 40))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'IF': expected ';', <EOF> (line 1, column 41 (offset: 40))
+          |"ALTER DATABASE foo SET ACCESS READ ONLY IF EXISTS"
+          |                                         ^""".stripMargin
+      ))
   }
 
   // IF NOT EXISTS instead of IF EXISTS
   test("ALTER DATABASE foo IF NOT EXISTS SET ACCESS READ ONLY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 23 (offset: 22))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 23 (offset: 22))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'NOT': expected 'EXISTS' (line 1, column 23 (offset: 22))
+          |"ALTER DATABASE foo IF NOT EXISTS SET ACCESS READ ONLY"
+          |                       ^""".stripMargin
+      ))
   }
 
   // ALTER with OPTIONS
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET ACCESS READ WRITE OPTIONS {existingData: 'use'}") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'OPTIONS': expected \"NOWAIT\", \"SET\", \"WAIT\" or <EOF> (line 1, column 42 (offset: 41))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'OPTIONS': expected \"NOWAIT\", \"SET\", \"WAIT\" or <EOF> (line 1, column 42 (offset: 41))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'OPTIONS': expected ';', <EOF> (line 1, column 42 (offset: 41))
+          |"ALTER DATABASE foo SET ACCESS READ WRITE OPTIONS {existingData: 'use'}"
+          |                                          ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL'") {
@@ -1235,192 +1446,268 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  // TODO Wrong position
   test("ALTER DATABASE foo REMOVE OPTION key REMOVE OPTION key") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate 'REMOVE OPTION key' clause (line 1, column 38 (offset: 37))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate 'REMOVE OPTION key' clause (line 1, column 38 (offset: 37))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate 'REMOVE OPTION key' clause (line 1, column 52 (offset: 51))"""
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET ACCESS READ ONLY REMOVE OPTION key") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'REMOVE': expected "NOWAIT", "SET", "WAIT" or <EOF> (line 1, column 41 (offset: 40))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'REMOVE': expected "NOWAIT", "SET", "WAIT" or <EOF> (line 1, column 41 (offset: 40))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'REMOVE': expected ';', <EOF> (line 1, column 41 (offset: 40))
+          |"ALTER DATABASE foo SET ACCESS READ ONLY REMOVE OPTION key"
+          |                                         ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET OPTIONS {key: value}") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'OPTIONS': expected "ACCESS", "OPTION" or "TOPOLOGY" (line 1, column 24 (offset: 23))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'OPTIONS': expected "ACCESS", "OPTION" or "TOPOLOGY" (line 1, column 24 (offset: 23))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'OPTIONS': expected 'ACCESS', 'TOPOLOGY', 'OPTION' (line 1, column 24 (offset: 23))
+          |"ALTER DATABASE foo SET OPTIONS {key: value}"
+          |                        ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET OPTION {key: value}") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '{': expected an identifier (line 1, column 31 (offset: 30))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '{': expected an identifier (line 1, column 31 (offset: 30))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input '{': expected an identifier (line 1, column 31 (offset: 30))
+          |"ALTER DATABASE foo SET OPTION {key: value}"
+          |                               ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET OPTIONS key value") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'OPTIONS': expected "ACCESS", "OPTION" or "TOPOLOGY" (line 1, column 24 (offset: 23))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'OPTIONS': expected "ACCESS", "OPTION" or "TOPOLOGY" (line 1, column 24 (offset: 23))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'OPTIONS': expected 'ACCESS', 'TOPOLOGY', 'OPTION' (line 1, column 24 (offset: 23))
+          |"ALTER DATABASE foo SET OPTIONS key value"
+          |                        ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET OPTION key value key2 value") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'key2': expected
-        |  "!="
-        |  "%"
-        |  "*"
-        |  "+"
-        |  "-"
-        |  "/"
-        |  "::"
-        |  "<"
-        |  "<="
-        |  "<>"
-        |  "="
-        |  "=~"
-        |  ">"
-        |  ">="
-        |  "AND"
-        |  "CONTAINS"
-        |  "ENDS"
-        |  "IN"
-        |  "IS"
-        |  "NOWAIT"
-        |  "OR"
-        |  "SET"
-        |  "STARTS"
-        |  "WAIT"
-        |  "XOR"
-        |  "^"
-        |  "||"
-        |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'key2': expected
+          |  "!="
+          |  "%"
+          |  "*"
+          |  "+"
+          |  "-"
+          |  "/"
+          |  "::"
+          |  "<"
+          |  "<="
+          |  "<>"
+          |  "="
+          |  "=~"
+          |  ">"
+          |  ">="
+          |  "AND"
+          |  "CONTAINS"
+          |  "ENDS"
+          |  "IN"
+          |  "IS"
+          |  "NOWAIT"
+          |  "OR"
+          |  "SET"
+          |  "STARTS"
+          |  "WAIT"
+          |  "XOR"
+          |  "^"
+          |  "||"
+          |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'key2': expected ';', <EOF> (line 1, column 41 (offset: 40))
+          |"ALTER DATABASE foo SET OPTION key value key2 value"
+          |                                         ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET OPTION key value, key2 value") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input ',': expected
-        |  "!="
-        |  "%"
-        |  "*"
-        |  "+"
-        |  "-"
-        |  "/"
-        |  "::"
-        |  "<"
-        |  "<="
-        |  "<>"
-        |  "="
-        |  "=~"
-        |  ">"
-        |  ">="
-        |  "AND"
-        |  "CONTAINS"
-        |  "ENDS"
-        |  "IN"
-        |  "IS"
-        |  "NOWAIT"
-        |  "OR"
-        |  "SET"
-        |  "STARTS"
-        |  "WAIT"
-        |  "XOR"
-        |  "^"
-        |  "||"
-        |  <EOF> (line 1, column 40 (offset: 39))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input ',': expected
+          |  "!="
+          |  "%"
+          |  "*"
+          |  "+"
+          |  "-"
+          |  "/"
+          |  "::"
+          |  "<"
+          |  "<="
+          |  "<>"
+          |  "="
+          |  "=~"
+          |  ">"
+          |  ">="
+          |  "AND"
+          |  "CONTAINS"
+          |  "ENDS"
+          |  "IN"
+          |  "IS"
+          |  "NOWAIT"
+          |  "OR"
+          |  "SET"
+          |  "STARTS"
+          |  "WAIT"
+          |  "XOR"
+          |  "^"
+          |  "||"
+          |  <EOF> (line 1, column 40 (offset: 39))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input ',': expected ';', <EOF> (line 1, column 40 (offset: 39))
+          |"ALTER DATABASE foo SET OPTION key value, key2 value"
+          |                                        ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo REMOVE OPTION key key2") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'key2': expected "NOWAIT", "REMOVE", "WAIT" or <EOF> (line 1, column 38 (offset: 37))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'key2': expected "NOWAIT", "REMOVE", "WAIT" or <EOF> (line 1, column 38 (offset: 37))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'key2': expected ';', <EOF> (line 1, column 38 (offset: 37))
+          |"ALTER DATABASE foo REMOVE OPTION key key2"
+          |                                      ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo REMOVE OPTION key, key2") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input ',': expected "NOWAIT", "REMOVE", "WAIT" or <EOF> (line 1, column 37 (offset: 36))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input ',': expected "NOWAIT", "REMOVE", "WAIT" or <EOF> (line 1, column 37 (offset: 36))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input ',': expected ';', <EOF> (line 1, column 37 (offset: 36))
+          |"ALTER DATABASE foo REMOVE OPTION key, key2"
+          |                                     ^""".stripMargin
+      ))
   }
 
+  // TODO Odd message
   test("ALTER DATABASE foo REMOVE OPTIONS key") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'OPTIONS': expected "OPTION" (line 1, column 27 (offset: 26))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'OPTIONS': expected "OPTION" (line 1, column 27 (offset: 26))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Missing 'OPTION' at 'OPTIONS' (line 1, column 27 (offset: 26))
+          |"ALTER DATABASE foo REMOVE OPTIONS key"
+          |                           ^""".stripMargin
+      ))
   }
 
+  // TODO Wrong position
   test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' SET OPTION txLogEnrichment 'FULL'") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Duplicate 'SET OPTION txLogEnrichment' clause (line 1, column 54 (offset: 53))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Duplicate 'SET OPTION txLogEnrichment' clause (line 1, column 54 (offset: 53))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate 'SET OPTION txLogEnrichment' clause (line 1, column 58 (offset: 57))"""
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' REMOVE OPTION txLogEnrichment") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'REMOVE': expected
-        |  "!="
-        |  "%"
-        |  "*"
-        |  "+"
-        |  "-"
-        |  "/"
-        |  "::"
-        |  "<"
-        |  "<="
-        |  "<>"
-        |  "="
-        |  "=~"
-        |  ">"
-        |  ">="
-        |  "AND"
-        |  "CONTAINS"
-        |  "ENDS"
-        |  "IN"
-        |  "IS"
-        |  "NOWAIT"
-        |  "OR"
-        |  "SET"
-        |  "STARTS"
-        |  "WAIT"
-        |  "XOR"
-        |  "^"
-        |  "||"
-        |  <EOF> (line 1, column 54 (offset: 53))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'REMOVE': expected
+          |  "!="
+          |  "%"
+          |  "*"
+          |  "+"
+          |  "-"
+          |  "/"
+          |  "::"
+          |  "<"
+          |  "<="
+          |  "<>"
+          |  "="
+          |  "=~"
+          |  ">"
+          |  ">="
+          |  "AND"
+          |  "CONTAINS"
+          |  "ENDS"
+          |  "IN"
+          |  "IS"
+          |  "NOWAIT"
+          |  "OR"
+          |  "SET"
+          |  "STARTS"
+          |  "WAIT"
+          |  "XOR"
+          |  "^"
+          |  "||"
+          |  <EOF> (line 1, column 54 (offset: 53))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'REMOVE': expected ';', <EOF> (line 1, column 54 (offset: 53))
+          |"ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' REMOVE OPTION txLogEnrichment"
+          |                                                      ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo REMOVE OPTION txLogEnrichment SET OPTION txLogEnrichment 'FULL'") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'SET': expected \"NOWAIT\", \"REMOVE\", \"WAIT\" or <EOF> (line 1, column 50 (offset: 49))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'SET': expected \"NOWAIT\", \"REMOVE\", \"WAIT\" or <EOF> (line 1, column 50 (offset: 49))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'SET': expected ';', <EOF> (line 1, column 50 (offset: 49))
+          |"ALTER DATABASE foo REMOVE OPTION txLogEnrichment SET OPTION txLogEnrichment 'FULL'"
+          |                                                  ^""".stripMargin
+      ))
   }
 
   // ALTER OR REPLACE
   test("ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'OR': expected
-        |  "ALIAS"
-        |  "CURRENT"
-        |  "DATABASE"
-        |  "SERVER"
-        |  "USER" (line 1, column 7 (offset: 6))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'OR': expected
+          |  "ALIAS"
+          |  "CURRENT"
+          |  "DATABASE"
+          |  "SERVER"
+          |  "USER" (line 1, column 7 (offset: 6))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'OR': expected 'ALIAS', 'CURRENT', 'DATABASE', 'USER', 'SERVER' (line 1, column 7 (offset: 6))
+          |"ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE"
+          |       ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY") {
@@ -1438,22 +1725,33 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY $param PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '$': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '$': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '$': expected an integer value (line 1, column 33 (offset: 32))
+          |"ALTER DATABASE foo SET TOPOLOGY $param PRIMARY"
+          |                                 ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY $param SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '$': expected
-        |  "NOWAIT"
-        |  "SET"
-        |  "WAIT"
-        |  <EOF>
-        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '$': expected
+          |  "NOWAIT"
+          |  "SET"
+          |  "WAIT"
+          |  <EOF>
+          |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '$': expected ';', <EOF> (line 1, column 43 (offset: 42))
+          |"ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY $param SECONDARY"
+          |                                           ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY") {
@@ -1484,32 +1782,48 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  // TODO Different position
   test("ALTER DATABASE foo SET TOPOLOGY 2 PRIMARIES 1 PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate PRIMARY clause (line 1, column 47 (offset: 46))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 47 (offset: 46))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 45 (offset: 44))""".stripMargin
+      ))
   }
 
+  // TODO Different position
   test("ALTER DATABASE foo SET TOPOLOGY 2 SECONDARIES 1 SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate SECONDARY clause (line 1, column 49 (offset: 48))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 49 (offset: 48))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 47 (offset: 46))""".stripMargin
+      ))
   }
 
+  // TODO Different position
   test("ALTER DATABASE foo SET TOPOLOGY 5 PRIMARIES 10 PRIMARIES 1 PRIMARY 2 SECONDARIES") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate PRIMARY clause (line 1, column 48 (offset: 47))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 48 (offset: 47))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 45 (offset: 44))"""
+      ))
   }
 
+  // TODO Different position
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 2 SECONDARIES 1 SECONDARIES") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate SECONDARY clause (line 1, column 59 (offset: 58))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 59 (offset: 58))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 57 (offset: 56))"""
+      ))
   }
 
   test("ALTER DATABASE foo SET ACCESS READ WRITE SET TOPOLOGY 1 PRIMARY 1 SECONDARY") {
@@ -1624,55 +1938,88 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  // TODO Missing SET and wrong position
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY SET TOPOLOGY 1 SECONDARY") {
-    assertFailsWithMessage[Statements](testName, "Duplicate SET TOPOLOGY clause (line 1, column 43 (offset: 42))")
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Duplicate SET TOPOLOGY clause (line 1, column 43 (offset: 42))"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate TOPOLOGY clause (line 1, column 47 (offset: 46))"""
+      ))
   }
 
+  // TODO wrong position
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate PRIMARY clause (line 1, column 45 (offset: 44))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 45 (offset: 44))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate PRIMARY clause (line 1, column 43 (offset: 42))"""
+      ))
   }
 
+  // TODO wrong position
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate SECONDARY clause (line 1, column 57 (offset: 56))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 57 (offset: 56))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 55 (offset: 54))"""
+      ))
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY -1 PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input '-': expected an integer value (line 1, column 33 (offset: 32))
+          |"ALTER DATABASE foo SET TOPOLOGY -1 PRIMARY"
+          |                                 ^""".stripMargin
+      ))
   }
 
+  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY -1 SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '-': expected
-        |  "NOWAIT"
-        |  "SET"
-        |  "WAIT"
-        |  <EOF>
-        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '-': expected
+          |  "NOWAIT"
+          |  "SET"
+          |  "WAIT"
+          |  <EOF>
+          |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '-': expected ';', <EOF> (line 1, column 43 (offset: 42))
+          |"ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY -1 SECONDARY"
+          |                                           ^""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY -1 SECONDARY 1 PRIMARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 33 (offset: 32))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input '-': expected an integer value (line 1, column 33 (offset: 32))
+          |"ALTER DATABASE foo SET TOPOLOGY -1 SECONDARY 1 PRIMARY"
+          |                                 ^""".stripMargin
+      ))
   }
 
+  // TODO Wrong position
   test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY 1 SECONDARY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Duplicate SECONDARY clause (line 1, column 47 (offset: 46))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 47 (offset: 46))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Duplicate SECONDARY clause (line 1, column 45 (offset: 44))""".stripMargin
+      ))
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY") {
@@ -1690,10 +2037,15 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("ALTER DATABASE foo SET TOPOLOGY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 32 (offset: 31))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 32 (offset: 31))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected an integer value (line 1, column 32 (offset: 31))
+          |"ALTER DATABASE foo SET TOPOLOGY"
+          |                                ^""".stripMargin
+      ))
   }
 
   // START DATABASE
@@ -1739,10 +2091,15 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("START DATABASE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected an identifier, '$' (line 1, column 15 (offset: 14))
+          |"START DATABASE"
+          |               ^""".stripMargin
+      ))
   }
 
   // STOP DATABASE
@@ -1788,9 +2145,14 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("STOP DATABASE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected an identifier, '$' (line 1, column 14 (offset: 13))
+          |"STOP DATABASE"
+          |              ^""".stripMargin
+      ))
   }
 }

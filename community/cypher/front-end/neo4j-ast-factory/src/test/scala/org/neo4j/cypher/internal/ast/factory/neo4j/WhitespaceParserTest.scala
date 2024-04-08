@@ -18,9 +18,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class WhitespaceParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class WhitespaceParserTest extends AstParsingTestBase {
 
   private val whitespaceCharacters =
     Seq(

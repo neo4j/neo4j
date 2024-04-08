@@ -18,8 +18,11 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.IntegerType
+import org.neo4j.exceptions.SyntaxException
 
 /* Tests for listing functions */
 class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -438,306 +441,378 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   // Negative tests
 
   test("SHOW FUNCTIONS YIELD (123 + xyz)") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS YIELD (123 + xyz) AS foo") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS YIELD") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS YIELD * YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS WHERE name = 'my.func' YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS WHERE name = 'my.func' RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS YIELD a b RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW EXECUTABLE FUNCTION") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'EXECUTABLE': expected
-        |  "ALIAS"
-        |  "ALIASES"
-        |  "ALL"
-        |  "BTREE"
-        |  "BUILT"
-        |  "CONSTRAINT"
-        |  "CONSTRAINTS"
-        |  "CURRENT"
-        |  "DATABASE"
-        |  "DATABASES"
-        |  "DEFAULT"
-        |  "EXIST"
-        |  "EXISTENCE"
-        |  "EXISTS"
-        |  "FULLTEXT"
-        |  "FUNCTION"
-        |  "FUNCTIONS"
-        |  "HOME"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "KEY"
-        |  "LOOKUP"
-        |  "NODE"
-        |  "POINT"
-        |  "POPULATED"
-        |  "PRIVILEGE"
-        |  "PRIVILEGES"
-        |  "PROCEDURE"
-        |  "PROCEDURES"
-        |  "PROPERTY"
-        |  "RANGE"
-        |  "REL"
-        |  "RELATIONSHIP"
-        |  "ROLE"
-        |  "ROLES"
-        |  "SERVER"
-        |  "SERVERS"
-        |  "SETTING"
-        |  "SETTINGS"
-        |  "SUPPORTED"
-        |  "TEXT"
-        |  "TRANSACTION"
-        |  "TRANSACTIONS"
-        |  "UNIQUE"
-        |  "UNIQUENESS"
-        |  "USER"
-        |  "USERS"
-        |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        """Invalid input 'EXECUTABLE': expected
+          |  "ALIAS"
+          |  "ALIASES"
+          |  "ALL"
+          |  "BTREE"
+          |  "BUILT"
+          |  "CONSTRAINT"
+          |  "CONSTRAINTS"
+          |  "CURRENT"
+          |  "DATABASE"
+          |  "DATABASES"
+          |  "DEFAULT"
+          |  "EXIST"
+          |  "EXISTENCE"
+          |  "EXISTS"
+          |  "FULLTEXT"
+          |  "FUNCTION"
+          |  "FUNCTIONS"
+          |  "HOME"
+          |  "INDEX"
+          |  "INDEXES"
+          |  "KEY"
+          |  "LOOKUP"
+          |  "NODE"
+          |  "POINT"
+          |  "POPULATED"
+          |  "PRIVILEGE"
+          |  "PRIVILEGES"
+          |  "PROCEDURE"
+          |  "PROCEDURES"
+          |  "PROPERTY"
+          |  "RANGE"
+          |  "REL"
+          |  "RELATIONSHIP"
+          |  "ROLE"
+          |  "ROLES"
+          |  "SERVER"
+          |  "SERVERS"
+          |  "SETTING"
+          |  "SETTINGS"
+          |  "SUPPORTED"
+          |  "TEXT"
+          |  "TRANSACTION"
+          |  "TRANSACTIONS"
+          |  "UNIQUE"
+          |  "UNIQUENESS"
+          |  "USER"
+          |  "USERS"
+          |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'EXECUTABLE': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DATABASE', 'DATABASES', 'DEFAULT', 'HOME', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+          |"SHOW EXECUTABLE FUNCTION"
+          |      ^""".stripMargin
+      ))
   }
 
   test("SHOW FUNCTION EXECUTABLE user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE CURRENT USER") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXEC") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY user1, user2") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY CURRENT USER user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY CURRENT USER, user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY user CURRENT USER") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY user, CURRENT USER") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION CURRENT USER") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW CURRENT USER FUNCTION") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW user FUNCTION") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW USER user FUNCTION") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY USER user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE USER user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION USER user") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW BUILT FUNCTIONS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW BUILT-IN FUNCTIONS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
+  // TODO check message missing comma
   test("SHOW USER FUNCTIONS") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Missing 'PRIVILEGE', 'PRIVILEGES' at '' (line 1, column 20 (offset: 19))
+          |"SHOW USER FUNCTIONS"
+          |                    ^""".stripMargin
+      ))
   }
 
   test("SHOW USER-DEFINED FUNCTIONS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS ALL") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS BUILT IN") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS USER DEFINED") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW ALL USER DEFINED FUNCTIONS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW ALL BUILT IN FUNCTIONS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW BUILT IN USER DEFINED FUNCTIONS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW USER DEFINED BUILT IN FUNCTIONS") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW UNKNOWN FUNCTIONS") {
-    assertFailsWithMessageStart[Statements](testName, """Invalid input 'UNKNOWN': expected""")
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'UNKNOWN': expected"""))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DATABASE', 'DATABASES', 'DEFAULT', 'HOME', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+          |"SHOW UNKNOWN FUNCTIONS"
+          |      ^""".stripMargin
+      ))
   }
 
   test("SHOW LOOKUP FUNCTIONS") {
-    assertFailsWithMessageStart[Statements](testName, """Invalid input 'FUNCTIONS': expected "INDEX" or "INDEXES"""")
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'FUNCTIONS': expected "INDEX" or "INDEXES""""))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'FUNCTIONS': expected 'INDEX', 'INDEXES' (line 1, column 13 (offset: 12))
+          |"SHOW LOOKUP FUNCTIONS"
+          |             ^""".stripMargin
+      ))
   }
 
   // Invalid clause order
 
+  // TODO Unhelpful message
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW FUNCTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
     }
 
+    // TODO Unhelpful message
     test(s"$prefix UNWIND range(1,10) as b SHOW FUNCTIONS YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'SHOW': expected ';', <EOF>""".stripMargin
+        ))
     }
 
+    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
     }
 
+    // TODO Unhelpful message
     test(s"$prefix WITH 'n' as n SHOW FUNCTIONS YIELD name RETURN name as numIndexes") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'SHOW': expected ';', <EOF>""".stripMargin
+        ))
     }
 
+    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS RETURN name as numIndexes") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'RETURN': expected ';', <EOF>""".stripMargin
+        ))
     }
 
+    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c RETURN name as numIndexes") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
     }
 
+    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
     }
 
+    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS YIELD a WITH a RETURN a") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+        ))
     }
 
+    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS YIELD as UNWIND as as a RETURN a") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'UNWIND': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'UNWIND': expected ';', <EOF>""".stripMargin
+        ))
     }
 
     test(s"$prefix SHOW FUNCTIONS RETURN name2 YIELD name2") {
-      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
+      testName should notParse[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+          """Mismatched input 'RETURN': expected ';', <EOF>""".stripMargin
+        ))
     }
   }
 
   // Brief/verbose not allowed
 
   test("SHOW FUNCTION BRIEF") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION BRIEF OUTPUT") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS BRIEF YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS BRIEF RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS BRIEF WHERE name = 'my.func'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION VERBOSE") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION VERBOSE OUTPUT") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS VERBOSE YIELD *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS VERBOSE RETURN *") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTIONS VERBOSE WHERE name = 'my.func'") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
   test("SHOW FUNCTION OUTPUT") {
-    failsToParse[Statements]
+    failsParsing[Statements]
   }
 
 }

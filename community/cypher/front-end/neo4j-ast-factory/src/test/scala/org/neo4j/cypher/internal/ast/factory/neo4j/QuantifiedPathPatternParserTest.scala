@@ -399,7 +399,7 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
 
   // node abbreviations are not implemented, yet
   test("MATCH (n)--((a)-->(b))+") {
-    failsToParse[Clause]()
+    failsParsing[Clause]
   }
 }
 

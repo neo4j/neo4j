@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.PathPatternPart
@@ -33,7 +32,7 @@ import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.util.InputPosition
 
-class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class PatternPartWithSelectorParserTest extends AstParsingTestBase {
 
   private val selectors = Map(
     "ALL" -> allPathsSelector(),
@@ -335,7 +334,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAs
   }
 
   // Selectors may not be placed inside QPPs and PPPs
-  selectors.foreach { case (selector -> astSelector) =>
+  selectors.foreach { case selector -> astSelector =>
     Seq("+", "").foreach { quantifier =>
       test(s"MATCH ($selector (a)-[r]->(b))$quantifier") {
         val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
