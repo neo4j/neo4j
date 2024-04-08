@@ -248,6 +248,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
      */
     Optional<TerminationMark> getTerminationMark();
 
+    void releaseStorageEngineResources();
     /**
      * @return true if transaction was terminated, otherwise false
      */
@@ -311,6 +312,8 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
      * @return a {@link Statement} with access to underlying database.
      */
     Statement acquireStatement();
+
+    int aquireStatementCounter();
 
     /**
      * Returns resource monitor that is bound to opened statement.

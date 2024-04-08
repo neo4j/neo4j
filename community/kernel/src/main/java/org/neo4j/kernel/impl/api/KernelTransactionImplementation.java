@@ -789,6 +789,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public int aquireStatementCounter() {
+        return currentStatement.aquireCounter();
+    }
+
+    @Override
     public ResourceMonitor resourceMonitor() {
         assert currentStatement.isAcquired();
         return currentStatement;
@@ -1292,9 +1297,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 error = Exceptions.chain(error, e);
             }
             try {
-                if (txState != null) {
-                    storageEngine.release(txState, cursorContext, commandCreationContext, !commit);
-                }
+                releaseStorageEngineResources();
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);
             }
@@ -1375,6 +1378,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if (error != null) {
             Exceptions.throwIfUnchecked(error);
             throw new ResourceCloseFailureException("Failed to close resources", error);
+        }
+    }
+
+    @Override
+    public void releaseStorageEngineResources() {
+        if (txState != null) {
+            storageEngine.release(txState, cursorContext, commandCreationContext, !commit);
         }
     }
 

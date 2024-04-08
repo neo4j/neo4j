@@ -120,12 +120,16 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
                     compilerFactory,
                     innerQueryCaches,
                     innerCompilerFactory);
-        } else if (spi.config().get(GraphDatabaseInternalSettings.snapshot_query)) {
+        }
+        if (spi.config().get(GraphDatabaseInternalSettings.snapshot_query)) {
             return new SnapshotExecutionEngine(
                     queryService, spi.config(), queryCaches, spi.logProvider(), compilerFactory);
-        } else {
-            return new ExecutionEngine(queryService, queryCaches, spi.logProvider(), compilerFactory);
         }
+        if ("multiversion".equals(spi.config().get(GraphDatabaseSettings.db_format))) {
+            return new MultiVersionExecutionEngine(
+                    queryService, spi.config(), queryCaches, spi.logProvider(), compilerFactory);
+        }
+        return new ExecutionEngine(queryService, queryCaches, spi.logProvider(), compilerFactory);
     }
 
     private CypherQueryCaches makeCypherQueryCaches(

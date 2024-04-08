@@ -81,6 +81,7 @@ public class KernelStatement extends QueryStatement {
     private final TransactionClockContext clockContext;
     private long initialStatementHits;
     private long initialStatementFaults;
+    private int aquireCounter;
 
     public KernelStatement(
             KernelTransactionImplementation transaction,
@@ -135,6 +136,7 @@ public class KernelStatement extends QueryStatement {
         this.cursorContext = cursorContext;
         this.clockContext.initializeTransaction(startTimeMillis);
         this.clearQueryExecution();
+        this.aquireCounter = 0;
     }
 
     public LockManager.Client locks() {
@@ -186,7 +188,12 @@ public class KernelStatement extends QueryStatement {
             this.initialStatementHits = cursorTracer.hits();
             this.initialStatementFaults = cursorTracer.faults();
         }
+        aquireCounter++;
         recordOpenCloseMethods();
+    }
+
+    final int aquireCounter() {
+        return aquireCounter;
     }
 
     final boolean isAcquired() {

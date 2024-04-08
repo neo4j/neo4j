@@ -190,6 +190,11 @@ public class ExecutionContextProcedureKernelTransaction implements KernelTransac
     }
 
     @Override
+    public void releaseStorageEngineResources() {
+        throw failure("releaseStorageEngineResources");
+    }
+
+    @Override
     public boolean isTerminated() {
         return ktx.isTerminated() && isOriginalTx();
     }
@@ -231,6 +236,11 @@ public class ExecutionContextProcedureKernelTransaction implements KernelTransac
     @Override
     public Statement acquireStatement() {
         throw failure("acquireStatement");
+    }
+
+    @Override
+    public int aquireStatementCounter() {
+        throw failure("aquireStatementCounter");
     }
 
     @Override

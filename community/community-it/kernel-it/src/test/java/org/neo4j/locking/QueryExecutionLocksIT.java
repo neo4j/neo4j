@@ -815,6 +815,11 @@ class QueryExecutionLocksIT {
         }
 
         @Override
+        public int aquireStatementCounter() {
+            return internal.aquireStatementCounter();
+        }
+
+        @Override
         public ResourceMonitor resourceMonitor() {
             return internal.resourceMonitor();
         }
@@ -877,6 +882,11 @@ class QueryExecutionLocksIT {
         @Override
         public Optional<TerminationMark> getTerminationMark() {
             return internal.getTerminationMark();
+        }
+
+        @Override
+        public void releaseStorageEngineResources() {
+            internal.releaseStorageEngineResources();
         }
 
         @Override

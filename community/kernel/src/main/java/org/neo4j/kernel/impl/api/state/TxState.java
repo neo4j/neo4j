@@ -277,6 +277,7 @@ public class TxState implements TransactionState {
         return enrichmentStrategy.check();
     }
 
+    @Override
     public void reset() {
         labelStatesMap = null;
         nodeStatesMap = null;

@@ -72,6 +72,11 @@ public class StubKernelTransaction implements KernelTransaction {
     }
 
     @Override
+    public int aquireStatementCounter() {
+        return 0;
+    }
+
+    @Override
     public ResourceMonitor resourceMonitor() {
         return acquireStatement();
     }
@@ -205,6 +210,9 @@ public class StubKernelTransaction implements KernelTransaction {
     public Optional<TerminationMark> getTerminationMark() {
         return Optional.empty();
     }
+
+    @Override
+    public void releaseStorageEngineResources() {}
 
     @Override
     public boolean isTerminated() {
