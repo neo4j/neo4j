@@ -1450,7 +1450,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
         FunctionName(Trim.name)(p),
         distinct = false,
         IndexedSeq(
-          StringLiteral(trimSpec.description())(p, p),
+          StringLiteral(trimSpec.description())(p.withInputLength(0)),
           trimSource
         )
       )(p)
@@ -1459,7 +1459,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
         FunctionName(Trim.name)(p),
         distinct = false,
         IndexedSeq(
-          StringLiteral(trimSpec.description())(p, p),
+          StringLiteral(trimSpec.description())(p.withInputLength(0)),
           trimCharacterString,
           trimSource
         )

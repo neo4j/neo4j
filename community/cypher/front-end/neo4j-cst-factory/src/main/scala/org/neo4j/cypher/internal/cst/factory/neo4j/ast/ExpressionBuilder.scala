@@ -999,7 +999,7 @@ trait ExpressionBuilder extends CypherParserListener {
         FunctionName(Trim.name)(pos(ctx)),
         distinct = false,
         args = IndexedSeq(
-          StringLiteral(trimSpecification)(pos(ctx), pos(ctx)),
+          StringLiteral(trimSpecification)(pos(ctx).withInputLength(0)),
           trimSource
         )
       )(
@@ -1010,7 +1010,7 @@ trait ExpressionBuilder extends CypherParserListener {
         FunctionName(Trim.name)(pos(ctx)),
         distinct = false,
         args = IndexedSeq(
-          StringLiteral(trimSpecification)(pos(ctx), pos(ctx)),
+          StringLiteral(trimSpecification)(pos(ctx).withInputLength(0)),
           trimCharacterString.get,
           trimSource
         )
