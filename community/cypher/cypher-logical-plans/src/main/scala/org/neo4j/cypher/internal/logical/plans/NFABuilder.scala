@@ -21,31 +21,13 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
-import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.NFABuilder.State
-import org.neo4j.cypher.internal.logical.plans.NFABuilder.StateImpl
-import org.neo4j.cypher.internal.logical.plans.NFABuilder.Transition
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.State
+import org.neo4j.cypher.internal.logical.plans.NFA.Transition
 import org.neo4j.cypher.internal.macros.AssertMacros
 
+import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
-
-object NFABuilder {
-
-  /**
-   * The method in this builder return their own representation of State.
-   * We use a sealed trait with a private case class to forbid creating instance of State
-   * outside of this builder. This was easiest since the apply method of a case class will be public
-   * even if the constructor is private.
-   */
-  sealed trait State {
-    def id: Int
-    def variable: LogicalVariable
-  }
-
-  private case class StateImpl(id: Int, variable: LogicalVariable) extends State
-
-  case class Transition(nfaPredicate: NFA.Predicate, end: State)
-}
 
 /**
  * This class can be used to construct an NFA conveniently, without having to manually keep track of IDs.
@@ -83,10 +65,11 @@ object NFABuilder {
  *  }}}
  */
 class NFABuilder protected (_startState: State) {
-  private val states: mutable.Map[Int, LogicalVariable] = mutable.Map(_startState.id -> _startState.variable)
+
+  private val states: mutable.SortedMap[Int, State] = mutable.SortedMap(_startState.id -> _startState)
   private var startState: State = _startState
   private var finalState: State = _
-  private val transitions: mutable.MultiDict[State, Transition] = mutable.MultiDict.empty
+  private val transitions: mutable.MultiDict[Int, Transition] = mutable.MultiDict.empty
   private var nextId: Int = 0
   private var lastState: State = _startState
 
@@ -94,7 +77,7 @@ class NFABuilder protected (_startState: State) {
    * @param _startState the varName of the initial node of the start state of the NFA.
    */
   def this(_startState: LogicalVariable) = {
-    this(StateImpl(0, _startState))
+    this(State(0, _startState, None))
     nextId += 1
   }
 
@@ -102,7 +85,7 @@ class NFABuilder protected (_startState: State) {
    * Protected constructor to support TestNFABuilder.
    */
   protected def this(id: Int, startName: String) = {
-    this(StateImpl(id, varFor(startName)))
+    this(State(id, varFor(startName), None))
     nextId += 1
   }
 
@@ -110,14 +93,18 @@ class NFABuilder protected (_startState: State) {
    * To support TestNFABuilder.
    */
   protected def getState(id: Int): State = {
-    StateImpl(id, states(id))
+    states(id)
   }
 
   /**
    * To support TestNFABuilder.
    */
-  protected def getOrCreateState(id: Int, variable: LogicalVariable): State = {
-    val state = StateImpl(id, states.getOrElseUpdate(id, variable))
+  protected def getOrCreateState(
+    id: Int,
+    variable: LogicalVariable,
+    predicate: Option[VariablePredicate] = None
+  ): State = {
+    val state = states.getOrElseUpdate(id, State(id, variable, predicate))
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       state.variable == variable,
       s"Found state with id $id to be `${state.variable.name}` instead of `${variable.name}`"
@@ -131,31 +118,18 @@ class NFABuilder protected (_startState: State) {
       throw new IllegalStateException("finalState not set")
     }
 
-    // Create a mapping from our own State to NFAState to avoid instantiating many identical copies of NFAStates.
-    val stateToNFAState =
-      this.states.map { case (key, value) => StateImpl(key, value) -> NFA.State(key, value) }.toMap[State, NFA.State]
+    val states = ArraySeq.from(this.states.values)
 
-    val states = this.states.map { case (key, value) => stateToNFAState(StateImpl(key, value)) }.toSet
+    val transitions = this.transitions.sets.view.mapValues(_.toSet).toMap
 
-    val transitions = this.transitions.sets.map {
-      case (stateImpl: StateImpl, transitions) =>
-        stateToNFAState(stateImpl) -> transitions.map {
-          case Transition(nfaPredicate, end) =>
-            plans.NFA.Transition(nfaPredicate, stateToNFAState(end))
-        }.toSet
-    }.toMap
-
-    val startState = stateToNFAState(this.startState)
-    val finalState = stateToNFAState(this.finalState)
-
-    NFA(states, transitions, startState, finalState)
+    NFA(states, transitions, startState.id, finalState.id)
   }
 
   def getStartState: State = startState
 
-  def addAndGetState(variable: LogicalVariable): State = {
-    val newState = StateImpl(this.nextId, variable)
-    this.states += (newState.id -> newState.variable)
+  def addAndGetState(variable: LogicalVariable, predicate: Option[VariablePredicate]): State = {
+    val newState = State(this.nextId, variable, predicate)
+    this.states += (newState.id -> newState)
     this.nextId = nextId + 1
     lastState = newState
     newState
@@ -178,7 +152,7 @@ class NFABuilder protected (_startState: State) {
   }
 
   def addTransition(from: State, to: State, nfaPredicate: NFA.Predicate): NFABuilder = {
-    transitions.addOne(from -> Transition(nfaPredicate, to))
+    transitions.addOne(from.id -> Transition(nfaPredicate, to.id))
     this
   }
 }

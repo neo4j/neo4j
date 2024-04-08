@@ -1444,9 +1444,9 @@ object LogicalPlanToPlanBuilderString {
     val start = nfa.startState
     val constructor =
       s"${indent}new TestNFABuilder(${start.id}, ${wrapInQuotations(start.variable.name)})"
-    val transitions = nfa.transitions.toSeq.sortBy(_._1.id).flatMap {
+    val transitions = nfa.transitions.toSeq.sortBy(_._1).flatMap {
       case (from, transitions) =>
-        transitions.toSeq.sortBy(_.end.id).map(t => transitionString(from, t.predicate, t.end))
+        transitions.toSeq.sortBy(_.endId).map(t => transitionString(nfa.states(from), t.predicate, nfa.states(t.endId)))
     }
     val finalState = s"${indent}${indent}.setFinalState(${nfa.finalState.id})"
     val build = s"${indent}${indent}.build()"
@@ -1457,19 +1457,19 @@ object LogicalPlanToPlanBuilderString {
 
   private def transitionString(from: State, nfaPredicate: Predicate, to: State): String = {
     val patternString = nfaPredicate match {
-      case NodeJuxtapositionPredicate(variablePredicate) =>
+      case NodeJuxtapositionPredicate =>
         val whereString =
-          variablePredicate.map(vp =>
+          to.predicate.map(vp =>
             s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         s""" "(${escapeIdentifier(from.variable.name)}) (${escapeIdentifier(to.variable.name)}$whereString)" """.trim
-      case RelationshipExpansionPredicate(relName, relPred, types, dir, nodePred) =>
+      case RelationshipExpansionPredicate(relName, relPred, types, dir) =>
         val relWhereString =
           relPred.map(vp =>
             s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         val nodeWhereString =
-          nodePred.map(vp =>
+          to.predicate.map(vp =>
             s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         val (dirStrA, dirStrB) = arrows(dir)

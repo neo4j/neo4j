@@ -2283,18 +2283,9 @@ case class StatefulShortestPath(
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with PlanWithVariableGroupings {
 
-  def hasTargetNodePredicates: Boolean = {
-    nfa.transitions.view.values.flatten.collect {
-      case NFA.Transition(predicate, NFA.State(_, variable)) if variable == targetNode => predicate
-    }.collect {
-      case NFA.NodeJuxtapositionPredicate(Some(pred))                     => pred
-      case NFA.RelationshipExpansionPredicate(_, _, _, _, Some(nodePred)) => nodePred
-    }.nonEmpty
-  }
-
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
     // With ExpandInto, we must not have predicates on the target node
-    mode != ExpandInto || !hasTargetNodePredicates,
+    mode != ExpandInto || nfa.finalState.predicate.isEmpty,
     "Expand into and predicates on the target node are forbidden: \n" + nfa.toDotString
   )
 

@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
 import scala.annotation.tailrec
 import scala.collection.IterableFactory
+import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -97,6 +98,8 @@ object Rewritable {
         that match {
           case a: RewritableUniversal =>
             a.dup(children)
+          case _: scala.collection.immutable.ArraySeq[_] =>
+            ArraySeq.from(children)
           case _: scala.collection.IndexedSeq[_] =>
             children.toIndexedSeq
           case _: List[_] =>

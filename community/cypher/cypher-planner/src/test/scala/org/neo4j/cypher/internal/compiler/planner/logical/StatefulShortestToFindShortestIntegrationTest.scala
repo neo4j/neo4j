@@ -323,10 +323,10 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
     val nfa = new TestNFABuilder(0, "a")
-      .addTransition(0, 1, "(a) (anon_0 WHERE cacheNFromStore[anon_0.prop] = 1)")
+      .addTransition(0, 1, "(a) (anon_0 WHERE anon_0.prop = 1)")
       .addTransition(0, 3, "(a) (b)")
       .addTransition(1, 2, "(anon_0)-[r]->(anon_1 WHERE anon_1.prop = 1)")
-      .addTransition(2, 1, "(anon_1) (anon_0 WHERE cacheNFromStore[anon_0.prop] = 1)")
+      .addTransition(2, 1, "(anon_1) (anon_0 WHERE anon_0.prop = 1)")
       .addTransition(2, 3, "(anon_1) (b)")
       .setFinalState(3)
       .build()
@@ -347,8 +347,8 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
           ExpandInto
         )
         .cartesianProduct()
-        .|.allNodeScan("b")
-        .allNodeScan("a")
+        .|.allNodeScan("a")
+        .allNodeScan("b")
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -391,10 +391,10 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |""".stripMargin
     val plan = planner.plan(query).stripProduceResults
     val nfa = new TestNFABuilder(0, "a")
-      .addTransition(0, 1, "(a) (anon_0 WHERE cacheNFromStore[anon_0.prop] = 1)")
+      .addTransition(0, 1, "(a) (anon_0 WHERE anon_0.prop = 1)")
       .addTransition(0, 3, "(a) (b)")
       .addTransition(1, 2, "(anon_0)-[r]->(anon_1 WHERE anon_1.prop = 2)")
-      .addTransition(2, 1, "(anon_1) (anon_0 WHERE cacheNFromStore[anon_0.prop] = 1)")
+      .addTransition(2, 1, "(anon_1) (anon_0 WHERE anon_0.prop = 1)")
       .addTransition(2, 3, "(anon_1) (b)")
       .setFinalState(3)
       .build()

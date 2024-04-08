@@ -8146,7 +8146,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("Do not insert eager between shortest path pattern and create when there is no overlap") {
     val nfa = new TestNFABuilder(0, "u")
-      .addTransition(0, 1, "(u) (a_inner)")
+      .addTransition(0, 1, "(u) (a_inner WHERE a_inner:A)")
       .addTransition(1, 2, "(a_inner)-[r_inner WHERE r_inner:A]->(b_inner WHERE b_inner:A)")
       .addTransition(2, 1, "(b_inner) (a_inner WHERE a_inner:A)")
       .addTransition(2, 3, "(b_inner) (v_inner WHERE v_inner:A)")
@@ -8187,7 +8187,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "Do not insert eager between shortest path pattern and create when there is no overlap (nonInlinedPreFilters)"
   ) {
     val nfa = new TestNFABuilder(0, "u")
-      .addTransition(0, 1, "(u) (a_inner)")
+      .addTransition(0, 1, "(u) (a_inner WHERE a_inner:A)")
       .addTransition(1, 2, "(a_inner)-[r_inner WHERE r_inner:A]->(b_inner WHERE b_inner:A)")
       .addTransition(2, 1, "(b_inner) (a_inner WHERE a_inner:A)")
       .addTransition(2, 3, "(b_inner) (v_inner)")

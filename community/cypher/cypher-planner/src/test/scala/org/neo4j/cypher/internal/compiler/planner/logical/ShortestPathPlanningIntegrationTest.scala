@@ -1614,13 +1614,13 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       plan = nestedPlan,
       solvedExpressionAsString = solvedNestedExpressionAsString
     )(pos)
-    val juxtapositionPredicate = NodeJuxtapositionPredicate(Some(VariablePredicate(v"v", patternExpressionPredicate)))
+    val varPredicate = VariablePredicate(v"v", patternExpressionPredicate)
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
-      .addTransition(2 -> "b", 3 -> "v", juxtapositionPredicate)
+      .addTransition(2 -> "b", 3 -> "v", varPredicate, NodeJuxtapositionPredicate)
       .addTransition(3, 4, "(v)-[s]->(w)")
       .setFinalState(4)
       .build()
@@ -1674,17 +1674,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       solvedExpressionAsString =
         solvedNestedExpressionAsString
     )(pos)
-    val expansionPredicate = RelationshipExpansionPredicate(
-      v"  r@1",
-      None,
-      Seq.empty,
-      OUTGOING,
-      Some(VariablePredicate(v"  m@2", nestedPlanExpression))
-    )
+    val varPredicate = VariablePredicate(v"  m@2", nestedPlanExpression)
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (`  n@0`)")
-      .addTransition(1 -> "  n@0", 2 -> "  m@2", expansionPredicate)
+      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)", Some(varPredicate))
       .addTransition(2, 1, "(`  m@2`) (`  n@0`)")
       .addTransition(2, 3, "(`  m@2`) (`  v@6`)")
       .setFinalState(3)
@@ -1825,17 +1819,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       solvedExpressionAsString = solvedNestedExpressionAsString
     )(pos)
     val eq2 = equals(nestedPlanExpression, literalInt(2))
-    val expansionPredicate = RelationshipExpansionPredicate(
-      v"  r@1",
-      None,
-      Seq.empty,
-      OUTGOING,
-      Some(VariablePredicate(v"  m@2", eq2))
-    )
+    val varPredicate = VariablePredicate(v"  m@2", eq2)
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (`  n@0`)")
-      .addTransition(1 -> "  n@0", 2 -> "  m@2", expansionPredicate)
+      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)", Some(varPredicate))
       .addTransition(2, 1, "(`  m@2`) (`  n@0`)")
       .addTransition(2, 3, "(`  m@2`) (`  v@6`)")
       .setFinalState(3)
@@ -2550,8 +2538,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       v"r2",
       Some(Expand.VariablePredicate(v"r2", expr)),
       Seq.empty,
-      OUTGOING,
-      None
+      OUTGOING
     )
 
     val nfa = new TestNFABuilder(0, "u")
@@ -2656,9 +2643,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val query = "MATCH (a) MATCH ANY SHORTEST ((u)((n WHERE a.prop = n.prop)-[r]->(m))+(v)) RETURN *"
 
     val nfa = new TestNFABuilder(0, "u")
-      .addTransition(0, 1, "(u) (n WHERE cacheN[a.prop] = cacheNFromStore[n.prop])")
+      .addTransition(0, 1, "(u) (n WHERE cacheN[a.prop] = n.prop)")
       .addTransition(1, 2, "(n)-[r]->(m)")
-      .addTransition(2, 1, "(m) (n WHERE cacheN[a.prop] = cacheNFromStore[n.prop])")
+      .addTransition(2, 1, "(m) (n WHERE cacheN[a.prop] = n.prop)")
       .addTransition(2, 3, "(m) (v)")
       .setFinalState(3)
       .build()

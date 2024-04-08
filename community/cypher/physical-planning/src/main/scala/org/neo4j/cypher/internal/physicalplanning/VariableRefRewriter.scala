@@ -582,7 +582,7 @@ object VariableRefRewriter extends Rewriter {
     case m @ StatefulShortestPath.Mapping(left, right) => m.copy(varRef(left), varRef(right))
     case p @ PatternRelationship(name, (left, right), _, _, _) =>
       p.copy(variable = varRef(name), boundaryNodes = (varRef(left), varRef(right)))
-    case NFA.State(id, variable)                => NFA.State(id, varRef(variable))
+    case s: NFA.State                           => s.copy(variable = varRef(s.variable))
     case re: NFA.RelationshipExpansionPredicate => re.copy(relationshipVariable = varRef(re.relationshipVariable))
   }
 

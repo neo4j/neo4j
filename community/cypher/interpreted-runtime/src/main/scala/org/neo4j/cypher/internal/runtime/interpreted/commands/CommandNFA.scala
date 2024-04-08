@@ -177,19 +177,20 @@ object CommandNFA {
     }
 
     def compileStubbedNodeJuxtaposition(
-      logicalPredicate: NFA.NodeJuxtapositionPredicate,
+      nodePredicate: Option[VariablePredicate],
       end: State
     ): NodeJuxtapositionTransition = {
-      val commandPred = logicalPredicate.variablePredicate.map(convertPredicate)
+      val commandPred = nodePredicate.map(convertPredicate)
       NodeJuxtapositionTransition(commandPred, end)
     }
 
     def compileStubbedRelationshipExpansion(
       logicalPredicate: NFA.RelationshipExpansionPredicate,
+      nodePredicate: Option[VariablePredicate],
       end: State
     )(implicit st: SemanticTable): RelationshipExpansionTransition = {
       val commandRelPred = logicalPredicate.relPred.map(convertPredicate)
-      val commandNodePred = logicalPredicate.nodePred.map(convertPredicate)
+      val commandNodePred = nodePredicate.map(convertPredicate)
 
       // In planner land, empty type seq means all types. We use null in runtime land to represent all types
       val types = logicalPredicate.types
@@ -223,21 +224,23 @@ object CommandNFA {
         finalState = commandState
       }
 
-      logicalState -> commandState
+      logicalState.id -> commandState
     }.toMap
 
     // second phase: add the transitions
     for (logicalState <- logicalNFA.states) {
-      val transitions = logicalNFA.transitions.getOrElse(logicalState, Seq.empty)
+      val transitions = logicalNFA.transitions.getOrElse(logicalState.id, Seq.empty)
 
       val (nodeTransitions, relTransitions) = transitions.partitionMap {
-        case NFA.Transition(np: NFA.NodeJuxtapositionPredicate, end) =>
-          Left(compileStubbedNodeJuxtaposition(np, stateLookup(end)))
+        case NFA.Transition(NFA.NodeJuxtapositionPredicate, endId) =>
+          val end = logicalNFA.states(endId)
+          Left(compileStubbedNodeJuxtaposition(end.predicate, stateLookup(end.id)))
 
-        case NFA.Transition(rp: NFA.RelationshipExpansionPredicate, end) =>
-          Right(compileStubbedRelationshipExpansion(rp, stateLookup(end)))
+        case NFA.Transition(rp: NFA.RelationshipExpansionPredicate, endId) =>
+          val end = logicalNFA.states(endId)
+          Right(compileStubbedRelationshipExpansion(rp, end.predicate, stateLookup(end.id)))
       }
-      val commandState = stateLookup(logicalState)
+      val commandState = stateLookup(logicalState.id)
       commandState.nodeTransitions = nodeTransitions.toSeq
       commandState.relTransitions = relTransitions.toSeq
     }

@@ -754,9 +754,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       Set.empty,
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
-        .addTransition(0, 1, "(start) (a WHERE cacheNFromStore[a.prop] = 5)")
+        .addTransition(0, 1, "(start) (a WHERE a.prop = 5)")
         .addTransition(1, 2, "(a)-[r:R]->(b)")
-        .addTransition(2, 1, "(b) (a WHERE cacheNFromStore[a.prop] = 5)")
+        .addTransition(2, 1, "(b) (a WHERE a.prop = 5)")
         .addTransition(2, 3, "(b) (end)")
         .setFinalState(3)
         .build()
@@ -771,9 +771,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       Set.empty,
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
-        .addTransition(0, 1, "(start) (anon_0 WHERE cacheNFromStore[anon_0.prop] = 5)")
+        .addTransition(0, 1, "(start) (anon_0 WHERE anon_0.prop = 5)")
         .addTransition(1, 2, "(anon_0)-[r:R]->(b)")
-        .addTransition(2, 1, "(b) (anon_0 WHERE cacheNFromStore[anon_0.prop] = 5)")
+        .addTransition(2, 1, "(b) (anon_0 WHERE anon_0.prop = 5)")
         .addTransition(2, 3, "(b) (end)")
         .setFinalState(3)
         .build()
@@ -995,9 +995,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start)-[s]-(x WHERE x.prop = 5)")
-            .addTransition(1, 2, "(x) (a WHERE cacheNFromStore[a.prop] = 5)")
+            .addTransition(1, 2, "(x) (a WHERE a.prop = 5)")
             .addTransition(2, 3, "(a)-[r:R]->(b)")
-            .addTransition(3, 2, "(b) (a WHERE cacheNFromStore[a.prop] = 5)")
+            .addTransition(3, 2, "(b) (a WHERE a.prop = 5)")
             .addTransition(3, 4, "(b) (end)")
             .setFinalState(4)
             .build(),
@@ -1225,9 +1225,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
-            .addTransition(0, 1, "(start) (a WHERE cacheNFromStore[a.prop] = 5 AND NOT a:Label)")
+            .addTransition(0, 1, "(start) (a WHERE a.prop = 5 AND NOT a:Label)")
             .addTransition(1, 2, "(a)-[r:R]->(b WHERE NOT b:Label)")
-            .addTransition(2, 1, "(b) (a WHERE cacheNFromStore[a.prop] = 5 AND NOT a:Label)")
+            .addTransition(2, 1, "(b) (a WHERE a.prop = 5 AND NOT a:Label)")
             .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
             .setFinalState(3)
             .build(),

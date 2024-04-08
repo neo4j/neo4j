@@ -521,7 +521,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         ast.TrailRelationshipUniqueness(SlotAllocation.TRAIL_STATE_METADATA_KEY, trailId.x, innerRel)
 
       // Inside an NFA there are cases where we need to use a VariableRef
-      case state @ NFA.State(_, Variable(name)) =>
+      case state @ NFA.State(_, Variable(name), _) =>
         state.copy(variable = VariableRef(name))
 
       case re: NFA.RelationshipExpansionPredicate =>

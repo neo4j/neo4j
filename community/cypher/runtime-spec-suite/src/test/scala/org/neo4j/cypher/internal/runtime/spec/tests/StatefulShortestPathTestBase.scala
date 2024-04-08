@@ -2888,10 +2888,11 @@ abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
           .addTransition(
             2 -> "b_inner",
             3 -> "v_inner",
-            NodeJuxtapositionPredicate(Some(VariablePredicate(
+            VariablePredicate(
               varFor("v_inner"),
               NestedPlanExistsExpression(npe, "EXISTS { (v_inner)-->(:N) }")(pos)
-            )))
+            ),
+            NodeJuxtapositionPredicate
           )
           .addTransition(3, 4, "(v_inner)-[`  UNNAMED22`]-(w)")
           .setFinalState(4)

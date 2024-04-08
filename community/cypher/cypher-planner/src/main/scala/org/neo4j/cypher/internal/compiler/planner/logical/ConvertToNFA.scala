@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.NFA
+import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
@@ -210,9 +211,9 @@ object ConvertToNFA {
           relationshipVariable: LogicalVariable,
           dir: SemanticDirection,
           types: Seq[RelTypeName],
-          sourceState: NFABuilder.State,
-          targetState: NFABuilder.State
-        ): Selections = {
+          sourceState: State,
+          targetState: State
+        ): ListSet[Expression] = {
           val directionToPlan = if (fromLeft) dir else dir.reversed
 
           val target = targetState.variable
@@ -230,7 +231,6 @@ object ConvertToNFA {
 
           val relVariablePredicates =
             toVariablePredicates(relationshipVariable, relPredicates ++ extraRelPredicates.map(_._2))
-          val nodeVariablePredicates = toVariablePredicates(target, nodePredicates)
 
           builder.addTransition(
             sourceState,
@@ -239,11 +239,10 @@ object ConvertToNFA {
               relationshipVariable = relationshipVariable,
               relPred = relVariablePredicates,
               types = types,
-              dir = directionToPlan,
-              nodePred = nodeVariablePredicates
+              dir = directionToPlan
             )
           )
-          Selections.from(relPredicates ++ nodePredicates ++ extraRelPredicates.map(_._1))
+          relPredicates ++ extraRelPredicates.map(_._1)
         }
 
         def addRelationship(
@@ -252,9 +251,17 @@ object ConvertToNFA {
           dir: SemanticDirection,
           types: Seq[RelTypeName]
         ): Selections = {
+          val nodePredicates = getTopLevelPredicates(Set(target))
+          val nodeVariablePredicates = toVariablePredicates(target, nodePredicates)
           val sourceState = builder.getLastState
-          val targetState = builder.addAndGetState(target)
-          addRelationshipBetweenStates(relationship, dir, types, sourceState, targetState)
+          val targetState = builder.addAndGetState(target, nodeVariablePredicates)
+          Selections.from(nodePredicates ++ addRelationshipBetweenStates(
+            relationship,
+            dir,
+            types,
+            sourceState,
+            targetState
+          ))
         }
 
         val newlyInlinedSelections = nodeConnection match {
@@ -294,11 +301,11 @@ object ConvertToNFA {
             val singletonRelationship = syntheticVarLengthSingleton(relationship)
             val sourceState = builder.getLastState
 
-            val innerState = builder.addAndGetState(varFor(anonymousVariableNameGenerator.nextName))
+            val innerState = builder.addAndGetState(varFor(anonymousVariableNameGenerator.nextName), None)
             builder.addTransition(
               sourceState,
               innerState,
-              NFA.NodeJuxtapositionPredicate(None)
+              NFA.NodeJuxtapositionPredicate
             )
 
             for (_ <- 1 to lowerBound) {
@@ -330,13 +337,13 @@ object ConvertToNFA {
             }
 
             val target = if (fromLeft) right else left
-            val targetState = builder.addAndGetState(target)
             val (predicatesOnTargetNode, variablePredicateOnTargetNode) = getVariablePredicates(target)
+            val targetState = builder.addAndGetState(target, variablePredicateOnTargetNode)
             (exitableState +: furtherExitableStates).foreach { exitableState =>
               builder.addTransition(
                 exitableState,
                 targetState,
-                NFA.NodeJuxtapositionPredicate(variablePredicateOnTargetNode)
+                NFA.NodeJuxtapositionPredicate
               )
             }
 
@@ -392,16 +399,16 @@ object ConvertToNFA {
             val sourceBinding = if (fromLeft) leftBinding else rightBinding
             val sourceOuterState = builder.getLastState
             val sourceInner = sourceBinding.inner
-            // var because it will get overwritten if the lower bound is > 1
-            var lastSourceInnerState = builder.addAndGetState(sourceInner)
             val predicatesOnSourceInner =
               getPredicates(qppSelections, availableSymbols + sourceInner)
             val variablePredicateOnSourceInner =
               toVariablePredicates(sourceInner, predicatesOnSourceInner.to(ListSet))
+            // var because it will get overwritten if the lower bound is > 1
+            var lastSourceInnerState = builder.addAndGetState(sourceInner, variablePredicateOnSourceInner)
             builder.addTransition(
               sourceOuterState,
               lastSourceInnerState,
-              NFA.NodeJuxtapositionPredicate(variablePredicateOnSourceInner)
+              NFA.NodeJuxtapositionPredicate
             )
 
             // === 2.a) Add inner transitions ===
@@ -426,11 +433,11 @@ object ConvertToNFA {
             // If the lower bound is larger than 1, repeat the inner steps of the QPP (min - 1) times.
             for (_ <- 1L to (repetition.min - 1)) {
               val targetInnerState = builder.getLastState
-              lastSourceInnerState = builder.addAndGetState(sourceInner)
+              lastSourceInnerState = builder.addAndGetState(sourceInner, variablePredicateOnSourceInner)
               builder.addTransition(
                 targetInnerState,
                 lastSourceInnerState,
-                NFA.NodeJuxtapositionPredicate(variablePredicateOnSourceInner)
+                NFA.NodeJuxtapositionPredicate
               )
               addQppInnerTransitions()
             }
@@ -442,17 +449,17 @@ object ConvertToNFA {
                 builder.addTransition(
                   exitableTargetInnerState,
                   lastSourceInnerState,
-                  NFA.NodeJuxtapositionPredicate(variablePredicateOnSourceInner)
+                  NFA.NodeJuxtapositionPredicate
                 )
                 Seq.empty
               case UpperBound.Limited(max) =>
                 for (_ <- Math.max(repetition.min, 1) until max) yield {
                   val targetInnerState = builder.getLastState
-                  val sourceInnerState = builder.addAndGetState(sourceInner)
+                  val sourceInnerState = builder.addAndGetState(sourceInner, variablePredicateOnSourceInner)
                   builder.addTransition(
                     targetInnerState,
                     sourceInnerState,
-                    NFA.NodeJuxtapositionPredicate(variablePredicateOnSourceInner)
+                    NFA.NodeJuxtapositionPredicate
                   )
                   addQppInnerTransitions()
                   builder.getLastState
@@ -464,16 +471,16 @@ object ConvertToNFA {
             // Connect all exitableTargetInnerStates with the targetOuterState
             val targetBinding = if (fromLeft) rightBinding else leftBinding
             val targetOuter = targetBinding.outer
-            val targetOuterState = builder.addAndGetState(targetOuter)
             val predicatesOnTargetOuter = getTopLevelPredicates(Set(targetOuter))
-
             val variablePredicateOnTargetOuter =
               toVariablePredicates(targetOuter, predicatesOnTargetOuter.to(ListSet))
+            val targetOuterState = builder.addAndGetState(targetOuter, variablePredicateOnTargetOuter)
+
             exitableTargetInnerStates.foreach { targetInnerState =>
               builder.addTransition(
                 targetInnerState,
                 targetOuterState,
-                NFA.NodeJuxtapositionPredicate(variablePredicateOnTargetOuter)
+                NFA.NodeJuxtapositionPredicate
               )
             }
 
@@ -482,7 +489,7 @@ object ConvertToNFA {
               builder.addTransition(
                 sourceOuterState,
                 targetOuterState,
-                NFA.NodeJuxtapositionPredicate(variablePredicateOnTargetOuter)
+                NFA.NodeJuxtapositionPredicate
               )
             }
             Selections.from(predicatesOnSourceInner ++ predicatesOnTargetOuter)

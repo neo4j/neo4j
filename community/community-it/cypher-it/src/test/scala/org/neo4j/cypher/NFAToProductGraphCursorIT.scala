@@ -114,8 +114,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       context.setLongAt(slots.getLongOffsetFor("start"), start.getId)
 
       val nfaBuilder = new NFABuilder(varFor("s0"))
-      val s1 = nfaBuilder.addAndGetState(varFor("s1"))
-      val s2 = nfaBuilder.addAndGetState(varFor("s2"))
+      val s1 = nfaBuilder.addAndGetState(varFor("s1"), None)
+      val s2 = nfaBuilder.addAndGetState(varFor("s2"), None)
       val s0 = nfaBuilder.getStartState
 
       nfaBuilder.setFinalState(s2)
@@ -127,8 +127,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r1"),
           None,
           Seq(relTypeName("R1")),
-          SemanticDirection.OUTGOING,
-          None
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -139,8 +138,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r2"),
           None,
           Seq(relTypeName("R2")),
-          SemanticDirection.OUTGOING,
-          None
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -187,8 +185,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       context.setLongAt(slots.getLongOffsetFor("start"), start.getId)
 
       val nfaBuilder = new NFABuilder(varFor("s0"))
-      val s1 = nfaBuilder.addAndGetState(varFor("s1"))
-      val s2 = nfaBuilder.addAndGetState(varFor("s2"))
+      val s1 = nfaBuilder.addAndGetState(varFor("s1"), None)
+      val s2 = nfaBuilder.addAndGetState(varFor("s2"), None)
       val s0 = nfaBuilder.getStartState
 
       nfaBuilder.setFinalState(s2)
@@ -200,8 +198,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r1"),
           None,
           Seq(relTypeName("R1")),
-          SemanticDirection.OUTGOING,
-          None
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -212,8 +209,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r2"),
           None,
           Seq(relTypeName("R1")),
-          SemanticDirection.OUTGOING,
-          None
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -258,8 +254,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       context.setLongAt(slots.getLongOffsetFor("start"), start.getId)
 
       val nfaBuilder = new NFABuilder(varFor("s0"))
-      val s1 = nfaBuilder.addAndGetState(varFor("s1"))
-      val s2 = nfaBuilder.addAndGetState(varFor("s2"))
+      val s1 = nfaBuilder.addAndGetState(varFor("s1"), None)
+      val s2 = nfaBuilder.addAndGetState(varFor("s2"), None)
       val s0 = nfaBuilder.getStartState
 
       nfaBuilder.setFinalState(s2)
@@ -271,8 +267,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r1"),
           None,
           Seq(relTypeName("R1")),
-          SemanticDirection.OUTGOING,
-          None
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -283,8 +278,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r2"),
           None,
           Seq(relTypeName("R2")),
-          SemanticDirection.INCOMING,
-          None
+          SemanticDirection.INCOMING
         )
       )
 
@@ -329,8 +323,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       context.setLongAt(slots.getLongOffsetFor("start"), start.getId)
 
       val nfaBuilder = new NFABuilder(varFor("s0"))
-      val s1 = nfaBuilder.addAndGetState(varFor("s1"))
-      val s2 = nfaBuilder.addAndGetState(varFor("s2"))
+      val s1 = nfaBuilder.addAndGetState(varFor("s1"), None)
+      val s2 = nfaBuilder.addAndGetState(varFor("s2"), None)
       val s0 = nfaBuilder.getStartState
 
       nfaBuilder.setFinalState(s2)
@@ -342,8 +336,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r1"),
           None,
           Seq(relTypeName("R1")),
-          SemanticDirection.OUTGOING,
-          None
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -354,8 +347,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r2"),
           falsePred,
           Seq(relTypeName("R2")),
-          SemanticDirection.OUTGOING,
-          None
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -400,8 +392,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       context.setLongAt(slots.getLongOffsetFor("start"), start.getId)
 
       val nfaBuilder = new NFABuilder(varFor("s0"))
-      val s1 = nfaBuilder.addAndGetState(varFor("s1"))
-      val s2 = nfaBuilder.addAndGetState(varFor("s2"))
+      val s1 = nfaBuilder.addAndGetState(varFor("s1"), None)
+      val s2 = nfaBuilder.addAndGetState(varFor("s2"), falsePred)
       val s0 = nfaBuilder.getStartState
 
       nfaBuilder.setFinalState(s2)
@@ -413,8 +405,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r1"),
           None,
           Seq(relTypeName("R1")),
-          SemanticDirection.OUTGOING,
-          None
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -425,8 +416,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r2"),
           truePred,
           Seq(relTypeName("R2")),
-          SemanticDirection.OUTGOING,
-          falsePred
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -490,10 +480,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       context.setLongAt(slots.getLongOffsetFor("start"), start.getId)
 
       val nfaBuilder = new NFABuilder(varFor("s0"))
-      val s1 = nfaBuilder.addAndGetState(varFor("s1"))
-      val s2 = nfaBuilder.addAndGetState(varFor("s2"))
-      val s3 = nfaBuilder.addAndGetState(varFor("s3"))
-      val s4 = nfaBuilder.addAndGetState(varFor("s4"))
+      val s1 = nfaBuilder.addAndGetState(varFor("s1"), None)
+      val s2 = nfaBuilder.addAndGetState(varFor("s2"), None)
+      val s3 = nfaBuilder.addAndGetState(varFor("s3"), None)
+      val s4 = nfaBuilder.addAndGetState(varFor("s4"), None)
       val s0 = nfaBuilder.getStartState
       nfaBuilder.setFinalState(s4)
 
@@ -504,8 +494,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r1"),
           truePred,
           Seq(relTypeName("O1")),
-          SemanticDirection.OUTGOING,
-          truePred
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -516,8 +505,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r2"),
           truePred,
           Seq(relTypeName("I1"), relTypeName("I2")),
-          SemanticDirection.INCOMING,
-          truePred
+          SemanticDirection.INCOMING
         )
       )
 
@@ -528,8 +516,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r2"),
           truePred,
           Seq(relTypeName("L1"), relTypeName("I3")),
-          SemanticDirection.BOTH,
-          truePred
+          SemanticDirection.BOTH
         )
       )
 
@@ -540,8 +527,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r2"),
           truePred,
           Seq(relTypeName("O3"), relTypeName("L2")),
-          SemanticDirection.INCOMING,
-          truePred
+          SemanticDirection.INCOMING
         )
       )
 
@@ -552,8 +538,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("r2"),
           truePred,
           Seq(relTypeName("L3")),
-          SemanticDirection.INCOMING,
-          truePred
+          SemanticDirection.INCOMING
         )
       )
 
@@ -604,8 +589,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       context.setLongAt(slots.getLongOffsetFor("start"), start.getId)
 
       val nfaBuilder = new NFABuilder(varFor("s0"))
-      val s1 = nfaBuilder.addAndGetState(varFor("s1"))
-      val s2 = nfaBuilder.addAndGetState(varFor("s2"))
+      val s1 = nfaBuilder.addAndGetState(varFor("s1"), truePred)
+      val s2 = nfaBuilder.addAndGetState(varFor("s2"), falsePred)
       val s0 = nfaBuilder.getStartState
 
       nfaBuilder.setFinalState(s2)
@@ -613,25 +598,19 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       nfaBuilder.addTransition(
         s0,
         s1,
-        NFA.NodeJuxtapositionPredicate(
-          truePred
-        )
+        NFA.NodeJuxtapositionPredicate
       )
 
       nfaBuilder.addTransition(
         s0,
         s2,
-        NFA.NodeJuxtapositionPredicate(
-          falsePred
-        )
+        NFA.NodeJuxtapositionPredicate
       )
 
       nfaBuilder.addTransition(
         s1,
         s2,
-        NFA.NodeJuxtapositionPredicate(
-          falsePred
-        )
+        NFA.NodeJuxtapositionPredicate
       )
 
       val nfa = expressionVariableAllocation.allocate(nfaBuilder.build()).rewritten
@@ -701,47 +680,48 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val nfaBuilder = new NFABuilder(varFor("nj0"))
       val nj0 = nfaBuilder.getStartState
 
-      val nj1 = nfaBuilder.addAndGetState(varFor("nj1"))
-      val nj2 = nfaBuilder.addAndGetState(varFor("nj2"))
-      val nj3 = nfaBuilder.addAndGetState(varFor("nj3"))
-      val nj4 = nfaBuilder.addAndGetState(varFor("nj4"))
-      val nj5 = nfaBuilder.addAndGetState(varFor("nj5"))
+      val nj1 = nfaBuilder.addAndGetState(
+        varFor("nj1"),
+        Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(n1))))
+      )
+      val nj2 = nfaBuilder.addAndGetState(
+        varFor("nj2"),
+        Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(start))))
+      )
+      val nj3 = nfaBuilder.addAndGetState(
+        varFor("nj3"),
+        Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(n5))))
+      )
+      val nj4 = nfaBuilder.addAndGetState(varFor("nj4"), None)
+      val nj5 = nfaBuilder.addAndGetState(varFor("nj5"), None)
 
-      val re0 = nfaBuilder.addAndGetState(varFor("re0"))
-      val re1 = nfaBuilder.addAndGetState(varFor("re1"))
-      val re2 = nfaBuilder.addAndGetState(varFor("re2"))
-      val _ = nfaBuilder.addAndGetState(varFor("re3"))
-      val _ = nfaBuilder.addAndGetState(varFor("re4"))
+      val re0 = nfaBuilder.addAndGetState(varFor("re0"), truePred)
+      val re1 = nfaBuilder.addAndGetState(varFor("re1"), None)
+      val re2 = nfaBuilder.addAndGetState(varFor("re2"), None)
+      val _ = nfaBuilder.addAndGetState(varFor("re3"), None)
+      val _ = nfaBuilder.addAndGetState(varFor("re4"), None)
 
       nfaBuilder.setFinalState(re2)
 
       nfaBuilder.addTransition(
         nj0,
         nj1,
-        NFA.NodeJuxtapositionPredicate(
-          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(n1))))
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         nj0,
         nj2,
-        NFA.NodeJuxtapositionPredicate(
-          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(start))))
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         nj1,
         nj2,
-        NFA.NodeJuxtapositionPredicate(
-          truePred
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         nj2,
         re0,
-        NFA.NodeJuxtapositionPredicate(
-          truePred
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         re0,
@@ -753,8 +733,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
             eq(function("startNode", varFor("rel")), function("endNode", varFor("rel")))
           )),
           Seq(), // All types
-          SemanticDirection.BOTH,
-          truePred
+          SemanticDirection.BOTH
         )
       )
       nfaBuilder.addTransition(
@@ -771,16 +750,13 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
             )
           )),
           Seq(), // All types
-          SemanticDirection.BOTH,
-          Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(n5))))
+          SemanticDirection.BOTH
         )
       )
       nfaBuilder.addTransition(
         nj3,
         re1,
-        NFA.NodeJuxtapositionPredicate(
-          Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(start))))
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         re1,
@@ -789,8 +765,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("re1->re2"),
           truePred,
           Seq(), // All types
-          SemanticDirection.BOTH,
-          None // Another (preferred) way to specify always true
+          SemanticDirection.BOTH
         )
       )
       nfaBuilder.addTransition(
@@ -800,8 +775,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("re2->re2"),
           truePred,
           Seq(), // All types
-          SemanticDirection.OUTGOING,
-          None // Another (preferred) way to specify always true
+          SemanticDirection.OUTGOING
         )
       )
       nfaBuilder.addTransition(
@@ -814,8 +788,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
             eq(function("startNode", varFor("rel")), function("endNode", varFor("rel")))
           )),
           Seq(), // All types
-          SemanticDirection.OUTGOING,
-          None // Another (preferred) way to specify always true
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -919,33 +892,44 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val nfaBuilder = new NFABuilder(varFor("s0"))
       val s0 = nfaBuilder.getStartState
 
-      val s1 = nfaBuilder.addAndGetState(varFor("s1"))
-      val s2 = nfaBuilder.addAndGetState(varFor("s2"))
-      val s3 = nfaBuilder.addAndGetState(varFor("s3"))
-      val s4 = nfaBuilder.addAndGetState(varFor("s4"))
-      val s5 = nfaBuilder.addAndGetState(varFor("s5"))
+      val s1 = nfaBuilder.addAndGetState(
+        varFor("s1"),
+        Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(n1))))
+      )
+      val s2 = nfaBuilder.addAndGetState(
+        varFor("s2"),
+        Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(start))))
+      )
+      val s3 = nfaBuilder.addAndGetState(
+        varFor("s3"),
+        Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(n5))))
+      )
+      val s4 = nfaBuilder.addAndGetState(varFor("s4"), truePred)
+      val s5 = nfaBuilder.addAndGetState(
+        varFor("s5"),
+        Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(n2))))
+      )
 
-      val s6 = nfaBuilder.addAndGetState(varFor("s6"))
-      val s7 = nfaBuilder.addAndGetState(varFor("s7"))
-      val s8 = nfaBuilder.addAndGetState(varFor("s8"))
-      val _ = nfaBuilder.addAndGetState(varFor("s9"))
-      val _ = nfaBuilder.addAndGetState(varFor("s10"))
+      val s6 = nfaBuilder.addAndGetState(varFor("s6"), truePred)
+      val s7 = nfaBuilder.addAndGetState(
+        varFor("s7"),
+        Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(start))))
+      )
+      val s8 = nfaBuilder.addAndGetState(varFor("s8"), None)
+      val _ = nfaBuilder.addAndGetState(varFor("s9"), None)
+      val _ = nfaBuilder.addAndGetState(varFor("s10"), None)
 
       nfaBuilder.setFinalState(s8)
 
       nfaBuilder.addTransition(
         s0,
         s1,
-        NFA.NodeJuxtapositionPredicate(
-          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(n1))))
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         s0,
         s2,
-        NFA.NodeJuxtapositionPredicate(
-          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(start))))
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         s0,
@@ -954,33 +938,26 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("s0->s4"),
           truePred,
           Seq(),
-          SemanticDirection.INCOMING,
-          truePred
+          SemanticDirection.INCOMING
         )
       )
 
       nfaBuilder.addTransition(
         s1,
         s2,
-        NFA.NodeJuxtapositionPredicate(
-          truePred
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         s2,
         s6,
-        NFA.NodeJuxtapositionPredicate(
-          truePred
-        )
+        NFA.NodeJuxtapositionPredicate
       )
 
       // s4 has mixed transitions
       nfaBuilder.addTransition(
         s4,
         s5,
-        NFA.NodeJuxtapositionPredicate(
-          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(n2))))
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         s4,
@@ -989,8 +966,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("s4->s3"),
           truePred,
           Seq(),
-          SemanticDirection.OUTGOING,
-          truePred
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -1004,8 +980,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
             eq(function("startNode", varFor("rel")), function("endNode", varFor("rel")))
           )),
           Seq(), // All types
-          SemanticDirection.BOTH,
-          truePred
+          SemanticDirection.BOTH
         )
       )
       nfaBuilder.addTransition(
@@ -1022,16 +997,13 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
             )
           )),
           Seq(), // All types
-          SemanticDirection.BOTH,
-          Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(n5))))
+          SemanticDirection.BOTH
         )
       )
       nfaBuilder.addTransition(
         s3,
         s7,
-        NFA.NodeJuxtapositionPredicate(
-          Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(start))))
-        )
+        NFA.NodeJuxtapositionPredicate
       )
       nfaBuilder.addTransition(
         s7,
@@ -1040,8 +1012,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("s8->s7"),
           truePred,
           Seq(), // All types
-          SemanticDirection.BOTH,
-          None // Another (preferred) way to specify always true
+          SemanticDirection.BOTH
         )
       )
       nfaBuilder.addTransition(
@@ -1051,8 +1022,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           varFor("s8->s8"),
           truePred,
           Seq(), // All types
-          SemanticDirection.OUTGOING,
-          None // Another (preferred) way to specify always true
+          SemanticDirection.OUTGOING
         )
       )
       nfaBuilder.addTransition(
@@ -1065,8 +1035,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
             eq(function("startNode", varFor("rel")), function("endNode", varFor("rel")))
           )),
           Seq(), // All types
-          SemanticDirection.OUTGOING,
-          None // Another (preferred) way to specify always true
+          SemanticDirection.OUTGOING
         )
       )
 
@@ -1126,8 +1095,6 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           .addRelationship(n3.getId, conv(s8), r35.getId, n5.getId, conv(s8))
           .addRelationship(n4.getId, conv(s8), r45.getId, n5.getId, conv(s8))
           .addNode(n5.getId, conv(s8))
-          .addRelationship(n3.getId, conv(s8), r33.getId, n3.getId, conv(s5))
-          .addNode(n3.getId, conv(s5))
           .build()
 
       expected.assertSame(actual)
@@ -1163,7 +1130,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
-  def conv(state: NFABuilder.State): productgraph.State = {
+  def conv(state: NFA.State): productgraph.State = {
     new State(
       state.id,
       SlotOrName.None,
