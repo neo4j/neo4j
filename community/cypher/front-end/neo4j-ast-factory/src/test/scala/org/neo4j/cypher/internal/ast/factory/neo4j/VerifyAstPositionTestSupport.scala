@@ -47,8 +47,8 @@ trait VerifyAstPositionTestSupport extends Assertions with Matchers {
 
   def verifyPositions(actual: ASTNode, expected: ASTNode): Unit = {
     findPosMismatch(expected, actual) match {
-      case Some(Mismatch(expectedNode, actualNode)) =>
-        withClue(s"AST node $actualNode was parsed with different positions:") {
+      case Some(m @ Mismatch(expectedNode, actualNode)) =>
+        withClue(m) {
           actualNode.position shouldBe expectedNode.position
         }
       case _ =>
@@ -63,10 +63,16 @@ object VerifyAstPositionTestSupport {
     override def toString: String =
       s"""Mismatched positions
          |Expected: $expected
-         |          @ ${expected.position}
+         |          @ ${positionToString(expected.position)}
          |Actual  : $actual
-         |          @ ${actual.position}
+         |          @ ${positionToString(actual.position)}
          |""".stripMargin
+
+    private def positionToString(position: InputPosition): String = position match {
+      case p: InputPosition.Simple => p.toString
+      case InputPosition.Range(offset, line, column, length) =>
+        s"line $line, column $column (offset: $offset, inputLength: $length)"
+    }
   }
 
   def findPosMismatch(expected: Any, actual: Any): Option[Mismatch] = {
