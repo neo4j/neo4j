@@ -4761,12 +4761,13 @@ case class PartitionedUnionNodeByLabelsScan(
 }
 
 /**
- * TODO
- */
+* Produce one row for every node in the graph that has all of the provided "positive" labels and none of the provided
+ *"negative" labels. This row contains the node (assigned to 'idName') and the contents of argument.
+*/
 case class SubtractionNodeByLabelsScan(
   idName: LogicalVariable,
-  positiveLabel: LabelName,
-  negativeLabel: LabelName,
+  positiveLabels: Seq[LabelName],
+  negativeLabels: Seq[LabelName],
   argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)

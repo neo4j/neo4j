@@ -37,8 +37,8 @@ import org.neo4j.values.virtual.VirtualValues
 
 case class SubtractionNodeByLabelsScanPipe(
   ident: String,
-  positiveLabel: LazyLabel,
-  negativeLabel: LazyLabel,
+  positiveLabels: Seq[LazyLabel],
+  negativeLabels: Seq[LazyLabel],
   indexOrder: IndexOrder
 )(val id: Id =
   Id.INVALID_ID)
@@ -46,7 +46,7 @@ case class SubtractionNodeByLabelsScanPipe(
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val nodes =
-      subtractionIterator(state.query, positiveLabel, negativeLabel, indexOrder, state.nodeLabelTokenReadSession.get)
+      subtractionIterator(state.query, positiveLabels, negativeLabels, indexOrder, state.nodeLabelTokenReadSession.get)
     val baseContext = state.newRowWithArgument(rowFactory)
     PrimitiveLongHelper.map(nodes, n => rowFactory.copyWith(baseContext, ident, VirtualValues.node(n)))
   }
@@ -56,44 +56,54 @@ object SubtractionNodeByLabelsScanPipe {
 
   def subtractionIterator(
     query: QueryContext,
-    positiveLabel: LazyLabel,
-    negativeLabel: LazyLabel,
+    positiveLabels: Seq[LazyLabel],
+    negativeLabels: Seq[LazyLabel],
     indexOrder: IndexOrder,
     tokenReadSession: TokenReadSession
   ): ClosingLongIterator = {
-    val posToken = positiveLabel.getId(query)
-    val negToken = negativeLabel.getId(query)
-    val posCursor = query.nodeLabelIndexCursor()
-    query.resources.trace(posCursor)
-    val negCursor = query.nodeLabelIndexCursor()
-    query.resources.trace(negCursor)
+    val posTokens = positiveLabels.map(l => l.getId(query)).toArray
+    val negTokens = negativeLabels.map(l => l.getId(query)).toArray
+    val posCursors = posTokens.map(_ => {
+      val cursor = query.nodeLabelIndexCursor()
+      query.resources.trace(cursor)
+      cursor
+    })
+    val negCursors = negTokens.map(_ => {
+      val cursor = query.nodeLabelIndexCursor()
+      query.resources.trace(cursor)
+      cursor
+    })
+
     val cursor = indexOrder match {
       case IndexOrderDescending =>
         descendingSubtractionNodeLabelIndexCursor(
           query.dataRead,
           tokenReadSession,
           query.transactionalContext.cursorContext,
-          Array(posToken),
-          Array(negToken),
-          Array(posCursor),
-          Array(negCursor)
+          posTokens,
+          negTokens,
+          posCursors,
+          negCursors
         )
       case _ =>
         ascendingSubtractionNodeLabelIndexCursor(
           query.dataRead,
           tokenReadSession,
           query.transactionalContext.cursorContext,
-          Array(posToken),
-          Array(negToken),
-          Array(posCursor),
-          Array(negCursor)
+          posTokens,
+          negTokens,
+          posCursors,
+          negCursors
         )
     }
 
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.reference() else -1L
 
-      override def close(): Unit = IOUtils.closeAll(posCursor, negCursor)
+      override def close(): Unit = {
+        IOUtils.closeAll(posCursors:_*)
+        IOUtils.closeAll(negCursors:_*)
+      }
     }
 
   }

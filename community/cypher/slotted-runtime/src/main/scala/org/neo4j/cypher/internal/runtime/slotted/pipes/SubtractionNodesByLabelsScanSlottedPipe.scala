@@ -31,14 +31,14 @@ import org.neo4j.cypher.internal.util.attribution.Id
 
 case class SubtractionNodesByLabelsScanSlottedPipe(
   nodeOffset: Int,
-  positiveLabel: LazyLabel,
-  negativeLabel: LazyLabel,
+  positiveLabels: Seq[LazyLabel],
+  negativeLabels: Seq[LazyLabel],
   indexOrder: IndexOrder
 )(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     PrimitiveLongHelper.map(
-      subtractionIterator(state.query, positiveLabel, negativeLabel, indexOrder, state.nodeLabelTokenReadSession.get),
+      subtractionIterator(state.query, positiveLabels, negativeLabels, indexOrder, state.nodeLabelTokenReadSession.get),
       n => {
         val context = state.newRowWithArgument(rowFactory)
         context.setLongAt(nodeOffset, n)

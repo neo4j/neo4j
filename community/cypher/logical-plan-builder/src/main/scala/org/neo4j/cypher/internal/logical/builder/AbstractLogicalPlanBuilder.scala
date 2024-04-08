@@ -1234,12 +1234,22 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     indexOrder: IndexOrder,
     args: String*
   ): IMPL = {
+   subtractionNodeByLabelsScan(node, Seq(positiveLabel), Seq(negativeLabel), indexOrder, args:_*)
+  }
+
+  def subtractionNodeByLabelsScan(
+                                   node: String,
+                                   positiveLabels: Seq[String],
+                                   negativeLabels: Seq[String],
+                                   indexOrder: IndexOrder,
+                                   args: String*
+                                 ): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     appendAtCurrentIndent(LeafOperator(SubtractionNodeByLabelsScan(
       varFor(n),
-      labelName(positiveLabel),
-      labelName(negativeLabel),
+      positiveLabels.map(labelName),
+      negativeLabels.map(labelName),
       args.map(a => varFor(VariableParser.unescaped(a))).toSet,
       indexOrder
     )(_)))

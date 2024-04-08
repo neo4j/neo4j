@@ -474,14 +474,11 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case SubtractionNodeByLabelsScan(idName, p, n, _, _) =>
-        // TODO what to do about multiple labels, add tests
-        val positiveLabels = List(p)
-        val negativeLabels = List(p)
+      case SubtractionNodeByLabelsScan(idName, positiveLabels, negativeLabels, _, _) =>
         val prettyDetails =
           pretty"${asPrettyString(idName)}:${positiveLabels.map(l => asPrettyString(l.name)).mkPrettyString(
-              "&"
-            )}:${negativeLabels.map(l => asPrettyString(s"!${l.name}")).mkPrettyString("&")}"
+              "", "&", "&"
+            )}${negativeLabels.map(l => pretty"!${asPrettyString(l.name)}").mkPrettyString("&")}"
         PlanDescriptionImpl(
           id,
           "SubtractionNodeByLabelsScan",

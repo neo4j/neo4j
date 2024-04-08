@@ -477,12 +477,12 @@ class SlottedPipeMapper(
           IndexOrderNone
         )(id)
 
-      case SubtractionNodeByLabelsScan(column, positiveLabel, negativeLabel, _, indexOrder) =>
+      case SubtractionNodeByLabelsScan(column, positiveLabels, negativeLabels, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
         SubtractionNodesByLabelsScanSlottedPipe(
           slots.getLongOffsetFor(column),
-          LazyLabel(positiveLabel)(semanticTable),
-          LazyLabel(negativeLabel)(semanticTable),
+          positiveLabels.map(l => LazyLabel(l)(semanticTable)),
+          negativeLabels.map(l => LazyLabel(l)(semanticTable)),
           indexOrder
         )(id)
 

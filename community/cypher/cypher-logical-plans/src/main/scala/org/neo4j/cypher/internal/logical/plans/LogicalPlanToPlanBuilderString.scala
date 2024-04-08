@@ -468,9 +468,11 @@ object LogicalPlanToPlanBuilderString {
         val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ argumentIds.map(wrapInQuotations)
         args.mkString(", ")
 
-      case SubtractionNodeByLabelsScan(idName, p, n, argumentIds, indexOrder) =>
+      case SubtractionNodeByLabelsScan(idName, ps, ns, argumentIds, indexOrder) =>
+        val positiveLabels = ps.map(l => wrapInQuotations(l.name)).mkString(", ")
+        val negativeLabels = ns.map(l => wrapInQuotations(l.name)).mkString(", ")
         val args =
-          Seq(wrapInQuotations(idName), wrapInQuotations(p.name), wrapInQuotations(n.name), objectName(indexOrder)) ++
+          Seq(wrapInQuotations(idName), s"Seq($positiveLabels)",  s"Seq($negativeLabels)") ++ Seq(objectName(indexOrder)) ++
             argumentIds.map(wrapInQuotations)
         args.mkString(", ")
 

@@ -428,9 +428,9 @@ case class InterpretedPipeMapper(
         indexRegistrator.registerLabelScan()
         IntersectionNodeByLabelsScanPipe(ident.name, labels.map(l => LazyLabel(l)), IndexOrderNone)(id = id)
 
-      case SubtractionNodeByLabelsScan(ident, positiveLabel, negativeLabel, _, indexOrder) =>
+      case SubtractionNodeByLabelsScan(ident, positiveLabels, negativeLabels, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
-        SubtractionNodeByLabelsScanPipe(ident.name, LazyLabel(positiveLabel), LazyLabel(negativeLabel), indexOrder)(id =
+        SubtractionNodeByLabelsScanPipe(ident.name, positiveLabels.map(l => LazyLabel(l)), negativeLabels.map(l => LazyLabel(l)), indexOrder)(id =
           id
         )
 
