@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import static org.neo4j.storageengine.api.TransactionIdStore.emptyVersionedTransaction;
+
 import java.util.Optional;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -152,7 +154,7 @@ public class LogTailInformation implements LogTailMetadata {
     @Override
     public TransactionId getLastCommittedTransaction() {
         if (lastCheckPoint == null) {
-            return LogTailLogVersionsMetadata.EMPTY_LOG_TAIL.getLastCommittedTransaction();
+            return emptyVersionedTransaction(kernelVersion());
         }
         return lastCheckPoint.transactionId();
     }

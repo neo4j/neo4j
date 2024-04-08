@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
@@ -42,6 +43,7 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.pagecache.OutOfDiskSpaceException;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
@@ -106,7 +108,9 @@ class InternalTransactionCommitProcessTest {
 
         // THEN
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
-        verify(transactionIdStore).transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
+        verify(transactionIdStore)
+                .transactionClosed(
+                        eq(txId), any(KernelVersion.class), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
     }
 
     @Test
@@ -144,7 +148,11 @@ class InternalTransactionCommitProcessTest {
 
         verify(transactionIdStore)
                 .transactionCommitted(
-                        txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP, FakeCommitment.CONSENSUS_INDEX);
+                        txId,
+                        DEFAULT_BOOTSTRAP_VERSION,
+                        FakeCommitment.CHECKSUM,
+                        FakeCommitment.TIMESTAMP,
+                        FakeCommitment.CONSENSUS_INDEX);
     }
 
     @Test
@@ -195,12 +203,13 @@ class InternalTransactionCommitProcessTest {
     }
 
     private TransactionToApply mockedTransaction(TransactionIdStore transactionIdStore) {
-        CommandBatch transaction = mock(CommandBatch.class);
-        when(transaction.consensusIndex()).thenReturn(UNKNOWN_CONSENSUS_INDEX);
+        CommandBatch batch = mock(CommandBatch.class);
+        when(batch.consensusIndex()).thenReturn(UNKNOWN_CONSENSUS_INDEX);
+        when(batch.kernelVersion()).thenReturn(LatestVersions.LATEST_KERNEL_VERSION);
         var commitmentFactory = new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore);
         var transactionCommitment = commitmentFactory.newCommitment();
         return new TransactionToApply(
-                transaction,
+                batch,
                 NULL_CONTEXT,
                 StoreCursors.NULL,
                 transactionCommitment,

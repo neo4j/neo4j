@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.storageengine.api.TransactionIdStore.emptyVersionedTransaction;
 
 import java.util.Optional;
 import org.neo4j.configuration.Config;
@@ -68,7 +69,7 @@ public class EmptyLogTailMetadata implements LogTailMetadata {
 
     @Override
     public TransactionId getLastCommittedTransaction() {
-        return EMPTY_LAST_TRANSACTION;
+        return emptyVersionedTransaction(kernelVersion);
     }
 
     @Override

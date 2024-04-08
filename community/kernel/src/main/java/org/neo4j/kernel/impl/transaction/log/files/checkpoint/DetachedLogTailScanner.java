@@ -282,7 +282,7 @@ public class DetachedLogTailScanner {
         // this supports special case when upgrading from pre 5.7 to 5.10+
         // we can have 5.0 checkpoint without consensus index and need to parse it from transaction itself, if it is
         // available
-        long requiredTransactionId = checkpoint.transactionId().transactionId();
+        long requiredTransactionId = checkpoint.transactionId().id();
         long consensusIndex =
                 findConsensusIndexForTransactionId(logFile, requiredTransactionId, checkpoint.transactionLogPosition());
         if (consensusIndex == UNKNOWN_CONSENSUS_INDEX) {
@@ -299,7 +299,8 @@ public class DetachedLogTailScanner {
                 checkpoint.kernelVersion(),
                 checkpoint.kernelVersionByte(),
                 new TransactionId(
-                        checkpoint.transactionId().transactionId(),
+                        checkpoint.transactionId().id(),
+                        checkpoint.transactionId().kernelVersion(),
                         checkpoint.transactionId().checksum(),
                         checkpoint.transactionId().commitTimestamp(),
                         consensusIndex),

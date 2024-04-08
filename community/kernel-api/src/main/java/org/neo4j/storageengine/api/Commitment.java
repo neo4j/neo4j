@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 /**
@@ -33,6 +34,7 @@ public interface Commitment {
         @Override
         public void commit(
                 long transactionId,
+                KernelVersion kernelVersion,
                 LogPosition beforeCommit,
                 LogPosition logPositionAfterCommit,
                 int checksum,
@@ -47,6 +49,7 @@ public interface Commitment {
 
     void commit(
             long transactionId,
+            KernelVersion kernelVersion,
             LogPosition beforeCommit,
             LogPosition logPositionAfterCommit,
             int checksum,

@@ -53,7 +53,6 @@ import org.neo4j.test.LatestVersions;
 class RecoveryStartInformationProviderTest {
     private static final long NO_TRANSACTION_ID = -1;
     private final long currentLogVersion = 2L;
-    private final long logVersion = 2L;
     private final LogFiles logFiles = mock(LogFiles.class);
     private final LogFile logFile = mock(LogFile.class);
     private final Monitor monitor = mock(Monitor.class);
@@ -98,7 +97,7 @@ class RecoveryStartInformationProviderTest {
         LogPosition checkpointPosition = new LogPosition(2, 4);
         LogPosition afterCheckpointPosition = new LogPosition(4, 8);
         LogPosition readerPostPosition = new LogPosition(5, 9);
-        TransactionId transactionId = new TransactionId(4L, 2, 5L, 6L);
+        TransactionId transactionId = new TransactionId(4L, LATEST_KERNEL_VERSION, 2, 5L, 6L);
         when(logFiles.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         new CheckpointInfo(

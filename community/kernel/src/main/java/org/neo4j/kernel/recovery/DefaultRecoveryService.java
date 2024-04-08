@@ -166,19 +166,21 @@ public class DefaultRecoveryService implements RecoveryService {
             // it will still reference old offset from logs that are gone and as result log position in checkpoint
             // record will be incorrect
             // and that can cause partial next recovery.
-            var lastClosedTransactionData = transactionIdStore.getLastClosedTransaction();
-            long logVersion = lastClosedTransactionData.logPosition().getLogVersion();
+            var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+            var lastClosedTransactionId = lastClosedTransaction.transactionId();
+            long logVersion = lastClosedTransaction.logPosition().getLogVersion();
             log.warn(
                     "Recovery detected that transaction logs were missing. "
                             + "Resetting offset of last closed transaction to point to the head of %d transaction log file.",
                     logVersion);
             transactionIdStore.resetLastClosedTransaction(
-                    lastClosedTransactionData.transactionId(),
+                    lastClosedTransactionId.id(),
+                    versionProvider.kernelVersion(),
                     logVersion,
                     fromKernelVersion(versionProvider.kernelVersion()).getHeaderSize(),
-                    lastClosedTransactionData.checksum(),
-                    lastClosedTransactionData.commitTimestamp(),
-                    lastClosedTransactionData.consensusIndex());
+                    lastClosedTransactionId.checksum(),
+                    lastClosedTransactionId.commitTimestamp(),
+                    lastClosedTransactionId.consensusIndex());
             logVersionRepository.setCurrentLogVersion(logVersion);
 
             // cleanup checkpoint log files
@@ -191,6 +193,7 @@ public class DefaultRecoveryService implements RecoveryService {
         if (lastRecoveredBatch != null) {
             transactionIdStore.setLastCommittedAndClosedTransactionId(
                     lastRecoveredBatch.txId(),
+                    lastRecoveredBatch.kernelVersion(),
                     lastRecoveredBatch.checksum(),
                     lastRecoveredBatch.timeWritten(),
                     lastRecoveredBatch.consensusIndex(),
@@ -202,7 +205,7 @@ public class DefaultRecoveryService implements RecoveryService {
         } else {
             // we do not have last recovered transaction but recovery was still triggered
             // this happens when we read past end of the log file or can't read it at all but recovery was enforced
-            // which means that log files after last recovered position can't be trusted and we need to reset last
+            // which means that log files after last recovered position can't be trusted, and we need to reset last
             // closed tx log info
             long lastClosedTransactionId = transactionIdStore.getLastClosedTransactionId();
             log.warn("Recovery detected that transaction logs tail can't be trusted. "
@@ -210,6 +213,7 @@ public class DefaultRecoveryService implements RecoveryService {
                     + positionAfterLastRecoveredTransaction);
             transactionIdStore.resetLastClosedTransaction(
                     lastClosedTransactionId,
+                    versionProvider.kernelVersion(),
                     positionAfterLastRecoveredTransaction.getLogVersion(),
                     positionAfterLastRecoveredTransaction.getByteOffset(),
                     BASE_TX_CHECKSUM,

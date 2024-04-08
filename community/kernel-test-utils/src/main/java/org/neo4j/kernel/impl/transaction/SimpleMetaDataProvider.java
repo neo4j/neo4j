@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -94,8 +95,10 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
-        transactionIdStore.transactionCommitted(transactionId, checksum, commitTimestamp, consensusIndex);
+    public void transactionCommitted(
+            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
+        transactionIdStore.transactionCommitted(
+                transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
@@ -126,37 +129,40 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId,
+            KernelVersion kernelVersion,
             int checksum,
             long commitTimestamp,
             long consensusIndex,
             long byteOffset,
             long logVersion) {
         transactionIdStore.setLastCommittedAndClosedTransactionId(
-                transactionId, checksum, commitTimestamp, consensusIndex, byteOffset, logVersion);
+                transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex, byteOffset, logVersion);
     }
 
     @Override
     public void transactionClosed(
             long transactionId,
+            KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
             int checksum,
             long commitTimestamp,
             long consensusIndex) {
         transactionIdStore.transactionClosed(
-                transactionId, logVersion, byteOffset, checksum, commitTimestamp, consensusIndex);
+                transactionId, kernelVersion, logVersion, byteOffset, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
     public void resetLastClosedTransaction(
             long transactionId,
+            KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
             int checksum,
             long commitTimestamp,
             long consensusIndex) {
         transactionIdStore.resetLastClosedTransaction(
-                transactionId, byteOffset, logVersion, checksum, commitTimestamp, consensusIndex);
+                transactionId, kernelVersion, byteOffset, logVersion, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override

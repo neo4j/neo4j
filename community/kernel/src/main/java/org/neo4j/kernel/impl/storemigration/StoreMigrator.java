@@ -635,7 +635,7 @@ public class StoreMigrator {
 
         @Override
         public long committingTransactionId() {
-            return logTailSupplier.get().getLastCommittedTransaction().transactionId();
+            return logTailSupplier.get().getLastCommittedTransaction().id();
         }
     }
 }

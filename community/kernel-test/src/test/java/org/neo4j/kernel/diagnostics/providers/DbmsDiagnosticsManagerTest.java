@@ -399,7 +399,7 @@ class DbmsDiagnosticsManagerTest {
         LogTailMetadata logTailMetadata = databaseDependencies.satisfyDependency(logFiles.getTailMetadata());
         TransactionIdStore txIdStore = databaseDependencies.satisfyDependency(mock(TransactionIdStore.class));
         when(txIdStore.getLastClosedTransactionId())
-                .thenReturn(logTailMetadata.getLastCommittedTransaction().transactionId());
+                .thenReturn(logTailMetadata.getLastCommittedTransaction().id());
         when(database.getDependencyResolver()).thenReturn(databaseDependencies);
         when(database.getNamedDatabaseId()).thenReturn(databaseId);
         when(database.isStarted()).thenReturn(true);

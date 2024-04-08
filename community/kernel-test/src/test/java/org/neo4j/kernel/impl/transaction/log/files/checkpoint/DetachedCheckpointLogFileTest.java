@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
@@ -72,8 +73,8 @@ class DetachedCheckpointLogFileTest {
     private final long rotationThreshold = ByteUnit.mebiBytes(1);
     private final DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
-    private final TransactionIdStore transactionIdStore =
-            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
+    private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
+            2L, LATEST_KERNEL_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
     private CheckpointFile checkpointFile;
     private LogFiles logFiles;
     private final FakeKernelVersionProvider versionProvider = new FakeKernelVersionProvider();
@@ -90,7 +91,7 @@ class DetachedCheckpointLogFileTest {
     void findLogTailShouldWorkForDetachedCheckpoints() throws IOException {
         LogPosition logPosition =
                 new LogPosition(logVersionRepository.getCurrentLogVersion(), LATEST_LOG_FORMAT.getHeaderSize());
-        TransactionId transactionId = new TransactionId(1, 2, 3, 4);
+        TransactionId transactionId = new TransactionId(1, LATEST_KERNEL_VERSION, 2, 3, 4);
         checkpointFile
                 .getCheckpointAppender()
                 .checkPoint(
@@ -109,7 +110,7 @@ class DetachedCheckpointLogFileTest {
         // Should find the detached checkpoint first
         LogPosition logPosition2 =
                 new LogPosition(logVersionRepository.getCurrentLogVersion(), LATEST_LOG_FORMAT.getHeaderSize());
-        TransactionId transactionId = new TransactionId(5, 6, 7, 8);
+        TransactionId transactionId = new TransactionId(5, LATEST_KERNEL_VERSION, 6, 7, 8);
         checkpointFile
                 .getCheckpointAppender()
                 .checkPoint(
@@ -131,8 +132,8 @@ class DetachedCheckpointLogFileTest {
         // Add detached checkpoints
         LogPosition logPosition = new LogPosition(0, 3);
         LogPosition logPosition1 = new LogPosition(0, 4);
-        TransactionId transactionId = new TransactionId(5, 6, 7, 8);
-        TransactionId transactionId1 = new TransactionId(6, 7, 8, 9);
+        TransactionId transactionId = new TransactionId(5, LATEST_KERNEL_VERSION, 6, 7, 8);
+        TransactionId transactionId1 = new TransactionId(6, LATEST_KERNEL_VERSION, 7, 8, 9);
         checkpointFile
                 .getCheckpointAppender()
                 .checkPoint(

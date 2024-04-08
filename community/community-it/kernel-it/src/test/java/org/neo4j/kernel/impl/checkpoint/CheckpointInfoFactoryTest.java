@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.checkpoint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory.ofLogEntry;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -31,6 +32,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -59,7 +61,8 @@ class CheckpointInfoFactoryTest {
         LogPosition position = new LogPosition(0, 448);
         LogPosition positionAfterCheckpoint = new LogPosition(0, 640);
         LogPosition postReaderPosition = new LogPosition(0, 640);
-        var restoredTransactionId = new TransactionId(73, 614900954, 1645458411645L, UNKNOWN_CONSENSUS_INDEX);
+        var restoredTransactionId =
+                new TransactionId(73, KernelVersion.V4_4, 614900954, 1645458411645L, UNKNOWN_CONSENSUS_INDEX);
 
         prepareTestResources();
 
@@ -84,7 +87,7 @@ class CheckpointInfoFactoryTest {
         LogPosition position = new LogPosition(1, 2);
         LogPosition positionAfterCheckpoint = new LogPosition(3, 4);
         LogPosition postReaderPosition = new LogPosition(5, 6);
-        TransactionId transactionId = new TransactionId(6, 7, 8, 9);
+        TransactionId transactionId = new TransactionId(6, LATEST_KERNEL_VERSION, 7, 8, 9);
         var checkpointInfo = ofLogEntry(
                 new LogEntryDetachedCheckpointV5_0(
                         LatestVersions.LATEST_KERNEL_VERSION, transactionId, logPosition, 2, storeId, "checkpoint"),

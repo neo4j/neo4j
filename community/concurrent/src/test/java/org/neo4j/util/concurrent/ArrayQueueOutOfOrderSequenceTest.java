@@ -341,7 +341,7 @@ class ArrayQueueOutOfOrderSequenceTest {
     }
 
     private static Meta simpleMeta(long value) {
-        return new Meta(value, value, 42, value, value);
+        return new Meta(value, value, Byte.MAX_VALUE, 42, value, value);
     }
 
     private static void assertGet(OutOfOrderSequence sequence, long number, Meta meta) {

@@ -136,7 +136,7 @@ class TransactionRangeDiagnosticsTest {
         LogPosition checkpointLogPosition = new LogPosition(checkpointLogHighVersion, 34);
         LogPosition afterCheckpointLogPosition = new LogPosition(checkpointLogHighVersion, 36);
         LogPosition readerPostPosition = new LogPosition(checkpointLogHighVersion, 36);
-        TransactionId transactionId = new TransactionId(37, 38, 39, 40);
+        TransactionId transactionId = new TransactionId(37, LATEST_KERNEL_VERSION, 38, 39, 40);
         Database database = databaseWithLogFilesContainingLowestTxId(logs(
                 transactionLogsWithTransaction(txLogLowVersion, txLogHighVersion, 42),
                 checkpointLogsWithLastCheckpoint(
@@ -219,7 +219,7 @@ class TransactionRangeDiagnosticsTest {
         LogTailMetadata logTailMetadata = dependencies.satisfyDependency(files.getTailMetadata());
         TransactionIdStore txIdStore = dependencies.satisfyDependency(mock(TransactionIdStore.class));
         when(txIdStore.getLastClosedTransactionId())
-                .thenReturn(logTailMetadata.getLastCommittedTransaction().transactionId());
+                .thenReturn(logTailMetadata.getLastCommittedTransaction().id());
         dependencies.satisfyDependency(files);
         dependencies.satisfyDependency(fs);
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.io.IOException;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -46,8 +47,13 @@ public interface CommittedCommandBatch {
      */
     default BatchInformation batchInformation() {
         return new BatchInformation(
-                txId(), checksum(), timeWritten(), commandBatch().consensusIndex());
+                txId(),
+                commandBatch().kernelVersion(),
+                checksum(),
+                timeWritten(),
+                commandBatch().consensusIndex());
     }
 
-    record BatchInformation(long txId, int checksum, long timeWritten, long consensusIndex) {}
+    record BatchInformation(
+            long txId, KernelVersion kernelVersion, int checksum, long timeWritten, long consensusIndex) {}
 }

@@ -23,12 +23,11 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corr
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
-import java.io.IOException;
 import java.util.Optional;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -44,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpoin
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class CheckpointInfoFactory {
     // transaction id - long
@@ -63,7 +61,7 @@ public class CheckpointInfoFactory {
             TransactionLogFilesContext context,
             LogFile logFile) {
         if (entry instanceof LogEntryDetachedCheckpointV4_2 checkpoint42) {
-            var transactionInfo = readTransactionInfoFor4_2(context, logFile, checkpoint42.getLogPosition());
+            var transactionId = readTransactionInfoFor4_2(context, logFile, checkpoint42.getLogPosition());
             return new CheckpointInfo(
                     checkpoint42.getLogPosition(),
                     checkpoint42.getStoreId(),
@@ -72,9 +70,9 @@ public class CheckpointInfoFactory {
                     // we need to use kernel version from transaction command since checkpoints were broken in old
                     // version and used incorrect kernel version
                     checkpointFilePostReadPosition,
-                    transactionInfo.kernelVersion,
-                    transactionInfo.kernelVersion().version(),
-                    transactionInfo.transactionId(),
+                    transactionId.kernelVersion(),
+                    transactionId.kernelVersion().version(),
+                    transactionId,
                     checkpoint42.getReason());
         } else if (entry instanceof LogEntryDetachedCheckpointV5_0 checkpoint50) {
             return new CheckpointInfo(
@@ -94,7 +92,7 @@ public class CheckpointInfoFactory {
         }
     }
 
-    private static TransactionInfo readTransactionInfoFor4_2(
+    private static TransactionId readTransactionInfoFor4_2(
             TransactionLogFilesContext context, LogFile logFile, LogPosition transactionPosition) {
         try (var channel = logFile.openForVersion(transactionPosition.getLogVersion());
                 var reader = new ReadAheadLogChannel(
@@ -116,13 +114,12 @@ public class CheckpointInfoFactory {
                         throw new IllegalStateException("Transaction commit entry for tx id: " + commit.getTxId()
                                 + " was found but transaction start was missing.");
                     }
-                    return new TransactionInfo(
-                            new TransactionId(
-                                    commit.getTxId(),
-                                    commit.getChecksum(),
-                                    commit.getTimeWritten(),
-                                    UNKNOWN_CONSENSUS_INDEX),
-                            logEntryStart.kernelVersion());
+                    return new TransactionId(
+                            commit.getTxId(),
+                            logEntryStart.kernelVersion(),
+                            commit.getChecksum(),
+                            commit.getTimeWritten(),
+                            UNKNOWN_CONSENSUS_INDEX);
                 }
             }
 
@@ -130,7 +127,12 @@ public class CheckpointInfoFactory {
             // corrupted.
             // Database should be restored from the last valid backup or dump in normal circumstances.
             if (!context.getConfig().get(fail_on_corrupted_log_files)) {
-                return new TransactionInfo(TransactionIdStore.UNKNOWN_TRANSACTION_ID, KernelVersion.V4_4);
+                return new TransactionId(
+                        UNKNOWN_TRANSACTION_ID.id(),
+                        KernelVersion.V4_4,
+                        UNKNOWN_TRANSACTION_ID.checksum(),
+                        UNKNOWN_TRANSACTION_ID.commitTimestamp(),
+                        UNKNOWN_TRANSACTION_ID.consensusIndex());
             }
             throw new IllegalStateException("Checkpoint record pointed to " + transactionPosition
                     + ", but log commit entry not found at that position. Last checked position: " + checkedPosition);
@@ -143,13 +145,13 @@ public class CheckpointInfoFactory {
             try (var fallbackChannel = logFile.openForVersion(transactionPosition.getLogVersion())) {
                 fallbackChannel.position(transactionPosition.getByteOffset() - COMMIT_ENTRY_OFFSET);
                 // try to read 44 transaction info
-                Optional<TransactionInfo> transactionInfo44 = tryReadTransactionInfo(fallbackChannel, context, false);
+                Optional<TransactionId> transactionInfo44 = tryReadTransactionInfo(fallbackChannel, context, false);
                 if (transactionInfo44.isPresent()) {
                     return transactionInfo44.get();
                 }
                 // try to read earlier 4.x transaction info
                 fallbackChannel.position(transactionPosition.getByteOffset() - LEGACY_COMMIT_ENTRY_OFFSET);
-                Optional<TransactionInfo> transactionInfo42 = tryReadTransactionInfo(fallbackChannel, context, true);
+                Optional<TransactionId> transactionInfo42 = tryReadTransactionInfo(fallbackChannel, context, true);
                 if (transactionInfo42.isPresent()) {
                     return transactionInfo42.get();
                 }
@@ -166,9 +168,10 @@ public class CheckpointInfoFactory {
         }
     }
 
-    private static Optional<TransactionInfo> tryReadTransactionInfo(
-            PhysicalLogVersionedStoreChannel fallbackChannel, TransactionLogFilesContext context, boolean skipChecksum)
-            throws IOException {
+    private static Optional<TransactionId> tryReadTransactionInfo(
+            PhysicalLogVersionedStoreChannel fallbackChannel,
+            TransactionLogFilesContext context,
+            boolean skipChecksum) {
         try (var fallbackReader = new ReadAheadLogChannel(
                 new UnclosableChannel(fallbackChannel), NO_MORE_CHANNELS, context.getMemoryTracker())) {
             byte versionCode = fallbackReader.get();
@@ -186,8 +189,8 @@ public class CheckpointInfoFactory {
             long transactionId = maybeReverse(fallbackReader.getLong(), reverseBytes);
             long timeWritten = maybeReverse(fallbackReader.getLong(), reverseBytes);
             int checksum = skipChecksum ? 0 : maybeReverse(fallbackReader.getInt(), reverseBytes);
-            return Optional.of(new TransactionInfo(
-                    new TransactionId(transactionId, checksum, timeWritten, UNKNOWN_CONSENSUS_INDEX), kernelVersion));
+            return Optional.of(
+                    new TransactionId(transactionId, kernelVersion, checksum, timeWritten, UNKNOWN_CONSENSUS_INDEX));
         } catch (Exception e) {
             context.getLogProvider()
                     .getLog(CheckpointInfoFactory.class)
@@ -203,7 +206,4 @@ public class CheckpointInfoFactory {
     private static long maybeReverse(long value, boolean reverseBytes) {
         return reverseBytes ? Long.reverseBytes(value) : value;
     }
-
-    private record TransactionInfo(TransactionId transactionId, KernelVersion kernelVersion)
-            implements KernelVersionProvider {}
 }

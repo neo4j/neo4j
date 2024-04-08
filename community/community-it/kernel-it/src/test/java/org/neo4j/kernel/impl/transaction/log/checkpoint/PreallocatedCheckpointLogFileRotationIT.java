@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
@@ -53,7 +54,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition(1000, 12345);
-        var transactionId = new TransactionId(100, 101, 102, 103);
+        var transactionId = new TransactionId(100, LATEST_KERNEL_VERSION, 101, 102, 103);
         var reason = "checkpoints in preallocated file";
         for (int i = 0; i < 2; i++) {
             checkpointAppender.checkPoint(
@@ -68,7 +69,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition(1000, 12345);
-        var transactionId = new TransactionId(100, 101, 102, 103);
+        var transactionId = new TransactionId(100, LATEST_KERNEL_VERSION, 101, 102, 103);
         var reason = "checkpoint in preallocated file";
 
         checkpointFile.rotate();

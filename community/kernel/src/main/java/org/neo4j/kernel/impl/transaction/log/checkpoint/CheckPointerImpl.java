@@ -101,7 +101,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     @Override
     public void start() {
         var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
-        threshold.initialize(lastClosedTransaction.transactionId(), lastClosedTransaction.logPosition());
+        threshold.initialize(lastClosedTransaction.transactionId().id(), lastClosedTransaction.logPosition());
     }
 
     @Override
@@ -148,7 +148,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
                 if (lock != null) {
                     var lastInfo = latestCheckPointInfo;
                     log.info(info.describe(lastInfo) + " Check pointing was already running, completed now");
-                    return lastInfo.checkpointedTransactionId().transactionId();
+                    return lastInfo.checkpointedTransactionId().id();
                 } else {
                     return NO_TRANSACTION_ID;
                 }
@@ -160,7 +160,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     public long checkPointIfNeeded(TriggerInfo info) throws IOException {
         var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
         if (threshold.isCheckPointingNeeded(
-                lastClosedTransaction.transactionId(), lastClosedTransaction.logPosition(), info)) {
+                lastClosedTransaction.transactionId().id(), lastClosedTransaction.logPosition(), info)) {
             try (Resource lock = mutex.checkPoint()) {
                 return checkpointByTrigger(info);
             }
@@ -174,11 +174,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             return NO_TRANSACTION_ID;
         }
         var lastClosedTxData = transactionIdStore.getLastClosedTransaction();
-        var lastClosedTransaction = new TransactionId(
-                lastClosedTxData.transactionId(),
-                lastClosedTxData.checksum(),
-                lastClosedTxData.commitTimestamp(),
-                lastClosedTxData.consensusIndex());
+        var lastClosedTransaction = lastClosedTxData.transactionId();
         return checkpointByExternalParams(lastClosedTransaction, lastClosedTxData.logPosition(), triggerInfo);
     }
 
@@ -196,10 +192,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
         var databaseTracer = tracers.getDatabaseTracer();
         try (var cursorContext = cursorContextFactory.create(CHECKPOINT_TAG);
                 LogCheckPointEvent checkPointEvent = databaseTracer.beginCheckPoint()) {
-            long lastClosedTransactionId = transactionId.transactionId();
+            long lastClosedTransactionId = transactionId.id();
             cursorContext.getVersionContext().initWrite(lastClosedTransactionId);
             KernelVersion kernelVersion = versionProvider.kernelVersion();
-            var ongoingCheckpoint = new LatestCheckpointInfo(transactionId, kernelVersion);
+            var ongoingCheckpoint = new LatestCheckpointInfo(transactionId);
             String checkpointReason = triggerInfo.describe(ongoingCheckpoint);
             /*
              * Check kernel health before going into waiting for transactions to be closed, to avoid

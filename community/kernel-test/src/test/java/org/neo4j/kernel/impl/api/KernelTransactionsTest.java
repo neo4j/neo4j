@@ -730,10 +730,9 @@ class KernelTransactionsTest {
         life.start();
 
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
-        when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(new TransactionId(0, 0, 0, UNKNOWN_CONSENSUS_INDEX));
-
         KernelVersionProvider kernelVersionProvider = LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
+        when(transactionIdStore.getLastCommittedTransaction())
+                .thenReturn(new TransactionId(0, kernelVersionProvider.kernelVersion(), 0, 0, UNKNOWN_CONSENSUS_INDEX));
 
         DefaultTracers tracers = new DefaultTracers(
                 "null", NullLog.getInstance(), new Monitors(), mock(JobScheduler.class), clock, config);

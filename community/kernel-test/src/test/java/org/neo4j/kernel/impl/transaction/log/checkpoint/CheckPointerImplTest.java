@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import static java.time.Duration.ofMinutes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,10 +37,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -75,7 +74,6 @@ import org.neo4j.util.concurrent.BinaryLatch;
 
 class CheckPointerImplTest {
     private static final SimpleTriggerInfo INFO = new SimpleTriggerInfo("Test");
-    public static final Duration TIMEOUT = ofMinutes(5);
 
     private final MetadataProvider metadataProvider = mock(MetadataProvider.class);
     private final CheckPointThreshold threshold = mock(CheckPointThreshold.class);
@@ -416,9 +414,11 @@ class CheckPointerImplTest {
     }
 
     private void mockTxIdStore() {
-        var initialCommitted =
-                new ClosedTransactionMetadata(initialTransactionId, logPosition, 4, 5, UNKNOWN_CONSENSUS_INDEX);
-        var otherCommitted = new ClosedTransactionMetadata(transactionId, logPosition, 6, 7, UNKNOWN_CONSENSUS_INDEX);
+        var initialCommitted = new ClosedTransactionMetadata(
+                new TransactionId(initialTransactionId, LATEST_KERNEL_VERSION, 4, 5, UNKNOWN_CONSENSUS_INDEX),
+                logPosition);
+        var otherCommitted = new ClosedTransactionMetadata(
+                new TransactionId(transactionId, LATEST_KERNEL_VERSION, 6, 7, UNKNOWN_CONSENSUS_INDEX), logPosition);
         when(metadataProvider.getLastClosedTransaction()).thenReturn(initialCommitted, otherCommitted);
         when(metadataProvider.getLastClosedTransactionId())
                 .thenReturn(initialTransactionId, transactionId, transactionId);

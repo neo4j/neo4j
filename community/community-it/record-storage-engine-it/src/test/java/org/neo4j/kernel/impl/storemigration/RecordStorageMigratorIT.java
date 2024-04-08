@@ -372,7 +372,7 @@ class RecordStorageMigratorIT {
         // WHEN migrating
         var engineFactory = StorageEngineFactory.defaultStorageEngine();
         var logTailMetadata = loadLogTail(databaseLayout, CONFIG, engineFactory);
-        var txIdBeforeMigration = logTailMetadata.getLastCommittedTransaction().transactionId();
+        var txIdBeforeMigration = logTailMetadata.getLastCommittedTransaction().id();
         var versionToMigrateTo = getVersionToMigrateTo();
         migrator.migrate(
                 databaseLayout,
@@ -473,7 +473,7 @@ class RecordStorageMigratorIT {
                 false);
         var engineFactory = StorageEngineFactory.defaultStorageEngine();
         var logTailMetadata = loadLogTail(databaseLayout, CONFIG, engineFactory);
-        var txIdBeforeMigration = logTailMetadata.getLastCommittedTransaction().transactionId();
+        var txIdBeforeMigration = logTailMetadata.getLastCommittedTransaction().id();
         var versionToMigrateTo = getVersionToMigrateTo();
         var migratedStoreOpenOptions = engineFactory.getStoreOpenOptions(fs, pageCache, databaseLayout, contextFactory);
         migrator.migrate(

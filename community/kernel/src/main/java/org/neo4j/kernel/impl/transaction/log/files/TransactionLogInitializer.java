@@ -181,9 +181,9 @@ public class TransactionLogInitializer {
                 logFiles,
                 reason,
                 position,
-                new TransactionId(upgradeTransactionId, checksum, timestamp, consensusIndex),
+                new TransactionId(upgradeTransactionId, kernelVersion, checksum, timestamp, consensusIndex),
                 kernelVersion);
-        store.transactionCommitted(upgradeTransactionId, checksum, timestamp, consensusIndex);
+        store.transactionCommitted(upgradeTransactionId, kernelVersion, checksum, timestamp, consensusIndex);
         return upgradeTransactionId;
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.storageengine;
 
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
@@ -27,19 +28,12 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class ReadOnlyTransactionIdStore implements TransactionIdStore {
-    private final long transactionId;
-    private final int transactionChecksum;
-    private final long transactionCommitTimestamp;
-    private final long transactionConsensusIndex;
     private final LogPosition logPosition;
+    private final TransactionId lastCommittedTransaction;
 
     public ReadOnlyTransactionIdStore(LogTailLogVersionsMetadata logTailMetadata) {
-        var lastCommittedTransaction = logTailMetadata.getLastCommittedTransaction();
-        transactionId = lastCommittedTransaction.transactionId();
-        transactionChecksum = lastCommittedTransaction.checksum();
-        transactionCommitTimestamp = lastCommittedTransaction.commitTimestamp();
+        this.lastCommittedTransaction = logTailMetadata.getLastCommittedTransaction();
         logPosition = logTailMetadata.getLastTransactionLogPosition();
-        transactionConsensusIndex = lastCommittedTransaction.consensusIndex();
     }
 
     @Override
@@ -53,40 +47,40 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     }
 
     @Override
-    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
+    public void transactionCommitted(
+            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
     @Override
     public long getLastCommittedTransactionId() {
-        return transactionId;
+        return lastCommittedTransaction.id();
     }
 
     @Override
     public TransactionId getLastCommittedTransaction() {
-        return new TransactionId(
-                transactionId, transactionChecksum, BASE_TX_COMMIT_TIMESTAMP, transactionConsensusIndex);
+        return lastCommittedTransaction;
     }
 
     @Override
     public long getLastClosedTransactionId() {
-        return transactionId;
+        return lastCommittedTransaction.id();
     }
 
     @Override
     public TransactionIdSnapshot getClosedTransactionSnapshot() {
-        return new TransactionIdSnapshot(transactionId);
+        return new TransactionIdSnapshot(getLastClosedTransactionId());
     }
 
     @Override
     public ClosedTransactionMetadata getLastClosedTransaction() {
-        return new ClosedTransactionMetadata(
-                transactionId, logPosition, transactionChecksum, transactionCommitTimestamp, transactionConsensusIndex);
+        return new ClosedTransactionMetadata(lastCommittedTransaction, logPosition);
     }
 
     @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId,
+            KernelVersion kernelVersion,
             int checksum,
             long commitTimestamp,
             long consensusIndex,
@@ -98,6 +92,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     @Override
     public void transactionClosed(
             long transactionId,
+            KernelVersion kernelVersion,
             long logVersion,
             long logByteOffset,
             int checksum,
@@ -109,6 +104,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     @Override
     public void resetLastClosedTransaction(
             long transactionId,
+            KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
             int checksum,

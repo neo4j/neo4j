@@ -24,6 +24,7 @@ import static java.lang.Runtime.getRuntime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
@@ -34,19 +35,21 @@ class HighestTransactionIdTest {
     @Test
     void shouldHardSetHighest() {
         // GIVEN
-        HighestTransactionId highest = new HighestTransactionId(10, 10, 10, 11);
+        HighestTransactionId highest =
+                new HighestTransactionId(new TransactionId(10, DEFAULT_BOOTSTRAP_VERSION, 10, 10, 11));
 
         // WHEN
-        highest.set(8, 1299128, 42, 43);
+        highest.set(8, DEFAULT_BOOTSTRAP_VERSION, 1299128, 42, 43);
 
         // THEN
-        assertEquals(new TransactionId(8, 1299128, 42, 43), highest.get());
+        assertEquals(new TransactionId(8, DEFAULT_BOOTSTRAP_VERSION, 1299128, 42, 43), highest.get());
     }
 
     @Test
     void shouldOnlyKeepTheHighestOffered() {
         // GIVEN
-        HighestTransactionId highest = new HighestTransactionId(-1, -1, -1, -1);
+        HighestTransactionId highest =
+                new HighestTransactionId(new TransactionId(-1, DEFAULT_BOOTSTRAP_VERSION, -1, -1, -1));
 
         // WHEN/THEN
         assertAccepted(highest, 2);
@@ -59,14 +62,15 @@ class HighestTransactionIdTest {
     @Test
     void shouldKeepHighestDuringConcurrentOfferings() throws Throwable {
         // GIVEN
-        final HighestTransactionId highest = new HighestTransactionId(-1, -1, -1, -1);
+        final HighestTransactionId highest =
+                new HighestTransactionId(new TransactionId(-1, DEFAULT_BOOTSTRAP_VERSION, -1, -1, -1));
         Race race = new Race();
         int updaters = max(2, getRuntime().availableProcessors());
         final AtomicInteger accepted = new AtomicInteger();
         for (int i = 0; i < updaters; i++) {
             final long id = i + 1;
             race.addContestant(() -> {
-                if (highest.offer(id, (int) id, id, id)) {
+                if (highest.offer(id, DEFAULT_BOOTSTRAP_VERSION, (int) id, id, id)) {
                     accepted.incrementAndGet();
                 }
             });
@@ -77,18 +81,18 @@ class HighestTransactionIdTest {
 
         // THEN
         assertTrue(accepted.get() > 0);
-        assertEquals(updaters, highest.get().transactionId());
+        assertEquals(updaters, highest.get().id());
     }
 
     private static void assertAccepted(HighestTransactionId highest, long txId) {
         TransactionId current = highest.get();
-        assertTrue(highest.offer(txId, -1, -1, -1));
-        assertTrue(txId > current.transactionId());
+        assertTrue(highest.offer(txId, DEFAULT_BOOTSTRAP_VERSION, -1, -1, -1));
+        assertTrue(txId > current.id());
     }
 
     private static void assertRejected(HighestTransactionId highest, long txId) {
         TransactionId current = highest.get();
-        assertFalse(highest.offer(txId, -1, -1, -1));
+        assertFalse(highest.offer(txId, DEFAULT_BOOTSTRAP_VERSION, -1, -1, -1));
         assertEquals(current, highest.get());
     }
 }

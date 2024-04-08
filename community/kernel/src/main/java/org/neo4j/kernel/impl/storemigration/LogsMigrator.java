@@ -95,7 +95,7 @@ class LogsMigrator {
                             + "please run the version of the DBMS you are migrating from on this store.");
         }
         // all good
-        return new CheckResult(false, logTail.getLastCommittedTransaction().transactionId());
+        return new CheckResult(false, logTail.getLastCommittedTransaction().id());
     }
 
     /**

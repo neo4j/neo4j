@@ -436,7 +436,7 @@ public class ImportCommand {
                                 PageCacheTracer.NULL,
                                 new FixedVersionContextSupplier(getLogTail(fileSystem, databaseLayout, databaseConfig)
                                         .getLastCommittedTransaction()
-                                        .transactionId()));
+                                        .id()));
                     } else {
                         cursorContextFactory = new CursorContextFactory(
                                 PageCacheTracer.NULL, new FixedVersionContextSupplier(BASE_TX_ID));

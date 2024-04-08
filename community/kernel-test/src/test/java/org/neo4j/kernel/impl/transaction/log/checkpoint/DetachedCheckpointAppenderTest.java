@@ -77,8 +77,8 @@ class DetachedCheckpointAppenderTest {
     private final long rotationThreshold = ByteUnit.mebiBytes(1);
     private final DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
-    private final TransactionIdStore transactionIdStore =
-            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
+    private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
+            2L, LATEST_KERNEL_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
     private CheckpointAppender checkpointAppender;
     private LogFiles logFiles;
 

@@ -37,6 +37,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy.PER
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
@@ -543,7 +544,7 @@ class TransactionLogServiceIT {
         try {
             availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
             long lastTransactionBeforeBufferAppend =
-                    metadataProvider.getLastClosedTransaction().transactionId();
+                    metadataProvider.getLastClosedTransaction().transactionId().id();
 
             positionBeforeRecovery = metadataProvider.getLastClosedTransaction().logPosition();
 
@@ -712,7 +713,7 @@ class TransactionLogServiceIT {
         TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
         String testReason = "Should checkpoint at end of file";
 
-        var eofPosition = findEndOfFile(lastTransactionId.transactionId());
+        var eofPosition = findEndOfFile(lastTransactionId.id());
 
         logService.appendCheckpoint(lastTransactionId, testReason);
 
@@ -756,7 +757,7 @@ class TransactionLogServiceIT {
                 .isTrue();
         assertThat(freshTail.firstTxIdAfterLastCheckPoint)
                 .describedAs("Transaction id after should be right after checkpointed tx id.")
-                .isEqualTo(lastTransactionId.transactionId() + 1);
+                .isEqualTo(lastTransactionId.id() + 1);
     }
 
     @Test
@@ -847,7 +848,7 @@ class TransactionLogServiceIT {
         }
 
         logFile.rotate();
-        var expectedPosition = findEndOfTransaction(lastTransactionId.transactionId());
+        var expectedPosition = findEndOfTransaction(lastTransactionId.id());
 
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
@@ -870,10 +871,10 @@ class TransactionLogServiceIT {
             createNodeInIsolatedTransaction("foo");
         }
         TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
-        var eofPosition = findEndOfFile(lastTransactionId.transactionId());
+        var eofPosition = findEndOfFile(lastTransactionId.id());
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
         String testReason = "Should checkpoint at end of file when transaction doesn't exist";
-        logService.appendCheckpoint(new TransactionId(789, 7, 8, 9), testReason);
+        logService.appendCheckpoint(new TransactionId(789, LATEST_KERNEL_VERSION, 7, 8, 9), testReason);
 
         var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertThat(checkpointInfo.reason()).contains(testReason);

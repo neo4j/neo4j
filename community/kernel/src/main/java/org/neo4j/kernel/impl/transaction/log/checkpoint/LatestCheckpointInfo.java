@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.TransactionId;
 
-public record LatestCheckpointInfo(TransactionId checkpointedTransactionId, KernelVersion kernelVersion) {
-    public static final LatestCheckpointInfo UNKNOWN_CHECKPOINT_INFO =
-            new LatestCheckpointInfo(UNKNOWN_TRANSACTION_ID, null);
+public record LatestCheckpointInfo(TransactionId checkpointedTransactionId) {
+    public static final LatestCheckpointInfo UNKNOWN_CHECKPOINT_INFO = new LatestCheckpointInfo(UNKNOWN_TRANSACTION_ID);
 }

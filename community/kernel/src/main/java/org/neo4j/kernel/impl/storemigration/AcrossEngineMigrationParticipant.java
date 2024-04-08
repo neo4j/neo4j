@@ -267,7 +267,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
 
             @Override
             public long lastCommittedTransactionId() {
-                return tailMetadata.getLastCommittedTransaction().transactionId();
+                return tailMetadata.getLastCommittedTransaction().id();
             }
 
             @Override

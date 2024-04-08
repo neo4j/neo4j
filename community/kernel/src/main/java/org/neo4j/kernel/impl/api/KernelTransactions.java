@@ -298,7 +298,7 @@ public class KernelTransactions extends LifecycleAdapter
                 TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
                 KernelTransactionImplementation tx = txPool.acquire();
                 tx.initialize(
-                        lastCommittedTransaction.transactionId(),
+                        lastCommittedTransaction.id(),
                         type,
                         securityContext,
                         timeout,

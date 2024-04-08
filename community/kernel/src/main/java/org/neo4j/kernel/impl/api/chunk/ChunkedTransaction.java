@@ -148,6 +148,7 @@ public class ChunkedTransaction implements CommandBatchToApply {
         }
         this.commitment.commit(
                 transactionId,
+                chunk.kernelVersion(),
                 beforeTransactionStartPosition,
                 positionAfter,
                 checksum,

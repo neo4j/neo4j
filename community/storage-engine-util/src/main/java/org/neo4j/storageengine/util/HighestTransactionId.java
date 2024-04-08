@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.util;
 
 import java.util.concurrent.atomic.AtomicReference;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.TransactionId;
 
 /**
@@ -29,9 +30,8 @@ import org.neo4j.storageengine.api.TransactionId;
 public class HighestTransactionId {
     private final AtomicReference<TransactionId> highest = new AtomicReference<>();
 
-    public HighestTransactionId(
-            long initialTransactionId, int initialChecksum, long commitTimestamp, long consensusIndex) {
-        set(initialTransactionId, initialChecksum, commitTimestamp, consensusIndex);
+    public HighestTransactionId(TransactionId transactionId) {
+        highest.set(transactionId);
     }
 
     /**
@@ -39,22 +39,25 @@ public class HighestTransactionId {
      * This method is thread-safe.
      *
      * @param transactionId transaction id to compare for highest.
+     * @param kernelVersion transaction kernel version.
      * @param checksum checksum of the transaction.
-     * @param commitTimestamp commit time for transaction with {@code transactionId}.
-     * @param consensusIndex consensus index for transaction with {@code transactionId}.
+     * @param commitTimestamp commit time for transaction with {@code transaction}.
+     * @param consensusIndex consensus index for transaction with {@code transaction}.
      * @return {@code true} if the given transaction id was higher than the current highest,
      * {@code false}.
      */
-    public boolean offer(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
+    public boolean offer(
+            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
         TransactionId high = highest.get();
-        if (transactionId < high.transactionId()) { // a higher id has already been offered
+        if (transactionId < high.id()) { // a higher id has already been offered
             return false;
         }
 
-        TransactionId update = new TransactionId(transactionId, checksum, commitTimestamp, consensusIndex);
+        TransactionId update =
+                new TransactionId(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex);
         while (!highest.compareAndSet(high, update)) {
             high = highest.get();
-            if (high.transactionId()
+            if (high.id()
                     >= transactionId) { // apparently someone else set a higher id while we were trying to set this id
                 return false;
             }
@@ -67,12 +70,14 @@ public class HighestTransactionId {
      * Overrides the highest transaction id value, no matter what it currently is. Used for initialization purposes.
      *
      * @param transactionId id of the transaction.
+     * @param kernelVersion transaction kernel version.
      * @param checksum checksum of the transaction.
-     * @param commitTimestamp commit time for transaction with {@code transactionId}.
-     * @param consensusIndex consensus index for transaction with {@code transactionId}.
+     * @param commitTimestamp commit time for transaction with {@code transaction}.
+     * @param consensusIndex consensus index for transaction with {@code transaction}.
      */
-    public final void set(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
-        highest.set(new TransactionId(transactionId, checksum, commitTimestamp, consensusIndex));
+    public final void set(
+            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
+        highest.set(new TransactionId(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex));
     }
 
     /**

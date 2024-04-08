@@ -148,7 +148,13 @@ public class TransactionToApply implements CommandBatchToApply {
 
     @Override
     public void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum) {
-        this.commitment.commit(transactionId, beforeCommit, positionAfter, checksum, commandBatch.consensusIndex());
+        this.commitment.commit(
+                transactionId,
+                commandBatch.kernelVersion(),
+                beforeCommit,
+                positionAfter,
+                checksum,
+                commandBatch.consensusIndex());
         this.cursorContext.getVersionContext().initWrite(transactionId);
     }
 

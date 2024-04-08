@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -30,6 +31,7 @@ public class TransactionCommitment implements Commitment {
     private long transactionId;
     private int checksum;
     private long consensusIndex;
+    private KernelVersion kernelVersion;
     private LogPosition logPosition;
     private long transactionCommitTimestamp;
 
@@ -41,11 +43,13 @@ public class TransactionCommitment implements Commitment {
     @Override
     public void commit(
             long transactionId,
+            KernelVersion kernelVersion,
             LogPosition beforeCommit,
             LogPosition logPositionAfterCommit,
             int checksum,
             long consensusIndex) {
         this.transactionId = transactionId;
+        this.kernelVersion = kernelVersion;
         this.logPosition = logPositionAfterCommit;
         this.checksum = checksum;
         this.consensusIndex = consensusIndex;
@@ -56,7 +60,8 @@ public class TransactionCommitment implements Commitment {
     public void publishAsCommitted(long transactionCommitTimestamp) {
         this.committed = true;
         this.transactionCommitTimestamp = transactionCommitTimestamp;
-        transactionIdStore.transactionCommitted(transactionId, checksum, transactionCommitTimestamp, consensusIndex);
+        transactionIdStore.transactionCommitted(
+                transactionId, kernelVersion, checksum, transactionCommitTimestamp, consensusIndex);
     }
 
     @Override
@@ -64,6 +69,7 @@ public class TransactionCommitment implements Commitment {
         if (committed) {
             transactionIdStore.transactionClosed(
                     transactionId,
+                    kernelVersion,
                     logPosition.getLogVersion(),
                     logPosition.getByteOffset(),
                     checksum,

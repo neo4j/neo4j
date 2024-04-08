@@ -416,7 +416,7 @@ public class Database extends AbstractDatabase {
 
         // Check the tail of transaction logs and validate version
         LogTailMetadata tailMetadata = getLogTail();
-        long lastClosedTxId = tailMetadata.getLastCommittedTransaction().transactionId();
+        long lastClosedTxId = tailMetadata.getLastCommittedTransaction().id();
         initialiseContextFactory(() -> new TransactionIdSnapshot(lastClosedTxId), () -> lastClosedTxId);
 
         storageExists = storageEngineFactory.storageExists(fs, databaseLayout);
@@ -440,7 +440,7 @@ public class Database extends AbstractDatabase {
             // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the
             // latest info
             tailMetadata = getLogTail();
-            long recoveredTxId = tailMetadata.getLastCommittedTransaction().transactionId();
+            long recoveredTxId = tailMetadata.getLastCommittedTransaction().id();
             initialiseContextFactory(() -> new TransactionIdSnapshot(recoveredTxId), () -> recoveredTxId);
         }
 

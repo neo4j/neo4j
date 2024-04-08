@@ -119,7 +119,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     @Override
     public void appendCheckpoint(TransactionId transactionId, String reason) throws IOException {
         checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
-        long txId = transactionId.transactionId() + 1;
+        long txId = transactionId.id() + 1;
         var logHeader = requireNonNull(logFile.extractHeader(logFile.getHighestLogVersion()));
 
         var lastHeaderPosition = logHeader.getStartPosition();

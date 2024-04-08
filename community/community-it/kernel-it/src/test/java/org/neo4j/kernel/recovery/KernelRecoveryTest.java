@@ -133,7 +133,7 @@ class KernelRecoveryTest {
 
     private static long getLastClosedTransactionId(GraphDatabaseAPI database) {
         MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency(MetadataProvider.class);
-        return metaDataStore.getLastClosedTransaction().transactionId();
+        return metaDataStore.getLastClosedTransaction().transactionId().id();
     }
 
     private GraphDatabaseService newDB(FileSystemAbstraction fs, String name) {

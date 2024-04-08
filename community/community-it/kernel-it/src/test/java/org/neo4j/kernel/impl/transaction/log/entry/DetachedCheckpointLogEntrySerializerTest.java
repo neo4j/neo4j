@@ -32,6 +32,7 @@ import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
@@ -100,7 +101,9 @@ class DetachedCheckpointLogEntrySerializerTest {
                 assertEquals(KernelVersion.V5_0, checkpointV50.kernelVersion());
                 assertEquals(new LogPosition(100, 200), checkpointV50.getLogPosition());
                 assertEquals(TEST_STORE_ID, checkpointV50.getStoreId());
-                assertEquals(new TransactionId(70, 80, 90, UNKNOWN_CONSENSUS_INDEX), checkpointV50.getTransactionId());
+                assertEquals(
+                        new TransactionId(70, KernelVersion.V5_0, 80, 90, UNKNOWN_CONSENSUS_INDEX),
+                        checkpointV50.getTransactionId());
             }
         }
     }
@@ -190,7 +193,7 @@ class DetachedCheckpointLogEntrySerializerTest {
 
     private static void writeCheckpoint(WritableChannel channel, KernelVersion kernelVersion, String reason)
             throws IOException {
-        var transactionId = new TransactionId(70, 80, 90, 10);
+        var transactionId = new TransactionId(70, LATEST_KERNEL_VERSION, 80, 90, 10);
         LogPosition logPosition = new LogPosition(100, 200);
         serializationSet(kernelVersion, LatestVersions.BINARY_VERSIONS)
                 .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0)

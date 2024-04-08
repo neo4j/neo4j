@@ -217,7 +217,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             schemaStoreMigration.assertCanMigrate();
 
             // Extract information about the last transaction from legacy neostore
-            long lastTxId = tailMetadata.getLastCommittedTransaction().transactionId();
+            long lastTxId = tailMetadata.getLastCommittedTransaction().id();
             TransactionId lastTxInfo = tailMetadata.getLastCommittedTransaction();
             LogPosition lastTxLogPosition = tailMetadata.getLastTransactionLogPosition();
             long checkpointLogVersion = tailMetadata.getCheckpointLogVersion();

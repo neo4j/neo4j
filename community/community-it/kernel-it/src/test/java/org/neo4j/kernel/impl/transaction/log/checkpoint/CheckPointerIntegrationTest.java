@@ -266,11 +266,7 @@ class CheckPointerIntegrationTest {
                 }
             }
             var closedTxMetadata = getMetadataProvider(databaseAPI).getLastClosedTransaction();
-            var lastClosedTxId = new TransactionId(
-                    closedTxMetadata.transactionId(),
-                    closedTxMetadata.checksum(),
-                    closedTxMetadata.commitTimestamp(),
-                    closedTxMetadata.consensusIndex());
+            var lastClosedTxId = closedTxMetadata.transactionId();
 
             getCheckPointer(databaseAPI).forceCheckPoint(new SimpleTriggerInfo("test"));
             var checkpointInfos = checkPointsInTxLog(databaseAPI);

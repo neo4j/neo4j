@@ -436,7 +436,7 @@ class StoreMigratorTest {
                 .withStorageEngineFactory(new RecordStorageEngineFactory())
                 .build();
         var txIdBeforeMigration =
-                logFiles.getTailMetadata().getLastCommittedTransaction().transactionId();
+                logFiles.getTailMetadata().getLastCommittedTransaction().id();
         var storeMigrator = createMigrator();
         var participant = mock(StoreMigrationParticipant.class);
         when(participant.getName()).thenReturn("Me");
@@ -461,7 +461,7 @@ class StoreMigratorTest {
 
         assertThat(logFiles.getTailMetadata().kernelVersion()).isEqualTo(KernelVersion.V5_0);
         var txIdBeforeMigration =
-                logFiles.getTailMetadata().getLastCommittedTransaction().transactionId();
+                logFiles.getTailMetadata().getLastCommittedTransaction().id();
 
         var storeMigrator = createMigrator();
         var participant = mock(StoreMigrationParticipant.class);

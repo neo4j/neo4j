@@ -23,6 +23,7 @@ import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class EmptyLogTailLogVersionsMetadata implements LogTailLogVersionsMetadata {
     static final LogPosition START_POSITION = new LogPosition(INITIAL_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET);
@@ -44,7 +45,7 @@ public class EmptyLogTailLogVersionsMetadata implements LogTailLogVersionsMetada
 
     @Override
     public TransactionId getLastCommittedTransaction() {
-        return EMPTY_LAST_TRANSACTION;
+        return TransactionIdStore.BASE_TRANSACTION_ID;
     }
 
     @Override

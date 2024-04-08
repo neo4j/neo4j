@@ -546,7 +546,11 @@ class DetachedLogTailScannerTest {
                         start(),
                         commit(transactionId),
                         checkPoint(new TransactionId(
-                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, consensusIndex))));
+                                transactionId,
+                                LATEST_KERNEL_VERSION,
+                                BASE_TX_CHECKSUM,
+                                BASE_TX_COMMIT_TIMESTAMP,
+                                consensusIndex))));
 
         // when
         var logTailInformation = logFiles.getTailMetadata();
@@ -574,7 +578,11 @@ class DetachedLogTailScannerTest {
                         start(999),
                         commit(transactionId),
                         checkPoint(new TransactionId(
-                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX))));
+                                transactionId,
+                                LATEST_KERNEL_VERSION,
+                                BASE_TX_CHECKSUM,
+                                BASE_TX_COMMIT_TIMESTAMP,
+                                UNKNOWN_CONSENSUS_INDEX))));
 
         // when
         var logTailInformation = logFiles.getTailMetadata();
@@ -603,7 +611,11 @@ class DetachedLogTailScannerTest {
                         start(consensusIndex),
                         commit(transactionId),
                         checkPoint(new TransactionId(
-                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX))));
+                                transactionId,
+                                LATEST_KERNEL_VERSION,
+                                BASE_TX_CHECKSUM,
+                                BASE_TX_COMMIT_TIMESTAMP,
+                                UNKNOWN_CONSENSUS_INDEX))));
 
         // when
         var logTailInformation = logFiles.getTailMetadata();
@@ -632,7 +644,11 @@ class DetachedLogTailScannerTest {
                 logFile(
                         KernelVersion.V5_0,
                         checkPoint(new TransactionId(
-                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX))));
+                                transactionId,
+                                LATEST_KERNEL_VERSION,
+                                BASE_TX_CHECKSUM,
+                                BASE_TX_COMMIT_TIMESTAMP,
+                                UNKNOWN_CONSENSUS_INDEX))));
 
         // when
         var logTailInformation = logFiles.getTailMetadata();
@@ -657,7 +673,11 @@ class DetachedLogTailScannerTest {
                         start(consensusIndex),
                         commit(transactionId),
                         checkPoint(new TransactionId(
-                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX)),
+                                transactionId,
+                                LATEST_KERNEL_VERSION,
+                                BASE_TX_CHECKSUM,
+                                BASE_TX_COMMIT_TIMESTAMP,
+                                UNKNOWN_CONSENSUS_INDEX)),
                         start(1001),
                         commit(transactionId + 1)));
 

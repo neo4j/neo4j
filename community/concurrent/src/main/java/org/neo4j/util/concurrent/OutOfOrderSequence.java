@@ -22,7 +22,7 @@ package org.neo4j.util.concurrent;
 /**
  * The thinking behind an out-of-order sequence is that, to the outside, there's one "last number"
  * which will never be decremented between times of looking at it. It can move in bigger strides
- * than 1 though. That is because multiple threads can {@link #offer(long, long[]) tell} it that a certain number is
+ * than 1 though. That is because multiple threads can {@link #offer(long, Meta)} it that a certain number is
  * "done",
  * a number that not necessarily is the previously last one plus one. So if a gap is observed then the number
  * that is the logical next one, whenever that arrives, will move the externally visible number to
@@ -30,9 +30,15 @@ package org.neo4j.util.concurrent;
  */
 public interface OutOfOrderSequence {
 
-    record Meta(long logVersion, long byteOffset, int checksum, long commitTimestamp, long consensusIndex) {}
+    record Meta(
+            long logVersion,
+            long byteOffset,
+            byte kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {}
 
-    Meta EMPTY_META = new Meta(-1L, -1L, 0, -1L, -1L);
+    Meta EMPTY_META = new Meta(-1L, -1L, (byte) -1, 0, -1L, -1L);
 
     record NumberWithMeta(long number, Meta meta) {}
     /**

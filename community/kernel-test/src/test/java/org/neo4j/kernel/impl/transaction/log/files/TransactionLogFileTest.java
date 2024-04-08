@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
@@ -117,8 +119,8 @@ class TransactionLogFileTest {
 
     private final long rotationThreshold = ByteUnit.mebiBytes(1);
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
-    private final TransactionIdStore transactionIdStore =
-            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
+    private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
+            2L, DEFAULT_BOOTSTRAP_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
 
     @BeforeEach
     void setUp() {
@@ -155,7 +157,7 @@ class TransactionLogFileTest {
         fileSystem
                 .write(logFiles.getLogFile().getLogFileForVersion(logVersionRepository.getCurrentLogVersion()))
                 .close();
-        transactionIdStore.transactionCommitted(5L, 5, 5L, 6L);
+        transactionIdStore.transactionCommitted(5L, DEFAULT_BOOTSTRAP_VERSION, 5, 5L, 6L);
 
         TransactionLogVersionLocator versionLocator = new TransactionLogVersionLocator(4L);
         logFiles.getLogFile().accept(versionLocator);
@@ -363,7 +365,7 @@ class TransactionLogFileTest {
                 IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion(logVersion));
         verify(channel).close();
         assertEquals(1, exception.getSuppressed().length);
-        assertTrue(exception.getSuppressed()[0] instanceof IOException);
+        assertInstanceOf(IOException.class, exception.getSuppressed()[0]);
     }
 
     @Test
@@ -732,12 +734,8 @@ class TransactionLogFileTest {
         logFile.rotate();
 
         final var listAssert = assertThat(rotations).hasSize(2);
-        listAssert.element(0).satisfies(pos -> {
-            assertEndLogPosition(logFile, lowestLogVersion, (LogPosition) pos);
-        });
-        listAssert.element(1).satisfies(pos -> {
-            assertEndLogPosition(logFile, lowestLogVersion + 1, (LogPosition) pos);
-        });
+        listAssert.element(0).satisfies(pos -> assertEndLogPosition(logFile, lowestLogVersion, (LogPosition) pos));
+        listAssert.element(1).satisfies(pos -> assertEndLogPosition(logFile, lowestLogVersion + 1, (LogPosition) pos));
     }
 
     @Test

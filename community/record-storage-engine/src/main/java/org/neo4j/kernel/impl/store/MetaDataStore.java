@@ -48,10 +48,10 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
@@ -154,19 +154,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         logVersion = new AtomicLong(logTailMetadata.getLogVersion());
         this.storeIdFactory = storeIdFactory;
         var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
-        lastCommittingTx = new AtomicLong(lastCommittedTx.transactionId());
-        highestCommittedTransaction = new HighestTransactionId(
-                lastCommittedTx.transactionId(),
-                lastCommittedTx.checksum(),
-                lastCommittedTx.commitTimestamp(),
-                lastCommittedTx.consensusIndex());
+        lastCommittingTx = new AtomicLong(lastCommittedTx.id());
+        highestCommittedTransaction = new HighestTransactionId(lastCommittedTx);
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
         lastClosedTx = new ArrayQueueOutOfOrderSequence(
-                lastCommittedTx.transactionId(),
+                lastCommittedTx.id(),
                 200,
                 new Meta(
                         logPosition.getLogVersion(),
                         logPosition.getByteOffset(),
+                        lastCommittedTx.kernelVersion().version(),
                         lastCommittedTx.checksum(),
                         lastCommittedTx.commitTimestamp(),
                         lastCommittedTx.consensusIndex()));
@@ -216,6 +213,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId,
+            KernelVersion kernelVersion,
             int checksum,
             long commitTimestamp,
             long consensusIndex,
@@ -223,8 +221,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             long logVersion) {
         assertNotClosed();
         lastCommittingTx.set(transactionId);
-        lastClosedTx.set(transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
-        highestCommittedTransaction.set(transactionId, checksum, commitTimestamp, consensusIndex);
+        lastClosedTx.set(
+                transactionId,
+                new Meta(logVersion, byteOffset, kernelVersion.version(), checksum, commitTimestamp, consensusIndex));
+        highestCommittedTransaction.set(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
@@ -288,15 +288,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
+    public void transactionCommitted(
+            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
         assertNotClosed();
-        highestCommittedTransaction.offer(transactionId, checksum, commitTimestamp, consensusIndex);
+        highestCommittedTransaction.offer(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
     public long getLastCommittedTransactionId() {
         assertNotClosed();
-        return highestCommittedTransaction.get().transactionId();
+        return highestCommittedTransaction.get().id();
     }
 
     @Override
@@ -320,36 +321,36 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     @Override
     public ClosedTransactionMetadata getLastClosedTransaction() {
         assertNotClosed();
-        var txData = lastClosedTx.get();
-        return new ClosedTransactionMetadata(
-                txData.number(),
-                new LogPosition(txData.meta().logVersion(), txData.meta().byteOffset()),
-                txData.meta().checksum(),
-                txData.meta().commitTimestamp(),
-                txData.meta().consensusIndex());
+        return new ClosedTransactionMetadata(lastClosedTx.get());
     }
 
     @Override
     public void transactionClosed(
             long transactionId,
+            KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
             int checksum,
             long commitTimestamp,
             long consensusIndex) {
-        lastClosedTx.offer(transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
+        lastClosedTx.offer(
+                transactionId,
+                new Meta(logVersion, byteOffset, kernelVersion.version(), checksum, commitTimestamp, consensusIndex));
     }
 
     @Override
     public void resetLastClosedTransaction(
             long transactionId,
+            KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
             int checksum,
             long commitTimestamp,
             long consensusIndex) {
         assertNotClosed();
-        lastClosedTx.set(transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
+        lastClosedTx.set(
+                transactionId,
+                new Meta(logVersion, byteOffset, kernelVersion.version(), checksum, commitTimestamp, consensusIndex));
     }
 
     public void logRecords(final DiagnosticsLogger logger) {

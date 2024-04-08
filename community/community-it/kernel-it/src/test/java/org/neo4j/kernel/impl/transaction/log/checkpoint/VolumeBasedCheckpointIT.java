@@ -79,8 +79,8 @@ class VolumeBasedCheckpointIT {
         await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES)).untilAsserted(() -> assertThat(checkPointer
                         .latestCheckPointInfo()
                         .checkpointedTransactionId()
-                        .transactionId())
-                .isGreaterThan(lastCheckpointedTransactionId.transactionId()));
+                        .id())
+                .isGreaterThan(lastCheckpointedTransactionId.id()));
     }
 
     @Test
@@ -107,8 +107,8 @@ class VolumeBasedCheckpointIT {
         await().atMost(ofMinutes(WAIT_TIMEOUT_MINUTES)).untilAsserted(() -> assertThat(checkPointer
                         .latestCheckPointInfo()
                         .checkpointedTransactionId()
-                        .transactionId())
-                .isGreaterThan(lastCheckpointedTransactionId.transactionId()));
+                        .id())
+                .isGreaterThan(lastCheckpointedTransactionId.id()));
     }
 
     @Test
@@ -138,8 +138,8 @@ class VolumeBasedCheckpointIT {
         await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES)).untilAsserted(() -> assertThat(checkPointer
                         .latestCheckPointInfo()
                         .checkpointedTransactionId()
-                        .transactionId())
-                .isGreaterThan(lastCheckpointedTransactionId.transactionId()));
+                        .id())
+                .isGreaterThan(lastCheckpointedTransactionId.id()));
     }
 
     private DatabaseManagementService startDbms(Config config) {

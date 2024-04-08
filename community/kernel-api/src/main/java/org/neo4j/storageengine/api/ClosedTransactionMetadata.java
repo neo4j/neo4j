@@ -19,7 +19,19 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.util.concurrent.OutOfOrderSequence;
 
-public record ClosedTransactionMetadata(
-        long transactionId, LogPosition logPosition, int checksum, long commitTimestamp, long consensusIndex) {}
+public record ClosedTransactionMetadata(TransactionId transactionId, LogPosition logPosition) {
+    public ClosedTransactionMetadata(OutOfOrderSequence.NumberWithMeta metadata) {
+        this(
+                new TransactionId(
+                        metadata.number(),
+                        KernelVersion.getForVersion(metadata.meta().kernelVersion()),
+                        metadata.meta().checksum(),
+                        metadata.meta().commitTimestamp(),
+                        metadata.meta().consensusIndex()),
+                new LogPosition(metadata.meta().logVersion(), metadata.meta().byteOffset()));
+    }
+}

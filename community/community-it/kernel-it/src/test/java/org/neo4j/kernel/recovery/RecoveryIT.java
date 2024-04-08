@@ -57,6 +57,7 @@ import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointReco
 import static org.neo4j.kernel.recovery.facade.RecoveryCriteria.ALL;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
@@ -1939,7 +1940,7 @@ class RecoveryIT {
         var checkpointFile =
                 db.getDependencyResolver().resolveDependency(LogFiles.class).getCheckpointFile();
         var appender = (DetachedCheckpointAppender) checkpointFile.getCheckpointAppender();
-        var transactionId = new TransactionId(100, 101, 102, 103);
+        var transactionId = new TransactionId(100, LATEST_KERNEL_VERSION, 101, 102, 103);
         appender.rotate();
         appender.checkPoint(
                 LogCheckPointEvent.NULL,

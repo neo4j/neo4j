@@ -127,7 +127,7 @@ public class DetachedCheckpointLogEntrySerializerV5_7 extends LogEntrySerializer
         channel.get(storeIdBuffer, storeIdBuffer.length);
         StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(ByteBuffer.wrap(storeIdBuffer));
         var transactionId =
-                new TransactionId(channel.getLong(), channel.getInt(), channel.getLong(), channel.getLong());
+                new TransactionId(channel.getLong(), version, channel.getInt(), channel.getLong(), channel.getLong());
         short reasonBytesLength = channel.getShort();
         byte[] bytes = new byte[MAX_DESCRIPTION_LENGTH];
         channel.get(bytes, MAX_DESCRIPTION_LENGTH);
@@ -153,7 +153,7 @@ public class DetachedCheckpointLogEntrySerializerV5_7 extends LogEntrySerializer
                 .putLong(logPosition.getByteOffset())
                 .putLong(logEntry.getCheckpointTime())
                 .put(storeIdBuffer, storeIdBuffer.length)
-                .putLong(transactionId.transactionId())
+                .putLong(transactionId.id())
                 .putInt(transactionId.checksum())
                 .putLong(transactionId.commitTimestamp())
                 .putLong(transactionId.consensusIndex())

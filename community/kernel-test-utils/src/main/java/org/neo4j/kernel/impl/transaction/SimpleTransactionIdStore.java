@@ -25,7 +25,7 @@ import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSI
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -40,12 +40,12 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     private final AtomicLong committingTransactionId = new AtomicLong();
     private final OutOfOrderSequence closedTransactionId =
             new ArrayQueueOutOfOrderSequence(-1, 100, OutOfOrderSequence.EMPTY_META);
-    private final AtomicReference<TransactionId> committedTransactionId = new AtomicReference<>(
-            new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
+    private final AtomicReference<TransactionId> committedTransactionId = new AtomicReference<>(BASE_TRANSACTION_ID);
 
     public SimpleTransactionIdStore() {
         this(
                 BASE_TX_ID,
+                KernelVersion.DEFAULT_BOOTSTRAP_VERSION,
                 BASE_TX_CHECKSUM,
                 BASE_TX_COMMIT_TIMESTAMP,
                 UNKNOWN_CONSENSUS_INDEX,
@@ -55,6 +55,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
 
     public SimpleTransactionIdStore(
             long previouslyCommittedTxId,
+            KernelVersion kernelVersion,
             int checksum,
             long previouslyCommittedTxCommitTimestamp,
             long previousConsensusIndex,
@@ -63,6 +64,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
         assert previouslyCommittedTxId >= BASE_TX_ID : "cannot start from a tx id less than BASE_TX_ID";
         setLastCommittedAndClosedTransactionId(
                 previouslyCommittedTxId,
+                kernelVersion,
                 checksum,
                 previouslyCommittedTxCommitTimestamp,
                 previousConsensusIndex,
@@ -82,16 +84,17 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
 
     @Override
     public synchronized void transactionCommitted(
-            long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
+            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
         TransactionId current = committedTransactionId.get();
-        if (current == null || transactionId > current.transactionId()) {
-            committedTransactionId.set(new TransactionId(transactionId, checksum, commitTimestamp, consensusIndex));
+        if (current == null || transactionId > current.id()) {
+            committedTransactionId.set(
+                    new TransactionId(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex));
         }
     }
 
     @Override
     public long getLastCommittedTransactionId() {
-        return committedTransactionId.get().transactionId();
+        return committedTransactionId.get().id();
     }
 
     @Override
@@ -111,50 +114,51 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
 
     @Override
     public ClosedTransactionMetadata getLastClosedTransaction() {
-        var data = closedTransactionId.get();
-        return new ClosedTransactionMetadata(
-                data.number(),
-                new LogPosition(data.meta().logVersion(), data.meta().byteOffset()),
-                data.meta().checksum(),
-                data.meta().commitTimestamp(),
-                data.meta().consensusIndex());
+        return new ClosedTransactionMetadata(closedTransactionId.get());
     }
 
     @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId,
+            KernelVersion kernelVersion,
             int checksum,
             long commitTimestamp,
             long consensusIndex,
             long byteOffset,
             long logVersion) {
         committingTransactionId.set(transactionId);
-        committedTransactionId.set(new TransactionId(transactionId, checksum, commitTimestamp, consensusIndex));
+        committedTransactionId.set(
+                new TransactionId(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex));
         closedTransactionId.set(
-                transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
+                transactionId,
+                new Meta(logVersion, byteOffset, kernelVersion.version(), checksum, commitTimestamp, consensusIndex));
     }
 
     @Override
     public void transactionClosed(
             long transactionId,
+            KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
             int checksum,
             long commitTimestamp,
             long consensusIndex) {
         closedTransactionId.offer(
-                transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
+                transactionId,
+                new Meta(logVersion, byteOffset, kernelVersion.version(), checksum, commitTimestamp, consensusIndex));
     }
 
     @Override
     public void resetLastClosedTransaction(
             long transactionId,
+            KernelVersion kernelVersion,
             long byteOffset,
             long logVersion,
             int checksum,
             long commitTimestamp,
             long consensusIndex) {
         closedTransactionId.set(
-                transactionId, new Meta(logVersion, byteOffset, checksum, commitTimestamp, consensusIndex));
+                transactionId,
+                new Meta(logVersion, byteOffset, kernelVersion.version(), checksum, commitTimestamp, consensusIndex));
     }
 }

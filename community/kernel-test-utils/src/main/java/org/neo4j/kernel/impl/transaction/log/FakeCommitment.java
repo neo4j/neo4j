@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
+
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -39,6 +42,7 @@ public class FakeCommitment implements Commitment {
     @Override
     public void commit(
             long transactionId,
+            KernelVersion kernelVersion,
             LogPosition beforeCommit,
             LogPosition logPositionAfterCommit,
             int checksum,
@@ -47,13 +51,14 @@ public class FakeCommitment implements Commitment {
     @Override
     public void publishAsCommitted(long transactionCommitTimestamp) {
         committed = true;
-        transactionIdStore.transactionCommitted(id, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
+        transactionIdStore.transactionCommitted(id, DEFAULT_BOOTSTRAP_VERSION, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
     }
 
     @Override
     public void publishAsClosed() {
         if (committed) {
-            transactionIdStore.transactionClosed(id, 1, 2, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
+            transactionIdStore.transactionClosed(
+                    id, DEFAULT_BOOTSTRAP_VERSION, 1, 2, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
         }
     }
 }

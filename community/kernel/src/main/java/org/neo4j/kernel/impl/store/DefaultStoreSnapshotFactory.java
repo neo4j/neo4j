@@ -60,14 +60,12 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
         var latestCheckpointInfo = checkPointer.latestCheckPointInfo();
         var lastCommittedTransactionId = latestCheckpointInfo.checkpointedTransactionId();
 
-        var kernelVersion = latestCheckpointInfo.kernelVersion();
         var unrecoverableFiles = unrecoverableFiles(database);
         var recoverableFiles = recoverableFiles(database);
         var snapshot = new StoreSnapshot(
                 unrecoverableFiles,
                 recoverableFiles,
                 lastCommittedTransactionId,
-                kernelVersion,
                 database.getStoreId(),
                 checkpointMutex);
         return Optional.of(snapshot);

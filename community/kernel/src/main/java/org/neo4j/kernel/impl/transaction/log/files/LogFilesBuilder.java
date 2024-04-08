@@ -43,6 +43,7 @@ import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -100,7 +101,7 @@ public class LogFilesBuilder {
     private Monitors monitors;
     private StoreId storeId;
     private NativeAccess nativeAccess;
-    private KernelVersionProvider kernelVersionProvider = KernelVersionProvider.THROWING_PROVIDER;
+    private KernelVersionProvider kernelVersionProvider;
     private LogTailMetadata externalLogTail;
     private int envelopeSegmentBlockSizeBytes = LogSegments.DEFAULT_LOG_SEGMENT_SIZE;
     private int bufferSizeBytes;
@@ -319,6 +320,9 @@ public class LogFilesBuilder {
     TransactionLogFilesContext buildContext() {
         if (config == null) {
             config = Config.defaults();
+        }
+        if (kernelVersionProvider == null) {
+            kernelVersionProvider = () -> KernelVersion.getLatestVersion(config);
         }
         requireNonNull(fileSystem);
         Supplier<StoreId> storeIdSupplier = getStoreId();
@@ -624,7 +628,7 @@ public class LogFilesBuilder {
     private static class ReadOnlyLastCommittedTransactionIdProvider implements LastCommittedTransactionIdProvider {
         @Override
         public long getLastCommittedTransactionId(LogFiles logFiles) {
-            return logFiles.getTailMetadata().getLastCommittedTransaction().transactionId();
+            return logFiles.getTailMetadata().getLastCommittedTransaction().id();
         }
     }
 

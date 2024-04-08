@@ -38,6 +38,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
@@ -113,7 +114,7 @@ class BatchingTransactionAppenderTest {
     void setUp() {
         when(logFiles.getLogFile()).thenReturn(logFile);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, 1, 2));
+                .thenReturn(new TransactionId(BASE_TX_ID, DEFAULT_BOOTSTRAP_VERSION, BASE_TX_CHECKSUM, 1, 2));
     }
 
     @Test
@@ -126,8 +127,12 @@ class BatchingTransactionAppenderTest {
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(
-                        new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
+                .thenReturn(new TransactionId(
+                        txId,
+                        DEFAULT_BOOTSTRAP_VERSION,
+                        BASE_TX_CHECKSUM,
+                        BASE_TX_COMMIT_TIMESTAMP,
+                        UNKNOWN_CONSENSUS_INDEX));
         TransactionAppender appender = life.add(createTransactionAppender());
         CommandBatch transaction =
                 new CompleteTransaction(singleTestCommand(), 5, 12345, 7896, 123456, -1, null, ANONYMOUS);
@@ -159,8 +164,12 @@ class BatchingTransactionAppenderTest {
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(
-                        new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
+                .thenReturn(new TransactionId(
+                        txId,
+                        DEFAULT_BOOTSTRAP_VERSION,
+                        BASE_TX_CHECKSUM,
+                        BASE_TX_COMMIT_TIMESTAMP,
+                        UNKNOWN_CONSENSUS_INDEX));
         TransactionAppender appender = life.add(createTransactionAppender());
 
         // WHEN
@@ -219,7 +228,11 @@ class BatchingTransactionAppenderTest {
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(nextTxId);
         when(transactionIdStore.getLastCommittedTransaction())
                 .thenReturn(new TransactionId(
-                        nextTxId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
+                        nextTxId,
+                        DEFAULT_BOOTSTRAP_VERSION,
+                        BASE_TX_CHECKSUM,
+                        BASE_TX_COMMIT_TIMESTAMP,
+                        UNKNOWN_CONSENSUS_INDEX));
         TransactionAppender appender =
                 life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic));
 
@@ -314,8 +327,12 @@ class BatchingTransactionAppenderTest {
 
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(
-                        new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
+                .thenReturn(new TransactionId(
+                        txId,
+                        DEFAULT_BOOTSTRAP_VERSION,
+                        BASE_TX_CHECKSUM,
+                        BASE_TX_COMMIT_TIMESTAMP,
+                        UNKNOWN_CONSENSUS_INDEX));
         Mockito.reset(databasePanic);
         TransactionAppender appender = life.add(createTransactionAppender());
 
@@ -339,7 +356,8 @@ class BatchingTransactionAppenderTest {
         assertSame(failure, e);
         verify(transactionIdStore).nextCommittingTransactionId();
         verify(transactionIdStore, never())
-                .transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
+                .transactionClosed(
+                        eq(txId), eq(DEFAULT_BOOTSTRAP_VERSION), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
         verify(databasePanic).panic(failure);
     }
 
@@ -366,8 +384,12 @@ class BatchingTransactionAppenderTest {
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(
-                        new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
+                .thenReturn(new TransactionId(
+                        txId,
+                        DEFAULT_BOOTSTRAP_VERSION,
+                        BASE_TX_CHECKSUM,
+                        BASE_TX_COMMIT_TIMESTAMP,
+                        UNKNOWN_CONSENSUS_INDEX));
         TransactionAppender appender =
                 life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic));
 
@@ -392,7 +414,8 @@ class BatchingTransactionAppenderTest {
         assertSame(failure, e);
         verify(transactionIdStore).nextCommittingTransactionId();
         verify(transactionIdStore, never())
-                .transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
+                .transactionClosed(
+                        eq(txId), eq(DEFAULT_BOOTSTRAP_VERSION), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
     }
 
     @Test

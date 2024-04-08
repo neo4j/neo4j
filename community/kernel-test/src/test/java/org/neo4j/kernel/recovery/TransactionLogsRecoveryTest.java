@@ -128,8 +128,8 @@ class TransactionLogsRecoveryTest {
 
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final StoreId storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-    private final TransactionIdStore transactionIdStore =
-            new SimpleTransactionIdStore(5L, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
+    private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
+            5L, LATEST_KERNEL_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
     private final int logVersion = 0;
 
     private LogEntry lastCommittedTxStartEntry;
@@ -185,7 +185,7 @@ class TransactionLogsRecoveryTest {
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
-                    new TransactionId(4L, 2, 5L, 6L),
+                    new TransactionId(4L, LATEST_KERNEL_VERSION, 2, 5L, 6L),
                     LATEST_KERNEL_VERSION,
                     lastCommittedTxPosition,
                     Instant.now(),
@@ -299,7 +299,7 @@ class TransactionLogsRecoveryTest {
         writeSomeDataWithVersion(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
-            TransactionId transactionId = new TransactionId(4L, BASE_TX_CHECKSUM, 5L, 6L);
+            TransactionId transactionId = new TransactionId(4L, LATEST_KERNEL_VERSION, BASE_TX_CHECKSUM, 5L, 6L);
 
             // last committed tx
             channel.getCurrentLogPosition(marker);
@@ -401,7 +401,7 @@ class TransactionLogsRecoveryTest {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
             writer.writeStartEntry(LATEST_KERNEL_VERSION, 1L, 1L, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
-            TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L, 4L);
+            TransactionId transactionId = new TransactionId(1L, LATEST_KERNEL_VERSION, BASE_TX_CHECKSUM, 2L, 4L);
 
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 1L, 2L);
             channel.getCurrentLogPosition(marker);
@@ -447,7 +447,7 @@ class TransactionLogsRecoveryTest {
             LogPositionAwareChannel channel = dataWriters.channel();
             writer.writeStartEntry(LATEST_KERNEL_VERSION, 1L, 1L, BASE_TX_CHECKSUM, EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(LATEST_KERNEL_VERSION, 1L, 2L);
-            TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L, 3L);
+            TransactionId transactionId = new TransactionId(1L, LATEST_KERNEL_VERSION, BASE_TX_CHECKSUM, 2L, 3L);
 
             channel.getCurrentLogPosition(marker);
             var checkpointFile = logFiles.getCheckpointFile();
@@ -537,7 +537,7 @@ class TransactionLogsRecoveryTest {
         assertTrue(recoveryRequired);
         var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
         LogPosition logPosition = lastClosedTransaction.logPosition();
-        assertEquals(transactionId, lastClosedTransaction.transactionId());
+        assertEquals(transactionId, lastClosedTransaction.transactionId().id());
         assertEquals(
                 commitTimestamp,
                 transactionIdStore.getLastCommittedTransaction().commitTimestamp());
