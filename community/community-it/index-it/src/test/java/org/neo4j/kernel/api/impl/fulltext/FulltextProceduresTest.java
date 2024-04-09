@@ -162,7 +162,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         });
 
         // Fails at parsing, schema descriptor must have at least one label.
-        assertThat(e).hasMessageContaining("Invalid input ')': expected \":\"");
+        assertThat(e)
+                .message()
+                .containsAnyOf("Invalid input ')': expected \":\"", "Mismatched input ')': expected ':'");
     }
 
     @Test
@@ -174,7 +176,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         });
 
         // Fails at parsing, schema descriptor must have at least one relationship type.
-        assertThat(e).hasMessageContaining("Invalid input ']': expected \":\"");
+        assertThat(e)
+                .message()
+                .containsAnyOf("Invalid input ']': expected \":\"", "Mismatched input ']': expected ':'");
     }
 
     @Test
@@ -188,7 +192,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         });
 
         // Fails at parsing, an index needs at least one property key to index.
-        assertThat(e).hasMessageContaining("Invalid input ']': expected an identifier");
+        assertThat(e)
+                .message()
+                .containsAnyOf(
+                        "Invalid input ']': expected an identifier", "Mismatched input ']': expected a variable name");
     }
 
     @Test
@@ -202,7 +209,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         });
 
         // Fails at parsing, an index needs at least one property key to index.
-        assertThat(e).hasMessageContaining("Invalid input ']': expected an identifier");
+        assertThat(e)
+                .message()
+                .containsAnyOf(
+                        "Invalid input ']': expected an identifier", "Mismatched input ']': expected a variable name");
     }
 
     @Test

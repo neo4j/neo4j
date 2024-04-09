@@ -628,7 +628,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       execute("CREATE USER 4neo4j SET PASSWORD 'password'")
     }
     // THEN
-    exception.getMessage should include("Invalid input '4neo4j'")
+    exception.getMessage should (include("Invalid input '4neo4j'") or include("No viable alternative"))
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser, user("3neo4j"))
