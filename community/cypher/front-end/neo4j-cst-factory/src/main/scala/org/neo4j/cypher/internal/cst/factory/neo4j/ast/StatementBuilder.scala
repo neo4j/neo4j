@@ -75,6 +75,8 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
+import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
@@ -337,7 +339,10 @@ trait StatementBuilder extends CypherParserListener {
     val secondToken = nodeChild(ctx, 1).getSymbol
     ctx.ast = secondToken.getType match {
       case CypherParser.INDEX => indexHint(ctx, UsingAnyIndexType)
-      case CypherParser.BTREE => throw new IllegalStateException("TODO") // TODO Correct error
+      case CypherParser.BTREE => throw exceptionFactory.syntaxException(
+          ASTExceptionFactory.invalidHintIndexType(HintIndexType.BTREE),
+          pos(secondToken)
+        )
       case CypherParser.TEXT  => indexHint(ctx, UsingTextIndexType)
       case CypherParser.RANGE => indexHint(ctx, UsingRangeIndexType)
       case CypherParser.POINT => indexHint(ctx, UsingPointIndexType)
