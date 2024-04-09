@@ -25,7 +25,9 @@ import static org.antlr.v4.runtime.IntStream.UNKNOWN_SOURCE_NAME;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CodePointBuffer;
+import org.antlr.v4.runtime.Token;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.neo4j.cypher.internal.cst.factory.neo4j.CypherToken;
 import org.neo4j.cypher.internal.cst.factory.neo4j.OffsetTable;
@@ -34,8 +36,29 @@ import org.neo4j.cypher.internal.parser.javacc.InvalidUnicodeLiteral;
 import org.neo4j.cypher.internal.util.InputPosition;
 import org.neo4j.util.VisibleForTesting;
 
-public class ReplaceUnicodeEscapeSequences {
-    private static final int BUFFER_SIZE = 4096;
+public final class CypherAstLexer extends CypherLexer {
+    // Note, this query string is not always identical to the one that the lexer/parser sees,
+    // see inputText(Token, Token).
+    private final String inputQuery;
+
+    private CypherAstLexer(CharStream input, String inputQuery) {
+        super(input);
+        this.inputQuery = inputQuery;
+    }
+
+    /**
+     * Returns a substring of the input query.
+     * NOTE!! The input query in this context is usually:
+     * - after pre-parsing of cypher options (profile/explain/cypher is not included)
+     * - before unicode escape replacement (unicode escape characters are included)
+     * - comments and white space are included
+     * In most situations Token/RuleContext.getText is what you want.
+     */
+    public String inputText(Token start, Token stop) {
+        return inputQuery.substring(
+                ((CypherToken) start).inputOffset(start.getStartIndex()),
+                ((CypherToken) stop).inputOffset(stop.getStopIndex()) + 1);
+    }
 
     /**
      *  Pre-parser step that replace unicode escape sequences.
@@ -43,19 +66,18 @@ public class ReplaceUnicodeEscapeSequences {
      *  relative to the chars of the input string (which is not always the same
      *  as the codepoint based offset that antlr provides).
      */
-    // TODO Investigate the impact of including escape codes in the antlr lexer grammar instead.
-    public static CypherLexer fromString(final String cypher) throws IOException {
-        return fromString(cypher, BUFFER_SIZE);
+    public static CypherAstLexer fromString(final String cypher) throws IOException {
+        return fromString(cypher, 4096);
     }
 
     @VisibleForTesting
-    public static CypherLexer fromString(final String cypher, int maxBuffer) throws IOException {
+    static CypherAstLexer fromString(final String cypher, int maxBuffer) throws IOException {
         final var antlrBuffer = CodePointBuffer.builder(cypher.length());
         final var cb = CharBuffer.allocate(min(maxBuffer, cypher.length()));
 
         try (final var reader = new UnicodeEscapeReader(cypher)) {
             while (reader.read(cb.clear()) != -1) antlrBuffer.append(cb.flip());
-            final var lexer = new CypherLexer(fromBuffer(antlrBuffer.build(), UNKNOWN_SOURCE_NAME));
+            final var lexer = new CypherAstLexer(fromBuffer(antlrBuffer.build(), UNKNOWN_SOURCE_NAME), cypher);
             lexer.setTokenFactory(CypherToken.factory(reader.offsetTable()));
             return lexer;
         }

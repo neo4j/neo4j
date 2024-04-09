@@ -28,7 +28,7 @@ import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.ReplaceUnicodeEscapeSequences
+import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
 import org.neo4j.cypher.internal.cst.factory.neo4j.DefaultCypherToken
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
@@ -194,7 +194,7 @@ object CypherAstParser {
     result
   }
 
-  private def preparsedTokens(cypher: String) = new CommonTokenStream(ReplaceUnicodeEscapeSequences.fromString(cypher))
+  private def preparsedTokens(cypher: String) = new CommonTokenStream(CypherAstLexer.fromString(cypher))
 }
 
 object NoOpParseTreeListener extends ParseTreeListener {

@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
 import org.neo4j.cypher.internal.cst.factory.neo4j.CypherToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -165,6 +166,14 @@ object Util {
   @inline def pos(ctx: ParserRuleContext): InputPosition = pos(ctx.start)
 
   @inline def pos(node: TerminalNode): InputPosition = pos(node.getSymbol)
+
+  /**
+   * Returns the query input text for the specified rule. Includes comments! Do not include pre-parser options!
+   * In most situations ctx.getText is what you want.
+   */
+  @inline def inputText(ctx: AstRuleCtx): String = {
+    ctx.stop.getTokenSource.asInstanceOf[CypherAstLexer].inputText(ctx.start, ctx.stop)
+  }
 
   def ifExistsDo(replace: Boolean, ifNotExists: Boolean): IfExistsDo = {
     (replace, ifNotExists) match {

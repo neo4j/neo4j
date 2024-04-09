@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
@@ -512,5 +513,36 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
            |"$query"
            |                                          ^""".stripMargin
       )
+  }
+
+  test("return item text parses correctly") {
+    "return 'a\\u000Ab\\u000Ac', 'x'" should parse[Statements].toAstPositioned {
+      Statements(Seq(singleQuery(return_(
+        returnItem(
+          StringLiteral("a\nb\nc")(InputPosition(7, 1, 8), InputPosition(23, 1, 24)),
+          "'a\\u000Ab\\u000Ac'"
+        ),
+        returnItem(
+          StringLiteral("x")(InputPosition(26, 1, 27), InputPosition(28, 1, 29)),
+          "'x'"
+        )
+      ))))
+    }
+
+    "return 1 +  /* hello */ 2, 3" should parse[Statements].toAstPositioned {
+      Statements(Seq(singleQuery(return_(
+        returnItem(
+          add(
+            SignedDecimalIntegerLiteral("1")(InputPosition(7, 1, 8)),
+            SignedDecimalIntegerLiteral("2")(InputPosition(24, 1, 25))
+          ),
+          "1 +  /* hello */ 2"
+        ),
+        returnItem(
+          SignedDecimalIntegerLiteral("3")(InputPosition(27, 1, 28)),
+          "3"
+        )
+      ))))
+    }
   }
 }

@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
-import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -81,6 +80,7 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeqPositioned
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.inputText
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
@@ -210,12 +210,7 @@ trait StatementBuilder extends CypherParserListener {
     val variable = ctx.variable()
     ctx.ast =
       if (variable != null) AliasedReturnItem(expression.ast(), variable.ast())(position)
-      else {
-        val interval = Interval.of(expression.start.getStartIndex, expression.stop.getStopIndex)
-        UnaliasedReturnItem(expression.ast(), expression.start.getInputStream.getText(interval))(
-          position
-        )
-      }
+      else UnaliasedReturnItem(expression.ast(), inputText(expression))(position)
   }
 
   final override def exitOrderItem(ctx: CypherParser.OrderItemContext): Unit = {

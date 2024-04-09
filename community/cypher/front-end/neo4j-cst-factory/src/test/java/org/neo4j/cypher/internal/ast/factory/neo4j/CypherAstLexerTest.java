@@ -38,7 +38,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 @ExtendWith({RandomExtension.class})
-public class ReplaceUnicodeEscapeSequencesTest {
+public class CypherAstLexerTest {
     @Inject
     private RandomSupport rand;
 
@@ -85,7 +85,7 @@ public class ReplaceUnicodeEscapeSequencesTest {
         final var expectedLine = lines.size();
         final var expectedCol = lines.get(lines.size() - 1).indexOf("ohno") + 1;
 
-        assertThatThrownBy(() -> ReplaceUnicodeEscapeSequences.fromString(in, rand.nextInt(in.length()) + 2))
+        assertThatThrownBy(() -> CypherAstLexer.fromString(in, rand.nextInt(in.length()) + 2))
                 .isInstanceOf(InvalidUnicodeLiteral.class)
                 .hasMessage("Invalid input 'ohno': expected four hexadecimal digits specifying a unicode character")
                 .extracting("offset", "column", "line")
@@ -148,7 +148,7 @@ public class ReplaceUnicodeEscapeSequencesTest {
     }
 
     private Read read(String in) throws IOException {
-        final var lexer = ReplaceUnicodeEscapeSequences.fromString(in, rand.nextInt(4096) + 64);
+        final var lexer = CypherAstLexer.fromString(in, rand.nextInt(4096) + 64);
         final var tokens = (TokenFactory<CypherToken>) lexer.getTokenFactory();
         final var stream = (CodePointCharStream) lexer.getInputStream();
         final var codepoints =
