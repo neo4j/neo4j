@@ -848,7 +848,7 @@ showSettings
    ;
 
 namesAndClauses
-   : stringsOrExpression? showCommandYield composableCommandClauses?
+   : (showCommandYield | stringsOrExpression showCommandYield) composableCommandClauses?
    ;
 
 composableCommandClauses
