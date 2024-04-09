@@ -465,7 +465,7 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
   }
 
   test(
-    "should not plan to obtain the count from count store when the property key names of the 'IS NOT NULL' predicate and the aggregation do not match"
+    "should not plan to obtain the count from count store when the IS NOT NULL predicate cannot be implied since the property key does not have an existence constraint"
   ) {
     val query = "MATCH (n:A) WHERE n.prop2 IS NOT NULL RETURN count(n.prop)"
     val planner = plannerBuilder()
@@ -484,9 +484,30 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
   }
 
   test(
-    "should not plan to obtain the count from count store when the property variable names of the 'IS NOT NULL' predicate and the aggregation do not match"
+    "should plan to obtain the count from count store by identifying that the IS NOT NULL predicate is implied by a label predicate and an existence constraint"
   ) {
-    val query = "MATCH (n:A), (m:A) WHERE n.prop IS NOT NULL RETURN count(m.prop)"
+    val query = "MATCH (n:A) WHERE n.prop2 IS NOT NULL RETURN count(n.prop)"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setLabelCardinality("A", 30)
+      .addNodeExistenceConstraint("A", "prop")
+      .addNodeExistenceConstraint("A", "prop2")
+      .build()
+
+    val plan = planner
+      .plan(query)
+
+    plan should equal(planner.planBuilder()
+      .produceResults("`count(n.prop)`")
+      .nodeCountFromCountStore("count(n.prop)", Seq(Some("A")))
+      .build())
+  }
+
+  test(
+    "should not plan to obtain the count from count store when the IS NOT NULL predicate cannot be implied since the node does not have a label"
+  ) {
+    val query = "MATCH (n:A),(m) WHERE m.prop IS NOT NULL RETURN count(n.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
@@ -523,9 +544,9 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
   }
 
   test(
-    "should not plan to obtain the relationship count from count store when the property variable names of the 'IS NOT NULL' predicate and the aggregation do not match"
+    "should not plan to obtain the relationship count from count store when the IS NOT NULL predicate cannot be implied since the variable does not have a label"
   ) {
-    val query = "MATCH (n)-[e:T]->() WHERE e.prop IS NOT NULL RETURN count(n.prop)"
+    val query = "MATCH (n)-[e:T]->() WHERE n.prop IS NOT NULL RETURN count(e.prop)"
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
@@ -542,7 +563,7 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
   }
 
   test(
-    "should not plan to obtain the relationship count from count store when the property key names of the 'IS NOT NULL' predicate and the aggregation do not match"
+    "should not plan to obtain the relationship count from count store when the IS NOT NULL predicate cannot be implied since the property key does not have an existence constraint"
   ) {
     val query = "MATCH ()-[e:T]->() WHERE e.prop2 IS NOT NULL RETURN count(e.prop)"
     val planner = plannerBuilder()
@@ -558,5 +579,49 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
     plan should not(containPlanMatching {
       case _: NodeCountFromCountStore =>
     })
+  }
+
+  test(
+    "should plan to obtain the relationship count from count store by identifying that the IS NOT NULL predicate is implied by a type predicate and an existence constraint"
+  ) {
+    val query = "MATCH ()-[e:T]->() WHERE e.prop2 IS NOT NULL RETURN count(e.prop)"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:T]->()", 30)
+      .addRelationshipExistenceConstraint("T", "prop")
+      .addRelationshipExistenceConstraint("T", "prop2")
+      .build()
+
+    val plan = planner
+      .plan(query)
+
+    plan should equal(planner.planBuilder()
+      .produceResults("`count(e.prop)`")
+      .relationshipCountFromCountStore("count(e.prop)", None, Seq("T"), None)
+      .build())
+  }
+
+  test(
+    "should plan to obtain the relationship count from count store by identifying that the IS NOT NULL predicate is implied by a label predicate and an existence constraint"
+  ) {
+    val query = "MATCH (n:A)-[e:T]->() WHERE n.prop2 IS NOT NULL RETURN count(e.prop)"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 50)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:T]->()", 30)
+      .setRelationshipCardinality("(:A)-[:T]->()", 20)
+      .addRelationshipExistenceConstraint("T", "prop")
+      .addNodeExistenceConstraint("A", "prop2")
+      .build()
+
+    val plan = planner
+      .plan(query)
+
+    plan should equal(planner.planBuilder()
+      .produceResults("`count(e.prop)`")
+      .relationshipCountFromCountStore("count(e.prop)", Some("A"), Seq("T"), None)
+      .build())
   }
 }

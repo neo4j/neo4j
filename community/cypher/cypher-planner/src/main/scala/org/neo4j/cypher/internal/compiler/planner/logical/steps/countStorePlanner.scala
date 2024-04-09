@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -43,6 +44,8 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 case object countStorePlanner {
 
@@ -105,6 +108,41 @@ case object countStorePlanner {
     }
   }
 
+  /**
+   * An IS NOT NULL predicate (variable.propertyKey IS NOT NULL) can be implied by a combination of
+   * - label or type predicate (variable:Label) and
+   * - node or relationship existence constraint (existence constraint between Label and propertyKey)
+   *
+   * @param selections           The selections of the query including the predicates which needs to be checked if they are implied
+   * @param patternRelationships The pattern relationships of the query (used to find the types of relationships)
+   * @param context              The logical planning context
+   * @return The predicates that are implied by other predicates and/or constraints
+   */
+  private def findImpliedPredicates(
+    selections: Selections,
+    patternRelationships: Set[PatternRelationship],
+    context: LogicalPlanningContext
+  ): Set[Predicate] = {
+    selections.predicates.filter {
+      // variable.propertyKey IS NOT NULL
+      case Predicate(_, IsNotNull(Property(variable: LogicalVariable, propertyKey: PropertyKeyName))) =>
+        if (isNode(variable, context)) {
+          // Check if the variable has a label that puts a constraint on having the property
+          findLabel(variable, selections).exists(labelImpliesProperty(_, Some(propertyKey), context))
+        } else if (isRel(variable, context)) {
+          // Check if the variable has a type that puts a constraint on having the property
+          findTypes(variable, patternRelationships) match {
+            case SetExtractor(typ) => relTypeImpliesProperty(typ, Some(propertyKey), context)
+            case _                 => false
+          }
+        } else {
+          // variable is not a node and not a relationship
+          false
+        }
+      case _ => false
+    }
+  }
+
   private def checkForValidAggregations(
     query: SinglePlannerQuery,
     columnName: LogicalVariable,
@@ -114,7 +152,9 @@ case object countStorePlanner {
     argumentIds: Set[LogicalVariable],
     selections: Selections,
     context: LogicalPlanningContext
-  ): Option[LogicalPlan] =
+  ): Option[LogicalPlan] = {
+    val impliedPredicates = findImpliedPredicates(selections, patternRelationships, context)
+    val selectionsWithoutImpliedPredicates = selections.copy(predicates = selections.predicates -- impliedPredicates)
     exp match {
       case // COUNT(<id>)
         func @ FunctionInvocation(_, _, false, IndexedSeq(v: Variable), _, _) if func.function == functions.Count =>
@@ -125,7 +165,7 @@ case object countStorePlanner {
           patternRelationships,
           patternNodes,
           argumentIds,
-          selections,
+          selectionsWithoutImpliedPredicates,
           context,
           None
         )
@@ -139,13 +179,13 @@ case object countStorePlanner {
           patternRelationships,
           patternNodes,
           argumentIds,
-          selections,
+          selectionsWithoutImpliedPredicates,
           context,
           None
         )
 
       case // COUNT(n.prop)
-        func @ FunctionInvocation(_, _, false, IndexedSeq(prop @ Property(v: Variable, propKeyName)), _, _)
+        func @ FunctionInvocation(_, _, false, IndexedSeq(Property(v: Variable, propKeyName)), _, _)
         if func.function == functions.Count =>
         trySolveNodeOrRelationshipAggregation(
           query,
@@ -154,17 +194,17 @@ case object countStorePlanner {
           patternRelationships,
           patternNodes,
           argumentIds,
-          selections,
+          selectionsWithoutImpliedPredicates,
           context,
-          Some(prop)
+          Some(propKeyName)
         )
 
       case _ => None
     }
+  }
 
   /**
    * @param variableName    the name of the variable in the count function. None, if this is count(*)
-   * @param propertyKeyName the name of the property in the count function. None, if this is count(*) or count(n)
    */
   private def trySolveNodeOrRelationshipAggregation(
     query: SinglePlannerQuery,
@@ -175,16 +215,16 @@ case object countStorePlanner {
     argumentIds: Set[LogicalVariable],
     selections: Selections,
     context: LogicalPlanningContext,
-    property: Option[Property]
+    propertyKeyName: Option[PropertyKeyName]
   ): Option[LogicalPlan] = {
     if (
       patternRelationships.isEmpty &&
       patternNodes.nonEmpty &&
       variableName.forall(patternNodes.contains) &&
-      noWrongPredicates(patternNodes, selections, property)
+      noWrongPredicates(patternNodes, selections)
     ) { // MATCH (n), MATCH (n:A)
 
-      if (couldPlanCountStoreLookupOnAllLabels(variableName, selections, property.map(_.propertyKey), context)) {
+      if (couldPlanCountStoreLookupOnAllLabels(variableName, selections, propertyKeyName, context)) {
         // this is the case where the count can be answered using the counts of the provided labels
 
         val allLabels = patternNodes.toList.map(n => findLabel(n, selections))
@@ -201,7 +241,7 @@ case object countStorePlanner {
     } else if (patternRelationships.size == 1 && notLoop(patternRelationships.head)) { // MATCH ()-[r]->(), MATCH ()-[r:X]->(), MATCH ()-[r:X|Y]->()
       val types = patternRelationships.head.types
       // this means that the given type implies the predicate that we do the count on through constraint
-      if (types.forall(relTypeImpliesProperty(_, property.map(_.propertyKey), context))) {
+      if (types.forall(relTypeImpliesProperty(_, propertyKeyName, context))) {
         trySolveRelationshipAggregation(
           query,
           columnName,
@@ -209,8 +249,7 @@ case object countStorePlanner {
           patternRelationships.head,
           argumentIds,
           selections,
-          context,
-          property
+          context
         )
       } else {
         None
@@ -266,14 +305,13 @@ case object countStorePlanner {
     patternRelationship: PatternRelationship,
     argumentIds: Set[LogicalVariable],
     selections: Selections,
-    context: LogicalPlanningContext,
-    property: Option[Property]
+    context: LogicalPlanningContext
   ): Option[LogicalPlan] = {
     patternRelationship match {
 
       case PatternRelationship(relId, (startNodeId, endNodeId), direction, types, SimplePatternLength)
         if variableName.forall(name => Set(relId, startNodeId, endNodeId).contains(name)) &&
-          noWrongPredicates(Set(startNodeId, endNodeId), selections, property) =>
+          noWrongPredicates(Set(startNodeId, endNodeId), selections) =>
         def planRelAggr(fromLabel: Option[LabelName], toLabel: Option[LabelName]): Option[LogicalPlan] =
           Some(context.staticComponents.logicalPlanProducer.planCountStoreRelationshipAggregation(
             query,
@@ -300,21 +338,12 @@ case object countStorePlanner {
     }
   }
 
-  /**
-   * Check if all predicates can be handled by the count store
-   * Only when each predicate:
-   * - matches the property key name and the property variable of the aggregate function
-   * @param predicates The predicates to check
-   * @param aggregateProperty The aggregate function's property
-   * @return True if all predicates can be handled
-   */
-  private def canHandlePredicates(predicates: Set[Predicate], aggregateProperty: Option[Property]): Boolean = {
-    predicates.forall(predicate =>
-      predicate match {
-        case Predicate(_, IsNotNull(innProperty: Property)) => aggregateProperty.contains(innProperty)
-        case _                                              => false
-      }
-    )
+  def isNode(variable: LogicalVariable, context: LogicalPlanningContext): Boolean = {
+    context.staticComponents.semanticTable.typeFor(variable).is(CTNode)
+  }
+
+  def isRel(variable: LogicalVariable, context: LogicalPlanningContext): Boolean = {
+    context.staticComponents.semanticTable.typeFor(variable).is(CTRelationship)
   }
 
   /**
@@ -323,19 +352,23 @@ case object countStorePlanner {
    */
   private def noWrongPredicates(
     nodeIds: Set[LogicalVariable],
-    selections: Selections,
-    aggregateProperty: Option[Property]
+    selections: Selections
   ): Boolean = {
     val (labelPredicates, others) = selections.predicates.partition {
       case Predicate(nIds, h: HasLabels) if nIds.forall(nodeIds.contains) && h.labels.size == 1 => true
       case _                                                                                    => false
     }
     val groupedLabelPredicates = labelPredicates.groupBy(_.dependencies intersect nodeIds)
-    groupedLabelPredicates.values.forall(_.size == 1) && canHandlePredicates(others, aggregateProperty)
+    groupedLabelPredicates.values.forall(_.size == 1) && others.isEmpty
   }
 
   private def findLabel(nodeId: LogicalVariable, selections: Selections): Option[LabelName] =
     selections.predicates.collectFirst {
       case Predicate(nIds, h: HasLabels) if nIds == Set(nodeId) && h.labels.size == 1 => h.labels.head
     }
+
+  private def findTypes(relId: LogicalVariable, patternRelationships: Set[PatternRelationship]): Set[RelTypeName] =
+    patternRelationships.filter(_.variable == relId)
+      .flatMap { pr => pr.types }
+
 }
