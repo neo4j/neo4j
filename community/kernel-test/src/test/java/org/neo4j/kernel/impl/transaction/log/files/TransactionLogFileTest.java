@@ -34,13 +34,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.KernelVersion.DEFAULT_BOOTSTRAP_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
-import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
-import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -60,10 +57,10 @@ import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.mockito.stubbing.Answer;
 import org.neo4j.internal.nativeimpl.ErrorTranslator;
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -75,6 +72,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -82,13 +80,14 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogVersionLocator;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.LatestVersions;
+import org.neo4j.test.arguments.KernelVersionSource;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -127,10 +126,11 @@ class TransactionLogFileTest {
         wrappingFileSystem = new CapturingChannelFileSystem(fileSystem);
     }
 
-    @Test
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
     @EnabledOnOs(OS.LINUX)
-    void truncateCurrentLogFile() throws IOException {
-        LogFiles logFiles = buildLogFiles();
+    void truncateCurrentLogFile(KernelVersion kernelVersion) throws IOException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.add(logFiles);
         life.start();
 
@@ -146,9 +146,10 @@ class TransactionLogFileTest {
                 .isGreaterThan(sizeAfter);
     }
 
-    @Test
-    void skipLogFileWithoutHeader() throws IOException {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void skipLogFileWithoutHeader(KernelVersion kernelVersion) throws IOException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.add(logFiles);
         life.start();
 
@@ -166,10 +167,11 @@ class TransactionLogFileTest {
         assertEquals(1, logPosition.getLogVersion());
     }
 
-    @Test
-    void preAllocateOnStartAndEvictOnShutdownNewLogFile() throws IOException {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void preAllocateOnStartAndEvictOnShutdownNewLogFile(KernelVersion kernelVersion) throws IOException {
         final CapturingNativeAccess capturingNativeAccess = new CapturingNativeAccess();
-        LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+        LogFilesBuilder.builder(databaseLayout, fileSystem, () -> kernelVersion)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
@@ -177,7 +179,7 @@ class TransactionLogFileTest {
                 .withNativeAccess(capturingNativeAccess)
                 .build();
 
-        startStop(capturingNativeAccess, life);
+        startStop(capturingNativeAccess, life, kernelVersion);
 
         assertEquals(2, capturingNativeAccess.getPreallocateCounter());
         assertEquals(5, capturingNativeAccess.getEvictionCounter());
@@ -185,14 +187,15 @@ class TransactionLogFileTest {
         assertEquals(3, capturingNativeAccess.getKeepCounter());
     }
 
-    @Test
-    void adviseOnStartAndEvictOnShutdownExistingLogFile() throws IOException {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void adviseOnStartAndEvictOnShutdownExistingLogFile(KernelVersion kernelVersion) throws IOException {
         var capturingNativeAccess = new CapturingNativeAccess();
 
-        startStop(capturingNativeAccess, life);
+        startStop(capturingNativeAccess, life, kernelVersion);
         capturingNativeAccess.reset();
 
-        startStop(capturingNativeAccess, new LifeSupport());
+        startStop(capturingNativeAccess, new LifeSupport(), kernelVersion);
 
         assertEquals(0, capturingNativeAccess.getPreallocateCounter());
         assertEquals(5, capturingNativeAccess.getEvictionCounter());
@@ -200,10 +203,11 @@ class TransactionLogFileTest {
         assertEquals(5, capturingNativeAccess.getKeepCounter());
     }
 
-    @Test
-    void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void shouldOpenInFreshDirectoryAndFinallyAddHeader(KernelVersion kernelVersion) throws Exception {
         // GIVEN
-        LogFiles logFiles = buildLogFiles();
+        LogFiles logFiles = buildLogFiles(kernelVersion);
 
         // WHEN
         life.start();
@@ -221,10 +225,11 @@ class TransactionLogFileTest {
         assertEquals(2L, header.getLastCommittedTxId());
     }
 
-    @Test
-    void shouldWriteSomeDataIntoTheLog() throws Exception {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void shouldWriteSomeDataIntoTheLog(KernelVersion kernelVersion) throws Exception {
         // GIVEN
-        LogFiles logFiles = buildLogFiles();
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -235,21 +240,25 @@ class TransactionLogFileTest {
         LogPosition currentPosition = transactionLogWriter.getCurrentPosition();
         int intValue = 45;
         long longValue = 4854587;
+        channel.putVersion(kernelVersion.version());
         channel.putInt(intValue);
         channel.putLong(longValue);
+        channel.putChecksum();
         logFile.flush();
 
         // THEN
         try (ReadableChannel reader = logFile.getReader(currentPosition)) {
+            assertEquals(kernelVersion.version(), reader.getVersion());
             assertEquals(intValue, reader.getInt());
             assertEquals(longValue, reader.getLong());
         }
     }
 
-    @Test
-    void shouldReadOlderLogs() throws Exception {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void shouldReadOlderLogs(KernelVersion kernelVersion) throws Exception {
         // GIVEN
-        LogFiles logFiles = buildLogFiles();
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -260,43 +269,51 @@ class TransactionLogFileTest {
         LogPosition position1 = logWriter.getCurrentPosition();
         int intValue = 45;
         long longValue = 4854587;
-        byte[] someBytes = someBytes(40);
+        byte[] someBytes1 = someBytes(42);
+        byte[] someBytes2 = someBytes(69);
+        writer.putVersion(kernelVersion.version());
         writer.putInt(intValue);
         writer.putLong(longValue);
-        writer.put(someBytes, someBytes.length);
+        writer.put(someBytes1, someBytes1.length);
+        writer.putChecksum();
         logFile.flush();
         LogPosition position2 = logWriter.getCurrentPosition();
         long longValue2 = 123456789L;
         writer.putLong(longValue2);
-        writer.put(someBytes, someBytes.length);
+        writer.put(someBytes2, someBytes2.length);
+        writer.putChecksum();
         logFile.flush();
 
         // THEN
         try (ReadableChannel reader = logFile.getReader(position1)) {
+            assertEquals(kernelVersion.version(), reader.getVersion());
             assertEquals(intValue, reader.getInt());
             assertEquals(longValue, reader.getLong());
-            assertArrayEquals(someBytes, readBytes(reader, 40));
+            assertArrayEquals(someBytes1, readBytes(reader, someBytes1.length));
         }
         try (ReadableChannel reader = logFile.getReader(position2)) {
             assertEquals(longValue2, reader.getLong());
-            assertArrayEquals(someBytes, readBytes(reader, 40));
+            assertArrayEquals(someBytes2, readBytes(reader, someBytes2.length));
         }
     }
 
-    @Test
-    void shouldVisitLogFile() throws Exception {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void shouldVisitLogFile(KernelVersion kernelVersion) throws Exception {
         // GIVEN
-        LogFiles logFiles = buildLogFiles();
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
         LogFile logFile = logFiles.getLogFile();
         var transactionLogWriter = logFile.getTransactionLogWriter();
         var writer = transactionLogWriter.getChannel();
+        writer.putVersion(kernelVersion.version());
         LogPosition position = transactionLogWriter.getCurrentPosition();
         for (int i = 0; i < 5; i++) {
             writer.put((byte) i);
         }
+        writer.putChecksum();
         logFile.flush();
 
         // WHEN/THEN
@@ -313,11 +330,12 @@ class TransactionLogFileTest {
         assertTrue(called.get());
     }
 
-    @Test
-    void shouldCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void shouldCloseChannelInFailedAttemptToReadHeaderAfterOpen(KernelVersion kernelVersion) throws Exception {
         // GIVEN a file which returns 1/2 log header size worth of bytes
         FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, () -> kernelVersion)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
@@ -334,16 +352,19 @@ class TransactionLogFileTest {
         when(fs.read(logFile)).thenReturn(channel);
 
         // WHEN
-        assertThrows(
+        final var exception = assertThrows(
                 IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion(logVersion));
         verify(channel).close();
+        assertEquals(0, exception.getSuppressed().length);
     }
 
-    @Test
-    void shouldSuppressFailureToCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void shouldSuppressFailureToCloseChannelInFailedAttemptToReadHeaderAfterOpen(KernelVersion kernelVersion)
+            throws Exception {
         // GIVEN a file which returns 1/2 log header size worth of bytes
         FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, () -> kernelVersion)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
@@ -361,16 +382,18 @@ class TransactionLogFileTest {
         doThrow(IOException.class).when(channel).close();
 
         // WHEN
-        IncompleteLogHeaderException exception = assertThrows(
+        final var exception = assertThrows(
                 IncompleteLogHeaderException.class, () -> logFiles.getLogFile().openForVersion(logVersion));
         verify(channel).close();
         assertEquals(1, exception.getSuppressed().length);
         assertInstanceOf(IOException.class, exception.getSuppressed()[0]);
     }
 
-    @Test
-    void closeChannelThrowExceptionOnAttemptToAppendTransactionLogRecords() throws IOException {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void closeChannelThrowExceptionOnAttemptToAppendTransactionLogRecords(KernelVersion kernelVersion)
+            throws IOException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -386,12 +409,13 @@ class TransactionLogFileTest {
         assertThrows(Throwable.class, () -> channel.putFloat(7));
         assertThrows(Throwable.class, () -> channel.putShort((short) 7));
         assertThrows(Throwable.class, () -> channel.put(new byte[] {1, 2, 3}, 3));
-        assertThrows(IllegalStateException.class, logFile::flush);
+        assertThrows(Throwable.class, logFile::flush);
     }
 
-    @Test
-    void shouldForceLogChannel() throws Throwable {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void shouldForceLogChannel(KernelVersion kernelVersion) throws Throwable {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -404,19 +428,20 @@ class TransactionLogFileTest {
         logFile.locklessForce(LogAppendEvent.NULL);
 
         assertEquals(1, capturingChannel.getFlushCounter().get() - flushesBefore);
-        assertEquals(1, capturingChannel.getWriteAllCounter().get() - writesBefore);
+        assertEquals(0, capturingChannel.getWriteAllCounter().get() - writesBefore);
     }
 
-    @Test
-    void combineLogFilesFromMultipleLocationsNonOverlappingFiles() throws IOException {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void combineLogFilesFromMultipleLocationsNonOverlappingFiles(KernelVersion kernelVersion) throws IOException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
         Path additionalSource = testDirectory.directory("another");
-        createFile(additionalSource, 2);
-        createFile(additionalSource, 3);
-        createFile(additionalSource, 4);
+        createFile(additionalSource, 2, kernelVersion);
+        createFile(additionalSource, 3, kernelVersion);
+        createFile(additionalSource, 4, kernelVersion);
 
         LogFile logFile = logFiles.getLogFile();
         assertEquals(1, logFile.getHighestLogVersion());
@@ -432,16 +457,17 @@ class TransactionLogFileTest {
                         "neostore.transaction.db.4");
     }
 
-    @Test
-    void combineLogFilesFromMultipleLocationsOverlappingFiles() throws IOException {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void combineLogFilesFromMultipleLocationsOverlappingFiles(KernelVersion kernelVersion) throws IOException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
         Path additionalSource = testDirectory.directory("another");
-        createFile(additionalSource, 0);
-        createFile(additionalSource, 1);
-        createFile(additionalSource, 2);
+        createFile(additionalSource, 0, kernelVersion);
+        createFile(additionalSource, 1, kernelVersion);
+        createFile(additionalSource, 2, kernelVersion);
 
         LogFile logFile = logFiles.getLogFile();
         assertEquals(1, logFile.getHighestLogVersion());
@@ -457,9 +483,10 @@ class TransactionLogFileTest {
                         "neostore.transaction.db.4");
     }
 
-    @Test
-    void combineShouldPreserveOrder() throws IOException {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void combineShouldPreserveOrder(KernelVersion kernelVersion) throws IOException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -468,7 +495,7 @@ class TransactionLogFileTest {
         int numberOfAdditionalFile = 20;
 
         for (int i = 0; i < numberOfAdditionalFile; i++) {
-            createFile(additionalSource, i, i);
+            createFile(additionalSource, i, i, kernelVersion);
         }
 
         LogFile logFile = logFiles.getLogFile();
@@ -490,21 +517,22 @@ class TransactionLogFileTest {
         }
     }
 
-    @Test
-    void combineLogFilesFromMultipleLocationsNonSequentialFiles() throws IOException {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void combineLogFilesFromMultipleLocationsNonSequentialFiles(KernelVersion kernelVersion) throws IOException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
         Path additionalSource1 = testDirectory.directory("another");
-        createFile(additionalSource1, 0);
-        createFile(additionalSource1, 6);
-        createFile(additionalSource1, 8);
+        createFile(additionalSource1, 0, kernelVersion);
+        createFile(additionalSource1, 6, kernelVersion);
+        createFile(additionalSource1, 8, kernelVersion);
 
         Path additionalSource2 = testDirectory.directory("another2");
-        createFile(additionalSource2, 10);
-        createFile(additionalSource2, 26);
-        createFile(additionalSource2, 38);
+        createFile(additionalSource2, 10, kernelVersion);
+        createFile(additionalSource2, 26, kernelVersion);
+        createFile(additionalSource2, 38, kernelVersion);
 
         LogFile logFile = logFiles.getLogFile();
         assertEquals(1, logFile.getHighestLogVersion());
@@ -525,9 +553,10 @@ class TransactionLogFileTest {
                         "neostore.transaction.db.7");
     }
 
-    @Test
-    void logFilesExternalReadersRegistration() throws IOException, ExecutionException {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void logFilesExternalReadersRegistration(KernelVersion kernelVersion) throws IOException, ExecutionException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -571,9 +600,10 @@ class TransactionLogFileTest {
         }
     }
 
-    @Test
-    void terminateLogFilesExternalReaders() throws IOException, ExecutionException {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void terminateLogFilesExternalReaders(KernelVersion kernelVersion) throws IOException, ExecutionException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -621,9 +651,10 @@ class TransactionLogFileTest {
         }
     }
 
-    @Test
-    void registerUnregisterLogFilesExternalReaders() throws IOException, ExecutionException {
-        LogFiles logFiles = buildLogFiles();
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void registerUnregisterLogFilesExternalReaders(KernelVersion kernelVersion) throws IOException, ExecutionException {
+        LogFiles logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -675,8 +706,9 @@ class TransactionLogFileTest {
         assertThat(externalFileReaders).isEmpty();
     }
 
-    @Test
-    void delete() throws IOException {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void delete(KernelVersion kernelVersion) throws IOException {
         final var deletions = LongLists.mutable.empty();
         logFileVersionTracker = new LogFileVersionTracker() {
             @Override
@@ -688,7 +720,7 @@ class TransactionLogFileTest {
             public void logCompleted(LogPosition endLogPosition) {}
         };
 
-        final var logFiles = buildLogFiles();
+        final var logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -710,8 +742,9 @@ class TransactionLogFileTest {
         assertThat(deletions.toArray()).containsExactly(lowestBeforeDelete, lowestAfterDelete);
     }
 
-    @Test
-    void rotate() throws IOException {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void rotate(KernelVersion kernelVersion) throws IOException {
         final var rotations = Lists.mutable.empty();
         logFileVersionTracker = new LogFileVersionTracker() {
             @Override
@@ -723,7 +756,7 @@ class TransactionLogFileTest {
             }
         };
 
-        final var logFiles = buildLogFiles();
+        final var logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -738,8 +771,9 @@ class TransactionLogFileTest {
         listAssert.element(1).satisfies(pos -> assertEndLogPosition(logFile, lowestLogVersion + 1, (LogPosition) pos));
     }
 
-    @Test
-    void ensureErrorsInLogFileVersionTrackerDontEscapeIntoLogFile() throws IOException {
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.0")
+    void ensureErrorsInLogFileVersionTrackerDontEscapeIntoLogFile(KernelVersion kernelVersion) throws IOException {
         logFileVersionTracker = new LogFileVersionTracker() {
             @Override
             public void logDeleted(long version) {
@@ -752,7 +786,7 @@ class TransactionLogFileTest {
             }
         };
 
-        final var logFiles = buildLogFiles();
+        final var logFiles = buildLogFiles(kernelVersion);
         life.start();
         life.add(logFiles);
 
@@ -780,9 +814,8 @@ class TransactionLogFileTest {
         return result;
     }
 
-    private LogFiles buildLogFiles() throws IOException {
-        return LogFilesBuilder.builder(
-                        databaseLayout, wrappingFileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+    private LogFiles buildLogFiles(KernelVersion kernelVersion) throws IOException {
+        return LogFilesBuilder.builder(databaseLayout, wrappingFileSystem, () -> kernelVersion)
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
@@ -800,9 +833,10 @@ class TransactionLogFileTest {
         return result;
     }
 
-    private void startStop(CapturingNativeAccess capturingNativeAccess, LifeSupport lifeSupport) throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(
-                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+    private void startStop(
+            CapturingNativeAccess capturingNativeAccess, LifeSupport lifeSupport, KernelVersion kernelVersion)
+            throws IOException {
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, () -> kernelVersion)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
@@ -816,25 +850,20 @@ class TransactionLogFileTest {
         lifeSupport.shutdown();
     }
 
-    private void createFile(Path filePath, long version, long lastCommittedTxId) throws IOException {
+    private void createFile(Path filePath, long version, long lastCommittedTxId, KernelVersion kernelVersion)
+            throws IOException {
+
         var filesHelper = new TransactionLogFilesHelper(fileSystem, filePath);
         try (StoreChannel storeChannel = fileSystem.write(filesHelper.getLogFileForVersion(version))) {
-            writeLogHeader(
-                    storeChannel,
-                    new LogHeader(
-                            LATEST_LOG_FORMAT,
-                            version,
-                            lastCommittedTxId,
-                            STORE_ID,
-                            UNKNOWN_LOG_SEGMENT_SIZE,
-                            BASE_TX_CHECKSUM,
-                            LATEST_KERNEL_VERSION),
-                    INSTANCE);
+            LogFormat logFormat = LogFormat.fromKernelVersion(kernelVersion);
+            LogHeader logHeader =
+                    logFormat.newHeader(version, lastCommittedTxId, STORE_ID, 256, BASE_TX_CHECKSUM, kernelVersion);
+            writeLogHeader(storeChannel, logHeader, INSTANCE);
         }
     }
 
-    private void createFile(Path filePath, long version) throws IOException {
-        createFile(filePath, version, 1);
+    private void createFile(Path filePath, long version, KernelVersion kernelVersion) throws IOException {
+        createFile(filePath, version, 1, kernelVersion);
     }
 
     private static class CapturingNativeAccess implements NativeAccess {

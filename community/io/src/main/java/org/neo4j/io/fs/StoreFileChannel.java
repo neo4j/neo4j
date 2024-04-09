@@ -134,7 +134,7 @@ public class StoreFileChannel implements StoreChannel {
 
     @Override
     public void writeAll(ByteBuffer src) throws IOException {
-        long bytesToWrite = src.limit() - src.position();
+        int bytesToWrite = src.remaining();
         int bytesWritten;
         while ((bytesToWrite -= bytesWritten = write(src)) > 0) {
             if (bytesWritten < 0) {
@@ -176,7 +176,7 @@ public class StoreFileChannel implements StoreChannel {
             return null;
         }
         try {
-            return (Object) POSITION_LOCK_GETTER.invoke(channel);
+            return POSITION_LOCK_GETTER.invoke(channel);
         } catch (Throwable th) {
             throw new LinkageError("Cannot get FileChannel.positionLock", th);
         }

@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -171,13 +170,6 @@ public class DefaultTracer implements DatabaseTracer {
         return logCheckPointEvent;
     }
 
-    private void appendLogBytes(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {
-        if (logPositionAfterAppend.getLogVersion() != logPositionBeforeAppend.getLogVersion()) {
-            throw new IllegalStateException("Appending to several log files is not supported.");
-        }
-        appendedBytes.add(logPositionAfterAppend.getByteOffset() - logPositionBeforeAppend.getByteOffset());
-    }
-
     @Override
     public LogFileCreateEvent createLogFile() {
         return logFileCreateEvent;
@@ -279,9 +271,6 @@ public class DefaultTracer implements DatabaseTracer {
     }
 
     private class DefaultLogAppendEvent implements LogAppendEvent {
-        @Override
-        public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {}
-
         @Override
         public void appendedBytes(long bytes) {
             appendedBytes.add(bytes);

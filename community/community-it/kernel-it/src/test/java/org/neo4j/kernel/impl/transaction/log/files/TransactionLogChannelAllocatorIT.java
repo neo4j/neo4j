@@ -27,6 +27,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
@@ -57,7 +58,6 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
@@ -99,8 +99,7 @@ class TransactionLogChannelAllocatorIT {
         try (var storeChannel = fileSystem.write(path)) {
             writeLogHeader(
                     storeChannel,
-                    new LogHeader(
-                            LATEST_LOG_FORMAT, 1, 1, STORE_ID, UNKNOWN_LOG_SEGMENT_SIZE, 1, LATEST_KERNEL_VERSION),
+                    LATEST_LOG_FORMAT.newHeader(1, 1, STORE_ID, UNKNOWN_LOG_SEGMENT_SIZE, 1, LATEST_KERNEL_VERSION),
                     INSTANCE);
         }
 
@@ -109,7 +108,7 @@ class TransactionLogChannelAllocatorIT {
         var nativeChannelAccessor = new AdviseCountingChannelNativeAccessor();
         var channelAllocator =
                 new TransactionLogChannelAllocator(logFileContext, fileHelper, logHeaderCache, nativeChannelAccessor);
-        try (var channel = channelAllocator.openLogChannel(1, true)) {
+        try (var ignored = channelAllocator.openLogChannel(1, true)) {
             assertEquals(0, nativeChannelAccessor.getCallCounter());
         }
     }
@@ -120,8 +119,7 @@ class TransactionLogChannelAllocatorIT {
         try (StoreChannel storeChannel = fileSystem.write(path)) {
             writeLogHeader(
                     storeChannel,
-                    new LogHeader(
-                            LATEST_LOG_FORMAT, 1, 1, STORE_ID, UNKNOWN_LOG_SEGMENT_SIZE, 1, LATEST_KERNEL_VERSION),
+                    LATEST_LOG_FORMAT.newHeader(1, 1, STORE_ID, UNKNOWN_LOG_SEGMENT_SIZE, 1, LATEST_KERNEL_VERSION),
                     INSTANCE);
         }
 
@@ -130,7 +128,7 @@ class TransactionLogChannelAllocatorIT {
         var nativeChannelAccessor = new AdviseCountingChannelNativeAccessor();
         var channelAllocator =
                 new TransactionLogChannelAllocator(logFileContext, fileHelper, logHeaderCache, nativeChannelAccessor);
-        try (var channel = channelAllocator.openLogChannel(1)) {
+        try (var ignored = channelAllocator.openLogChannel(1)) {
             assertEquals(1, nativeChannelAccessor.getCallCounter());
         }
     }
@@ -138,7 +136,7 @@ class TransactionLogChannelAllocatorIT {
     @Test
     @EnabledOnOs(OS.LINUX)
     void allocateNewTransactionLogFile() throws IOException {
-        PhysicalLogVersionedStoreChannel logChannel = fileAllocator.createLogChannel(10, () -> 1L);
+        PhysicalLogVersionedStoreChannel logChannel = fileAllocator.createLogChannel(10, 1L, BASE_TX_CHECKSUM);
         assertEquals(ROTATION_THRESHOLD, logChannel.size());
     }
 
@@ -149,7 +147,7 @@ class TransactionLogChannelAllocatorIT {
         var nativeChannelAccessor = new LogFileChannelNativeAccessor(fileSystem, logFileContext);
         var unreasonableAllocator = new TransactionLogChannelAllocator(
                 logFileContext, fileHelper, new LogHeaderCache(10), nativeChannelAccessor);
-        assertDoesNotThrow(() -> unreasonableAllocator.createLogChannel(10, () -> 1L));
+        assertDoesNotThrow(() -> unreasonableAllocator.createLogChannel(10, 1L, BASE_TX_CHECKSUM));
 
         assertThat(logProvider.serialize())
                 .containsSequence(
@@ -166,7 +164,8 @@ class TransactionLogChannelAllocatorIT {
         var nativeChannelAccessor = new LogFileChannelNativeAccessor(fileSystem, logFileContext);
         var unreasonableAllocator = new TransactionLogChannelAllocator(
                 logFileContext, fileHelper, new LogHeaderCache(10), nativeChannelAccessor);
-        try (PhysicalLogVersionedStoreChannel channel = unreasonableAllocator.createLogChannel(10, () -> 1L)) {
+        try (PhysicalLogVersionedStoreChannel channel =
+                unreasonableAllocator.createLogChannel(10, 1L, BASE_TX_CHECKSUM)) {
             assertEquals(LATEST_LOG_FORMAT.getHeaderSize(), channel.size());
             assertThat(logProvider.serialize())
                     .containsSequence(
@@ -180,7 +179,7 @@ class TransactionLogChannelAllocatorIT {
     @Test
     @DisabledOnOs(OS.LINUX)
     void allocateNewTransactionLogFileOnSystemThatDoesNotSupportPreallocations() throws IOException {
-        try (PhysicalLogVersionedStoreChannel logChannel = fileAllocator.createLogChannel(10, () -> 1L)) {
+        try (PhysicalLogVersionedStoreChannel logChannel = fileAllocator.createLogChannel(10, 1L, BASE_TX_CHECKSUM)) {
             assertEquals(LATEST_LOG_FORMAT.getHeaderSize(), logChannel.size());
         }
     }
@@ -191,7 +190,7 @@ class TransactionLogChannelAllocatorIT {
         fileSystem.write(file).close();
 
         TransactionLogChannelAllocator fileAllocator = createLogFileAllocator();
-        try (PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel(11, () -> 1L)) {
+        try (PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel(11, 1L, BASE_TX_CHECKSUM)) {
             assertEquals(LATEST_LOG_FORMAT.getHeaderSize(), channel.size());
         }
     }
@@ -201,22 +200,14 @@ class TransactionLogChannelAllocatorIT {
     }
 
     private TransactionLogChannelAllocator createLogFileAllocator() {
-        return createLogFileAllocator(ROTATION_THRESHOLD);
-    }
-
-    private TransactionLogFilesContext createLogFileContext() {
-        return createLogFileContext(ROTATION_THRESHOLD);
-    }
-
-    private TransactionLogChannelAllocator createLogFileAllocator(long rotationsThreshold) {
         LogHeaderCache logHeaderCache = new LogHeaderCache(10);
-        var logFileContext = createLogFileContext(rotationsThreshold);
+        var logFileContext = createLogFileContext();
         var nativeChannelAccessor = new LogFileChannelNativeAccessor(fileSystem, logFileContext);
         return new TransactionLogChannelAllocator(logFileContext, fileHelper, logHeaderCache, nativeChannelAccessor);
     }
 
-    private TransactionLogFilesContext createLogFileContext(long rotationThreshold) {
-        return createLogFileContext(rotationThreshold, NativeAccessProvider.getNativeAccess());
+    private TransactionLogFilesContext createLogFileContext() {
+        return createLogFileContext(ROTATION_THRESHOLD, NativeAccessProvider.getNativeAccess());
     }
 
     private TransactionLogFilesContext createLogFileContext(long rotationThreshold, NativeAccess nativeAccess) {

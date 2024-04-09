@@ -19,4 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-public interface ReadableLogChannel extends ReadableLogPositionAwareChannel, VersionableLog {}
+import java.io.IOException;
+
+public interface ReadableLogChannel extends ReadableLogPositionAwareChannel, VersionableLog {
+    void setCurrentPosition(long byteOffset) throws IOException;
+
+    long position() throws IOException;
+}

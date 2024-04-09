@@ -19,22 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-
 /**
  * Represents the process of turning the state of a committing transaction into a sequence of commands, and appending
  * them to the transaction log.
  */
 public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoCloseable {
     LogAppendEvent NULL = new Empty();
-
-    /**
-     * Notify about append of data into the current log file.
-     * New data is appended to the end of the log file and located between {@code logPositionBeforeAppend} and {@code logPositionAfterAppend}
-     * @param logPositionBeforeAppend start position
-     * @param logPositionAfterAppend end position
-     */
-    void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend);
 
     /**
      * Notify how many bytes were appended.
@@ -60,9 +50,6 @@ public interface LogAppendEvent extends LogForceEvents, LogRotateEvents, AutoClo
     AppendTransactionEvent beginAppendTransaction(int appendItems);
 
     class Empty implements LogAppendEvent {
-        @Override
-        public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {}
-
         @Override
         public void appendedBytes(long bytes) {}
 

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.io.fs;
 
 import static java.util.Arrays.copyOfRange;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +31,10 @@ import static org.neo4j.io.ByteUnit.bytes;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
+import static org.neo4j.io.memory.HeapScopedBuffer.EMPTY_BUFFER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
@@ -49,18 +52,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.PhysicalFlushableChannel;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -301,8 +304,9 @@ class PhysicalFlushableChannelTest {
         StoreChannel storeChannel = fileSystem.write(file);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 storeChannel, 1, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
-        try (var channel = new PhysicalFlushableLogPositionAwareChannel(
-                versionedStoreChannel, new NativeScopedBuffer(1024, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
+        final var logHeader =
+                LATEST_LOG_FORMAT.newHeader(1, 0, StoreId.UNKNOWN, 1024, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+        try (var channel = new PhysicalFlushableLogPositionAwareChannel(versionedStoreChannel, logHeader, INSTANCE)) {
             LogPosition initialPosition = channel.getCurrentLogPosition();
 
             // WHEN
@@ -323,13 +327,14 @@ class PhysicalFlushableChannelTest {
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 storeChannel, 1, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
         PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, INSTANCE);
+        channel.put((byte) 1);
 
         // closing the WritableLogChannel, then the underlying channel is what PhysicalLogFile does
         channel.close();
         storeChannel.close();
 
         // WHEN wanting to empty buffer into the channel
-        assertThatThrownBy(channel::prepareForFlush)
+        assertThatThrownBy(() -> channel.flushToChannel(storeChannel, EMPTY_BUFFER.getBuffer()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("This log channel has been closed");
     }

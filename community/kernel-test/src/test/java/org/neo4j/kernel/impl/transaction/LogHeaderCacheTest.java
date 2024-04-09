@@ -52,8 +52,7 @@ class LogHeaderCacheTest {
         // when
         cache.putHeader(
                 5,
-                new LogHeader(
-                        LATEST_LOG_FORMAT,
+                LATEST_LOG_FORMAT.newHeader(
                         1,
                         3,
                         new StoreId(1, 2, "engine-1", "format-1", 3, 4),
@@ -74,8 +73,7 @@ class LogHeaderCacheTest {
         // when
         cache.putHeader(
                 5,
-                new LogHeader(
-                        LATEST_LOG_FORMAT,
+                LATEST_LOG_FORMAT.newHeader(
                         1,
                         3,
                         new StoreId(1, 2, "engine-1", "format-1", 3, 4),

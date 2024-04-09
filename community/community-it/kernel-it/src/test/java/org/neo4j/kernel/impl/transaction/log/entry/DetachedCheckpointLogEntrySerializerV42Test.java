@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializer.writeLogEntryHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.v42.DetachedCheckpointLogEntrySerializerV4_2.MAX_DESCRIPTION_LENGTH;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
@@ -40,6 +41,7 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.PhysicalFlushableLogChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -48,7 +50,6 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
@@ -84,6 +85,7 @@ class DetachedCheckpointLogEntrySerializerV42Test {
         var checkpoint = new LogEntryDetachedCheckpointV4_2(
                 version, new LogPosition(1, 2), checkpointMillis, storeId, checkpointDescription);
 
+        writeLogEntryHeader(version, DETACHED_CHECK_POINT, channel);
         channel.putLong(checkpoint.getLogPosition().getLogVersion())
                 .putLong(checkpoint.getLogPosition().getByteOffset())
                 .putLong(checkpointMillis)
@@ -96,6 +98,8 @@ class DetachedCheckpointLogEntrySerializerV42Test {
                 .put(bytes, bytes.length);
         channel.putChecksum();
 
+        assertEquals(version.version(), channel.getVersion());
+        assertEquals(DETACHED_CHECK_POINT, channel.get());
         var checkpointParser = LogEntrySerializationSets.serializationSet(version, LatestVersions.BINARY_VERSIONS)
                 .select(DETACHED_CHECK_POINT);
         LogEntry logEntry = checkpointParser.parse(version, channel, positionMarker, commandReader);
@@ -170,10 +174,5 @@ class DetachedCheckpointLogEntrySerializerV42Test {
                 .putLong(0);
         channel.putShort(length).put(descriptionBytes, descriptionBytes.length);
         channel.putChecksum();
-    }
-
-    private static void writeLogEntryHeader(KernelVersion kernelVersion, byte type, WritableChannel channel)
-            throws IOException {
-        channel.put(kernelVersion.version()).put(type);
     }
 }

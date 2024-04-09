@@ -222,13 +222,11 @@ public class TransactionAppenderConcurrencyTest {
 
         LogFile logFile = logFiles.getLogFile();
         assertThat(logFile.getLowestLogVersion()).isEqualTo(logFile.getHighestLogVersion());
-        long version = logFile.getHighestLogVersion();
 
-        try (LogVersionedStoreChannel channel = logFile.openForVersion(version);
-                ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel(channel, INSTANCE);
-                LogEntryCursor cursor = new LogEntryCursor(logEntryReader, readAheadLogChannel)) {
+        try (var readAheadLogChannel = ReadAheadUtils.newChannel(logFile, logFile.getHighestLogVersion(), INSTANCE);
+                var cursor = new LogEntryCursor(logEntryReader, readAheadLogChannel)) {
             LogEntry entry;
-            long numberOfTransactions = 0;
+            var numberOfTransactions = 0;
             while (cursor.next()) {
                 entry = cursor.get();
                 if (entry instanceof LogEntryCommit) {

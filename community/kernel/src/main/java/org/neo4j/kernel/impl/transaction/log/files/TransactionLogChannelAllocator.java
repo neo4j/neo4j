@@ -22,12 +22,10 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.function.LongSupplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelVersion;
@@ -60,8 +58,8 @@ public class TransactionLogChannelAllocator {
         this.nativeChannelAccessor = nativeChannelAccessor;
     }
 
-    public PhysicalLogVersionedStoreChannel createLogChannel(long version, LongSupplier lastCommittedTransactionId)
-            throws IOException {
+    public PhysicalLogVersionedStoreChannel createLogChannel(
+            long version, long lastCommittedTransactionId, int previousLogFileChecksum) throws IOException {
         AllocatedFile allocatedFile = allocateFile(version);
         var storeChannel = allocatedFile.storeChannel();
         var logFile = allocatedFile.path();
@@ -72,20 +70,38 @@ public class TransactionLogChannelAllocator {
                 storeChannel.position(0);
                 KernelVersion kernelVersion =
                         logFilesContext.getKernelVersionProvider().kernelVersion();
-                LogFormat currentLogFormat = LogFormat.fromKernelVersion(kernelVersion);
-                long lastTxId = lastCommittedTransactionId.getAsLong();
-                header = new LogHeader(
-                        currentLogFormat,
-                        version,
-                        lastTxId,
-                        logFilesContext.getStoreId(),
-                        currentLogFormat.getDefaultSegmentBlockSize(),
-                        BASE_TX_CHECKSUM,
-                        kernelVersion);
+                header = LogFormat.fromKernelVersion(kernelVersion)
+                        .newHeader(
+                                version,
+                                lastCommittedTransactionId,
+                                logFilesContext.getStoreId(),
+                                logFilesContext.getEnvelopeSegmentBlockSizeBytes(),
+                                previousLogFileChecksum,
+                                kernelVersion);
                 writeLogHeader(storeChannel, header, logFilesContext.getMemoryTracker());
-                logHeaderCache.putHeader(version, header);
             }
         }
+        assert header.getLogVersion() == version;
+        logHeaderCache.putHeader(version, header);
+
+        storeChannel.position(header.getStartPosition().getByteOffset());
+
+        return new PhysicalLogVersionedStoreChannel(
+                storeChannel, version, header.getLogFormatVersion(), logFile, nativeChannelAccessor, databaseTracer);
+    }
+
+    public PhysicalLogVersionedStoreChannel createLogChannelExistingVersion(long version) throws IOException {
+        AllocatedFile allocatedFile = allocateExistingFile(version);
+        var storeChannel = allocatedFile.storeChannel();
+        var logFile = allocatedFile.path();
+        LogHeader header = readLogHeader(storeChannel, true, logFile, logFilesContext.getMemoryTracker());
+        if (header == null) {
+            // Either there was nothing at all, or we read one byte and saw that it was a preallocated file.
+            throw new IncompleteLogHeaderException(allocatedFile.path, (int) storeChannel.position(), -1);
+        }
+        assert header.getLogVersion() == version;
+        logHeaderCache.putHeader(version, header);
+
         storeChannel.position(header.getStartPosition().getByteOffset());
 
         return new PhysicalLogVersionedStoreChannel(
@@ -143,6 +159,18 @@ public class TransactionLogChannelAllocator {
         }
     }
 
+    public LogHeader readLogHeaderForVersion(long version) throws IOException {
+        Path fileToOpen = fileHelper.getLogFileForVersion(version);
+
+        if (!fileSystem.fileExists(fileToOpen)) {
+            throw new NoSuchFileException(fileToOpen.toAbsolutePath().toString());
+        }
+
+        try (StoreChannel read = fileSystem.read(fileToOpen)) {
+            return readLogHeader(read, true, fileToOpen, logFilesContext.getMemoryTracker());
+        }
+    }
+
     private AllocatedFile allocateFile(long version) throws IOException {
         Path file = fileHelper.getLogFileForVersion(version);
         boolean fileExist = fileSystem.fileExists(file);
@@ -152,6 +180,17 @@ public class TransactionLogChannelAllocator {
         } else if (logFilesContext.getTryPreallocateTransactionLogs().get()) {
             nativeChannelAccessor.preallocateSpace(storeChannel, version);
         }
+        return new AllocatedFile(file, storeChannel);
+    }
+
+    private AllocatedFile allocateExistingFile(long version) throws IOException {
+        Path file = fileHelper.getLogFileForVersion(version);
+        boolean fileExist = fileSystem.fileExists(file);
+        if (!fileExist) {
+            throw new NoSuchFileException(file.toAbsolutePath().toString());
+        }
+        StoreChannel storeChannel = fileSystem.write(file);
+        nativeChannelAccessor.adviseSequentialAccessAndKeepInCache(storeChannel, version);
         return new AllocatedFile(file, storeChannel);
     }
 

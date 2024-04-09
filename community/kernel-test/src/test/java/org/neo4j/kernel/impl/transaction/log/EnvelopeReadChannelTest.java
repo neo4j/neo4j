@@ -57,7 +57,6 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEnvelopeReadException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.EnvelopeType;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -1176,18 +1175,10 @@ class EnvelopeReadChannelTest {
 
     private static void writeZeroSegment(ByteBuffer buffer, int segmentSize, int previousLogFileChecksum) {
         try {
-            LogFormat.V9
-                    .getHeaderWriter()
-                    .write(
-                            buffer,
-                            new LogHeader(
-                                    LogFormat.V9,
-                                    42,
-                                    1,
-                                    StoreId.UNKNOWN,
-                                    segmentSize,
-                                    previousLogFileChecksum,
-                                    LATEST_KERNEL_VERSION));
+            LogFormat.V9.serializeHeader(
+                    buffer,
+                    LogFormat.V9.newHeader(
+                            42, 1, StoreId.UNKNOWN, segmentSize, previousLogFileChecksum, LATEST_KERNEL_VERSION));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

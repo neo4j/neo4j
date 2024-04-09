@@ -95,7 +95,7 @@ public enum KernelVersion {
     public static final KernelVersion DEFAULT_BOOTSTRAP_VERSION = V5_0;
 
     public static final List<KernelVersion> VERSIONS = List.of(values());
-    private static final ImmutableByteObjectMap<KernelVersion> versionMap =
+    private static final ImmutableByteObjectMap<KernelVersion> VERSION_MAP =
             ByteObjectMaps.immutable.from(VERSIONS, KernelVersion::version, v -> v);
 
     private final byte version;
@@ -143,7 +143,7 @@ public enum KernelVersion {
     }
 
     public static KernelVersion getForVersion(byte version) {
-        KernelVersion kernelVersion = versionMap.get(version);
+        KernelVersion kernelVersion = VERSION_MAP.get(version);
         if (kernelVersion == null) {
             throw new IllegalArgumentException(
                     "No matching " + KernelVersion.class.getSimpleName() + " for version " + version);

@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.input;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -27,7 +28,7 @@ import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
-import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -115,15 +116,19 @@ class ValueTypeTest {
         }
 
         @Override
+        public CountingChannel putVersion(byte version) {
+            if (KernelVersion.getForVersion(version).isAtLeast(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED)) {
+                // version is not part of the data when writing envelopes
+                return this;
+            }
+            return put(version);
+        }
+
+        @Override
         public CountingChannel putAll(ByteBuffer src) {
             position += src.remaining();
             src.position(src.limit()); // Consume buffer
             return this;
-        }
-
-        @Override
-        public WritableChannel putVersion(byte version) {
-            return put(version);
         }
 
         @Override
@@ -139,7 +144,7 @@ class ValueTypeTest {
         }
 
         @Override
-        public int write(ByteBuffer src) throws IOException {
+        public int write(ByteBuffer src) {
             int remaining = src.remaining();
             putAll(src);
             return remaining;

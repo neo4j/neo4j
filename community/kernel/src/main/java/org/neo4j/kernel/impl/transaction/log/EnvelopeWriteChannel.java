@@ -445,7 +445,8 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
 
         currentEnvelopeStart = nextSegmentOffset;
 
-        if (currentEnvelopeStart == buffer.capacity()) {
+        if (currentEnvelopeStart == buffer.capacity()
+                || (channel.position() + currentEnvelopeStart - lastWrittenPosition) == rotateAtSize) {
             prepareForFlush();
         } else {
             nextSegmentOffset += segmentBlockSize;

@@ -42,7 +42,6 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
@@ -60,8 +59,8 @@ class RecoveryStartInformationProviderTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        var logHeader = new LogHeader(
-                LATEST_LOG_FORMAT, 0, 1, null, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+        var logHeader = LATEST_LOG_FORMAT.newHeader(
+                0, 1, null, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
         when(logFile.extractHeader(0)).thenReturn(logHeader);
         when(logFiles.getLogFile()).thenReturn(logFile);
     }

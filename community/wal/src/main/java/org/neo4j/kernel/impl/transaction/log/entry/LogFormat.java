@@ -45,25 +45,37 @@ public enum LogFormat {
      * - 8 bytes version
      * - 8 bytes last committed tx id
      */
-    V6(
-            (byte) 6,
-            16,
-            KernelVersion.V2_3,
-            KernelVersion.V2_3,
-            UNKNOWN_LOG_SEGMENT_SIZE,
-            (logVersion, buffer) -> {
-                long previousCommittedTx = buffer.getLong();
-                return new LogHeader(
-                        (byte) 6,
-                        logVersion,
-                        previousCommittedTx,
-                        null,
-                        16,
-                        UNKNOWN_LOG_SEGMENT_SIZE,
-                        BASE_TX_CHECKSUM,
-                        null);
-            },
-            null),
+    V6((byte) 6, 16, KernelVersion.V2_3, KernelVersion.V2_3, UNKNOWN_LOG_SEGMENT_SIZE) {
+        @Override
+        public LogHeader deserializeHeader(long logVersion, ByteBuffer buffer) {
+            long previousCommittedTx = buffer.getLong();
+            return new LogHeader(
+                    getVersionByte(),
+                    logVersion,
+                    previousCommittedTx,
+                    null,
+                    getHeaderSize(),
+                    UNKNOWN_LOG_SEGMENT_SIZE,
+                    BASE_TX_CHECKSUM,
+                    null);
+        }
+
+        @Override
+        public void serializeHeader(ByteBuffer buffer, LogHeader logHeader) {
+            throw new UnsupportedOperationException("Cannot write log format V6");
+        }
+
+        @Override
+        public LogHeader newHeader(
+                long logVersion,
+                long lastCommittedTxId,
+                StoreId storeId,
+                int segmentBlockSize,
+                int previousLogFileChecksum,
+                KernelVersion kernelVersion) {
+            throw new UnsupportedOperationException("Cannot write log format V6");
+        }
+    },
 
     /**
      * Total 64 bytes
@@ -78,31 +90,43 @@ public enum LogFormat {
      *   |          version          | last tx | store id | reserved |
      *  </pre>
      */
-    V7(
-            (byte) 7,
-            64,
-            KernelVersion.V4_2,
-            KernelVersion.V4_4,
-            UNKNOWN_LOG_SEGMENT_SIZE,
-            (logVersion, buffer) -> {
-                long previousCommittedTx = buffer.getLong();
-                buffer.getLong(); // legacy creation time
-                buffer.getLong(); // legacy random
-                buffer.getLong(); // legacy store version
-                buffer.getLong(); // legacy upgrade time
-                buffer.getLong(); // legacy upgrade tx id
-                buffer.getLong(); // reserved
-                return new LogHeader(
-                        (byte) 7,
-                        logVersion,
-                        previousCommittedTx,
-                        null,
-                        64,
-                        UNKNOWN_LOG_SEGMENT_SIZE,
-                        BASE_TX_CHECKSUM,
-                        null);
-            },
-            null),
+    V7((byte) 7, 64, KernelVersion.V4_2, KernelVersion.V4_4, UNKNOWN_LOG_SEGMENT_SIZE) {
+        @Override
+        public LogHeader deserializeHeader(long logVersion, ByteBuffer buffer) {
+            long previousCommittedTx = buffer.getLong();
+            buffer.getLong(); // legacy creation time
+            buffer.getLong(); // legacy random
+            buffer.getLong(); // legacy store version
+            buffer.getLong(); // legacy upgrade time
+            buffer.getLong(); // legacy upgrade tx id
+            buffer.getLong(); // reserved
+            return new LogHeader(
+                    getVersionByte(),
+                    logVersion,
+                    previousCommittedTx,
+                    null,
+                    getHeaderSize(),
+                    UNKNOWN_LOG_SEGMENT_SIZE,
+                    BASE_TX_CHECKSUM,
+                    null);
+        }
+
+        @Override
+        public void serializeHeader(ByteBuffer buffer, LogHeader logHeader) {
+            throw new UnsupportedOperationException("Cannot write log format V7");
+        }
+
+        @Override
+        public LogHeader newHeader(
+                long logVersion,
+                long lastCommittedTxId,
+                StoreId storeId,
+                int segmentBlockSize,
+                int previousLogFileChecksum,
+                KernelVersion kernelVersion) {
+            throw new UnsupportedOperationException("Cannot write log format V7");
+        }
+    },
 
     /**
      * Total 128 bytes
@@ -117,44 +141,62 @@ public enum LogFormat {
      *   |          version          | last tx | store id | reserved |
      *  </pre>
      */
-    V8(
-            (byte) 8,
-            128,
-            KernelVersion.V5_0,
-            KernelVersion.getLatestVersion(Config.defaults()),
-            UNKNOWN_LOG_SEGMENT_SIZE,
-            (logVersion, buffer) -> {
-                long previousCommittedTx = buffer.getLong();
-                StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(buffer);
-                buffer.position(128); // rest is reserved
-                return new LogHeader(
-                        (byte) 8,
-                        logVersion,
-                        previousCommittedTx,
-                        storeId,
-                        128,
-                        UNKNOWN_LOG_SEGMENT_SIZE,
-                        BASE_TX_CHECKSUM,
-                        null);
-            },
-            (buffer, logHeader) -> {
-                ByteOrder originalOrder = buffer.order();
-                try {
-                    buffer.order(ByteOrder.BIG_ENDIAN);
-                    buffer.putLong(encodeLogVersion(
-                            logHeader.getLogVersion(),
-                            logHeader.getLogFormatVersion().getVersionByte()));
-                    buffer.putLong(logHeader.getLastCommittedTxId());
-                    StoreIdSerialization.serializeWithFixedSize(logHeader.getStoreId(), buffer);
+    V8((byte) 8, 128, KernelVersion.V5_0, KernelVersion.getLatestVersion(Config.defaults()), UNKNOWN_LOG_SEGMENT_SIZE) {
+        @Override
+        public LogHeader deserializeHeader(long logVersion, ByteBuffer buffer) throws IOException {
+            long previousCommittedTx = buffer.getLong();
+            StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(buffer);
+            buffer.position(getHeaderSize()); // rest is reserved
+            return new LogHeader(
+                    getVersionByte(),
+                    logVersion,
+                    previousCommittedTx,
+                    storeId,
+                    getHeaderSize(),
+                    UNKNOWN_LOG_SEGMENT_SIZE,
+                    BASE_TX_CHECKSUM,
+                    null);
+        }
 
-                    // Pad rest with zeroes
-                    while (buffer.position() < 128) {
-                        buffer.put((byte) 0);
-                    }
-                } finally {
-                    buffer.order(originalOrder);
+        @Override
+        public void serializeHeader(ByteBuffer buffer, LogHeader logHeader) throws IOException {
+            ByteOrder originalOrder = buffer.order();
+            try {
+                buffer.order(ByteOrder.BIG_ENDIAN);
+                buffer.putLong(encodeLogVersion(
+                        logHeader.getLogVersion(),
+                        logHeader.getLogFormatVersion().getVersionByte()));
+                buffer.putLong(logHeader.getLastCommittedTxId());
+                StoreIdSerialization.serializeWithFixedSize(logHeader.getStoreId(), buffer);
+
+                // Pad rest with zeroes
+                while (buffer.position() < getHeaderSize()) {
+                    buffer.put((byte) 0);
                 }
-            }),
+            } finally {
+                buffer.order(originalOrder);
+            }
+        }
+
+        @Override
+        public LogHeader newHeader(
+                long logVersion,
+                long lastCommittedTxId,
+                StoreId storeId,
+                int segmentBlockSize,
+                int previousLogFileChecksum,
+                KernelVersion kernelVersion) {
+            return new LogHeader(
+                    getVersionByte(),
+                    logVersion,
+                    lastCommittedTxId,
+                    storeId,
+                    getHeaderSize(),
+                    UNKNOWN_LOG_SEGMENT_SIZE,
+                    BASE_TX_CHECKSUM,
+                    null);
+        }
+    },
 
     /**
      * Total 128 bytes
@@ -177,45 +219,68 @@ public enum LogFormat {
             128,
             KernelVersion.GLORIOUS_FUTURE,
             KernelVersion.GLORIOUS_FUTURE,
-            LogSegments.DEFAULT_LOG_SEGMENT_SIZE,
-            (logVersion, buffer) -> {
-                long previousCommittedTx = buffer.getLong();
-                StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(buffer);
-                int segmentBlockSize = buffer.getInt();
-                int previousChecksum = buffer.getInt();
-                byte kernelVersion = buffer.get();
-                buffer.position(128); // rest is reserved
-                return new LogHeader(
-                        (byte) 9,
-                        logVersion,
-                        previousCommittedTx,
-                        storeId,
-                        128,
-                        segmentBlockSize,
-                        previousChecksum,
-                        KernelVersion.getForVersion(kernelVersion));
-            },
-            (buffer, logHeader) -> {
-                ByteOrder originalOrder = buffer.order();
-                try {
-                    buffer.order(ByteOrder.BIG_ENDIAN);
-                    buffer.putLong(encodeLogVersion(
-                            logHeader.getLogVersion(),
-                            logHeader.getLogFormatVersion().getVersionByte()));
-                    buffer.putLong(logHeader.getLastCommittedTxId());
-                    StoreIdSerialization.serializeWithFixedSize(logHeader.getStoreId(), buffer);
-                    buffer.putInt(logHeader.getSegmentBlockSize());
-                    buffer.putInt(logHeader.getPreviousLogFileChecksum());
-                    buffer.put(logHeader.getKernelVersion().version());
+            LogSegments.DEFAULT_LOG_SEGMENT_SIZE) {
+        @Override
+        public LogHeader deserializeHeader(long logVersion, ByteBuffer buffer) throws IOException {
+            long previousCommittedTx = buffer.getLong();
+            StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(buffer);
+            int segmentBlockSize = buffer.getInt();
+            int previousChecksum = buffer.getInt();
+            byte kernelVersion = buffer.get();
+            buffer.position(getHeaderSize()); // rest is reserved
+            return new LogHeader(
+                    getVersionByte(),
+                    logVersion,
+                    previousCommittedTx,
+                    storeId,
+                    getHeaderSize(),
+                    segmentBlockSize,
+                    previousChecksum,
+                    KernelVersion.getForVersion(kernelVersion));
+        }
 
-                    // Pad rest with zeroes
-                    while (buffer.position() < logHeader.getStartPosition().getByteOffset()) {
-                        buffer.put((byte) 0);
-                    }
-                } finally {
-                    buffer.order(originalOrder);
+        @Override
+        public void serializeHeader(ByteBuffer buffer, LogHeader logHeader) throws IOException {
+            ByteOrder originalOrder = buffer.order();
+            try {
+                buffer.order(ByteOrder.BIG_ENDIAN);
+                buffer.putLong(encodeLogVersion(
+                        logHeader.getLogVersion(),
+                        logHeader.getLogFormatVersion().getVersionByte()));
+                buffer.putLong(logHeader.getLastCommittedTxId());
+                StoreIdSerialization.serializeWithFixedSize(logHeader.getStoreId(), buffer);
+                buffer.putInt(logHeader.getSegmentBlockSize());
+                buffer.putInt(logHeader.getPreviousLogFileChecksum());
+                buffer.put(logHeader.getKernelVersion().version());
+
+                // Pad rest with zeroes
+                while (buffer.position() < logHeader.getStartPosition().getByteOffset()) {
+                    buffer.put((byte) 0);
                 }
-            });
+            } finally {
+                buffer.order(originalOrder);
+            }
+        }
+
+        @Override
+        public LogHeader newHeader(
+                long logVersion,
+                long lastCommittedTxId,
+                StoreId storeId,
+                int segmentBlockSize,
+                int previousLogFileChecksum,
+                KernelVersion kernelVersion) {
+            return new LogHeader(
+                    getVersionByte(),
+                    logVersion,
+                    lastCommittedTxId,
+                    storeId,
+                    getHeaderSize(),
+                    segmentBlockSize,
+                    previousLogFileChecksum,
+                    kernelVersion);
+        }
+    };
 
     public static final int BIGGEST_HEADER;
     static final long LOG_VERSION_BITS = 56;
@@ -243,25 +308,26 @@ public enum LogFormat {
     private final KernelVersion fromKernelVersion;
     private final KernelVersion toKernelVersion;
     private final int defaultSegmentBlockSize;
-    private final LogFormatHeaderParser headerParser;
-    private final LogFormatHeaderWriter headerWriter;
 
-    LogFormat(
-            byte versionByte,
-            int headerSize,
-            KernelVersion from,
-            KernelVersion to,
-            int defaultSegmentBlockSize,
-            LogFormatHeaderParser headerParser,
-            LogFormatHeaderWriter headerWriter) {
+    LogFormat(byte versionByte, int headerSize, KernelVersion from, KernelVersion to, int defaultSegmentBlockSize) {
         this.versionByte = versionByte;
         this.headerSize = headerSize;
         this.fromKernelVersion = from;
         this.toKernelVersion = to;
         this.defaultSegmentBlockSize = defaultSegmentBlockSize;
-        this.headerParser = headerParser;
-        this.headerWriter = headerWriter;
     }
+
+    public abstract void serializeHeader(ByteBuffer buffer, LogHeader logHeader) throws IOException;
+
+    public abstract LogHeader deserializeHeader(long logVersion, ByteBuffer buffer) throws IOException;
+
+    public abstract LogHeader newHeader(
+            long logVersion,
+            long lastCommittedTxId,
+            StoreId storeId,
+            int segmentBlockSize,
+            int previousLogFileChecksum,
+            KernelVersion kernelVersion);
 
     public byte getVersionByte() {
         return versionByte;
@@ -275,8 +341,8 @@ public enum LogFormat {
         return defaultSegmentBlockSize;
     }
 
-    public LogFormatHeaderWriter getHeaderWriter() {
-        return headerWriter;
+    public boolean usesSegments() {
+        return defaultSegmentBlockSize != UNKNOWN_LOG_SEGMENT_SIZE;
     }
 
     public static LogHeader parseHeader(ByteBuffer buffer, boolean strict, Path sourceFile) throws IOException {
@@ -309,7 +375,7 @@ public enum LogFormat {
                 return null;
             }
 
-            return logFormat.headerParser.parse(logVersion, buffer);
+            return logFormat.deserializeHeader(logVersion, buffer);
         } finally {
             buffer.order(originalOrder);
         }
@@ -317,15 +383,12 @@ public enum LogFormat {
 
     public static void writeLogHeader(StoreChannel channel, LogHeader logHeader, MemoryTracker memoryTracker)
             throws IOException {
-        LogFormatHeaderWriter headerWriter = logHeader.getLogFormatVersion().headerWriter;
-        if (headerWriter == null) {
-            throw new UnsupportedOperationException("Cannot write log format " + logHeader.getLogFormatVersion());
-        }
+        LogFormat logFormat = logHeader.getLogFormatVersion();
 
         int headerSize = (int) logHeader.getStartPosition().getByteOffset();
         try (var scopedBuffer = new NativeScopedBuffer(headerSize, ByteOrder.BIG_ENDIAN, memoryTracker)) {
             var buffer = scopedBuffer.getBuffer();
-            headerWriter.write(buffer, logHeader);
+            logFormat.serializeHeader(buffer, logHeader);
             buffer.position(headerSize);
             buffer.flip();
             channel.writeAll(buffer);
@@ -392,13 +455,5 @@ public enum LogFormat {
 
     static long encodeLogVersion(long logVersion, long formatVersion) {
         return (logVersion & LOG_VERSION_MASK) | (formatVersion << LOG_VERSION_BITS);
-    }
-
-    private interface LogFormatHeaderParser {
-        LogHeader parse(long logVersion, ByteBuffer buffer) throws IOException;
-    }
-
-    public interface LogFormatHeaderWriter {
-        void write(ByteBuffer buffer, LogHeader logHeader) throws IOException;
     }
 }

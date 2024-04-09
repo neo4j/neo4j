@@ -19,10 +19,12 @@
  */
 package org.neo4j.io.fs;
 
-public class ChecksumMismatchException extends RuntimeException {
+import java.io.IOException;
+
+public class ChecksumMismatchException extends IOException {
 
     public ChecksumMismatchException(long storedChecksum, long checksum) {
-        this("The stored checksum '%d' does not match to evaluated checksum of '%d'.", storedChecksum, checksum);
+        this("The stored checksum '%d' does not match the calculated checksum of '%d'.", storedChecksum, checksum);
     }
 
     public ChecksumMismatchException(String messageTemplate, long storedChecksum, long checksum) {

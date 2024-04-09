@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
@@ -44,7 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class CheckpointInfoFactory {
+public final class CheckpointInfoFactory {
     // transaction id - long
     // time written - long
     // checksum - int
@@ -52,6 +51,8 @@ public class CheckpointInfoFactory {
     private static final long COMMIT_ENTRY_OFFSET = 2 * Long.BYTES + Integer.BYTES + 2 * Byte.BYTES;
     // older version of commit entry that do not have checksum as part of entry
     private static final long LEGACY_COMMIT_ENTRY_OFFSET = 2 * Long.BYTES + 2 * Byte.BYTES;
+
+    private CheckpointInfoFactory() {}
 
     public static CheckpointInfo ofLogEntry(
             LogEntry entry,
@@ -95,8 +96,7 @@ public class CheckpointInfoFactory {
     private static TransactionId readTransactionInfoFor4_2(
             TransactionLogFilesContext context, LogFile logFile, LogPosition transactionPosition) {
         try (var channel = logFile.openForVersion(transactionPosition.getLogVersion());
-                var reader = new ReadAheadLogChannel(
-                        new UnclosableChannel(channel), NO_MORE_CHANNELS, context.getMemoryTracker());
+                var reader = new ReadAheadLogChannel(new UnclosableChannel(channel), context.getMemoryTracker());
                 var logEntryCursor = new LogEntryCursor(
                         new VersionAwareLogEntryReader(
                                 context.getCommandReaderFactory(), context.getBinarySupportedKernelVersions()),
@@ -124,8 +124,7 @@ public class CheckpointInfoFactory {
             }
 
             // We have a checkpoint on this point but there is no transaction found that match it and log files are
-            // corrupted.
-            // Database should be restored from the last valid backup or dump in normal circumstances.
+            // corrupted. Database should be restored from the last valid backup or dump in normal circumstances.
             if (!context.getConfig().get(fail_on_corrupted_log_files)) {
                 return new TransactionId(
                         UNKNOWN_TRANSACTION_ID.id(),
@@ -139,9 +138,8 @@ public class CheckpointInfoFactory {
         } catch (IllegalStateException e) {
             Throwable cause = e;
             // We were not able to read last transaction log file one of the reason can be inability to read full logs
-            // because of transactions
-            // in legacy formats that are present. Here we try to read pre-checkpoint last commit entry and extract our
-            // tx info
+            // because of transactions in legacy formats that are present. Here we try to read pre-checkpoint last
+            // commit entry and extract our tx info
             try (var fallbackChannel = logFile.openForVersion(transactionPosition.getLogVersion())) {
                 fallbackChannel.position(transactionPosition.getByteOffset() - COMMIT_ENTRY_OFFSET);
                 // try to read 44 transaction info
@@ -172,8 +170,14 @@ public class CheckpointInfoFactory {
             PhysicalLogVersionedStoreChannel fallbackChannel,
             TransactionLogFilesContext context,
             boolean skipChecksum) {
-        try (var fallbackReader = new ReadAheadLogChannel(
-                new UnclosableChannel(fallbackChannel), NO_MORE_CHANNELS, context.getMemoryTracker())) {
+        if (fallbackChannel.getLogFormatVersion().usesSegments()) {
+            // This should never be an envelope channel as this is for 4.2-4.4 logs.
+            // Returning empty here will make the original exception bubble up.
+            return Optional.empty();
+        }
+
+        try (var fallbackReader =
+                new ReadAheadLogChannel(new UnclosableChannel(fallbackChannel), context.getMemoryTracker())) {
             byte versionCode = fallbackReader.get();
             if (context.getBinarySupportedKernelVersions().latestSupportedIsLessThan(versionCode)) {
                 return Optional.empty();

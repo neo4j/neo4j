@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -821,22 +822,29 @@ abstract class LogCommandSerializationV5Base {
      * Possible improvement: validate that original record and deserialized record are applied to store they produce equal data.
      */
     <T extends Command.BaseCommand<?>> void testDoubleSerialization(Class<T> type, T original) throws IOException {
+        byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
         InMemoryClosableChannel originalChannel = new InMemoryClosableChannel();
 
         originalChannel.beginChecksum();
+        originalChannel.putVersion(version);
         original.serialize(originalChannel);
         var originalChecksum = originalChannel.putChecksum();
 
         // When
         CommandReader reader = createReader();
+        byte readOnceVersion = originalChannel.getVersion();
+        assertThat(readOnceVersion).isEqualTo(version);
         var readOnce = (Command.BaseCommand<?>) reader.read(originalChannel);
         assertThat(readOnce).isInstanceOf(type);
 
         var anotherChannel = new InMemoryClosableChannel();
         anotherChannel.beginChecksum();
+        anotherChannel.putVersion(version);
         readOnce.serialize(anotherChannel);
         var anotherChecksum = anotherChannel.putChecksum();
 
+        byte readTwiceVersion = anotherChannel.getVersion();
+        assertThat(readTwiceVersion).isEqualTo(version);
         var readTwice = (Command.BaseCommand<?>) reader.read(anotherChannel);
         assertThat(readTwice).isInstanceOf(type);
         assertThat(originalChecksum)

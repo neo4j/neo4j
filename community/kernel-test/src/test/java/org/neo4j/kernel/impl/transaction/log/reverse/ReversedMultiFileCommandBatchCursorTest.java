@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.FlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -219,7 +219,7 @@ class ReversedMultiFileCommandBatchCursorTest {
     }
 
     private CommandBatchCursor txCursor(LogPosition position, boolean presketch) throws IOException {
-        ReadAheadLogChannel fileReader = (ReadAheadLogChannel)
+        ReadableLogChannel fileReader =
                 logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition());
         try {
             return fromLogFile(logFile, position, logEntryReader(), false, monitor, presketch);

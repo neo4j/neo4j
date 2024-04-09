@@ -110,6 +110,14 @@ public class TransactionLogWriter {
         return channel.getCurrentLogPosition();
     }
 
+    public void resetAppendedBytesCounter() {
+        channel.resetAppendedBytesCounter();
+    }
+
+    public long getAppendedBytes() {
+        return channel.getAppendedBytes();
+    }
+
     public LogPositionMarker getCurrentPosition(LogPositionMarker logPositionMarker) throws IOException {
         return channel.getCurrentLogPosition(logPositionMarker);
     }
@@ -119,8 +127,8 @@ public class TransactionLogWriter {
         return channel;
     }
 
-    public void append(ByteBuffer byteBuffer) throws IOException {
-        channel.write(byteBuffer);
+    public int append(ByteBuffer byteBuffer) throws IOException {
+        return channel.write(byteBuffer);
     }
 
     @VisibleForTesting

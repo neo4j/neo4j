@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.IOException;
 import java.util.function.Supplier;
 import org.neo4j.internal.helpers.collection.LfuCache;
+import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.kernel.impl.transaction.log.EnvelopeReadChannel;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -134,6 +136,15 @@ public class TransactionLogFileInformation implements LogFileInformation {
                 if (logHeader != null) {
                     LogPosition position = logHeader.getStartPosition();
                     try (ReadableLogChannel channel = logFile.getRawReader(position)) {
+                        if (logHeader.getLogFormatVersion().usesSegments()) {
+                            try {
+                                // Make sure we look at the beginning of a transaction
+                                ((EnvelopeReadChannel) channel).goToNextEntry();
+                            } catch (ReadPastEndException e) {
+                                // If there was no start/full envelopes in the file we could reach the end
+                                return -1;
+                            }
+                        }
                         var logEntryReader = logEntryReaderFactory.get();
                         LogEntry entry;
                         while ((entry = logEntryReader.readLogEntry(channel)) != null) {

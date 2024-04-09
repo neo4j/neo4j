@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
@@ -67,9 +66,6 @@ class CountingLogCheckPointEvent implements LogCheckPointEvent {
     public void close() {
         // empty
     }
-
-    @Override
-    public void appendToLogFile(LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint) {}
 
     @Override
     public void appendedBytes(long bytes) {

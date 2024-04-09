@@ -98,7 +98,7 @@ class VersionAwareLogEntryReaderTest {
         final LogEntryCommand command = new LogEntryCommand(testCommand);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
-        channel.put(kernelVersion.version());
+        channel.putVersion(kernelVersion.version());
         channel.put(LogEntryTypeCodes.COMMAND);
         testCommand.serialize(channel);
 
@@ -115,7 +115,7 @@ class VersionAwareLogEntryReaderTest {
         // given
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
-        channel.put(kernelVersion.version());
+        channel.putVersion(kernelVersion.version());
         channel.put(LogEntryTypeCodes.COMMAND);
         channel.put(CommandReader.NONE);
 

@@ -108,6 +108,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         // log rotation, which will wait for all transactions closed or fail on kernel panic.
         try {
             var logPositionBeforeCommit = transactionLogWriter.getCurrentPosition();
+            transactionLogWriter.resetAppendedBytesCounter();
             this.previousChecksum = transactionLogWriter.append(
                     commands.commandBatch(),
                     transactionId,
@@ -115,9 +116,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
                     previousChecksum,
                     commands.previousBatchLogPosition());
             var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
-            logAppendEvent.appendToLogFile(logPositionBeforeCommit, logPositionAfterCommit);
-            logAppendEvent.appendedBytes(
-                    logPositionAfterCommit.getByteOffset() - logPositionBeforeCommit.getByteOffset());
+            logAppendEvent.appendedBytes(transactionLogWriter.getAppendedBytes());
             commands.batchAppended(logPositionBeforeCommit, logPositionAfterCommit, previousChecksum);
         } catch (final Throwable panic) {
             databasePanic.panic(panic);

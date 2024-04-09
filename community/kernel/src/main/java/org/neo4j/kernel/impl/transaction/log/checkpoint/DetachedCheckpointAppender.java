@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -36,11 +36,13 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadUtils;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -67,13 +69,13 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final Panic databasePanic;
     private final LogRotation logRotation;
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
+    private final InternalLog log;
+    private final DetachedLogTailScanner logTailScanner;
     private StoreId storeId;
     private PhysicalFlushableLogPositionAwareChannel writer;
     private NativeScopedBuffer buffer;
     private PhysicalLogVersionedStoreChannel channel;
     private LogVersionRepository logVersionRepository;
-    private final InternalLog log;
-    private final DetachedLogTailScanner logTailScanner;
 
     public DetachedCheckpointAppender(
             LogFiles logFiles,
@@ -99,20 +101,33 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         this.storeId = context.getStoreId();
         this.logVersionRepository =
                 requireNonNull(context.getLogVersionRepositoryProvider().logVersionRepository(logFiles));
-        long version = logVersionRepository.getCheckpointLogVersion();
+
+        long currentLogVersion = logVersionRepository.getCheckpointLogVersion();
         channel = channelAllocator.createLogChannel(
-                version, () -> context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles));
-        context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), version);
-        seekCheckpointChannel(version);
-        buffer = new NativeScopedBuffer(kibiBytes(1), ByteOrder.LITTLE_ENDIAN, context.getMemoryTracker());
-        writer = new PhysicalFlushableLogPositionAwareChannel(channel, buffer);
+                currentLogVersion,
+                context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles),
+                BASE_TX_CHECKSUM);
+
+        context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), currentLogVersion);
+        seekCheckpointChannel(currentLogVersion);
+
+        buffer = new NativeScopedBuffer(
+                context.getBufferSizeBytes(), ByteOrder.LITTLE_ENDIAN, context.getMemoryTracker());
+        final var checksumChannelProvider =
+                new PhysicalFlushableLogPositionAwareChannel.VersionedPhysicalFlushableLogChannelProvider(
+                        logRotation, context.getDatabaseTracers().getDatabaseTracer(), buffer);
+        writer = new PhysicalFlushableLogPositionAwareChannel(
+                channel, logHeader(currentLogVersion), checksumChannelProvider);
+    }
+
+    private LogHeader logHeader(long logVersion) throws IOException {
+        return channelAllocator.readLogHeaderForVersion(logVersion);
     }
 
     private void seekCheckpointChannel(long expectedVersion) throws IOException {
         LogTailMetadata tailMetadata = logTailScanner.getTailMetadata();
         if (tailMetadata.hasUnreadableBytesInCheckpointLogs()) {
-            // we have unreadable bytes in the tail and we can't find correct position anyway and will rotate this file
-            // away
+            // we have unreadable bytes in the tail and can't find correct position anyway -> rotate this file away
             return;
         }
         var lastCheckPoint = tailMetadata.getLastCheckPoint();
@@ -129,14 +144,20 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     }
 
     private long lastReadablePosition() throws IOException {
-        try (var reader = new ReadAheadLogChannel(
-                        new UnclosableChannel(channel), NO_MORE_CHANNELS, context.getMemoryTracker());
+        try (var reader = ReadAheadUtils.newChannel(
+                        new UnclosableChannel(channel),
+                        NO_MORE_CHANNELS,
+                        logHeader(channel.getLogVersion()),
+                        context.getMemoryTracker());
                 var logEntryCursor = new LogEntryCursor(
                         new VersionAwareLogEntryReader(NO_COMMANDS, true, binarySupportedKernelVersions), reader)) {
+            LogPositionMarker beforeEntry = new LogPositionMarker();
+            reader.getCurrentLogPosition(beforeEntry);
             while (logEntryCursor.next()) {
                 logEntryCursor.get();
+                reader.getCurrentLogPosition(beforeEntry);
             }
-            return reader.getCurrentLogPosition().getByteOffset();
+            return beforeEntry.getByteOffset();
         }
     }
 
@@ -165,7 +186,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         synchronized (checkpointFile) {
             try {
                 databasePanic.assertNoPanic(IOException.class);
-                var logPositionBeforeCheckpoint = writer.getCurrentLogPosition();
+                writer.resetAppendedBytesCounter();
                 serializationSet(kernelVersion, binarySupportedKernelVersions)
                         .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0)
                         .write(
@@ -177,11 +198,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                                         checkpointTime.toEpochMilli(),
                                         storeId,
                                         reason));
-
-                var logPositionAfterCheckpoint = writer.getCurrentLogPosition();
-                logCheckPointEvent.appendToLogFile(logPositionBeforeCheckpoint, logPositionAfterCheckpoint);
-                logCheckPointEvent.appendedBytes(
-                        logPositionAfterCheckpoint.getByteOffset() - logPositionBeforeCheckpoint.getByteOffset());
+                logCheckPointEvent.appendedBytes(writer.getAppendedBytes());
                 forceAfterAppend(logCheckPointEvent);
                 logRotation.rotateLogIfNeeded(logCheckPointEvent);
             } catch (Throwable cause) {
@@ -196,14 +213,14 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     }
 
     private void forceAfterAppend(LogCheckPointEvent logCheckPointEvent) throws IOException {
-        try (LogForceEvent logForceEvent = logCheckPointEvent.beginLogForce()) {
+        try (LogForceEvent ignored = logCheckPointEvent.beginLogForce()) {
             writer.prepareForFlush().flush();
         }
     }
 
     public Path rotate() throws IOException {
         channel = rotateChannel(channel);
-        writer.setChannel(channel);
+        writer.setChannel(channel, logHeader(channel.getLogVersion()));
         return channel.getPath();
     }
 
@@ -211,7 +228,9 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             throws IOException {
         long newLogVersion = logVersionRepository.incrementAndGetCheckpointLogVersion();
         writer.prepareForFlush().flush();
-        var newChannel = channelAllocator.createLogChannel(newLogVersion, context::committingTransactionId);
+
+        int checksum = writer.currentChecksum().orElse(BASE_TX_CHECKSUM);
+        var newChannel = channelAllocator.createLogChannel(newLogVersion, context.committingTransactionId(), checksum);
         channel.close();
         return newChannel;
     }

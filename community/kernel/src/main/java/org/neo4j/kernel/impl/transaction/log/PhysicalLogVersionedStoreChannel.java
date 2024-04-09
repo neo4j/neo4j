@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 
@@ -37,6 +38,23 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
     private final ChannelNativeAccessor nativeChannelAccessor;
     private final boolean raw;
     private final DatabaseTracer databaseTracer;
+
+    public PhysicalLogVersionedStoreChannel(
+            StoreChannel delegateChannel,
+            LogHeader header,
+            Path path,
+            ChannelNativeAccessor nativeChannelAccessor,
+            DatabaseTracer databaseTracer)
+            throws IOException {
+        this(
+                delegateChannel,
+                header.getLogVersion(),
+                header.getLogFormatVersion(),
+                path,
+                nativeChannelAccessor,
+                databaseTracer,
+                false);
+    }
 
     public PhysicalLogVersionedStoreChannel(
             StoreChannel delegateChannel,
@@ -171,7 +189,7 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
 
     @Override
     public void flush() throws IOException {
-        try (var flushEvent = databaseTracer.flushFile()) {
+        try (var ignored = databaseTracer.flushFile()) {
             super.flush();
         }
     }

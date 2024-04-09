@@ -37,9 +37,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.CommittedCommandBatchCursor;
-import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadUtils;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -203,7 +201,7 @@ class TestLogPruning {
 
         // Then
         // the database must have kept at least one tx (in our case exactly one, because we rotated the log)
-        assertThat(transactionCount()).isGreaterThanOrEqualTo(1);
+        assertThat(transactionCount()).isPositive();
     }
 
     @Test
@@ -316,12 +314,10 @@ class TestLogPruning {
     private int transactionCount() throws IOException {
         return aggregateLogData(version -> {
             int counter = 0;
-            LogVersionBridge bridge = LogVersionBridge.NO_MORE_CHANNELS;
-            LogVersionedStoreChannel versionedStoreChannel =
-                    logFiles.getLogFile().openForVersion(version);
+            LogFile logFile = logFiles.getLogFile();
             StorageEngineFactory storageEngineFactory =
                     db.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
-            try (ReadableLogChannel channel = new ReadAheadLogChannel(versionedStoreChannel, bridge, INSTANCE)) {
+            try (ReadableLogChannel channel = ReadAheadUtils.newChannel(logFile, version, INSTANCE)) {
                 try (CommittedCommandBatchCursor physicalTransactionCursor = new CommittedCommandBatchCursor(
                         channel,
                         new VersionAwareLogEntryReader(

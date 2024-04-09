@@ -23,28 +23,47 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 
 /**
  * {@link LogVersionBridge} naturally transitioning from one {@link LogVersionedStoreChannel} to the next,
  * i.e. to log version with one higher version than the current.
  */
-public class ReaderLogVersionBridge implements LogVersionBridge {
-    private final LogFile logFile;
+public abstract class ReaderLogVersionBridge implements LogVersionBridge {
 
-    public ReaderLogVersionBridge(LogFile logFile) {
-        this.logFile = logFile;
+    /**
+     *
+     * @param logFile the transaction log file(s) to read over
+     * @return a bridge that can return the chain of transaction files in version order
+     */
+    public static LogVersionBridge forFile(LogFile logFile) {
+        return (channel, raw) -> swap(channel, version -> logFile.openForVersion(version, raw));
     }
 
-    @Override
-    public LogVersionedStoreChannel next(LogVersionedStoreChannel channel, boolean raw) throws IOException {
-        PhysicalLogVersionedStoreChannel nextChannel;
+    /**
+     *
+     * @param logFile the checkpoint log file(s) to read over
+     * @return a bridge that can return the chain of checkpoint files in version order
+     */
+    public static LogVersionBridge forFile(CheckpointFile logFile) {
+        return (channel, raw) -> swap(channel, logFile::openForVersion);
+    }
+
+    @FunctionalInterface
+    private interface ChannelProvider {
+        LogVersionedStoreChannel get(long version) throws IOException;
+    }
+
+    private static LogVersionedStoreChannel swap(
+            LogVersionedStoreChannel prevChannel, ChannelProvider nextChannelProvider) throws IOException {
+        LogVersionedStoreChannel nextChannel;
         try {
-            nextChannel = logFile.openForVersion(channel.getLogVersion() + 1, raw);
+            nextChannel = nextChannelProvider.get(prevChannel.getLogVersion() + 1);
         } catch (NoSuchFileException | IncompleteLogHeaderException e) {
-            // See PhysicalLogFile#rotate() for description as to why these exceptions are OK
-            return channel;
+            // See TransactionLogFile#rotate() for description as to why these exceptions are OK
+            return prevChannel;
         }
-        channel.close();
+        prevChannel.close();
         return nextChannel;
     }
 }

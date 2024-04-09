@@ -99,8 +99,13 @@ public interface LogFile extends RotatableFile {
     PhysicalLogVersionedStoreChannel openForVersion(long version, boolean raw) throws IOException;
 
     PhysicalLogVersionedStoreChannel createLogChannelForVersion(
-            long version, LongSupplier lastTransactionIdSupplier, KernelVersionProvider kernelVersionProvider)
+            long version,
+            LongSupplier lastTransactionIdSupplier,
+            KernelVersionProvider kernelVersionProvider,
+            int previousLogFileChecksum)
             throws IOException;
+
+    PhysicalLogVersionedStoreChannel createLogChannelForExistingVersion(long version) throws IOException;
 
     long getLogVersion(Path file);
 

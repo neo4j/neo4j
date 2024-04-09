@@ -123,4 +123,9 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     protected LogVersionedStoreChannel next(LogVersionedStoreChannel channel) throws IOException {
         return bridge.next(channel, raw);
     }
+
+    @Override
+    public void setCurrentPosition(long byteOffset) throws IOException {
+        channel.position(byteOffset);
+    }
 }

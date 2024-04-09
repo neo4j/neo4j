@@ -82,7 +82,13 @@ public class PhysicalFlushableChannel implements FlushableChannel {
         }
 
         buffer.flip();
-        Flushable flushable = flushToChannel(channel, buffer);
+        // You may ask why we set flushable=channel
+        // This is tied to the setChannel and the fact that this is used by multiple threads. In case of a race,
+        // we still want to make sure that we do the force() on the correct channel, to avoid losing any data.
+        StoreChannel flushable = channel;
+        if (buffer.hasRemaining()) {
+            flushToChannel(flushable, buffer);
+        }
         buffer.clear();
         return flushable;
     }
@@ -194,16 +200,17 @@ public class PhysicalFlushableChannel implements FlushableChannel {
      * @param position new position (byte offset) to set as new current position.
      * @throws IOException if underlying channel throws {@link IOException}.
      */
-    public void position(long position) throws IOException {
+    public PhysicalFlushableChannel position(long position) throws IOException {
         // Currently we take the pessimistic approach of flushing (doesn't imply forcing) buffer to
         // channel before moving to a new position. This works in all cases, but there could be
         // made an optimization where we could see that we're moving within the current buffer range
         // and if so skip flushing and simply move the cursor in the buffer.
         prepareForFlush();
         channel.position(position);
+        return this;
     }
 
-    private ByteBuffer bufferWithGuaranteedSpace(int spaceInBytes) throws IOException {
+    protected ByteBuffer bufferWithGuaranteedSpace(int spaceInBytes) throws IOException {
         assert spaceInBytes <= buffer.capacity();
         if (buffer.remaining() < spaceInBytes) {
             prepareForFlush();
@@ -211,13 +218,13 @@ public class PhysicalFlushableChannel implements FlushableChannel {
         return buffer;
     }
 
-    private Flushable flushToChannel(StoreChannel destination, ByteBuffer src) throws IOException {
+    @VisibleForTesting
+    void flushToChannel(StoreChannel destination, ByteBuffer src) throws IOException {
         try {
             destination.writeAll(src);
         } catch (ClosedChannelException e) {
             handleClosedChannelException(e);
         }
-        return destination;
     }
 
     private void handleClosedChannelException(ClosedChannelException e) throws ClosedChannelException {

@@ -73,6 +73,6 @@ public class TransactionIdChecker {
                 .build();
         LogFile logFile = logFiles.getLogFile();
         PhysicalLogVersionedStoreChannel channel = logFile.openForVersion(version);
-        return new ReadAheadLogChannel(channel, new ReaderLogVersionBridge(logFile), INSTANCE);
+        return new ReadAheadLogChannel(channel, ReaderLogVersionBridge.forFile(logFile), INSTANCE);
     }
 }

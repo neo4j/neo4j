@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import static org.neo4j.io.fs.PhysicalFlushableChannel.DEFAULT_BUFFER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.fromKernelVersion;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -27,11 +26,9 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.time.Clock;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
@@ -45,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
@@ -122,12 +120,12 @@ public class DefaultRecoveryService implements RecoveryService {
         }
         KernelVersion kernelVersion = versionProvider.kernelVersion();
         LogFile logFile = logFiles.getLogFile();
-        PhysicalLogVersionedStoreChannel channel = logFile.createLogChannelForVersion(
-                writePosition.getLogVersion(), lastCommittedBatch::txId, versionProvider);
+        PhysicalLogVersionedStoreChannel channel =
+                logFile.createLogChannelForExistingVersion(writePosition.getLogVersion());
+        LogHeader logHeader = logFile.extractHeader(writePosition.getLogVersion());
         channel.position(writePosition.getByteOffset());
-        try (var tempRollbackBuffer = new HeapScopedBuffer(
-                        DEFAULT_BUFFER_SIZE, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
-                var writerChannel = new PhysicalFlushableLogPositionAwareChannel(channel, tempRollbackBuffer)) {
+        try (var writerChannel =
+                new PhysicalFlushableLogPositionAwareChannel(channel, logHeader, EmptyMemoryTracker.INSTANCE)) {
             var entryWriter = new LogEntryWriter<>(writerChannel, binarySupportedKernelVersions);
             long time = clock.millis();
             for (long notCompletedTransaction : notCompletedTransactions) {

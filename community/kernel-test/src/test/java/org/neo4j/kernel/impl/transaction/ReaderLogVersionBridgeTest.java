@@ -40,7 +40,6 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
@@ -73,15 +72,15 @@ class ReaderLogVersionBridgeTest {
     @Test
     void shouldOpenTheNextChannelWhenItExists() throws IOException {
         // given
-        final StoreChannel newStoreChannel = mock(StoreChannel.class);
-        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge(logFiles.getLogFile());
+        final var newStoreChannel = mock(LogVersionedStoreChannel.class);
+        final var bridge = ReaderLogVersionBridge.forFile(logFiles.getLogFile());
 
         when(channel.getLogVersion()).thenReturn(version);
         when(channel.getLogFormatVersion()).thenReturn(LATEST_LOG_FORMAT);
         when(fs.fileExists(any(Path.class))).thenReturn(true);
         when(fs.read(any(Path.class))).thenReturn(newStoreChannel);
 
-        var storeId = new StoreId(1, 1, "engine-1", "format-1", 1, 1);
+        StoreId storeId = new StoreId(1, 1, "engine-1", "format-1", 1, 1);
         when(newStoreChannel.read(ArgumentMatchers.<ByteBuffer>any())).then(new Answer<>() {
             private int count;
 
@@ -91,16 +90,9 @@ class ReaderLogVersionBridgeTest {
                     throw new AssertionError("Should only be called twice.");
                 }
                 ByteBuffer buffer = invocation.getArgument(0);
-
-                LogHeader logHeader = new LogHeader(
-                        LATEST_LOG_FORMAT,
-                        version + 1,
-                        -1L,
-                        storeId,
-                        UNKNOWN_LOG_SEGMENT_SIZE,
-                        BASE_TX_CHECKSUM,
-                        LATEST_KERNEL_VERSION);
-                LATEST_LOG_FORMAT.getHeaderWriter().write(buffer, logHeader);
+                LogHeader logHeader = LATEST_LOG_FORMAT.newHeader(
+                        version + 1, -1L, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                LATEST_LOG_FORMAT.serializeHeader(buffer, logHeader);
                 return LATEST_LOG_FORMAT.getHeaderSize();
             }
         });
@@ -123,7 +115,7 @@ class ReaderLogVersionBridgeTest {
     @Test
     void shouldReturnOldChannelWhenThereIsNoNextChannel() throws IOException {
         // given
-        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge(logFiles.getLogFile());
+        final var bridge = ReaderLogVersionBridge.forFile(logFiles.getLogFile());
 
         when(channel.getLogVersion()).thenReturn(version);
         when(fs.read(any(Path.class))).thenThrow(new NoSuchFileException("mock"));
@@ -139,8 +131,8 @@ class ReaderLogVersionBridgeTest {
     @Test
     void shouldReturnOldChannelWhenNextChannelHasNotGottenCompleteHeaderYet() throws Exception {
         // given
-        final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge(logFiles.getLogFile());
-        final StoreChannel nextVersionWithIncompleteHeader = mock(StoreChannel.class);
+        final var bridge = ReaderLogVersionBridge.forFile(logFiles.getLogFile());
+        final var nextVersionWithIncompleteHeader = mock(LogVersionedStoreChannel.class);
         when(nextVersionWithIncompleteHeader.read(any(ByteBuffer.class)))
                 .thenReturn(LATEST_LOG_FORMAT.getHeaderSize() / 2);
 

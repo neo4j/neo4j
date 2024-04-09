@@ -24,9 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V6;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
@@ -40,12 +43,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.ByteBuffers;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
@@ -77,27 +78,25 @@ class TransactionLogFilesTest {
     void extractHeaderOf3_5Format() throws Exception {
         LogFiles files = createLogFiles();
 
-        create3_5FileWithHeader(databaseLayout, "0");
+        create3_5FileWithHeader(databaseLayout, "0", 0);
         create3_5FileWithHeader(databaseLayout, "1", 1);
         create3_5FileWithHeader(databaseLayout, "2", 2);
 
         LogFile logFile = files.getLogFile();
         var logHeader = logFile.extractHeader(0);
-        assertEquals(LogFormat.V6.getHeaderSize(), logHeader.getStartPosition().getByteOffset());
-        assertEquals(LogFormat.V6, logHeader.getLogFormatVersion());
+        assertEquals(V6.getHeaderSize(), logHeader.getStartPosition().getByteOffset());
+        assertEquals(V6, logHeader.getLogFormatVersion());
         assertEquals(
-                LogFormat.V6.getHeaderSize(),
-                logFile.extractHeader(1).getStartPosition().getByteOffset());
+                V6.getHeaderSize(), logFile.extractHeader(1).getStartPosition().getByteOffset());
         assertEquals(
-                LogFormat.V6.getHeaderSize(),
-                logFile.extractHeader(2).getStartPosition().getByteOffset());
+                V6.getHeaderSize(), logFile.extractHeader(2).getStartPosition().getByteOffset());
     }
 
     @Test
     void detectEntriesIn3_5Format() throws Exception {
         LogFiles files = createLogFiles();
 
-        create3_5FileWithHeader(databaseLayout, "0");
+        create3_5FileWithHeader(databaseLayout, "0", 0);
         create3_5FileWithHeader(databaseLayout, "1", 10);
 
         LogFile logFile = files.getLogFile();
@@ -257,11 +256,11 @@ class TransactionLogFilesTest {
 
     @Test
     void fileWithoutEntriesDoesNotHaveThemIndependentlyOfItsSize() throws Exception {
-        LogFiles logFiles = createLogFiles();
+        final var logFile = (TransactionLogFile) createLogFiles().getLogFile();
         try (PhysicalLogVersionedStoreChannel channel =
-                logFiles.getLogFile().createLogChannelForVersion(1, () -> 1L, () -> KernelVersion.GLORIOUS_FUTURE)) {
+                logFile.createLogChannelForVersion(1, () -> 1L, LATEST_KERNEL_VERSION_PROVIDER, BASE_TX_CHECKSUM)) {
             assertThat(channel.size()).isGreaterThanOrEqualTo(LATEST_LOG_FORMAT.getHeaderSize());
-            assertFalse(logFiles.getLogFile().hasAnyEntries(1));
+            assertFalse(logFile.hasAnyEntries(1));
         }
     }
 
@@ -270,17 +269,13 @@ class TransactionLogFilesTest {
         try (StoreChannel storeChannel =
                 fileSystem.write(createTransactionLogFile(databaseLayout, getVersionedLogFileName(version)))) {
             ByteBuffer byteBuffer =
-                    ByteBuffers.allocate(LogFormat.V6.getHeaderSize() + bytesOfData, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+                    ByteBuffers.allocate(V6.getHeaderSize() + bytesOfData, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             while (byteBuffer.hasRemaining()) {
-                byteBuffer.put(LogFormat.V6.getVersionByte());
+                byteBuffer.put(V6.getVersionByte());
             }
             byteBuffer.flip();
             storeChannel.writeAll(byteBuffer);
         }
-    }
-
-    private void create3_5FileWithHeader(DatabaseLayout databaseLayout, String version) throws IOException {
-        create3_5FileWithHeader(databaseLayout, version, 0);
     }
 
     private static Path createTransactionLogFile(DatabaseLayout databaseLayout, String fileName) {

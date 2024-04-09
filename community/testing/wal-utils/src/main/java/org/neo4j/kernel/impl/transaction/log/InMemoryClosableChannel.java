@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED;
 
 import java.io.Closeable;
 import java.io.Flushable;
@@ -31,7 +32,6 @@ import java.util.Arrays;
 import java.util.zip.Checksum;
 import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.ReadPastEndException;
-import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 
 /**
@@ -52,7 +52,7 @@ public class InMemoryClosableChannel
     }
 
     public InMemoryClosableChannel(boolean isReader) {
-        this(1000, isReader);
+        this(new byte[1000], false, isReader, ByteOrder.LITTLE_ENDIAN);
     }
 
     public InMemoryClosableChannel(byte[] bytes, boolean append, boolean isReader, ByteOrder byteOrder) {
@@ -65,10 +65,6 @@ public class InMemoryClosableChannel
         }
         this.writer = new Writer(writeBuffer);
         this.reader = new Reader(readBuffer);
-    }
-
-    public InMemoryClosableChannel(int bufferSize, boolean isReader) {
-        this(new byte[bufferSize], false, isReader, ByteOrder.LITTLE_ENDIAN);
     }
 
     public InMemoryClosableChannel(int bufferSize) {
@@ -144,7 +140,7 @@ public class InMemoryClosableChannel
     }
 
     @Override
-    public WritableChannel putVersion(byte version) {
+    public InMemoryClosableChannel putVersion(byte version) {
         currentVersion = KernelVersion.getForVersion(version);
         writer.putVersion(version);
         return this;
@@ -219,8 +215,7 @@ public class InMemoryClosableChannel
 
     @Override
     public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) {
-        var buffer = isReader ? reader : writer;
-        return buffer.getCurrentLogPosition(positionMarker);
+        return getCurrentBuffer().getCurrentLogPosition(positionMarker);
     }
 
     @Override
@@ -236,8 +231,14 @@ public class InMemoryClosableChannel
     }
 
     @Override
-    public int putChecksum() {
-        return writer.putChecksum();
+    public int putChecksum() throws ReadPastEndException {
+        if (currentVersion == null) {
+            throw new RuntimeException("putVersion must be called at least once.");
+        }
+        if (currentVersion.isLessThan(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED)) {
+            return writer.putChecksum();
+        }
+        return 0;
     }
 
     @Override
@@ -325,6 +326,16 @@ public class InMemoryClosableChannel
         }
         dst.put(reader.buffer);
         return readerRemaining;
+    }
+
+    @Override
+    public void resetAppendedBytesCounter() {
+        writer.resetAppendedBytesCounter();
+    }
+
+    @Override
+    public long getAppendedBytes() {
+        return writer.getAppendedBytes();
     }
 
     ByteBufferBase getCurrentBuffer() {
@@ -438,12 +449,18 @@ public class InMemoryClosableChannel
         }
 
         @Override
-        public byte getVersion() throws ReadPastEndException {
-            return get();
+        public byte getVersion() throws IOException {
+            if (currentVersion == null) {
+                throw ReadPastEndException.INSTANCE;
+            }
+            if (currentVersion.isLessThan(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED)) {
+                return get();
+            }
+            return currentVersion.version();
         }
 
         @Override
-        public int endChecksumAndValidate() throws ReadPastEndException {
+        public int endChecksumAndValidate() throws IOException {
             ensureAvailableToRead(Integer.BYTES);
             int checksum = (int) this.checksum.getValue();
             int storedChecksum = buffer.getInt();
@@ -506,6 +523,8 @@ public class InMemoryClosableChannel
     public static class Writer extends ByteBufferBase implements FlushableLogPositionAwareChannel {
         private final Checksum checksum = CHECKSUM_FACTORY.get();
 
+        private long appendedBytes;
+
         Writer(ByteBuffer buffer) {
             super(buffer);
         }
@@ -513,49 +532,52 @@ public class InMemoryClosableChannel
         @Override
         public Writer put(byte b) {
             buffer.put(b);
-            updateCrc(Byte.BYTES);
-            return this;
+            return updateCrc(Byte.BYTES);
         }
 
         @Override
         public Writer putShort(short s) {
             buffer.putShort(s);
-            updateCrc(Short.BYTES);
-            return this;
+            return updateCrc(Short.BYTES);
         }
 
         @Override
         public Writer putInt(int i) {
             buffer.putInt(i);
-            updateCrc(Integer.BYTES);
-            return this;
+            return updateCrc(Integer.BYTES);
         }
 
         @Override
         public Writer putLong(long l) {
             buffer.putLong(l);
-            updateCrc(Long.BYTES);
-            return this;
+            return updateCrc(Long.BYTES);
         }
 
         @Override
         public Writer putFloat(float f) {
             buffer.putFloat(f);
-            updateCrc(Float.BYTES);
-            return this;
+            return updateCrc(Float.BYTES);
         }
 
         @Override
         public Writer putDouble(double d) {
             buffer.putDouble(d);
-            updateCrc(Double.BYTES);
-            return this;
+            return updateCrc(Double.BYTES);
         }
 
         @Override
         public Writer put(byte[] bytes, int offset, int length) {
             buffer.put(bytes, offset, length);
             checksum.update(bytes, offset, length);
+            appendedBytes += length;
+            return this;
+        }
+
+        @Override
+        public Writer putVersion(byte version) {
+            if (KernelVersion.getForVersion(version).isLessThan(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED)) {
+                return put(version);
+            }
             return this;
         }
 
@@ -565,12 +587,8 @@ public class InMemoryClosableChannel
             buffer.put(src);
             src.reset();
             checksum.update(src);
+            appendedBytes += src.remaining();
             return this;
-        }
-
-        @Override
-        public WritableChannel putVersion(byte version) {
-            return put(version);
         }
 
         @Override
@@ -580,9 +598,10 @@ public class InMemoryClosableChannel
 
         @Override
         public int putChecksum() {
-            int checksum = (int) this.checksum.getValue();
-            buffer.putInt(checksum);
-            return checksum;
+            int value = (int) this.checksum.getValue();
+            buffer.putInt(value);
+            appendedBytes += Integer.BYTES;
+            return value;
         }
 
         @Override
@@ -590,13 +609,16 @@ public class InMemoryClosableChannel
             checksum.reset();
         }
 
-        private void updateCrc(int size) {
+        private Writer updateCrc(int size) {
             checksum.update(buffer.array(), buffer.position() - size, size);
+            appendedBytes += size;
+            return this;
         }
 
         @Override
         public int write(ByteBuffer byteBuffer) throws IOException {
             int remaining = byteBuffer.remaining();
+            appendedBytes += remaining;
             byteBuffer.mark();
             buffer.put(byteBuffer);
             byteBuffer.reset();
@@ -607,6 +629,16 @@ public class InMemoryClosableChannel
         @Override
         public boolean isOpen() {
             return !isClosed;
+        }
+
+        @Override
+        public void resetAppendedBytesCounter() {
+            appendedBytes = 0;
+        }
+
+        @Override
+        public long getAppendedBytes() {
+            return appendedBytes;
         }
     }
 }

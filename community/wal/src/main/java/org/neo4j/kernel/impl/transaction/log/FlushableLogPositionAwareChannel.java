@@ -21,4 +21,8 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.io.fs.FlushableChannel;
 
-public interface FlushableLogPositionAwareChannel extends FlushableChannel, LogPositionAwareChannel {}
+public interface FlushableLogPositionAwareChannel extends FlushableChannel, LogPositionAwareChannel {
+    void resetAppendedBytesCounter();
+
+    long getAppendedBytes();
+}

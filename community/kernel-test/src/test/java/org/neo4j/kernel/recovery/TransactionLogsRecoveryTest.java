@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.recovery;
 
-import static java.lang.Math.toIntExact;
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,7 +33,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
@@ -55,7 +54,6 @@ import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -72,7 +70,6 @@ import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
@@ -80,6 +77,7 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.FlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
@@ -91,7 +89,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -180,7 +177,7 @@ class TransactionLogsRecoveryTest {
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
             lastCommittedTxCommitEntry = newCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L, previousChecksum);
 
-            // check point pointing to the previously committed transaction
+            // checkpoint pointing to the previously committed transaction
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
@@ -296,7 +293,7 @@ class TransactionLogsRecoveryTest {
         var contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
 
         LogPositionMarker marker = new LogPositionMarker();
-        writeSomeDataWithVersion(file, dataWriters -> {
+        writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
             TransactionId transactionId = new TransactionId(4L, LATEST_KERNEL_VERSION, BASE_TX_CHECKSUM, 5L, 6L);
@@ -376,11 +373,12 @@ class TransactionLogsRecoveryTest {
 
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
-            LogPositionAwareChannel channel = dataWriters.channel();
+            FlushableLogPositionAwareChannel channel = dataWriters.channel();
 
             // incomplete tx
             channel.getCurrentLogPosition(marker); // <-- marker has the last good position
             writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, EMPTY_BYTE_ARRAY);
+            channel.putChecksum();
 
             return true;
         });
@@ -417,11 +415,12 @@ class TransactionLogsRecoveryTest {
 
             // write incomplete tx to trigger recovery
             writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, EMPTY_BYTE_ARRAY);
+            writer.getChannel().putChecksum();
             return true;
         });
         assertTrue(recovery(storeDir));
 
-        assertEquals(marker.getByteOffset(), Files.size(file));
+        assertThat(file).hasSize(marker.getByteOffset());
         assertEquals(
                 LATEST_LOG_FORMAT.getHeaderSize() + RECORD_LENGTH_BYTES /* one checkpoint */,
                 ((DetachedCheckpointAppender) logFiles.getCheckpointFile().getCheckpointAppender())
@@ -667,10 +666,7 @@ class TransactionLogsRecoveryTest {
     }
 
     private void writeSomeData(Path file, Visitor<DataWriters, IOException> visitor) throws IOException {
-        writeSomeDataWithVersion(file, visitor);
-    }
 
-    private void writeSomeDataWithVersion(Path file, Visitor<DataWriters, IOException> visitor) throws IOException {
         try (var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                         fileSystem.write(file),
                         logVersion,
@@ -678,19 +674,12 @@ class TransactionLogsRecoveryTest {
                         file,
                         EMPTY_ACCESSOR,
                         DatabaseTracer.NULL);
-                var writableLogChannel = new PhysicalFlushableLogPositionAwareChannel(
-                        versionedStoreChannel,
-                        new HeapScopedBuffer(toIntExact(KibiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
+                var writableLogChannel =
+                        new PhysicalFlushableLogPositionAwareChannel(versionedStoreChannel, null, INSTANCE)) {
             writeLogHeader(
                     versionedStoreChannel,
-                    new LogHeader(
-                            LATEST_LOG_FORMAT,
-                            logVersion,
-                            2L,
-                            storeId,
-                            UNKNOWN_LOG_SEGMENT_SIZE,
-                            BASE_TX_CHECKSUM,
-                            LATEST_KERNEL_VERSION),
+                    LATEST_LOG_FORMAT.newHeader(
+                            logVersion, 2L, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION),
                     INSTANCE);
             writableLogChannel.beginChecksumForWriting();
             LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, LatestVersions.BINARY_VERSIONS);
@@ -698,7 +687,7 @@ class TransactionLogsRecoveryTest {
         }
     }
 
-    private record DataWriters(LogEntryWriter<?> writer, LogPositionAwareChannel channel) {}
+    private record DataWriters(LogEntryWriter<?> writer, FlushableLogPositionAwareChannel channel) {}
 
     private LogFiles buildLogFiles() throws IOException {
         return LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)

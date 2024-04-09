@@ -118,6 +118,22 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             MemoryTracker memoryTracker,
             boolean raw)
             throws IOException {
+
+        this(
+                startingChannel,
+                segmentBlockSize,
+                bridge,
+                raw,
+                new NativeScopedBuffer(segmentBlockSize, LITTLE_ENDIAN, memoryTracker));
+    }
+
+    EnvelopeReadChannel(
+            LogVersionedStoreChannel startingChannel,
+            int segmentBlockSize,
+            LogVersionBridge bridge,
+            boolean raw,
+            ScopedBuffer scopedBuffer)
+            throws IOException {
         this.channel = requireNonNull(startingChannel);
         requirePowerOfTwo(segmentBlockSize);
         this.segmentBlockSize = segmentBlockSize;
@@ -127,7 +143,7 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         this.raw = raw;
 
         boolean successfulInitialization = false;
-        this.scopedBuffer = new NativeScopedBuffer(segmentBlockSize, LITTLE_ENDIAN, memoryTracker);
+        this.scopedBuffer = scopedBuffer;
         try {
             this.buffer = scopedBuffer.getBuffer();
             this.checksumView = buffer.duplicate().order(buffer.order());
@@ -214,14 +230,14 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
 
         if (newSegment == currentSegment) {
             if (newBufferOffset < payloadStartOffset || newBufferOffset > payloadEndOffset) {
-                readAllEnvelopesUpToIncluding(newBufferOffset);
+                readAllEnvelopesUpToIncluding(newBufferOffset, false);
             }
         } else {
             loadSegmentIntoBuffer(newSegment);
             // Even if we're on offset 0, on the first segment we need to invoke this to make sure
             // we're skipping the START_OFFSET envelope if it is present.
             if (newBufferOffset != 0 || newSegment == 1) {
-                readAllEnvelopesUpToIncluding(newBufferOffset);
+                readAllEnvelopesUpToIncluding(newBufferOffset, false);
             }
         }
         checkState(newBufferOffset == 0 || newBufferOffset <= payloadEndOffset, "Invalid end of payload.");
@@ -229,8 +245,60 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         buffer.position(Math.max(newBufferOffset, payloadStartOffset));
     }
 
+    /**
+     * Temporary because we are planning to get the checksum from the latest checkpoint instead of having to
+     * read it from the channel. Might need something like this for the checkpoint log or tests though. But this
+     * is a warning to not depend on it because it might change soon.
+     *
+     * @return checksum
+     */
+    public int temporaryFindPreviousChecksumBeforePosition(long byteOffset) throws IOException {
+        long newSegment = byteOffset >> segmentShift;
+        int newBufferOffset = (int) (byteOffset & segmentMask);
+
+        if (newSegment == 0) {
+            throw new IOException("Invalid position " + byteOffset);
+        }
+
+        // Read previous if at boundary
+        if (newBufferOffset == 0 && newSegment != 1) {
+            newSegment = newSegment - 1;
+            newBufferOffset = segmentBlockSize;
+        }
+
+        if (newSegment != currentSegment) {
+            loadSegmentIntoBuffer(newSegment);
+        }
+
+        readAllEnvelopesUpToIncluding(newBufferOffset, true);
+        checkState(newBufferOffset == 0 || newBufferOffset <= payloadEndOffset, "Invalid end of payload.");
+
+        buffer.position(Math.max(newBufferOffset, payloadStartOffset));
+        return previousChecksum;
+    }
+
     @Override
     public void beginChecksum() {}
+
+    public void setPositionUnsafe(long byteOffset) throws IOException {
+        long newSegment = byteOffset >> segmentShift;
+        int newBufferOffset = (int) (byteOffset & segmentMask);
+        if (newSegment != currentSegment) {
+            loadSegmentIntoBuffer(newSegment);
+        }
+        buffer.position(newBufferOffset);
+        payloadType = null;
+        readEnvelopeHeader();
+    }
+
+    @Override
+    public void setCurrentPosition(long byteOffset) throws IOException {
+        requireNonNegative(byteOffset);
+
+        LogPositionMarker positionMarker = new LogPositionMarker();
+        positionMarker.mark(channel.getLogVersion(), byteOffset);
+        setLogPosition(positionMarker);
+    }
 
     @Override
     public int endChecksumAndValidate() {
@@ -315,6 +383,9 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
 
     @Override
     public byte getVersion() throws IOException {
+        if (checkForEndOfEnvelope()) {
+            readEnvelopeHeader();
+        }
         return payloadVersion;
     }
 
@@ -348,7 +419,7 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         }
     }
 
-    private void readAllEnvelopesUpToIncluding(int bufferOffset) throws IOException {
+    private void readAllEnvelopesUpToIncluding(int bufferOffset, boolean forceReadingEvenIfAtEnd) throws IOException {
         assert currentSegment != 0;
         payloadType = null;
         // We need to skip the first checksum chain check as we don't know the previous checksum.
@@ -358,7 +429,7 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
         payloadStartOffset = 0;
         payloadEndOffset = 0;
 
-        if (bufferOffset == buffer.limit()) {
+        if (bufferOffset == buffer.limit() && !forceReadingEvenIfAtEnd) {
             // Positioning at the end of the file
             buffer.position(bufferOffset);
             payloadStartOffset = bufferOffset;
@@ -389,10 +460,10 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
             }
         }
 
-        do {
+        while (payloadEndOffset < bufferOffset) {
             readEnvelopeHeader();
             skipToNextEnvelope();
-        } while (payloadEndOffset <= bufferOffset);
+        }
     }
 
     private void consumeStartOffsetEnvelopeIfPresent() throws IOException {
@@ -535,6 +606,8 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
                 // Must be the end of actual content in a longer pre-allocated file
                 // So we throw, to avoid the loop to keep going and just read a lot of zeroes
                 // until the end of the file.
+                // Position should be reset so we know where the actual content ended
+                buffer.position(buffer.position() - remaining - 5 /* checksum + type */);
                 throw ReadPastEndException.INSTANCE;
             }
         }
@@ -578,11 +651,22 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     }
 
     private void nextSegment() throws IOException {
-        int read = loadSegmentIntoBuffer(currentSegment + 1);
-        if (read == -1) {
+        int read;
+        if (channel.size() == channel.position()) {
+            // We are at the end, don't try to load in the next segment because that will change the position and
+            // it should be correct on calling getPosition if ReadPastEndException is thrown.
             goToNextFileOrThrow();
-            // Read the first data segment
             read = loadSegmentIntoBuffer(1);
+        } else {
+            read = loadSegmentIntoBuffer(currentSegment + 1);
+            if (read == -1) {
+                // Correct the file position for getPosition by backing the segment again.
+                // Necessary if the below go-to-next throws a ReadPastEndException.
+                currentSegment--;
+                goToNextFileOrThrow();
+                // Read the first data segment
+                read = loadSegmentIntoBuffer(1);
+            }
         }
 
         if (read < HEADER_SIZE) {

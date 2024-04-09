@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -262,8 +261,7 @@ class TransactionRangeDiagnosticsTest {
                     write.writeAll(ByteBuffer.wrap("Some text to mock a tx log file".getBytes()));
                 }
                 when(transactionLogs.extractHeader(version))
-                        .thenReturn(new LogHeader(
-                                LATEST_LOG_FORMAT,
+                        .thenReturn(LATEST_LOG_FORMAT.newHeader(
                                 version,
                                 headerTxId,
                                 new StoreId(12345, 56789, "engine-1", "format-1", 1, 1),

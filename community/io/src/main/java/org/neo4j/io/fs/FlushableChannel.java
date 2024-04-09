@@ -61,4 +61,7 @@ public interface FlushableChannel extends WritableChannel {
 
     @Override
     FlushableChannel put(byte[] value, int offset, int length) throws IOException;
+
+    @Override
+    FlushableChannel putVersion(byte version) throws IOException;
 }

@@ -29,7 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadUtils;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -91,14 +91,9 @@ public final class LogTestUtils {
         try (StoreChannel in = fileSystem.read(file)) {
             LogHeader logHeader = readLogHeader(in, true, file, INSTANCE);
             assert logHeader != null : "Looks like we tried to read a log header of an empty pre-allocated file.";
-            PhysicalLogVersionedStoreChannel inChannel = new PhysicalLogVersionedStoreChannel(
-                    in,
-                    logHeader.getLogVersion(),
-                    logHeader.getLogFormatVersion(),
-                    file,
-                    ChannelNativeAccessor.EMPTY_ACCESSOR,
-                    DatabaseTracer.NULL);
-            ReadableLogChannel inBuffer = new ReadAheadLogChannel(inChannel, INSTANCE);
+            var inChannel = new PhysicalLogVersionedStoreChannel(
+                    in, logHeader, file, ChannelNativeAccessor.EMPTY_ACCESSOR, DatabaseTracer.NULL);
+            ReadableLogChannel inBuffer = ReadAheadUtils.newChannel(inChannel, logHeader, INSTANCE);
             LogEntryReader entryReader =
                     new VersionAwareLogEntryReader(TestCommandReaderFactory.INSTANCE, LatestVersions.BINARY_VERSIONS);
 

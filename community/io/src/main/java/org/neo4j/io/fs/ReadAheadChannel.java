@@ -21,6 +21,7 @@ package org.neo4j.io.fs;
 
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
@@ -29,7 +30,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.zip.Checksum;
+import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * A buffering implementation of {@link ReadableChannel}. This class also allows subclasses to read content
@@ -66,6 +69,17 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
         this(channel, scopedBuffer.getBuffer(), scopedBuffer);
     }
 
+    public ReadAheadChannel(T channel, MemoryTracker memoryTracker) {
+        this(channel, new NativeScopedBuffer(DEFAULT_READ_AHEAD_SIZE, LITTLE_ENDIAN, memoryTracker));
+    }
+
+    /**
+     * @return the size of the read ahead buffer
+     */
+    public int readAheadBufferSize() {
+        return aheadBuffer.capacity();
+    }
+
     /**
      * This is the position within the buffered stream (and not the
      * underlying channel, which will generally be further ahead).
@@ -80,7 +94,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
 
     @Override
     public byte get() throws IOException {
-        ensureDataExists(1);
+        ensureDataExists(Byte.BYTES);
         return aheadBuffer.get();
     }
 

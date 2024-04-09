@@ -34,6 +34,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -116,7 +117,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 schemaLife.init();
 
                 boolean fullRecovery = true;
-                try (var transactionsToRecover = recoveryService.getCommandBatches(recoveryStartPosition);
+                try (CommandBatchCursor transactionsToRecover =
+                                recoveryService.getCommandBatches(recoveryStartPosition);
                         var recoveryVisitor =
                                 recoveryService.getRecoveryApplier(RECOVERY, contextFactory, RECOVERY_TAG)) {
                     while (fullRecovery && transactionsToRecover.next()) {

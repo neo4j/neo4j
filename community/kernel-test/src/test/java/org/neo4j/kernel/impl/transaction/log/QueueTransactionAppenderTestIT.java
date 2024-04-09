@@ -286,12 +286,9 @@ class QueueTransactionAppenderTestIT {
         private final Queue<EventType> events = new LinkedBlockingQueue<>();
 
         @Override
-        public void appendToLogFile(LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend) {
+        public void appendedBytes(long bytes) {
             events.add(EventType.FILE_APPEND);
         }
-
-        @Override
-        public void appendedBytes(long bytes) {}
 
         @Override
         public void close() {

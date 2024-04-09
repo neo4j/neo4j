@@ -99,14 +99,8 @@ class EnvelopeFuzzerTest {
 
         // Create first file and write header
         PhysicalLogVersionedStoreChannel storeChannel = storeChannel(0, preAllocate, rotationSize);
-        LogHeader logHeader = new LogHeader(
-                LogFormat.V9,
-                INITIAL_LOG_VERSION,
-                BASE_TX_ID,
-                StoreId.UNKNOWN,
-                segmentSize,
-                initialChecksum,
-                LATEST_KERNEL_VERSION);
+        LogHeader logHeader = LogFormat.V9.newHeader(
+                INITIAL_LOG_VERSION, BASE_TX_ID, StoreId.UNKNOWN, segmentSize, initialChecksum, LATEST_KERNEL_VERSION);
         writeLogHeader(storeChannel, logHeader, INSTANCE);
         storeChannel.position(segmentSize);
 
@@ -237,8 +231,7 @@ class EnvelopeFuzzerTest {
                 try (var event = logRotateEvents.beginLogRotate()) {
                     final var logChannel = storeChannel(currentVersion.incrementAndGet(), preAllocate, maxFileSize);
                     int previousChecksum = writeChannel.currentChecksum();
-                    LogHeader logHeader = new LogHeader(
-                            LogFormat.V9,
+                    LogHeader logHeader = LogFormat.V9.newHeader(
                             currentVersion.intValue(),
                             BASE_TX_ID,
                             StoreId.UNKNOWN,

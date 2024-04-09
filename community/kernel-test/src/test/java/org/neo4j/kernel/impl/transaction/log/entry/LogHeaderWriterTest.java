@@ -87,8 +87,7 @@ class LogHeaderWriterTest {
         // given
         final var file = testDirectory.file("WriteLogHeader");
         final var channel = fileSystem.write(file);
-        LogHeader logHeader = new LogHeader(
-                logFormat,
+        LogHeader logHeader = logFormat.newHeader(
                 expectedLogVersion,
                 expectedTxId,
                 expectedStoreId,

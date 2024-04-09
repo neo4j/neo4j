@@ -162,10 +162,11 @@ class LogHeaderReaderTest {
                     LogHeader expected(
                             long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
                         return new LogHeader(
-                                LogFormat.V6,
+                                LogFormat.V6.getVersionByte(),
                                 logVersion,
                                 previousCommittedTx,
                                 null,
+                                LogFormat.V6.getHeaderSize(),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
                                 null);
@@ -194,10 +195,11 @@ class LogHeaderReaderTest {
                     LogHeader expected(
                             long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
                         return new LogHeader(
-                                LogFormat.V7,
+                                LogFormat.V7.getVersionByte(),
                                 logVersion,
                                 previousCommittedTx,
                                 null,
+                                LogFormat.V7.getHeaderSize(),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,
                                 null);
@@ -227,8 +229,7 @@ class LogHeaderReaderTest {
                     @Override
                     LogHeader expected(
                             long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
-                        return new LogHeader(
-                                LogFormat.V8,
+                        return LogFormat.V8.newHeader(
                                 logVersion,
                                 previousCommittedTx,
                                 storeId,
@@ -259,14 +260,8 @@ class LogHeaderReaderTest {
                     @Override
                     LogHeader expected(
                             long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
-                        return new LogHeader(
-                                LogFormat.V9,
-                                logVersion,
-                                previousCommittedTx,
-                                storeId,
-                                segmentSize,
-                                checksum,
-                                LATEST_KERNEL_VERSION);
+                        return LogFormat.V9.newHeader(
+                                logVersion, previousCommittedTx, storeId, segmentSize, checksum, LATEST_KERNEL_VERSION);
                     }
                 });
     }

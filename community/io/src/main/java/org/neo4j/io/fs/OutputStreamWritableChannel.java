@@ -99,7 +99,7 @@ public class OutputStreamWritableChannel implements FlushableChannel {
     }
 
     @Override
-    public WritableChannel putVersion(byte version) throws IOException {
+    public OutputStreamWritableChannel putVersion(byte version) throws IOException {
         return put(version);
     }
 

@@ -19,13 +19,28 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.OptionalInt;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.PhysicalFlushableChannel;
-import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.io.fs.PhysicalFlushableLogChannel;
+import org.neo4j.io.fs.PhysicalLogChannel;
+import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushableLogPositionAwareChannel}. This
@@ -33,24 +48,35 @@ import org.neo4j.io.memory.ScopedBuffer;
  * decorated channel.
  */
 public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPositionAwareChannel {
-    private final PhysicalFlushableLogChannel channel;
+    private final PhysicalFlushableLogChannelProvider channelProvider;
     private LogVersionedStoreChannel logVersionedStoreChannel;
+    private PhysicalLogChannel checksumChannel;
+
+    @VisibleForTesting
+    public PhysicalFlushableLogPositionAwareChannel(
+            LogVersionedStoreChannel logVersionedStoreChannel, LogHeader logHeader, MemoryTracker memoryTracker)
+            throws IOException {
+        this(logVersionedStoreChannel, logHeader, new SingleLogFileChannelProvider(memoryTracker));
+    }
 
     public PhysicalFlushableLogPositionAwareChannel(
-            LogVersionedStoreChannel logVersionedStoreChannel, ScopedBuffer buffer) {
-        this.logVersionedStoreChannel = logVersionedStoreChannel;
-        this.channel = new PhysicalFlushableLogChannel(logVersionedStoreChannel, buffer);
+            LogVersionedStoreChannel logVersionedStoreChannel,
+            LogHeader logHeader,
+            PhysicalFlushableLogChannelProvider channelProvider)
+            throws IOException {
+        this.channelProvider = channelProvider;
+        setChannel(logVersionedStoreChannel, logHeader);
     }
 
     @Override
     public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) throws IOException {
-        positionMarker.mark(logVersionedStoreChannel.getLogVersion(), channel.position());
+        positionMarker.mark(logVersionedStoreChannel.getLogVersion(), checksumChannel.position());
         return positionMarker;
     }
 
     @Override
     public LogPosition getCurrentLogPosition() throws IOException {
-        return new LogPosition(logVersionedStoreChannel.getLogVersion(), channel.position());
+        return new LogPosition(logVersionedStoreChannel.getLogVersion(), checksumChannel.position());
     }
 
     @Override
@@ -64,83 +90,212 @@ public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPos
 
     @Override
     public Flushable prepareForFlush() throws IOException {
-        return channel.prepareForFlush();
+        return checksumChannel.prepareForFlush();
     }
 
     @Override
     public int putChecksum() throws IOException {
-        return channel.putChecksum();
+        return checksumChannel.putChecksum();
+    }
+
+    @Override
+    public void resetAppendedBytesCounter() {
+        checksumChannel.resetAppendedBytesCounter();
     }
 
     @Override
     public void beginChecksumForWriting() {
-        channel.beginChecksumForWriting();
+        checksumChannel.beginChecksumForWriting();
+    }
+
+    @Override
+    public long getAppendedBytes() {
+        return checksumChannel.getAppendedBytes();
     }
 
     @Override
     public FlushableChannel put(byte value) throws IOException {
-        return channel.put(value);
+        return checksumChannel.put(value);
     }
 
     @Override
     public FlushableChannel putShort(short value) throws IOException {
-        return channel.putShort(value);
+        return checksumChannel.putShort(value);
     }
 
     @Override
     public FlushableChannel putInt(int value) throws IOException {
-        return channel.putInt(value);
+        return checksumChannel.putInt(value);
     }
 
     @Override
     public FlushableChannel putLong(long value) throws IOException {
-        return channel.putLong(value);
+        return checksumChannel.putLong(value);
     }
 
     @Override
     public FlushableChannel putFloat(float value) throws IOException {
-        return channel.putFloat(value);
+        return checksumChannel.putFloat(value);
     }
 
     @Override
     public FlushableChannel putDouble(double value) throws IOException {
-        return channel.putDouble(value);
+        return checksumChannel.putDouble(value);
     }
 
     @Override
     public FlushableChannel put(byte[] value, int offset, int length) throws IOException {
-        return channel.put(value, offset, length);
+        return checksumChannel.put(value, offset, length);
     }
 
     @Override
     public FlushableChannel putAll(ByteBuffer src) throws IOException {
-        return channel.putAll(src);
+        return checksumChannel.putAll(src);
     }
 
     @Override
-    public WritableChannel putVersion(byte version) throws IOException {
-        return channel.putVersion(version);
+    public FlushableChannel putVersion(byte version) throws IOException {
+        return checksumChannel.putVersion(version);
     }
 
     @Override
     public boolean isOpen() {
-        return channel.isOpen();
+        return checksumChannel.isOpen();
     }
 
     @Override
     public void close() throws IOException {
-        channel.close();
+        checksumChannel.close();
     }
 
     @Override
     public int write(ByteBuffer buffer) throws IOException {
         int remaining = buffer.remaining();
-        logVersionedStoreChannel.writeAll(buffer);
+        checksumChannel.putAll(buffer);
         return remaining;
     }
 
-    public void setChannel(LogVersionedStoreChannel channel) {
-        this.logVersionedStoreChannel = channel;
-        this.channel.setChannel(channel);
+    public void setChannel(LogVersionedStoreChannel logChannel, LogHeader logHeader) throws IOException {
+        final var prevLogChannel = logVersionedStoreChannel;
+        logVersionedStoreChannel = logChannel;
+        if (channelProvider.isNewChannelRequired(prevLogChannel, logChannel)) {
+            checksumChannel = channelProvider.create(logChannel, logHeader);
+        } else {
+            checksumChannel.setChannel(logChannel);
+        }
+    }
+
+    /**
+     * @return the checksum for the channel (if supported)
+     */
+    public OptionalInt currentChecksum() {
+        if (checksumChannel instanceof EnvelopeWriteChannel writeChannel) {
+            return OptionalInt.of(writeChannel.currentChecksum());
+        } else {
+            return OptionalInt.empty();
+        }
+    }
+
+    public interface PhysicalFlushableLogChannelProvider {
+        /**
+         * @param currentChannel the current log file or <code>null</code> if the channel does not yet exist
+         * @param newLogChannel the new log file
+         * @return <code>true</code> if this provider should create a new {@link PhysicalFlushableLogChannel}
+         */
+        boolean isNewChannelRequired(LogVersionedStoreChannel currentChannel, LogVersionedStoreChannel newLogChannel);
+
+        /**
+         *
+         * @param logChannel the log channel to wrap as a {@link FlushableChannel}
+         * @param logHeader metadata about the log channel
+         * @return a new {@link PhysicalFlushableLogChannel}
+         */
+        PhysicalLogChannel create(LogVersionedStoreChannel logChannel, LogHeader logHeader) throws IOException;
+    }
+
+    public static class VersionedPhysicalFlushableLogChannelProvider implements PhysicalFlushableLogChannelProvider {
+
+        private final LogRotation logRotation;
+        private final DatabaseTracer databaseTracer;
+        private final ScopedBuffer buffer;
+
+        public VersionedPhysicalFlushableLogChannelProvider(
+                LogRotation logRotation, DatabaseTracer databaseTracer, ScopedBuffer buffer) {
+            this.logRotation = requireNonNull(logRotation);
+            this.databaseTracer = requireNonNull(databaseTracer);
+            this.buffer = requireNonNull(buffer);
+        }
+
+        @Override
+        public boolean isNewChannelRequired(
+                LogVersionedStoreChannel currentChannel, LogVersionedStoreChannel newLogChannel) {
+            return currentChannel == null
+                    || currentChannel.getLogFormatVersion().usesSegments()
+                            != newLogChannel.getLogFormatVersion().usesSegments();
+        }
+
+        @Override
+        public PhysicalLogChannel create(LogVersionedStoreChannel logChannel, LogHeader logHeader) throws IOException {
+            if (logChannel.getLogFormatVersion().usesSegments()) {
+                int previousChecksum = logHeader.getPreviousLogFileChecksum();
+
+                // Apparently not at the start of the file - must update to the correct checksum
+                long position = logChannel.position();
+                if (position != logHeader.getStartPosition().getByteOffset()) {
+                    // Providing our own buffer since we don't want to close the read channel - which would close the
+                    // underlying channel.
+                    try (var buffer = new NativeScopedBuffer(
+                            logHeader.getSegmentBlockSize(), LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
+                        EnvelopeReadChannel envelopeReadChannel = new EnvelopeReadChannel(
+                                logChannel,
+                                logHeader.getSegmentBlockSize(),
+                                LogVersionBridge.NO_MORE_CHANNELS,
+                                true,
+                                buffer);
+                        previousChecksum = envelopeReadChannel.temporaryFindPreviousChecksumBeforePosition(position);
+                        logChannel.position(position);
+                    }
+                }
+
+                return new EnvelopeWriteChannel(
+                        logChannel,
+                        buffer,
+                        logHeader.getSegmentBlockSize(),
+                        previousChecksum,
+                        EnvelopeWriteChannel
+                                .START_INDEX, // Not correct index from cluster perspective -  not needed yet.
+                        databaseTracer,
+                        logRotation);
+            } else {
+                return new PhysicalFlushableLogChannel(logChannel, buffer);
+            }
+        }
+    }
+
+    private record SingleLogFileChannelProvider(MemoryTracker memoryTracker)
+            implements PhysicalFlushableLogChannelProvider {
+        @Override
+        public boolean isNewChannelRequired(
+                LogVersionedStoreChannel currentChannel, LogVersionedStoreChannel newLogChannel) {
+            return currentChannel == null;
+        }
+
+        @Override
+        public PhysicalLogChannel create(LogVersionedStoreChannel logChannel, LogHeader logHeader) throws IOException {
+            if (logChannel.getLogFormatVersion().usesSegments()) {
+                return new EnvelopeWriteChannel(
+                        logChannel,
+                        new HeapScopedBuffer(logHeader.getSegmentBlockSize(), ByteOrder.LITTLE_ENDIAN, memoryTracker),
+                        logHeader.getSegmentBlockSize(),
+                        logHeader.getPreviousLogFileChecksum(),
+                        EnvelopeWriteChannel
+                                .START_INDEX, // Not correct index from cluster perspective -  not needed yet.
+                        DatabaseTracer.NULL,
+                        LogRotation.NO_ROTATION);
+            } else {
+                return new PhysicalFlushableLogChannel(
+                        logChannel, new HeapScopedBuffer((int) kibiBytes(128), ByteOrder.LITTLE_ENDIAN, memoryTracker));
+            }
+        }
     }
 }

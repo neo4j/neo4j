@@ -41,25 +41,6 @@ public class LogHeader {
     private final int previousLogFileChecksum;
     private final KernelVersion kernelVersion;
 
-    public LogHeader(
-            LogFormat logFormat,
-            long logVersion,
-            long lastCommittedTxId,
-            StoreId storeId,
-            int segmentBlockSize,
-            int previousLogFileChecksum,
-            KernelVersion kernelVersion) {
-        this(
-                logFormat.getVersionByte(),
-                logVersion,
-                lastCommittedTxId,
-                storeId,
-                logFormat.getHeaderSize(),
-                segmentBlockSize,
-                previousLogFileChecksum,
-                kernelVersion);
-    }
-
     LogHeader(
             byte logFormatVersion,
             long logVersion,
