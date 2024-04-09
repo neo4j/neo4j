@@ -102,16 +102,16 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     // In some situations we're not able to enforce the checksum chain, like when we reposition
     // the channel position as we don't know the checksum of the envelope before it.
     private boolean enforceChecksumChain;
-    private int previousChecksum;
-    private long currentSegment;
-    private EnvelopeType payloadType;
-    private long entryIndex;
+    protected int previousChecksum;
+    protected long currentSegment;
+    protected EnvelopeType payloadType;
+    protected long entryIndex;
     private byte payloadVersion;
-    private int payloadStartOffset;
-    private int payloadEndOffset;
+    protected int payloadStartOffset;
+    protected int payloadEndOffset;
     private volatile boolean closed;
 
-    EnvelopeReadChannel(
+    protected EnvelopeReadChannel(
             LogVersionedStoreChannel startingChannel,
             int segmentBlockSize,
             LogVersionBridge bridge,
@@ -569,7 +569,7 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
                 + ". Expecting only zeros at this point. Found: " + Arrays.toString(excess));
     }
 
-    private void readEnvelopeHeader() throws IOException {
+    protected void readEnvelopeHeader() throws IOException {
         int nextEnvelopeChecksum;
         EnvelopeType nextEnvelopeType;
 
