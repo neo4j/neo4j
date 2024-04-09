@@ -80,7 +80,7 @@ public class DefaultTopologyInfoService implements TopologyInfoService {
                 address(HttpsConnector.enabled, HttpsConnector.advertised_address),
                 Set.of(),
                 ServerDetails.State.ENABLED,
-                ServerDetails.Health.AVAILABLE,
+                ServerDetails.RunningState.AVAILABLE,
                 hostedDatabases,
                 desiredDatabases,
                 Set.of(),

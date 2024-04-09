@@ -165,7 +165,7 @@ class DefaultTopologyInfoServiceTest {
         assertThat(serverDetails.boltAddress()).hasValue(boltAddress);
         assertThat(serverDetails.httpAddress()).isEmpty();
         assertThat(serverDetails.httpsAddress()).isEmpty();
-        assertThat(serverDetails.health()).isEqualTo(ServerDetails.Health.AVAILABLE);
+        assertThat(serverDetails.runningState()).isEqualTo(ServerDetails.RunningState.AVAILABLE);
         assertThat(serverDetails.state()).isEqualTo(ServerDetails.State.ENABLED);
         assertThat(serverDetails.modeConstraint()).isEqualTo(InstanceModeConstraint.NONE);
         assertThat(serverDetails.tags()).isEmpty();

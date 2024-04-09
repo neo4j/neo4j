@@ -34,14 +34,14 @@ public record ServerDetails(
         Optional<SocketAddress> httpsAddress,
         Set<String> tags,
         State state,
-        Health health,
+        RunningState runningState,
         Set<String> hostedDatabases,
         Set<String> desiredDatabases,
         Set<String> allowedDatabases,
         Set<String> deniedDatabases,
         InstanceModeConstraint modeConstraint,
         Optional<String> neo4jVersion) {
-    public enum Health {
+    public enum RunningState {
         /**
          * Present in Discovery Service
          */
