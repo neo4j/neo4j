@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
+import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType
@@ -162,6 +163,16 @@ case class IndexDescriptor(
   maybeKernelIndexCapability: Option[org.neo4j.internal.schema.IndexCapability] = None,
   isUnique: Boolean = false
 ) {
+
+  // Assert that the index cannot lead to wrong results because of read-committed anomalies.
+  (orderCapability, valueCapability) match {
+    case (IndexOrderCapability.BOTH, x) if x != CanGetValue =>
+      throw new IllegalStateException(
+        "Indexes that support ordering must also support returning values. Otherwise queries with 'ORDER BY' might return wrong results under concurrent updates."
+      )
+    case _ =>
+  }
+
   val isComposite: Boolean = properties.length > 1
 
   def isQuerySupported(indexQueryType: IndexQueryType, cypherType: CypherType): Boolean = {
