@@ -17,6 +17,8 @@
 
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
+import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
@@ -25,6 +27,8 @@ import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DeallocateServers
+import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
@@ -41,7 +45,11 @@ import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.EnableServer
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
+import org.neo4j.cypher.internal.ast.HomeDatabaseScope
+import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.NamedDatabasesScope
+import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
@@ -125,22 +133,6 @@ trait DdlBuilder extends CypherParserListener {
     ctx: CypherParser.CommandContext
   ): Unit = {
     ctx.ast = lastChild[AstRuleCtx](ctx) match {
-      case c: CypherParser.CreateCommandContext =>
-        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
-      case c: CypherParser.DropCommandContext =>
-        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
-      case c: CypherParser.AlterCommandContext =>
-        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
-      case c: CypherParser.StartDatabaseContext =>
-        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
-      case c: CypherParser.StopDatabaseContext =>
-        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
-      case c: CypherParser.RenameCommandContext =>
-        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
-      case c: CypherParser.EnableServerCommandContext =>
-        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
-      case c: CypherParser.AllocationCommandContext =>
-        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
       case c: CypherParser.ShowCommandContext =>
         c.ast match {
           case sQ: SingleQuery =>
@@ -157,7 +149,8 @@ trait DdlBuilder extends CypherParserListener {
         } else {
           SingleQuery(c.ast[Seq[Clause]]())(pos(ctx))
         }
-      case _ => null
+      case c =>
+        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
     }
   }
 
@@ -371,14 +364,6 @@ trait DdlBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitGrantCommand(
-    ctx: CypherParser.GrantCommandContext
-  ): Unit = {}
-
-  final override def exitRevokeCommand(
-    ctx: CypherParser.RevokeCommandContext
-  ): Unit = {}
-
   final override def exitEnableServerCommand(
     ctx: CypherParser.EnableServerCommandContext
   ): Unit = {
@@ -447,11 +432,31 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitDatabaseScope(
     ctx: CypherParser.DatabaseScopeContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = if (ctx.DEFAULT() != null) {
+      DefaultDatabaseScope()(pos(ctx))
+    } else if (ctx.HOME() != null) {
+      HomeDatabaseScope()(pos(ctx))
+    } else if (ctx.TIMES() != null) {
+      AllDatabasesScope()(pos(ctx))
+    } else {
+      NamedDatabasesScope(ctx.symbolicAliasNameList().ast())(pos(ctx))
+    }
+  }
 
   final override def exitGraphScope(
     ctx: CypherParser.GraphScopeContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = if (ctx.DEFAULT() != null) {
+      DefaultGraphScope()(pos(ctx))
+    } else if (ctx.HOME() != null) {
+      HomeGraphScope()(pos(ctx))
+    } else if (ctx.TIMES() != null) {
+      AllGraphsScope()(pos(ctx))
+    } else {
+      NamedGraphsScope(ctx.symbolicAliasNameList().ast())(pos(ctx))
+    }
+  }
 
   final override def exitCreateAlias(
     ctx: CypherParser.CreateAliasContext
@@ -467,7 +472,9 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitSymbolicAliasNameList(
     ctx: CypherParser.SymbolicAliasNameListContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = astSeq[DatabaseName](ctx.symbolicAliasNameOrParameter())
+  }
 
   final override def exitSymbolicAliasNameOrParameter(
     ctx: CypherParser.SymbolicAliasNameOrParameterContext
@@ -537,14 +544,6 @@ trait DdlBuilder extends CypherParserListener {
     ctx: CypherParser.RenameRoleContext
   ): Unit = {}
 
-  final override def exitGrantRole(
-    ctx: CypherParser.GrantRoleContext
-  ): Unit = {}
-
-  final override def exitRevokeRole(
-    ctx: CypherParser.RevokeRoleContext
-  ): Unit = {}
-
   final override def exitCreateUser(
     ctx: CypherParser.CreateUserContext
   ): Unit = {}
@@ -597,133 +596,11 @@ trait DdlBuilder extends CypherParserListener {
     ctx.ast = SetHomeDatabaseAction(dbName)
   }
 
-  final override def exitGrantRoleManagement(
-    ctx: CypherParser.GrantRoleManagementContext
-  ): Unit = {}
-
-  final override def exitRevokeRoleManagement(
-    ctx: CypherParser.RevokeRoleManagementContext
-  ): Unit = {}
-
-  final override def exitRoleManagementPrivilege(
-    ctx: CypherParser.RoleManagementPrivilegeContext
-  ): Unit = {}
-
-  final override def exitGrantPrivilege(
-    ctx: CypherParser.GrantPrivilegeContext
-  ): Unit = {}
-
-  final override def exitDenyPrivilege(
-    ctx: CypherParser.DenyPrivilegeContext
-  ): Unit = {}
-
-  final override def exitRevokePrivilege(
-    ctx: CypherParser.RevokePrivilegeContext
-  ): Unit = {}
-
-  final override def exitPrivilege(
-    ctx: CypherParser.PrivilegeContext
-  ): Unit = {}
-
-  final override def exitShowPrivilege(
-    ctx: CypherParser.ShowPrivilegeContext
-  ): Unit = {}
-
-  final override def exitAllPrivilege(
-    ctx: CypherParser.AllPrivilegeContext
-  ): Unit = {}
-
-  final override def exitAllPrivilegeType(
-    ctx: CypherParser.AllPrivilegeTypeContext
-  ): Unit = {}
-
-  final override def exitAllPrivilegeTarget(
-    ctx: CypherParser.AllPrivilegeTargetContext
-  ): Unit = {}
-
-  final override def exitCreatePrivilege(
-    ctx: CypherParser.CreatePrivilegeContext
-  ): Unit = {}
-
-  final override def exitDropPrivilege(
-    ctx: CypherParser.DropPrivilegeContext
-  ): Unit = {}
-
-  final override def exitLoadPrivilege(
-    ctx: CypherParser.LoadPrivilegeContext
-  ): Unit = {}
-
-  final override def exitSetPrivilege(
-    ctx: CypherParser.SetPrivilegeContext
-  ): Unit = {}
-
-  final override def exitRemovePrivilege(
-    ctx: CypherParser.RemovePrivilegeContext
-  ): Unit = {}
-
-  final override def exitWritePrivilege(
-    ctx: CypherParser.WritePrivilegeContext
-  ): Unit = {}
-
-  final override def exitDatabasePrivilege(
-    ctx: CypherParser.DatabasePrivilegeContext
-  ): Unit = {}
-
-  final override def exitDbmsPrivilege(
-    ctx: CypherParser.DbmsPrivilegeContext
-  ): Unit = {}
-
-  final override def exitExecuteFunctionQualifier(
-    ctx: CypherParser.ExecuteFunctionQualifierContext
-  ): Unit = {}
-
-  final override def exitExecuteProcedureQualifier(
-    ctx: CypherParser.ExecuteProcedureQualifierContext
-  ): Unit = {}
-
-  final override def exitSettingQualifier(
-    ctx: CypherParser.SettingQualifierContext
-  ): Unit = {}
-
-  final override def exitQualifiedGraphPrivilegesWithProperty(
-    ctx: CypherParser.QualifiedGraphPrivilegesWithPropertyContext
-  ): Unit = {}
-
-  final override def exitQualifiedGraphPrivileges(
-    ctx: CypherParser.QualifiedGraphPrivilegesContext
-  ): Unit = {}
-
-  final override def exitGlobs(
-    ctx: CypherParser.GlobsContext
-  ): Unit = {}
-
-  final override def exitGlob(
-    ctx: CypherParser.GlobContext
-  ): Unit = {}
-
-  final override def exitGlobRecursive(
-    ctx: CypherParser.GlobRecursiveContext
-  ): Unit = {}
-
-  final override def exitGlobPart(
-    ctx: CypherParser.GlobPartContext
-  ): Unit = {}
-
-  final override def exitLabelResource(
-    ctx: CypherParser.LabelResourceContext
-  ): Unit = {}
-
-  final override def exitPropertyResource(
-    ctx: CypherParser.PropertyResourceContext
-  ): Unit = {}
-
-  final override def exitGraphQualifier(
-    ctx: CypherParser.GraphQualifierContext
-  ): Unit = {}
-
   final override def exitSymbolicNameOrStringParameterList(
     ctx: CypherParser.SymbolicNameOrStringParameterListContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = astSeq[Expression](ctx.commandNameExpression())
+  }
 
   final override def exitCommandNameExpression(
     ctx: CypherParser.CommandNameExpressionContext

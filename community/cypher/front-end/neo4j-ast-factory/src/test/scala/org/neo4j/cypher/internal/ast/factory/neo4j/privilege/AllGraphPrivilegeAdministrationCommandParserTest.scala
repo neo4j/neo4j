@@ -36,159 +36,159 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // All versions of ALL [[GRAPH] PRIVILEGES] should be allowed
 
           test(s"$verb$immutableString ALL ON GRAPH foo $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString ALL PRIVILEGES ON GRAPH foo $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Home graph should be allowed
 
           test(s"$verb$immutableString ALL ON HOME GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.HomeGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString ALL PRIVILEGES ON HOME GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.HomeGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON HOME GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.HomeGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Default graph should be allowed
 
           test(s"$verb$immutableString ALL ON DEFAULT GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.DefaultGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString ALL PRIVILEGES ON DEFAULT GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.DefaultGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DEFAULT GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.DefaultGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Multiple graphs should be allowed
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS * $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.AllGraphsScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS foo,baz $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFooBaz)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Multiple roles should be allowed
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS foo $preposition role1, role2") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole1, literalRole2),
               immutable
-            ))
+            )(pos))
           }
 
           // Parameter values should be allowed
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH $$foo $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeParamFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo $preposition $$role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(paramRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Qualifier or resource should not be supported
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo NODE A $preposition role") {
-            failsToParse[Statements]
+            failsParsing[Statements]
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo ELEMENTS * $preposition role") {
-            failsToParse[Statements]
+            failsParsing[Statements]
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES {prop} ON GRAPH foo $preposition role") {
-            failsToParse[Statements]
+            failsParsing[Statements]
           }
 
           // Invalid syntax
 
           test(s"$verb$immutableString ALL GRAPH ON GRAPH foo $preposition role") {
-            failsToParse[Statements]
+            failsParsing[Statements]
           }
 
           test(s"$verb$immutableString GRAPH ON GRAPH foo $preposition role") {

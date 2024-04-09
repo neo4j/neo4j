@@ -104,7 +104,6 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_labelType -> exitLabelType((CypherParser.LabelTypeContext) ctx);
             case CypherParser.RULE_relType -> exitRelType((CypherParser.RelTypeContext) ctx);
             case CypherParser.RULE_labelOrRelType -> exitLabelOrRelType((CypherParser.LabelOrRelTypeContext) ctx);
-            case CypherParser.RULE_labelOrRelTypes -> exitLabelOrRelTypes((CypherParser.LabelOrRelTypesContext) ctx);
             case CypherParser.RULE_properties -> exitProperties((CypherParser.PropertiesContext) ctx);
             case CypherParser.RULE_relationshipPattern -> exitRelationshipPattern(
                     (CypherParser.RelationshipPatternContext) ctx);
@@ -272,8 +271,6 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
                     (CypherParser.LookupIndexRelPatternContext) ctx);
             case CypherParser.RULE_dropIndex -> exitDropIndex((CypherParser.DropIndexContext) ctx);
             case CypherParser.RULE_propertyList -> exitPropertyList((CypherParser.PropertyListContext) ctx);
-            case CypherParser.RULE_grantCommand -> exitGrantCommand((CypherParser.GrantCommandContext) ctx);
-            case CypherParser.RULE_revokeCommand -> exitRevokeCommand((CypherParser.RevokeCommandContext) ctx);
             case CypherParser.RULE_enableServerCommand -> exitEnableServerCommand(
                     (CypherParser.EnableServerCommandContext) ctx);
             case CypherParser.RULE_alterServer -> exitAlterServer((CypherParser.AlterServerContext) ctx);
@@ -290,8 +287,7 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_dropRole -> exitDropRole((CypherParser.DropRoleContext) ctx);
             case CypherParser.RULE_renameRole -> exitRenameRole((CypherParser.RenameRoleContext) ctx);
             case CypherParser.RULE_showRoles -> exitShowRoles((CypherParser.ShowRolesContext) ctx);
-            case CypherParser.RULE_grantRole -> exitGrantRole((CypherParser.GrantRoleContext) ctx);
-            case CypherParser.RULE_revokeRole -> exitRevokeRole((CypherParser.RevokeRoleContext) ctx);
+            case CypherParser.RULE_roleToken -> exitRoleToken((CypherParser.RoleTokenContext) ctx);
             case CypherParser.RULE_createUser -> exitCreateUser((CypherParser.CreateUserContext) ctx);
             case CypherParser.RULE_dropUser -> exitDropUser((CypherParser.DropUserContext) ctx);
             case CypherParser.RULE_renameUser -> exitRenameUser((CypherParser.RenameUserContext) ctx);
@@ -313,30 +309,48 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
                     (CypherParser.ShowRolePrivilegesContext) ctx);
             case CypherParser.RULE_showUserPrivileges -> exitShowUserPrivileges(
                     (CypherParser.ShowUserPrivilegesContext) ctx);
-            case CypherParser.RULE_grantRoleManagement -> exitGrantRoleManagement(
-                    (CypherParser.GrantRoleManagementContext) ctx);
-            case CypherParser.RULE_revokeRoleManagement -> exitRevokeRoleManagement(
-                    (CypherParser.RevokeRoleManagementContext) ctx);
-            case CypherParser.RULE_roleManagementPrivilege -> exitRoleManagementPrivilege(
-                    (CypherParser.RoleManagementPrivilegeContext) ctx);
-            case CypherParser.RULE_grantPrivilege -> exitGrantPrivilege((CypherParser.GrantPrivilegeContext) ctx);
-            case CypherParser.RULE_denyPrivilege -> exitDenyPrivilege((CypherParser.DenyPrivilegeContext) ctx);
-            case CypherParser.RULE_revokePrivilege -> exitRevokePrivilege((CypherParser.RevokePrivilegeContext) ctx);
+            case CypherParser.RULE_privilegeAsCommand -> exitPrivilegeAsCommand(
+                    (CypherParser.PrivilegeAsCommandContext) ctx);
+            case CypherParser.RULE_privilegeToken -> exitPrivilegeToken((CypherParser.PrivilegeTokenContext) ctx);
+            case CypherParser.RULE_grantCommand -> exitGrantCommand((CypherParser.GrantCommandContext) ctx);
+            case CypherParser.RULE_grantRole -> exitGrantRole((CypherParser.GrantRoleContext) ctx);
+            case CypherParser.RULE_denyCommand -> exitDenyCommand((CypherParser.DenyCommandContext) ctx);
+            case CypherParser.RULE_revokeCommand -> exitRevokeCommand((CypherParser.RevokeCommandContext) ctx);
+            case CypherParser.RULE_revokeRole -> exitRevokeRole((CypherParser.RevokeRoleContext) ctx);
             case CypherParser.RULE_privilege -> exitPrivilege((CypherParser.PrivilegeContext) ctx);
-            case CypherParser.RULE_allPrivilege -> exitAllPrivilege((CypherParser.AllPrivilegeContext) ctx);
-            case CypherParser.RULE_allPrivilegeType -> exitAllPrivilegeType((CypherParser.AllPrivilegeTypeContext) ctx);
-            case CypherParser.RULE_allPrivilegeTarget -> exitAllPrivilegeTarget(
-                    (CypherParser.AllPrivilegeTargetContext) ctx);
+            case CypherParser.RULE_allDatabasePrivilege -> exitAllDatabasePrivilege(
+                    (CypherParser.AllDatabasePrivilegeContext) ctx);
+            case CypherParser.RULE_allGraphPrivilege -> exitAllGraphPrivilege(
+                    (CypherParser.AllGraphPrivilegeContext) ctx);
+            case CypherParser.RULE_allDbmsPrivilege -> exitAllDbmsPrivilege((CypherParser.AllDbmsPrivilegeContext) ctx);
             case CypherParser.RULE_createPrivilege -> exitCreatePrivilege((CypherParser.CreatePrivilegeContext) ctx);
+            case CypherParser.RULE_createPrivilegeForDatabase -> exitCreatePrivilegeForDatabase(
+                    (CypherParser.CreatePrivilegeForDatabaseContext) ctx);
+            case CypherParser.RULE_createNodePrivilegeToken -> exitCreateNodePrivilegeToken(
+                    (CypherParser.CreateNodePrivilegeTokenContext) ctx);
+            case CypherParser.RULE_createRelPrivilegeToken -> exitCreateRelPrivilegeToken(
+                    (CypherParser.CreateRelPrivilegeTokenContext) ctx);
+            case CypherParser.RULE_createPropertyPrivilegeToken -> exitCreatePropertyPrivilegeToken(
+                    (CypherParser.CreatePropertyPrivilegeTokenContext) ctx);
+            case CypherParser.RULE_actionForDBMS -> exitActionForDBMS((CypherParser.ActionForDBMSContext) ctx);
             case CypherParser.RULE_dropPrivilege -> exitDropPrivilege((CypherParser.DropPrivilegeContext) ctx);
             case CypherParser.RULE_loadPrivilege -> exitLoadPrivilege((CypherParser.LoadPrivilegeContext) ctx);
             case CypherParser.RULE_showPrivilege -> exitShowPrivilege((CypherParser.ShowPrivilegeContext) ctx);
             case CypherParser.RULE_setPrivilege -> exitSetPrivilege((CypherParser.SetPrivilegeContext) ctx);
+            case CypherParser.RULE_passwordToken -> exitPasswordToken((CypherParser.PasswordTokenContext) ctx);
             case CypherParser.RULE_removePrivilege -> exitRemovePrivilege((CypherParser.RemovePrivilegeContext) ctx);
             case CypherParser.RULE_writePrivilege -> exitWritePrivilege((CypherParser.WritePrivilegeContext) ctx);
             case CypherParser.RULE_databasePrivilege -> exitDatabasePrivilege(
                     (CypherParser.DatabasePrivilegeContext) ctx);
             case CypherParser.RULE_dbmsPrivilege -> exitDbmsPrivilege((CypherParser.DbmsPrivilegeContext) ctx);
+            case CypherParser.RULE_dbmsPrivilegeExecute -> exitDbmsPrivilegeExecute(
+                    (CypherParser.DbmsPrivilegeExecuteContext) ctx);
+            case CypherParser.RULE_adminToken -> exitAdminToken((CypherParser.AdminTokenContext) ctx);
+            case CypherParser.RULE_procedureToken -> exitProcedureToken((CypherParser.ProcedureTokenContext) ctx);
+            case CypherParser.RULE_indexToken -> exitIndexToken((CypherParser.IndexTokenContext) ctx);
+            case CypherParser.RULE_constraintToken -> exitConstraintToken((CypherParser.ConstraintTokenContext) ctx);
+            case CypherParser.RULE_transactionToken -> exitTransactionToken((CypherParser.TransactionTokenContext) ctx);
+            case CypherParser.RULE_userQualifier -> exitUserQualifier((CypherParser.UserQualifierContext) ctx);
             case CypherParser.RULE_executeFunctionQualifier -> exitExecuteFunctionQualifier(
                     (CypherParser.ExecuteFunctionQualifierContext) ctx);
             case CypherParser.RULE_executeProcedureQualifier -> exitExecuteProcedureQualifier(
@@ -347,9 +361,17 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
                     (CypherParser.QualifiedGraphPrivilegesWithPropertyContext) ctx);
             case CypherParser.RULE_qualifiedGraphPrivileges -> exitQualifiedGraphPrivileges(
                     (CypherParser.QualifiedGraphPrivilegesContext) ctx);
-            case CypherParser.RULE_labelResource -> exitLabelResource((CypherParser.LabelResourceContext) ctx);
-            case CypherParser.RULE_propertyResource -> exitPropertyResource((CypherParser.PropertyResourceContext) ctx);
+            case CypherParser.RULE_labelsResource -> exitLabelsResource((CypherParser.LabelsResourceContext) ctx);
+            case CypherParser.RULE_propertiesResource -> exitPropertiesResource(
+                    (CypherParser.PropertiesResourceContext) ctx);
+            case CypherParser.RULE_nonEmptyStringList -> exitNonEmptyStringList(
+                    (CypherParser.NonEmptyStringListContext) ctx);
             case CypherParser.RULE_graphQualifier -> exitGraphQualifier((CypherParser.GraphQualifierContext) ctx);
+            case CypherParser.RULE_graphQualifierToken -> exitGraphQualifierToken(
+                    (CypherParser.GraphQualifierTokenContext) ctx);
+            case CypherParser.RULE_relToken -> exitRelToken((CypherParser.RelTokenContext) ctx);
+            case CypherParser.RULE_elementToken -> exitElementToken((CypherParser.ElementTokenContext) ctx);
+            case CypherParser.RULE_nodeToken -> exitNodeToken((CypherParser.NodeTokenContext) ctx);
             case CypherParser.RULE_createCompositeDatabase -> exitCreateCompositeDatabase(
                     (CypherParser.CreateCompositeDatabaseContext) ctx);
             case CypherParser.RULE_createDatabase -> exitCreateDatabase((CypherParser.CreateDatabaseContext) ctx);

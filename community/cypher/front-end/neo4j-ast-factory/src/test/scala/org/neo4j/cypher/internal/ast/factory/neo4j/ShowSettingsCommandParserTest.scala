@@ -17,21 +17,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.OrderBy
-import org.neo4j.cypher.internal.ast.ShowAndTerminateColumn
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
-import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.ExplicitParameter
-import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.UnknownSize
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CTBoolean
-import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.exceptions.SyntaxException
 
@@ -141,6 +133,20 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
         eq(
           varFor("name"),
           parameter("name", CTAny)
+        )
+      )),
+      List.empty,
+      yieldAll = false
+    )(defaultPos)))
+  }
+
+  test("SHOW SETTINGS WHERE (`name`) = ($`s`)") {
+    assertAst(singleQuery(ShowSettingsClause(
+      Left(List.empty),
+      Some(where(
+        eq(
+          varFor("name"),
+          parameter("s", CTAny)
         )
       )),
       List.empty,
@@ -651,30 +657,4 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
     failsParsing[Statements]
   }
 
-  test("SHOW SETTINGS WHERE (`name`) = ($`s`)") {
-    parsesTo[Statements](Statements(List(SingleQuery(List(ShowSettingsClause(
-      List(
-        ShowAndTerminateColumn("name", CTString),
-        ShowAndTerminateColumn("value", CTString),
-        ShowAndTerminateColumn("isDynamic", CTBoolean),
-        ShowAndTerminateColumn("defaultValue", CTString),
-        ShowAndTerminateColumn("description", CTString)
-      ),
-      List(
-        ShowAndTerminateColumn("name", CTString),
-        ShowAndTerminateColumn("value", CTString),
-        ShowAndTerminateColumn("isDynamic", CTBoolean),
-        ShowAndTerminateColumn("defaultValue", CTString),
-        ShowAndTerminateColumn("description", CTString),
-        ShowAndTerminateColumn("startupValue", CTString),
-        ShowAndTerminateColumn("isExplicitlySet", CTBoolean),
-        ShowAndTerminateColumn("validValues", CTString),
-        ShowAndTerminateColumn("isDeprecated", CTBoolean)
-      ),
-      Left(List()),
-      Some(Where(Equals(Variable("name")(pos), ExplicitParameter("s", CTAny, UnknownSize)(pos))(pos))(pos)),
-      List(),
-      false
-    )(pos)))(pos))))
-  }
 }

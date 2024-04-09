@@ -39,125 +39,125 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
             immutable =>
               val immutableString = immutableOrEmpty(immutable)
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo ELEMENTS A $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(elemQualifierA),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo NODE A $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(labelQualifierA),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo RELATIONSHIPS * $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(ast.RelationshipAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               // Home graph
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition role1, role2") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole1, literalRole2),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition $$role1, role2") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(paramRole1, literalRole2),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH RELATIONSHIPS * $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.RelationshipAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               // Both Home and * should not parse
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH * $preposition role") {
-                failsToParse[Statements]
+                failsParsing[Statements]
               }
 
               // Default graph
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition role1, role2") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole1, literalRole2),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition $$role1, role2") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(paramRole1, literalRole2),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH RELATIONSHIPS * $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.RelationshipAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               // Both Default and * should not parse
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH * $preposition role") {
-                failsToParse[Statements]
+                failsParsing[Statements]
               }
 
               test(s"$verb$immutableString $createOrDelete ON DATABASE blah $preposition role") {

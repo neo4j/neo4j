@@ -129,10 +129,6 @@ trait LabelExpressionBuilder extends CypherParserListener {
     ctx.ast = LabelOrRelTypeName(ctxChild(ctx, 1).ast())(pos(ctx))
   }
 
-  final override def exitLabelOrRelTypes(
-    ctx: CypherParser.LabelOrRelTypesContext
-  ): Unit = {}
-
   final override def exitLabelExpression(ctx: CypherParser.LabelExpressionContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
   }

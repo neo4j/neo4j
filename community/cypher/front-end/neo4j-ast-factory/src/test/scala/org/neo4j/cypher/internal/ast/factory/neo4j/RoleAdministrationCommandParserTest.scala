@@ -692,13 +692,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
               case _      => """Invalid input '': expected a parameter or an identifier"""
             }
 
-            // TODO Loss of information on REVOKE case
+            // TODO Loss of information on ROLE case
             val antlrExpected = roleKeyword match {
-              case "ROLE" => if (verb.equals("REVOKE")) {
-                  """No viable alternative"""
-                } else {
-                  """Mismatched input '': expected 'MANAGEMENT', an identifier, '$'""".stripMargin
-                }
+              case "ROLE" =>
+                """No viable alternative"""
               case _ =>
                 """Mismatched input '': expected an identifier, '$'""".stripMargin
             }
@@ -799,7 +796,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           |  "CREATE"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'ROLES': expected 'IMMUTABLE', 'ALL', 'CREATE', 'DROP', 'LOAD', 'SHOW', 'SET', 'REMOVE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'TRANSACTION', 'TERMINATE', 'NAME', 'ALTER', 'ASSIGN', 'COMPOSITE', 'DATABASE', 'ALIAS', 'EXECUTE', 'PRIVILEGE', 'RENAME', 'SERVER', 'USER', 'IMPERSONATE', 'WRITE', 'DELETE', 'MERGE', 'TRAVERSE', 'READ', 'MATCH', 'ROLE' (line 1, column 6 (offset: 5))
+        """Mismatched input 'ROLES': expected 'IMMUTABLE', 'ALL', 'CREATE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'NAME', 'TRANSACTION', 'TERMINATE', 'ALTER', 'ASSIGN', 'ALIAS', 'COMPOSITE', 'DATABASE', 'PRIVILEGE', 'ROLE', 'SERVER', 'USER', 'EXECUTE', 'RENAME', 'IMPERSONATE', 'DROP', 'LOAD', 'DELETE', 'MERGE', 'TRAVERSE', 'MATCH', 'READ', 'REMOVE', 'SET', 'SHOW', 'WRITE' (line 1, column 6 (offset: 5))
           |"DENY ROLES foo TO abc"
           |      ^""".stripMargin
       ))

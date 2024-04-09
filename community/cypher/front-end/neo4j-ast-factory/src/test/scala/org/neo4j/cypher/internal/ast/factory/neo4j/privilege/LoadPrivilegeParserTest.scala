@@ -37,78 +37,78 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
           val immutableString = immutableOrEmpty(immutable)
 
           test(s"""$verb$immutableString LOAD ON URL "https://my.server.com/some/file.csv" $preposition role""") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.LoadUrlAction,
               ast.LoadUrlQualifier("https://my.server.com/some/file.csv")(InputPosition.NONE),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"""$verb$immutableString LOAD ON CIDR "192.168.1.0/24" $preposition role""") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.LoadCidrAction,
               ast.LoadCidrQualifier("192.168.1.0/24")(InputPosition.NONE),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"""$verb$immutableString LOAD ON URL $$foo $preposition role""") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.LoadUrlAction,
               ast.LoadUrlQualifier(Right(paramFoo))(InputPosition.NONE),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"""$verb$immutableString LOAD ON CIDR $$foo $preposition role""") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.LoadCidrAction,
               ast.LoadCidrQualifier(Right(paramFoo))(InputPosition.NONE),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"""$verb$immutableString LOAD ON ALL DATA $preposition role""") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.LoadAllDataAction,
               ast.LoadAllQualifier()(InputPosition.NONE),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
       }
   }
 
   test("""DENY LOAD ON URL "not really a url" TO $role""") {
-    yields[Statements](denyLoadPrivilege(
+    parsesTo[Statements](denyLoadPrivilege(
       ast.LoadUrlAction,
       ast.LoadUrlQualifier("not really a url")(InputPosition.NONE),
       Seq(paramRole),
       i = false
-    ))
+    )(pos))
   }
 
   test("""REVOKE GRANT LOAD ON CIDR 'not a cidr' FROM $role""") {
-    yields[Statements](revokeGrantLoadPrivilege(
+    parsesTo[Statements](revokeGrantLoadPrivilege(
       ast.LoadCidrAction,
       ast.LoadCidrQualifier("not a cidr")(InputPosition.NONE),
       Seq(paramRole),
       i = false
-    ))
+    )(pos))
   }
 
   test("GRANT LOAD ON CIDR $x TO `\u0885`, `x\u0885y`") {
-    yields[Statements](grantLoadPrivilege(
+    parsesTo[Statements](grantLoadPrivilege(
       ast.LoadCidrAction,
       ast.LoadCidrQualifier(Right(stringParam("x")))(InputPosition.NONE),
       Seq(literalString("\u0885"), literalString("x\u0885y")),
       i = false
-    ))
+    )(pos))
   }
 
   // Error Cases

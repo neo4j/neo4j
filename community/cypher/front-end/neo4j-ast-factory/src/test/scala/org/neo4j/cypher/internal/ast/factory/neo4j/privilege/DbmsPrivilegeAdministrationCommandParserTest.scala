@@ -16,7 +16,44 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
-import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AllAliasManagementActions
+import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
+import org.neo4j.cypher.internal.ast.AllDbmsAction
+import org.neo4j.cypher.internal.ast.AllPrivilegeActions
+import org.neo4j.cypher.internal.ast.AllRoleActions
+import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterAliasAction
+import org.neo4j.cypher.internal.ast.AlterDatabaseAction
+import org.neo4j.cypher.internal.ast.AlterUserAction
+import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
+import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
+import org.neo4j.cypher.internal.ast.CreateAliasAction
+import org.neo4j.cypher.internal.ast.CreateCompositeDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateRoleAction
+import org.neo4j.cypher.internal.ast.CreateUserAction
+import org.neo4j.cypher.internal.ast.DbmsAction
+import org.neo4j.cypher.internal.ast.DropAliasAction
+import org.neo4j.cypher.internal.ast.DropCompositeDatabaseAction
+import org.neo4j.cypher.internal.ast.DropDatabaseAction
+import org.neo4j.cypher.internal.ast.DropRoleAction
+import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
+import org.neo4j.cypher.internal.ast.RemoveRoleAction
+import org.neo4j.cypher.internal.ast.RenameRoleAction
+import org.neo4j.cypher.internal.ast.RenameUserAction
+import org.neo4j.cypher.internal.ast.ServerManagementAction
+import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
+import org.neo4j.cypher.internal.ast.SetPasswordsAction
+import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.SetUserStatusAction
+import org.neo4j.cypher.internal.ast.ShowAliasAction
+import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
+import org.neo4j.cypher.internal.ast.ShowRoleAction
+import org.neo4j.cypher.internal.ast.ShowServerAction
+import org.neo4j.cypher.internal.ast.ShowUserAction
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -29,60 +66,60 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         val immutableString = immutableOrEmpty(immutable)
         val offset = command.length + immutableString.length + 1
         Seq(
-          ("CREATE ROLE", ast.CreateRoleAction),
-          ("RENAME ROLE", ast.RenameRoleAction),
-          ("DROP ROLE", ast.DropRoleAction),
-          ("SHOW ROLE", ast.ShowRoleAction),
-          ("ASSIGN ROLE", ast.AssignRoleAction),
-          ("REMOVE ROLE", ast.RemoveRoleAction),
-          ("ROLE MANAGEMENT", ast.AllRoleActions),
-          ("CREATE USER", ast.CreateUserAction),
-          ("RENAME USER", ast.RenameUserAction),
-          ("DROP USER", ast.DropUserAction),
-          ("SHOW USER", ast.ShowUserAction),
-          ("SET PASSWORD", ast.SetPasswordsAction),
-          ("SET PASSWORDS", ast.SetPasswordsAction),
-          ("SET USER STATUS", ast.SetUserStatusAction),
-          ("SET USER HOME DATABASE", ast.SetUserHomeDatabaseAction),
-          ("ALTER USER", ast.AlterUserAction),
-          ("USER MANAGEMENT", ast.AllUserActions),
-          ("CREATE DATABASE", ast.CreateDatabaseAction),
-          ("DROP DATABASE", ast.DropDatabaseAction),
-          ("ALTER DATABASE", ast.AlterDatabaseAction),
-          ("SET DATABASE ACCESS", ast.SetDatabaseAccessAction),
-          ("DATABASE MANAGEMENT", ast.AllDatabaseManagementActions),
-          ("SHOW PRIVILEGE", ast.ShowPrivilegeAction),
-          ("ASSIGN PRIVILEGE", ast.AssignPrivilegeAction),
-          ("REMOVE PRIVILEGE", ast.RemovePrivilegeAction),
-          ("PRIVILEGE MANAGEMENT", ast.AllPrivilegeActions),
-          ("SHOW SERVER", ast.ShowServerAction),
-          ("SHOW SERVERS", ast.ShowServerAction),
-          ("SERVER MANAGEMENT", ast.ServerManagementAction),
-          ("COMPOSITE DATABASE MANAGEMENT", ast.CompositeDatabaseManagementActions),
-          ("CREATE COMPOSITE DATABASE", ast.CreateCompositeDatabaseAction),
-          ("DROP COMPOSITE DATABASE", ast.DropCompositeDatabaseAction),
-          ("ALIAS MANAGEMENT", ast.AllAliasManagementActions),
-          ("CREATE ALIAS", ast.CreateAliasAction),
-          ("DROP ALIAS", ast.DropAliasAction),
-          ("ALTER ALIAS", ast.AlterAliasAction),
-          ("SHOW ALIAS", ast.ShowAliasAction)
+          ("CREATE ROLE", CreateRoleAction),
+          ("RENAME ROLE", RenameRoleAction),
+          ("DROP ROLE", DropRoleAction),
+          ("SHOW ROLE", ShowRoleAction),
+          ("ASSIGN ROLE", AssignRoleAction),
+          ("REMOVE ROLE", RemoveRoleAction),
+          ("ROLE MANAGEMENT", AllRoleActions),
+          ("CREATE USER", CreateUserAction),
+          ("RENAME USER", RenameUserAction),
+          ("DROP USER", DropUserAction),
+          ("SHOW USER", ShowUserAction),
+          ("SET PASSWORD", SetPasswordsAction),
+          ("SET PASSWORDS", SetPasswordsAction),
+          ("SET USER STATUS", SetUserStatusAction),
+          ("SET USER HOME DATABASE", SetUserHomeDatabaseAction),
+          ("ALTER USER", AlterUserAction),
+          ("USER MANAGEMENT", AllUserActions),
+          ("CREATE DATABASE", CreateDatabaseAction),
+          ("DROP DATABASE", DropDatabaseAction),
+          ("ALTER DATABASE", AlterDatabaseAction),
+          ("SET DATABASE ACCESS", SetDatabaseAccessAction),
+          ("DATABASE MANAGEMENT", AllDatabaseManagementActions),
+          ("SHOW PRIVILEGE", ShowPrivilegeAction),
+          ("ASSIGN PRIVILEGE", AssignPrivilegeAction),
+          ("REMOVE PRIVILEGE", RemovePrivilegeAction),
+          ("PRIVILEGE MANAGEMENT", AllPrivilegeActions),
+          ("SHOW SERVER", ShowServerAction),
+          ("SHOW SERVERS", ShowServerAction),
+          ("SERVER MANAGEMENT", ServerManagementAction),
+          ("COMPOSITE DATABASE MANAGEMENT", CompositeDatabaseManagementActions),
+          ("CREATE COMPOSITE DATABASE", CreateCompositeDatabaseAction),
+          ("DROP COMPOSITE DATABASE", DropCompositeDatabaseAction),
+          ("ALIAS MANAGEMENT", AllAliasManagementActions),
+          ("CREATE ALIAS", CreateAliasAction),
+          ("DROP ALIAS", DropAliasAction),
+          ("ALTER ALIAS", AlterAliasAction),
+          ("SHOW ALIAS", ShowAliasAction)
         ).foreach {
-          case (privilege: String, action: ast.DbmsAction) =>
+          case (privilege: String, action: DbmsAction) =>
             test(s"$command$immutableString $privilege ON DBMS $preposition role") {
-              yields[ast.Statements](privilegeFunc(action, Seq(literalRole), immutable))
+              parsesTo[Statements](privilegeFunc(action, Seq(literalRole), immutable)(pos))
             }
 
             test(s"$command$immutableString $privilege ON DBMS $preposition role1, $$role2") {
-              yields[ast.Statements](privilegeFunc(action, Seq(literalRole1, paramRole2), immutable))
+              parsesTo[Statements](privilegeFunc(action, Seq(literalRole1, paramRole2), immutable)(pos))
             }
 
             test(s"$command$immutableString $privilege ON DBMS $preposition `r:ole`") {
-              yields[ast.Statements](privilegeFunc(action, Seq(literalRColonOle), immutable))
+              parsesTo[Statements](privilegeFunc(action, Seq(literalRColonOle), immutable)(pos))
             }
 
             test(s"$command$immutableString $privilege ON DATABASE $preposition role") {
               val offset = command.length + immutableString.length + 5 + privilege.length
-              assertFailsWithMessage[ast.Statements](
+              assertFailsWithMessage[Statements](
                 testName,
                 s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
               )
@@ -90,7 +127,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
             test(s"$command$immutableString $privilege ON HOME DATABASE $preposition role") {
               val offset = command.length + immutableString.length + 5 + privilege.length
-              assertFailsWithMessage[ast.Statements](
+              assertFailsWithMessage[Statements](
                 testName,
                 s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
               )
@@ -106,12 +143,12 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
                   s"""Invalid input 'DBMS': expected "," or "FROM" (line 1, column ${offset + 1} (offset: $offset))"""
                 case _ => s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 1} (offset: $offset))"""
               }
-              assertFailsWithMessage[ast.Statements](testName, expected)
+              assertFailsWithMessage[Statements](testName, expected)
             }
 
             test(s"$command$immutableString $privilege ON $preposition role") {
               val offset = command.length + immutableString.length + 5 + privilege.length
-              assertFailsWithMessage[ast.Statements](
+              assertFailsWithMessage[Statements](
                 testName,
                 s"""Invalid input '$preposition': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
               )
@@ -119,7 +156,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
             test(s"$command$immutableString $privilege ON DBMS $preposition r:ole") {
               val offset = command.length + immutableString.length + 12 + privilege.length + preposition.length
-              assertFailsWithMessage[ast.Statements](
+              assertFailsWithMessage[Statements](
                 testName,
                 s"""Invalid input ':': expected "," or <EOF> (line 1, column ${offset + 1} (offset: $offset))"""
               )
@@ -127,7 +164,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
             test(s"$command$immutableString $privilege ON DBMS $preposition") {
               val offset = command.length + immutableString.length + 10 + privilege.length + preposition.length
-              assertFailsWithMessage[ast.Statements](
+              assertFailsWithMessage[Statements](
                 testName,
                 s"""Invalid input '': expected a parameter or an identifier (line 1, column ${offset + 1} (offset: $offset))"""
               )
@@ -135,7 +172,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
             test(s"$command$immutableString $privilege ON DBMS") {
               val offset = command.length + immutableString.length + 9 + privilege.length
-              assertFailsWithMessage[ast.Statements](
+              assertFailsWithMessage[Statements](
                 testName,
                 s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 1} (offset: $offset))"""
               )
@@ -145,59 +182,59 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         // The tests below needs to be outside the loop since ALL [PRIVILEGES] ON DATABASE is a valid (but different) command
 
         test(s"$command$immutableString ALL ON DBMS $preposition $$role") {
-          yields[ast.Statements](privilegeFunc(ast.AllDbmsAction, Seq(paramRole), immutable))
+          parsesTo[Statements](privilegeFunc(AllDbmsAction, Seq(paramRole), immutable)(pos))
         }
 
         test(s"$command$immutableString ALL ON DBMS $preposition role1, role2") {
-          yields[ast.Statements](privilegeFunc(ast.AllDbmsAction, Seq(literalRole1, literalRole2), immutable))
+          parsesTo[Statements](privilegeFunc(AllDbmsAction, Seq(literalRole1, literalRole2), immutable)(pos))
         }
 
         test(s"$command$immutableString ALL PRIVILEGES ON DBMS $preposition role") {
-          yields[ast.Statements](privilegeFunc(ast.AllDbmsAction, Seq(literalRole), immutable))
+          parsesTo[Statements](privilegeFunc(AllDbmsAction, Seq(literalRole), immutable)(pos))
         }
 
         test(s"$command$immutableString ALL PRIVILEGES ON DBMS $preposition $$role1, role2") {
-          yields[ast.Statements](privilegeFunc(ast.AllDbmsAction, Seq(paramRole1, literalRole2), immutable))
+          parsesTo[Statements](privilegeFunc(AllDbmsAction, Seq(paramRole1, literalRole2), immutable)(pos))
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS $preposition role") {
-          yields[ast.Statements](privilegeFunc(ast.AllDbmsAction, Seq(literalRole), immutable))
+          parsesTo[Statements](privilegeFunc(AllDbmsAction, Seq(literalRole), immutable)(pos))
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS $preposition `r:ole`, $$role2") {
-          yields[ast.Statements](privilegeFunc(ast.AllDbmsAction, Seq(literalRColonOle, paramRole2), immutable))
+          parsesTo[Statements](privilegeFunc(AllDbmsAction, Seq(literalRColonOle, paramRole2), immutable)(pos))
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DATABASE $preposition role") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
           )
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON HOME DATABASE $preposition role") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
           )
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES DBMS $preposition role") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
           )
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES $preposition") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input '$preposition': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
           )
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON $preposition") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input '$preposition': expected
                |  "DATABASE"
@@ -212,7 +249,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS $preposition r:ole") {
           val finalOffset = offset + 30 + preposition.length
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input ':': expected "," or <EOF> (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
           )
@@ -220,14 +257,14 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS $preposition") {
           val finalOffset = offset + 28 + preposition.length
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input '': expected a parameter or an identifier (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
           )
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 28} (offset: ${offset + 27}))"""
           )
@@ -236,35 +273,35 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         // Tests for invalid alias management privileges (database keyword in wrong place)
 
         test(s"$command$immutableString DATABASE ALIAS MANAGEMENT ON DBMS $preposition role") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input 'ALIAS': expected "MANAGEMENT" (line 1, column ${offset + 10} (offset: ${offset + 9}))"""
           )
         }
 
         test(s"$command$immutableString CREATE DATABASE ALIAS ON DBMS $preposition role") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 17} (offset: ${offset + 16}))"""
           )
         }
 
         test(s"$command$immutableString DROP DATABASE ALIAS ON DBMS $preposition role") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 15} (offset: ${offset + 14}))"""
           )
         }
 
         test(s"$command$immutableString ALTER DATABASE ALIAS ON DBMS $preposition role") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 16} (offset: ${offset + 15}))"""
           )
         }
 
         test(s"$command$immutableString SHOW DATABASE ALIAS ON DBMS $preposition role") {
-          assertFailsWithMessage[ast.Statements](
+          assertFailsWithMessage[Statements](
             testName,
             s"""Invalid input 'DATABASE': expected
                |  "ALIAS"

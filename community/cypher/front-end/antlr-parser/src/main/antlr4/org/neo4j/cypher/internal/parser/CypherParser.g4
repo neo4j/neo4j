@@ -295,10 +295,6 @@ labelOrRelType
    : COLON symbolicNameString
    ;
 
-labelOrRelTypes
-   : COLON symbolicNameString (BAR symbolicNameString)*
-   ;
-
 properties
    : map
    | parameter["ANY"]
@@ -644,6 +640,7 @@ variable
    : symbolicNameString
    ;
 
+// Returns non-list of propertyKeyNames
 nonEmptyNameList
    : symbolicNameString (COMMA symbolicNameString)*
    ;
@@ -654,7 +651,7 @@ command
       | dropCommand
       | alterCommand
       | renameCommand
-      | denyPrivilege
+      | denyCommand
       | revokeCommand
       | grantCommand
       | startDatabase
@@ -750,7 +747,11 @@ yieldClause
    ;
 
 showBriefAndYield
-   : ((BRIEF | VERBOSE) OUTPUT? | yieldClause returnClause? | whereClause)?
+   : (
+      (BRIEF | VERBOSE) OUTPUT?
+      | yieldClause returnClause?
+      | whereClause
+   )?
    ;
 
 showIndexCommand
@@ -766,11 +767,11 @@ showIndexCommand
    ;
 
 showIndexesAllowBrief
-   : (INDEX | INDEXES) showBriefAndYield composableCommandClauses?
+   : indexToken showBriefAndYield composableCommandClauses?
    ;
 
 showIndexesNoBrief
-   : (INDEX | INDEXES) showCommandYield composableCommandClauses?
+   : indexToken showCommandYield composableCommandClauses?
    ;
 
 showConstraintCommand
@@ -804,15 +805,15 @@ constraintBriefAndYieldType
    ;
 
 showConstraintsAllowBriefAndYield
-   : (CONSTRAINT | CONSTRAINTS) showBriefAndYield composableCommandClauses?
+   : constraintToken showBriefAndYield composableCommandClauses?
    ;
 
 showConstraintsAllowBrief
-   : (CONSTRAINT | CONSTRAINTS) ((BRIEF | VERBOSE) OUTPUT?)? composableCommandClauses?
+   : constraintToken ((BRIEF | VERBOSE) OUTPUT?)? composableCommandClauses?
    ;
 
 showConstraintsAllowYield
-   : (CONSTRAINT | CONSTRAINTS) showCommandYield composableCommandClauses?
+   : constraintToken showCommandYield composableCommandClauses?
    ;
 
 showProcedures
@@ -832,7 +833,7 @@ showFunctionsType
    ;
 
 showTransactions
-   : (TRANSACTION | TRANSACTIONS) namesAndClauses
+   : transactionToken namesAndClauses
    ;
 
 terminateCommand
@@ -840,7 +841,7 @@ terminateCommand
    ;
 
 terminateTransactions
-   : (TRANSACTION | TRANSACTIONS) namesAndClauses
+   : transactionToken namesAndClauses
    ;
 
 showSettings
@@ -996,20 +997,7 @@ dropIndex
    ;
 
 propertyList
-   : (variable property | LPAREN variable property (COMMA variable property)* RPAREN)
-   ;
-
-grantCommand
-   : GRANT (IMMUTABLE (grantPrivilege | ROLE grantRoleManagement) | (grantPrivilege | ROLE (grantRoleManagement | grantRole) | ROLES grantRole))
-   ;
-
-revokeCommand
-   : REVOKE (
-      DENY IMMUTABLE? (revokePrivilege | ROLE revokeRoleManagement)
-      | GRANT IMMUTABLE? (revokePrivilege | ROLE revokeRoleManagement)
-      | IMMUTABLE (revokePrivilege | ROLE revokeRoleManagement)
-      | (revokePrivilege | ROLE revokeRoleManagement | (ROLE | ROLES) revokeRole)
-   )
+   : variable property | LPAREN variable property (COMMA variable property)* RPAREN
    ;
 
 enableServerCommand
@@ -1057,15 +1045,12 @@ renameRole
    ;
 
 showRoles
-   : (ALL | POPULATED)? (ROLE | ROLES) (WITH (USER | USERS))? showCommandYield
+   : (ALL | POPULATED)? roleToken (WITH (USER | USERS))? showCommandYield
    ;
 
-grantRole
-   : symbolicNameOrStringParameterList TO symbolicNameOrStringParameterList
-   ;
-
-revokeRole
-   : symbolicNameOrStringParameterList FROM symbolicNameOrStringParameterList
+ roleToken
+   : ROLES
+   | ROLE
    ;
 
 createUser
@@ -1123,120 +1108,159 @@ showCurrentUser
    ;
 
 showPrivileges
-   : ALL? (PRIVILEGE | PRIVILEGES) (AS REVOKE? (COMMAND | COMMANDS))? showCommandYield
+   : ALL? privilegeToken privilegeAsCommand showCommandYield
    ;
 
 showSupportedPrivileges
-   : SUPPORTED (PRIVILEGE | PRIVILEGES) showCommandYield
+   : SUPPORTED privilegeToken showCommandYield
    ;
 
 showRolePrivileges
-   : (ROLE | ROLES) symbolicNameOrStringParameterList (PRIVILEGE | PRIVILEGES) (AS REVOKE? (COMMAND | COMMANDS))? showCommandYield
+   : (ROLE | ROLES) symbolicNameOrStringParameterList privilegeToken privilegeAsCommand showCommandYield
    ;
 
 showUserPrivileges
-   : (USER | USERS) symbolicNameOrStringParameterList? (PRIVILEGE | PRIVILEGES) (AS REVOKE? (COMMAND | COMMANDS))? showCommandYield
+   : (USER | USERS) symbolicNameOrStringParameterList? privilegeToken privilegeAsCommand showCommandYield
    ;
 
-grantRoleManagement
-   : roleManagementPrivilege TO symbolicNameOrStringParameterList
+privilegeAsCommand
+   : (AS REVOKE? (COMMAND | COMMANDS))?
    ;
 
-revokeRoleManagement
-   : roleManagementPrivilege FROM symbolicNameOrStringParameterList
+privilegeToken
+   : PRIVILEGE
+   | PRIVILEGES
    ;
 
-roleManagementPrivilege
-   : MANAGEMENT ON DBMS
-   ;
-
-grantPrivilege
-   : privilege TO symbolicNameOrStringParameterList
-   ;
-
-denyPrivilege
-   : DENY IMMUTABLE? (privilege | ROLE roleManagementPrivilege) TO symbolicNameOrStringParameterList
-   ;
-
-revokePrivilege
-   : privilege FROM symbolicNameOrStringParameterList
-   ;
-
-privilege
-   : (
-      allPrivilege
-      | createPrivilege
-      | dropPrivilege
-      | loadPrivilege
-      | showPrivilege
-      | setPrivilege
-      | removePrivilege
-      | databasePrivilege
-      | dbmsPrivilege
-      | writePrivilege
-      | qualifiedGraphPrivileges
-      | qualifiedGraphPrivilegesWithProperty
+grantCommand
+   : GRANT (
+      IMMUTABLE? privilege TO symbolicNameOrStringParameterList
+      | roleToken grantRole
    )
    ;
 
-allPrivilege
-   : ALL allPrivilegeType? ON allPrivilegeTarget
+grantRole
+   : symbolicNameOrStringParameterList TO symbolicNameOrStringParameterList
    ;
 
-allPrivilegeType
-   : (DBMS | GRAPH | DATABASE)? PRIVILEGES
+denyCommand
+   : DENY IMMUTABLE? privilege TO symbolicNameOrStringParameterList
    ;
 
-allPrivilegeTarget
-   : DEFAULT (GRAPH | DATABASE)
-   | HOME (GRAPH | DATABASE)
-   | DBMS
-   | (GRAPH | GRAPHS) (TIMES | symbolicAliasNameList)
-   | (DATABASE | DATABASES) (TIMES | symbolicAliasNameList)
+revokeCommand
+   : REVOKE (
+      (DENY | GRANT)? IMMUTABLE? privilege FROM symbolicNameOrStringParameterList
+      | roleToken revokeRole
+   )
+   ;
+
+revokeRole
+   : symbolicNameOrStringParameterList FROM symbolicNameOrStringParameterList
+   ;
+
+privilege
+   : allDatabasePrivilege
+   | allGraphPrivilege
+   | allDbmsPrivilege
+   | createPrivilege
+   | databasePrivilege
+   | dbmsPrivilege
+   | dropPrivilege
+   | loadPrivilege
+   | qualifiedGraphPrivileges
+   | qualifiedGraphPrivilegesWithProperty
+   | removePrivilege
+   | setPrivilege
+   | showPrivilege
+   | writePrivilege
+   ;
+
+allDatabasePrivilege
+   : ALL (DATABASE? PRIVILEGES)? ON databaseScope
+   ;
+
+allGraphPrivilege
+   : ALL (GRAPH? PRIVILEGES)? ON graphScope
+   ;
+
+allDbmsPrivilege
+   : ALL (DBMS? PRIVILEGES)? ON DBMS
    ;
 
 createPrivilege
-   : CREATE (((INDEX | INDEXES) | (CONSTRAINT | CONSTRAINTS) | NEW (NODE? (LABEL | LABELS) | RELATIONSHIP? (TYPE | TYPES) | PROPERTY? (NAME | NAMES))) ON databaseScope | (
-      DATABASE
-      | ALIAS
-      | ROLE
-      | USER
-      | COMPOSITE DATABASE
-   ) ON DBMS | ON graphScope graphQualifier)
+   : CREATE (
+      createPrivilegeForDatabase ON databaseScope
+      | actionForDBMS ON DBMS
+      | ON graphScope graphQualifier
+   )
+   ;
+
+createPrivilegeForDatabase
+   : indexToken
+   | constraintToken
+   | createNodePrivilegeToken
+   | createRelPrivilegeToken
+   | createPropertyPrivilegeToken
+   ;
+
+createNodePrivilegeToken
+   : NEW NODE? (LABEL | LABELS)
+   ;
+
+createRelPrivilegeToken
+   : NEW RELATIONSHIP? (TYPE | TYPES)
+   ;
+
+createPropertyPrivilegeToken
+   : NEW PROPERTY? (NAME | NAMES)
+   ;
+
+actionForDBMS
+   : ALIAS
+   | COMPOSITE? DATABASE
+   | ROLE
+   | USER
    ;
 
 dropPrivilege
-   : DROP (((INDEX | INDEXES) | (CONSTRAINT | CONSTRAINTS)) ON databaseScope | (
-      DATABASE
-      | ALIAS
-      | ROLE
-      | USER
-      | COMPOSITE DATABASE
-   ) ON DBMS)
+   : DROP (
+      (indexToken | constraintToken) ON databaseScope
+      | actionForDBMS ON DBMS
+   )
    ;
 
 loadPrivilege
-   : LOAD ON (URL stringOrParameter | CIDR stringOrParameter | ALL DATA)
+   : LOAD ON (
+      (URL | CIDR) stringOrParameter
+      | ALL DATA
+   )
    ;
 
 showPrivilege
-   : SHOW (((INDEX | INDEXES) | (CONSTRAINT | CONSTRAINTS) | (TRANSACTION | TRANSACTIONS) (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?) ON databaseScope | (
-      ALIAS
-      | PRIVILEGE
-      | ROLE
-      | USER
-      | SERVER
-      | SERVERS
-      | SETTING settingQualifier
-   ) ON DBMS)
+   : SHOW (
+      (indexToken | constraintToken | transactionToken userQualifier) ON databaseScope
+      | (ALIAS | PRIVILEGE | ROLE | SERVER | SERVERS | SETTING settingQualifier | USER) ON DBMS
+   )
    ;
 
 setPrivilege
-   : SET (((PASSWORD | PASSWORDS) | USER (STATUS | HOME DATABASE) | DATABASE ACCESS) ON DBMS | (LABEL labelResource ON graphScope | PROPERTY propertyResource ON graphScope graphQualifier))
+   : SET (
+      (passwordToken | USER (STATUS | HOME DATABASE) | DATABASE ACCESS) ON DBMS
+      | LABEL labelsResource ON graphScope
+      | PROPERTY propertiesResource ON graphScope graphQualifier
+   )
+   ;
+
+passwordToken
+   : PASSWORD
+   | PASSWORDS
    ;
 
 removePrivilege
-   : REMOVE ((PRIVILEGE | ROLE) ON DBMS | LABEL labelResource ON graphScope)
+   : REMOVE (
+      (PRIVILEGE | ROLE) ON DBMS
+      | LABEL labelsResource ON graphScope
+   )
    ;
 
 writePrivilege
@@ -1248,33 +1272,61 @@ databasePrivilege
       ACCESS
       | START
       | STOP
-      | (INDEX | INDEXES) MANAGEMENT?
-      | (CONSTRAINT | CONSTRAINTS) MANAGEMENT?
-      | TRANSACTION MANAGEMENT? (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?
-      | TERMINATE (TRANSACTION | TRANSACTIONS) (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?
-      | NAME MANAGEMENT?
-   ) ON databaseScope
+      | (indexToken | constraintToken | NAME) MANAGEMENT?
+      | (TRANSACTION MANAGEMENT? | TERMINATE transactionToken) userQualifier
+   )
+   ON databaseScope
    ;
 
 dbmsPrivilege
    : (
-      ALTER (USER | DATABASE | ALIAS)
+      ALTER (ALIAS | DATABASE | USER)
       | ASSIGN (PRIVILEGE | ROLE)
-      | COMPOSITE DATABASE MANAGEMENT
-      | DATABASE MANAGEMENT
-      | ALIAS MANAGEMENT
-      | EXECUTE (
-         (ADMIN | ADMINISTRATOR) PROCEDURES
-         | BOOSTED ((PROCEDURE | PROCEDURES) executeProcedureQualifier | (USER DEFINED?)? FUNCTIONS executeFunctionQualifier)
-         | (PROCEDURE | PROCEDURES) executeProcedureQualifier
+      | (ALIAS | COMPOSITE? DATABASE | PRIVILEGE | ROLE | SERVER | USER) MANAGEMENT
+      | dbmsPrivilegeExecute
+      | RENAME (ROLE | USER)
+      | IMPERSONATE userQualifier
+   )
+   ON DBMS
+   ;
+
+dbmsPrivilegeExecute
+   : EXECUTE (
+      adminToken PROCEDURES
+      | BOOSTED? (
+         procedureToken executeProcedureQualifier
          | (USER DEFINED?)? FUNCTIONS executeFunctionQualifier
       )
-      | PRIVILEGE MANAGEMENT
-      | RENAME (ROLE | USER)
-      | SERVER MANAGEMENT
-      | USER MANAGEMENT
-      | IMPERSONATE (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?
-   ) ON DBMS
+   )
+   ;
+
+adminToken
+   : ADMIN
+   | ADMINISTRATOR
+   ;
+
+procedureToken
+   : PROCEDURE
+   | PROCEDURES
+   ;
+
+indexToken
+   : INDEX
+   | INDEXES
+   ;
+
+constraintToken
+   : CONSTRAINT
+   | CONSTRAINTS
+   ;
+
+transactionToken
+   : TRANSACTION
+   | TRANSACTIONS
+   ;
+
+userQualifier
+   : (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?
    ;
 
 executeFunctionQualifier
@@ -1294,28 +1346,53 @@ globs
    ;
 
 qualifiedGraphPrivilegesWithProperty
-   : (TRAVERSE | READ propertyResource | MATCH propertyResource) ON graphScope graphQualifier (LPAREN TIMES RPAREN)?
+   : (TRAVERSE | (READ | MATCH) propertiesResource) ON graphScope graphQualifier (LPAREN TIMES RPAREN)?
    ;
 
 qualifiedGraphPrivileges
-   : (DELETE | MERGE propertyResource) ON graphScope graphQualifier
+   : (DELETE | MERGE propertiesResource) ON graphScope graphQualifier
    ;
 
-labelResource
-   : (TIMES | nonEmptyNameList)
+labelsResource
+   : TIMES
+   | nonEmptyStringList
    ;
 
-propertyResource
-   : LCURLY (TIMES | nonEmptyNameList) RCURLY
+propertiesResource
+   : LCURLY (TIMES | nonEmptyStringList) RCURLY
+   ;
+
+// Returns non-empty list of strings
+nonEmptyStringList
+   : symbolicNameString (COMMA symbolicNameString)*
    ;
 
 graphQualifier
    : (
-      (RELATIONSHIP | RELATIONSHIPS) (TIMES | symbolicNameString (COMMA symbolicNameString)*)
-      | (NODE | NODES) (TIMES | symbolicNameString (COMMA symbolicNameString)*)
-      | (ELEMENT | ELEMENTS) (TIMES | symbolicNameString (COMMA symbolicNameString)*)
-      | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | map RPAREN)
+      graphQualifierToken (TIMES | nonEmptyStringList)
+      | FOR LPAREN variable? (COLON symbolicNameString (BAR symbolicNameString)*)? (RPAREN WHERE expression | (WHERE expression | map) RPAREN)
    )?
+   ;
+
+graphQualifierToken
+   : relToken
+   | nodeToken
+   | elementToken
+   ;
+
+relToken
+   : RELATIONSHIP
+   | RELATIONSHIPS
+   ;
+
+elementToken
+   : ELEMENT
+   | ELEMENTS
+   ;
+
+nodeToken
+   : NODE
+   | NODES
    ;
 
 createCompositeDatabase
@@ -1339,7 +1416,10 @@ dropDatabase
    ;
 
 alterDatabase
-   : DATABASE symbolicAliasNameOrParameter (IF EXISTS)? ((SET (alterDatabaseAccess | alterDatabaseTopology | alterDatabaseOption))+ | (REMOVE OPTION symbolicNameString)+) waitClause?
+   : DATABASE symbolicAliasNameOrParameter (IF EXISTS)? (
+      (SET (alterDatabaseAccess | alterDatabaseTopology | alterDatabaseOption))+
+      | (REMOVE OPTION symbolicNameString)+
+   ) waitClause?
    ;
 
 alterDatabaseAccess
@@ -1368,15 +1448,17 @@ waitClause
 
 showDatabase
    : (DATABASE | DATABASES) symbolicAliasNameOrParameter? showCommandYield
-   | (DEFAULT DATABASE | HOME DATABASE) showCommandYield
+   | (DEFAULT | HOME) DATABASE showCommandYield
    ;
 
 databaseScope
-   : ((DATABASE | DATABASES) (TIMES | symbolicAliasNameList) | DEFAULT DATABASE | HOME DATABASE)
+   : (DATABASE | DATABASES) (TIMES | symbolicAliasNameList)
+   | (DEFAULT | HOME) DATABASE
    ;
 
 graphScope
-   : ((GRAPH | GRAPHS) (TIMES | symbolicAliasNameList) | DEFAULT GRAPH | HOME GRAPH)
+   : (GRAPH | GRAPHS) (TIMES | symbolicAliasNameList)
+   | (DEFAULT | HOME) GRAPH
    ;
 
 commandOptions
@@ -1451,25 +1533,23 @@ symbolicAliasName
    ;
 
 symbolicNameOrStringParameterList
-   : symbolicNameOrStringParameter (COMMA symbolicNameOrStringParameter)*
+   : commandNameExpression (COMMA commandNameExpression)*
    ;
 
 glob
-   : (escapedSymbolicNameString | escapedSymbolicNameString globRecursive | globRecursive)
+   : escapedSymbolicNameString globRecursive?
+   | globRecursive
    ;
 
 globRecursive
-   : (globPart | globPart globRecursive)
+   : globPart globRecursive?
    ;
 
 globPart
-   : (
-      DOT escapedSymbolicNameString
-      | QUESTION
-      | TIMES
-      | DOT
-      | unescapedSymbolicNameString
-   )
+   : DOT escapedSymbolicNameString?
+   | QUESTION
+   | TIMES
+   | unescapedSymbolicNameString
    ;
 
 stringList

@@ -34,646 +34,656 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
         immutable =>
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString TRAVERSE ON HOME GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.HomeGraphScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString TRAVERSE ON HOME GRAPH NODE A $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.HomeGraphScope()(_))(pos),
               List(labelQualifierA),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString TRAVERSE ON HOME GRAPH RELATIONSHIP * $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.HomeGraphScope()(_))(pos),
               List(ast.RelationshipAllQualifier() _),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString TRAVERSE ON HOME GRAPH ELEMENT A $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.HomeGraphScope()(_))(pos),
               List(elemQualifierA),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.DefaultGraphScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH NODE A $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.DefaultGraphScope()(_))(pos),
               List(labelQualifierA),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH RELATIONSHIP * $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.DefaultGraphScope()(_))(pos),
               List(ast.RelationshipAllQualifier() _),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH ELEMENT A $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.DefaultGraphScope()(_))(pos),
               List(elemQualifierA),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           Seq("GRAPH", "GRAPHS").foreach {
             graphKeyword =>
               test(s"$verb$immutableString TRAVERSE ON $graphKeyword * $preposition $$role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
                   List(ast.ElementsAllQualifier() _),
                   Seq(paramRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString TRAVERSE ON $graphKeyword foo $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
                   List(ast.ElementsAllQualifier() _),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString TRAVERSE ON $graphKeyword $$foo $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(ast.TraverseAction, graphScopeParamFoo)(pos),
                   List(ast.ElementsAllQualifier() _),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               Seq("NODE", "NODES").foreach {
                 nodeKeyword =>
                   test(s"validExpressions $verb$immutableString $graphKeyword $nodeKeyword $preposition") {
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(ast.LabelAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(ast.LabelAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(ast.LabelAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(ast.LabelAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword A $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(labelQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword A $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(labelQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(labelQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(labelQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword `*` $nodeKeyword A $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("*"))) _)(pos),
-                        List(labelQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword `*` $nodeKeyword A $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("*"))) _)(pos),
+                          List(labelQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword * $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(ast.LabelAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword * $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(ast.LabelAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword * (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(ast.LabelAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword * (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(ast.LabelAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(labelQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(labelQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(labelQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(labelQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition role1, $$role2"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(labelQualifierA),
-                        Seq(literalRole1, paramRole2),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition role1, $$role2" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(labelQualifierA),
+                          Seq(literalRole1, paramRole2),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword `2foo` $nodeKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("2foo"))) _)(pos),
-                        List(labelQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword `2foo` $nodeKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("2foo"))) _)(pos),
+                          List(labelQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition `r:ole`"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(labelQualifierA),
-                        Seq(literalRColonOle),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition `r:ole`" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(labelQualifierA),
+                          Seq(literalRColonOle),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword `A B` (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(ast.LabelQualifier("A B") _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword `A B` (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(ast.LabelQualifier("A B") _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A, B (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(labelQualifierA, labelQualifierB),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A, B (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(labelQualifierA, labelQualifierB),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A, B (*) $preposition role1, role2"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(labelQualifierA, labelQualifierB),
-                        Seq(literalRole1, literalRole2),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A, B (*) $preposition role1, role2" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(labelQualifierA, labelQualifierB),
+                          Seq(literalRole1, literalRole2),
+                          immutable
+                        )(pos)
                       )
-                    parsing[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFooBaz)(pos),
-                        List(labelQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFooBaz)(pos),
+                          List(labelQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
                   }
 
                   test(s"traverseParsingErrors $verb$immutableString $graphKeyword $nodeKeyword $preposition") {
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE $graphKeyword * $nodeKeyword * (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A B (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (foo) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword * $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword A $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword * (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword A (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition r:ole"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword 2foo $nodeKeyword A (*) $preposition role"
-                    )
-                    assertFails[Statements](s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * (*)")
+                    s"$verb$immutableString TRAVERSE $graphKeyword * $nodeKeyword * (*) $preposition role" should
+                      notParse[Statements]
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A B (*) $preposition role" should
+                      notParse[Statements]
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (foo) $preposition role" should
+                      notParse[Statements]
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword * $preposition role" should
+                      notParse[Statements]
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword A $preposition role" should
+                      notParse[Statements]
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword * (*) $preposition role" should
+                      notParse[Statements]
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword A (*) $preposition role" should
+                      notParse[Statements]
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition r:ole" should
+                      notParse[Statements]
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword 2foo $nodeKeyword A (*) $preposition role" should
+                      notParse[Statements]
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * (*)" should notParse[Statements]
                   }
               }
 
               Seq("RELATIONSHIP", "RELATIONSHIPS").foreach {
                 relTypeKeyword =>
                   test(s"validExpressions $verb$immutableString $graphKeyword $relTypeKeyword $preposition") {
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword * $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(ast.RelationshipAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword * $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(ast.RelationshipAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword * (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(ast.RelationshipAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword * (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(ast.RelationshipAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword A $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(relQualifierA),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword A $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(relQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(relQualifierA),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(relQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword `*` $relTypeKeyword A $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("*"))) _)(pos),
-                        List(relQualifierA),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword `*` $relTypeKeyword A $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("*"))) _)(pos),
+                          List(relQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword * $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(ast.RelationshipAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword * $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(ast.RelationshipAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword * (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(ast.RelationshipAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword * (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(ast.RelationshipAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(relQualifierA),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(relQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(relQualifierA),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(relQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition $$role1, role2"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(relQualifierA),
-                        Seq(paramRole1, literalRole2),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition $$role1, role2" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(relQualifierA),
+                          Seq(paramRole1, literalRole2),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword `2foo` $relTypeKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("2foo"))) _)(pos),
-                        List(relQualifierA),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword `2foo` $relTypeKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("2foo"))) _)(pos),
+                          List(relQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition `r:ole`"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(relQualifierA),
-                        Seq(literalRColonOle),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition `r:ole`" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(relQualifierA),
+                          Seq(literalRColonOle),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword `A B` (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(ast.RelationshipQualifier("A B") _),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword `A B` (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(ast.RelationshipQualifier("A B") _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A, B (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(relQualifierA, relQualifierB),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A, B (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(relQualifierA, relQualifierB),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A, B (*) $preposition role1, role2"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(relQualifierA, relQualifierB),
-                        Seq(literalRole1, literalRole2),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A, B (*) $preposition role1, role2" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(relQualifierA, relQualifierB),
+                          Seq(literalRole1, literalRole2),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFooBaz)(pos),
-                        List(relQualifierA),
-                        Seq(literalRole),
-                        immutable
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFooBaz)(pos),
+                          List(relQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
                   }
 
                   test(s"traverseParsingErrors$verb$immutableString $graphKeyword $relTypeKeyword $preposition") {
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE $graphKeyword * $relTypeKeyword * (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A B (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (foo) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword * $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword A $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword * (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword A (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition r:ole"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword 2foo $relTypeKeyword A (*) $preposition role"
-                    )
-                    assertFails[Statements](s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword * (*)")
+
+                    s"$verb$immutableString TRAVERSE $graphKeyword * $relTypeKeyword * (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A B (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (foo) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword * $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword A $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword * (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword A (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition r:ole" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword 2foo $relTypeKeyword A (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword * (*)" should
+                      notParse[Statements]
                   }
               }
 
               Seq("ELEMENT", "ELEMENTS").foreach {
                 elementKeyword =>
                   test(s"validExpressions $verb$immutableString $graphKeyword $elementKeyword $preposition") {
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword * $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(ast.ElementsAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword * $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(ast.ElementsAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword * (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(ast.ElementsAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword * (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(ast.ElementsAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword A $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(elemQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword A $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(elemQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
-                        List(elemQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
+                          List(elemQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword `*` $elementKeyword A $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("*"))) _)(pos),
-                        List(elemQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword `*` $elementKeyword A $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("*"))) _)(pos),
+                          List(elemQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword * $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(ast.ElementsAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword * $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(ast.ElementsAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword * (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(ast.ElementsAllQualifier() _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword * (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(ast.ElementsAllQualifier() _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(elemQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(elemQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(elemQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(elemQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition role1, role2"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(elemQualifierA),
-                        Seq(literalRole1, literalRole2),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition role1, role2" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(elemQualifierA),
+                          Seq(literalRole1, literalRole2),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword `2foo` $elementKeyword A (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("2foo"))) _)(pos),
-                        List(elemQualifierA),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword `2foo` $elementKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, ast.NamedGraphsScope(Seq(literal("2foo"))) _)(pos),
+                          List(elemQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition `r:ole`"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(elemQualifierA),
-                        Seq(literalRColonOle),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition `r:ole`" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(elemQualifierA),
+                          Seq(literalRColonOle),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword `A B` (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(ast.ElementQualifier("A B") _),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword `A B` (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(ast.ElementQualifier("A B") _),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A, B (*) $preposition role"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(elemQualifierA, elemQualifierB),
-                        Seq(literalRole),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A, B (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(elemQualifierA, elemQualifierB),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A, B (*) $preposition $$role1, $$role2"
-                    ) shouldGive
-                      func(
-                        ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
-                        List(elemQualifierA, elemQualifierB),
-                        Seq(paramRole1, paramRole2),
-                        immutable
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A, B (*) $preposition $$role1, $$role2" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
+                          List(elemQualifierA, elemQualifierB),
+                          Seq(paramRole1, paramRole2),
+                          immutable
+                        )(pos)
                       )
-                    parsing(
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role"
-                    )
-                    func(
-                      ast.GraphPrivilege(ast.TraverseAction, graphScopeFooBaz)(pos),
-                      List(elemQualifierA),
-                      Seq(paramRole),
-                      immutable
-                    )
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role" should
+                      parseTo[Statements](
+                        func(
+                          ast.GraphPrivilege(ast.TraverseAction, graphScopeFooBaz)(pos),
+                          List(elemQualifierA),
+                          Seq(literalRole),
+                          immutable
+                        )(pos)
+                      )
                   }
 
                   test(s"traverseParsingErrors $verb$immutableString $graphKeyword $elementKeyword $preposition") {
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE $graphKeyword * $elementKeyword * (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A B (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (foo) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword * $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword A $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword * (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword A (*) $preposition role"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition r:ole"
-                    )
-                    assertFails[Statements](
-                      s"$verb$immutableString TRAVERSE ON $graphKeyword 2foo $elementKeyword A (*) $preposition role"
-                    )
-                    assertFails[Statements](s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword * (*)")
+
+                    s"$verb$immutableString TRAVERSE $graphKeyword * $elementKeyword * (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A B (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (foo) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword * $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword A $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword * (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword A (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition r:ole" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword 2foo $elementKeyword A (*) $preposition role" should
+                      notParse[Statements]
+
+                    s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword * (*)" should
+                      notParse[Statements]
                   }
               }
           }
@@ -681,11 +691,11 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Mix of specific graph and *
 
           test(s"$verb$immutableString TRAVERSE ON GRAPH foo, * $preposition role") {
-            failsToParse[Statements]
+            failsParsing[Statements]
           }
 
           test(s"$verb$immutableString TRAVERSE ON GRAPH *, foo $preposition role") {
-            failsToParse[Statements]
+            failsParsing[Statements]
           }
 
           // Database instead of graph keyword
@@ -707,11 +717,11 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString TRAVERSE ON HOME DATABASE $preposition role") {
-            failsToParse[Statements]
+            failsParsing[Statements]
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT DATABASE $preposition role") {
-            failsToParse[Statements]
+            failsParsing[Statements]
           }
       }
   }

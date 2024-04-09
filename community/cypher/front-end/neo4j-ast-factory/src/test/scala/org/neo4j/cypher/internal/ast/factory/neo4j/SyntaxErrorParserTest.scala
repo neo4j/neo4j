@@ -180,7 +180,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
       "revoke",
       mismatch(
         "",
-        "'DENY', 'GRANT', 'IMMUTABLE', 'ALL', 'CREATE', 'DROP', 'LOAD', 'SHOW', 'SET', 'REMOVE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'TRANSACTION', 'TERMINATE', 'NAME', 'ALTER', 'ASSIGN', 'COMPOSITE', 'DATABASE', 'ALIAS', 'EXECUTE', 'PRIVILEGE', 'RENAME', 'SERVER', 'USER', 'IMPERSONATE', 'WRITE', 'DELETE', 'MERGE', 'TRAVERSE', 'READ', 'MATCH', 'ROLE', 'ROLES'",
+        "'DENY', 'GRANT', 'IMMUTABLE', 'ALL', 'CREATE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'NAME', 'TRANSACTION', 'TERMINATE', 'ALTER', 'ASSIGN', 'ALIAS', 'COMPOSITE', 'DATABASE', 'PRIVILEGE', 'ROLE', 'SERVER', 'USER', 'EXECUTE', 'RENAME', 'IMPERSONATE', 'DROP', 'LOAD', 'DELETE', 'MERGE', 'TRAVERSE', 'MATCH', 'READ', 'REMOVE', 'SET', 'SHOW', 'WRITE', 'ROLES'",
         6
       )
     )
@@ -188,11 +188,12 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
       "revoke deny",
       mismatch(
         "",
-        "'IMMUTABLE', 'ALL', 'CREATE', 'DROP', 'LOAD', 'SHOW', 'SET', 'REMOVE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'TRANSACTION', 'TERMINATE', 'NAME', 'ALTER', 'ASSIGN', 'COMPOSITE', 'DATABASE', 'ALIAS', 'EXECUTE', 'PRIVILEGE', 'RENAME', 'SERVER', 'USER', 'IMPERSONATE', 'WRITE', 'DELETE', 'MERGE', 'TRAVERSE', 'READ', 'MATCH', 'ROLE'",
+        "'IMMUTABLE', 'ALL', 'CREATE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'NAME', 'TRANSACTION', 'TERMINATE', 'ALTER', 'ASSIGN', 'ALIAS', 'COMPOSITE', 'DATABASE', 'PRIVILEGE', 'ROLE', 'SERVER', 'USER', 'EXECUTE', 'RENAME', 'IMPERSONATE', 'DROP', 'LOAD', 'DELETE', 'MERGE', 'TRAVERSE', 'MATCH', 'READ', 'REMOVE', 'SET', 'SHOW', 'WRITE'",
         11
       )
     )
-    assertSyntaxError("revoke deny all", mismatch("", "'DATABASE', 'DBMS', 'GRAPH', 'PRIVILEGES', 'ON'", 15))
+
+    assertSyntaxError("revoke deny all", notViable("", 15))
     assertSyntaxError("start", mismatch("", "'DATABASE'", 5))
     assertSyntaxError("start database", mismatch("", "an identifier, '$'", 14))
     assertSyntaxError("start database a wai", extraneous("wai", "';', <EOF>", 17))
@@ -217,7 +218,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
       "grant",
       mismatch(
         "",
-        "'IMMUTABLE', 'ALL', 'CREATE', 'DROP', 'LOAD', 'SHOW', 'SET', 'REMOVE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'TRANSACTION', 'TERMINATE', 'NAME', 'ALTER', 'ASSIGN', 'COMPOSITE', 'DATABASE', 'ALIAS', 'EXECUTE', 'PRIVILEGE', 'RENAME', 'SERVER', 'USER', 'IMPERSONATE', 'WRITE', 'DELETE', 'MERGE', 'TRAVERSE', 'READ', 'MATCH', 'ROLE', 'ROLES'",
+        "'IMMUTABLE', 'ALL', 'CREATE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'NAME', 'TRANSACTION', 'TERMINATE', 'ALTER', 'ASSIGN', 'ALIAS', 'COMPOSITE', 'DATABASE', 'PRIVILEGE', 'ROLE', 'SERVER', 'USER', 'EXECUTE', 'RENAME', 'IMPERSONATE', 'DROP', 'LOAD', 'DELETE', 'MERGE', 'TRAVERSE', 'MATCH', 'READ', 'REMOVE', 'SET', 'SHOW', 'WRITE', 'ROLES'",
         5
       )
     )
@@ -225,7 +226,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
       "deny",
       mismatch(
         "",
-        "'IMMUTABLE', 'ALL', 'CREATE', 'DROP', 'LOAD', 'SHOW', 'SET', 'REMOVE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'TRANSACTION', 'TERMINATE', 'NAME', 'ALTER', 'ASSIGN', 'COMPOSITE', 'DATABASE', 'ALIAS', 'EXECUTE', 'PRIVILEGE', 'RENAME', 'SERVER', 'USER', 'IMPERSONATE', 'WRITE', 'DELETE', 'MERGE', 'TRAVERSE', 'READ', 'MATCH', 'ROLE'",
+        "'IMMUTABLE', 'ALL', 'CREATE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'NAME', 'TRANSACTION', 'TERMINATE', 'ALTER', 'ASSIGN', 'ALIAS', 'COMPOSITE', 'DATABASE', 'PRIVILEGE', 'ROLE', 'SERVER', 'USER', 'EXECUTE', 'RENAME', 'IMPERSONATE', 'DROP', 'LOAD', 'DELETE', 'MERGE', 'TRAVERSE', 'MATCH', 'READ', 'REMOVE', 'SET', 'SHOW', 'WRITE'",
         4
       )
     )

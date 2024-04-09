@@ -43,105 +43,135 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
             immutable =>
               val immutableString = immutableOrEmpty(immutable)
               test(s"$verb$immutableString $execute * ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("*")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(action, List(procedureQualifier("*")), Seq(literalRole), immutable)(pos))
               }
 
               // The following two tests check that the plural form EXECUTE [BOOSTED] PROCEDURES is valid
 
               test(s"$verb$immutableString ${execute}S * ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("*")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(action, List(procedureQualifier("*")), Seq(literalRole), immutable)(pos))
               }
 
               test(s"$verb$immutableString ${execute}S `*` ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("*")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(action, List(procedureQualifier("*")), Seq(literalRole), immutable)(pos))
               }
 
               test(s"$verb$immutableString $execute apoc.procedure ON DBMS $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   action,
                   List(procedureQualifier("apoc.procedure")),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString ${execute}S apoc.procedure ON DBMS $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   action,
                   List(procedureQualifier("apoc.procedure")),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $execute apoc.math.sin ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("apoc.math.sin")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(
+                  action,
+                  List(procedureQualifier("apoc.math.sin")),
+                  Seq(literalRole),
+                  immutable
+                )(pos))
               }
 
               test(s"$verb$immutableString $execute apoc* ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("apoc*")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(action, List(procedureQualifier("apoc*")), Seq(literalRole), immutable)(pos))
               }
 
               test(s"$verb$immutableString $execute *apoc ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("*apoc")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(action, List(procedureQualifier("*apoc")), Seq(literalRole), immutable)(pos))
               }
 
               test(s"$verb$immutableString $execute *apoc, *.sin ON DBMS $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   action,
                   List(procedureQualifier("*apoc"), procedureQualifier("*.sin")),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $execute *.sin, apoc* ON DBMS $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   action,
                   List(procedureQualifier("*.sin"), procedureQualifier("apoc*")),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $execute *.sin ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("*.sin")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(action, List(procedureQualifier("*.sin")), Seq(literalRole), immutable)(pos))
               }
 
               test(s"$verb$immutableString $execute apoc.*.math.* ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("apoc.*.math.*")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(
+                  action,
+                  List(procedureQualifier("apoc.*.math.*")),
+                  Seq(literalRole),
+                  immutable
+                )(pos))
               }
 
               test(s"$verb$immutableString $execute math.*n ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("math.*n")), Seq(literalRole), immutable))
+                parsesTo[Statements](
+                  func(action, List(procedureQualifier("math.*n")), Seq(literalRole), immutable)(pos)
+                )
               }
 
               test(s"$verb$immutableString $execute math.si? ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("math.si?")), Seq(literalRole), immutable))
+                parsesTo[Statements](
+                  func(action, List(procedureQualifier("math.si?")), Seq(literalRole), immutable)(pos)
+                )
               }
 
               test(s"$verb$immutableString $execute mat*.sin ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("mat*.sin")), Seq(literalRole), immutable))
+                parsesTo[Statements](
+                  func(action, List(procedureQualifier("mat*.sin")), Seq(literalRole), immutable)(pos)
+                )
               }
 
               test(s"$verb$immutableString $execute mat?.sin ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("mat?.sin")), Seq(literalRole), immutable))
+                parsesTo[Statements](
+                  func(action, List(procedureQualifier("mat?.sin")), Seq(literalRole), immutable)(pos)
+                )
               }
 
               test(s"$verb$immutableString $execute ?ath.sin ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("?ath.sin")), Seq(literalRole), immutable))
+                parsesTo[Statements](
+                  func(action, List(procedureQualifier("?ath.sin")), Seq(literalRole), immutable)(pos)
+                )
               }
 
               test(s"$verb$immutableString $execute mat?.`a.\n`.*n ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("mat?.a.\n.*n")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(
+                  action,
+                  List(procedureQualifier("mat?.a.\n.*n")),
+                  Seq(literalRole),
+                  immutable
+                )(pos))
               }
 
               test(s"$verb$immutableString $execute `mat?`.`a.\n`.`*n` ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("mat?.a.\n.*n")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(
+                  action,
+                  List(procedureQualifier("mat?.a.\n.*n")),
+                  Seq(literalRole),
+                  immutable
+                )(pos))
               }
 
               test(s"$verb$immutableString $execute `a b` ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("a b")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(action, List(procedureQualifier("a b")), Seq(literalRole), immutable)(pos))
               }
 
               test(s"$verb$immutableString $execute a b ON DBMS $preposition role") {
@@ -151,37 +181,41 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
               }
 
               test(s"$verb$immutableString $execute math. ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("math.")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(action, List(procedureQualifier("math.")), Seq(literalRole), immutable)(pos))
               }
 
               test(s"$verb$immutableString $execute `math.` ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("math.")), Seq(literalRole), immutable))
+                parsesTo[Statements](func(action, List(procedureQualifier("math.")), Seq(literalRole), immutable)(pos))
               }
 
               test(s"$verb$immutableString $execute math.`sin.`. ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("math.sin..")), Seq(literalRole), immutable))
+                parsesTo[Statements](
+                  func(action, List(procedureQualifier("math.sin..")), Seq(literalRole), immutable)(pos)
+                )
               }
 
               test(s"$verb$immutableString $execute apoc.math.* ON DBMS $preposition role") {
-                yields[Statements](func(action, List(procedureQualifier("apoc.math.*")), Seq(literalRole), immutable))
+                parsesTo[Statements](
+                  func(action, List(procedureQualifier("apoc.math.*")), Seq(literalRole), immutable)(pos)
+                )
               }
 
               test(s"$verb$immutableString $execute math.sin, math.cos ON DBMS $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   action,
                   List(procedureQualifier("math.sin"), procedureQualifier("math.cos")),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $execute apoc.math.sin, math.* ON DBMS $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   action,
                   List(procedureQualifier("apoc.math.sin"), procedureQualifier("math.*")),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $execute * $preposition role") {
@@ -314,7 +348,7 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
           ).foreach {
             command =>
               test(s"$verb$immutableString $command ON DBMS $preposition role") {
-                yields[Statements](func(ExecuteAdminProcedureAction, Seq(literalRole), immutable))
+                parsesTo[Statements](func(ExecuteAdminProcedureAction, Seq(literalRole), immutable)(pos))
               }
 
               test(s"$verb$immutableString $command * ON DBMS $preposition role") {

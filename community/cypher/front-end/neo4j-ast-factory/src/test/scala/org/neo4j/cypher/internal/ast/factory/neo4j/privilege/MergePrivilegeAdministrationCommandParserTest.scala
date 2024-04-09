@@ -34,197 +34,197 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
         immutable =>
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString MERGE { prop } ON GRAPH foo $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Multiple properties should be allowed
 
           test(s"$verb$immutableString MERGE { * } ON GRAPH foo $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop1, prop2 } ON GRAPH foo $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Home graph should be allowed
 
           test(s"$verb$immutableString MERGE { * } ON HOME GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.HomeGraphScope()(_))(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop1, prop2 } ON HOME GRAPH RELATIONSHIP * $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.HomeGraphScope()(_))(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.RelationshipAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Default graph should be allowed
 
           test(s"$verb$immutableString MERGE { * } ON DEFAULT GRAPH $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.DefaultGraphScope()(_))(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop1, prop2 } ON DEFAULT GRAPH RELATIONSHIP * $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.DefaultGraphScope()(_))(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.RelationshipAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Multiple graphs should be allowed
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS * $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.AllGraphsScope()(_))(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo,baz $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFooBaz)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Qualifiers
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo ELEMENTS A,B $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(elemQualifierA, elemQualifierB),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo ELEMENT A $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(elemQualifierA),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo NODES A,B $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(labelQualifierA, labelQualifierB),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo NODES * $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.LabelAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo RELATIONSHIPS A,B $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(relQualifierA, relQualifierB),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo RELATIONSHIP * $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.RelationshipAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Multiple roles should be allowed
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo $preposition role1, role2") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole1, literalRole2),
               immutable
-            ))
+            )(pos))
           }
 
           // Parameter values
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPH $$foo $preposition role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeParamFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(literalRole),
               immutable
-            ))
+            )(pos))
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPH foo $preposition $$role") {
-            yields[Statements](func(
+            parsesTo[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
               Seq(paramRole),
               immutable
-            ))
+            )(pos))
           }
 
           // Database instead of graph keyword

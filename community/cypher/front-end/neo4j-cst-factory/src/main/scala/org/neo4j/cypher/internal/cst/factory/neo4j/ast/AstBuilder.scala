@@ -40,6 +40,7 @@ final class AstBuilder(
     with DdlBuilder
     with DdlCreateBuilder
     with DdlShowBuilder
+    with DdlPrivilegeBuilder
     with ExpressionBuilder
     with StatementBuilder {
   override def visitTerminal(node: TerminalNode): Unit = {}

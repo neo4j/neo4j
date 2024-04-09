@@ -141,8 +141,6 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitLabelOrRelType(CypherParser.LabelOrRelTypeContext ctx);
 
-    void exitLabelOrRelTypes(CypherParser.LabelOrRelTypesContext ctx);
-
     void exitProperties(CypherParser.PropertiesContext ctx);
 
     void exitRelationshipPattern(CypherParser.RelationshipPatternContext ctx);
@@ -385,10 +383,6 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitPropertyList(CypherParser.PropertyListContext ctx);
 
-    void exitGrantCommand(CypherParser.GrantCommandContext ctx);
-
-    void exitRevokeCommand(CypherParser.RevokeCommandContext ctx);
-
     void exitEnableServerCommand(CypherParser.EnableServerCommandContext ctx);
 
     void exitAlterServer(CypherParser.AlterServerContext ctx);
@@ -413,9 +407,7 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitShowRoles(CypherParser.ShowRolesContext ctx);
 
-    void exitGrantRole(CypherParser.GrantRoleContext ctx);
-
-    void exitRevokeRole(CypherParser.RevokeRoleContext ctx);
+    void exitRoleToken(CypherParser.RoleTokenContext ctx);
 
     void exitCreateUser(CypherParser.CreateUserContext ctx);
 
@@ -449,27 +441,39 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitShowUserPrivileges(CypherParser.ShowUserPrivilegesContext ctx);
 
-    void exitGrantRoleManagement(CypherParser.GrantRoleManagementContext ctx);
+    void exitPrivilegeAsCommand(CypherParser.PrivilegeAsCommandContext ctx);
 
-    void exitRevokeRoleManagement(CypherParser.RevokeRoleManagementContext ctx);
+    void exitPrivilegeToken(CypherParser.PrivilegeTokenContext ctx);
 
-    void exitRoleManagementPrivilege(CypherParser.RoleManagementPrivilegeContext ctx);
+    void exitGrantCommand(CypherParser.GrantCommandContext ctx);
 
-    void exitGrantPrivilege(CypherParser.GrantPrivilegeContext ctx);
+    void exitGrantRole(CypherParser.GrantRoleContext ctx);
 
-    void exitDenyPrivilege(CypherParser.DenyPrivilegeContext ctx);
+    void exitDenyCommand(CypherParser.DenyCommandContext ctx);
 
-    void exitRevokePrivilege(CypherParser.RevokePrivilegeContext ctx);
+    void exitRevokeCommand(CypherParser.RevokeCommandContext ctx);
+
+    void exitRevokeRole(CypherParser.RevokeRoleContext ctx);
 
     void exitPrivilege(CypherParser.PrivilegeContext ctx);
 
-    void exitAllPrivilege(CypherParser.AllPrivilegeContext ctx);
+    void exitAllDatabasePrivilege(CypherParser.AllDatabasePrivilegeContext ctx);
 
-    void exitAllPrivilegeType(CypherParser.AllPrivilegeTypeContext ctx);
+    void exitAllGraphPrivilege(CypherParser.AllGraphPrivilegeContext ctx);
 
-    void exitAllPrivilegeTarget(CypherParser.AllPrivilegeTargetContext ctx);
+    void exitAllDbmsPrivilege(CypherParser.AllDbmsPrivilegeContext ctx);
 
     void exitCreatePrivilege(CypherParser.CreatePrivilegeContext ctx);
+
+    void exitCreatePrivilegeForDatabase(CypherParser.CreatePrivilegeForDatabaseContext ctx);
+
+    void exitCreateNodePrivilegeToken(CypherParser.CreateNodePrivilegeTokenContext ctx);
+
+    void exitCreateRelPrivilegeToken(CypherParser.CreateRelPrivilegeTokenContext ctx);
+
+    void exitCreatePropertyPrivilegeToken(CypherParser.CreatePropertyPrivilegeTokenContext ctx);
+
+    void exitActionForDBMS(CypherParser.ActionForDBMSContext ctx);
 
     void exitDropPrivilege(CypherParser.DropPrivilegeContext ctx);
 
@@ -479,6 +483,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitSetPrivilege(CypherParser.SetPrivilegeContext ctx);
 
+    void exitPasswordToken(CypherParser.PasswordTokenContext ctx);
+
     void exitRemovePrivilege(CypherParser.RemovePrivilegeContext ctx);
 
     void exitWritePrivilege(CypherParser.WritePrivilegeContext ctx);
@@ -486,6 +492,20 @@ public interface CypherParserListener extends ParseTreeListener {
     void exitDatabasePrivilege(CypherParser.DatabasePrivilegeContext ctx);
 
     void exitDbmsPrivilege(CypherParser.DbmsPrivilegeContext ctx);
+
+    void exitDbmsPrivilegeExecute(CypherParser.DbmsPrivilegeExecuteContext ctx);
+
+    void exitAdminToken(CypherParser.AdminTokenContext ctx);
+
+    void exitProcedureToken(CypherParser.ProcedureTokenContext ctx);
+
+    void exitIndexToken(CypherParser.IndexTokenContext ctx);
+
+    void exitConstraintToken(CypherParser.ConstraintTokenContext ctx);
+
+    void exitTransactionToken(CypherParser.TransactionTokenContext ctx);
+
+    void exitUserQualifier(CypherParser.UserQualifierContext ctx);
 
     void exitExecuteFunctionQualifier(CypherParser.ExecuteFunctionQualifierContext ctx);
 
@@ -499,11 +519,21 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitQualifiedGraphPrivileges(CypherParser.QualifiedGraphPrivilegesContext ctx);
 
-    void exitLabelResource(CypherParser.LabelResourceContext ctx);
+    void exitLabelsResource(CypherParser.LabelsResourceContext ctx);
 
-    void exitPropertyResource(CypherParser.PropertyResourceContext ctx);
+    void exitPropertiesResource(CypherParser.PropertiesResourceContext ctx);
+
+    void exitNonEmptyStringList(CypherParser.NonEmptyStringListContext ctx);
 
     void exitGraphQualifier(CypherParser.GraphQualifierContext ctx);
+
+    void exitGraphQualifierToken(CypherParser.GraphQualifierTokenContext ctx);
+
+    void exitRelToken(CypherParser.RelTokenContext ctx);
+
+    void exitElementToken(CypherParser.ElementTokenContext ctx);
+
+    void exitNodeToken(CypherParser.NodeTokenContext ctx);
 
     void exitCreateCompositeDatabase(CypherParser.CreateCompositeDatabaseContext ctx);
 

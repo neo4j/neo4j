@@ -60,7 +60,7 @@ object Util {
   }
   @inline def ctxChild(ctx: AstRuleCtx, index: Int): AstRuleCtx = ctx.getChild(index).asInstanceOf[AstRuleCtx]
 
-  @inline def astChild[T <: ASTNode](ctx: AstRuleCtx, index: Int): T =
+  @inline def astChild[T <: Any](ctx: AstRuleCtx, index: Int): T =
     ctx.getChild(index).asInstanceOf[AstRuleCtx].ast()
 
   def astSeq[T: ClassTag](list: java.util.List[_ <: ParseTree], from: Int = 0): ArraySeq[T] = {

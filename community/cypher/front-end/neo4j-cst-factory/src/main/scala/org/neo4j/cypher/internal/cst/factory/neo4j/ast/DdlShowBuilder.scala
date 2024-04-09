@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.ast.ShowSupportedPrivilegeCommand
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
+import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleNamedDatabaseScope
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
@@ -473,15 +474,53 @@ trait DdlShowBuilder extends CypherParserListener {
   final override def exitShowPrivileges(
     ctx: CypherParser.ShowPrivilegesContext
   ): Unit = {
-    ctx.ast = if (ctx.AS != null) {
-      ShowPrivilegeCommands(
-        ShowAllPrivileges()(pos(ctx)),
-        ctx.REVOKE() != null,
-        ctx.showCommandYield().ast[YieldOrWhere]()
-      )(pos(ctx))
-    } else {
-      ShowPrivileges(ShowAllPrivileges()(pos(ctx)), ctx.showCommandYield().ast[YieldOrWhere]())(pos(ctx))
+    val (asCommand, asRevoke) = ctx.privilegeAsCommand().ast[(Boolean, Boolean)]()
+    val cmdYield = ctx.showCommandYield().ast[YieldOrWhere]()
+    ctx.ast = if (asCommand)
+      ShowPrivilegeCommands(ShowAllPrivileges()(pos(ctx)), asRevoke, cmdYield)(pos(ctx))
+    else {
+      ShowPrivileges(ShowAllPrivileges()(pos(ctx)), cmdYield)(pos(ctx))
     }
+  }
+
+  final override def exitShowSupportedPrivileges(
+    ctx: CypherParser.ShowSupportedPrivilegesContext
+  ): Unit = {
+    ctx.ast = ShowSupportedPrivilegeCommand(ctx.showCommandYield().ast[YieldOrWhere]())(pos(ctx))
+  }
+
+  final override def exitShowRolePrivileges(
+    ctx: CypherParser.ShowRolePrivilegesContext
+  ): Unit = {
+    val (asCommand, asRevoke) = ctx.privilegeAsCommand().ast[(Boolean, Boolean)]()
+    val cmdYield = ctx.showCommandYield().ast[YieldOrWhere]()
+    val scope = ShowRolesPrivileges(
+      ctx.symbolicNameOrStringParameterList().ast[Seq[Expression]]().toList
+    )(pos(ctx))
+    ctx.ast = if (asCommand) {
+      ShowPrivilegeCommands(scope, asRevoke, cmdYield)(pos(ctx))
+    } else {
+      ShowPrivileges(scope, cmdYield)(pos(ctx))
+    }
+  }
+
+  final override def exitShowUserPrivileges(
+    ctx: CypherParser.ShowUserPrivilegesContext
+  ): Unit = {
+    val (asCommand, asRevoke) = ctx.privilegeAsCommand().ast[(Boolean, Boolean)]()
+    val namesList = ctx.symbolicNameOrStringParameterList()
+    val cmdYield = ctx.showCommandYield().ast[YieldOrWhere]()
+    val scope = if (namesList != null) ShowUsersPrivileges(astOpt(namesList, Seq()).toList)(pos(ctx))
+    else ShowUserPrivileges(None)(pos(ctx))
+    ctx.ast = if (asCommand) {
+      ShowPrivilegeCommands(scope, asRevoke, cmdYield)(pos(ctx))
+    } else {
+      ShowPrivileges(scope, cmdYield)(pos(ctx))
+    }
+  }
+
+  override def exitPrivilegeAsCommand(ctx: CypherParser.PrivilegeAsCommandContext): Unit = {
+    ctx.ast = (ctx.AS() != null, ctx.REVOKE() != null)
   }
 
   final override def exitShowProcedures(
@@ -495,15 +534,6 @@ trait DdlShowBuilder extends CypherParserListener {
       ctx.composableCommandClauses(),
       ShowProceduresClause(ctx.executableBy.ast(), where, yieldedItems, yieldAll)(parentPos)
     )
-  }
-
-  final override def exitShowRolePrivileges(
-    ctx: CypherParser.ShowRolePrivilegesContext
-  ): Unit = {
-    ctx.ast = ShowPrivileges(
-      ShowRolesPrivileges(ctx.symbolicNameOrStringParameterList().ast())(pos(ctx)),
-      ctx.showCommandYield().ast[YieldOrWhere]()
-    )(pos(ctx))
   }
 
   final override def exitShowRoles(
@@ -534,12 +564,6 @@ trait DdlShowBuilder extends CypherParserListener {
       ctx.namesAndClauses().composableCommandClauses(),
       ShowSettingsClause(strOrExpr, where, yieldedItems, yieldAll)(parentPos)
     )
-  }
-
-  final override def exitShowSupportedPrivileges(
-    ctx: CypherParser.ShowSupportedPrivilegesContext
-  ): Unit = {
-    ctx.ast = ShowSupportedPrivilegeCommand(ctx.showCommandYield().ast[YieldOrWhere]())(pos(ctx))
   }
 
   final override def exitShowTransactions(
@@ -576,15 +600,6 @@ trait DdlShowBuilder extends CypherParserListener {
       ctx.namesAndClauses().composableCommandClauses(),
       TerminateTransactionsClause(strOrExpr, yieldedItems, yieldAll, where.map(_.position))(parentPos)
     )
-  }
-
-  final override def exitShowUserPrivileges(
-    ctx: CypherParser.ShowUserPrivilegesContext
-  ): Unit = {
-    ctx.ast = ShowPrivileges(
-      ShowUserPrivileges(astOpt(ctx.symbolicNameOrStringParameterList()))(pos(ctx)),
-      ctx.showCommandYield().ast[YieldOrWhere]()
-    )(pos(ctx))
   }
 
   final override def exitShowFunctionsType(

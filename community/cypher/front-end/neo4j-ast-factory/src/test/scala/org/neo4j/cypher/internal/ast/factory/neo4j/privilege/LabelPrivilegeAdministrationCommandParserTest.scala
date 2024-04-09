@@ -40,140 +40,140 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           ).foreach {
             case (setOrRemove, action) =>
               test(s"$verb$immutableString $setOrRemove LABEL label ON GRAPH foo $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   labelResource,
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               // Multiple labels should be allowed
 
               test(s"$verb$immutableString $setOrRemove LABEL * ON GRAPH foo $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   ast.AllLabelResource()(_),
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label1, label2 ON GRAPH foo $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   ast.LabelsResource(Seq("label1", "label2"))(_),
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               // Multiple graphs should be allowed
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON GRAPHS * $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.AllGraphsScope()(_))(_),
                   labelResource,
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON GRAPHS foo,baz $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFooBaz)(_),
                   labelResource,
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               // Home graph should be allowed
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON HOME GRAPH $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   labelResource,
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL * ON HOME GRAPH $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   ast.AllLabelResource()(_),
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               // Default graph should be allowed
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DEFAULT GRAPH $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   labelResource,
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL * ON DEFAULT GRAPH $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   ast.AllLabelResource()(_),
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               // Multiple roles should be allowed
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON GRAPHS foo $preposition role1, role2") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   labelResource,
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole1, literalRole2),
                   immutable
-                ))
+                )(pos))
               }
 
               // Parameter values
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON GRAPH $$foo $preposition role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeParamFoo)(_),
                   labelResource,
                   List(ast.LabelAllQualifier()(_)),
                   Seq(literalRole),
                   immutable
-                ))
+                )(pos))
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON GRAPH foo $preposition $$role") {
-                yields[Statements](func(
+                parsesTo[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   labelResource,
                   List(ast.LabelAllQualifier()(_)),
                   Seq(paramRole),
                   immutable
-                ))
+                )(pos))
               }
 
               // TODO: should this one be supported?
               test(s"$verb$immutableString $setOrRemove LABEL $$label ON GRAPH foo $preposition role") {
-                failsToParse[Statements]
+                failsParsing[Statements]
               }
 
               // LABELS instead of LABEL
@@ -193,11 +193,11 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON HOME DATABASE $preposition role") {
-                failsToParse[Statements]
+                failsParsing[Statements]
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DEFAULT DATABASE $preposition role") {
-                failsToParse[Statements]
+                failsParsing[Statements]
               }
           }
       }

@@ -66,7 +66,6 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       case CypherParser.RULE_createLookupIndex                => checkCreateLookupIndex(cast(ctx))
       case CypherParser.RULE_createUser                       => checkCreateUser(cast(ctx))
       case CypherParser.RULE_alterUser                        => checkAlterUser(cast(ctx))
-      case CypherParser.RULE_allPrivilege                     => checkAllPrivilege(cast(ctx))
       case CypherParser.RULE_createDatabase                   => checkCreateDatabase(cast(ctx))
       case CypherParser.RULE_alterDatabase                    => checkAlterDatabase(cast(ctx))
       case CypherParser.RULE_alterDatabaseTopology            => checkAlterDatabaseTopology(cast(ctx))
@@ -207,38 +206,6 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
     }
     errorOnDuplicateRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
     errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")
-  }
-
-  private def checkAllPrivilege(ctx: CypherParser.AllPrivilegeContext): Unit = {
-    val privilegeType = ctx.allPrivilegeType()
-    val privilegeTarget = ctx.allPrivilegeTarget()
-
-    if (privilegeType != null && privilegeTarget != null) {
-      val privilege =
-        if (privilegeType.GRAPH() != null) Some("GRAPH")
-        else if (privilegeType.DBMS() != null) Some("DBMS")
-        else if (privilegeType.DATABASE() != null) Some("DATABASE")
-        else None
-
-      val target =
-        if (privilegeTarget.GRAPH() != null) Some(("GRAPH", privilegeTarget.GRAPH().getSymbol))
-        else if (privilegeTarget.DBMS() != null) Some(("DBMS", privilegeTarget.DBMS().getSymbol))
-        else if (privilegeTarget.DATABASE() != null) Some(("DATABASE", privilegeTarget.DATABASE().getSymbol))
-        else if (privilegeTarget.DATABASES() != null) Some(("DATABASES", privilegeTarget.DATABASES().getSymbol))
-        else None
-
-      (privilege, target) match {
-        case (Some(privilege), Some((target, symbol))) =>
-          // This makes GRANT ALL DATABASE PRIVILEGES ON DATABASES * work
-          if (!target.startsWith(privilege)) {
-            errors :+= exceptionFactory.syntaxException(
-              s"Invalid input $target': expected \"$privilege\"",
-              inputPosition(symbol)
-            )
-          }
-        case _ =>
-      }
-    }
   }
 
   private def checkGlobPart(ctx: CypherParser.GlobPartContext): Unit = {

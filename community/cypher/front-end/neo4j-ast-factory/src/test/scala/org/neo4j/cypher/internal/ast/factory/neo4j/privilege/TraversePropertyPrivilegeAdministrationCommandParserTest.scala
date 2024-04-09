@@ -64,21 +64,20 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
     } yield {
       val immutableString = immutableOrEmpty(immutable)
 
-      parsing(
-        s"$verb$immutableString TRAVERSE ON HOME GRAPH FOR (a:A) WHERE a.prop2=1 $preposition role"
-      ) shouldGive func(
-        GraphPrivilege(TraverseAction, HomeGraphScope()(pos))(pos),
-        List(PatternQualifier(
-          Seq(labelQualifierA),
-          Some(Variable("a")(_)),
-          Equals(
-            Property(Variable("a")(_), PropertyKeyName("prop2")(_))(_),
-            literal(1)
-          )(_)
-        )),
-        Seq(literalRole),
-        immutable
-      )
+      s"$verb$immutableString TRAVERSE ON HOME GRAPH FOR (a:A) WHERE a.prop2=1 $preposition role" should
+        parseTo[Statements](func(
+          GraphPrivilege(TraverseAction, HomeGraphScope()(pos))(pos),
+          List(PatternQualifier(
+            Seq(labelQualifierA),
+            Some(Variable("a")(_)),
+            Equals(
+              Property(Variable("a")(_), PropertyKeyName("prop2")(_))(_),
+              literal(1)
+            )(_)
+          )),
+          Seq(literalRole),
+          immutable
+        )(pos))
     }
   }
 
@@ -89,21 +88,22 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
     } yield {
       val immutableString = immutableOrEmpty(immutable)
 
-      parsing(
-        s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH FOR (a:A) WHERE a.prop2=1 $preposition role"
-      ) shouldGive func(
-        GraphPrivilege(TraverseAction, DefaultGraphScope()(pos))(pos),
-        List(PatternQualifier(
-          Seq(labelQualifierA),
-          Some(Variable("a")(_)),
-          Equals(
-            Property(Variable("a")(_), PropertyKeyName("prop2")(_))(_),
-            literal(1)
-          )(_)
-        )),
-        Seq(literalRole),
-        immutable
-      )
+      s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH FOR (a:A) WHERE a.prop2=1 $preposition role" should
+        parseTo[Statements](
+          func(
+            GraphPrivilege(TraverseAction, DefaultGraphScope()(pos))(pos),
+            List(PatternQualifier(
+              Seq(labelQualifierA),
+              Some(Variable("a")(_)),
+              Equals(
+                Property(Variable("a")(_), PropertyKeyName("prop2")(_))(_),
+                literal(1)
+              )(_)
+            )),
+            Seq(literalRole),
+            immutable
+          )(pos)
+        )
     }
   }
 
@@ -136,25 +136,25 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         case _ => fail("Unexpected expression")
       }).foreach { case (variable: Option[Variable], propertyRule: String) =>
         // All labels, parameterised role
-        parsing(
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition $$role"
-        ) shouldGive
-          func(
-            GraphPrivilege(TraverseAction, graphScope)(pos),
-            List(PatternQualifier(Seq(LabelAllQualifier()(pos)), variable, propertyRuleAst)),
-            Seq(paramRole),
-            immutable
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition $$role" should
+          parseTo[Statements](
+            func(
+              GraphPrivilege(TraverseAction, graphScope)(pos),
+              List(PatternQualifier(Seq(LabelAllQualifier()(pos)), variable, propertyRuleAst)),
+              Seq(paramRole),
+              immutable
+            )(pos)
           )
 
         // All labels, role containing colon
-        parsing(
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition `r:ole`"
-        ) shouldGive
-          func(
-            GraphPrivilege(TraverseAction, graphScope)(pos),
-            List(PatternQualifier(Seq(LabelAllQualifier()(pos)), variable, propertyRuleAst)),
-            Seq(literalRColonOle),
-            immutable
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition `r:ole`" should
+          parseTo[Statements](
+            func(
+              GraphPrivilege(TraverseAction, graphScope)(pos),
+              List(PatternQualifier(Seq(LabelAllQualifier()(pos)), variable, propertyRuleAst)),
+              Seq(literalRColonOle),
+              immutable
+            )(pos)
           )
       }
 
@@ -179,14 +179,14 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
           )
         case _ => fail("Unexpected expression")
       }).foreach { case (variable: Option[Variable], propertyRule: String) =>
-        parsing(
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
-        ) shouldGive
-          func(
-            GraphPrivilege(TraverseAction, graphScope)(pos),
-            List(PatternQualifier(Seq(labelQualifierA), variable, propertyRuleAst)),
-            Seq(literalRole),
-            immutable
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role" should
+          parseTo[Statements](
+            func(
+              GraphPrivilege(TraverseAction, graphScope)(pos),
+              List(PatternQualifier(Seq(labelQualifierA), variable, propertyRuleAst)),
+              Seq(literalRole),
+              immutable
+            )(pos)
           )
       }
 
@@ -210,14 +210,14 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
           )
         case _ => fail("Unexpected expression")
       }).foreach { case (variable: Option[Variable], propertyRule: String) =>
-        parsing(
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
-        ) shouldGive
-          func(
-            GraphPrivilege(TraverseAction, graphScope)(pos),
-            List(PatternQualifier(Seq(LabelQualifier("A B")(_)), variable, propertyRuleAst)),
-            Seq(literalRole),
-            immutable
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role" should
+          parseTo[Statements](
+            func(
+              GraphPrivilege(TraverseAction, graphScope)(pos),
+              List(PatternQualifier(Seq(LabelQualifier("A B")(_)), variable, propertyRuleAst)),
+              Seq(literalRole),
+              immutable
+            )(pos)
           )
       }
 
@@ -241,14 +241,14 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
           )
         case _ => fail("Unexpected expression")
       }).foreach { case (variable: Option[Variable], propertyRule: String) =>
-        parsing(
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
-        ) shouldGive
-          func(
-            GraphPrivilege(TraverseAction, graphScope)(pos),
-            List(PatternQualifier(Seq(LabelQualifier(":A")(_)), variable, propertyRuleAst)),
-            Seq(literalRole),
-            immutable
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role" should
+          parseTo[Statements](
+            func(
+              GraphPrivilege(TraverseAction, graphScope)(pos),
+              List(PatternQualifier(Seq(LabelQualifier(":A")(_)), variable, propertyRuleAst)),
+              Seq(literalRole),
+              immutable
+            )(pos)
           )
       }
 
@@ -272,16 +272,16 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
           )
         case _ => fail("Unexpected expression")
       }).foreach { case (variable: Option[Variable], propertyRule: String) =>
-        parsing(
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role1, $$role2"
-        ) shouldGive
-          func(
-            GraphPrivilege(TraverseAction, graphScope)(pos),
-            List(
-              PatternQualifier(Seq(labelQualifierA, labelQualifierB), variable, propertyRuleAst)
-            ),
-            Seq(literalRole1, paramRole2),
-            immutable
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition role1, $$role2" should
+          parseTo[Statements](
+            func(
+              GraphPrivilege(TraverseAction, graphScope)(pos),
+              List(
+                PatternQualifier(Seq(labelQualifierA, labelQualifierB), variable, propertyRuleAst)
+              ),
+              Seq(literalRole1, paramRole2),
+              immutable
+            )(pos)
           )
       }
     }
@@ -317,33 +317,31 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         case _ => fail("Unexpected expression")
       }).foreach { case (variable: Option[Variable], propertyRule: String) =>
         val patternQualifier = List(PatternQualifier(Seq(labelQualifierA), variable, propertyRuleAst))
-        parsing(
-          s"$verb$immutableString TRAVERSE ON $graphKeyword `f:oo` $patternKeyword $propertyRule $preposition role"
-        ) shouldGive
-          func(
-            GraphPrivilege(TraverseAction, NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
-            patternQualifier,
-            Seq(literalRole),
-            immutable
+        s"$verb$immutableString TRAVERSE ON $graphKeyword `f:oo` $patternKeyword $propertyRule $preposition role" should
+          parseTo[Statements](
+            func(
+              GraphPrivilege(TraverseAction, NamedGraphsScope(Seq(namespacedName("f:oo"))) _)(pos),
+              patternQualifier,
+              Seq(literalRole),
+              immutable
+            )(pos)
           )
 
-        parsing(
-          s"$verb$immutableString TRAVERSE ON $graphKeyword foo, baz $patternKeyword $propertyRule $preposition role"
-        ) shouldGive
-          func(
-            GraphPrivilege(TraverseAction, graphScopeFooBaz)(pos),
-            patternQualifier,
-            Seq(literalRole),
-            immutable
+        s"$verb$immutableString TRAVERSE ON $graphKeyword foo, baz $patternKeyword $propertyRule $preposition role" should
+          parseTo[Statements](
+            func(
+              GraphPrivilege(TraverseAction, graphScopeFooBaz)(pos),
+              patternQualifier,
+              Seq(literalRole),
+              immutable
+            )(pos)
           )
       }
     }
   }
 
   test("Allow trailing star") {
-    parsing(
-      s"GRANT TRAVERSE ON GRAPH * FOR (n) WHERE n.prop1 = 1 (*) TO role"
-    ) shouldGive
+    s"GRANT TRAVERSE ON GRAPH * FOR (n) WHERE n.prop1 = 1 (*) TO role" should parseTo[Statements](
       grantGraphPrivilege(
         GraphPrivilege(TraverseAction, AllGraphsScope()(pos))(pos),
         List(PatternQualifier(
@@ -353,15 +351,14 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         )),
         Seq(literalRole),
         i = false
-      )
+      )(pos)
+    )
   }
 
   test(
     "Different variable should parse correctly to allow them to be rejected in the semantic check with a user-friendly explanation"
   ) {
-    parsing(
-      s"GRANT TRAVERSE ON GRAPH * FOR (a) WHERE b.prop1 = 1 TO role"
-    ) shouldGive
+    s"GRANT TRAVERSE ON GRAPH * FOR (a) WHERE b.prop1 = 1 TO role" should parseTo[Statements](
       grantGraphPrivilege(
         GraphPrivilege(TraverseAction, AllGraphsScope()(pos))(pos),
         List(PatternQualifier(
@@ -371,15 +368,14 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         )),
         Seq(literalRole),
         i = false
-      )
+      )(pos)
+    )
   }
 
   test(
     "'FOR (n) WHERE 1 = n.prop1 (foo) TO role' parse as a function to then be rejected in semantic check"
   ) {
-    parsing(
-      s"GRANT TRAVERSE ON GRAPH * FOR (n) WHERE 1 = n.prop1 (foo) TO role"
-    ) shouldGive
+    s"GRANT TRAVERSE ON GRAPH * FOR (n) WHERE 1 = n.prop1 (foo) TO role" should parseTo[Statements](
       grantGraphPrivilege(
         GraphPrivilege(TraverseAction, AllGraphsScope()(pos))(pos),
         List(PatternQualifier(
@@ -396,11 +392,10 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         )),
         Seq(literalRole),
         i = false
-      )
+      )(pos)
+    )
 
-    parsing(
-      s"GRANT TRAVERSE ON GRAPH * FOR (n WHERE 1 = n.prop1 (foo)) TO role"
-    ) shouldGive
+    s"GRANT TRAVERSE ON GRAPH * FOR (n WHERE 1 = n.prop1 (foo)) TO role" should parseTo[Statements](
       grantGraphPrivilege(
         GraphPrivilege(TraverseAction, AllGraphsScope()(pos))(pos),
         List(PatternQualifier(
@@ -417,15 +412,14 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         )),
         Seq(literalRole),
         i = false
-      )
+      )(pos)
+    )
   }
 
   test(
     "'(n:A WHERE EXISTS { MATCH (n) })' parse to then be rejected in semantic check"
   ) {
-    parsing(
-      s"GRANT TRAVERSE ON GRAPH * FOR (n:A WHERE EXISTS { MATCH (n) }) TO role"
-    ) shouldGive
+    s"GRANT TRAVERSE ON GRAPH * FOR (n:A WHERE EXISTS { MATCH (n) }) TO role" should parseTo[Statements](
       grantGraphPrivilege(
         GraphPrivilege(TraverseAction, AllGraphsScope()(pos))(pos),
         List(PatternQualifier(
@@ -450,7 +444,8 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         )),
         Seq(literalRole),
         i = false
-      )
+      )(pos)
+    )
   }
 
   test("legitimate property rules, but with problems elsewhere in the privilege command") {
@@ -482,40 +477,32 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         case _ => fail("Unexpected expression")
       }).foreach { (propertyRule: String) =>
         // Missing ON
-        assertFails[Statements](
-          s"$verb$immutableString TRAVERSE $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
-        )
+        s"$verb$immutableString TRAVERSE $graphKeyword $graphName $patternKeyword $propertyRule $preposition role" should
+          notParse[Statements]
 
         // Missing role
-        assertFails[Statements](
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule"
-        )
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule" should
+          notParse[Statements]
 
         // r:ole is invalid
-        assertFails[Statements](
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition r:ole"
-        )
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition r:ole" should
+          notParse[Statements]
 
         // Invalid graph name
-        assertFails[Statements](
-          s"$verb$immutableString TRAVERSE ON $graphKeyword f:oo $patternKeyword $propertyRule $preposition role"
-        )
+        s"$verb$immutableString TRAVERSE ON $graphKeyword f:oo $patternKeyword $propertyRule $preposition role" should
+          notParse[Statements]
 
         // Mixing specific graph and *
-        assertFails[Statements](
-          s"$verb$immutableString TRAVERSE ON $graphKeyword foo, * $patternKeyword $propertyRule $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString TRAVERSE ON $graphKeyword *, foo $patternKeyword $propertyRule $preposition role"
-        )
+        s"$verb$immutableString TRAVERSE ON $graphKeyword foo, * $patternKeyword $propertyRule $preposition role" should
+          notParse[Statements]
+        s"$verb$immutableString TRAVERSE ON $graphKeyword *, foo $patternKeyword $propertyRule $preposition role" should
+          notParse[Statements]
 
         // Missing graph name
-        assertFails[Statements](
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $patternKeyword $propertyRule $preposition role"
-        )
-        assertFails[Statements](
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $patternKeyword $propertyRule (*) $preposition role"
-        )
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $patternKeyword $propertyRule $preposition role" should
+          notParse[Statements]
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $patternKeyword $propertyRule (*) $preposition role" should
+          notParse[Statements]
       }
     }
   }
@@ -537,9 +524,8 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         s"(n:A {prop1:1})"
       ).foreach { (propertyRule: String) =>
         {
-          assertFails[Statements](
-            s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $segment $propertyRule $preposition role"
-          )
+          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $segment $propertyRule $preposition role" should
+            notParse[Statements]
         }
       }
     }
@@ -554,9 +540,8 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
     } yield {
       val immutableString = immutableOrEmpty(immutable)
       disallowedPropertyRules.foreach { (disallowedPropertyRule: String) =>
-        assertFails[Statements](
-          s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $disallowedPropertyRule $preposition role"
-        )
+        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $disallowedPropertyRule $preposition role" should
+          notParse[Statements]
       }
 
       // No variable, WHERE gets parsed as variable in javacc
