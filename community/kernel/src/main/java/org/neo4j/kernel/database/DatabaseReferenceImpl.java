@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -308,6 +309,54 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
         @Override
         public boolean isComposite() {
             return true;
+        }
+    }
+
+    public static final class SPD extends DatabaseReferenceImpl.Internal {
+        private final Map<Integer, DatabaseReference> entityDetailStores;
+
+        /**
+         * Creates a sharded property database reference
+         */
+        public SPD(
+                NormalizedDatabaseName alias,
+                NamedDatabaseId namedDatabaseId,
+                Map<Integer, DatabaseReference> entityDetailStores) {
+            super(alias, namedDatabaseId, true);
+            this.entityDetailStores = entityDetailStores;
+        }
+
+        @Override
+        public Optional<NormalizedDatabaseName> namespace() {
+            return Optional.empty();
+        }
+
+        public Map<Integer, DatabaseReference> entityDetailStores() {
+            return entityDetailStores;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            SPD spd = (SPD) o;
+            return Objects.equals(entityDetailStores, spd.entityDetailStores());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), entityDetailStores);
+        }
+
+        @Override
+        public String toString() {
+            return "ShardedPropertyDatabase{" + "alias="
+                    + alias + ", namespace="
+                    + namespace + ", namedDatabaseId="
+                    + namedDatabaseId + ", primary="
+                    + primary + ", entityDetailStores="
+                    + entityDetailStores + '}';
         }
     }
 }
