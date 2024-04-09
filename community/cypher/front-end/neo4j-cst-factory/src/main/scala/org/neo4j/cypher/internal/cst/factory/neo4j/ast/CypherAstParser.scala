@@ -27,6 +27,7 @@ import org.antlr.v4.runtime.atn.PredictionMode
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
 import org.neo4j.cypher.internal.cst.factory.neo4j.DefaultCypherToken
@@ -36,8 +37,11 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.internal.helpers.Exceptions
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
 import scala.util.control.NonFatal
 
@@ -132,8 +136,25 @@ object CypherAstParser {
     query: String,
     exceptionFactory: CypherExceptionFactory,
     notificationLogger: Option[InternalNotificationLogger]
-  ): Statements =
-    parse(query, exceptionFactory, notificationLogger, _.statements()).ast[Statements]()
+  ): Statement = {
+    val statements =
+      try {
+        parse(query, exceptionFactory, notificationLogger, _.statements()).ast[Statements]()
+      } catch {
+        case e: HasStatus => throw e
+        // Other errors which come from the parser should not be exposed to the user
+        case e: Exception => throw new CypherExecutionException(s"Failed to parse query `$query`.", e)
+      }
+
+    if (statements.size() == 1) {
+      statements.statements.head
+    } else {
+      throw exceptionFactory.syntaxException(
+        s"Expected exactly one statement per query but got: ${statements.size}",
+        InputPosition.NONE
+      )
+    }
+  }
 
   def parse[T <: AstRuleCtx](
     query: String,

@@ -39,7 +39,7 @@ case class Parse(useAntlr: Boolean) extends Phase[BaseContext, BaseState, BaseSt
         in.queryText,
         context.cypherExceptionFactory,
         Some(context.notificationLogger)
-      ).get(0))
+      ))
     } else {
       in.withStatement(JavaCCParser.parse(
         in.queryText,

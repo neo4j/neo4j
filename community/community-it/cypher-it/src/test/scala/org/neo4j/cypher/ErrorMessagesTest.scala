@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
 
-class ErrorMessagesTest extends ExecutionEngineFunSuite {
+class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
 
   // pure syntax errors -- not sure if TCK material?
 
@@ -35,27 +35,29 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("noReturnColumns") {
     expectError(
       "match (s) where id(s) = 0 return",
-      "Invalid input '': expected \"*\", \"DISTINCT\" or an expression (line 1, column 33 (offset: 32))"
+      "Invalid input '': expected \"*\", \"DISTINCT\" or an expression (line 1, column 33 (offset: 32))",
+      "Mismatched input '': expected 'DISTINCT', '*', an expression (line 1, column 33 (offset: 32))"
     )
   }
 
   test("bad node variable") {
     expectSyntaxError(
       "match (a) where id(a) = 0 match (a)-[WORKED_ON]-, return a",
+      48,
       "Invalid input ',': expected",
-      48
+      "Mismatched input ',': expected '{', '+', '*', '(' (line 1, column 49 (offset: 48))"
     )
   }
 
   test("should consider extra offset in syntax error messages when there are pre-parsing options") {
-    expectSyntaxError("PROFILE XX", "", 8)
+    expectSyntaxError("PROFILE XX", 8, "")
   }
 
   test("should consider extra offset in semantic error messages when there are pre-parsing options") {
     expectSyntaxError(
       "explain match (a) where id(a) = 0 return dontDoIt(a)",
-      "Unknown function 'dontDoIt' (line 1, column 42 (offset: 41))",
-      41
+      41,
+      "Unknown function 'dontDoIt' (line 1, column 42 (offset: 41))"
     )
   }
 
@@ -63,8 +65,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     expectSyntaxError(
       """explain
         |match (a) where id(a) = 0 return dontDoIt(a)""".stripMargin,
-      "Unknown function 'dontDoIt' (line 2, column 34 (offset: 41))",
-      41
+      41,
+      "Unknown function 'dontDoIt' (line 2, column 34 (offset: 41))"
     )
   }
 
@@ -72,8 +74,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     expectSyntaxError(
       """explain match (a) where id(a) = 0
         |return dontDoIt(a)""".stripMargin,
-      "Unknown function 'dontDoIt' (line 2, column 8 (offset: 41))",
-      41
+      41,
+      "Unknown function 'dontDoIt' (line 2, column 8 (offset: 41))"
     )
   }
 
@@ -96,39 +98,44 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("badMatch2") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match (p)-[:IS_A]>dude return dude.name",
+      43,
       "Invalid input '>'",
-      43
+      "Missing '-' at '>' (line 1, column 44 (offset: 43))"
     )
   }
 
   test("badMatch3") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match (p)-[:IS_A->dude return dude.name",
+      42,
       "Invalid input '-'",
-      42
+      "Mismatched input '-': expected '*', '{', '$', 'WHERE', ']' (line 1, column 43 (offset: 42))"
     )
   }
 
   test("badMatch4") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match (p)-[!]->dude return dude.name",
+      37,
       "Invalid input '!'",
-      37
+      "Extraneous input '!': expected a variable name, ':', 'IS', '*', '{', '$', 'WHERE', ']' (line 1, column 38 (offset: 37))"
     )
   }
 
   test("badMatch5") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match (p)[:likes]->dude return dude.name",
+      35,
       "Invalid input '['",
-      35
+      "Mismatched input '[': expected ';', <EOF> (line 1, column 36 (offset: 35))"
     )
   }
 
   test("invalidLabel") {
     expectError(
       "match (p) where id(p) = 2 match (p:super-man) return p.name",
-      "Invalid input"
+      "Invalid input",
+      "Mismatched input '-': expected '{', '$', 'WHERE', ')' (line 1, column 41 (offset: 40))"
     )
   }
 
@@ -215,53 +222,61 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
   test("should render caret correctly in parser errors for queries without prefix") {
     testSyntaxErrorWithCaret(
-      "Invalid input '1",
       "MATCH 123",
-      "      ^"
+      "      ^",
+      "Invalid input '1",
+      "Mismatched input '123'"
     )
   }
 
   test("should render caret correctly in parser errors for queries with prefix") {
     testSyntaxErrorWithCaret(
-      "Invalid input '1",
       "EXPLAIN MATCH 123",
-      "              ^"
+      "              ^",
+      "Invalid input '1",
+      "Mismatched input '123'"
     )
   }
 
   test("should render caret correctly in planner errors for queries without prefix") {
     testSyntaxErrorWithCaret(
-      "Type mismatch: expected Integer but was String (line 1, column 22 (offset: 21))",
       "CALL db.awaitIndexes('wrong')",
-      "                     ^"
+      "                     ^",
+      "Type mismatch: expected Integer but was String (line 1, column 22 (offset: 21))"
     )
   }
 
   test("should render caret correctly in planner errors for queries with prefix") {
     testSyntaxErrorWithCaret(
-      "Type mismatch: expected Integer but was String (line 1, column 30 (offset: 29))",
       "EXPLAIN CALL db.awaitIndexes('wrong')",
-      "                             ^"
+      "                             ^",
+      "Type mismatch: expected Integer but was String (line 1, column 30 (offset: 29))"
     )
   }
 
-  private def expectError(query: String, expectedError: String): Unit = {
+  private def expectError(query: String, expectedError: String*): Unit = {
     val error = intercept[Neo4jException](executeQuery(query))
-    assertThat(error).hasMessageContaining(expectedError)
+    withClue(error)(expectedError.exists(error.getMessage.contains) shouldBe true)
   }
 
-  private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int): Unit = {
+  private def expectSyntaxError(query: String, expectedOffset: Int, expectedError: String*): Unit = {
     val error = intercept[SyntaxException](executeQuery(query))
-    assertThat(error).hasMessageContaining(expectedError)
+    withClue(error) {
+      expectedError.exists(error.getMessage.contains) shouldBe true
+    }
     assertThat(error.getOffset).hasValue(expectedOffset);
   }
 
-  private def testSyntaxErrorWithCaret(expectedError: String, query: String, expectedCaret: String): Unit = {
+  private def testSyntaxErrorWithCaret(query: String, expectedCaret: String, expectedError: String*): Unit = {
     val error = intercept[SyntaxException](executeQuery(query))
-    val expected = String.format("\"%s\"\n %s", query, expectedCaret)
-    val got = error.getMessage.linesIterator
-    got.next() should startWith(expectedError)
-    got.mkString("\n") should endWith(expected)
+    val errorLines = error.getMessage.linesIterator.toSeq
+    withClue(error) {
+      expectedError.exists { e =>
+        val expected = String.format("\"%s\"\n %s", query, expectedCaret)
+        errorLines.head.startsWith(e) &&
+        errorLines.mkString("\n").endsWith(expected)
+      } shouldBe true
+    }
   }
 
   private def executeQuery(query: String): Unit = {
