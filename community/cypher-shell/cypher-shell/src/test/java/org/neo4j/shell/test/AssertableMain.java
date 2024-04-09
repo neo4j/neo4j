@@ -45,9 +45,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.assertj.core.api.AbstractStringAssert;
 import org.assertj.core.api.Condition;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Environment;
@@ -128,6 +130,12 @@ public class AssertableMain {
     public final AssertableMain assertThatErrorOutput(Condition<String>... conditions) {
         var errorOutput = err.toString(UTF_8);
         assertThat(errorOutput).satisfies(allOf(conditions));
+        return this;
+    }
+
+    public final AssertableMain assertThatErrorOutput(Consumer<AbstractStringAssert<?>> f) {
+        var errorOutput = err.toString(UTF_8);
+        f.accept(assertThat(errorOutput));
         return this;
     }
 

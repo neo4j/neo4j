@@ -291,7 +291,7 @@ class MainIntegrationTest {
                 .addArgs("-u", USER, "-p", PASSWORD, "--file", fileFromResource("invalid.cypher"))
                 .run()
                 .assertFailure()
-                .assertThatErrorOutput(contains("Invalid input"))
+                .assertThatErrorOutput(o -> o.containsAnyOf("Invalid input", "Mismatched input"))
                 .assertOutputLines("result", "42");
     }
 
@@ -515,7 +515,7 @@ class MainIntegrationTest {
                 .userInputLines(":source " + file, ":exit")
                 .run()
                 .assertSuccessAndConnected(false)
-                .assertThatErrorOutput(contains("Invalid input"))
+                .assertThatErrorOutput(o -> o.containsAnyOf("Invalid input", "Mismatched input"))
                 .assertThatOutput(
                         contains("> :source " + file + format("%nresult%n42%n") + USER + "@"), endsWithInteractiveExit);
     }
