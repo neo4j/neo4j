@@ -168,7 +168,7 @@ object Util {
   @inline def pos(node: TerminalNode): InputPosition = pos(node.getSymbol)
 
   /**
-   * Returns the query input text for the specified rule. Includes comments! Do not include pre-parser options!
+   * Returns the query input text for the specified rule. Includes comments! Does not include pre-parser options!
    * In most situations ctx.getText is what you want.
    */
   @inline def inputText(ctx: AstRuleCtx): String = {
