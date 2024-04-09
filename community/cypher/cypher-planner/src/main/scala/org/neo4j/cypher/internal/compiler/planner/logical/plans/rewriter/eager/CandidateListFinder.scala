@@ -301,7 +301,7 @@ object CandidateListFinder {
    */
   private case class SequencesAcc(
     openConflicts: Map[Ref[LogicalPlan], Set[ConflictingPlanPair]],
-    openSequences: Map[Ref[LogicalPlan], Seq[OpenSequence]] = Map.empty,
+    openSequences: Map[Ref[LogicalPlan], List[OpenSequence]] = Map.empty,
     candidateLists: Vector[CandidateList] = Vector.empty,
     currentLayer: Int = -1
   ) {
@@ -312,9 +312,9 @@ object CandidateListFinder {
       conflict: ConflictingPlanPair,
       layer: Int
     ): SequencesAcc = {
-      val oS = openSequences.getOrElse(end, Seq.empty)
+      val oS = openSequences.getOrElse(end, Nil)
       copy(openSequences =
-        openSequences.updated(end, oS :+ OpenSequence(start, layer, conflict))
+        openSequences.updated(end, OpenSequence(start, layer, conflict) :: oS)
       )
     }
 
