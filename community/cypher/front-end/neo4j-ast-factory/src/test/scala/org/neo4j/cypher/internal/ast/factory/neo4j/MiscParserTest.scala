@@ -519,11 +519,11 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     "return 'a\\u000Ab\\u000Ac', 'x'" should parse[Statements].toAstPositioned {
       Statements(Seq(singleQuery(return_(
         returnItem(
-          StringLiteral("a\nb\nc")(InputPosition(7, 1, 8), InputPosition(23, 1, 24)),
+          StringLiteral("a\nb\nc")(InputPosition(7, 1, 8).withInputLength(17)),
           "'a\\u000Ab\\u000Ac'"
         ),
         returnItem(
-          StringLiteral("x")(InputPosition(26, 1, 27), InputPosition(28, 1, 29)),
+          StringLiteral("x")(InputPosition(26, 1, 27).withInputLength(3)),
           "'x'"
         )
       ))))
