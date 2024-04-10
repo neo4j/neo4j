@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 /**
@@ -53,8 +52,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         "Many",
         Seq("prop"),
         existsSelectivity = 1.0,
-        uniqueSelectivity = 0.1,
-        providesOrder = IndexOrderCapability.BOTH
+        uniqueSelectivity = 0.1
       )
       .build()
 

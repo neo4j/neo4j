@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -273,7 +274,11 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         |""".stripMargin
     ).leaves.head should equal(
       planner.subPlanBuilder()
-        .relationshipIndexOperator(s"(a)-[r:REL(prop STARTS WITH 'www')]->(b)", indexType = IndexType.RANGE)
+        .relationshipIndexOperator(
+          s"(a)-[r:REL(prop STARTS WITH 'www')]->(b)",
+          _ => GetValue,
+          indexType = IndexType.RANGE
+        )
         .build()
     )
   }

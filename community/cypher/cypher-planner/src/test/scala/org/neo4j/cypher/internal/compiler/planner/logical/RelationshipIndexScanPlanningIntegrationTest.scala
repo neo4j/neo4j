@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
@@ -450,12 +451,12 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
     planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop = b.prop RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .filter("r.prop = b.prop")
+        .filter("cacheR[r.prop] = b.prop")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop)]-(b)",
           indexOrder = IndexOrderNone,
           argumentIds = Set(),
-          getValue = _ => DoNotGetValue,
+          getValue = _ => GetValue,
           indexType = IndexType.RANGE
         )
         .build()

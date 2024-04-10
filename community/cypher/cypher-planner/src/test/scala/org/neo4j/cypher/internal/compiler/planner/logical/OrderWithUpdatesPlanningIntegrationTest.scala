@@ -49,7 +49,6 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Sort
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class OrderWithUpdatesIDPPlanningIntegrationTest extends OrderWithUpdatesPlanningIntegrationTestBase(true)
@@ -300,7 +299,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
       .setRelationshipCardinality("(:N)-[]-()", 100)
       .setRelationshipCardinality("(:N)-[:R]-()", 100)
       .setRelationshipCardinality("()-[:R]-()", 100)
-      .addNodeIndex("N", Seq("prop"), 1.0, 0.3, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("N", Seq("prop"), 1.0, 0.3)
       .addProcedure(writer)
       .addProcedure(reader)
       .build()

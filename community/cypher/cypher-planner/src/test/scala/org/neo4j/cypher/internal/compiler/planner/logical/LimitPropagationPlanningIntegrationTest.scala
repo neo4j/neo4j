@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Assertion
@@ -52,14 +52,13 @@ class LimitPropagationPlanningIntegrationTest
       .setRelationshipCardinality("(:C)-[:REL_CB]->(:B)", 4444)
       .setRelationshipCardinality("()-[:REL_CB]->(:B)", 10000)
       .setRelationshipCardinality("()-[:REL_CB]->()", 10000)
-      .addNodeIndex("A", Seq("id"), 0.5, 1.0 / 111.0, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("C", Seq("id"), 0.5, 1.0 / 2222.0, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("id"), 0.5, 1.0 / 111.0)
+      .addNodeIndex("C", Seq("id"), 0.5, 1.0 / 2222.0)
       .addRelationshipIndex(
         "REL_CB",
         Seq("id"),
         0.5,
         1.0 / 10000,
-        providesOrder = IndexOrderCapability.BOTH,
         indexType = IndexType.RANGE
       )
       .addRelationshipIndex(
@@ -67,7 +66,6 @@ class LimitPropagationPlanningIntegrationTest
         Seq("id"),
         0.5,
         1.0 / 10000,
-        providesOrder = IndexOrderCapability.BOTH,
         indexType = IndexType.TEXT
       )
       .build()
@@ -95,7 +93,12 @@ class LimitPropagationPlanningIntegrationTest
         .limit(10)
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
-        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          "c:C(id STARTS WITH '')",
+          _ => GetValue,
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
         .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
@@ -121,58 +124,6 @@ class LimitPropagationPlanningIntegrationTest
           "(c)-[cb:REL_CB(id)]->(b)",
           indexOrder = IndexOrderAscending,
           indexType = IndexType.RANGE
-        )
-        .filterExpression(hasLabels("b", "B"))
-        .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-        .build()
-    }
-  }
-
-  test("should plan lazy relationship index contains scan instead of sort when under limit") {
-    val query =
-      s"""
-         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
-         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE cb.id CONTAINS 'sub'
-         |RETURN a, c ORDER BY cb.id LIMIT 10
-         |""".stripMargin
-
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
-      planBuilder
-        .produceResults("a", "c")
-        .limit(10)
-        .nodeHashJoin("b")
-        .|.filterExpression(hasLabels("c", "C"))
-        .|.relationshipIndexOperator(
-          "(c)-[cb:REL_CB(id CONTAINS 'sub')]->(b)",
-          indexOrder = IndexOrderAscending,
-          indexType = IndexType.TEXT
-        )
-        .filterExpression(hasLabels("b", "B"))
-        .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
-        .build()
-    }
-  }
-
-  test("should plan lazy relationship index ends with scan instead of sort when under limit") {
-    val query =
-      s"""
-         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
-         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE cb.id ENDS WITH 'suff'
-         |RETURN a, c ORDER BY cb.id LIMIT 10
-         |""".stripMargin
-
-    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
-      planBuilder
-        .produceResults("a", "c")
-        .limit(10)
-        .nodeHashJoin("b")
-        .|.filterExpression(hasLabels("c", "C"))
-        .|.relationshipIndexOperator(
-          "(c)-[cb:REL_CB(id ENDS WITH 'suff')]->(b)",
-          indexOrder = IndexOrderAscending,
-          indexType = IndexType.TEXT
         )
         .filterExpression(hasLabels("b", "B"))
         .expandAll("(a)-[ab:REL_AB]->(b)")
@@ -221,7 +172,7 @@ class LimitPropagationPlanningIntegrationTest
         .limit(10)
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
-        .|.nodeIndexOperator("c:C(id)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("c:C(id)", _ => GetValue, indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
         .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
@@ -244,7 +195,12 @@ class LimitPropagationPlanningIntegrationTest
         .limit(10)
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
-        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          "c:C(id STARTS WITH '')",
+          _ => GetValue,
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
         .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
@@ -268,7 +224,12 @@ class LimitPropagationPlanningIntegrationTest
         .distinct("a AS a", "c AS c")
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
-        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          "c:C(id STARTS WITH '')",
+          _ => GetValue,
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
         .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
@@ -301,7 +262,12 @@ class LimitPropagationPlanningIntegrationTest
         .distinct("a AS a", "c AS c")
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
-        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          "c:C(id STARTS WITH '')",
+          _ => GetValue,
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
         .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
@@ -349,7 +315,12 @@ class LimitPropagationPlanningIntegrationTest
         .limit(add(literalInt(10), literalInt(7)))
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
-        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          "c:C(id STARTS WITH '')",
+          _ => GetValue,
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
         .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
@@ -451,7 +422,12 @@ class LimitPropagationPlanningIntegrationTest
         .distinct("a AS a", "c AS c")
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
-        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          "c:C(id STARTS WITH '')",
+          _ => GetValue,
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
         .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
@@ -506,7 +482,12 @@ class LimitPropagationPlanningIntegrationTest
         .distinct("a AS a", "c AS c")
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
-        .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          "c:C(id STARTS WITH '')",
+          _ => GetValue,
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
         .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)

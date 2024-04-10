@@ -144,7 +144,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
               ),
               Map(v"n" -> v"n")
             ),
-            Set(cachedNodeProp("n", "prop1"), cachedNodeProp("n", "prop2", "n", knownToAccessStore = false))
+            Set(cachedNodeProp("n", "prop1"), cachedNodeProp("n", "prop2", "n"))
           ),
           Map(v"n.prop1" -> cachedNodeProp("n", "prop1"), v"n.prop2" -> cachedNodeProp("n", "prop2"))
         )
@@ -920,31 +920,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
-  test("should plan index contains scan with GetValue when the relationship property is projected") {
-    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'foo' RETURN r.prop"
-
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(100)
-      .setAllRelationshipsCardinality(100)
-      .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, indexType = IndexType.TEXT)
-      .build()
-
-    planner.plan(query) should equal(
-      planner.planBuilder()
-        .produceResults("`r.prop`")
-        .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator(
-          "(a)-[r:REL(prop CONTAINS 'foo')]-(b)",
-          indexOrder = IndexOrderNone,
-          argumentIds = Set(),
-          getValue = _ => GetValue,
-          indexType = IndexType.TEXT
-        )
-        .build()
-    )
-  }
-
   test(
     "should plan relationship projection and index contains scan with DoNotGetValue when the index does not provide values"
   ) {
@@ -981,7 +956,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, indexType = IndexType.TEXT)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
       .build()
 
     planner.plan(query) should equal(
@@ -1030,7 +1005,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
       .build()
 
     val plan = planner
@@ -1052,7 +1027,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
       .build()
 
     val plan = planner
@@ -1105,8 +1080,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("r.prop AS `r.prop`")
-      .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
+      .projection("cacheR[r.prop] AS `r.prop`")
+      .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
       .build())
   }
 
@@ -1142,7 +1117,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
       .addRelationshipExistenceConstraint("REL", "prop")
       .build()
 
@@ -1197,8 +1172,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("r.prop AS `r.prop`")
-      .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
+      .projection("cacheR[r.prop] AS `r.prop`")
+      .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", getValue = _ => GetValue, indexType = IndexType.RANGE)
       .build())
   }
 
@@ -1232,7 +1207,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01)
       .addRelationshipExistenceConstraint("REL", "prop1")
       .addRelationshipExistenceConstraint("REL", "prop2")
       .build()
@@ -1260,7 +1235,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("A", 10)
-      .addNodeIndex("A", Seq("prop1", "prop2"), 1.0, 0.01, withValues = true)
+      .addNodeIndex("A", Seq("prop1", "prop2"), 1.0, 0.01)
       .addNodeExistenceConstraint("A", "prop1")
       .addNodeExistenceConstraint("A", "prop2")
       .build()
@@ -1325,10 +1300,10 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("r.prop2 AS `r.prop2`")
+      .projection("cacheR[r.prop2] AS `r.prop2`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1, prop2)]-(b)",
-        getValue = _ => DoNotGetValue,
+        getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
         indexType = IndexType.RANGE
       )
       .build())
@@ -1400,31 +1375,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
-  test("should plan index ends with scan with GetValue when the relationship property is projected") {
-    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'foo' RETURN r.prop"
-
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(100)
-      .setAllRelationshipsCardinality(100)
-      .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, indexType = IndexType.TEXT)
-      .build()
-
-    planner.plan(query) should equal(
-      planner.planBuilder()
-        .produceResults("`r.prop`")
-        .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator(
-          "(a)-[r:REL(prop ENDS WITH 'foo')]-(b)",
-          indexOrder = IndexOrderNone,
-          argumentIds = Set(),
-          getValue = _ => GetValue,
-          indexType = IndexType.TEXT
-        )
-        .build()
-    )
-  }
-
   test(
     "should plan relationship projection and index ends with scan with DoNotGetValue when the index does not provide values"
   ) {
@@ -1461,7 +1411,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, indexType = IndexType.TEXT)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
       .build()
 
     planner.plan(query) should equal(
@@ -1511,7 +1461,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
       .build()
 
     val plan = planner
@@ -1562,8 +1512,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .aggregation(Seq(), Seq("avg(r.prop) AS `avg(r.prop)`"))
-      .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexType = IndexType.RANGE)
+      .aggregation(Seq(), Seq("avg(cacheR[r.prop]) AS `avg(r.prop)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
       .build())
   }
 
@@ -1597,7 +1547,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
       .build()
 
     val plan = planner
@@ -1648,22 +1598,22 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .aggregation(Seq(), Seq("sum(r.prop) AS `sum(r.prop)`"))
-      .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexType = IndexType.RANGE)
+      .aggregation(Seq(), Seq("sum(cacheR[r.prop]) AS `sum(r.prop)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
       .build())
   }
 
-  private def relIndexSeekConfig(withValues: Boolean) =
+  private def relIndexSeekConfig() =
     plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = withValues)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
 
   test("should plan seek with GetValue when the relationship property is projected") {
     val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop = 123 RETURN r.prop"
 
-    val planner = relIndexSeekConfig(withValues = true).build()
+    val planner = relIndexSeekConfig().build()
 
     val plan = planner
       .plan(query)
@@ -1685,7 +1635,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         |MATCH (a)-[r]-(b)
         |RETURN r.prop""".stripMargin
 
-    val planner = relIndexSeekConfig(withValues = true).build()
+    val planner = relIndexSeekConfig().build()
 
     val plan = planner
       .plan(query)
@@ -1707,17 +1657,17 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan seek with DoNotGetValue when the relationship index does not provide values") {
     val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN r.prop"
 
-    val planner = relIndexSeekConfig(withValues = false).build()
+    val planner = relIndexSeekConfig().build()
 
     val plan = planner
       .plan(query)
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("r.prop AS `r.prop`")
+      .projection("cacheR[r.prop] AS `r.prop`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop > 123)]-(b)",
-        getValue = _ => DoNotGetValue,
+        getValue = _ => GetValue,
         indexType = IndexType.RANGE
       )
       .build())
@@ -1726,7 +1676,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan seek (relationship) with GetValue when the property is used in avg function") {
     val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN avg(r.prop)"
 
-    val planner = relIndexSeekConfig(withValues = true).build()
+    val planner = relIndexSeekConfig().build()
 
     val plan = planner
       .plan(query)
@@ -1741,22 +1691,22 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan seek (relationship) with DoNotGetValue when the property is used in avg function") {
     val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN avg(r.prop)"
 
-    val planner = relIndexSeekConfig(withValues = false).build()
+    val planner = relIndexSeekConfig().build()
 
     val plan = planner
       .plan(query)
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .aggregation(Seq(), Seq("avg(r.prop) AS `avg(r.prop)`"))
-      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", indexType = IndexType.RANGE)
+      .aggregation(Seq(), Seq("avg(cacheR[r.prop]) AS `avg(r.prop)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
       .build())
   }
 
   test("should plan seek (relationship) with GetValue when the property is used in sum function") {
     val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN sum(r.prop)"
 
-    val planner = relIndexSeekConfig(withValues = true).build()
+    val planner = relIndexSeekConfig().build()
 
     val plan = planner
       .plan(query)
@@ -1771,24 +1721,24 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan seek (relationship) with DoNotGetValue when the property is used in sum function") {
     val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN sum(r.prop)"
 
-    val planner = relIndexSeekConfig(withValues = false).build()
+    val planner = relIndexSeekConfig().build()
 
     val plan = planner
       .plan(query)
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .aggregation(Seq(), Seq("sum(r.prop) AS `sum(r.prop)`"))
-      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", indexType = IndexType.RANGE)
+      .aggregation(Seq(), Seq("sum(cacheR[r.prop]) AS `sum(r.prop)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
       .build())
   }
 
-  private def relCompositeIndexSeekConfig(withValues: Boolean): StatisticsBackedLogicalPlanningConfiguration =
+  private def relCompositeIndexSeekConfig(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = withValues)
+      .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01)
       .addRelationshipExistenceConstraint("REL", "prop1")
       .addRelationshipExistenceConstraint("REL", "prop2")
       .build()
@@ -1796,7 +1746,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan seek (relationship) with GetValue when composite existence constraint on projected property") {
     val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop1 > 123 RETURN r.prop2"
 
-    val planner = relCompositeIndexSeekConfig(withValues = true)
+    val planner = relCompositeIndexSeekConfig()
 
     val plan = planner
       .plan(query)
@@ -1820,17 +1770,17 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   ) {
     val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop1 = 123 RETURN r.prop2"
 
-    val planner = relCompositeIndexSeekConfig(withValues = false)
+    val planner = relCompositeIndexSeekConfig()
 
     val plan = planner
       .plan(query)
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("r.prop2 AS `r.prop2`")
+      .projection("cacheR[r.prop2] AS `r.prop2`")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1 = 123, prop2)]-(b)",
-        getValue = _ => DoNotGetValue,
+        getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
         indexType = IndexType.RANGE,
         supportPartitionedScan = false
       )
@@ -1838,7 +1788,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   }
 
   test("should plan relationship index seek with GetValue when the property is projected (composite index)") {
-    val planner = relCompositeIndexSeekConfig(withValues = true)
+    val planner = relCompositeIndexSeekConfig()
     val q = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop1, r.prop2"
     val plan = planner.plan(q).stripProduceResults
 
@@ -1856,7 +1806,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test(
     "for exact seeks, should even plan relationship index seek with GetValue when the index does not provide values (composite index)"
   ) {
-    val planner = relCompositeIndexSeekConfig(withValues = false)
+    val planner = relCompositeIndexSeekConfig()
     val q = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop1, r.prop2"
     val plan = planner.plan(q).stripProduceResults
 
@@ -1874,7 +1824,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test(
     "should plan projection and index seek with DoNotGetValue when another property is projected (composite relationship index)"
   ) {
-    val planner = relCompositeIndexSeekConfig(withValues = true)
+    val planner = relCompositeIndexSeekConfig()
     val q = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.otherProp"
     val plan = planner.plan(q).stripProduceResults
 
@@ -1892,7 +1842,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test(
     "should plan relationship index seek with GetValue and DoNotGetValue when only one property is projected (composite index)"
   ) {
-    val planner = relCompositeIndexSeekConfig(withValues = true)
+    val planner = relCompositeIndexSeekConfig()
     val q = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop2"
     val plan = planner.plan(q).stripProduceResults
 
@@ -1907,7 +1857,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("Question", 1000)
-      .addNodeIndex("Question", Seq("views"), existsSelectivity = 1, uniqueSelectivity = 0.1, withValues = true)
+      .addNodeIndex("Question", Seq("views"), existsSelectivity = 1, uniqueSelectivity = 0.1)
       .addNodeExistenceConstraint("Question", "views")
       .setExecutionModel(ExecutionModel.BatchedParallel(128, 1024))
       .build()

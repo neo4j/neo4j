@@ -1102,8 +1102,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .shouldEqual(
         planner.planBuilder()
           .produceResults("a")
-          .filterExpression(andsReorderableAst(hasLabels("b", "B"), isTyped(prop("r", "prop"), CTStringNotNull)))
-          .relationshipIndexOperator("(a)-[r:R(prop)]->(b)", indexType = IndexType.RANGE)
+          .filterExpression(hasLabels("b", "B"), isTyped(cachedRelProp("r", "prop"), CTStringNotNull))
+          .relationshipIndexOperator("(a)-[r:R(prop)]->(b)", _ => GetValue, indexType = IndexType.RANGE)
           .build()
       )
   }
@@ -1650,7 +1650,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = pb.plan(query).stripProduceResults
 
     val expectedPlan = pb.subPlanBuilder()
-      .filter("point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5")
+      .filter("point.distance(cacheN[n.prop], point({x: 1.1, y: 5.4})) < 0.5")
       .pointDistanceNodeIndexSeek(
         "n",
         "Person",
@@ -1659,7 +1659,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         0.5,
         indexOrder = IndexOrderNone,
         argumentIds = Set(),
-        getValue = DoNotGetValue,
+        getValue = GetValue,
         indexType = IndexType.POINT
       )
       .build()

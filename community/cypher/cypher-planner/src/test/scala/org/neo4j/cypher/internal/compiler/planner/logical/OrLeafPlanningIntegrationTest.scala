@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Union
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.graphdb.schema.IndexType
@@ -330,8 +330,8 @@ class OrLeafPlanningIntegrationTest
 
   test("should work with index seeks of label disjunctions") {
     val cfg = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 0.5, 0.5, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("P", Seq("p1"), 0.5, 0.5, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
+      .addNodeIndex("P", Seq("p1"), 0.5, 0.5)
       .build()
 
     val plan = cfg.plan(
@@ -354,8 +354,8 @@ class OrLeafPlanningIntegrationTest
 
   test("should work with index seeks of label disjunctions and solve single index hint") {
     val cfg = hintPlannerConfig()
-      .addNodeIndex("L", Seq("p1"), 1.0, 1.0, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("P", Seq("p1"), 1.0, 1.0, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("L", Seq("p1"), 1.0, 1.0)
+      .addNodeIndex("P", Seq("p1"), 1.0, 1.0)
       .build()
 
     val plan = cfg.plan(
@@ -380,8 +380,8 @@ class OrLeafPlanningIntegrationTest
 
   test("should work with index seeks of label disjunctions and solve two index hints") {
     val cfg = hintPlannerConfig()
-      .addNodeIndex("L", Seq("p1"), 1.0, 1.0, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("P", Seq("p1"), 1.0, 1.0, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("L", Seq("p1"), 1.0, 1.0)
+      .addNodeIndex("P", Seq("p1"), 1.0, 1.0)
       .build()
 
     val plan = cfg.plan(
@@ -407,7 +407,7 @@ class OrLeafPlanningIntegrationTest
 
   test("should work with label scan + filter on one side of label disjunctions if there is only one index") {
     val cfg = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 0.5, 0.5, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
       .build()
 
     val plan = cfg.plan(
@@ -421,9 +421,9 @@ class OrLeafPlanningIntegrationTest
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.filter("n.p1 < 1")
+        .|.filter("cacheNFromStore[n.p1] < 1")
         .|.nodeByLabelScan("n", "P", IndexOrderAscending)
-        .nodeIndexOperator("n:L(p1 < 1)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 < 1)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -794,9 +794,9 @@ class OrLeafPlanningIntegrationTest
     "should prefer union label scan to node index scan from existence constraint with same cardinality, if indexed property is used"
   ) {
     val cfg = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("L", Seq("p1"), 1.0, 0.1)
       .addNodeExistenceConstraint("L", "p1")
-      .addNodeIndex("P", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("P", Seq("p1"), 1.0, 0.1)
       .addNodeExistenceConstraint("P", "p1")
       .build()
 
@@ -816,9 +816,9 @@ class OrLeafPlanningIntegrationTest
       "to relationship index scan from existence constraint with same cardinality, if indexed property is used"
   ) {
     val cfg = plannerConfig()
-      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1)
       .addRelationshipExistenceConstraint("REL1", "p1")
-      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 0.1)
       .addRelationshipExistenceConstraint("REL2", "p1")
       .build()
 
@@ -845,12 +845,12 @@ class OrLeafPlanningIntegrationTest
       "to node index scan from existence constraint with same cardinality"
   ) {
     val cfg = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("L", Seq("p1"), 1.0, 0.1)
       .addNodeExistenceConstraint("L", "p1")
-      .addNodeIndex("L", Seq("p2"), 1.0, 0.1, withValues = true)
-      .addNodeIndex("P", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("L", Seq("p2"), 1.0, 0.1)
+      .addNodeIndex("P", Seq("p1"), 1.0, 0.1)
       .addNodeExistenceConstraint("P", "p1")
-      .addNodeIndex("P", Seq("p2"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("P", Seq("p2"), 1.0, 0.1)
       .build()
 
     val plan = cfg.plan(s"MATCH (n) WHERE n:L or n:P RETURN count(n.p2) AS c")
@@ -870,12 +870,12 @@ class OrLeafPlanningIntegrationTest
       "to relationship index scan from existence constraint with same cardinality"
   ) {
     val cfg = plannerConfig()
-      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1)
       .addRelationshipExistenceConstraint("REL1", "p1")
-      .addRelationshipIndex("REL1", Seq("p2"), 1.0, 0.1, withValues = true)
-      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addRelationshipIndex("REL1", Seq("p2"), 1.0, 0.1)
+      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 0.1)
       .addRelationshipExistenceConstraint("REL2", "p1")
-      .addRelationshipIndex("REL2", Seq("p2"), 1.0, 0.1, withValues = true)
+      .addRelationshipIndex("REL2", Seq("p2"), 1.0, 0.1)
       .build()
 
     val plan = cfg.plan(s"MATCH (a)-[r:REL1|REL2]->(b) RETURN count(r.p2) AS c")
@@ -897,12 +897,12 @@ class OrLeafPlanningIntegrationTest
 
   test("should prefer union label scan for aggregated property, even if other property is referenced") {
     val cfg = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("L", Seq("p1"), 1.0, 0.1)
       .addNodeExistenceConstraint("L", "p1")
-      .addNodeIndex("L", Seq("p2"), 1.0, 0.1, withValues = true)
-      .addNodeIndex("P", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("L", Seq("p2"), 1.0, 0.1)
+      .addNodeIndex("P", Seq("p1"), 1.0, 0.1)
       .addNodeExistenceConstraint("P", "p1")
-      .addNodeIndex("P", Seq("p2"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("P", Seq("p2"), 1.0, 0.1)
       .build()
 
     val plan = cfg.plan(s"MATCH (n) WHERE (n:L or n:P) AND n.p1 <> 1 RETURN count(n.p2) AS c")
@@ -919,12 +919,12 @@ class OrLeafPlanningIntegrationTest
 
   test("should prefer union relationship type scan for aggregated property, even if other property is referenced") {
     val cfg = plannerConfig()
-      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.01)
       .addRelationshipExistenceConstraint("REL1", "p1")
-      .addRelationshipIndex("REL1", Seq("p2"), 1.0, 0.01, withValues = true)
-      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL1", Seq("p2"), 1.0, 0.01)
+      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 0.01)
       .addRelationshipExistenceConstraint("REL2", "p1")
-      .addRelationshipIndex("REL2", Seq("p2"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL2", Seq("p2"), 1.0, 0.01)
       .build()
 
     val plan = cfg.plan(s"MATCH (a)-[r:REL1|REL2]->(b) WHERE r.p1 <> 1 RETURN count(r.p2) AS c")
@@ -1154,7 +1154,7 @@ class OrLeafPlanningIntegrationTest
       planner.planBuilder()
         .produceResults("a")
         .filter(
-          "a.prop2 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL",
+          "cacheN[a.prop2] IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL",
           "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL"
         )
         .distinct("a AS a")
@@ -1162,7 +1162,7 @@ class OrLeafPlanningIntegrationTest
         .|.filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
         .|.nodeByLabelScan("a", "A")
         .filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
-        .nodeIndexOperator("a:A(prop2)")
+        .nodeIndexOperator("a:A(prop2)", _ => GetValue)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -1289,8 +1289,12 @@ class OrLeafPlanningIntegrationTest
         .distinct("n AS n")
         .union()
         .|.nodeIndexOperator("n:L(p3 > 20)")
-        .filter("n.p2 >= 10")
-        .nodeIndexOperator("n:L(p1 <= 10, p2)", supportPartitionedScan = false)
+        .filter("cacheN[n.p2] >= 10")
+        .nodeIndexOperator(
+          "n:L(p1 <= 10, p2)",
+          Map("p1" -> DoNotGetValue, "p2" -> GetValue),
+          supportPartitionedScan = false
+        )
         .build()
     )(SymmetricalLogicalPlanEquality)
   }

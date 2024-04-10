@@ -46,8 +46,6 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.PropertyTypeDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.defaultSettingsOverrides
-import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
-import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
@@ -367,12 +365,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     existsSelectivity: Double,
     uniqueSelectivity: Double,
     isUnique: Boolean = false,
-    withValues: Boolean = false,
-    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
     indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE,
     maybeIndexCapability: Option[IndexCapability] = None
   ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
+    val indexCapability = defaultIndexCapability(indexType, maybeIndexCapability)
     val indexDef = IndexDefinition(
       IndexDefinition.EntityType.Node(label),
       indexType = indexType,
@@ -380,9 +377,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       propExistsSelectivity = existsSelectivity,
       uniqueValueSelectivity = uniqueSelectivity,
       isUnique = isUnique,
-      withValues = withValues,
-      withOrdering = providesOrder,
-      indexCapability = defaultIndexCapability(indexType, maybeIndexCapability)
+      withValues = indexCapability.supportsReturningValues(),
+      withOrdering =
+        if (indexCapability.supportsOrdering()) IndexOrderCapability.BOTH else IndexOrderCapability.NONE,
+      indexCapability = indexCapability
     )
 
     addLabel(label).addIndexDefAndProperties(indexDef, properties)
@@ -394,12 +392,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     existsSelectivity: Double,
     uniqueSelectivity: Double,
     isUnique: Boolean = false,
-    withValues: Boolean = false,
-    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE,
     indexType: graphdb.schema.IndexType = graphdb.schema.IndexType.RANGE,
     maybeIndexCapability: Option[IndexCapability] = None
   ): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
+    val indexCapability = defaultIndexCapability(indexType, maybeIndexCapability)
     val indexDef = IndexDefinition(
       IndexDefinition.EntityType.Relationship(relType),
       indexType = indexType,
@@ -407,9 +404,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       propExistsSelectivity = existsSelectivity,
       uniqueValueSelectivity = uniqueSelectivity,
       isUnique = isUnique,
-      withValues = withValues,
-      withOrdering = providesOrder,
-      indexCapability = defaultIndexCapability(indexType, maybeIndexCapability)
+      withValues = indexCapability.supportsReturningValues(),
+      withOrdering =
+        if (indexCapability.supportsOrdering()) IndexOrderCapability.BOTH else IndexOrderCapability.NONE,
+      indexCapability = indexCapability
     )
 
     addRelType(relType).addIndexDefAndProperties(indexDef, properties)
@@ -685,8 +683,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             existsSelectivity,
             uniqueSelectivity,
             isUnique = isUnique,
-            withValues = getWithValues(indexType),
-            providesOrder = getProvidesOrder(indexType),
             indexType.toPublicApi,
             maybeIndexCapability = maybeIndexCapability
           )
@@ -708,8 +704,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
             existsSelectivity,
             uniqueSelectivity,
             isUnique = isUnique,
-            withValues = getWithValues(indexType),
-            providesOrder = getProvidesOrder(indexType),
             indexType.toPublicApi,
             maybeIndexCapability = maybeIndexCapability
           )

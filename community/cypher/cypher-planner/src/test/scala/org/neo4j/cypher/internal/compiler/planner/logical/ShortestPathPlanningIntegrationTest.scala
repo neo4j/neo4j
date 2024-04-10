@@ -81,7 +81,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setLabelCardinality("NN", 5)
     .setLabelCardinality("NN", 5)
     .setLabelCardinality("B", 8)
-    .addNodeIndex("User", Seq("prop"), 1.0, 0.25, withValues = true)
+    .addNodeIndex("User", Seq("prop"), 1.0, 0.25)
     .setRelationshipCardinality("()-[:R]->()", 10)
     .setRelationshipCardinality("(:User)-[:R]->()", 10)
     .setRelationshipCardinality("(:User)-[:R]->(:B)", 10)

@@ -53,7 +53,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
     .setAllNodesCardinality(100)
     .setAllRelationshipsCardinality(40)
     .setLabelCardinality("User", 4)
-    .addNodeIndex("User", Seq("prop"), 1.0, 0.25, withValues = true)
+    .addNodeIndex("User", Seq("prop"), 1.0, 0.25)
     .setRelationshipCardinality("()-[:R]->()", 10)
     .setRelationshipCardinality("()-[]->(:User)", 10)
     .setRelationshipCardinality("(:User)-[]->(:User)", 10)

@@ -40,11 +40,12 @@ import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
+import org.scalatest.LoneElement
 
 import java.util.Locale
 
 class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunSuite
-    with LogicalPlanningIntegrationTestSupport {
+    with LogicalPlanningIntegrationTestSupport with LoneElement {
 
   /**
    * These index types are currently handled differently from all the other property indexes.
@@ -100,7 +101,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
 
         val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
         val planner = plannerBuilder().processGraphCounts(graphCountData)
-        planner.indexes.propertyIndexes should contain only IndexDefinition(
+        planner.indexes.propertyIndexes.loneElement should be(IndexDefinition(
           entityType = IndexDefinition.EntityType.Node("Person"),
           indexType = indexType.toPublicApi,
           propertyKeys = Seq("name"),
@@ -109,7 +110,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
           withValues = getWithValues(indexType),
           withOrdering = getProvidesOrder(indexType),
           indexCapability = indexCapability(indexProvider)
-        )
+        ))
       }
     }
   }
@@ -155,10 +156,10 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
 
     val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
     val builder = plannerBuilder().processGraphCounts(graphCountData)
-    builder.existenceConstraints should contain only ExistenceConstraintDefinition(
+    builder.existenceConstraints.loneElement should be(ExistenceConstraintDefinition(
       entityType = IndexDefinition.EntityType.Node("Person"),
       propertyKey = "name"
-    )
+    ))
     val planner = builder.build()
     val plan = planner
       .plan("MATCH (p:Person) RETURN p.name AS name")
@@ -330,7 +331,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
 
         val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
         val planner = plannerBuilder().processGraphCounts(graphCountData)
-        planner.indexes.propertyIndexes should contain only IndexDefinition(
+        planner.indexes.propertyIndexes.loneElement should be(IndexDefinition(
           entityType = IndexDefinition.EntityType.Relationship("FRIEND"),
           indexType = indexType.toPublicApi,
           propertyKeys = Seq("name"),
@@ -339,7 +340,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
           withValues = getWithValues(indexType),
           withOrdering = getProvidesOrder(indexType),
           indexCapability = indexCapability(indexProvider)
-        )
+        ))
       }
     }
   }

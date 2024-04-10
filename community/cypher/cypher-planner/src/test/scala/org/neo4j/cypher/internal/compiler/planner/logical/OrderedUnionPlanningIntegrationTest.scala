@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
@@ -200,7 +200,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", 60)
-      .addNodeIndex("Person", Seq("name"), 1.0, 0.01, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("Person", Seq("name"), 1.0, 0.01)
       .build()
     val plan = planner
       .plan(query)
@@ -209,11 +209,21 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     plan should equal(
       planner.subPlanBuilder()
         .sort("`p.name` ASC")
-        .projection("p.name AS `p.name`")
+        .projection("cacheN[p.name] AS `p.name`")
         .distinct("p AS p")
         .union()
-        .|.nodeIndexOperator("p:Person(name > 5)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
-        .nodeIndexOperator("p:Person(name < 0)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          "p:Person(name > 5)",
+          _ => GetValue,
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
+        .nodeIndexOperator(
+          "p:Person(name < 0)",
+          _ => GetValue,
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE
+        )
         .build()
     )(SymmetricalLogicalPlanEquality)
   }

@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -74,7 +73,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setAllNodesCardinality(100)
       .setLabelCardinality("Few", 2)
       .setLabelCardinality("Many", 50)
-      .addNodeIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = BOTH)
+      .addNodeIndex("Many", Seq("prop"), 0.5, 0.01)
       .build()
       .plan(
         s"""MATCH $nodes, ($orderedNode:Many)
@@ -101,7 +100,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setAllNodesCardinality(Batched.default.bigBatchSize * 2)
       .setLabelCardinality("Few", 1)
       .setLabelCardinality("Many", Batched.default.bigBatchSize * 2)
-      .addNodeIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = BOTH)
+      .addNodeIndex("Many", Seq("prop"), 0.5, 0.01)
       .setExecutionModel(Batched.default) // In Volcano, the cartesian product does not get more expensive by having to provide order, so this test does not make sense there.
       .build()
       .plan(
@@ -1254,7 +1253,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val builder = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", 100)
-      .addNodeIndex("Person", Seq("name"), 1.0, 0.01, withValues = true, providesOrder = BOTH)
+      .addNodeIndex("Person", Seq("name"), 1.0, 0.01)
       .setRelationshipCardinality("(:Person)-[]->()", 400)
       .setRelationshipCardinality("()-[]->()", 400)
 

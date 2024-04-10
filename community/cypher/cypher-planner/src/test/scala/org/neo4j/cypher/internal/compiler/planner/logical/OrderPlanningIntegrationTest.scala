@@ -63,7 +63,6 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -135,9 +134,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         "A",
         Seq("prop"),
         0.9,
-        uniqueSelectivity = 0.9,
-        providesOrder = IndexOrderCapability.BOTH,
-        withValues = true
+        uniqueSelectivity = 0.9
       )
       .addNodeIndex("A", Seq("foo"), 0.8, uniqueSelectivity = 0.8) // Make it cheapest to start on a.foo.
       .build()
@@ -681,7 +678,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("should use ordered distinct if there is one aliased grouping column, index-backed ordered") {
     val query = "MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x"
     val planner = plannerBuilder()
-      .addNodeIndex("A", Seq("foo"), 1.0, 0.01, withValues = true, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("foo"), 1.0, 0.01)
       .build()
     val plan = planner.plan(query).stripProduceResults
 
@@ -702,7 +699,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val query = "MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x"
     val planner = plannerBuilder()
       .setExecutionModel(BatchedParallel(1, 2))
-      .addNodeIndex("A", Seq("foo"), 1.0, 0.01, withValues = true, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("foo"), 1.0, 0.01)
       .build()
     val plan = planner.plan(query).stripProduceResults
 
@@ -1024,9 +1021,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setRelationshipCardinality("(:B)-[]->(:C)", 400)
       .setRelationshipCardinality("(:B)-[]->()", 400)
       .setRelationshipCardinality("()-[]->(:C)", 400)
-      .addNodeIndex("A", Seq("prop"), 1.0, 0.005, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("B", Seq("prop"), 1.0, 0.01, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("C", Seq("prop"), 1.0, 0.005, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 1.0, 0.005)
+      .addNodeIndex("B", Seq("prop"), 1.0, 0.01)
+      .addNodeIndex("C", Seq("prop"), 1.0, 0.005)
       .build()
     val plan = planner.plan(query)
 
@@ -1053,9 +1050,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setLabelCardinality("A", 200)
       .setLabelCardinality("B", 100)
       .setLabelCardinality("C", 200)
-      .addNodeIndex("A", Seq("prop"), 1.0, 0.005, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("B", Seq("prop"), 1.0, 0.01, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("C", Seq("prop"), 1.0, 0.005, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 1.0, 0.005)
+      .addNodeIndex("B", Seq("prop"), 1.0, 0.01)
+      .addNodeIndex("C", Seq("prop"), 1.0, 0.005)
       .build()
     val plan = planner.plan(query)
 
@@ -1076,8 +1073,8 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setAllNodesCardinality(200)
       .setLabelCardinality("A", 100)
       .setLabelCardinality("B", 180)
-      .addNodeIndex("A", Seq("prop"), 0.4, 1 / 40d, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("B", Seq("prop"), 0.4, 1 / 40d, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 0.4, 1 / 40d)
+      .addNodeIndex("B", Seq("prop"), 0.4, 1 / 40d)
       .build()
     val plan = planner.plan(query)
 
@@ -1104,9 +1101,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setRelationshipCardinality("(:B)-[]->(:C)", 400)
       .setRelationshipCardinality("(:B)-[]->()", 400)
       .setRelationshipCardinality("()-[]->(:C)", 400)
-      .addNodeIndex("A", Seq("prop"), 1.0, 0.005, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("B", Seq("prop"), 1.0, 0.01, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("C", Seq("prop"), 1.0, 0.005, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 1.0, 0.005)
+      .addNodeIndex("B", Seq("prop"), 1.0, 0.01)
+      .addNodeIndex("C", Seq("prop"), 1.0, 0.005)
       .build()
     val plan = planner.plan(query)
 
@@ -1139,9 +1136,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setLabelCardinality("A", 200)
       .setLabelCardinality("B", 100)
       .setLabelCardinality("C", 200)
-      .addNodeIndex("A", Seq("prop"), 1.0, 0.005, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("B", Seq("prop"), 1.0, 0.01, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("C", Seq("prop"), 1.0, 0.005, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 1.0, 0.005)
+      .addNodeIndex("B", Seq("prop"), 1.0, 0.01)
+      .addNodeIndex("C", Seq("prop"), 1.0, 0.005)
       .build()
     val plan = planner.plan(query)
 
@@ -1173,8 +1170,8 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setAllNodesCardinality(200)
       .setLabelCardinality("A", 100)
       .setLabelCardinality("B", 180)
-      .addNodeIndex("A", Seq("prop"), 0.4, 1 / 40d, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("B", Seq("prop"), 0.4, 1 / 40d, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 0.4, 1 / 40d)
+      .addNodeIndex("B", Seq("prop"), 0.4, 1 / 40d)
       .build()
     val plan = planner.plan(query)
 
@@ -1222,11 +1219,11 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setRelationshipCardinality("(:D)-[]-(:E)", allNodes * 0.7)
       .setRelationshipCardinality("(:D)-[]-()", allNodes * 0.7)
       .setRelationshipCardinality("()-[]-(:E)", allNodes * 0.7)
-      .addNodeIndex("A", Seq("prop"), 1.0, 1d / allNodes, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("B", Seq("prop"), 1.0, 1d / allNodes * 0.9, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("C", Seq("prop"), 1.0, 1d / allNodes * 0.9, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("D", Seq("prop"), 1.0, 1d / allNodes * 0.9, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("E", Seq("prop"), 1.0, 1d / allNodes * 0.9, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 1.0, 1d / allNodes)
+      .addNodeIndex("B", Seq("prop"), 1.0, 1d / allNodes * 0.9)
+      .addNodeIndex("C", Seq("prop"), 1.0, 1d / allNodes * 0.9)
+      .addNodeIndex("D", Seq("prop"), 1.0, 1d / allNodes * 0.9)
+      .addNodeIndex("E", Seq("prop"), 1.0, 1d / allNodes * 0.9)
       .build()
     val plan = planner.plan(query).stripProduceResults
 
@@ -1253,9 +1250,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setAllRelationshipsCardinality(1000)
       .setLabelCardinality("A", 100)
       .setRelationshipCardinality("(:A)-[]->()", 1000)
-      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50)
       // Make it cheapest to start on a.foo.
-      .addNodeIndex("A", Seq("foo"), 0.1, 1d / 10, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("foo"), 0.1, 1d / 10)
       .build()
     val plan = planner.plan(query).stripProduceResults
 
@@ -1283,9 +1280,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setAllRelationshipsCardinality(1000)
       .setLabelCardinality("A", 100)
       .setRelationshipCardinality("(:A)-[]->()", 1000)
-      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50)
       // Make it cheapest to start on a.foo.
-      .addNodeIndex("A", Seq("foo"), 0.1, 1d / 10, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("foo"), 0.1, 1d / 10)
       .build()
     val plan = planner.plan(query).stripProduceResults
 
@@ -1321,9 +1318,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setAllRelationshipsCardinality(1000)
       .setLabelCardinality("A", 100)
       .setRelationshipCardinality("(:A)-[]->()", 1000)
-      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50)
       // Make it cheapest to start on a.foo.
-      .addNodeIndex("A", Seq("foo"), 0.1, 1d / 10, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("foo"), 0.1, 1d / 10)
       .build()
     val plan = planner.plan(query).stripProduceResults
 
@@ -1351,7 +1348,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setAllRelationshipsCardinality(1000)
       .setLabelCardinality("A", 100)
       .setRelationshipCardinality("(:A)-[]->()", 1000)
-      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50)
       .build()
     val plan = planner.plan(query).stripProduceResults
 
@@ -1380,7 +1377,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setAllRelationshipsCardinality(1000)
       .setLabelCardinality("A", 100)
       .setRelationshipCardinality("(:A)-[]->()", 1000)
-      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("prop"), 0.5, 1d / 50)
       .build()
     val plan = planner.plan(query).stripProduceResults
 
@@ -2378,9 +2375,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         "N",
         Seq("prop"),
         existsSelectivity = 0.9,
-        uniqueSelectivity = 0.9,
-        withValues = true,
-        providesOrder = IndexOrderCapability.BOTH
+        uniqueSelectivity = 0.9
       )
       .build()
 
@@ -2439,7 +2434,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |""".stripMargin
 
     val cfg = plannerBuilder()
-      .addNodeIndex("A", Seq("p1", "p2"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("p1", "p2"), 1.0, 0.03)
       .build()
 
     val plan = cfg
@@ -2461,8 +2456,8 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |""".stripMargin
 
     val cfg = plannerBuilder()
-      .addNodeIndex("A", Seq("p1", "p2"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("B", Seq("p"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("p1", "p2"), 1.0, 0.03)
+      .addNodeIndex("B", Seq("p"), 1.0, 0.03)
       .build()
 
     val plan = cfg
@@ -2526,7 +2521,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |""".stripMargin
 
     val cfg = plannerBuilder()
-      .addNodeIndex("B", Seq("p"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("B", Seq("p"), 1.0, 0.03)
       .build()
 
     val plan = cfg
@@ -2546,7 +2541,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |""".stripMargin
 
     val cfg = plannerBuilder()
-      .addNodeIndex("B", Seq("p"), 1.0, 0.03, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("B", Seq("p"), 1.0, 0.03)
       .build()
 
     val plan = cfg

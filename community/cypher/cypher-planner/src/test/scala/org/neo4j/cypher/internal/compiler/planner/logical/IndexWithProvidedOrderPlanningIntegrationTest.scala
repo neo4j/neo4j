@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -71,7 +72,6 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
-import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.NONE
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -101,36 +101,35 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   case class TestOrder(
     indexOrder: IndexOrder,
     cypherToken: String,
-    indexOrderCapability: IndexOrderCapability,
     sortOrder: String => ColumnOrder
   )
-  private val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, c => Ascending(varFor(c)))
-  private val DESCENDING_BOTH = TestOrder(IndexOrderDescending, "DESC", BOTH, c => Descending(varFor(c)))
+  private val ASCENDING = TestOrder(IndexOrderAscending, "ASC", c => Ascending(varFor(c)))
+  private val DESCENDING = TestOrder(IndexOrderDescending, "DESC", c => Descending(varFor(c)))
 
   override val pushdownPropertyReads: Boolean = false
 
-  for (TestOrder(plannedOrder, cypherToken, orderCapability, sortOrder) <- List(ASCENDING_BOTH, DESCENDING_BOTH)) {
+  for (TestOrder(plannedOrder, cypherToken, sortOrder) <- List(ASCENDING, DESCENDING)) {
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order") {
+    test(s"$cypherToken: Order by index backed property should plan with provided order") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
       plan._1 should equal(
         Projection(
-          nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-          Map(v"n.prop" -> prop("n", "prop"))
+          nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder, getValue = _ => GetValue),
+          Map(v"n.prop" -> cachedNodeProp("n", "prop"))
         )
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order, even after initial WITH"
+      s"$cypherToken: Order by index backed property should plan with provided order, even after initial WITH"
     ) {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         }.getLogicalPlanFor(
           s"WITH 1 AS foo MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken",
           stripProduceResults = false
@@ -139,21 +138,26 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("p")
-          .projection("n.prop AS p")
+          .projection("cacheN[n.prop] AS p")
           .projection("1 AS foo")
-          .nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = plannedOrder, indexType = IndexType.RANGE)
+          .nodeIndexOperator(
+            "n:Awesome(prop > 'foo')",
+            getValue = _ => GetValue,
+            indexOrder = plannedOrder,
+            indexType = IndexType.RANGE
+          )
           .build()
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order, even after initial WITH that introduces variable used in subsequent WHERE"
+      s"$cypherToken: Order by index backed property should plan with provided order, even after initial WITH that introduces variable used in subsequent WHERE"
     ) {
       val planner = plannerBuilder()
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(100)
         .setLabelCardinality("Awesome", 10)
-        .addNodeIndex("Awesome", Seq("prop"), 1.0, 0.1, providesOrder = orderCapability)
+        .addNodeIndex("Awesome", Seq("prop"), 1.0, 0.1)
         .build()
 
       val plan = planner.plan(
@@ -167,16 +171,21 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan should equal(
         planner.subPlanBuilder()
-          .projection("n.prop AS prop")
+          .projection("cacheN[n.prop] AS prop")
           .apply()
-          .|.nodeIndexOperator("n:Awesome(prop > x)", indexOrder = plannedOrder, argumentIds = Set("x"))
+          .|.nodeIndexOperator(
+            "n:Awesome(prop > x)",
+            getValue = _ => GetValue,
+            indexOrder = plannedOrder,
+            argumentIds = Set("x")
+          )
           .projection("$param AS x")
           .argument()
           .build()
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by variable from label scan should plan with provided order") {
+    test(s"$cypherToken: Order by variable from label scan should plan with provided order") {
       val planner = plannerBuilder()
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(100)
@@ -196,7 +205,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable from label scan with token index with no ordering should not plan with provided order"
+      s"$cypherToken: Order by variable from label scan with token index with no ordering should not plan with provided order"
     ) {
       val planner = plannerBuilder()
         .setAllNodesCardinality(100)
@@ -218,7 +227,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by variable from union label scan should plan with provided order") {
+    test(s"$cypherToken: Order by variable from union label scan should plan with provided order") {
       val planner = plannerBuilder()
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(100)
@@ -239,7 +248,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable with label disjunction with token index with no ordering should not plan unionNodeByLabelsScan"
+      s"$cypherToken: Order by variable with label disjunction with token index with no ordering should not plan unionNodeByLabelsScan"
     ) {
       val planner = plannerBuilder()
         .setAllNodesCardinality(100)
@@ -266,7 +275,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable from intersection label scan should plan with provided order"
+      s"$cypherToken: Order by variable from intersection label scan should plan with provided order"
     ) {
       val planner = plannerBuilder()
         .setAllNodesCardinality(100)
@@ -288,7 +297,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable with label conjunction with token index with no ordering should not plan intersectionNodeByLabelsScan"
+      s"$cypherToken: Order by variable with label conjunction with token index with no ordering should not plan intersectionNodeByLabelsScan"
     ) {
       val planner = plannerBuilder()
         .setAllNodesCardinality(100)
@@ -313,7 +322,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable from relationship type scan should plan with provided order"
+      s"$cypherToken: Order by variable from relationship type scan should plan with provided order"
     ) {
       val query = s"MATCH (n)-[r:REL]->(m) RETURN r ORDER BY r $cypherToken"
 
@@ -332,7 +341,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable from relationship type scan with token index with no ordering should not plan with provided order"
+      s"$cypherToken: Order by variable from relationship type scan with token index with no ordering should not plan with provided order"
     ) {
       val query = s"MATCH (n)-[r:REL]->(m) RETURN r ORDER BY r $cypherToken"
 
@@ -353,7 +362,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable from union relationship type scan should plan with provided order"
+      s"$cypherToken: Order by variable from union relationship type scan should plan with provided order"
     ) {
       val query = s"MATCH (n)-[r:REL|LER]->(m) RETURN r ORDER BY r $cypherToken"
 
@@ -373,7 +382,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable with reltype disjunction with token index with no ordering should not plan unionRelationshipTypesScan"
+      s"$cypherToken: Order by variable with reltype disjunction with token index with no ordering should not plan unionRelationshipTypesScan"
     ) {
       val query = s"MATCH (n)-[r:REL|LER]->(m) RETURN r ORDER BY r $cypherToken"
 
@@ -397,7 +406,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .build())
     }
 
-    test(s"$cypherToken-$orderCapability: Order by id of variable from label scan should plan with provided order") {
+    test(s"$cypherToken: Order by id of variable from label scan should plan with provided order") {
       val query = s"MATCH (n:L) RETURN n ORDER BY id(n) $cypherToken"
 
       val planner = plannerBuilder()
@@ -414,7 +423,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by id of variable from relationship type scan should plan with provided order"
+      s"$cypherToken: Order by id of variable from relationship type scan should plan with provided order"
     ) {
       val query = s"MATCH (n)-[r:REL]->(m) RETURN r ORDER BY id(r) $cypherToken"
 
@@ -432,7 +441,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .build())
     }
 
-    test(s"$cypherToken-$orderCapability: Order by variable from label and join in MATCH with multiple labels") {
+    test(s"$cypherToken: Order by variable from label and join in MATCH with multiple labels") {
       val plan = new givenConfig {
         indexOn("Foo", "prop")
         indexOn("Bar", "unused") // otherwise we don't get a label id for Bar
@@ -464,7 +473,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Should not order label scan if ORDER BY aggregation of that node") {
+    test(s"$cypherToken: Should not order label scan if ORDER BY aggregation of that node") {
       val plan = new givenConfig().getLogicalPlanFor(
         s"MATCH (n:Awesome)-[r]-(m) RETURN m AS mm, count(n) AS c ORDER BY c $cypherToken",
         stripProduceResults = false
@@ -482,7 +491,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable renamed in WITH from label scan should plan with provided order"
+      s"$cypherToken: Order by variable renamed in WITH from label scan should plan with provided order"
     ) {
       val plan = new givenConfig().getLogicalPlanFor(
         s"""MATCH (n:Awesome)
@@ -503,7 +512,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by variable from label scan should plan with provided order and PartialSort"
+      s"$cypherToken: Order by variable from label scan should plan with provided order and PartialSort"
     ) {
       val plan = new givenConfig().getLogicalPlanFor(
         s"MATCH (n:Awesome) WITH n, n.foo AS foo RETURN n ORDER BY n $cypherToken, foo",
@@ -526,7 +535,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       .setLabelCardinality("B", 60)
       .build()
 
-    test(s"$cypherToken-$orderCapability: Should not need to sort after Label disjunction") {
+    test(s"$cypherToken: Should not need to sort after Label disjunction") {
       val query = s"MATCH (m) WHERE m:A OR m:B RETURN m ORDER BY m $cypherToken"
 
       val plan = planner
@@ -540,7 +549,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )(SymmetricalLogicalPlanEquality)
     }
 
-    test(s"$cypherToken-$orderCapability: Should do a PartialSort after ordered union for Label disjunction") {
+    test(s"$cypherToken: Should do a PartialSort after ordered union for Label disjunction") {
       val query = s"MATCH (m) WHERE m:A OR m:B RETURN m ORDER BY m $cypherToken, m.prop"
 
       val plan = planner
@@ -557,7 +566,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property should plan sort if index does not provide order"
+      s"$cypherToken: Order by index backed property should plan sort if index does not provide order"
     ) {
       val plan =
         new givenConfig {
@@ -580,11 +589,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order, even after initial WITH and with Expand"
+      s"$cypherToken: Order by index backed property should plan with provided order, even after initial WITH and with Expand"
     ) {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         }.getLogicalPlanFor(
           s"WITH 1 AS foo MATCH (n:Awesome)-[r]->(m) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken",
           stripProduceResults = false
@@ -593,20 +602,25 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("p")
-          .projection("n.prop AS p")
+          .projection("cacheN[n.prop] AS p")
           .projection("1 AS foo")
           .expandAll("(n)-[r]->(m)")
-          .nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = plannedOrder, indexType = IndexType.RANGE)
+          .nodeIndexOperator(
+            "n:Awesome(prop > 'foo')",
+            getValue = _ => GetValue,
+            indexOrder = plannedOrder,
+            indexType = IndexType.RANGE
+          )
           .build()
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property should plan partial sort if index does partially provide order"
+      s"$cypherToken: Order by index backed property should plan partial sort if index does partially provide order"
     ) {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo ASC"
 
       plan._1 should equal(
@@ -615,9 +629,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Projection(
               nodeIndexSeek(
                 "n:Awesome(prop > 'foo')",
-                indexOrder = plannedOrder
+                indexOrder = plannedOrder,
+                getValue = _ => GetValue
               ),
-              Map(v"n.prop" -> prop("n", "prop"))
+              Map(v"n.prop" -> cachedNodeProp("n", "prop"))
             ),
             Map(v"n.foo" -> prop("n", "foo"))
           ),
@@ -628,7 +643,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (directed) should plan partial sort if index does partially provide order"
+      s"$cypherToken: Order by index backed relationship property (directed) should plan partial sort if index does partially provide order"
     ) {
       val query =
         s"MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN r.prop ORDER BY r.prop $cypherToken, r.foo ASC"
@@ -637,7 +652,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -658,7 +673,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (directed) should plan partial sort if index seek does partially provide order"
+      s"$cypherToken: Order by index backed relationship property (directed) should plan partial sort if index seek does partially provide order"
     ) {
       val query = s"MATCH (a)-[r:REL]->(b) WHERE r.prop > 123 RETURN r.prop ORDER BY r.prop $cypherToken, r.foo ASC"
 
@@ -666,7 +681,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -687,25 +702,25 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property should plan partial sort if index does partially provide order and the second column is more complicated"
+      s"$cypherToken: Order by index backed property should plan partial sort if index does partially provide order and the second column is more complicated"
     ) {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo + 1 ASC"
 
       plan._1 should equal(new LogicalPlanBuilder(wholePlan = false)
         .partialSortColumns(Seq(sortOrder("n.prop")), Seq(Ascending(v"n.foo + 1")))
         .projection("n.foo + 1 AS `n.foo + 1`")
-        .projection("n.prop AS `n.prop`")
-        .nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = plannedOrder, getValue = _ => DoNotGetValue)
+        .projection("cacheN[n.prop] AS `n.prop`")
+        .nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = plannedOrder, getValue = _ => GetValue)
         .build())
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property should plan multiple partial sorts") {
+    test(s"$cypherToken: Order by index backed property should plan multiple partial sorts") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' WITH n, n.prop AS p, n.foo AS f ORDER BY p $cypherToken, f ASC RETURN p ORDER BY p $cypherToken, f ASC, n.bar ASC"
 
       plan._1 should equal(
@@ -715,9 +730,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               Projection(
                 nodeIndexSeek(
                   "n:Awesome(prop > 'foo')",
-                  indexOrder = plannedOrder
+                  indexOrder = plannedOrder,
+                  getValue = _ => GetValue
                 ),
-                Map(v"f" -> prop("n", "foo"), v"p" -> prop("n", "prop"))
+                Map(v"f" -> prop("n", "foo"), v"p" -> cachedNodeProp("n", "prop"))
               ),
               Seq(sortOrder("p")),
               Seq(Ascending(v"f"))
@@ -730,10 +746,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property renamed in an earlier WITH") {
+    test(s"$cypherToken: Order by index backed property renamed in an earlier WITH") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor
           s"""MATCH (n:Awesome) WHERE n.prop > 'foo'
              |WITH n AS nnn
@@ -746,7 +762,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Projection(
               nodeIndexSeek(
                 "n:Awesome(prop > 'foo')",
-                indexOrder = plannedOrder
+                indexOrder = plannedOrder,
+                getValue = _ => GetValue
               ),
               Map(v"nnn" -> v"n")
             ),
@@ -756,29 +773,29 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             v"m",
             v"r"
           ),
-          Map(v"nnn.prop" -> prop("nnn", "prop"))
+          Map(v"nnn.prop" -> cachedNodeProp("n", "prop", "nnn"))
         )
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property renamed in same return") {
+    test(s"$cypherToken: Order by index backed property renamed in same return") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor
           s"""MATCH (n:Awesome) WHERE n.prop > 'foo'
              |RETURN n AS m ORDER BY m.prop $cypherToken""".stripMargin
 
       plan._1 should equal(
         Projection(
-          nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+          nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder, getValue = _ => GetValue),
           Map(v"m" -> v"n")
         )
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node"
+      s"$cypherToken: Cannot order by index when ordering is on same property name, but different node"
     ) {
       assume(
         queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents,
@@ -787,7 +804,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         }.getLogicalPlanFor(
           s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
           stripProduceResults = false
@@ -802,7 +819,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node with relationship"
+      s"$cypherToken: Cannot order by index when ordering is on same property name, but different node with relationship"
     ) {
       assume(
         queryGraphSolverSetup == QueryGraphSolverWithIDPConnectComponents,
@@ -813,7 +830,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       // By keeping the best overall and the best sorted plan, we should only have one sort.
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         }.getLogicalPlanFor(
           s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
           stripProduceResults = false
@@ -828,20 +845,21 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (starts with scan)"
+      s"$cypherToken: Order by index backed property should plan with provided order (starts with scan)"
     ) {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop STARTS WITH 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
       plan._1 should equal(
         Projection(
           nodeIndexSeek(
             "n:Awesome(prop STARTS WITH 'foo')",
-            indexOrder = plannedOrder
+            indexOrder = plannedOrder,
+            getValue = _ => GetValue
           ),
-          Map(v"n.prop" -> prop("n", "prop"))
+          Map(v"n.prop" -> cachedNodeProp("n", "prop"))
         )
       )
     }
@@ -849,10 +867,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     for (predicate <- Seq("CONTAINS", "ENDS WITH")) {
       // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve contains
       test(
-        s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order ($predicate scan)"
+        s"$cypherToken: Order by index backed property should plan with provided order ($predicate scan)"
       ) {
         val planner = plannerBuilder()
-          .addNodeIndex("Awesome", Seq("prop"), 0.01, 0.0001, providesOrder = orderCapability)
+          .addNodeIndex("Awesome", Seq("prop"), 0.01, 0.0001)
           .setAllNodesCardinality(100)
           .setLabelCardinality("Awesome", 10)
           .build()
@@ -864,32 +882,38 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           planner.planBuilder()
             .produceResults("`n.prop`")
             .projection("cacheN[n.prop] AS `n.prop`")
-            .filter(s"cacheNFromStore[n.prop] $predicate 'foo'")
-            .nodeIndexOperator("n:Awesome(prop)", indexOrder = plannedOrder, indexType = IndexType.RANGE)
+            .filter(s"cacheN[n.prop] $predicate 'foo'")
+            .nodeIndexOperator(
+              "n:Awesome(prop)",
+              getValue = _ => GetValue,
+              indexOrder = plannedOrder,
+              indexType = IndexType.RANGE
+            )
             .build()
         )
       }
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (scan)") {
+    test(s"$cypherToken: Order by index backed property should plan with provided order (scan)") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n.prop ORDER BY n.prop $cypherToken"
 
       plan._1 should equal(
         Projection(
           nodeIndexSeek(
             "n:Awesome(prop)",
-            indexOrder = plannedOrder
+            indexOrder = plannedOrder,
+            getValue = _ => GetValue
           ),
-          Map(v"n.prop" -> prop("n", "prop"))
+          Map(v"n.prop" -> cachedNodeProp("n", "prop"))
         )
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (scan)"
+      s"$cypherToken: Order by index backed relationship property (undirected) should plan with provided order (scan)"
     ) {
       val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r.prop ORDER BY r.prop $cypherToken"
 
@@ -897,7 +921,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -916,7 +940,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (scan) with NOT IS NULL"
+      s"$cypherToken: Order by index backed relationship property (undirected) should plan with provided order (scan) with NOT IS NULL"
     ) {
       val query = s"MATCH (a)-[r:REL]-(b) WHERE NOT(r.prop IS NULL) RETURN r.prop ORDER BY r.prop $cypherToken"
 
@@ -924,7 +948,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -943,7 +967,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (seek)"
+      s"$cypherToken: Order by index backed relationship property (undirected) should plan with provided order (seek)"
     ) {
       val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN r.prop ORDER BY r.prop $cypherToken"
 
@@ -951,7 +975,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -970,7 +994,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (contains scan)"
+      s"$cypherToken: Order by index backed relationship property (undirected) should not plan with provided order (contains scan)"
     ) {
       val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'sub' RETURN r.prop ORDER BY r.prop $cypherToken"
 
@@ -983,8 +1007,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Seq("prop"),
           1.0,
           0.01,
-          withValues = true,
-          providesOrder = orderCapability,
           indexType = IndexType.TEXT
         )
         .build()
@@ -994,18 +1016,18 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .sortColumns(Seq(sortOrder("r.prop")))
+        .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop CONTAINS 'sub')]-(b)",
-          indexOrder = plannedOrder,
-          getValue = _ => GetValue,
+          indexOrder = IndexOrderNone,
           indexType = IndexType.TEXT
         )
         .build())
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (ends with scan)"
+      s"$cypherToken: Order by index backed relationship property (undirected) should not plan with provided order (ends with scan)"
     ) {
       val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'sub' RETURN r.prop ORDER BY r.prop $cypherToken"
 
@@ -1018,8 +1040,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Seq("prop"),
           1.0,
           0.01,
-          withValues = true,
-          providesOrder = orderCapability,
           indexType = IndexType.TEXT
         )
         .build()
@@ -1029,11 +1049,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .sortColumns(Seq(sortOrder("r.prop")))
+        .projection("r.prop AS `r.prop`")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop ENDS WITH 'sub')]-(b)",
-          indexOrder = plannedOrder,
-          getValue = _ => GetValue,
+          indexOrder = IndexOrderNone,
           indexType = IndexType.TEXT
         )
         .build())
@@ -1065,11 +1085,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       }
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an Apply") {
+    test(s"$cypherToken: Order by index backed property in a plan with an Apply") {
       val plan =
         new givenConfig {
-          indexOn("A", "prop").providesOrder(orderCapability)
-          indexOn("B", "prop").providesOrder(orderCapability)
+          indexOn("A", "prop").providesOrder(BOTH).providesValues()
+          indexOn("B", "prop").providesOrder(BOTH).providesValues()
           cardinality = mapCardinality(byPredicateSelectivity(
             10000,
             Map(
@@ -1100,11 +1120,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Apply(
             nodeIndexSeek(
               "a:A(prop > 'foo')",
+              getValue = _ => GetValue,
               indexOrder = plannedOrder
             ),
             nodeIndexSeek(
               "b:B(prop = ???)",
-              paramExpr = Some(cachedNodePropFromStore("a", "prop")),
+              paramExpr = Some(cachedNodeProp("a", "prop")),
               labelId = 1,
               argumentIds = Set("a")
             )
@@ -1114,7 +1135,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed relationship property in a plan with an Apply") {
+    test(s"$cypherToken: Order by index backed relationship property in a plan with an Apply") {
       val query =
         s"MATCH (a)-[r:REL]-(b), (c)-[r2:REL2]-(d) WHERE r.prop > 'foo' AND r.prop = r2.prop RETURN r.prop ORDER BY r.prop $cypherToken"
 
@@ -1123,8 +1144,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 50)
         .setRelationshipCardinality("()-[:REL2]-()", 50)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.1, withValues = true, providesOrder = orderCapability)
-        .addRelationshipIndex("REL2", Seq("prop"), 1.0, 0.02, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.1)
+        .addRelationshipIndex("REL2", Seq("prop"), 1.0, 0.02)
         .build()
 
       val plan = planner
@@ -1149,7 +1170,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .build())
     }
 
-    test(s"$cypherToken-$orderCapability: Order by label variable in a plan with an Apply") {
+    test(s"$cypherToken: Order by label variable in a plan with an Apply") {
       val plan = new givenConfig {
         indexOn("B", "prop")
       }.getLogicalPlanFor(
@@ -1172,7 +1193,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by relationship variable in a plan with an Apply") {
+    test(s"$cypherToken: Order by relationship variable in a plan with an Apply") {
       val query = s"MATCH (a)-[r:REL]-(b), (c)-[r2:REL2]-(d) WHERE r2.prop = r.prop RETURN r ORDER BY r $cypherToken"
 
       val planner = plannerBuilder()
@@ -1202,7 +1223,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by label variable in a plan where NIJ is not possible, with 1 relationship pattern on the RHS"
+      s"$cypherToken: Order by label variable in a plan where NIJ is not possible, with 1 relationship pattern on the RHS"
     ) {
       val planner = plannerBuilder()
         .setAllNodesCardinality(10000)
@@ -1210,7 +1231,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setLabelCardinality("B", 100)
         .setRelationshipCardinality("()-[]->()", 50000)
         .setRelationshipCardinality("(:B)-[]->()", 50)
-        .addNodeIndex("B", Seq("prop"), 0.001, 0.001, providesOrder = orderCapability)
+        .addNodeIndex("B", Seq("prop"), 0.001, 0.001)
         .build()
 
       planner.plan(
@@ -1229,12 +1250,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed properties in a plan with an Apply needs Partial Sort if RHS order required"
+      s"$cypherToken: Order by index backed properties in a plan with an Apply needs Partial Sort if RHS order required"
     ) {
       val plan =
         new givenConfig {
-          indexOn("A", "prop").providesOrder(orderCapability)
-          indexOn("B", "prop").providesOrder(orderCapability)
+          indexOn("A", "prop").providesOrder(BOTH).providesValues()
+          indexOn("B", "prop").providesOrder(BOTH).providesValues()
           // This query is very fragile in the sense that the slightest modification will result in a stupid plan
         } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop STARTS WITH 'foo' AND b.prop > a.prop RETURN a.prop, b.prop ORDER BY a.prop $cypherToken, b.prop $cypherToken"
 
@@ -1242,16 +1263,17 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         PartialSort(
           Projection(
             Apply(
-              nodeIndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
+              nodeIndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = plannedOrder, getValue = _ => GetValue),
               nodeIndexSeek(
                 "b:B(prop > ???)",
-                paramExpr = Some(cachedNodePropFromStore("a", "prop")),
+                getValue = _ => GetValue,
+                paramExpr = Some(cachedNodeProp("a", "prop")),
                 labelId = 1,
                 argumentIds = Set("a"),
                 indexOrder = plannedOrder
               )
             ),
-            Map(v"a.prop" -> cachedNodeProp("a", "prop"), v"b.prop" -> prop("b", "prop"))
+            Map(v"a.prop" -> cachedNodeProp("a", "prop"), v"b.prop" -> cachedNodeProp("b", "prop"))
           ),
           Seq(sortOrder("a.prop")),
           Seq(sortOrder("b.prop"))
@@ -1259,27 +1281,28 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an renaming Projection") {
+    test(s"$cypherToken: Order by index backed property in a plan with an renaming Projection") {
       val plan =
         new givenConfig {
-          indexOn("A", "prop").providesOrder(orderCapability)
+          indexOn("A", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (a:A) WHERE a.prop > 'foo' WITH a.prop AS theProp, 1 AS x RETURN theProp ORDER BY theProp $cypherToken"
 
       plan._1 should equal(
         Projection(
           nodeIndexSeek(
             "a:A(prop > 'foo')",
-            indexOrder = plannedOrder
+            indexOrder = plannedOrder,
+            getValue = _ => GetValue
           ),
-          Map(v"theProp" -> prop("a", "prop"), v"x" -> literalInt(1))
+          Map(v"theProp" -> cachedNodeProp("a", "prop"), v"x" -> literalInt(1))
         )
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an aggregation and an expand") {
+    test(s"$cypherToken: Order by index backed property in a plan with an aggregation and an expand") {
       val plan =
         new givenConfig {
-          indexOn("A", "prop").providesOrder(orderCapability)
+          indexOn("A", "prop").providesOrder(BOTH).providesValues()
           cardinality = mapCardinality {
             // Force the planner to start at a
             case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a") => 100.0
@@ -1292,7 +1315,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Expand(
             nodeIndexSeek(
               "a:A(prop > 'foo')",
-              indexOrder = plannedOrder
+              indexOrder = plannedOrder,
+              getValue = _ => GetValue
             ),
             v"a",
             SemanticDirection.OUTGOING,
@@ -1300,19 +1324,19 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             v"b",
             v"r"
           ),
-          Map(v"a.prop" -> cachedNodePropFromStore("a", "prop")),
+          Map(v"a.prop" -> cachedNodeProp("a", "prop")),
           Map(v"count(b)" -> count(v"b")),
-          Seq(cachedNodePropFromStore("a", "prop"))
+          Seq(cachedNodeProp("a", "prop"))
         )
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property in a plan with partial provided order and with an expand"
+      s"$cypherToken: Order by index backed property in a plan with partial provided order and with an expand"
     ) {
       val plan =
         new givenConfig {
-          indexOn("A", "prop").providesOrder(orderCapability)
+          indexOn("A", "prop").providesOrder(BOTH).providesValues()
           cardinality = mapCardinality {
             // Force the planner to start at a
             case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a") => 100.0
@@ -1327,7 +1351,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               Expand(
                 nodeIndexSeek(
                   "a:A(prop > 'foo')",
-                  indexOrder = plannedOrder
+                  indexOrder = plannedOrder,
+                  getValue = _ => GetValue
                 ),
                 v"a",
                 SemanticDirection.OUTGOING,
@@ -1335,7 +1360,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 v"b",
                 v"r"
               ),
-              Map(v"a.prop" -> prop("a", "prop"))
+              Map(v"a.prop" -> cachedNodeProp("a", "prop"))
             ),
             Map(v"b.prop" -> prop("b", "prop"))
           ),
@@ -1346,11 +1371,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property in a plan with partial provided order and with two expand - should plan partial sort in the middle"
+      s"$cypherToken: Order by index backed property in a plan with partial provided order and with two expand - should plan partial sort in the middle"
     ) {
       val plan =
         new givenConfig {
-          indexOn("A", "prop").providesOrder(orderCapability)
+          indexOn("A", "prop").providesOrder(BOTH).providesValues()
           cardinality = mapCardinality {
             // Force the planner to start at a
             case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a") => 1.0
@@ -1375,7 +1400,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                   Expand(
                     nodeIndexSeek(
                       "a:A(prop > 'foo')",
-                      indexOrder = plannedOrder
+                      indexOrder = plannedOrder,
+                      getValue = _ => GetValue
                     ),
                     v"a",
                     SemanticDirection.OUTGOING,
@@ -1383,7 +1409,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                     v"b",
                     v"r"
                   ),
-                  Map(v"a.prop" -> prop("a", "prop"))
+                  Map(v"a.prop" -> cachedNodeProp("a", "prop"))
                 ),
                 Map(v"b.prop" -> prop("b", "prop"))
               ),
@@ -1400,10 +1426,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with a distinct") {
+    test(s"$cypherToken: Order by index backed property in a plan with a distinct") {
       val plan =
         new givenConfig {
-          indexOn("A", "prop").providesOrder(orderCapability)
+          indexOn("A", "prop").providesOrder(BOTH).providesValues()
           cardinality = mapCardinality {
             // Force the planner to start at a
             case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a") => 100.0
@@ -1416,7 +1442,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Expand(
             nodeIndexSeek(
               "a:A(prop > 'foo')",
-              indexOrder = plannedOrder
+              indexOrder = plannedOrder,
+              getValue = _ => GetValue
             ),
             v"a",
             SemanticDirection.OUTGOING,
@@ -1424,14 +1451,14 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             v"b",
             v"r"
           ),
-          Map(v"a.prop" -> cachedNodePropFromStore("a", "prop")),
-          Seq(cachedNodePropFromStore("a", "prop"))
+          Map(v"a.prop" -> cachedNodeProp("a", "prop")),
+          Seq(cachedNodeProp("a", "prop"))
         )
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (directed) in a plan with a distinct"
+      s"$cypherToken: Order by index backed relationship property (directed) in a plan with a distinct"
     ) {
       val query = s"MATCH (a)<-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN DISTINCT r.prop ORDER BY r.prop $cypherToken"
 
@@ -1439,7 +1466,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -1447,13 +1474,18 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .orderedDistinct(Seq("cacheRFromStore[r.prop]"), "cacheRFromStore[r.prop] AS `r.prop`")
-        .relationshipIndexOperator("(a)<-[r:REL(prop)]-(b)", indexOrder = plannedOrder, indexType = IndexType.RANGE)
+        .orderedDistinct(Seq("cacheR[r.prop]"), "cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator(
+          "(a)<-[r:REL(prop)]-(b)",
+          getValue = _ => GetValue,
+          indexOrder = plannedOrder,
+          indexType = IndexType.RANGE
+        )
         .build())
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (directed) in a plan with a distinct (seek)"
+      s"$cypherToken: Order by index backed relationship property (directed) in a plan with a distinct (seek)"
     ) {
       val query = s"MATCH (a)<-[r:REL]-(b) WHERE r.prop > 123 RETURN DISTINCT r.prop ORDER BY r.prop $cypherToken"
 
@@ -1461,7 +1493,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -1469,21 +1501,22 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .orderedDistinct(Seq("cacheRFromStore[r.prop]"), "cacheRFromStore[r.prop] AS `r.prop`")
+        .orderedDistinct(Seq("cacheR[r.prop]"), "cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator(
           "(a)<-[r:REL(prop > 123)]-(b)",
+          getValue = _ => GetValue,
           indexOrder = plannedOrder,
           indexType = IndexType.RANGE
         )
         .build())
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an outer join") {
+    test(s"$cypherToken: Order by index backed property in a plan with an outer join") {
       // Left outer hash join can only maintain ASC order
-      assume(sortOrder == Ascending)
+      assume(cypherToken == "ASC")
       val plan =
         new givenConfig {
-          indexOn("A", "prop").providesOrder(orderCapability)
+          indexOn("A", "prop").providesOrder(BOTH).providesValues()
           cardinality = mapCardinality {
             // Force the planner to start at b
             case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a", v"b") =>
@@ -1500,6 +1533,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Expand(
               nodeIndexSeek(
                 "a:A(prop > 'foo')",
+                _ => GetValue,
                 indexOrder = plannedOrder
               ),
               v"a",
@@ -1509,15 +1543,15 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               v"r"
             )
           ),
-          Map(v"a.prop" -> prop("a", "prop"))
+          Map(v"a.prop" -> cachedNodeProp("a", "prop"))
         )
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with a tail apply") {
+    test(s"$cypherToken: Order by index backed property in a plan with a tail apply") {
       val plan =
         new givenConfig {
-          indexOn("A", "prop").providesOrder(orderCapability)
+          indexOn("A", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor
           s"""MATCH (a:A) WHERE a.prop > 'foo' WITH a SKIP 0
              |MATCH (b)
@@ -1529,19 +1563,20 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Skip(
               nodeIndexSeek(
                 "a:A(prop > 'foo')",
-                indexOrder = plannedOrder
+                indexOrder = plannedOrder,
+                getValue = _ => GetValue
               ),
               literalInt(0)
             ),
             AllNodesScan(v"b", Set(v"a"))
           ),
-          Map(v"a.prop" -> prop("a", "prop"))
+          Map(v"a.prop" -> cachedNodeProp("a", "prop"))
         )
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) in a plan with a tail apply"
+      s"$cypherToken: Order by index backed relationship property (undirected) in a plan with a tail apply"
     ) {
       val query =
         s"""MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL WITH r SKIP 0
@@ -1552,7 +1587,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -1563,14 +1598,18 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .projection("cacheR[r.prop] AS `r.prop`")
         .apply()
         .|.allNodeScan("c", "r")
-        .cacheProperties("cacheRFromStore[r.prop]")
         .skip(0)
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = plannedOrder, indexType = IndexType.RANGE)
+        .relationshipIndexOperator(
+          "(a)-[r:REL(prop)]-(b)",
+          getValue = _ => GetValue,
+          indexOrder = plannedOrder,
+          indexType = IndexType.RANGE
+        )
         .build())
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) in a plan with a tail apply (seek)"
+      s"$cypherToken: Order by index backed relationship property (undirected) in a plan with a tail apply (seek)"
     ) {
       val query =
         s"""MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 WITH r SKIP 0
@@ -1581,7 +1620,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -1592,10 +1631,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .projection("cacheR[r.prop] AS `r.prop`")
         .apply()
         .|.allNodeScan("c", "r")
-        .cacheProperties("cacheRFromStore[r.prop]")
         .skip(0)
         .relationshipIndexOperator(
           "(a)-[r:REL(prop > 123)]-(b)",
+          getValue = _ => GetValue,
           indexOrder = plannedOrder,
           indexType = IndexType.RANGE
         )
@@ -1603,11 +1642,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (scan) in case of existence constraint"
+      s"$cypherToken: Order by index backed property should plan with provided order (scan) in case of existence constraint"
     ) {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability)
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
           nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
         } getLogicalPlanFor s"MATCH (n:Awesome) RETURN n.prop ORDER BY n.prop $cypherToken"
 
@@ -1615,15 +1654,16 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         Projection(
           nodeIndexSeek(
             "n:Awesome(prop)",
-            indexOrder = plannedOrder
+            indexOrder = plannedOrder,
+            getValue = _ => GetValue
           ),
-          Map(v"n.prop" -> prop("n", "prop"))
+          Map(v"n.prop" -> cachedNodeProp("n", "prop"))
         )
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (scan) in case of existence constraint"
+      s"$cypherToken: Order by index backed relationship property (undirected) should plan with provided order (scan) in case of existence constraint"
     ) {
       val query = s"MATCH (a)-[r:REL]-(b) RETURN r.prop ORDER BY r.prop $cypherToken"
 
@@ -1631,7 +1671,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 10)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .addRelationshipExistenceConstraint("REL", "prop")
         .build()
 
@@ -1650,10 +1690,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .build())
     }
 
-    test(s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered index available") {
+    test(s"$cypherToken: Should use OrderedDistinct if there is an ordered index available") {
       val plan = new givenConfig {
         indexOn("A", "prop")
-          .providesOrder(orderCapability)
+          .providesOrder(BOTH)
           .providesValues()
       }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.prop")._1
 
@@ -1674,11 +1714,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered index available (multiple columns)"
+      s"$cypherToken: Should use OrderedDistinct if there is an ordered index available (multiple columns)"
     ) {
       val plan = new givenConfig {
         indexOn("A", "prop")
-          .providesOrder(orderCapability)
+          .providesOrder(BOTH)
           .providesValues()
       }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.foo, a.prop")._1
 
@@ -1699,11 +1739,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered composite index available"
+      s"$cypherToken: Should use OrderedDistinct if there is an ordered composite index available"
     ) {
       val plan = new givenConfig {
         indexOn("A", "foo", "prop")
-          .providesOrder(orderCapability)
+          .providesOrder(BOTH)
           .providesValues()
       }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.foo, a.prop")._1
 
@@ -1724,11 +1764,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered composite index available (reveresed column order)"
+      s"$cypherToken: Should use OrderedDistinct if there is an ordered composite index available (reveresed column order)"
     ) {
       val plan = new givenConfig {
         indexOn("A", "foo", "prop")
-          .providesOrder(orderCapability)
+          .providesOrder(BOTH)
           .providesValues()
       }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.prop, a.foo")._1
 
@@ -1749,11 +1789,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Should use OrderedAggregation if there is an ordered index available, in presence of ORDER BY for aggregating column"
+      s"$cypherToken: Should use OrderedAggregation if there is an ordered index available, in presence of ORDER BY for aggregating column"
     ) {
       val plan = new givenConfig {
         indexOn("A", "prop")
-          .providesOrder(orderCapability)
+          .providesOrder(BOTH)
           .providesValues()
       }.getLogicalPlanFor(s"MATCH (a:A) WHERE a.prop > 0 RETURN a.prop, count(*) AS c ORDER BY c $cypherToken")._1
 
@@ -1775,7 +1815,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Should use OrderedAggregation if there is an ordered relationship index available, in presence of ORDER BY for aggregating column"
+      s"$cypherToken: Should use OrderedAggregation if there is an ordered relationship index available, in presence of ORDER BY for aggregating column"
     ) {
       val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r.prop, count(*) AS c ORDER BY c $cypherToken"
 
@@ -1783,7 +1823,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -1806,7 +1846,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Should use OrderedAggregation if there is an ordered relationship index available, in presence of ORDER BY for aggregating column (seek)"
+      s"$cypherToken: Should use OrderedAggregation if there is an ordered relationship index available, in presence of ORDER BY for aggregating column (seek)"
     ) {
       val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN r.prop, count(*) AS c ORDER BY c $cypherToken"
 
@@ -1814,7 +1854,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllNodesCardinality(100)
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
         .build()
 
       val plan = planner
@@ -1837,12 +1877,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$cypherToken-$orderCapability: Needs sort if a write plan invalidates order"
+      s"$cypherToken: Needs sort if a write plan invalidates order"
     ) {
       val planner = plannerBuilder()
         .setAllNodesCardinality(1000)
         .setLabelCardinality("A", 1000)
-        .addNodeIndex("A", Seq("prop"), 0.001, 0.001, providesOrder = orderCapability)
+        .addNodeIndex("A", Seq("prop"), 0.001, 0.001)
         .build()
 
       planner.plan(
@@ -1856,19 +1896,19 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .produceResults("a")
           .sortColumns(Seq(sortOrder("a.prop")))
           .projection("cacheN[a.prop] AS `a.prop`")
-          .setNodeProperty("a", "foo", "cacheNFromStore[a.prop] / 2")
-          .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => DoNotGetValue)
+          .setNodeProperty("a", "foo", "cacheN[a.prop] / 2")
+          .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => GetValue)
           .build()
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Needs sort if a write procedure invalidates order"
+      s"$cypherToken: Needs sort if a write procedure invalidates order"
     ) {
       val planner = plannerBuilder()
         .setAllNodesCardinality(1000)
         .setLabelCardinality("A", 1000)
-        .addNodeIndex("A", Seq("prop"), 0.001, 0.001, providesOrder = orderCapability)
+        .addNodeIndex("A", Seq("prop"), 0.001, 0.001)
         .addProcedure(
           procedureSignature("my.write")
             .withAccessMode(ProcedureReadWriteAccess)
@@ -1888,19 +1928,18 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .sortColumns(Seq(sortOrder("a.prop")))
           .projection("cacheN[a.prop] AS `a.prop`")
           .procedureCall("my.write()")
-          .cacheProperties("cacheNFromStore[a.prop]")
-          .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => DoNotGetValue)
+          .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => GetValue)
           .build()
       )
     }
 
     test(
-      s"$cypherToken-$orderCapability: Needs sort if a write procedure in a subquery invalidates order"
+      s"$cypherToken: Needs sort if a write procedure in a subquery invalidates order"
     ) {
       val planner = plannerBuilder()
         .setAllNodesCardinality(1000)
         .setLabelCardinality("A", 1000)
-        .addNodeIndex("A", Seq("prop"), 0.001, 0.001, providesOrder = orderCapability)
+        .addNodeIndex("A", Seq("prop"), 0.001, 0.001)
         .addProcedure(
           procedureSignature("my.write")
             .withAccessMode(ProcedureReadWriteAccess)
@@ -1920,11 +1959,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         planner.planBuilder()
           .produceResults("a")
           .sortColumns(Seq(sortOrder("a.prop")))
-          .projection("a.prop AS `a.prop`")
+          .projection("cacheN[a.prop] AS `a.prop`")
           .subqueryForeach()
           .|.procedureCall("my.write()")
           .|.argument()
-          .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => DoNotGetValue)
+          .nodeIndexOperator("a:A(prop)", indexOrder = plannedOrder, getValue = _ => GetValue)
           .build()
       )
     }
@@ -1938,111 +1977,71 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL]-()", 10)
 
-  // (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnlyOne, sortItems, shouldPartialSort, alreadySorted)
-  private def compositeIndexOnRangeTestData(variable: String)
-    : Seq[(String, IndexOrderCapability, IndexOrder, Boolean, Boolean, Seq[ColumnOrder], Boolean, Seq[ColumnOrder])] =
+  case class CompositeIndexOnRangeTestData(
+    orderByString: String,
+    indexOrder: IndexOrder,
+    shouldFullSort: Boolean,
+    sortOnOnlyOne: Boolean,
+    sortItems: Seq[ColumnOrder],
+    shouldPartialSort: Boolean,
+    alreadySorted: Seq[ColumnOrder]
+  )
+
+  private def compositeIndexOnRangeTestData(variable: String): Seq[CompositeIndexOnRangeTestData] =
     Seq(
-      (
-        s"$variable.prop1 DESC",
-        NONE,
-        IndexOrderNone,
-        true,
-        true,
-        Seq(Descending(v"$variable.prop1")),
-        false,
-        Seq.empty
+      CompositeIndexOnRangeTestData(
+        orderByString = s"$variable.prop1 ASC",
+        indexOrder = IndexOrderAscending,
+        shouldFullSort = false,
+        sortOnOnlyOne = false,
+        sortItems = Seq.empty,
+        shouldPartialSort = false,
+        alreadySorted = Seq.empty
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        Seq(Descending(v"$variable.prop1"), Ascending(v"$variable.prop2")),
-        false,
-        Seq.empty
+      CompositeIndexOnRangeTestData(
+        orderByString = s"$variable.prop1 DESC",
+        indexOrder = IndexOrderDescending,
+        shouldFullSort = false,
+        sortOnOnlyOne = false,
+        sortItems = Seq.empty,
+        shouldPartialSort = false,
+        alreadySorted = Seq.empty
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        Seq(Descending(v"$variable.prop1"), Descending(v"$variable.prop2")),
-        false,
-        Seq.empty
+      CompositeIndexOnRangeTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC",
+        indexOrder = IndexOrderAscending,
+        shouldFullSort = false,
+        sortOnOnlyOne = false,
+        sortItems = Seq.empty,
+        shouldPartialSort = false,
+        alreadySorted = Seq.empty
       ),
-      (
-        s"$variable.prop1 ASC",
-        NONE,
-        IndexOrderNone,
-        true,
-        true,
-        Seq(Ascending(v"$variable.prop1")),
-        false,
-        Seq.empty
+      CompositeIndexOnRangeTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC",
+        indexOrder = IndexOrderAscending,
+        shouldFullSort = false,
+        sortOnOnlyOne = false,
+        sortItems = Seq(Descending(v"$variable.prop2")),
+        shouldPartialSort = true,
+        alreadySorted = Seq(Ascending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        Seq(Ascending(v"$variable.prop1"), Ascending(v"$variable.prop2")),
-        false,
-        Seq.empty
+      CompositeIndexOnRangeTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC",
+        indexOrder = IndexOrderDescending,
+        shouldFullSort = false,
+        sortOnOnlyOne = false,
+        sortItems = Seq(Ascending(v"$variable.prop2")),
+        shouldPartialSort = true,
+        alreadySorted = Seq(Descending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        Seq(Ascending(v"$variable.prop1"), Descending(v"$variable.prop2")),
-        false,
-        Seq.empty
-      ),
-      (s"$variable.prop1 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-      (s"$variable.prop1 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        false,
-        Seq.empty,
-        false,
-        Seq.empty
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        false,
-        Seq(Descending(v"$variable.prop2")),
-        true,
-        Seq(Ascending(v"$variable.prop1"))
-      ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        false,
-        Seq(Ascending(v"$variable.prop2")),
-        true,
-        Seq(Descending(v"$variable.prop1"))
-      ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        false,
-        Seq.empty,
-        false,
-        Seq.empty
+      CompositeIndexOnRangeTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC",
+        indexOrder = IndexOrderDescending,
+        shouldFullSort = false,
+        sortOnOnlyOne = false,
+        sortItems = Seq.empty,
+        shouldPartialSort = false,
+        alreadySorted = Seq.empty
       )
     )
 
@@ -2057,9 +2056,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     val expr = ands(lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)))
 
     compositeIndexOnRangeTestData("n").foreach {
-      case t @ (
+      case t @ CompositeIndexOnRangeTestData(
           orderByString,
-          orderCapability,
           indexOrder,
           shouldFullSort,
           sortOnOnlyOne,
@@ -2075,7 +2073,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                |ORDER BY $orderByString""".stripMargin
           val plan =
             new givenConfig {
-              indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+              indexOn("Label", "prop1", "prop2").providesOrder(BOTH).providesValues()
             } getLogicalPlanFor query
 
           // Then
@@ -2112,9 +2110,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     val projectionProp2 = Map("r.prop2" -> cachedRelProp("r", "prop2"))
 
     compositeIndexOnRangeTestData("r").foreach {
-      case t @ (
+      case t @ CompositeIndexOnRangeTestData(
           orderByString,
-          orderCapability,
           indexOrder,
           shouldFullSort,
           sortOnOnlyOne,
@@ -2134,9 +2131,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "REL",
               Seq("prop1", "prop2"),
               1.0,
-              0.01,
-              withValues = true,
-              providesOrder = orderCapability
+              0.01
             )
             .build()
 
@@ -2182,25 +2177,50 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  // (orderByString, orderCapability, indexOrder, alreadySorted, toBeSorted)
-  private def compositeIndexPartialOrderByTestData(variable: String) = {
+  case class CompositeIndexPartialOrderByTestData(
+    orderByString: String,
+    indexOrder: IndexOrder,
+    alreadySorted: Seq[ColumnOrder],
+    toBeSorted: Seq[ColumnOrder]
+  )
+
+  private def compositeIndexPartialOrderByTestData(variable: String): Seq[CompositeIndexPartialOrderByTestData] = {
     val asc = Seq(Ascending(v"$variable.prop1"), Ascending(v"$variable.prop2"))
     val ascProp3 = Seq(Ascending(v"$variable.prop3"))
     val desc = Seq(Descending(v"$variable.prop1"), Descending(v"$variable.prop2"))
     val descProp3 = Seq(Descending(v"$variable.prop3"))
 
     Seq(
-      // Both index
-      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", BOTH, IndexOrderAscending, asc, ascProp3),
-      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", BOTH, IndexOrderAscending, asc, descProp3),
-      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", BOTH, IndexOrderDescending, desc, ascProp3),
-      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", BOTH, IndexOrderDescending, desc, descProp3)
+      CompositeIndexPartialOrderByTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        alreadySorted = asc,
+        toBeSorted = ascProp3
+      ),
+      CompositeIndexPartialOrderByTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
+        indexOrder = IndexOrderAscending,
+        alreadySorted = asc,
+        toBeSorted = descProp3
+      ),
+      CompositeIndexPartialOrderByTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
+        indexOrder = IndexOrderDescending,
+        alreadySorted = desc,
+        toBeSorted = ascProp3
+      ),
+      CompositeIndexPartialOrderByTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
+        indexOrder = IndexOrderDescending,
+        alreadySorted = desc,
+        toBeSorted = descProp3
+      )
     )
   }
 
   test("Order by partially index backed for composite node index on part of the order by") {
     compositeIndexPartialOrderByTestData("n").foreach {
-      case (orderByString, orderCapability, indexOrder, alreadySorted, toBeSorted) =>
+      case CompositeIndexPartialOrderByTestData(orderByString, indexOrder, alreadySorted, toBeSorted) =>
         // When
         val query =
           s"""MATCH (n:Label)
@@ -2209,7 +2229,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
              |ORDER BY $orderByString""".stripMargin
         val plan =
           new givenConfig {
-            indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+            indexOn("Label", "prop1", "prop2").providesOrder(BOTH).providesValues()
           } getLogicalPlanFor query
 
         // Then
@@ -2240,7 +2260,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
   test("Order by partially index backed for composite relationship index on part of the order by") {
     compositeIndexPartialOrderByTestData("r").foreach {
-      case (orderByString, orderCapability, indexOrder, alreadySorted, toBeSorted) =>
+      case CompositeIndexPartialOrderByTestData(orderByString, indexOrder, alreadySorted, toBeSorted) =>
         // When
         val query =
           s"""MATCH (a)-[r:REL]->(b)
@@ -2253,9 +2273,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "REL",
             Seq("prop1", "prop2"),
             1.0,
-            0.01,
-            withValues = true,
-            providesOrder = orderCapability
+            0.01
           )
           .build()
 
@@ -2279,226 +2297,187 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  // (orderByString, orderCapability, indexOrder, fullSort, sortItems, partialSort, alreadySorted)
-  private def compositeIndexOrderByMorePropsTestData(variable: String)
-    : Seq[(String, IndexOrderCapability, IndexOrder, Boolean, Seq[ColumnOrder], Boolean, Seq[ColumnOrder])] = {
-    val ascAll = Seq(
-      Ascending(v"$variable.prop1"),
-      Ascending(v"$variable.prop2"),
-      Ascending(v"$variable.prop3"),
-      Ascending(v"$variable.prop4")
-    )
-    val descAll = Seq(
-      Descending(v"$variable.prop1"),
-      Descending(v"$variable.prop2"),
-      Descending(v"$variable.prop3"),
-      Descending(v"$variable.prop4")
-    )
+  case class CompositeIndexOrderByMorePropsTestData(
+    orderByString: String,
+    indexOrder: IndexOrder,
+    fullSort: Boolean,
+    sortItems: Seq[ColumnOrder],
+    partialSort: Boolean,
+    alreadySorted: Seq[ColumnOrder]
+  )
+
+  private def compositeIndexOrderByMorePropsTestData(variable: String): Seq[CompositeIndexOrderByMorePropsTestData] = {
     val asc1_2 = Seq(Ascending(v"$variable.prop1"), Ascending(v"$variable.prop2"))
     val desc1_2 = Seq(Descending(v"$variable.prop1"), Descending(v"$variable.prop2"))
 
     Seq(
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
-        NONE,
-        IndexOrderNone,
-        true,
-        descAll,
-        false,
-        Seq.empty
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        sortItems = Seq.empty,
+        partialSort = false,
+        alreadySorted = Seq.empty
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
-        NONE,
-        IndexOrderNone,
-        true,
-        ascAll,
-        false,
-        Seq.empty
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        Seq.empty,
-        false,
-        Seq.empty
-      ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(v"$variable.prop4")),
-        true,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        sortItems = Seq(Descending(v"$variable.prop4")),
+        partialSort = true,
+        alreadySorted = Seq(
           Ascending(v"$variable.prop1"),
           Ascending(v"$variable.prop2"),
           Ascending(v"$variable.prop3")
         )
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(v"$variable.prop3"), Ascending(v"$variable.prop4")),
-        true,
-        asc1_2
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        sortItems = Seq(Descending(v"$variable.prop3"), Ascending(v"$variable.prop4")),
+        partialSort = true,
+        alreadySorted = asc1_2
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        Seq(Descending(v"$variable.prop3"), Descending(v"$variable.prop4")),
-        true,
-        asc1_2
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        sortItems = Seq(Descending(v"$variable.prop3"), Descending(v"$variable.prop4")),
+        partialSort = true,
+        alreadySorted = asc1_2
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        sortItems = Seq(
           Descending(v"$variable.prop2"),
           Ascending(v"$variable.prop3"),
           Ascending(v"$variable.prop4")
         ),
-        true,
-        Seq(Ascending(v"$variable.prop1"))
+        partialSort = true,
+        alreadySorted = Seq(Ascending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        sortItems = Seq(
           Descending(v"$variable.prop2"),
           Ascending(v"$variable.prop3"),
           Descending(v"$variable.prop4")
         ),
-        true,
-        Seq(Ascending(v"$variable.prop1"))
+        partialSort = true,
+        alreadySorted = Seq(Ascending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        sortItems = Seq(
           Descending(v"$variable.prop2"),
           Descending(v"$variable.prop3"),
           Ascending(v"$variable.prop4")
         ),
-        true,
-        Seq(Ascending(v"$variable.prop1"))
+        partialSort = true,
+        alreadySorted = Seq(Ascending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        sortItems = Seq(
           Descending(v"$variable.prop2"),
           Descending(v"$variable.prop3"),
           Descending(v"$variable.prop4")
         ),
-        true,
-        Seq(Ascending(v"$variable.prop1"))
+        partialSort = true,
+        alreadySorted = Seq(Ascending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(v"$variable.prop4")),
-        true,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        sortItems = Seq(Ascending(v"$variable.prop4")),
+        partialSort = true,
+        alreadySorted = Seq(
           Descending(v"$variable.prop1"),
           Descending(v"$variable.prop2"),
           Descending(v"$variable.prop3")
         )
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(v"$variable.prop3"), Descending(v"$variable.prop4")),
-        true,
-        desc1_2
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        sortItems = Seq(Ascending(v"$variable.prop3"), Descending(v"$variable.prop4")),
+        partialSort = true,
+        alreadySorted = desc1_2
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        Seq(Ascending(v"$variable.prop3"), Ascending(v"$variable.prop4")),
-        true,
-        desc1_2
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        sortItems = Seq(Ascending(v"$variable.prop3"), Ascending(v"$variable.prop4")),
+        partialSort = true,
+        alreadySorted = desc1_2
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        sortItems = Seq(
           Ascending(v"$variable.prop2"),
           Descending(v"$variable.prop3"),
           Descending(v"$variable.prop4")
         ),
-        true,
-        Seq(Descending(v"$variable.prop1"))
+        partialSort = true,
+        alreadySorted = Seq(Descending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        sortItems = Seq(
           Ascending(v"$variable.prop2"),
           Descending(v"$variable.prop3"),
           Ascending(v"$variable.prop4")
         ),
-        true,
-        Seq(Descending(v"$variable.prop1"))
+        partialSort = true,
+        alreadySorted = Seq(Descending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        sortItems = Seq(
           Ascending(v"$variable.prop2"),
           Ascending(v"$variable.prop3"),
           Descending(v"$variable.prop4")
         ),
-        true,
-        Seq(Descending(v"$variable.prop1"))
+        partialSort = true,
+        alreadySorted = Seq(Descending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        Seq(
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        sortItems = Seq(
           Ascending(v"$variable.prop2"),
           Ascending(v"$variable.prop3"),
           Ascending(v"$variable.prop4")
         ),
-        true,
-        Seq(Descending(v"$variable.prop1"))
+        partialSort = true,
+        alreadySorted = Seq(Descending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        Seq.empty,
-        false,
-        Seq.empty
+      CompositeIndexOrderByMorePropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        sortItems = Seq.empty,
+        partialSort = false,
+        alreadySorted = Seq.empty
       )
     )
   }
@@ -2517,7 +2496,14 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     )
 
     compositeIndexOrderByMorePropsTestData("n").foreach {
-      case (orderByString, orderCapability, indexOrder, fullSort, sortItems, partialSort, alreadySorted) =>
+      case CompositeIndexOrderByMorePropsTestData(
+          orderByString,
+          indexOrder,
+          fullSort,
+          sortItems,
+          partialSort,
+          alreadySorted
+        ) =>
         // When
         val query =
           s"""MATCH (n:Label)
@@ -2526,7 +2512,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
              |ORDER BY $orderByString""".stripMargin
         val plan =
           new givenConfig {
-            indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability).providesValues()
+            indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(BOTH).providesValues()
           } getLogicalPlanFor query
 
         // Then
@@ -2549,7 +2535,14 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
   test("Order by index backed for composite relationship index on more properties") {
     compositeIndexOrderByMorePropsTestData("r").foreach {
-      case (orderByString, orderCapability, indexOrder, fullSort, sortItems, partialSort, alreadySorted) =>
+      case CompositeIndexOrderByMorePropsTestData(
+          orderByString,
+          indexOrder,
+          fullSort,
+          sortItems,
+          partialSort,
+          alreadySorted
+        ) =>
         // When
         val query =
           s"""MATCH (a)-[r:REL]->(b)
@@ -2562,9 +2555,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "REL",
             Seq("prop1", "prop2", "prop3", "prop4"),
             1.0,
-            0.01,
-            withValues = true,
-            providesOrder = orderCapability
+            0.01
           )
           .build()
 
@@ -2602,11 +2593,20 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  // (orderByString, orderCapability, indexOrder, sort, projections, projectionsAfterSort, toSort, alreadySorted)
+  case class CompositeIndexOrderByPrefixTestData(
+    orderByString: String,
+    indexOrder: IndexOrder,
+    sort: Boolean,
+    projections: Map[String, Expression],
+    projectionsAfterSort: Map[String, Expression],
+    toSort: Seq[ColumnOrder],
+    alreadySorted: Seq[ColumnOrder]
+  )
+
   private def compositeIndexOrderByPrefixTestData(
     variable: String,
     cachedEntityProperty: (String, String) => CachedProperty
-  ) = {
+  ): Seq[CompositeIndexOrderByPrefixTestData] = {
     val projectionsAll = Map(
       s"$variable.prop1" -> cachedEntityProperty(variable, "prop1"),
       s"$variable.prop2" -> cachedEntityProperty(variable, "prop2"),
@@ -2625,65 +2625,59 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     )
 
     Seq(
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        projectionsAll,
-        Map.empty[String, Expression],
-        Seq.empty,
-        Seq.empty
+      CompositeIndexOrderByPrefixTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        sort = false,
+        projections = projectionsAll,
+        projectionsAfterSort = Map.empty[String, Expression],
+        toSort = Seq.empty,
+        alreadySorted = Seq.empty
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderAscending,
-        true,
-        projections_1_2_4,
-        Map(s"$variable.prop3" -> cachedEntityProperty(variable, "prop3")),
-        Seq(Ascending(v"$variable.prop4")),
-        Seq(Ascending(v"$variable.prop1"), Ascending(v"$variable.prop2"))
+      CompositeIndexOrderByPrefixTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop4 ASC",
+        indexOrder = IndexOrderAscending,
+        sort = true,
+        projections = projections_1_2_4,
+        projectionsAfterSort = Map(s"$variable.prop3" -> cachedEntityProperty(variable, "prop3")),
+        toSort = Seq(Ascending(v"$variable.prop4")),
+        alreadySorted = Seq(Ascending(v"$variable.prop1"), Ascending(v"$variable.prop2"))
       ),
-      (
-        s"$variable.prop1 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
-        BOTH,
-        IndexOrderAscending,
-        true,
-        projections_1_3_4,
-        Map(s"$variable.prop2" -> cachedEntityProperty(variable, "prop2")),
-        Seq(Ascending(v"$variable.prop3"), Ascending(v"$variable.prop4")),
-        Seq(Ascending(v"$variable.prop1"))
+      CompositeIndexOrderByPrefixTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
+        indexOrder = IndexOrderAscending,
+        sort = true,
+        projections = projections_1_3_4,
+        projectionsAfterSort = Map(s"$variable.prop2" -> cachedEntityProperty(variable, "prop2")),
+        toSort = Seq(Ascending(v"$variable.prop3"), Ascending(v"$variable.prop4")),
+        alreadySorted = Seq(Ascending(v"$variable.prop1"))
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        projectionsAll,
-        Map.empty[String, Expression],
-        Seq.empty,
-        Seq.empty
+      CompositeIndexOrderByPrefixTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
+        indexOrder = IndexOrderDescending,
+        sort = false,
+        projections = projectionsAll,
+        projectionsAfterSort = Map.empty[String, Expression],
+        toSort = Seq.empty,
+        alreadySorted = Seq.empty
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderDescending,
-        true,
-        projections_1_2_4,
-        Map(s"$variable.prop3" -> cachedEntityProperty(variable, "prop3")),
-        Seq(Descending(v"$variable.prop4")),
-        Seq(Descending(v"$variable.prop1"), Descending(v"$variable.prop2"))
+      CompositeIndexOrderByPrefixTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop4 DESC",
+        indexOrder = IndexOrderDescending,
+        sort = true,
+        projections = projections_1_2_4,
+        projectionsAfterSort = Map(s"$variable.prop3" -> cachedEntityProperty(variable, "prop3")),
+        toSort = Seq(Descending(v"$variable.prop4")),
+        alreadySorted = Seq(Descending(v"$variable.prop1"), Descending(v"$variable.prop2"))
       ),
-      (
-        s"$variable.prop1 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
-        BOTH,
-        IndexOrderDescending,
-        true,
-        projections_1_3_4,
-        Map(s"$variable.prop2" -> cachedEntityProperty(variable, "prop2")),
-        Seq(Descending(v"$variable.prop3"), Descending(v"$variable.prop4")),
-        Seq(Descending(v"$variable.prop1"))
+      CompositeIndexOrderByPrefixTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
+        indexOrder = IndexOrderDescending,
+        sort = true,
+        projections = projections_1_3_4,
+        projectionsAfterSort = Map(s"$variable.prop2" -> cachedEntityProperty(variable, "prop2")),
+        toSort = Seq(Descending(v"$variable.prop3"), Descending(v"$variable.prop4")),
+        alreadySorted = Seq(Descending(v"$variable.prop1"))
       )
     )
   }
@@ -2695,9 +2689,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       lessThan(cachedNodeProp("n", "prop4"), literalString("f"))
     )
     compositeIndexOrderByPrefixTestData("n", cachedNodeProp).foreach {
-      case (
+      case CompositeIndexOrderByPrefixTestData(
           orderByString,
-          orderCapability,
           indexOrder,
           sort,
           projections,
@@ -2713,7 +2706,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
              |ORDER BY $orderByString""".stripMargin
         val plan =
           new givenConfig {
-            indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability).providesValues()
+            indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(BOTH).providesValues()
           } getLogicalPlanFor query
 
         // Then
@@ -2747,9 +2740,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
   test("Order by index backed for composite relationship index on more properties than is ordered on") {
     compositeIndexOrderByPrefixTestData("r", cachedRelProp).foreach {
-      case (
+      case CompositeIndexOrderByPrefixTestData(
           orderByString,
-          orderCapability,
           indexOrder,
           sort,
           projections,
@@ -2769,9 +2761,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "REL",
             Seq("prop1", "prop2", "prop3", "prop4"),
             1.0,
-            0.01,
-            withValues = true,
-            providesOrder = orderCapability
+            0.01
           )
           .build()
 
@@ -2807,45 +2797,45 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  // (returnString, orderByString, orderCapability, indexOrder, fullSort, partialSort, returnProjections, sortProjections, selectionExpression, sortItems, alreadySorted)
+  case class CompositeIndexReturnOrderByTestData(
+    returnString: String,
+    orderByString: String,
+    indexOrder: IndexOrder,
+    fullSort: Boolean,
+    partialSort: Boolean,
+    returnProjections: Map[String, LogicalProperty],
+    sortProjections: Map[String, Expression],
+    selectionExpression: Ands,
+    sortItems: Seq[ColumnOrder],
+    alreadySorted: Seq[ColumnOrder],
+    getValue: String => GetValueFromIndexBehavior
+  )
+
   private def compositeIndexReturnOrderByTestData(
     variable: String,
-    cachedEntityProp: (String, String) => CachedProperty,
-    cachedEntityPropFromStore: (String, String) => CachedProperty
-  ): Seq[(
-    String,
-    String,
-    IndexOrderCapability,
-    IndexOrder,
-    Boolean,
-    Boolean,
-    Map[String, LogicalProperty],
-    Map[String, Expression],
-    Ands,
-    Seq[ColumnOrder],
-    Seq[ColumnOrder]
-  )] = {
+    cachedEntityProp: (String, String) => CachedProperty
+  ): Seq[CompositeIndexReturnOrderByTestData] = {
     val expr = ands(
-      lessThanOrEqual(prop(variable, "prop2"), literalInt(3)),
-      greaterThan(prop(variable, "prop3"), literalString(""))
+      lessThanOrEqual(cachedEntityProp(variable, "prop2"), literalInt(3)),
+      greaterThan(cachedEntityProp(variable, "prop3"), literalString(""))
     )
-    val expr_2_3_cached = ands(
-      lessThanOrEqual(cachedEntityPropFromStore(variable, "prop2"), literalInt(3)),
-      greaterThan(cachedEntityPropFromStore(variable, "prop3"), literalString(""))
+    val expr_2_3 = ands(
+      lessThanOrEqual(cachedEntityProp(variable, "prop2"), literalInt(3)),
+      greaterThan(cachedEntityProp(variable, "prop3"), literalString(""))
     )
-    val expr_2_cached = ands(
-      lessThanOrEqual(cachedEntityPropFromStore(variable, "prop2"), literalInt(3)),
-      greaterThan(prop(variable, "prop3"), literalString(""))
+    val expr_2 = ands(
+      lessThanOrEqual(cachedEntityProp(variable, "prop2"), literalInt(3)),
+      greaterThan(cachedEntityProp(variable, "prop3"), literalString(""))
     )
-    val expr_3_cached = ands(
-      lessThanOrEqual(prop(variable, "prop2"), literalInt(3)),
-      greaterThan(cachedEntityPropFromStore(variable, "prop3"), literalString(""))
+    val expr_3 = ands(
+      lessThanOrEqual(cachedEntityProp(variable, "prop2"), literalInt(3)),
+      greaterThan(cachedEntityProp(variable, "prop3"), literalString(""))
     )
     val map_empty = Map.empty[String, Expression] // needed for correct type
-    val map_1 = Map(s"$variable.prop1" -> prop(variable, "prop1"))
-    val map_2_cached = Map(s"$variable.prop2" -> cachedEntityProp(variable, "prop2"))
-    val map_3_cached = Map(s"$variable.prop3" -> cachedEntityProp(variable, "prop3"))
-    val map_2_3_cached = Map(
+    val map_1 = Map(s"$variable.prop1" -> cachedEntityProp(variable, "prop1"))
+    val map_2 = Map(s"$variable.prop2" -> cachedEntityProp(variable, "prop2"))
+    val map_3 = Map(s"$variable.prop3" -> cachedEntityProp(variable, "prop3"))
+    val map_2_3 = Map(
       s"$variable.prop2" -> cachedEntityProp(variable, "prop2"),
       s"$variable.prop3" -> cachedEntityProp(variable, "prop3")
     )
@@ -2863,438 +2853,315 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       Ascending(v"$variable.prop2"),
       Ascending(v"$variable.prop3")
     )
-    val desc_1_2_3 = Seq(
-      Descending(v"$variable.prop1"),
-      Descending(v"$variable.prop2"),
-      Descending(v"$variable.prop3")
-    )
 
     Seq(
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        false,
-        map_1,
-        map_empty,
-        expr,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_1,
+        sortProjections = map_empty,
+        selectionExpression = expr,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        desc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop2",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_2,
+        sortProjections = map_empty,
+        selectionExpression = expr_2,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue, "prop3" -> GetValue)
       ),
-      (
-        s"$variable.prop2",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        false,
-        map_2_cached,
-        map_empty,
-        expr_2_cached,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop3",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_3,
+        sortProjections = map_empty,
+        selectionExpression = expr_3,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue, "prop3" -> GetValue)
       ),
-      (
-        s"$variable.prop2",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_2_cached,
-        map_1 ++ map_3_cached,
-        expr_2_3_cached,
-        desc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop2",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_1 ++ map_2,
+        sortProjections = map_empty,
+        selectionExpression = expr_2,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop3",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        false,
-        map_3_cached,
-        map_empty,
-        expr_3_cached,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop3",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_1 ++ map_3,
+        sortProjections = map_empty,
+        selectionExpression = expr_3,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop3",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_3_cached,
-        map_1 ++ map_2_cached,
-        expr_2_3_cached,
-        desc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_1,
+        sortProjections = map_2_3,
+        selectionExpression = expr_2_3,
+        sortItems = asc_1_2_3,
+        alreadySorted = Seq.empty,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        false,
-        map_1 ++ map_2_cached,
-        map_empty,
-        expr_2_cached,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_1,
+        sortProjections = map_empty,
+        selectionExpression = expr,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        desc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop2",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_2,
+        sortProjections = map_empty,
+        selectionExpression = expr_2,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue, "prop3" -> GetValue)
       ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        false,
-        map_1 ++ map_3_cached,
-        map_empty,
-        expr_3_cached,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop3",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_3,
+        sortProjections = map_empty,
+        selectionExpression = expr_3,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue, "prop3" -> GetValue)
       ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        desc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop2",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_1 ++ map_2,
+        sortProjections = map_empty,
+        selectionExpression = expr_2,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        asc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop3",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = false,
+        returnProjections = map_1 ++ map_3,
+        sortProjections = map_empty,
+        selectionExpression = expr_3,
+        sortItems = Seq.empty,
+        alreadySorted = Seq.empty,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        false,
-        map_1,
-        map_empty,
-        expr,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1,
+        sortProjections = map_2_3,
+        selectionExpression = expr_2_3,
+        sortItems = desc_3,
+        alreadySorted = asc_1_2,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop2",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_2_cached,
-        map_1 ++ map_3_cached,
-        expr_2_3_cached,
-        asc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1,
+        sortProjections = map_2_3,
+        selectionExpression = expr_2_3,
+        sortItems = desc_2_asc_3,
+        alreadySorted = asc_1,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop2",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        false,
-        map_2_cached,
-        map_empty,
-        expr_2_cached,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1,
+        sortProjections = map_2_3,
+        selectionExpression = expr_2_3,
+        sortItems = asc_2_3,
+        alreadySorted = desc_1,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop3",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_3_cached,
-        map_1 ++ map_2_cached,
-        expr_2_3_cached,
-        asc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1,
+        sortProjections = map_2_3,
+        selectionExpression = expr_2_3,
+        sortItems = asc_3,
+        alreadySorted = desc_1_2,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop3",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        false,
-        map_3_cached,
-        map_empty,
-        expr_3_cached,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop2",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1 ++ map_2,
+        sortProjections = map_3,
+        selectionExpression = expr_2_3,
+        sortItems = desc_3,
+        alreadySorted = asc_1_2,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        asc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop2",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1 ++ map_2,
+        sortProjections = map_3,
+        selectionExpression = expr_2_3,
+        sortItems = desc_2_asc_3,
+        alreadySorted = asc_1,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        false,
-        map_1 ++ map_2_cached,
-        map_empty,
-        expr_2_cached,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop2",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1 ++ map_2,
+        sortProjections = map_3,
+        selectionExpression = expr_2_3,
+        sortItems = asc_2_3,
+        alreadySorted = desc_1,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC",
-        NONE,
-        IndexOrderNone,
-        true,
-        false,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        asc_1_2_3,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop2",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1 ++ map_2,
+        sortProjections = map_3,
+        selectionExpression = expr_2_3,
+        sortItems = asc_3,
+        alreadySorted = desc_1_2,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        false,
-        map_1 ++ map_3_cached,
-        map_empty,
-        expr_3_cached,
-        Seq.empty,
-        Seq.empty
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop3",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1 ++ map_3,
+        sortProjections = map_2,
+        selectionExpression = expr_2_3,
+        sortItems = desc_3,
+        alreadySorted = asc_1_2,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        desc_3,
-        asc_1_2
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop3",
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC",
+        indexOrder = IndexOrderAscending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1 ++ map_3,
+        sortProjections = map_2,
+        selectionExpression = expr_2_3,
+        sortItems = desc_2_asc_3,
+        alreadySorted = asc_1,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        desc_2_asc_3,
-        asc_1
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop3",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1 ++ map_3,
+        sortProjections = map_2,
+        selectionExpression = expr_2_3,
+        sortItems = asc_2_3,
+        alreadySorted = desc_1,
+        getValue = _ => GetValue
       ),
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        asc_2_3,
-        desc_1
-      ),
-      (
-        s"$variable.prop1",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1,
-        map_2_3_cached,
-        expr_2_3_cached,
-        asc_3,
-        desc_1_2
-      ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        desc_3,
-        asc_1_2
-      ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        desc_2_asc_3,
-        asc_1
-      ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        asc_2_3,
-        desc_1
-      ),
-      (
-        s"$variable.prop1, $variable.prop2",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1 ++ map_2_cached,
-        map_3_cached,
-        expr_2_3_cached,
-        asc_3,
-        desc_1_2
-      ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        desc_3,
-        asc_1_2
-      ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderAscending,
-        false,
-        true,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        desc_2_asc_3,
-        asc_1
-      ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        asc_2_3,
-        desc_1
-      ),
-      (
-        s"$variable.prop1, $variable.prop3",
-        s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
-        BOTH,
-        IndexOrderDescending,
-        false,
-        true,
-        map_1 ++ map_3_cached,
-        map_2_cached,
-        expr_2_3_cached,
-        asc_3,
-        desc_1_2
+      CompositeIndexReturnOrderByTestData(
+        returnString = s"$variable.prop1, $variable.prop3",
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC",
+        indexOrder = IndexOrderDescending,
+        fullSort = false,
+        partialSort = true,
+        returnProjections = map_1 ++ map_3,
+        sortProjections = map_2,
+        selectionExpression = expr_2_3,
+        sortItems = asc_3,
+        alreadySorted = desc_1_2,
+        getValue = _ => GetValue
       )
     )
   }
 
   test("Order by index backed for composite node index when not returning same as order on") {
-    compositeIndexReturnOrderByTestData("n", cachedNodeProp, cachedNodePropFromStore).foreach {
-      case (
+    compositeIndexReturnOrderByTestData("n", cachedNodeProp).foreach {
+      case CompositeIndexReturnOrderByTestData(
           returnString,
           orderByString,
-          orderCapability,
           indexOrder,
           fullSort,
           partialSort,
@@ -3302,7 +3169,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           sortProjections,
           selectionExpression,
           sortItems,
-          alreadySorted
+          alreadySorted,
+          getValue
         ) =>
         // When
         val query =
@@ -3314,14 +3182,15 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           """.stripMargin
         val plan =
           new givenConfig {
-            indexOn("Label", "prop1", "prop2", "prop3").providesOrder(orderCapability)
+            indexOn("Label", "prop1", "prop2", "prop3").providesOrder(BOTH).providesValues()
           } getLogicalPlanFor query
 
         // Then
         val leafPlan = nodeIndexSeek(
           "n:Label(prop1 >= 42, prop2 <= 3, prop3 > '')",
           indexOrder = indexOrder,
-          supportPartitionedScan = false
+          supportPartitionedScan = false,
+          getValue = getValue
         )
         withClue(query) {
           plan._1 should equal {
@@ -3359,11 +3228,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   }
 
   test("Order by index backed for composite relationship index when not returning same as order on") {
-    compositeIndexReturnOrderByTestData("r", cachedRelProp, cachedRelPropFromStore).foreach {
-      case t @ (
+    compositeIndexReturnOrderByTestData("r", cachedRelProp).foreach {
+      case t @ CompositeIndexReturnOrderByTestData(
           returnString,
           orderByString,
-          orderCapability,
           indexOrder,
           fullSort,
           partialSort,
@@ -3371,7 +3239,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           sortProjections,
           selectionExpression,
           sortItems,
-          alreadySorted
+          alreadySorted,
+          getValue
         ) => withClue(t) {
           // When
           val query =
@@ -3383,7 +3252,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           """.stripMargin
 
           val planner = compositeRelIndexPlannerBuilder()
-            .addRelationshipIndex("REL", Seq("prop1", "prop2", "prop3"), 1.0, 0.01, providesOrder = orderCapability)
+            .addRelationshipIndex(
+              "REL",
+              Seq("prop1", "prop2", "prop3"),
+              1.0,
+              0.01
+            )
             .build()
 
           val plan = planner.plan(query).stripProduceResults
@@ -3409,6 +3283,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               .filterExpression(selectionExpression.exprs.toSeq: _*)
               .relationshipIndexOperator(
                 "(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > '')]->(b)",
+                getValue = getValue,
                 indexOrder = indexOrder,
                 indexType = IndexType.RANGE,
                 supportPartitionedScan = false
@@ -3423,36 +3298,58 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  // (orderByString, orderCapability, indexOrder, shouldSort, alreadySorted, toBeSorted)
+  case class CompositeIndexOrderByDifferentDirectionsFirstPropTestData(
+    orderByString: String,
+    indexOrder: IndexOrder,
+    shouldSort: Boolean,
+    alreadySorted: Seq[ColumnOrder],
+    toBeSorted: Seq[ColumnOrder]
+  )
+
   private def compositeIndexOrderByDifferentDirectionsFirstPropTestData(variable: String)
-    : Seq[(String, IndexOrderCapability, IndexOrder, Boolean, Seq[ColumnOrder], Seq[ColumnOrder])] = Seq(
-    (s"$variable.prop1 ASC", BOTH, IndexOrderAscending, false, Seq.empty, Seq.empty),
-    (
-      s"$variable.prop1 DESC",
-      BOTH,
-      IndexOrderAscending,
-      false,
-      Seq.empty,
-      Seq.empty
+    : Seq[CompositeIndexOrderByDifferentDirectionsFirstPropTestData] = Seq(
+    CompositeIndexOrderByDifferentDirectionsFirstPropTestData(
+      orderByString = s"$variable.prop1 ASC",
+      indexOrder = IndexOrderAscending,
+      shouldSort = false,
+      alreadySorted = Seq.empty,
+      toBeSorted = Seq.empty
+    ),
+    CompositeIndexOrderByDifferentDirectionsFirstPropTestData(
+      orderByString = s"$variable.prop1 DESC",
+      indexOrder = IndexOrderAscending,
+      shouldSort = false,
+      alreadySorted = Seq.empty,
+      toBeSorted = Seq.empty
     ), // Index gives ASC, reports DESC, since ASC is cheaper
-    (s"$variable.prop1 ASC, $variable.prop2 ASC", BOTH, IndexOrderAscending, false, Seq.empty, Seq.empty),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      BOTH,
-      IndexOrderDescending,
-      false,
-      Seq.empty,
-      Seq.empty
+    CompositeIndexOrderByDifferentDirectionsFirstPropTestData(
+      orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC",
+      indexOrder = IndexOrderAscending,
+      shouldSort = false,
+      alreadySorted = Seq.empty,
+      toBeSorted = Seq.empty
+    ),
+    CompositeIndexOrderByDifferentDirectionsFirstPropTestData(
+      orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC",
+      indexOrder = IndexOrderDescending,
+      shouldSort = false,
+      alreadySorted = Seq.empty,
+      toBeSorted = Seq.empty
     ), // Index gives DESC DESC, reports ASC DESC
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      BOTH,
-      IndexOrderAscending,
-      false,
-      Seq.empty,
-      Seq.empty
+    CompositeIndexOrderByDifferentDirectionsFirstPropTestData(
+      orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC",
+      indexOrder = IndexOrderAscending,
+      shouldSort = false,
+      alreadySorted = Seq.empty,
+      toBeSorted = Seq.empty
     ), // Index gives ASC ASC, reports DESC ASC
-    (s"$variable.prop1 DESC, $variable.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty, Seq.empty)
+    CompositeIndexOrderByDifferentDirectionsFirstPropTestData(
+      orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC",
+      indexOrder = IndexOrderDescending,
+      shouldSort = false,
+      alreadySorted = Seq.empty,
+      toBeSorted = Seq.empty
+    )
   )
 
   test(
@@ -3464,8 +3361,14 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     )
 
     compositeIndexOrderByDifferentDirectionsFirstPropTestData("n").foreach {
-      case (orderByString, orderCapability, indexOrder, shouldSort, alreadySorted, toBeSorted) =>
-        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+      case CompositeIndexOrderByDifferentDirectionsFirstPropTestData(
+          orderByString,
+          indexOrder,
+          shouldSort,
+          alreadySorted,
+          toBeSorted
+        ) =>
+        withClue(s"ORDER BY $orderByString with index order capability :") {
           // When
           val query =
             s"""MATCH (n:Label)
@@ -3474,7 +3377,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                |ORDER BY $orderByString""".stripMargin
           val plan =
             new givenConfig {
-              indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+              indexOn("Label", "prop1", "prop2").providesOrder(BOTH).providesValues()
             } getLogicalPlanFor query
 
           // Then
@@ -3499,8 +3402,14 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     "Order by index backed for composite relationship index with different directions and equality predicate on first property"
   ) {
     compositeIndexOrderByDifferentDirectionsFirstPropTestData("r").foreach {
-      case (orderByString, orderCapability, indexOrder, shouldSort, alreadySorted, toBeSorted) =>
-        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+      case CompositeIndexOrderByDifferentDirectionsFirstPropTestData(
+          orderByString,
+          indexOrder,
+          shouldSort,
+          alreadySorted,
+          toBeSorted
+        ) =>
+        withClue(s"ORDER BY $orderByString with index order capability :") {
           // When
           val query =
             s"""MATCH (a)-[r:REL]->(b)
@@ -3513,9 +3422,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "REL",
               Seq("prop1", "prop2"),
               1.0,
-              0.01,
-              withValues = true,
-              providesOrder = orderCapability
+              0.01
             )
             .build()
 
@@ -3546,53 +3453,39 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  // (orderByString, orderCapability, indexOrder, shouldSort, toBeSorted)
+  case class CompositeIndexOrderByDifferentDirectionsSecondPropTestData(
+    orderByString: String,
+    indexOrder: IndexOrder,
+    shouldSort: Boolean,
+    toBeSorted: Seq[ColumnOrder]
+  )
+
   private def compositeIndexOrderByDifferentDirectionsSecondPropTestData(variable: String)
-    : Seq[(String, IndexOrderCapability, IndexOrder, Boolean, Seq[ColumnOrder])] = Seq(
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      NONE,
-      IndexOrderNone,
-      true,
-      Seq(Descending(v"$variable.prop1"), Ascending(v"$variable.prop2"))
+    : Seq[CompositeIndexOrderByDifferentDirectionsSecondPropTestData] = Seq(
+    CompositeIndexOrderByDifferentDirectionsSecondPropTestData(
+      orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC",
+      indexOrder = IndexOrderAscending,
+      shouldSort = false,
+      toBeSorted = Seq.empty
     ),
-    (
-      s"$variable.prop1 DESC, $variable.prop2 DESC",
-      NONE,
-      IndexOrderNone,
-      true,
-      Seq(Descending(v"$variable.prop1"), Descending(v"$variable.prop2"))
-    ),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 ASC",
-      NONE,
-      IndexOrderNone,
-      true,
-      Seq(Ascending(v"$variable.prop1"), Ascending(v"$variable.prop2"))
-    ),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      NONE,
-      IndexOrderNone,
-      true,
-      Seq(Ascending(v"$variable.prop1"), Descending(v"$variable.prop2"))
-    ),
-    (s"$variable.prop1 ASC, $variable.prop2 ASC", BOTH, IndexOrderAscending, false, Seq.empty),
-    (
-      s"$variable.prop1 ASC, $variable.prop2 DESC",
-      BOTH,
-      IndexOrderAscending,
-      false,
-      Seq.empty
+    CompositeIndexOrderByDifferentDirectionsSecondPropTestData(
+      orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC",
+      indexOrder = IndexOrderAscending,
+      shouldSort = false,
+      toBeSorted = Seq.empty
     ), // Index gives ASC ASC, reports ASC DESC (true after filter at least)
-    (
-      s"$variable.prop1 DESC, $variable.prop2 ASC",
-      BOTH,
-      IndexOrderDescending,
-      false,
-      Seq.empty
+    CompositeIndexOrderByDifferentDirectionsSecondPropTestData(
+      orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC",
+      indexOrder = IndexOrderDescending,
+      shouldSort = false,
+      toBeSorted = Seq.empty
     ), // Index gives DESC DESC, reports DESC ASC (true after filter at least)
-    (s"$variable.prop1 DESC, $variable.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty)
+    CompositeIndexOrderByDifferentDirectionsSecondPropTestData(
+      orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC",
+      indexOrder = IndexOrderDescending,
+      shouldSort = false,
+      toBeSorted = Seq.empty
+    )
   )
 
   test(
@@ -3604,8 +3497,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     )
 
     compositeIndexOrderByDifferentDirectionsSecondPropTestData("n").foreach {
-      case (orderByString, orderCapability, indexOrder, shouldSort, toBeSorted) =>
-        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+      case CompositeIndexOrderByDifferentDirectionsSecondPropTestData(
+          orderByString,
+          indexOrder,
+          shouldSort,
+          toBeSorted
+        ) =>
+        withClue(s"ORDER BY $orderByString:") {
           // When
           val query =
             s"""MATCH (n:Label)
@@ -3614,7 +3512,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                |ORDER BY $orderByString""".stripMargin
           val plan =
             new givenConfig {
-              indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+              indexOn("Label", "prop1", "prop2").providesOrder(BOTH).providesValues()
             } getLogicalPlanFor query
 
           // Then
@@ -3641,8 +3539,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     "Order by index backed for composite relationship index with different directions and equality predicate on second property"
   ) {
     compositeIndexOrderByDifferentDirectionsSecondPropTestData("r").foreach {
-      case (orderByString, orderCapability, indexOrder, shouldSort, toBeSorted) =>
-        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+      case CompositeIndexOrderByDifferentDirectionsSecondPropTestData(
+          orderByString,
+          indexOrder,
+          shouldSort,
+          toBeSorted
+        ) =>
+        withClue(s"ORDER BY $orderByString:") {
           // When
           val query =
             s"""MATCH (a)-[r:REL]->(b)
@@ -3655,9 +3558,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "REL",
               Seq("prop1", "prop2"),
               1.0,
-              0.01,
-              withValues = true,
-              providesOrder = orderCapability
+              0.01
             )
             .build()
 
@@ -3694,14 +3595,28 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  // (orderByString, orderCapability, indexOrder)
+  case class CompositeIndexOrderByDifferentDirectionsBothPropsTestData(orderByString: String, indexOrder: IndexOrder)
+
   private def compositeIndexOrderByDifferentDirectionsBothPropsTestData(variable: String)
-    : Seq[(String, IndexOrderCapability, IndexOrder)] = Seq(
-    (s"$variable.prop1 ASC, $variable.prop2 ASC", BOTH, IndexOrderAscending),
-    (s"$variable.prop1 ASC, $variable.prop2 DESC", BOTH, IndexOrderAscending), // Index gives ASC ASC, reports ASC DESC
-    (s"$variable.prop1 DESC, $variable.prop2 ASC", BOTH, IndexOrderAscending), // Index gives ASC ASC, reports DESC ASC
-    (s"$variable.prop1 DESC, $variable.prop2 DESC", BOTH, IndexOrderAscending) // Index gives ASC ASC, reports DESC DESC
-  )
+    : Seq[CompositeIndexOrderByDifferentDirectionsBothPropsTestData] =
+    Seq(
+      CompositeIndexOrderByDifferentDirectionsBothPropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 ASC",
+        indexOrder = IndexOrderAscending
+      ),
+      CompositeIndexOrderByDifferentDirectionsBothPropsTestData(
+        orderByString = s"$variable.prop1 ASC, $variable.prop2 DESC",
+        indexOrder = IndexOrderAscending
+      ), // Index gives ASC ASC, reports ASC DESC
+      CompositeIndexOrderByDifferentDirectionsBothPropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 ASC",
+        indexOrder = IndexOrderAscending
+      ), // Index gives ASC ASC, reports DESC ASC
+      CompositeIndexOrderByDifferentDirectionsBothPropsTestData(
+        orderByString = s"$variable.prop1 DESC, $variable.prop2 DESC",
+        indexOrder = IndexOrderAscending
+      ) // Index gives ASC ASC, reports DESC DESC
+    )
 
   test(
     "Order by index backed for composite node index with different directions and equality predicate on both properties"
@@ -3712,8 +3627,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     )
 
     compositeIndexOrderByDifferentDirectionsBothPropsTestData("n").foreach {
-      case (orderByString, orderCapability, indexOrder) =>
-        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+      case CompositeIndexOrderByDifferentDirectionsBothPropsTestData(orderByString, indexOrder) =>
+        withClue(s"ORDER BY $orderByString with index order capability :") {
           // When
           val query =
             s"""MATCH (n:Label)
@@ -3722,7 +3637,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                |ORDER BY $orderByString""".stripMargin
           val plan =
             new givenConfig {
-              indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
+              indexOn("Label", "prop1", "prop2").providesOrder(BOTH).providesValues()
             } getLogicalPlanFor query
 
           plan._1 should equal(Projection(
@@ -3742,8 +3657,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     "Order by index backed for composite relationship index with different directions and equality predicate on both properties"
   ) {
     compositeIndexOrderByDifferentDirectionsBothPropsTestData("r").foreach {
-      case (orderByString, orderCapability, indexOrder) =>
-        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+      case CompositeIndexOrderByDifferentDirectionsBothPropsTestData(orderByString, indexOrder) =>
+        withClue(s"ORDER BY $orderByString with index order capability :") {
           // When
           val query =
             s"""MATCH (a)-[r:REL]->(b)
@@ -3755,9 +3670,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "REL",
               Seq("prop1", "prop2"),
               1.0,
-              0.01,
-              withValues = true,
-              providesOrder = orderCapability
+              0.01
             )
             .build()
 
@@ -3788,13 +3701,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     .setRelationshipCardinality("()-[:REL]->()", 100)
 
   for (
-    (TestOrder(plannedOrder, cypherToken, orderCapability, _), functionName) <-
-      List((ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"), (ASCENDING_BOTH, "miN"), (DESCENDING_BOTH, "maX"))
+    (TestOrder(plannedOrder, cypherToken, _), functionName) <-
+      List((ASCENDING, "min"), (DESCENDING, "max"), (ASCENDING, "miN"), (DESCENDING, "maX"))
   ) {
 
     // Node label scan
 
-    test(s"$orderCapability-$functionName: should use node label scan order") {
+    test(s"$functionName: should use node label scan order") {
       val plan =
         new givenConfig().getLogicalPlanFor(s"MATCH (n:Awesome) RETURN $functionName(n)", stripProduceResults = false)
 
@@ -3811,10 +3724,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     // Node property index scan
 
-    test(s"$orderCapability-$functionName: should use provided node index scan order") {
+    test(s"$functionName: should use provided node index scan order") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
 
       plan._1 should equal(
@@ -3839,7 +3752,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$orderCapability-$functionName: should plan aggregation for node index scan when there is no $orderCapability"
+      s"$functionName: should plan aggregation for node index scan when there is no "
     ) {
       val plan =
         new givenConfig {
@@ -3865,10 +3778,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     // Node property index seek
 
-    test(s"$orderCapability-$functionName: should use provided node index order with range") {
+    test(s"$functionName: should use provided node index order with range") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
 
       plan._1 should equal(
@@ -3884,10 +3797,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$orderCapability-$functionName: should use provided node index order with ORDER BY") {
+    test(s"$functionName: should use provided node index order with ORDER BY") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $cypherToken"
 
       plan._1 should equal(
@@ -3904,7 +3817,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$orderCapability-$functionName: should use provided node index order followed by sort for ORDER BY with reverse order"
+      s"$functionName: should use provided node index order followed by sort for ORDER BY with reverse order"
     ) {
       val (inverseOrder, inverseSortOrder) = cypherToken match {
         case "ASC"  => ("DESC", Descending)
@@ -3913,7 +3826,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $inverseOrder"
 
       plan._1 should equal(
@@ -3932,10 +3845,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$orderCapability-$functionName: should use provided node index order with additional Limit") {
+    test(s"$functionName: should use provided node index order with additional Limit") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) LIMIT 2"
 
       plan._1 should equal(
@@ -3954,10 +3867,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$orderCapability-$functionName: should use provided node index order for multiple QueryGraphs") {
+    test(s"$functionName: should use provided node index order for multiple QueryGraphs") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor
           s"""MATCH (n:Awesome)
              |WHERE n.prop > 0
@@ -3978,10 +3891,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$orderCapability-$functionName: cannot use provided node index order for multiple aggregations") {
+    test(s"$functionName: cannot use provided node index order for multiple aggregations") {
       val plan =
         new givenConfig {
-          indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
+          indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop), count(n.prop)"
 
       plan._1 should equal(
@@ -3998,7 +3911,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     // Relationship type scan
 
-    test(s"$orderCapability-$functionName: should use relationship type scan order") {
+    test(s"$functionName: should use relationship type scan order") {
       val planner = relationshipIndexMinMaxSetup.build()
 
       val plan = planner
@@ -4017,9 +3930,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     // Relationship property index scan
 
-    test(s"$orderCapability-$functionName: should use provided relationship index scan order") {
+    test(s"$functionName: should use provided relationship index scan order") {
       val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
         .build()
 
       val plan = planner
@@ -4040,30 +3953,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .build()
     }
 
-    test(
-      s"$orderCapability-$functionName: should plan aggregation for relationship index scan when there is no $orderCapability"
-    ) {
-      val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true)
-        .build()
-
-      val plan = planner
-        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop IS NOT NULL RETURN $functionName(r.prop)")
-
-      plan shouldEqual
-        planner.planBuilder()
-          .produceResults(s"`$functionName(r.prop)`")
-          .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`"))
-          .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = _ => GetValue, indexType = IndexType.RANGE)
-          .build()
-
-    }
-
     // Relationship property index seeks
 
-    test(s"$orderCapability-$functionName: should use provided relationship index order with range") {
+    test(s"$functionName: should use provided relationship index order with range") {
       val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
         .build()
 
       val plan = planner
@@ -4084,9 +3978,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .build()
     }
 
-    test(s"$orderCapability-$functionName: should use provided relationship index order with ORDER BY") {
+    test(s"$functionName: should use provided relationship index order with ORDER BY") {
       val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
         .build()
 
       val plan = planner
@@ -4110,7 +4004,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
-      s"$orderCapability-$functionName: should use provided relationship index order followed by sort for ORDER BY with reverse order"
+      s"$functionName: should use provided relationship index order followed by sort for ORDER BY with reverse order"
     ) {
       val (inverseOrder, inverseSortOrder) = cypherToken match {
         case "ASC"  => ("DESC", Descending)
@@ -4118,7 +4012,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       }
 
       val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
         .build()
 
       val plan = planner
@@ -4142,9 +4036,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .build()
     }
 
-    test(s"$orderCapability-$functionName: should use provided relationship index order with additional Limit") {
+    test(s"$functionName: should use provided relationship index order with additional Limit") {
       val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
         .build()
 
       val plan = planner
@@ -4166,9 +4060,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .build()
     }
 
-    test(s"$orderCapability-$functionName: should use provided relationship index order for multiple QueryGraphs") {
+    test(s"$functionName: should use provided relationship index order for multiple QueryGraphs") {
       val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
         .build()
 
       val plan = planner
@@ -4193,9 +4087,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .build()
     }
 
-    test(s"$orderCapability-$functionName: cannot use provided relationship index order for multiple aggregations") {
+    test(s"$functionName: cannot use provided relationship index order for multiple aggregations") {
       val planner = relationshipIndexMinMaxSetup
-        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
         .build()
 
       val plan = planner
@@ -4222,7 +4116,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   test("should mark leveragedOrder in collect with ORDER BY") {
     val (plan, _, attributes) =
       new givenConfig {
-        indexOn("Awesome", "prop").providesOrder(BOTH)
+        indexOn("Awesome", "prop").providesOrder(BOTH).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' WITH n.prop AS p ORDER BY n.prop RETURN collect(p)"
     val leveragedOrders = attributes.leveragedOrders
 
