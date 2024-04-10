@@ -158,7 +158,8 @@ object LabelInferenceStrategy {
   private case class SimpleRelationship(
     startNode: LogicalVariable,
     endNode: LogicalVariable,
-    relationshipType: RelTypeId
+    relationshipType: RelTypeId,
+    isDirected: Boolean
   ) {
 
     private def nodesWithSameCardinalityWhenAddingLabel(
@@ -184,9 +185,23 @@ object LabelInferenceStrategy {
     def inferLabels(planContext: PlanContext): Seq[SimpleRelationship.InferredLabel] = {
       for {
         mostCommonLabelId <- planContext.statistics.mostCommonLabelGivenRelationshipType(this.relationshipType.id)
-        nodeName <- this.nodesWithSameCardinalityWhenAddingLabel(planContext, LabelId(mostCommonLabelId))
+
+        // Get the nodes where adding the label does not restrict the cardinality
+        // (this could be the start node, end node, both or none)
+        nodesWithSameCardinality = this.nodesWithSameCardinalityWhenAddingLabel(planContext, LabelId(mostCommonLabelId))
+
+        // For undirected relationships: both start and end nodes should infer the label,
+        // otherwise nothing can be inferred w.r.t. this relationship type and 'mostCommonLabelId'
+        if isDirected || nodesWithSameCardinality.size == 2
+
         labelName = planContext.getLabelName(mostCommonLabelId)
-      } yield SimpleRelationship.InferredLabel(nodeName, labelName, LabelId(mostCommonLabelId))
+        // We can infer the label 'labelName' (id: 'mostCommonLabelId') for all nodes in 'nodesWithSameCardinality'
+        nodeName <- nodesWithSameCardinality
+      } yield SimpleRelationship.InferredLabel(
+        nodeName,
+        labelName,
+        LabelId(mostCommonLabelId)
+      )
     }
   }
 
@@ -195,10 +210,14 @@ object LabelInferenceStrategy {
 
     def fromNodeConnection(nodeConnection: NodeConnection, semanticTable: SemanticTable): Option[SimpleRelationship] =
       nodeConnection match {
-        case relationship @ PatternRelationship(_, _, dir, Seq(relationshipTypeName), SimplePatternLength)
-          if dir == SemanticDirection.OUTGOING || dir == SemanticDirection.INCOMING =>
+        case relationship @ PatternRelationship(_, _, dir, Seq(relationshipTypeName), SimplePatternLength) =>
           val (startNode, endNode) = relationship.inOrder
-          semanticTable.id(relationshipTypeName).map(SimpleRelationship(startNode, endNode, _))
+          semanticTable.id(relationshipTypeName).map(SimpleRelationship(
+            startNode,
+            endNode,
+            _,
+            dir == SemanticDirection.OUTGOING || dir == SemanticDirection.INCOMING
+          ))
         case _ => None
       }
   }

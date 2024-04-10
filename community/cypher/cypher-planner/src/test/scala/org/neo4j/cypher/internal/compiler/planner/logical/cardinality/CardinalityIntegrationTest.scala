@@ -1184,6 +1184,69 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     )
   }
 
+  test("Label inference should infer label A on both start and end nodes of undirected relationships with type S") {
+    val N = 100
+    val R = 50
+    val S = 44
+    val A = 30
+    val builder = plannerBuilder()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
+      .setAllNodesCardinality(N)
+      .setLabelCardinality("A", A)
+      .setAllRelationshipsCardinality(R)
+      .setRelationshipCardinality("()-[:S]->()", S)
+      .setRelationshipCardinality("(:A)-[:S]->()", S)
+      .setRelationshipCardinality("()-[:S]->(:A)", S)
+      .setRelationshipCardinality("(:A)-[:S]->(:A)", S)
+      .build()
+
+    val query = "MATCH (n1)-[r1:S]-(n2)-[r2:S]-(n3)"
+
+    // Each relationship with the type S comes from and goes to a node with the label A
+    // This can be observed from the fact that the cardinality of ()-[:S]->() and (:A)-[:S]->(:A) is the same
+    // When the node label A is not inferred, the cardinality will be estimated as: S*2 * (S*2 / N) = 44*2 * (44*2/100) = 77.44
+    // When the node label A is inferred,     the cardinality will be estimates as: S*2 * (S*2 / A) = 44*2 * (44*2/30)  = 258.13
+    planShouldHaveCardinality(
+      builder,
+      query,
+      {
+        case _: Expand => true
+      },
+      S * 2 * (S * 2 / A.toDouble)
+      // Wrong would be not using (the inferred) node label: S*2 * (S*2 / N)
+    )
+  }
+
+  test(
+    "Label inference should not infer label A on any of the nodes of undirected relationships with type S, if not all sources of this type"
+  ) {
+    val N = 100
+    val R = 50
+    val S = 44
+    val A = 30
+    val builder = plannerBuilder()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, GraphDatabaseInternalSettings.LabelInference.ENABLED)
+      .setAllNodesCardinality(N)
+      .setLabelCardinality("A", A)
+      .setAllRelationshipsCardinality(R)
+      .setRelationshipCardinality("()-[:S]->()", S)
+      .setRelationshipCardinality("(:A)-[:S]->()", S - 1)
+      .setRelationshipCardinality("()-[:S]->(:A)", S)
+      .setRelationshipCardinality("(:A)-[:S]->(:A)", S - 1)
+      .build()
+
+    val query = "MATCH (n1)-[r1:S]-(n2)-[r2:S]-(n3)"
+
+    planShouldHaveCardinality(
+      builder,
+      query,
+      {
+        case _: Expand => true
+      },
+      S * 2 * (S * 2 / N.toDouble)
+    )
+  }
+
   private def uniquenessSelectivityForNRels(n: Int): Double = {
     RepetitionCardinalityModel.relationshipUniquenessSelectivity(
       differentRelationships = 0,
