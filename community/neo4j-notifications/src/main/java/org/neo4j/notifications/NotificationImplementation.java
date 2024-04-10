@@ -20,6 +20,7 @@
 package org.neo4j.notifications;
 
 import java.util.Objects;
+import org.neo4j.gqlstatus.GqlStatus;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
@@ -28,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public final class NotificationImplementation implements Notification {
     private final Status.Code statusCode;
+    private final GqlStatus gqlStatus;
     private final String title;
     private final String description;
     private final SeverityLevel severity;
@@ -37,6 +39,7 @@ public final class NotificationImplementation implements Notification {
 
     NotificationImplementation(
             NotificationCodeWithDescription notificationCodeWithDescription,
+            GqlStatus gqlStatus,
             InputPosition position,
             String title,
             String description,
@@ -51,6 +54,7 @@ public final class NotificationImplementation implements Notification {
             throw new IllegalStateException("'" + statusCode + "' is not a notification code.");
         }
 
+        this.gqlStatus = gqlStatus;
         this.position = position;
         this.title = title;
         this.description = description;
@@ -59,6 +63,7 @@ public final class NotificationImplementation implements Notification {
 
     public static class NotificationBuilder {
         private final NotificationCodeWithDescription notificationCodeWithDescription;
+        private final GqlStatus gqlStatus;
         private String title;
         private final String description;
         private InputPosition position;
@@ -68,6 +73,7 @@ public final class NotificationImplementation implements Notification {
 
         public NotificationBuilder(NotificationCodeWithDescription notificationCodeWithDescription) {
             this.notificationCodeWithDescription = notificationCodeWithDescription;
+            this.gqlStatus = notificationCodeWithDescription.getGqlStatus();
             this.description = notificationCodeWithDescription.getDescription();
             this.title = notificationCodeWithDescription.getStatus().code().description();
             this.position = InputPosition.empty;
@@ -107,7 +113,7 @@ public final class NotificationImplementation implements Notification {
             }
 
             return new NotificationImplementation(
-                    notificationCodeWithDescription, position, title, detailedDescription, detailedMessage);
+                    notificationCodeWithDescription, gqlStatus, position, title, detailedDescription, detailedMessage);
         }
     }
 
@@ -158,12 +164,13 @@ public final class NotificationImplementation implements Notification {
         return Objects.equals(position, that.position)
                 && Objects.equals(description, that.description)
                 && Objects.equals(title, that.title)
-                && Objects.equals(message, that.message);
+                && Objects.equals(message, that.message)
+                && Objects.equals(gqlStatus, that.gqlStatus);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(position, description, title, message);
+        return Objects.hash(position, description, title, message, gqlStatus);
     }
 
     private SeverityLevel mapSeverity(String severityLevel) {
@@ -177,5 +184,9 @@ public final class NotificationImplementation implements Notification {
     // Note: this should not be in the public interface until we have decided what name this field/function should have.
     public String getMessage() {
         return message;
+    }
+
+    public String getGqlStatus() {
+        return gqlStatus.gqlStatusString();
     }
 }
