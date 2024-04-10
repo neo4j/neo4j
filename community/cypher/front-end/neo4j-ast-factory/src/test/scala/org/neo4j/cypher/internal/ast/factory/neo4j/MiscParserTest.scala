@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
@@ -31,6 +32,7 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseSuccess
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.Explicit
@@ -53,6 +55,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -543,6 +546,19 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
           "3"
         )
       ))))
+    }
+  }
+
+  test("LOAD CSV FROM 'ftp://mark:Password1@localhost/images.txt' AS line RETURN line") {
+    val result = parseAst[Statements](testName)
+    result.result.foreach { case (parser, ast) =>
+      ast match {
+        case ParseSuccess(Statements(Seq(SingleQuery(Seq(loadCsv: LoadCSV, _))))) =>
+          withClue(s"parser=$parser, url class=${loadCsv.urlString.getClass}") {
+            loadCsv.urlString.isInstanceOf[SensitiveLiteral] shouldBe true
+          }
+        case other => fail(s"Unexpected ast in parser $parser:\n$other")
+      }
     }
   }
 }

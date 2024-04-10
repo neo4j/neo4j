@@ -450,7 +450,8 @@ trait StatementBuilder extends CypherParserListener {
     ctx: CypherParser.LoadCSVClauseContext
   ): Unit = {
     val withHeaders = ctx.HEADERS() != null
-    ctx.ast = LoadCSV(withHeaders, ctx.expression().ast(), ctx.variable().ast(), astOpt(ctx.stringLiteral()))(pos(ctx))
+    ctx.ast =
+      LoadCSV.fromUrl(withHeaders, ctx.expression().ast(), ctx.variable().ast(), astOpt(ctx.stringLiteral()))(pos(ctx))
   }
 
   final override def exitForeachClause(
