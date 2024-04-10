@@ -728,7 +728,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         val stringifiedPatternElement = stringifier.patterns(patternElement)
         SemanticError(
           s"""From within a ${patternElementErrorMessageDescription}, one may only reference variables, that are already bound in a previous `MATCH` clause.
-             |In this case, ${symbolUse.name} is defined in the same `MATCH` clause as $stringifiedPatternElement.""".stripMargin,
+             |In this case, `${symbolUse.name}` is defined in the same `MATCH` clause as $stringifiedPatternElement.""".stripMargin,
           symbolUse.asVariable.position
         )
       }
