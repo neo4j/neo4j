@@ -191,7 +191,13 @@ object ScenarioTestHelper {
         val scenarios =
           lines.filterNot(line => line.startsWith("//") || line.isEmpty) // comments in denylist are being ignored
         scenarios.foreach(validate)
-        scenarios.map(DenylistEntry(_))
+        val importPattern = "^import (\\S+)$".r
+        scenarios.flatMap {
+          case importPattern(fileImport) =>
+            parseDenylist(Paths.get(denylistPathString).getParent.resolve(fileImport).toString)
+          case regularLine =>
+            Seq(DenylistEntry(regularLine))
+        }
       } finally {
         try {
           fs.foreach(_.close())
