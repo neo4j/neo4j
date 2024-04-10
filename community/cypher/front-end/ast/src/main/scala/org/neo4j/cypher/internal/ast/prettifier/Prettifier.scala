@@ -1614,22 +1614,22 @@ object Prettifier {
   }
 
   def extractDbScope(dbScope: DatabaseScope): (String, Boolean, Boolean) = dbScope match {
-    case SingleNamedDatabaseScope(name)           => (escapeName(name), false, false)
-    case AllDatabasesScope()                      => ("*", false, false)
-    case DefaultDatabaseScope()                   => ("DEFAULT", true, false)
-    case HomeDatabaseScope()                      => ("HOME", true, false)
-    case NamedDatabasesScope(databaseName :: Nil) => (escapeName(databaseName), false, false)
-    case NamedDatabasesScope(databaseNames)       => (escapeNames(databaseNames), false, true)
+    case SingleNamedDatabaseScope(name)         => (escapeName(name), false, false)
+    case AllDatabasesScope()                    => ("*", false, false)
+    case DefaultDatabaseScope()                 => ("DEFAULT", true, false)
+    case HomeDatabaseScope()                    => ("HOME", true, false)
+    case NamedDatabasesScope(Seq(databaseName)) => (escapeName(databaseName), false, false)
+    case NamedDatabasesScope(databaseNames)     => (escapeNames(databaseNames), false, true)
   }
 
   def extractGraphScope(graphScope: GraphScope): String = {
     graphScope match {
-      case SingleNamedGraphScope(name)    => s"GRAPH ${escapeName(name)}"
-      case AllGraphsScope()               => "GRAPH *"
-      case DefaultGraphScope()            => "DEFAULT GRAPH"
-      case HomeGraphScope()               => "HOME GRAPH"
-      case NamedGraphsScope(graph :: Nil) => s"GRAPH ${escapeName(graph)}"
-      case NamedGraphsScope(graphs)       => s"GRAPHS ${escapeNames(graphs)}"
+      case SingleNamedGraphScope(name)  => s"GRAPH ${escapeName(name)}"
+      case AllGraphsScope()             => "GRAPH *"
+      case DefaultGraphScope()          => "DEFAULT GRAPH"
+      case HomeGraphScope()             => "HOME GRAPH"
+      case NamedGraphsScope(Seq(graph)) => s"GRAPH ${escapeName(graph)}"
+      case NamedGraphsScope(graphs)     => s"GRAPHS ${escapeNames(graphs)}"
     }
   }
 
