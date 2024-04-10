@@ -800,9 +800,6 @@ Feature: QuantifiedPathPatternAcceptance
       | a                                        | b                                        | e                                    | u                  | x                  |
       | [(:A {h: 11, k: 4}), (:B {h: 12, k: 4})] | [(:B {h: 12, k: 4}), (:C {h: 13, k: 4})] | [[:R {weight: 5}], [:R {weight: 4}]] | (:D {h: 13, k: 4}) | (:A {h: 11, k: 4}) |
 
-  # Solved in https://trello.com/c/XexwQoc1/
-  # non-local predicates not implemented
-  @Fails
   Scenario Outline: References to non-local unconditional singletons that are dependent on the evaluation of the quantification
     And having executed:
       """
@@ -811,13 +808,13 @@ Feature: QuantifiedPathPatternAcceptance
     When executing query:
       """
       <pattern>
-      RETURN *
+      RETURN x, y, a, e, b, s, u
       """
     Then the result should be, in any order:
-      | x    | y    | a      | e      | b      | s    | u    |
-      | (:A) | (:B) | []     | []     | []     | (:B) | (:C) |
-      | (:B) | (:C) | []     | []     | []     | (:C) | (:D) |
-      | (:A) | (:B) | [(:B)] | [[:R]] | [(:C)] | (:C) | (:D) |
+      | x            | y            | a              | e      | b              | s            | u            |
+      | (:A {h: 11}) | (:B {h: 12}) | []             | []     | []             | (:B {h: 12}) | (:C {h: 13}) |
+      | (:B {h: 12}) | (:C {h: 13}) | []             | []     | []             | (:C {h: 13}) | (:D {h: 10}) |
+      | (:A {h: 11}) | (:B {h: 12}) | [(:B {h: 12})] | [[:R]] | [(:C {h: 13})] | (:C {h: 13}) | (:D {h: 10}) |
     Examples:
       | pattern                                                 |
       | MATCH (x)-->(y)((a)-[e]->(b) WHERE a.h > x.h)*(s)-->(u) |

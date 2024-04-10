@@ -12,9 +12,6 @@ Feature "QuantifiedPathPatternAcceptance": Scenario "Multiple aggregating operat
 // Leaving out nodes is currently not supported. Will be handled in https://trello.com/c/rcFdSCvc/
 Feature "QuantifiedPathPatternAcceptance": Scenario "Leaving out the nodes adjacent to a QPP"
 
-// Non-local predicates not implemented. Solved in https://trello.com/c/XexwQoc1/
-Feature "QuantifiedPathPatternAcceptance": Scenario "References to non-local unconditional singletons that are dependent on the evaluation of the quantification"
-
 // Uses enterprise procedure
 Feature "CollectExpressionAcceptance": Scenario "COLLECT with updating procedure and yield should fail"
 

@@ -720,14 +720,16 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       // this may contain declarations from previous MATCH clauses.
       val declarationsInCurrentScope = state.currentScope.declarationsAndDependencies.declarations
 
-      val variablesInPattern = pattern.patternParts.flatMap(_.allVariables).toSet
-      val declarationsInPattern = variablesInPattern.map(SymbolUse(_)).filter(declarationsInCurrentScope)
+      val pathVariablesInPattern = pattern.patternParts.flatMap { part =>
+        part.allVariables -- part.element.allVariables
+      }.toSet
+      val declarationsInPattern = pathVariablesInPattern.map(SymbolUse(_)).filter(declarationsInCurrentScope)
 
       val referencesFromPatternElementToPattern = dependencies.intersect(declarationsInPattern).toSeq
       val errors = referencesFromPatternElementToPattern.map { symbolUse =>
         val stringifiedPatternElement = stringifier.patterns(patternElement)
         SemanticError(
-          s"""From within a ${patternElementErrorMessageDescription}, one may only reference variables, that are already bound in a previous `MATCH` clause.
+          s"""From within a $patternElementErrorMessageDescription, one may only reference variables, that are already bound in a previous `MATCH` clause.
              |In this case, `${symbolUse.name}` is defined in the same `MATCH` clause as $stringifiedPatternElement.""".stripMargin,
           symbolUse.asVariable.position
         )

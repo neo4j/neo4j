@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.SyntaxException
 
 class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
@@ -1935,14 +1934,16 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
-  // Unlocked by https://trello.com/c/XexwQoc1/1384-allow-non-local-predicates-in-qpps
   test(
-    "Should plan VarExpand instead of Trail on quantified path pattern with predicates that has non-local variable dependency (but doesn't currently)"
+    "Should plan VarExpand instead of Trail on quantified path pattern with predicates that has non-local variable dependency"
   ) {
     val query = s"MATCH (a) ((n)-[r]->(m) WHERE r.p = a.p)+ (b) RETURN r"
-    val exception = the[SyntaxException] thrownBy planner.plan(query)
-    exception.getMessage should startWith(
-      "From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause."
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("r", "r.p = a.p")))
+        .allNodeScan("a")
+        .build()
     )
   }
 
@@ -2339,5 +2340,44 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.allNodeScan("a", "z")
       .allNodeScan("z")
       .build()
+  }
+
+  test("should plan QPPs in two path patterns with predicates from one to the other") {
+    val query =
+      """MATCH
+        |  (a) ((b)-[r]-(c) WHERE i.prop = r.prop)+ (d)-[t]-(e),
+        |  (f)-[u:R]-(d) ((g)-[s]-(h) WHERE s.prop = a.prop)+ (i)
+        |RETURN count(*)""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`count(*)`")
+        .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
+        .filter(
+          "NOT t IN r",
+          "NOT u IN r",
+          "none(anon_1 IN r WHERE anon_1 IN s)",
+          "all(anon_0 IN range(0, size(s) - 1) WHERE (s[anon_0]).prop = a.prop)"
+        )
+        .expand(
+          "(d)-[r*1..]-(a)",
+          expandMode = ExpandAll,
+          projectedDir = INCOMING,
+          nodePredicates = Seq(),
+          relationshipPredicates = Seq(Predicate("r", "i.prop = r.prop"))
+        )
+        .filter("NOT t IN s", "NOT u IN s")
+        .expand(
+          "(d)-[s*1..]-(i)",
+          expandMode = ExpandAll,
+          projectedDir = OUTGOING,
+          nodePredicates = Seq(),
+          relationshipPredicates = Seq()
+        )
+        .filter("NOT t = u")
+        .expandAll("(d)-[t]-(e)")
+        .relationshipTypeScan("(f)-[u:R]-(d)")
+        .build()
+    )
   }
 }

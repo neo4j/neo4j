@@ -63,10 +63,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
   }
 
   test("MATCH (a) (()--(x {prop: a.prop}))+ (b) (()--())+ (c) RETURN *") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `a` is defined in the same `MATCH` clause as (()--(x {prop: a.prop}))+.""".stripMargin
-    )
+    runSemanticAnalysis().errorMessages shouldBe empty
   }
 
   test("MERGE (var0 WHERE COUNT { ((var1)--())+ } > 1 ) RETURN *") {
@@ -445,52 +442,31 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
 
   // accessing non-local variables outside of the quantification
   test("MATCH (x)-->(y)((a)-[e]->(b) WHERE a.h > x.h)* (s)-->(u) RETURN count(*)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `x` is defined in the same `MATCH` clause as ((a)-[e]->(b) WHERE a.h > x.h)*.""".stripMargin
-    )
+    runSemanticAnalysis().errorMessages shouldBe empty
   }
 
   test("MATCH (x)-->(y)((a)-[e]->(b) WHERE a.h > u.h)* (s)-->(u) RETURN count(*)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `u` is defined in the same `MATCH` clause as ((a)-[e]->(b) WHERE a.h > u.h)*.""".stripMargin
-    )
+    runSemanticAnalysis().errorMessages shouldBe empty
   }
 
   test("MATCH (x)-->(y)((a)-[e]->(b {h: x.h}))* (s)-->(u) RETURN count(*)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `x` is defined in the same `MATCH` clause as ((a)-[e]->(b {h: x.h}))*.""".stripMargin
-    )
+    runSemanticAnalysis().errorMessages shouldBe empty
   }
 
   test("MATCH (x)-->(y), ((a)-[e]->(b {h: x.h}))* (s)-->(u) RETURN count(*)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `x` is defined in the same `MATCH` clause as ((a)-[e]->(b {h: x.h}))*.""".stripMargin
-    )
+    runSemanticAnalysis().errorMessages shouldBe empty
   }
 
   test("MATCH (x) ((a)-[e]->(b {h: x.h}))* (s)-->(u) RETURN count(*)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `x` is defined in the same `MATCH` clause as ((a)-[e]->(b {h: x.h}))*.""".stripMargin
-    )
+    runSemanticAnalysis().errorMessages shouldBe empty
   }
 
   test("MATCH (x) ((a)-[e {h: x.h}]->(b))* (s)-->(u) RETURN count(*)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `x` is defined in the same `MATCH` clause as ((a)-[e {h: x.h}]->(b))*.""".stripMargin
-    )
+    runSemanticAnalysis().errorMessages shouldBe empty
   }
 
   test("MATCH (x)-->(y) ((a)-[e]->(b {h: u.h}))* (s)-->(u) RETURN count(*)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `u` is defined in the same `MATCH` clause as ((a)-[e]->(b {h: u.h}))*.""".stripMargin
-    )
+    runSemanticAnalysis().errorMessages shouldBe empty
   }
 
   test("MATCH p=(x)-->(y), ((a)-[e]->(b {h: nodes(p)[0].prop}))* (s)-->(u) RETURN count(*)") {
@@ -507,12 +483,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
         |  (f)--(d) ((g)-[s]-(h) WHERE s.prop = a.prop)+ (i)
         |RETURN count(*)""".stripMargin
 
-    runSemanticAnalysis(query).errorMessages.toSet shouldEqual Set(
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `a` is defined in the same `MATCH` clause as ((g)-[s]-(h) WHERE s.prop = a.prop)+.""".stripMargin,
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, `i` is defined in the same `MATCH` clause as ((b)-[r]-(c) WHERE i.prop = r.prop)+.""".stripMargin
-    )
+    runSemanticAnalysis(query).errorMessages shouldBe empty
   }
 
   test("MATCH (x)-->(y) MATCH (y) ((a)-[e]->(b {h: x.h}))* (s)-->(u) RETURN count(*)") {
