@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -219,9 +220,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
                   usageCount = math.max(lhs.usageCount, rhs.usageCount)
                 )
             }
+            val mergedEntitiesWithAllPropertiesRead =
+              lhsAcc.entitiesWithAllPropertiesRead ++ rhsAcc.entitiesWithAllPropertiesRead
 
             PropertyUsagesAndRenamings(
               mergedProperties,
+              mergedEntitiesWithAllPropertiesRead,
               mergedNames,
               Map.empty,
               indexedEntityAliases = lhsAcc.indexedEntityAliases.fuse(rhsAcc.indexedEntityAliases)(_ ++ _)
@@ -260,6 +264,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       case prop @ Property(v: Variable, _) if isRel(semanticTable, v) =>
         acc =>
           TraverseChildren(acc.addRelProperty(prop, logicalPlan, needsValue = true))
+      case pr: ProduceResult =>
+        acc => TraverseChildren(acc.addEntitiesWithAllPropertiesRead(pr.columns))
+      case Properties(variable: LogicalVariable) =>
+        acc => TraverseChildren(acc.addEntityWithAllPropertiesRead(variable))
 
       // New fold for nested plan expression
       case nested: NestedPlanExpression => acc =>
@@ -282,7 +290,6 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
     acc: PropertyUsagesAndRenamings,
     semanticTable: SemanticTable
   ): (LogicalPlan, SemanticTable) = {
-    val returnColumns = returnColumnsForPlan(logicalPlan)
     var currentTypes = semanticTable.types
 
     val rewriter = bottomUp(Rewriter.lift {
@@ -319,9 +326,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
       // Rewrite index plans to either GetValue or DoNotGetValue
       case indexPlan: NodeIndexLeafPlan =>
-        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, returnColumns)
+        rewriteIndexPlan(acc, indexPlan, indexPlan.idName)
       case indexPlan: RelationshipIndexLeafPlan =>
-        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, returnColumns)
+        rewriteIndexPlan(acc, indexPlan, indexPlan.idName)
     })
 
     val newPlan = logicalPlan.endoRewrite(rewriter)
@@ -335,14 +342,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
   private def rewriteIndexPlan(
     acc: PropertyUsagesAndRenamings,
     indexPlan: IndexedPropertyProvidingPlan,
-    idName: LogicalVariable,
-    returnColumns: Set[String]
+    idName: LogicalVariable
   ) = {
-    val shouldForceCache = {
-      val isReturnColumn =
-        acc.indexedEntityAliases.getOrElse(idName.name, Set.empty).intersect(returnColumns).nonEmpty
-      isReturnColumn
-    }
+    val shouldForceCache =
+      acc.indexedEntityAliases.getOrElse(idName.name, Set.empty).intersect(acc.entitiesWithAllPropertiesRead).nonEmpty
 
     indexPlan.withMappedProperties { indexedProp =>
       acc.properties.get(property(idName, indexedProp.propertyKeyToken.name)) match {
@@ -367,13 +370,6 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
   private def isRel(semanticTable: SemanticTable, variable: Variable) =
     semanticTable.typeFor(variable.name).is(CTRelationship)
-
-  private def returnColumnsForPlan(logicalPlan: LogicalPlan): Set[String] = {
-    logicalPlan match {
-      case pr: ProduceResult => pr.columns.map(_.name).toSet
-      case _                 => Set.empty
-    }
-  }
 }
 
 case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCondition
@@ -467,8 +463,17 @@ case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCo
       PropertyUsages(canGetFromIndex = false, Set.empty, 0, RELATIONSHIP_TYPE, None, needsValue = false)
   }
 
+  /**
+   * Accumulator used when traversing the plan
+   * @param properties for each encountered property, accumulated info as [[PropertyUsages]]
+   * @param entitiesWithAllPropertiesRead all entities for which all properties are read (either through ValuePopulation in ProduceResults or through the properties function)
+   * @param previousNames for each variable that gets projected, its previous name
+   * @param protectedPropertiesByPlanId per plan id, all properties that are protected, i.e. should not be cached
+   * @param indexedEntityAliases for each indexed entity, a list of later names (aliases).
+   */
   private case class PropertyUsagesAndRenamings(
     properties: Map[Property, PropertyUsages],
+    entitiesWithAllPropertiesRead: Set[String],
     previousNames: Map[String, String],
     protectedPropertiesByPlanId: Map[Id, ProtectedProperties],
     indexedEntityAliases: Map[String, Set[String]]
@@ -476,6 +481,7 @@ case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCo
 
     def ++(other: PropertyUsagesAndRenamings): PropertyUsagesAndRenamings = PropertyUsagesAndRenamings(
       this.properties.fuse(other.properties)(_ ++ _),
+      this.entitiesWithAllPropertiesRead ++ other.entitiesWithAllPropertiesRead,
       this.previousNames ++ other.previousNames,
       this.protectedPropertiesByPlanId ++ other.protectedPropertiesByPlanId,
       this.indexedEntityAliases.fuse(other.indexedEntityAliases)(_ ++ _)
@@ -517,6 +523,14 @@ case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCo
         val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan, needsValue))
         copy(properties = newProperties)
       }
+    }
+
+    def addEntityWithAllPropertiesRead(variable: LogicalVariable): PropertyUsagesAndRenamings = {
+      copy(entitiesWithAllPropertiesRead = entitiesWithAllPropertiesRead + variable.name)
+    }
+
+    def addEntitiesWithAllPropertiesRead(variables: Iterable[LogicalVariable]): PropertyUsagesAndRenamings = {
+      copy(entitiesWithAllPropertiesRead = entitiesWithAllPropertiesRead ++ variables.map(_.name))
     }
 
     def addPreviousNames(mappings: Map[String, String]): PropertyUsagesAndRenamings = {
@@ -587,6 +601,7 @@ case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCo
 
     def empty: PropertyUsagesAndRenamings = PropertyUsagesAndRenamings(
       properties = Map.empty,
+      entitiesWithAllPropertiesRead = Set.empty,
       previousNames = Map.empty,
       protectedPropertiesByPlanId = Map.empty,
       indexedEntityAliases = Map.empty

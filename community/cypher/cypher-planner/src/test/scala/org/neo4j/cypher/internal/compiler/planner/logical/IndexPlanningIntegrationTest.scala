@@ -2718,4 +2718,25 @@ class IndexPlanningIntegrationTest
       .nodeIndexOperator("a:L(x)", indexOrder = IndexOrderAscending, getValue = Map("x" -> GetValue))
       .build()
   }
+
+  test("should cache properties of indexed nodes passed to properties function") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("L", 800)
+      .addNodeIndex("L", Seq("x"), 1, 0.1)
+      .build()
+
+    val q =
+      """
+        |MATCH (n:L)
+        |WHERE n.x IS NOT NULL
+        |RETURN properties(n) ORDER BY n.x
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("properties(n) AS `properties(n)`")
+      .nodeIndexOperator("n:L(x)", indexOrder = IndexOrderAscending, getValue = Map("x" -> GetValue))
+      .build()
+  }
 }
