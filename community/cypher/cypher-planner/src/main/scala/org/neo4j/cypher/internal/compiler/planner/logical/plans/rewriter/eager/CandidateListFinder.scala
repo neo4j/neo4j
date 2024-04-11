@@ -115,7 +115,7 @@ object CandidateListFinder {
       copy(candidates = Nil, traversesEagerPlanFromLeft = false)
   }
 
-  sealed trait LHSvsRHSEagerization {
+  sealed trait LhsVsRhsEagerization {
 
     /**
      * Given the candidate lists accumulated so far, filter them out based
@@ -125,12 +125,12 @@ object CandidateListFinder {
     planChildrenLookup: PlanChildrenLookup): Vector[CandidateList]
   }
 
-  object LHSvsRHSEagerization {
+  object LhsVsRhsEagerization {
 
     /**
      * Eagerize conflicts between the LHS and the RHS of the plan.
      */
-    case object Yes extends LHSvsRHSEagerization {
+    case object Yes extends LhsVsRhsEagerization {
 
       override def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
       planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
@@ -141,7 +141,7 @@ object CandidateListFinder {
     /**
      * Do not eagerize conflicts between the LHS and the RHS of the plan.
      */
-    case object No extends LHSvsRHSEagerization {
+    case object No extends LhsVsRhsEagerization {
 
       override def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
       planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
@@ -157,7 +157,7 @@ object CandidateListFinder {
     /**
      * Assert there are no conflicts between the LHS and the RHS of the plan.
      */
-    case object AssertNoConflicts extends LHSvsRHSEagerization {
+    case object AssertNoConflicts extends LhsVsRhsEagerization {
 
       override def filterCandidateLists(candidateLists: Vector[CandidateList], plan: LogicalBinaryPlan)(implicit
       planChildrenLookup: PlanChildrenLookup): Vector[CandidateList] = {
@@ -181,7 +181,7 @@ object CandidateListFinder {
    *                                                an Eager on Top
    */
   private case class BinaryPlanEagerizationStrategy(
-    eagerizeLHSvsRHSConflicts: LHSvsRHSEagerization,
+    eagerizeLHSvsRHSConflicts: LhsVsRhsEagerization,
     emptyCandidateListsForRHSvsTopConflicts: Boolean
   )
 
@@ -202,35 +202,35 @@ object CandidateListFinder {
       // Otherwise we will get empty candidate lists.
       plan match {
         case _: EagerLogicalPlan => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.No,
+            eagerizeLHSvsRHSConflicts = LhsVsRhsEagerization.No,
             emptyCandidateListsForRHSvsTopConflicts = false
           )
         case _: Union => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.No,
+            eagerizeLHSvsRHSConflicts = LhsVsRhsEagerization.No,
             emptyCandidateListsForRHSvsTopConflicts = false
           )
         case _: OrderedUnion => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.AssertNoConflicts,
+            eagerizeLHSvsRHSConflicts = LhsVsRhsEagerization.AssertNoConflicts,
             emptyCandidateListsForRHSvsTopConflicts = false
           )
         case _: AssertSameNode => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.AssertNoConflicts,
+            eagerizeLHSvsRHSConflicts = LhsVsRhsEagerization.AssertNoConflicts,
             emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
           )
         case _: AssertSameRelationship => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.AssertNoConflicts,
+            eagerizeLHSvsRHSConflicts = LhsVsRhsEagerization.AssertNoConflicts,
             emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
           )
         case _: CartesianProduct => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.Yes,
+            eagerizeLHSvsRHSConflicts = LhsVsRhsEagerization.Yes,
             emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
           )
         case _: RepeatOptions => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.AssertNoConflicts,
+            eagerizeLHSvsRHSConflicts = LhsVsRhsEagerization.AssertNoConflicts,
             emptyCandidateListsForRHSvsTopConflicts = assertHasReadOnlyRHS(plan)
           )
         case ap: ApplyPlan => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = LHSvsRHSEagerization.Yes,
+            eagerizeLHSvsRHSConflicts = LhsVsRhsEagerization.Yes,
             emptyCandidateListsForRHSvsTopConflicts =
               // Most Apply variants must have read-only RHSs
               // If this changes in the future, the correct way to eagerize, e.g. a SemiApply variant
