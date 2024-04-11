@@ -18,4 +18,5 @@ package org.neo4j.cypher.internal.ast
 
 trait StatementWithGraph extends Statement {
   def withGraph(useGraph: Option[UseGraph]): StatementWithGraph
+  def useGraph: Option[GraphSelection]
 }

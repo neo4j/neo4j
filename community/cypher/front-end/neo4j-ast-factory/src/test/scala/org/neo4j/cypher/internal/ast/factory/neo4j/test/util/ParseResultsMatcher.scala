@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j.test.util
 
-import org.neo4j.cypher.internal.ast.factory.neo4j.VerifyAstPositionTestSupport.findPosMismatch
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseFailure
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResult
@@ -26,6 +25,8 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParserIn
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.parseAst
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.MatchResults.merge
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.Explicit
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.VerifyAstPositionTestSupport.findPosMismatch
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.VerifyStatementUseGraph.findUseGraphMismatch
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.internal.helpers.Exceptions
@@ -68,8 +69,8 @@ trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstM
   def withoutErrors: Self = and(beSuccess)
   def withAstLike(assertion: T => Unit): Self = and(haveAstLike(assertion))
   def withPositionOf[S <: ASTNode : ClassTag](expected: InputPosition*): Self = and(haveAstPositions[S](expected: _*))
-  def toAst(expected: ASTNode): Self = and(haveAst(expected)).withEqualPositions
-  def toAstIgnorePos(expected: ASTNode): Self = and(haveAst(expected))
+  def toAst(expected: ASTNode): Self = and(haveAst(expected)).withEqualPositions.and(haveEqualWithGraph(expected))
+  def toAstIgnorePos(expected: ASTNode): Self = and(haveAst(expected)).and(haveEqualWithGraph(expected))
   def toAstPositioned(expected: T): Self = toAstIgnorePos(expected).and(havePositionedAst(expected))
   def toAsts(expected: PartialFunction[ParserInTest, T]): Self = and(expected.andThen(haveAst(_)))
   def containing[C <: ASTNode : ClassTag](expected: C*): Self = and(haveAstContaining(expected: _*))
@@ -176,6 +177,9 @@ trait AstMatchers {
       )
     }
   }
+
+  def haveEqualWithGraph(expected: ASTNode): Matcher[ParseResult] =
+    be(Right(None)).compose(r => resultAsEither[ASTNode](r).map(findUseGraphMismatch(expected, _)))
 
   def failLike(matcher: Matcher[Throwable]): Matcher[ParseResult] = new Matcher[ParseResult] {
 

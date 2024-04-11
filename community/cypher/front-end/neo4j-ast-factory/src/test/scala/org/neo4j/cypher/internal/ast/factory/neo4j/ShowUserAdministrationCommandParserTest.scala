@@ -32,7 +32,7 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
   }
 
   test("USE system SHOW USERS") {
-    parsesTo[Statements](ast.ShowUsers(None)(pos))
+    parsesTo[Statements](ast.ShowUsers(None)(pos).withGraph(Some(use(List("system")))))
   }
 
   test("SHOW USERS WHERE user = 'GRANTED'") {

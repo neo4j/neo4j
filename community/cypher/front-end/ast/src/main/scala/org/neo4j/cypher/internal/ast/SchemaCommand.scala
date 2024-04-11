@@ -55,7 +55,7 @@ import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
 import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
 
 sealed trait SchemaCommand extends StatementWithGraph with SemanticAnalysisTooling {
-  def useGraph: Option[GraphSelection]
+
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand
 
   override def returnColumns: List[LogicalVariable] = List.empty

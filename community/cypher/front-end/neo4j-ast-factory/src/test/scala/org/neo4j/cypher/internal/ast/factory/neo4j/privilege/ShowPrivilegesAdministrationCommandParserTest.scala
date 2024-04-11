@@ -29,7 +29,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
   }
 
   test("use system show supported privileges") {
-    parsesTo[Statements](ast.ShowSupportedPrivilegeCommand(None)(pos))
+    parsesTo[Statements](ast.ShowSupportedPrivilegeCommand(None)(pos).withGraph(Some(use(List("system")))))
   }
 
   test("show supported privileges YIELD *") {
@@ -78,7 +78,8 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
   }
 
   test("use system show privileges") {
-    parsesTo[Statements](ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None)(pos))
+    parsesTo[Statements](ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None)(pos)
+      .withGraph(Some(use(List("system")))))
   }
 
   test("SHOW ALL PRIVILEGES") {

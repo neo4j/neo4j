@@ -132,25 +132,17 @@ trait DdlBuilder extends CypherParserListener {
   final override def exitCommand(
     ctx: CypherParser.CommandContext
   ): Unit = {
+    val useCtx = ctx.useClause()
     ctx.ast = lastChild[AstRuleCtx](ctx) match {
-      case c: CypherParser.ShowCommandContext =>
-        c.ast match {
-          case sQ: SingleQuery =>
-            if (ctx.useClause() != null) {
-              SingleQuery(ctx.useClause().ast[UseGraph]() +: sQ.clauses)(pos(ctx))
-            } else {
-              sQ
-            }
-          case a => a
+      case c: CypherParser.ShowCommandContext => c.ast match {
+          case sQ: SingleQuery if useCtx != null => SingleQuery(useCtx.ast[UseGraph]() +: sQ.clauses)(pos(ctx))
+          case command: StatementWithGraph if useCtx != null => command.withGraph(Some(useCtx.ast()))
+          case a                                             => a
         }
       case c: CypherParser.TerminateCommandContext =>
-        if (ctx.useClause() != null) {
-          SingleQuery(ctx.useClause().ast[UseGraph]() +: c.ast[Seq[Clause]]())(pos(ctx))
-        } else {
-          SingleQuery(c.ast[Seq[Clause]]())(pos(ctx))
-        }
-      case c =>
-        c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](ctx.useClause()))
+        if (useCtx != null) SingleQuery(useCtx.ast[UseGraph]() +: c.ast[Seq[Clause]]())(pos(ctx))
+        else SingleQuery(c.ast[Seq[Clause]]())(pos(ctx))
+      case c => c.ast[StatementWithGraph].withGraph(astOpt[UseGraph](useCtx))
     }
   }
 

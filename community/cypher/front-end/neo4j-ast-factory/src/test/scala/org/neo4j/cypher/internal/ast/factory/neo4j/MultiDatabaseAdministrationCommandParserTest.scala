@@ -79,7 +79,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     }
 
     test(s"USE system SHOW $dbType") {
-      parsesTo[Statements](privilege(None)(pos))
+      parsesTo[Statements](privilege(None)(pos).withGraph(Some(use(List("system")))))
     }
 
     test(s"SHOW $dbType WHERE access = 'GRANTED'") {
@@ -244,7 +244,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("USE system CREATE DATABASE foo") {
     // can parse USE clause, but is not included in AST
-    parsesTo[Statements](ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos))
+    parsesTo[Statements] {
+      ast.CreateDatabase(literalFoo, ast.IfExistsThrowError, ast.NoOptions, ast.NoWait, None)(pos)
+        .withGraph(Some(use(List("system"))))
+    }
   }
 
   test("CREATE DATABASE $foo") {
@@ -1182,7 +1185,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
           1,
           12,
           11
-        )))
+        )).withGraph(Some(use(List("system")))))
       }
 
       test(s"ALTER DATABASE foo IF EXISTS SET ACCESS $accessKeyword") {

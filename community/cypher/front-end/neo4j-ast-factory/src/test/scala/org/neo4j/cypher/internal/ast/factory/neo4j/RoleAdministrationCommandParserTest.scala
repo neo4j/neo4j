@@ -59,11 +59,15 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   })
 
   test("USE neo4j SHOW ROLES") {
-    parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
+    parsesTo[Statements] {
+      ast.ShowRoles(withUsers = false, showAll = true, None)(pos).withGraph(Some(use(List("neo4j"))))
+    }
   }
 
   test("USE GRAPH SYSTEM SHOW ROLES") {
-    parsesTo[Statements](ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
+    parsesTo[Statements] {
+      ast.ShowRoles(withUsers = false, showAll = true, None)(pos).withGraph(Some(use(List("SYSTEM"))))
+    }
   }
 
   test("SHOW ALL ROLES YIELD role") {

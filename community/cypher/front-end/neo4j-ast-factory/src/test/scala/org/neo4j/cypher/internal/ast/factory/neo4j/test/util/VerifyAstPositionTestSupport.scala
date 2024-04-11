@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.ast.factory.neo4j
+package org.neo4j.cypher.internal.ast.factory.neo4j.test.util
 
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.ReadAdministrationCommand
@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.Yield
-import org.neo4j.cypher.internal.ast.factory.neo4j.VerifyAstPositionTestSupport.Mismatch
-import org.neo4j.cypher.internal.ast.factory.neo4j.VerifyAstPositionTestSupport.findPosMismatch
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.VerifyAstPositionTestSupport.Mismatch
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.VerifyAstPositionTestSupport.findPosMismatch
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.ListSlice
