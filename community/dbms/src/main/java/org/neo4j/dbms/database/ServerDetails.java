@@ -44,18 +44,55 @@ public record ServerDetails(
     public enum RunningState {
         /**
          * Present in Discovery Service
+         *   has finished first reconciliation;
+         *   accessible from the outside;
+         *   not shutting down;
+         *   has not panicked
          */
-        AVAILABLE,
+        AVAILABLE("Available"),
+        /**
+         * Present in Discovery Service
+         *   did not finish starting yet;
+         *   not accessible from the outside;
+         *   not shutting down;
+         *   has not panicked
+         */
+        INITIALIZING("Initializing"),
+        /**
+         * Present in Discovery Service
+         *   not all user databases have been reconciled yet;
+         *   accessible from the outside;
+         *   not shutting down;
+         *   has not panicked
+         */
+        STARTING("Starting"),
+        /**
+         * Present in Discovery Service
+         *   shutting down;
+         *   not accessible from the outside anymore;
+         *   has not panicked
+         */
+        STOPPING("Shutting down"),
+        /**
+         * Present in Discovery Service
+         *   has panicked;
+         *   accessible from the outside;
+         *   not shutting down
+         */
+        PANICKED("In panic"),
         /**
          * Not present in discovery
          */
-        UNAVAILABLE;
+        UNAVAILABLE("Unavailable");
+
+        private final String prettyPrint;
+
+        RunningState(String prettyPrint) {
+            this.prettyPrint = prettyPrint;
+        }
 
         public String prettyPrint() {
-            return switch (this) {
-                case AVAILABLE -> "Available";
-                case UNAVAILABLE -> "Unavailable";
-            };
+            return prettyPrint;
         }
     }
 
@@ -63,51 +100,50 @@ public record ServerDetails(
         /**
          * Server only known via the discovery service (i.e, hasn't been registered with topology graph)
          */
-        FREE,
+        FREE("Free"),
 
         /**
          * Server has been enabled in the topology graph.
          */
-        ENABLED,
+        ENABLED("Enabled"),
 
         /**
          * Server has been prevented from accepting new allocations.
          */
-        CORDONED,
+        CORDONED("Cordoned"),
 
         /**
          * The server is deallocating its databases.
          */
-        DEALLOCATING,
+        DEALLOCATING("Deallocating"),
 
         /**
          * The server has deallocated all of its user databases, is in the deallocating state in the topology
          * graph, the system database is either hosted as replica or is rafted,
          * but the member is not voter in the raft group anymore.
          */
-        DEALLOCATED,
+        DEALLOCATED("Deallocated"),
 
         /**
          * The server has been dropped from the topology graph.
          */
-        DROPPED;
+        DROPPED("Dropped");
+
+        private final String prettyPrint;
+
+        State(String prettyPrint) {
+            this.prettyPrint = prettyPrint;
+        }
+
+        public String prettyPrint() {
+            return prettyPrint;
+        }
 
         public static State fromInstanceStatus(TopologyGraphDbmsModel.InstanceStatus status) {
             return switch (status) {
                 case ENABLED -> State.ENABLED;
                 case CORDONED -> State.CORDONED;
                 case DEALLOCATING -> State.DEALLOCATING;
-            };
-        }
-
-        public String prettyPrint() {
-            return switch (this) {
-                case FREE -> "Free";
-                case ENABLED -> "Enabled";
-                case CORDONED -> "Cordoned";
-                case DEALLOCATING -> "Deallocating";
-                case DEALLOCATED -> "Deallocated";
-                case DROPPED -> "Dropped";
             };
         }
     }
