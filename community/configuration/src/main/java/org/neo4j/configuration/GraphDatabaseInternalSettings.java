@@ -1275,7 +1275,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Log the classification of the error status.")
     public static final Setting<Boolean> log_status_classification = newBuilder(
-                    "internal.dbms.logs.query.log_status_category", BOOL, false)
+                    "internal.dbms.logs.query.log_status_classification", BOOL, false)
             .build();
 
     @Internal
