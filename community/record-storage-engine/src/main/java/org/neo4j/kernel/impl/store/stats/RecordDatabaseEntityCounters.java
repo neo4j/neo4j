@@ -66,4 +66,19 @@ public class RecordDatabaseEntityCounters implements StoreEntityCounters {
     public long allRelationshipsCountStore(CursorContext cursorContext) {
         return countsStore.relationshipCount(ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, cursorContext);
     }
+
+    @Override
+    public long estimateNodes() {
+        return idGeneratorFactory.get(RecordIdType.NODE).getHighId();
+    }
+
+    @Override
+    public long estimateRelationships() {
+        return idGeneratorFactory.get(RecordIdType.RELATIONSHIP).getHighId();
+    }
+
+    @Override
+    public long estimateLabels() {
+        return idGeneratorFactory.get(SchemaIdType.LABEL_TOKEN).getHighId();
+    }
 }

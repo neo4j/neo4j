@@ -1024,6 +1024,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     "dbms.routing.driver.connection.connect_timeout", DURATION, ofSeconds(5))
             .build();
 
+    @Description("Anonymous Usage Data reporting.")
+    public static final Setting<Boolean> udc_enabled =
+            newBuilder("dbms.usage_report.enabled", BOOL, true).build();
+
     /**
      * Default settings for connectors. The default values are assumes to be default for embedded deployments through the code.
      * This map contains default connector settings that you can pass to the builders.

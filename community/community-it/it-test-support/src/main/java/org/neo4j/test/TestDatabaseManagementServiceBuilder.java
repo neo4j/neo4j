@@ -154,6 +154,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 .setDefault(GraphDatabaseSettings.check_point_iops_limit, -1)
                 .setDefault(GraphDatabaseInternalSettings.gbptree_structure_log_enabled, true)
                 .setDefault(GraphDatabaseSettings.filewatcher_enabled, false)
+                .setDefault(GraphDatabaseSettings.udc_enabled, false)
                 .setDefault(
                         BoltConnector.listen_address,
                         new SocketAddress("localhost", DynamicPorts.OS_SELECTED_DYNAMIC_PORT));

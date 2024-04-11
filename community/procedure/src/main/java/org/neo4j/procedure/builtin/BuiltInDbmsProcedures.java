@@ -125,7 +125,7 @@ public class BuiltInDbmsProcedures {
         return dbmsInfo(systemGraph);
     }
 
-    public static Stream<SystemInfo> dbmsInfo(GraphDatabaseAPI system) throws NoSuchAlgorithmException {
+    public static Stream<SystemInfo> dbmsInfo(GraphDatabaseAPI system) {
         Config config = system.getDependencyResolver().resolveDependency(Config.class);
         var storeIdProvider = getSystemDatabaseStoreIdProvider(system);
         var creationTime = formatTime(

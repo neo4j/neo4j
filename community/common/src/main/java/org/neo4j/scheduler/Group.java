@@ -81,6 +81,8 @@ public enum Group {
 
     BUFFER_POOL_MAINTENANCE("BufferPoolMaintenance"),
 
+    UDC("UserDataCollector", ExecutorServiceFactory.singleThread()),
+
     // CYPHER.
     /** Thread pool for parallel Cypher query execution. */
     CYPHER_WORKER("CypherWorker", ExecutorServiceFactory.workStealing()),

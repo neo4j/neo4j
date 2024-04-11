@@ -27,7 +27,6 @@ import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
 import static org.neo4j.storageengine.util.StoreIdDecodeUtils.decodeId;
 
-import java.security.NoSuchAlgorithmException;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -87,7 +86,7 @@ public class BuiltInProcedures {
     @NotThreadSafe
     @Description("Provides information regarding the database.")
     @Procedure(name = "db.info", mode = READ)
-    public Stream<DatabaseInfo> databaseInfo() throws NoSuchAlgorithmException {
+    public Stream<DatabaseInfo> databaseInfo() {
         var storeIdProvider = graphDatabaseAPI.getDependencyResolver().resolveDependency(StoreIdProvider.class);
         var creationTime = formatTime(storeIdProvider.getStoreId().getCreationTime(), getConfiguredTimeZone());
         return Stream.of(new DatabaseInfo(decodeId(storeIdProvider), graphDatabaseAPI.databaseName(), creationTime));

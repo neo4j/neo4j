@@ -82,6 +82,7 @@
     <module>neo4j-notifications</module>
     <module>cloud</module>
     <module>neo4j-gql-status</module>
+    <module>udc</module>
   </modules>
 
   <profiles>

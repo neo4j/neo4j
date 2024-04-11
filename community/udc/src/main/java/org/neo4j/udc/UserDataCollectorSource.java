@@ -17,32 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.stats;
+package org.neo4j.udc;
 
-import org.neo4j.io.pagecache.context.CursorContext;
+import java.util.Map;
+import org.neo4j.annotations.service.Service;
+import org.neo4j.configuration.Config;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.InternalLog;
 
-public interface StoreEntityCounters {
-    long nodes(CursorContext cursorContext);
-
-    long relationships(CursorContext cursorContext);
-
-    long properties(CursorContext cursorContext);
-
-    long relationshipTypes(CursorContext cursorContext);
-
-    long allNodesCountStore(CursorContext cursorContext);
-
-    long allRelationshipsCountStore(CursorContext cursorContext);
-
-    /**
-     * A cheaper version of {@link #nodes(CursorContext)}.
-     */
-    long estimateNodes();
-
-    /**
-     * A cheaper version of {@link #relationships(CursorContext)}.
-     */
-    long estimateRelationships();
-
-    long estimateLabels();
+@Service
+public interface UserDataCollectorSource {
+    Map<String, String> getData(
+            DatabaseManagementService databaseManagementService,
+            FileSystemAbstraction fs,
+            Config config,
+            InternalLog log);
 }

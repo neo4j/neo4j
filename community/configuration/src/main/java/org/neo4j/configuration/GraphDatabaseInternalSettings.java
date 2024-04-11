@@ -23,6 +23,8 @@ import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.configuration.SettingConstraints.lessThanOrEqualLong;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
@@ -1381,5 +1383,23 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> cypher_parser_antlr_enabled = newBuilder(
                     "internal.cypher.parser.antlr_enabled", BOOL, false)
             .dynamic()
+            .build();
+
+    @Internal
+    @Description("Time to wait before sending the first UDC ping.")
+    public static final Setting<Long> udc_initial_delay_ms = newBuilder(
+                    "internal.dbms.usage_report.initial_delay_ms", LONG, MINUTES.toMillis(10))
+            .build();
+
+    @Internal
+    @Description("Interval of the UDC pings.")
+    public static final Setting<Long> udc_report_interval_ms = newBuilder(
+                    "internal.dbms.usage_report.report_interval_ms", LONG, DAYS.toMillis(1))
+            .build();
+
+    @Internal
+    @Description("Enable/disable network communications for UDP pings, useful for testing purposes.")
+    public static final Setting<Boolean> udc_network_enabled = newBuilder(
+                    "internal.dbms.usage_report.udc_network_enabled", BOOL, true)
             .build();
 }

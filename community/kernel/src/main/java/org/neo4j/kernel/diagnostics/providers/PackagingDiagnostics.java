@@ -28,7 +28,7 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 
 public class PackagingDiagnostics extends NamedDiagnosticsProvider {
-    private static final String PACKAGING_INFO_FILENAME = "packaging_info";
+    public static final String PACKAGING_INFO_FILENAME = "packaging_info";
     private final Path home;
 
     PackagingDiagnostics(Config config) {

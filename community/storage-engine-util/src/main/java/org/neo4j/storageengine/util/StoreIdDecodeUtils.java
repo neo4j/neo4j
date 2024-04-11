@@ -31,14 +31,18 @@ public class StoreIdDecodeUtils {
 
     private StoreIdDecodeUtils() {}
 
-    public static String decodeId(StoreIdProvider storeIdProvider) throws NoSuchAlgorithmException {
+    public static String decodeId(StoreIdProvider storeIdProvider) {
         return decodeId(storeIdProvider.getExternalStoreId());
     }
 
-    public static String decodeId(ExternalStoreId externalStoreId) throws NoSuchAlgorithmException {
-        var storeIdString = externalStoreId.id().toString();
-        var messageDigest = MessageDigest.getInstance(DEFAULT_ALGORITHM);
-        messageDigest.update(storeIdString.getBytes());
-        return hexString(messageDigest.digest());
+    public static String decodeId(ExternalStoreId externalStoreId) {
+        try {
+            var storeIdString = externalStoreId.id().toString();
+            var messageDigest = MessageDigest.getInstance(DEFAULT_ALGORITHM);
+            messageDigest.update(storeIdString.getBytes());
+            return hexString(messageDigest.digest());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

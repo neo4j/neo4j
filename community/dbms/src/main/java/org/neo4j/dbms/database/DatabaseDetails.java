@@ -63,13 +63,7 @@ public record DatabaseDetails(
     }
 
     public Optional<String> readableExternalStoreId() {
-        return externalStoreId.flatMap(id -> {
-            try {
-                return Optional.of(StoreIdDecodeUtils.decodeId(id));
-            } catch (Exception e) {
-                return Optional.empty();
-            }
-        });
+        return externalStoreId.flatMap(id -> Optional.of(StoreIdDecodeUtils.decodeId(id)));
     }
 
     public Optional<String> readableStoreId() {
