@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanCondition
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
@@ -393,6 +394,9 @@ case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCo
     // might not be the best order any more.
     SortPredicatesBySelectivity.completed
   )
+
+  override def postConditions: Set[StepSequencer.Condition] =
+    super.postConditions + LogicalPlanCondition(OrderedIndexPlansUseCachedProperties)
 
   override def getTransformer(
     pushdownPropertyReads: Boolean,
