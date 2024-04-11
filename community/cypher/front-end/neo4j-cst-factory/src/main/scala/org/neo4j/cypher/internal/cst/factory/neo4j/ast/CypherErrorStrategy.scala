@@ -48,9 +48,23 @@ import scala.util.Try
 final class CypherErrorStrategy extends DefaultErrorStrategy {
   private val vocabulary = new CypherErrorVocabulary
 
+  private def isUnclosedQuote(offender: Token): Boolean = {
+    offender.getText == "'" || offender.getText == "\""
+  }
+
+  private def isUnclosedComment(offender: Token, recognizer: Parser): Boolean = {
+    (offender.getText == "/" && recognizer.getInputStream.LT(2).getText == "*") ||
+    (offender.getText == "*" && recognizer.getInputStream.LT(-1).getText == "/")
+  }
+
   override protected def reportInputMismatch(recognizer: Parser, e: InputMismatchException): Unit = {
     val offender = e.getOffendingToken
-    val msg = errorMessage(offender, expected(recognizer, e.getOffendingState, e.getCtx), "Mismatched input")
+
+    val msg =
+      if (isUnclosedQuote(offender)) CypherErrorStrategy.qouteMismatchErrorMessage
+      else if (isUnclosedComment(offender, recognizer))
+        "Failed to parse comment. A comment starting on `/*` must have a closing `*/`."
+      else errorMessage(offender, expected(recognizer, e.getOffendingState, e.getCtx), "Mismatched input")
     recognizer.notifyErrorListeners(offender, msg, e)
   }
 
@@ -58,7 +72,9 @@ final class CypherErrorStrategy extends DefaultErrorStrategy {
     if (!inErrorRecoveryMode(recognizer)) {
       beginErrorCondition(recognizer)
       val t = recognizer.getCurrentToken
-      val msg = errorMessage(t, expected(recognizer, recognizer.getState, recognizer.getContext), "Extraneous input")
+      val msg =
+        if (isUnclosedQuote(t)) CypherErrorStrategy.qouteMismatchErrorMessage
+        else errorMessage(t, expected(recognizer, recognizer.getState, recognizer.getContext), "Extraneous input")
       recognizer.notifyErrorListeners(t, msg, null)
     }
   }
@@ -140,6 +156,12 @@ class ExpectedDisplayNameCollector(vocabulary: CypherErrorVocabulary, ctx: RuleC
   }
 }
 
+object CypherErrorStrategy {
+
+  val qouteMismatchErrorMessage =
+    "Failed to parse string literal. The query must contain an even number of non-escaped quotes."
+}
+
 final class CypherErrorVocabulary extends Vocabulary {
   private val inner = CypherParser.VOCABULARY.asInstanceOf[VocabularyImpl]
 
@@ -176,7 +198,6 @@ final class CypherErrorVocabulary extends Vocabulary {
       case CypherParser.ARROW_LINE               => "'-'"
       case CypherParser.ARROW_LEFT_HEAD          => "'<'"
       case CypherParser.ARROW_RIGHT_HEAD         => "'>'"
-      case CypherParser.FORMAL_COMMENT           => "'*/'"
       case CypherParser.MULTI_LINE_COMMENT       => "'/*'"
       case CypherParser.STRING_LITERAL1          => "a string value"
       case CypherParser.STRING_LITERAL2          => "a string value"

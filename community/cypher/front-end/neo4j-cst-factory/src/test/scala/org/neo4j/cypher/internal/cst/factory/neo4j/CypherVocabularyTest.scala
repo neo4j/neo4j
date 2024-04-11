@@ -332,11 +332,9 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.ARROW_LINE -> "'-'",
     CypherParser.ARROW_LEFT_HEAD -> "'<'",
     CypherParser.ARROW_RIGHT_HEAD -> "'>'",
-    CypherParser.FORMAL_COMMENT -> "'*/'",
     CypherParser.STRING_LITERAL1 -> "a string value",
     CypherParser.STRING_LITERAL2 -> "a string value",
     CypherParser.MULTI_LINE_COMMENT -> "'/*'",
-    CypherParser.ESCAPED_SYMBOLIC_NAME -> "an identifier",
-    CypherParser.MORE1 -> "'/*'"
+    CypherParser.ESCAPED_SYMBOLIC_NAME -> "an identifier"
   )
 }

@@ -169,11 +169,11 @@ class LiteralsParserTest extends AstParsingTestBase
       }
     }
 
-    s"'${toCypherHex('\\')}'" should notParse[Literal]
-    s"return '${toCypherHex('\'')}'" should notParse[Statements]
+    s"RETURN '${toCypherHex('\\')}'" should notParse[Statements]
+    s"RETURN '${toCypherHex('\'')}'" should notParse[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Lexical error"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Extraneous input ''': expected ';', <EOF> (line 1, column 15 (offset: 14))"
+        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 15 (offset: 14))"""
       ))
 
     "'\\U1'" should parseTo[Literal](literalString("\\U1"))

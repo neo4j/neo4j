@@ -38,8 +38,12 @@ import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InputPosition
 
 trait LiteralBuilder extends CypherParserListener {
+
+  protected def exceptionFactory: CypherExceptionFactory
 
   override def exitLiteral(ctx: CypherParser.LiteralContext): Unit = {
     ctx.ast = ctx.children.get(0) match {
@@ -82,7 +86,7 @@ trait LiteralBuilder extends CypherParserListener {
 
   override def exitStringLiteral(ctx: CypherParser.StringLiteralContext): Unit = {
     val text = ctx.start.getInputStream.getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1))
-    ctx.ast = StringLiteral(cypherStringToString(text))(rangePos(ctx))
+    ctx.ast = StringLiteral(cypherStringToString(text, pos(ctx), exceptionFactory))(rangePos(ctx))
   }
 }
 
@@ -98,14 +102,17 @@ object LiteralBuilder {
    *
    * https://github.com/antlr/antlr4/blob/dev/doc/faq/lexical.md#how-do-i-replace-escape-characters-in-string-tokens
    */
-  final def cypherStringToString(input: String): String = {
+  final def cypherStringToString(input: String, p: InputPosition, exceptionFactory: CypherExceptionFactory): String = {
     var pos = input.indexOf('\\')
     if (pos == -1) {
       input
     } else {
       var start = 0
+      val length = input.length
       var builder: java.lang.StringBuilder = null
       while (pos != -1) {
+        if (pos == length - 1)
+          throw exceptionFactory.syntaxException(CypherErrorStrategy.qouteMismatchErrorMessage, p)
         val replacement: Char = input.charAt(pos + 1) match {
           case 't'  => '\t'
           case 'b'  => '\b'

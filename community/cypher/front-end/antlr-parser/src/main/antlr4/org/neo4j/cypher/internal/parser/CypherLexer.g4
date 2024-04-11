@@ -49,15 +49,11 @@ SPACE
    ;
 
 SINGLE_LINE_COMMENT
-   : '//' (~ [\n\r])* (('\n' | '\r' | '\r\n'))? -> channel (HIDDEN)
+   : '//' ~[\r\n]* -> channel (HIDDEN)
    ;
 
-MORE0
-   : '/**' ~ [/] -> more , mode (IN_FORMAL_COMMENT)
-   ;
-
-MORE1
-   : '/*' -> more , mode (IN_MULTI_LINE_COMMENT)
+MULTI_LINE_COMMENT
+   : '/*' .*? '*/' -> channel (HIDDEN)
    ;
 
 DECIMAL_DOUBLE
@@ -1387,27 +1383,3 @@ fragment Y
 fragment Z
    : [zZ]
    ;
-
-mode IN_FORMAL_COMMENT;
-FORMAL_COMMENT
-   : '*/' -> channel (HIDDEN) , mode (DEFAULT_MODE)
-   ;
-
-MORE2
-   : . -> more
-   ;
-
-mode IN_MULTI_LINE_COMMENT;
-MULTI_LINE_COMMENT
-   : '*/' -> channel (HIDDEN) , mode (DEFAULT_MODE)
-   ;
-
-IN_MULTI_LINE_COMMENT_MORE2
-   : MORE2 -> more
-   ;
-
-mode IN_SINGLE_LINE_COMMENT;
-IN_SINGLE_LINE_COMMENT_MORE2
-   : MORE2 -> more
-   ;
-

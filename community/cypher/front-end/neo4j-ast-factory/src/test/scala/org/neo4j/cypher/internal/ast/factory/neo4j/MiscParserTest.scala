@@ -496,7 +496,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     failsParsing[Statements](Explicit(Antlr))
       .throws[SyntaxException]
       .withMessage(
-        """Extraneous input ''': expected 'DISTINCT', '*', an expression (line 1, column 8 (offset: 7))
+        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 8 (offset: 7))
           |"RETURN 'hell"
           |        ^""".stripMargin
       )
@@ -516,6 +516,92 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
            |"$query"
            |                                          ^""".stripMargin
       )
+  }
+
+  test("MATCH (n) WHERE n.prop = 'ab + 1") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 26 (offset: 25))
+          |"MATCH (n) WHERE n.prop = 'ab + 1"
+          |                          ^""".stripMargin
+      ))
+
+  }
+
+  test("MATCH (n) WHERE n.prop = 'ab'' + 1") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 30 (offset: 29))
+          |"MATCH (n) WHERE n.prop = 'ab'' + 1"
+          |                              ^""".stripMargin
+      ))
+  }
+
+  test("MATCH (n) WHERE n.prop = '") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 26 (offset: 25))
+          |"MATCH (n) WHERE n.prop = '"
+          |                          ^""".stripMargin
+      ))
+  }
+
+  test("MATCH (n) WHERE n.'prop") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 19 (offset: 18))
+          |"MATCH (n) WHERE n.'prop"
+          |                   ^""".stripMargin
+      ))
+  }
+
+  test("SHOW SETTING 'a', 'b''") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Lexical error at"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 22 (offset: 21))
+          |"SHOW SETTING 'a', 'b''"
+          |                      ^""".stripMargin
+      ))
+
+  }
+
+  test("MATCH (n) WHERE n.prop = 'ab\\'c' AND 'b\\'c' AND 'c\\'") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Lexical error at line 1, column 53"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Failed to parse string literal. The query must contain an even number of non-escaped quotes. (line 1, column 49 (offset: 48))
+          |"MATCH (n) WHERE n.prop = 'ab\'c' AND 'b\'c' AND 'c\'"
+          |                                                 ^""".stripMargin
+      ))
+  }
+
+  test("RETURN '\\\\'") {
+    parsesTo[Statements](Statements(List(SingleQuery(List(Return(
+      false,
+      ReturnItems(false, List(UnaliasedReturnItem(StringLiteral("\\")(pos.withInputLength(0)), "'\\\\'")(pos)), None)(
+        pos
+      ),
+      None,
+      None,
+      None,
+      Set(),
+      false
+    )(pos)))(pos))))
+  }
+
+  test("RETURN /* abc */ 1 /*'") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Lexical error at line 1, column 23."))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Failed to parse comment. A comment starting on `/*` must have a closing `*/`. (line 1, column 21 (offset: 20))
+          |"RETURN /* abc */ 1 /*'"
+          |                     ^""".stripMargin
+      ))
   }
 
   test("return item text parses correctly") {
