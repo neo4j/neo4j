@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -1223,7 +1224,12 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should equal(
       planner.subPlanBuilder()
         .apply()
-        .|.nodeIndexOperator("n:Label(prop = ???)", argumentIds = Set("anon_2"), paramExpr = Seq(reduceExpr(2)))
+        .|.nodeIndexOperator(
+          "n:Label(prop = ???)",
+          _ => GetValue,
+          argumentIds = Set("anon_2"),
+          paramExpr = Seq(reduceExpr(2))
+        )
         .rollUpApply("anon_2", "anon_0")
         .|.projection("b.age AS anon_0")
         .|.allRelationshipsScan("(a)-[anon_1]->(b)")
@@ -1247,6 +1253,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .apply()
         .|.relationshipIndexOperator(
           "(anon_1)-[r:REL(prop = ???)]->(anon_2)",
+          _ => GetValue,
           argumentIds = Set("anon_4"),
           paramExpr = Seq(reduceExpr(4))
         )
@@ -1273,6 +1280,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .apply()
         .|.nodeIndexOperator(
           "n:UniqueLabel(prop = ???)",
+          _ => GetValue,
           unique = true,
           argumentIds = Set("anon_2"),
           paramExpr = Seq(reduceExpr(2))

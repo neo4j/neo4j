@@ -2296,7 +2296,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .build()
   }
 
-  test("should NOT cache properties of returned indexed nodes if we don't rely on index ordering") {
+  test("should cache properties of returned indexed nodes if we don't rely on index ordering") {
     val builder = new LogicalPlanBuilder()
       .produceResults("n")
       .nodeIndexOperator("n:L(prop > 123)", getValue = _ => CanGetValue, indexOrder = IndexOrderNone)
@@ -2305,7 +2305,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("n")
-      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => DoNotGetValue)
+      .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue)
       .build()
   }
 
@@ -2443,7 +2443,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .build()
   }
 
-  test("should NOT cache properties of returned indexed relationships if we don't rely on index ordering") {
+  test("should cache properties of returned indexed relationships if we don't rely on index ordering") {
     val builder = new LogicalPlanBuilder()
       .produceResults("r")
       .relationshipIndexOperator(
@@ -2456,7 +2456,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("r")
-      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]->(b)", getValue = _ => DoNotGetValue)
+      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]->(b)", getValue = _ => GetValue)
       .build()
   }
 

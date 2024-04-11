@@ -1596,7 +1596,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .distinct("a AS a")
       .create(createNode("newNode"))
       .filter("cacheNFromStore[a.prop] IS NOT NULL")
-      .nodeIndexOperator("a:A(foo)", indexType = IndexType.RANGE)
+      .nodeIndexOperator("a:A(foo)", _ => GetValue, indexType = IndexType.RANGE)
       .build()
 
     plan shouldEqual expectedPlan

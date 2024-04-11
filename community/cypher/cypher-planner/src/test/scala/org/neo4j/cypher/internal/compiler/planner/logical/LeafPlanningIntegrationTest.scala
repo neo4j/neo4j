@@ -421,7 +421,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan._1 should equal(
-      nodeIndexSeek("n:Awesome(prop = 42)")
+      nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue)
     )
   }
 
@@ -435,7 +435,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeUniqueIndexSeek(
         v"n",
         LabelToken("Awesome", LabelId(0)),
-        Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
+        Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
         SingleQueryExpression(literalInt(42)),
         Set.empty,
         IndexOrderNone,
@@ -546,7 +546,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       case NodeIndexSeek(
           LogicalVariable("n"),
           LabelToken("Awesome", _),
-          Seq(IndexedProperty(PropertyKeyToken("prop", _), DoNotGetValue, NODE_TYPE)),
+          Seq(IndexedProperty(PropertyKeyToken("prop", _), GetValue, NODE_TYPE)),
           SingleQueryExpression(SignedDecimalIntegerLiteral("42")),
           _,
           _,
@@ -586,7 +586,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.prop2 = 'foo' RETURN n"
 
     plan._1 should equal(
-      nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')", supportPartitionedScan = false)
+      nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')", _ => GetValue, supportPartitionedScan = false)
     )
   }
 
@@ -599,7 +599,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.prop = 42 RETURN n"
 
     plan._1 should equal(
-      nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')", supportPartitionedScan = false)
+      nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')", _ => GetValue, supportPartitionedScan = false)
     )
   }
 
@@ -614,7 +614,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._1 should equal(
       Selection(
         ands(isNotNull(prop(v"n", "name"))),
-        nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')", supportPartitionedScan = false)
+        nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')", _ => GetValue, supportPartitionedScan = false)
       )
     )
   }
@@ -655,7 +655,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan shouldBe planner.planBuilder()
       .produceResults("n")
-      .nodeIndexOperator("n:Awesome(prop = 42)")
+      .nodeIndexOperator("n:Awesome(prop = 42)", _ => GetValue)
       .build()
   }
 
@@ -666,7 +666,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN *"
 
     plan._1 should equal(
-      nodeIndexSeek("n:Awesome(prop = 42)")
+      nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue)
     )
   }
 
@@ -680,7 +680,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         v"n",
         LabelToken("Awesome", LabelId(0)),
-        Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
+        Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
         ManyQueryExpression(listOfInt(42, 1337)),
         Set.empty,
         IndexOrderNone,
@@ -700,7 +700,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._1 should equal(
       Selection(
         ands(equals(prop(v"n", "prop1"), literalInt(42))),
-        nodeIndexSeek("n:Awesome(prop2 = 3)", propIds = Some(Map("prop2" -> 1)))
+        nodeIndexSeek("n:Awesome(prop2 = 3)", _ => GetValue, propIds = Some(Map("prop2" -> 1)))
       )
     )
   }
@@ -719,8 +719,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:Awesome(prop2 = 3)")
-        .nodeIndexOperator("n:Awesome(prop1 = 42)")
+        .|.nodeIndexOperator("n:Awesome(prop2 = 3)", _ => GetValue)
+        .nodeIndexOperator("n:Awesome(prop1 = 42)", _ => GetValue)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -735,7 +735,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeUniqueIndexSeek(
         v"n",
         LabelToken("Awesome", LabelId(0)),
-        Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
+        Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
         SingleQueryExpression(literalInt(42)),
         Set.empty,
         IndexOrderNone,
@@ -758,7 +758,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeUniqueIndexSeek(
           v"n",
           LabelToken("Awesome", LabelId(0)),
-          Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
+          Seq(indexedProperty("prop2", 1, GetValue, NODE_TYPE)),
           SingleQueryExpression(literalInt(3)),
           Set.empty,
           IndexOrderNone,
@@ -782,7 +782,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeUniqueIndexSeek(
           v"n",
           LabelToken("Awesome", LabelId(0)),
-          Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
+          Seq(indexedProperty("prop2", 1, GetValue, NODE_TYPE)),
           SingleQueryExpression(literalInt(3)),
           Set.empty,
           IndexOrderNone,
@@ -1188,8 +1188,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .produceResults("n")
         .distinct("n as n")
         .union()
-        .|.nodeIndexOperator("n:Awesome(prop1 = 42)")
-        .nodeIndexOperator("n:Awesome(prop2 = 'apa')")
+        .|.nodeIndexOperator("n:Awesome(prop1 = 42)", _ => GetValue)
+        .nodeIndexOperator("n:Awesome(prop2 = 'apa')", _ => GetValue)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -1201,8 +1201,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .produceResults("n")
         .distinct("n as n")
         .union()
-        .|.nodeIndexOperator("n:Awesome(prop1 >= 42)")
-        .nodeIndexOperator("n:Awesome(prop2 STARTS WITH 'apa')")
+        .|.nodeIndexOperator("n:Awesome(prop1 >= 42)", _ => GetValue)
+        .nodeIndexOperator("n:Awesome(prop2 STARTS WITH 'apa')", _ => GetValue)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }

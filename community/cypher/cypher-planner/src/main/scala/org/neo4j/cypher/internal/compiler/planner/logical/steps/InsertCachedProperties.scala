@@ -73,8 +73,6 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.GetValue
-import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedPropertyProvidingPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
@@ -321,9 +319,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
       // Rewrite index plans to either GetValue or DoNotGetValue
       case indexPlan: NodeIndexLeafPlan =>
-        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, indexPlan.indexOrder, returnColumns)
+        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, returnColumns)
       case indexPlan: RelationshipIndexLeafPlan =>
-        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, indexPlan.indexOrder, returnColumns)
+        rewriteIndexPlan(acc, indexPlan, indexPlan.idName, returnColumns)
     })
 
     val newPlan = logicalPlan.endoRewrite(rewriter)
@@ -338,13 +336,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
     acc: PropertyUsagesAndRenamings,
     indexPlan: IndexedPropertyProvidingPlan,
     idName: LogicalVariable,
-    indexOrder: IndexOrder,
     returnColumns: Set[String]
   ) = {
     val shouldForceCache = {
       val isReturnColumn =
         acc.indexedEntityAliases.getOrElse(idName.name, Set.empty).intersect(returnColumns).nonEmpty
-      isReturnColumn && indexOrder != IndexOrderNone
+      isReturnColumn
     }
 
     indexPlan.withMappedProperties { indexedProp =>

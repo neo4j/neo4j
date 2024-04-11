@@ -101,7 +101,7 @@ class LimitPropagationPlanningIntegrationTest
         )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -127,7 +127,7 @@ class LimitPropagationPlanningIntegrationTest
         )
         .filterExpression(hasLabels("b", "B"))
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -153,7 +153,7 @@ class LimitPropagationPlanningIntegrationTest
         )
         .filterExpression(hasLabels("b", "B"))
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -175,7 +175,7 @@ class LimitPropagationPlanningIntegrationTest
         .|.nodeIndexOperator("c:C(id)", _ => GetValue, indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -203,7 +203,7 @@ class LimitPropagationPlanningIntegrationTest
         )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -232,7 +232,7 @@ class LimitPropagationPlanningIntegrationTest
         )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -270,7 +270,7 @@ class LimitPropagationPlanningIntegrationTest
         )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -323,7 +323,7 @@ class LimitPropagationPlanningIntegrationTest
         )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -347,7 +347,7 @@ class LimitPropagationPlanningIntegrationTest
         .expandAll("(b)<-[cb:REL_CB]-(c)")
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -374,7 +374,7 @@ class LimitPropagationPlanningIntegrationTest
         .expandAll("(b)<-[cb:REL_CB]-(c)")
         .filterExpression(hasLabels("b", "B"))
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -399,7 +399,7 @@ class LimitPropagationPlanningIntegrationTest
         .expandAll("(b)<-[cb:REL_CB]-(c)")
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -430,7 +430,7 @@ class LimitPropagationPlanningIntegrationTest
         )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -456,7 +456,7 @@ class LimitPropagationPlanningIntegrationTest
         .expandAll("(b)<-[cb:REL_CB]-(c)")
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -490,7 +490,7 @@ class LimitPropagationPlanningIntegrationTest
         )
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }
@@ -519,7 +519,7 @@ class LimitPropagationPlanningIntegrationTest
         .expandAll("(b)<-[cb:REL_CB]-(c)")
         .filter("b:B")
         .expandAll("(a)-[ab:REL_AB]->(b)")
-        .nodeIndexOperator("a:A(id = 123)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("a:A(id = 123)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     }
   }

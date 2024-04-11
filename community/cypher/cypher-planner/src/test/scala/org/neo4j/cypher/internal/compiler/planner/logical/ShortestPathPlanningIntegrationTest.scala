@@ -549,7 +549,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           ExpandAll,
           reverseGroupVariableProjections = true
         )
-        .nodeIndexOperator("d:User(prop = 5)")
+        .nodeIndexOperator("d:User(prop = 5)", _ => GetValue)
         .build()
     )
   }
@@ -2996,7 +2996,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         nfa,
         ExpandAll
       )
-      .nodeIndexOperator("u:User(prop = 5)")
+      .nodeIndexOperator("u:User(prop = 5)", _ => GetValue)
       .build())
   }
 
@@ -3072,7 +3072,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         nfa,
         ExpandAll
       )
-      .nodeIndexOperator("u:User(prop = 5)")
+      .nodeIndexOperator("u:User(prop = 5)", _ => GetValue)
       .build())
   }
 
@@ -3371,7 +3371,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
             .build(),
           ExpandAll
         )
-        .nodeIndexOperator("a:A(p = 1)")
+        .nodeIndexOperator("a:A(p = 1)", _ => GetValue)
         .build())
     }
 
@@ -3412,8 +3412,8 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           ExpandInto
         )
         .cartesianProduct()
-        .|.nodeIndexOperator("b:B(p = 1)", unique = true)
-        .nodeIndexOperator("a:A(p = 1)", unique = true)
+        .|.nodeIndexOperator("b:B(p = 1)", _ => GetValue, unique = true)
+        .nodeIndexOperator("a:A(p = 1)", _ => GetValue, unique = true)
         .build())(SymmetricalLogicalPlanEquality)
     }
   }

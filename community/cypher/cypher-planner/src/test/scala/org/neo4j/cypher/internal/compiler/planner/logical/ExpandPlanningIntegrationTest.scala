@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Pred
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
@@ -824,7 +825,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
     plan shouldEqual planner.subPlanBuilder()
       .filterExpressionOrString("a:A", andsReorderable("a.x = 1", "a.y = 2", "a.z = 3"))
       .expandAll("(b)<-[r]-(a)")
-      .nodeIndexOperator("b:B(x = 4, y = 5, z = 6)", supportPartitionedScan = false)
+      .nodeIndexOperator("b:B(x = 4, y = 5, z = 6)", _ => GetValue, supportPartitionedScan = false)
       .build()
   }
 }

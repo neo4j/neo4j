@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
@@ -84,8 +83,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:L(p2 = 2)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:L(p2 = 2)", _ => GetValue, indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -107,8 +106,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:L(p2 < 7)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p1 > 3)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:L(p2 < 7)", _ => GetValue, indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 > 3)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -130,8 +129,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:L(3 < p2 < 7)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(3 < p1 < 10)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:L(3 < p2 < 7)", _ => GetValue, indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(3 < p1 < 10)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -154,9 +153,9 @@ class OrLeafPlanningIntegrationTest
         .distinct("n AS n")
         .union()
         .|.filterExpression(hasLabels("n", "P"))
-        .|.nodeIndexOperator("n:L(p2 = 2)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:L(p2 = 2)", _ => GetValue, indexType = IndexType.RANGE)
         .filterExpression(hasLabels("n", "P"))
-        .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -180,9 +179,9 @@ class OrLeafPlanningIntegrationTest
         .distinct("n AS n")
         .union()
         .|.filterExpression(hasLabels("n", "P"))
-        .|.nodeIndexOperator("n:L(p2 = 2)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:L(p2 = 2)", _ => GetValue, indexType = IndexType.RANGE)
         .filterExpression(hasLabels("n", "P"))
-        .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
@@ -208,9 +207,9 @@ class OrLeafPlanningIntegrationTest
         .distinct("n AS n")
         .union()
         .|.filterExpression(hasLabels("n", "P"))
-        .|.nodeIndexOperator("n:L(p2 = 2)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:L(p2 = 2)", _ => GetValue, indexType = IndexType.RANGE)
         .filterExpression(hasLabels("n", "P"))
-        .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
@@ -235,10 +234,10 @@ class OrLeafPlanningIntegrationTest
     val hasL = hasLabels("n", "L")
     val hasP = hasLabels("n", "P")
 
-    val seekLProp1 = nodeIndexSeek("n:L(p1 = 1)", _ => DoNotGetValue)
-    val seekLProp2 = nodeIndexSeek("n:L(p2 = 2)", _ => DoNotGetValue, propIds = Some(Map("p2" -> 1)))
-    val seekPProp1 = nodeIndexSeek("n:P(p1 = 1)", _ => DoNotGetValue, labelId = 1)
-    val seekPProp2 = nodeIndexSeek("n:P(p2 = 2)", _ => DoNotGetValue, labelId = 1, propIds = Some(Map("p2" -> 1)))
+    val seekLProp1 = nodeIndexSeek("n:L(p1 = 1)", _ => GetValue)
+    val seekLProp2 = nodeIndexSeek("n:L(p2 = 2)", _ => GetValue, propIds = Some(Map("p2" -> 1)))
+    val seekPProp1 = nodeIndexSeek("n:P(p1 = 1)", _ => GetValue, labelId = 1)
+    val seekPProp2 = nodeIndexSeek("n:P(p2 = 2)", _ => GetValue, labelId = 1, propIds = Some(Map("p2" -> 1)))
 
     val coveringCombinations = Seq(
       (seekLProp1, hasP),
@@ -271,8 +270,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
+        .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -295,8 +294,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
+        .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
@@ -321,8 +320,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
-        .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
+        .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
@@ -346,8 +345,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:P(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:P(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -372,8 +371,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:P(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:P(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -399,8 +398,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:P(p1 = 1)", indexType = IndexType.RANGE)
-        .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:P(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -446,8 +445,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
-        .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
+        .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
   }
@@ -471,8 +470,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
-        .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
+        .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
@@ -498,8 +497,8 @@ class OrLeafPlanningIntegrationTest
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
-        .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", indexType = IndexType.RANGE)
-        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", indexType = IndexType.RANGE)
+        .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )(SymmetricalLogicalPlanEquality)
     plan() should not equal plan(withHint = false)
@@ -1085,7 +1084,7 @@ class OrLeafPlanningIntegrationTest
         .nodeIndexOperator(
           "n:L(prop > 123)",
           argumentIds = Set(),
-          getValue = Map("prop" -> DoNotGetValue),
+          getValue = Map("prop" -> GetValue),
           indexType = IndexType.RANGE
         )
         .build()
@@ -1114,7 +1113,7 @@ class OrLeafPlanningIntegrationTest
         .nodeIndexOperator(
           "n:L(prop > 123)",
           argumentIds = Set(),
-          getValue = Map("prop" -> DoNotGetValue),
+          getValue = Map("prop" -> GetValue),
           indexType = IndexType.RANGE
         )
         .build()
@@ -1288,11 +1287,11 @@ class OrLeafPlanningIntegrationTest
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:L(p3 > 20)")
+        .|.nodeIndexOperator("n:L(p3 > 20)", _ => GetValue)
         .filter("cacheN[n.p2] >= 10")
         .nodeIndexOperator(
           "n:L(p1 <= 10, p2)",
-          Map("p1" -> DoNotGetValue, "p2" -> GetValue),
+          Map("p1" -> GetValue, "p2" -> GetValue),
           supportPartitionedScan = false
         )
         .build()

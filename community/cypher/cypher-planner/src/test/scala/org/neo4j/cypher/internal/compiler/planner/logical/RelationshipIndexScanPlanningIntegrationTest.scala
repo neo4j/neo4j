@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
-import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -53,7 +52,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
     planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -63,7 +62,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
     planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -73,7 +72,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
     planner.plan("MATCH (a)<-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)<-[r:REL(prop)]-(b)", indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)<-[r:REL(prop)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -196,7 +195,12 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         .produceResults("n", "r")
         .filter("b.prop = cacheN[n.prop]")
         .apply()
-        .|.relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", argumentIds = Set("n"), indexType = IndexType.RANGE)
+        .|.relationshipIndexOperator(
+          "(a)-[r:REL(prop)]-(b)",
+          _ => GetValue,
+          argumentIds = Set("n"),
+          indexType = IndexType.RANGE
+        )
         .cacheProperties("cacheNFromStore[n.prop]")
         .allNodeScan("n")
         .build()
@@ -270,11 +274,8 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
     planner.plan("MATCH (a:A)-[r:REL]-(b) USING INDEX r:REL(prop) WHERE r.prop IS NOT NULL RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .filterExpression(hasLabels(
-          "a",
-          "A"
-        )) // TODO change to .filter("a:A") after https://github.com/neo-technology/neo4j/pull/9823 is merged
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexType = IndexType.RANGE)
+        .filter("a:A")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -292,7 +293,12 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         // the filter got pushed up through the apply
         .filter("a = anon_0")
         .apply()
-        .|.relationshipIndexOperator("(anon_0)-[r:REL(prop)]-(b)", argumentIds = Set("a"), indexType = IndexType.RANGE)
+        .|.relationshipIndexOperator(
+          "(anon_0)-[r:REL(prop)]-(b)",
+          _ => GetValue,
+          argumentIds = Set("a"),
+          indexType = IndexType.RANGE
+        )
         .skip(0)
         .allNodeScan("a")
         .build()
@@ -310,7 +316,12 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         // the filter got pushed up through the apply
         .filter("b = anon_0")
         .apply()
-        .|.relationshipIndexOperator("(a)-[r:REL(prop)]-(anon_0)", argumentIds = Set("b"), indexType = IndexType.RANGE)
+        .|.relationshipIndexOperator(
+          "(a)-[r:REL(prop)]-(anon_0)",
+          _ => GetValue,
+          argumentIds = Set("b"),
+          indexType = IndexType.RANGE
+        )
         .skip(0)
         .allNodeScan("b")
         .build()
@@ -330,6 +341,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         .apply()
         .|.relationshipIndexOperator(
           "(anon_0)-[r:REL(prop)]-(anon_1)",
+          _ => GetValue,
           argumentIds = Set("a", "b"),
           indexType = IndexType.RANGE
         )
@@ -517,7 +529,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
           "(a)-[r:REL(prop)]->(b)",
           indexOrder = IndexOrderNone,
           argumentIds = Set(),
-          getValue = _ => DoNotGetValue,
+          getValue = _ => GetValue,
           indexType = IndexType.RANGE
         )
         .build()
@@ -558,7 +570,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
           "(c)-[r2:REL2(prop)]->(b)",
           indexOrder = IndexOrderNone,
           argumentIds = Set(),
-          getValue = _ => DoNotGetValue,
+          getValue = _ => GetValue,
           indexType = IndexType.RANGE
         )
         .filterExpression(andsReorderableAst(hasLabels("b", "B"), hasLabels("a", "A")))
@@ -566,7 +578,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
           "(a)-[r:REL(prop)]->(b)",
           indexOrder = IndexOrderNone,
           argumentIds = Set(),
-          getValue = _ => DoNotGetValue,
+          getValue = _ => GetValue,
           indexType = IndexType.RANGE
         )
         .build()
@@ -580,7 +592,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("r")
         .filter("a = anon_0")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(anon_0)", indexType = IndexType.RANGE)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(anon_0)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
     )
   }

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -1200,6 +1201,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         .apply()
         .|.nodeIndexOperator(
           "n:N(loc = ???)",
+          _ => GetValue,
           paramExpr = Some(prop("m", "loc")),
           argumentIds = Set("m"),
           indexType = IndexType.RANGE
@@ -1523,7 +1525,13 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .|.|.filter("anon_1:C")
       .|.|.expandAll("(b)-[anon_0:REL]->(anon_1)")
       .|.|.argument("b")
-      .|.nodeIndexOperator("b:B(prop = ???)", paramExpr = Some(prop("a", "id")), argumentIds = Set("a"), unique = true)
+      .|.nodeIndexOperator(
+        "b:B(prop = ???)",
+        _ => GetValue,
+        paramExpr = Some(prop("a", "id")),
+        argumentIds = Set("a"),
+        unique = true
+      )
       .nodeByLabelScan("a", "A")
       .build()
   }
@@ -1622,9 +1630,9 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     plan shouldEqual planner.subPlanBuilder()
       .filter("b.otherProp < cacheN[a.otherProp]")
       .cartesianProduct()
-      .|.nodeIndexOperator("b:B(prop = 2)")
+      .|.nodeIndexOperator("b:B(prop = 2)", _ => GetValue)
       .cacheProperties("cacheNFromStore[a.otherProp]")
-      .nodeIndexOperator("a:A(id = 1)", unique = true)
+      .nodeIndexOperator("a:A(id = 1)", _ => GetValue, unique = true)
       .build()
   }
 }

@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.ands
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
-import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -133,7 +132,7 @@ class IndexPlanningIntegrationTest
     val plan = cfg.plan(s"MATCH (a:Label) WHERE a.prop IS NOT NULL RETURN a").stripProduceResults
 
     plan shouldEqual cfg.subPlanBuilder()
-      .nodeIndexOperator("a:Label(prop)", indexType = IndexType.RANGE)
+      .nodeIndexOperator("a:Label(prop)", _ => GetValue, indexType = IndexType.RANGE)
       .build()
   }
 
@@ -143,7 +142,7 @@ class IndexPlanningIntegrationTest
     val plan = cfg.plan(s"MATCH (a)-[r:Type]->(b) WHERE r.prop IS NOT NULL RETURN r").stripProduceResults
 
     plan shouldEqual cfg.subPlanBuilder()
-      .relationshipIndexOperator("(a)-[r:Type(prop)]->(b)", indexType = IndexType.RANGE)
+      .relationshipIndexOperator("(a)-[r:Type(prop)]->(b)", _ => GetValue, indexType = IndexType.RANGE)
       .build()
   }
 
@@ -164,6 +163,7 @@ class IndexPlanningIntegrationTest
             .produceResults("a")
             .nodeIndexOperator(
               s"a:Label(prop1 $op1 1, prop2 $op2 2)",
+              _ => GetValue,
               indexType = IndexType.RANGE,
               supportPartitionedScan = false
             )
@@ -185,7 +185,7 @@ class IndexPlanningIntegrationTest
             .filter(s"cacheN[a.prop2] $op2 2")
             .nodeIndexOperator(
               s"a:Label(prop1 $op1 1, prop2)",
-              Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
+              _ => GetValue,
               indexType = IndexType.RANGE,
               supportPartitionedScan = false
             )
@@ -213,6 +213,7 @@ class IndexPlanningIntegrationTest
             .produceResults("r")
             .relationshipIndexOperator(
               s"(a)-[r:Type(prop1 $op1 1, prop2 $op2 2)]->(b)",
+              _ => GetValue,
               indexType = IndexType.RANGE,
               supportPartitionedScan = false
             )
@@ -234,7 +235,7 @@ class IndexPlanningIntegrationTest
             .filter(s"cacheR[r.prop2] $op2 2")
             .relationshipIndexOperator(
               s"(a)-[r:Type(prop1 $op1 1, prop2)]->(b)",
-              Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
+              _ => GetValue,
               indexType = IndexType.RANGE,
               supportPartitionedScan = false
             )
@@ -257,7 +258,12 @@ class IndexPlanningIntegrationTest
 
       plan shouldEqual cfg.subPlanBuilder()
         .apply()
-        .|.nodeIndexOperator(s"a:Label(prop $op point)", argumentIds = Set("point"), indexType = IndexType.RANGE)
+        .|.nodeIndexOperator(
+          s"a:Label(prop $op point)",
+          _ => GetValue,
+          argumentIds = Set("point"),
+          indexType = IndexType.RANGE
+        )
         .projection("point({x: 1, y: 1}) AS point")
         .argument()
         .build()
@@ -491,9 +497,9 @@ class IndexPlanningIntegrationTest
       .produceResults("s", "r", "t")
       .nodeHashJoin("t")
       .|.expandAll("(s)<-[r]-(t)")
-      .|.nodeIndexOperator("s:S(p = 10)", indexType = IndexType.RANGE)
+      .|.nodeIndexOperator("s:S(p = 10)", _ => GetValue, indexType = IndexType.RANGE)
       .filter("t.foo = 2")
-      .nodeIndexOperator("t:T(0 <= p <= 10)", indexType = IndexType.RANGE)
+      .nodeIndexOperator("t:T(0 <= p <= 10)", _ => GetValue, indexType = IndexType.RANGE)
       .build()
   }
 
@@ -513,7 +519,7 @@ class IndexPlanningIntegrationTest
       .produceResults("s", "r", "t")
       .nodeHashJoin("t")
       .|.expandAll("(s)<-[r]-(t)")
-      .|.nodeIndexOperator("s:S(p = 10)", indexType = IndexType.RANGE)
+      .|.nodeIndexOperator("s:S(p = 10)", _ => GetValue, indexType = IndexType.RANGE)
       .filter("t.foo = 2")
       .nodeByLabelScan("t", "T")
       .build()
@@ -1309,6 +1315,7 @@ class IndexPlanningIntegrationTest
     plan shouldEqual cfg.subPlanBuilder()
       .nodeIndexOperator(
         "a:A(prop = ???)",
+        _ => GetValue,
         paramExpr = List(parameter("param", CTAny)),
         indexType = IndexType.TEXT,
         supportPartitionedScan = false
@@ -1332,7 +1339,7 @@ class IndexPlanningIntegrationTest
 
     val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop IS NOT NULL RETURN *").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.POINT, supportPartitionedScan = false)
+      .nodeIndexOperator(s"a:A(prop)", _ => GetValue, indexType = IndexType.POINT, supportPartitionedScan = false)
       .build()
   }
 
@@ -2186,7 +2193,7 @@ class IndexPlanningIntegrationTest
 
     val expected = planner.planBuilder()
       .produceResults("u").withCardinality(1)
-      .nodeIndexOperator("u:User(id = 123)", unique = true).withCardinality(1)
+      .nodeIndexOperator("u:User(id = 123)", _ => GetValue, unique = true).withCardinality(1)
 
     val actual = planner.planState(query)
     actual should haveSamePlanAndEffectiveCardinalitiesAsBuilder(expected)
@@ -2252,7 +2259,7 @@ class IndexPlanningIntegrationTest
       val plan = planner.plan(q).stripProduceResults
       plan shouldEqual planner.subPlanBuilder()
         .filter(s"NOT ${pred.planWithCachedProp}")
-        .nodeIndexOperator("a:A(prop, otherProp)", Map("prop" -> GetValue, "otherProp" -> DoNotGetValue))
+        .nodeIndexOperator("a:A(prop, otherProp)", _ => GetValue)
         .build()
     }
   }
@@ -2288,7 +2295,7 @@ class IndexPlanningIntegrationTest
         .filter(s"NOT ${pred.planWithCachedProp}")
         .relationshipIndexOperator(
           "(a)-[r:REL(prop, otherProp)]->(b)",
-          Map("prop" -> GetValue, "otherProp" -> DoNotGetValue)
+          _ => GetValue
         )
         .build()
     }
@@ -2469,7 +2476,7 @@ class IndexPlanningIntegrationTest
         |RETURN a""".stripMargin
     ).asLogicalPlanBuilderString() should equal(
       """.produceResults("a")
-        |.nodeIndexOperator("a:Label(prop > datetime('2021-01-01'))", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = Map("prop" -> DoNotGetValue), unique = false, indexType = IndexType.RANGE, supportPartitionedScan = true)
+        |.nodeIndexOperator("a:Label(prop > datetime('2021-01-01'))", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = Map("prop" -> GetValue), unique = false, indexType = IndexType.RANGE, supportPartitionedScan = true)
         |.build()""".stripMargin
     )
   }
@@ -2496,7 +2503,7 @@ class IndexPlanningIntegrationTest
 
     val expectedPlanBuilder = planner.planBuilder()
       .produceResults("n").withCardinality(expectedCardinality)
-      .nodeIndexOperator("n:A(a = 1, b = 2, c = 3)", supportPartitionedScan = false).withCardinality(
+      .nodeIndexOperator("n:A(a = 1, b = 2, c = 3)", _ => GetValue, supportPartitionedScan = false).withCardinality(
         expectedCardinality
       )
 
@@ -2528,7 +2535,9 @@ class IndexPlanningIntegrationTest
     val expectedPlanBuilder = planner.planBuilder()
       .produceResults("n").withCardinality(abCardinality)
       .filterExpression(andsReorderable("n.a = 1", "n.b = 2")).withCardinality(abCardinality)
-      .nodeIndexOperator("n:A(c = 3, d = 4)", supportPartitionedScan = false).withCardinality(cdCardinality)
+      .nodeIndexOperator("n:A(c = 3, d = 4)", _ => GetValue, supportPartitionedScan = false).withCardinality(
+        cdCardinality
+      )
 
     planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
   }
@@ -2567,7 +2576,9 @@ class IndexPlanningIntegrationTest
     val expectedPlanBuilder = planner.planBuilder()
       .produceResults("n").withCardinality(abcCardinality)
       .filterExpression(andsReorderable("n.a = 1", "n.b = 2")).withCardinality(abcCardinality)
-      .nodeIndexOperator("n:A(c = 3, d = 4)", supportPartitionedScan = false).withCardinality(cdCardinality)
+      .nodeIndexOperator("n:A(c = 3, d = 4)", _ => GetValue, supportPartitionedScan = false).withCardinality(
+        cdCardinality
+      )
 
     planState should haveSamePlanAndCardinalitiesAsBuilder(expectedPlanBuilder)
   }
@@ -2596,6 +2607,7 @@ class IndexPlanningIntegrationTest
       .apply().withCardinality(expectedCardinality)
       .|.nodeIndexOperator(
         "n:A(a = ???, b = 2, c = 3)",
+        _ => GetValue,
         argumentIds = Set("x"),
         paramExpr = Some(prop("x", "prop")),
         supportPartitionedScan = false
@@ -2643,6 +2655,7 @@ class IndexPlanningIntegrationTest
       .apply().withCardinality(expectedCardinality)
       .|.relationshipIndexOperator(
         "(x)-[q:REL(a = ???, b = 2, c = 3)]->(y)",
+        _ => GetValue,
         argumentIds = Set("r", "a", "b"),
         paramExpr = Some(prop("r", "prop")),
         supportPartitionedScan = false
