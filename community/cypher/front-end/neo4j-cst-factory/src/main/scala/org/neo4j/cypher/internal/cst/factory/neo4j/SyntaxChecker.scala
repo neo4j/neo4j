@@ -148,7 +148,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       if (aliasName.symbolicAliasName() != null && aliasName.symbolicAliasName().symbolicNameString().size() > 2) {
         val start = aliasName.symbolicAliasName().symbolicNameString().get(0).getStart
         errors :+= exceptionFactory.syntaxException(
-          s"'.' is not a valid character in the remote alias name '${aliasName.symbolicAliasName().symbolicNameString().asScala.map(_.getText).mkString}'. Remote alias names using '.' must be quoted with backticks e.g. `remote.alias`.",
+          s"'.' is not a valid character in the remote alias name '${aliasName.getText}'. Remote alias names using '.' must be quoted with backticks e.g. `remote.alias`.",
           inputPosition(start)
         )
       }
