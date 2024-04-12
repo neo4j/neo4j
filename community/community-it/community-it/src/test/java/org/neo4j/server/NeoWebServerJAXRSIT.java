@@ -23,14 +23,18 @@ import static java.net.http.HttpClient.Redirect.NORMAL;
 import static java.net.http.HttpClient.newBuilder;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import org.apache.commons.codec.binary.Base64;
 import org.dummy.web.service.DummyThirdPartyWebService;
+import org.eclipse.jetty.http.HttpHeader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
@@ -63,6 +67,51 @@ class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase {
         var httpClient = HttpClient.newBuilder().followRedirects(NORMAL).build();
         var response = httpClient.send(request, discarding());
         assertEquals(200, response.statusCode());
+    }
+
+    @Test
+    void shouldRequireAuthIfEnabled() throws Exception {
+        testWebContainer = CommunityWebContainerBuilder.serverOnRandomPorts()
+                .withProperty(GraphDatabaseSettings.auth_enabled.name(), "true")
+                .withThirdPartyJaxRsPackage(
+                        "org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
+                .build();
+
+        var httpClient = newBuilder().followRedirects(NORMAL).build();
+
+        var thirdPartyServiceUri = new URI(
+                        testWebContainer.getBaseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
+                .normalize();
+
+        var request = HttpRequest.newBuilder(thirdPartyServiceUri).GET().build();
+        var response = httpClient.send(request, ofString());
+        assertThat(response.statusCode()).isEqualTo(401);
+    }
+
+    @Test
+    void shouldSuccessfullyAuthenticate() throws Exception {
+        testWebContainer = CommunityWebContainerBuilder.serverOnRandomPorts()
+                .withProperty(GraphDatabaseSettings.auth_enabled.name(), "true")
+                .withThirdPartyJaxRsPackage(
+                        "org.dummy.web.service", DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
+                .usingDataDir(
+                        testDirectory.directory(methodName).toAbsolutePath().toString())
+                .build();
+
+        var httpClient = newBuilder().followRedirects(NORMAL).build();
+
+        var thirdPartyServiceUri = new URI(
+                        testWebContainer.getBaseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT)
+                .normalize();
+
+        var request = HttpRequest.newBuilder(thirdPartyServiceUri)
+                .header(HttpHeader.AUTHORIZATION.name(), "Basic " + Base64.encodeBase64String("neo4j:neo4j".getBytes()))
+                .GET()
+                .build();
+        var response = httpClient.send(request, ofString());
+        assertThat(response.statusCode()).isEqualTo(200);
     }
 
     @Test

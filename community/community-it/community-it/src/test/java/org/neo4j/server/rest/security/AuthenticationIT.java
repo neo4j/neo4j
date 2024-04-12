@@ -177,6 +177,20 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
     }
 
     @Test
+    void should404IfEndpointDoesNotExist() throws Exception {
+        // Given
+        startServerWithConfiguredUser();
+
+        assertEquals(
+                404,
+                HTTP.GET(testWebContainer
+                                .getBaseUri()
+                                .resolve("this/does/not/exist")
+                                .toString())
+                        .status());
+    }
+
+    @Test
     void shouldNotAllowAnotherUserToAccessTransaction() throws Exception {
         // Given
         startServerWithConfiguredUser();
@@ -278,12 +292,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         while (System.currentTimeMillis() < timeout) {
             // Done in a loop because we're racing with the clock to get enough failed requests into 5 seconds
             response = HTTP.withBasicAuth("neo4j", "incorrect")
-                    .POST(
-                            testWebContainer
-                                    .getBaseUri()
-                                    .resolve("authentication")
-                                    .toString(),
-                            HTTP.RawPayload.quotedJson("{'username':'neo4j', 'password':'something that is wrong'}"));
+                    .POST(txCommitURL(), RawPayload.quotedJson("{'statements':[{'statement':'MATCH (n) RETURN n'}]}"));
 
             if (response.status() == 429) {
                 break;
