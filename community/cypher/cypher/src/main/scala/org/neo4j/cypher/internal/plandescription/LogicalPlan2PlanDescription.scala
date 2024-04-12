@@ -501,7 +501,7 @@ case class LogicalPlan2PlanDescription(
             )}${negativeLabels.map(l => pretty"!${asPrettyString(l.name)}").mkPrettyString("&")}"
         PlanDescriptionImpl(
           id,
-          "SubtractionNodeByLabelsScan",
+          "PartitionedSubtractionNodeByLabelsScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,

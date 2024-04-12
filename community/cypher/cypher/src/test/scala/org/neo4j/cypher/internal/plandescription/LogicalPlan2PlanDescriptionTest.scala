@@ -299,6 +299,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTy
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedSubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnionNodeByLabelsScan
@@ -957,6 +958,27 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         NoChildren,
         Seq(details(s"${anonVar("123")}:A&B&C&!X&!Y&!Z")),
         Set(anonVar("123"))
+      )
+    )
+  }
+
+  test("PartitionedSubtractionNodeByLabelScan") {
+    assertGood(
+      attach(
+        PartitionedSubtractionNodeByLabelsScan(
+          varFor("node"),
+          Seq(label("A"), label("B"), label("C")),
+          Seq(label("X"), label("Y"), label("Z")),
+          Set.empty
+        ),
+        33.0
+      ),
+      planDescription(
+        id,
+        "PartitionedSubtractionNodeByLabelsScan",
+        NoChildren,
+        Seq(details("node:A&B&C&!X&!Y&!Z")),
+        Set("node")
       )
     )
   }
