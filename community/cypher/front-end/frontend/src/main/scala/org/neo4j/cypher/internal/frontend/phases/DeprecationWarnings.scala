@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -44,7 +46,7 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
   private def findDeprecations(statement: Statement): Set[InternalNotification] =
     statement.folder.treeFold(Set.empty[InternalNotification]) {
       case f @ ResolvedCall(
-          ProcedureSignature(name, inputFields, _, Some(deprecatedBy), _, _, _, _, _, _, _, _),
+          ProcedureSignature(name, inputFields, _, Some(DeprecationInfo(true, deprecatedBy)), _, _, _, _, _, _, _, _),
           _,
           _,
           _,
@@ -59,7 +61,7 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
               + DeprecatedProcedureNotification(f.position, name.toString, deprecatedBy)
           )
       case f @ ResolvedCall(
-          ProcedureSignature(name, inputFields, _, None, _, _, _, _, _, _, _, _),
+          ProcedureSignature(name, inputFields, _, _, _, _, _, _, _, _, _, _),
           _,
           _,
           _,
@@ -74,7 +76,7 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
           )
       case f @ ResolvedFunctionInvocation(
           _,
-          Some(UserFunctionSignature(name, inputFields, _, Some(deprecatedBy), _, _, _, _, _)),
+          Some(UserFunctionSignature(name, inputFields, _, Some(DeprecationInfo(true, deprecatedBy)), _, _, _, _, _)),
           _
         ) =>
         seq =>
@@ -87,13 +89,26 @@ case object ProcedureAndFunctionDeprecationWarnings extends VisitorPhase[BaseCon
           ))
       case f @ ResolvedFunctionInvocation(
           name,
-          Some(UserFunctionSignature(_, inputFields, _, None, _, _, _, _, _)),
+          Some(UserFunctionSignature(_, inputFields, _, _, _, _, _, _, _)),
           _
         ) if inputFields.exists(_.deprecated) =>
         seq =>
           SkipChildren(seq ++ inputFields.filter(_.deprecated).map(inputField =>
             DeprecatedFunctionFieldNotification(f.position, name.toString, inputField.name)
           ).toSet)
+      case f: FunctionInvocation =>
+        val deprecationWarnings: Seq[DeprecatedFunctionNotification] = f.function.signatures.filter {
+          case FunctionTypeSignature(_, _, _, _, _, argumentTypes, _, deprecated, _, _, _, _) =>
+            deprecated && argumentTypes.length == f.arguments.length
+          case _ => false
+        }.map(_.asInstanceOf[FunctionTypeSignature]).map(fts =>
+          DeprecatedFunctionNotification(
+            f.position,
+            f.function.name,
+            fts.deprecatedBy
+          )
+        )
+        seq => SkipChildren(seq ++ deprecationWarnings.toSet)
       case _: UnresolvedCall =>
         throw new InternalException("Expected procedures to have been resolved already")
     }
@@ -117,7 +132,7 @@ case object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
     statement.folder.treeFold(Set.empty[InternalNotification]) {
       case f @ ResolvedCall(ProcedureSignature(name, _, _, _, _, _, Some(warning), _, _, _, _, _), _, _, _, _, _) =>
         seq => SkipChildren(seq + ProcedureWarningNotification(f.position, name.toString, warning))
-      case ResolvedCall(ProcedureSignature(name, _, Some(output), None, _, _, _, _, _, _, _, _), _, results, _, _, _)
+      case ResolvedCall(ProcedureSignature(name, _, Some(output), _, _, _, _, _, _, _, _, _), _, results, _, _, _)
         if output.exists(_.deprecated) =>
         set => SkipChildren(set ++ usedDeprecatedFields(name.toString, results, output))
       case _: UnresolvedCall =>

@@ -52,6 +52,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util.Optional
+
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 
@@ -71,6 +73,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     new QualifiedName(List.empty[String].asJava, "func1"),
     List.empty[FieldSignature].asJava,
     NTString,
+    false,
     null,
     "Built-in non-aggregating function",
     Category.STRING,
@@ -84,6 +87,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     new QualifiedName(List.empty[String].asJava, "func2"),
     List(FieldSignature.inputField("input", NTAny)).asJava,
     NTBoolean,
+    false,
     null,
     "Built-in aggregating function",
     Category.AGGREGATING,
@@ -100,6 +104,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       FieldSignature.inputField("booleanInput", NTBoolean)
     ).asJava,
     NTMap,
+    false,
     null,
     "User-defined non-aggregating function",
     Category.NUMERIC,
@@ -115,6 +120,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       FieldSignature.inputField("input", NTDuration)
     ).asJava,
     NTInteger,
+    false,
     null,
     "User-defined aggregating function",
     Category.AGGREGATING,
@@ -628,6 +634,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       new QualifiedName(List("internal").asJava, "func"),
       List.empty[FieldSignature].asJava,
       NTString,
+      false,
       null,
       "Internal function",
       Category.STRING,
@@ -640,6 +647,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       new QualifiedName(List("internal.aggregating").asJava, "func"),
       List.empty[FieldSignature].asJava,
       NTString,
+      false,
       null,
       "Internal aggregating function",
       Category.STRING,
@@ -669,7 +677,21 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       new QualifiedName(List("deprecated").asJava, "func"),
       List.empty[FieldSignature].asJava,
       NTString,
+      true,
       "I'm deprecated",
+      "Deprecated function",
+      Category.STRING,
+      true,
+      true,
+      false,
+      false
+    )
+    val deprecatedFuncWithoutReplacement = new UserFunctionSignature(
+      new QualifiedName(List("deprecatedWithoutReplacement").asJava, "func"),
+      List.empty[FieldSignature].asJava,
+      NTString,
+      true,
+      null,
       "Deprecated function",
       Category.STRING,
       true,
@@ -681,7 +703,21 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       new QualifiedName(List("deprecated.aggregating").asJava, "func"),
       List.empty[FieldSignature].asJava,
       NTString,
+      true,
       "I'm deprecated",
+      "Deprecated aggregating function",
+      Category.STRING,
+      true,
+      false,
+      false,
+      false
+    )
+    val deprecatedAggregatingFuncWithoutReplacement = new UserFunctionSignature(
+      new QualifiedName(List("deprecatedWithoutReplacement.aggregating").asJava, "func"),
+      List.empty[FieldSignature].asJava,
+      NTString,
+      true,
+      null,
       "Deprecated aggregating function",
       Category.STRING,
       true,
@@ -699,8 +735,11 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       arguments = List.empty,
       deprecated = true
     )
-    when(procedures.functionGetAll()).thenReturn(List(deprecatedFunc).asJava.stream())
-    when(procedures.aggregationFunctionGetAll()).thenReturn(List(deprecatedAggregatingFunc).asJava.stream())
+    when(procedures.functionGetAll()).thenReturn(List(deprecatedFunc, deprecatedFuncWithoutReplacement).asJava.stream())
+    when(procedures.aggregationFunctionGetAll()).thenReturn(List(
+      deprecatedAggregatingFunc,
+      deprecatedAggregatingFuncWithoutReplacement
+    ).asJava.stream())
     when(ctx.providedLanguageFunctions).thenReturn(List(deprecatedLanguageFunction))
 
     // When
@@ -709,7 +748,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 3
+    result should have size 5
     checkResult(
       result.head,
       name = "deprecated.aggregating.func",
@@ -726,6 +765,18 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       result(2),
       name = "deprecated.language",
       signature = "deprecated.language() :: INTEGER",
+      isDeprecated = true
+    )
+    checkResult(
+      result(3),
+      name = "deprecatedWithoutReplacement.aggregating.func",
+      signature = "deprecatedWithoutReplacement.aggregating.func() :: STRING",
+      isDeprecated = true
+    )
+    checkResult(
+      result(4),
+      name = "deprecatedWithoutReplacement.func",
+      signature = "deprecatedWithoutReplacement.func() :: STRING",
       isDeprecated = true
     )
   }
@@ -1172,7 +1223,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     aggregating: Boolean,
     output: String,
     arguments: List[InputInformation],
-    deprecated: Boolean = false
+    deprecated: Boolean = false,
+    deprecatedByString: Optional[String] = Optional.empty()
   ) extends FunctionInformation {
     override def getFunctionName: String = name
 
@@ -1185,6 +1237,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     override def isAggregationFunction: java.lang.Boolean = aggregating
 
     override def isDeprecated: java.lang.Boolean = deprecated
+
+    override def deprecatedBy: Optional[String] = deprecatedByString
 
     override def returnType(): String = output
 

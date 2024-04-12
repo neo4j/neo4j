@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi
 
+import org.neo4j.cypher.internal.frontend.phases.DeprecationInfo
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureAccessMode
 import org.neo4j.cypher.internal.frontend.phases.ProcedureDbmsAccess
@@ -125,7 +126,7 @@ object procsHelpers {
           FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated, sensitive = s.isSensitive)
         ).toIndexedSeq
       )
-    val deprecationInfo = asOption(signature.deprecated())
+    val deprecatedBy = asOption(signature.deprecated())
     val mode = asCypherProcMode(signature.mode())
     val description = asOption(signature.description())
     val warning = asOption(signature.warning())
@@ -135,7 +136,7 @@ object procsHelpers {
       name,
       input,
       output,
-      deprecationInfo,
+      Some(DeprecationInfo(signature.isDeprecated, deprecatedBy)),
       mode,
       description,
       warning,

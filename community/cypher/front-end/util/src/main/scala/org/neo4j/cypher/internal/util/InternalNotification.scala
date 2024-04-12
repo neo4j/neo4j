@@ -89,7 +89,7 @@ case class CartesianProductNotification(position: InputPosition, isolatedVariabl
 
 case class UnboundedShortestPathNotification(position: InputPosition, pattern: String) extends InternalNotification
 
-case class DeprecatedFunctionNotification(position: InputPosition, oldName: String, newName: String)
+case class DeprecatedFunctionNotification(position: InputPosition, oldName: String, newName: Option[String])
     extends InternalNotification
 
 case class DeprecatedRelTypeSeparatorNotification(

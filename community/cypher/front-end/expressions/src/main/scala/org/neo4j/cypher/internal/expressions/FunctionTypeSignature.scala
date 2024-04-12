@@ -42,6 +42,7 @@ case class FunctionTypeSignature(
   argumentTypes: IndexedSeq[CypherType],
   optionalTypes: IndexedSeq[CypherType] = Vector.empty,
   deprecated: Boolean = false,
+  deprecatedBy: Option[String] = None,
   internal: Boolean = false,
   overrideDefaultAsString: Option[String] = None,
   overriddenArgumentTypeName: Option[Map[String, String]] = None
@@ -66,23 +67,6 @@ case class FunctionTypeSignature(
 }
 
 object TypeSignature {
-
-  def deprecated(
-    function: Function,
-    argumentType: CypherType,
-    outputType: CypherType,
-    description: String,
-    category: String
-  ) =
-    FunctionTypeSignature(
-      function,
-      outputType,
-      Vector("input"),
-      description,
-      category,
-      Vector(argumentType),
-      deprecated = true
-    )
 
   def apply(
     function: Function,

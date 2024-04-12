@@ -41,6 +41,7 @@ public class ProcedureSignature {
     private final List<FieldSignature> outputSignature;
     private final Mode mode;
     private final boolean admin;
+    private final boolean isDeprecated;
     private final String deprecated;
     private final String description;
     private final String warning;
@@ -74,6 +75,7 @@ public class ProcedureSignature {
                 outputSignature,
                 mode,
                 admin,
+                deprecated != null && !deprecated.isEmpty(),
                 deprecated,
                 description,
                 warning,
@@ -85,6 +87,8 @@ public class ProcedureSignature {
                 true);
     }
 
+    @Deprecated(forRemoval = true)
+    @SuppressWarnings("unused")
     public ProcedureSignature(
             QualifiedName name,
             List<FieldSignature> inputSignature,
@@ -100,12 +104,47 @@ public class ProcedureSignature {
             boolean internal,
             boolean allowExpiredCredentials,
             boolean threadSafe) {
+        this(
+                name,
+                inputSignature,
+                outputSignature,
+                mode,
+                admin,
+                deprecated != null && !deprecated.isEmpty(),
+                deprecated,
+                description,
+                warning,
+                eager,
+                caseInsensitive,
+                systemProcedure,
+                internal,
+                allowExpiredCredentials,
+                threadSafe);
+    }
+
+    public ProcedureSignature(
+            QualifiedName name,
+            List<FieldSignature> inputSignature,
+            List<FieldSignature> outputSignature,
+            Mode mode,
+            boolean admin,
+            boolean isDeprecated,
+            String deprecatedBy,
+            String description,
+            String warning,
+            boolean eager,
+            boolean caseInsensitive,
+            boolean systemProcedure,
+            boolean internal,
+            boolean allowExpiredCredentials,
+            boolean threadSafe) {
         this.name = name;
         this.inputSignature = unmodifiableList(inputSignature);
         this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList(outputSignature);
         this.mode = mode;
         this.admin = admin;
-        this.deprecated = deprecated;
+        this.isDeprecated = isDeprecated || (deprecatedBy != null && !deprecatedBy.isEmpty());
+        this.deprecated = deprecatedBy;
         this.description = description;
         this.warning = warning;
         this.eager = eager;
@@ -126,6 +165,10 @@ public class ProcedureSignature {
 
     public boolean admin() {
         return admin;
+    }
+
+    public boolean isDeprecated() {
+        return isDeprecated;
     }
 
     public Optional<String> deprecated() {
@@ -213,6 +256,7 @@ public class ProcedureSignature {
         private final List<FieldSignature> inputSignature = new ArrayList<>();
         private List<FieldSignature> outputSignature = new ArrayList<>();
         private Mode mode = Mode.READ;
+        private Boolean isDeprecated = false;
         private String deprecated;
         private String description;
         private String warning;
@@ -238,7 +282,13 @@ public class ProcedureSignature {
             return this;
         }
 
+        public Builder isDeprecated(Boolean isDeprecated) {
+            this.isDeprecated = isDeprecated;
+            return this;
+        }
+
         public Builder deprecatedBy(String deprecated) {
+            this.isDeprecated = deprecated != null && !deprecated.isEmpty();
             this.deprecated = deprecated;
             return this;
         }
@@ -312,6 +362,7 @@ public class ProcedureSignature {
                     outputSignature,
                     mode,
                     admin,
+                    isDeprecated || (deprecated != null && !deprecated.isEmpty()),
                     deprecated,
                     description,
                     warning,

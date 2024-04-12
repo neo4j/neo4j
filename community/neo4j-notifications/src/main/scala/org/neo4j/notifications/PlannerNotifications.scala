@@ -57,7 +57,7 @@ case class MissingPropertyNameNotification(position: InputPosition, name: String
 case class ExhaustiveShortestPathForbiddenNotification(position: InputPosition, pathPredicates: Set[String])
     extends InternalNotification
 
-case class DeprecatedProcedureNotification(position: InputPosition, oldName: String, newName: String)
+case class DeprecatedProcedureNotification(position: InputPosition, oldName: String, newName: Option[String])
     extends InternalNotification
 
 case class ProcedureWarningNotification(position: InputPosition, procedure: String, warning: String)

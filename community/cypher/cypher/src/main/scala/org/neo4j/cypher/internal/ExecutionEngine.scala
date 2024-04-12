@@ -49,6 +49,7 @@ import org.neo4j.values.virtual.MapValue
 
 import java.lang
 import java.time.Clock
+import java.util.Optional
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
@@ -431,6 +432,8 @@ case class FunctionWithInformation(f: FunctionTypeSignature) extends FunctionInf
   override def isAggregationFunction: lang.Boolean = f.isAggregationFunction
 
   override def isDeprecated: lang.Boolean = f.deprecated
+
+  override def deprecatedBy: java.util.Optional[lang.String] = Optional.ofNullable(f.deprecatedBy.orNull)
 
   override def returnType: String = f.outputType.normalizedCypherTypeString()
 

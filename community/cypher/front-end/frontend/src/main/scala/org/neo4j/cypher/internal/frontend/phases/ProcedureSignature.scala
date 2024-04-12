@@ -26,7 +26,7 @@ case class ProcedureSignature(
   name: QualifiedName,
   inputSignature: IndexedSeq[FieldSignature],
   outputSignature: Option[IndexedSeq[FieldSignature]],
-  deprecationInfo: Option[String],
+  deprecationInfo: Option[DeprecationInfo],
   accessMode: ProcedureAccessMode,
   description: Option[String] = None,
   warning: Option[String] = None,
@@ -51,7 +51,7 @@ case class UserFunctionSignature(
   name: QualifiedName,
   inputSignature: IndexedSeq[FieldSignature],
   outputType: CypherType,
-  deprecationInfo: Option[String],
+  deprecationInfo: Option[DeprecationInfo],
   description: Option[String],
   isAggregate: Boolean,
   id: Int,
@@ -94,6 +94,11 @@ case class FieldSignature(
     case _        => any.toString
   }
 }
+
+case class DeprecationInfo(
+  isDeprecated: Boolean = false,
+  deprecatedBy: Option[String] = None
+)
 
 sealed trait ProcedureAccessMode
 case object ProcedureReadOnlyAccess extends ProcedureAccessMode

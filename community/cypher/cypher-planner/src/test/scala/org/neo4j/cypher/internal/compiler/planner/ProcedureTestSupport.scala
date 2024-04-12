@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport.FunctionSignatureBuilder
 import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport.ProcedureSignatureBuilder
+import org.neo4j.cypher.internal.frontend.phases.DeprecationInfo
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureAccessMode
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
@@ -61,7 +62,7 @@ object ProcedureTestSupport {
         name = QualifiedName(splitName.init.toSeq, splitName.last),
         inputSignature = inputSignature,
         outputSignature = outputSignature,
-        deprecationInfo = deprecationInfo,
+        deprecationInfo = Some(DeprecationInfo(deprecationInfo.isDefined, deprecationInfo)),
         accessMode = accessMode,
         id = 1
       )
@@ -89,7 +90,7 @@ object ProcedureTestSupport {
         name = QualifiedName(splitName.init.toSeq, splitName.last),
         inputSignature = inputSignature,
         outputType = outputType,
-        deprecationInfo = deprecationInfo,
+        deprecationInfo = Some(DeprecationInfo(deprecationInfo.isDefined, deprecationInfo)),
         description = None,
         isAggregate = isAggregate,
         id = 1,

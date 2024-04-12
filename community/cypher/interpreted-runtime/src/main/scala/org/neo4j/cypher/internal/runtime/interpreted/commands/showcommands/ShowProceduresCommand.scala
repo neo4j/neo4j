@@ -157,7 +157,7 @@ case class ShowProceduresCommand(
       // List of roles that can execute the procedure with boosted privileges
       case `rolesBoostedExecutionColumn` => rolesBoostedExecutionColumn -> boostedRolesList
       // Tells if the procedure is deprecated
-      case `isDeprecatedColumn` => isDeprecatedColumn -> Values.booleanValue(proc.deprecated().isPresent)
+      case `isDeprecatedColumn` => isDeprecatedColumn -> Values.booleanValue(proc.isDeprecated)
       // Additional output, for example if the procedure is deprecated
       case `optionColumn` => optionColumn -> getOptionValue(proc)
       case unknown        =>
@@ -172,7 +172,7 @@ case class ShowProceduresCommand(
 
   private def getOptionValue(proc: ProcedureSignature): MapValue = {
     val keys = Array("deprecated")
-    val values: Array[AnyValue] = Array(Values.booleanValue(proc.deprecated().isPresent))
+    val values: Array[AnyValue] = Array(Values.booleanValue(proc.isDeprecated))
 
     VirtualValues.map(keys, values)
   }

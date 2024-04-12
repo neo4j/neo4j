@@ -223,7 +223,8 @@ case class ShowFunctionsCommand(
     argDescr: List[InputInformation],
     retDescr: String,
     aggregating: Boolean,
-    deprecated: Boolean
+    deprecated: Boolean,
+    deprecatedBy: Option[String]
   )
 
   private object FunctionInfo {
@@ -236,7 +237,8 @@ case class ShowFunctionsCommand(
       val isBuiltIn = info.isBuiltIn
       val argumentDescr = ShowProcFuncCommandHelper.getSignatureValues(info.inputSignature())
       val returnDescr = info.outputType.toString
-      val deprecated = info.deprecated().isPresent
+      val deprecated = info.isDeprecated
+      val deprecatedBy = if (info.deprecated().isEmpty) None else Some(info.deprecated().get)
       FunctionInfo(
         name,
         category,
@@ -246,7 +248,8 @@ case class ShowFunctionsCommand(
         argumentDescr,
         returnDescr,
         aggregating,
-        deprecated
+        deprecated,
+        deprecatedBy
       )
     }
 
@@ -259,6 +262,7 @@ case class ShowFunctionsCommand(
       val argumentDescr = info.inputSignature.asScala.toList
       val returnDescr = info.returnType
       val deprecated = info.isDeprecated
+      val deprecatedBy = if (info.deprecatedBy.isEmpty) None else Some(info.deprecatedBy.get)
       FunctionInfo(
         name,
         category,
@@ -268,7 +272,8 @@ case class ShowFunctionsCommand(
         argumentDescr,
         returnDescr,
         aggregating,
-        deprecated
+        deprecated,
+        deprecatedBy
       )
     }
   }

@@ -145,7 +145,7 @@ object NotificationWrapping {
         NotificationDetail.commaSeparated(pathPredicates.asJava)
       )
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
-      if (newName == null || newName.trim.isEmpty)
+      if (newName.isEmpty || newName.get.trim.isEmpty)
         NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement(
           pos.withOffset(offset).asInputPosition,
           NotificationDetail.deprecatedName(oldName),
@@ -154,12 +154,12 @@ object NotificationWrapping {
       else
         NotificationCodeWithDescription.deprecatedFunctionWithReplacement(
           pos.withOffset(offset).asInputPosition,
-          NotificationDetail.deprecatedName(oldName, newName),
+          NotificationDetail.deprecatedName(oldName, newName.get),
           oldName,
-          newName
+          newName.get
         )
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
-      if (newName == null || newName.trim.isEmpty)
+      if (newName.isEmpty || newName.get.trim.isEmpty)
         NotificationCodeWithDescription.deprecatedProcedureWithoutReplacement(
           pos.withOffset(offset).asInputPosition,
           NotificationDetail.deprecatedName(oldName),
@@ -168,9 +168,9 @@ object NotificationWrapping {
       else
         NotificationCodeWithDescription.deprecatedProcedureWithReplacement(
           pos.withOffset(offset).asInputPosition,
-          NotificationDetail.deprecatedName(oldName, newName),
+          NotificationDetail.deprecatedName(oldName, newName.get),
           oldName,
-          newName
+          newName.get
         )
     case DeprecatedProcedureReturnFieldNotification(pos, procedure, field) =>
       NotificationCodeWithDescription.deprecatedProcedureReturnField(

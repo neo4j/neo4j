@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
+import org.neo4j.cypher.internal.frontend.phases.DeprecationInfo
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
@@ -108,14 +109,14 @@ object TransactionBoundPlanContext {
         )
         .toIndexedSeq
       val output = asCypherType(signature.outputType())
-      val deprecationInfo = asOption(signature.deprecated())
+      val deprecatedBy = asOption(signature.deprecated())
       val description = asOption(signature.description())
 
       Some(UserFunctionSignature(
         name,
         input,
         output,
-        deprecationInfo,
+        Some(DeprecationInfo(signature.isDeprecated, deprecatedBy)),
         description,
         isAggregate = aggregation,
         id = fcn.id(),

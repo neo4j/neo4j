@@ -36,6 +36,7 @@ public final class UserFunctionSignature {
     private final QualifiedName name;
     private final List<FieldSignature> inputSignature;
     private final Neo4jTypes.AnyType type;
+    private final boolean isDeprecated;
     private final String deprecated;
     private final String description;
     private final String category;
@@ -44,6 +45,8 @@ public final class UserFunctionSignature {
     private final boolean internal;
     private final boolean threadSafe;
 
+    @Deprecated(forRemoval = true)
+    @SuppressWarnings("unused")
     public UserFunctionSignature(
             QualifiedName name,
             List<FieldSignature> inputSignature,
@@ -55,10 +58,37 @@ public final class UserFunctionSignature {
             boolean isBuiltIn,
             boolean internal,
             boolean threadSafe) {
+        this(
+                name,
+                inputSignature,
+                type,
+                deprecated != null && !deprecated.isEmpty(),
+                deprecated,
+                description,
+                category,
+                caseInsensitive,
+                isBuiltIn,
+                internal,
+                threadSafe);
+    }
+
+    public UserFunctionSignature(
+            QualifiedName name,
+            List<FieldSignature> inputSignature,
+            Neo4jTypes.AnyType type,
+            boolean isDeprecated,
+            String deprecatedBy,
+            String description,
+            String category,
+            boolean caseInsensitive,
+            boolean isBuiltIn,
+            boolean internal,
+            boolean threadSafe) {
         this.name = name;
         this.inputSignature = unmodifiableList(inputSignature);
         this.type = type;
-        this.deprecated = deprecated;
+        this.isDeprecated = isDeprecated || (deprecatedBy != null && !deprecatedBy.isEmpty());
+        this.deprecated = deprecatedBy;
         this.description = description;
         this.category = category;
         this.caseInsensitive = caseInsensitive;
@@ -69,6 +99,10 @@ public final class UserFunctionSignature {
 
     public QualifiedName name() {
         return name;
+    }
+
+    public boolean isDeprecated() {
+        return isDeprecated;
     }
 
     public Optional<String> deprecated() {
@@ -136,6 +170,7 @@ public final class UserFunctionSignature {
         private final QualifiedName name;
         private final List<FieldSignature> inputSignature = new LinkedList<>();
         private Neo4jTypes.AnyType outputType;
+        private boolean isDeprecated = false;
         private String deprecated;
         private String description;
         private String category;
@@ -150,8 +185,14 @@ public final class UserFunctionSignature {
             return this;
         }
 
-        public Builder category(String category) {
-            this.category = category;
+        public Builder category(boolean isDeprecated) {
+            this.isDeprecated = isDeprecated;
+            return this;
+        }
+
+        public Builder deprecated(String deprecated) {
+            this.isDeprecated = deprecated != null && !deprecated.isEmpty();
+            this.deprecated = deprecated;
             return this;
         }
 
@@ -190,6 +231,7 @@ public final class UserFunctionSignature {
                     name,
                     inputSignature,
                     outputType,
+                    isDeprecated || (deprecated != null && !deprecated.isEmpty()),
                     deprecated,
                     description,
                     category,

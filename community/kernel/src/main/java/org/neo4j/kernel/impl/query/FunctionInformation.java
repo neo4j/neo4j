@@ -34,6 +34,8 @@ public interface FunctionInformation {
 
     java.lang.Boolean isDeprecated();
 
+    Optional<java.lang.String> deprecatedBy();
+
     String returnType();
 
     java.util.List<InputInformation> inputSignature();

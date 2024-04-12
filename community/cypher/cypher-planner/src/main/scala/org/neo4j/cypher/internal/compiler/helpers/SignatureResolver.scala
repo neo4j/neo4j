@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.frontend.phases.DeprecationInfo
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureAccessMode
 import org.neo4j.cypher.internal.frontend.phases.ProcedureDbmsAccess
@@ -96,6 +97,7 @@ object SignatureResolver {
 
   def toCypherProcedure(handle: ProcedureHandle): ProcedureSignature = {
     val signature = handle.signature()
+    val deprecatedBy: Option[String] = signature.deprecated().asScala
     ProcedureSignature(
       name = asCypherQualifiedName(signature.name()),
       inputSignature = signature.inputSignature().asScala.toIndexedSeq.map(s =>
@@ -118,7 +120,7 @@ object SignatureResolver {
               deprecated = s.isDeprecated
             )
           )),
-      deprecationInfo = signature.deprecated().asScala,
+      deprecationInfo = Some(DeprecationInfo(signature.isDeprecated, deprecatedBy)),
       accessMode = asCypherProcMode(signature.mode()),
       description = signature.description().asScala,
       warning = signature.warning().asScala,
@@ -132,6 +134,7 @@ object SignatureResolver {
 
   def toCypherFunction(fcn: UserFunctionHandle): UserFunctionSignature = {
     val signature = fcn.signature()
+    val deprecatedBy: Option[String] = signature.deprecated().asScala
     UserFunctionSignature(
       name = asCypherQualifiedName(signature.name()),
       inputSignature = signature.inputSignature().asScala.toIndexedSeq.map(s =>
@@ -144,7 +147,7 @@ object SignatureResolver {
         )
       ),
       outputType = asCypherType(signature.outputType()),
-      deprecationInfo = signature.deprecated().asScala,
+      deprecationInfo = Some(DeprecationInfo(signature.isDeprecated, deprecatedBy)),
       description = signature.description().asScala,
       isAggregate = false,
       id = fcn.id(),

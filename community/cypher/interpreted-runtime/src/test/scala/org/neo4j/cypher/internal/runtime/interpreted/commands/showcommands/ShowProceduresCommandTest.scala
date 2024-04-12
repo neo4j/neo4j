@@ -65,6 +65,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     List.empty[FieldSignature].asJava,
     Mode.READ,
     false,
+    false,
     null,
     "Non-admin, non-system, void read procedure without input parameters",
     null,
@@ -85,6 +86,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     ).asJava,
     Mode.WRITE,
     true,
+    false,
     null,
     "Admin, non-system, write procedure",
     null,
@@ -101,6 +103,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     List.empty[FieldSignature].asJava,
     List(FieldSignature.outputField("output", NTString)).asJava,
     Mode.DBMS,
+    false,
     false,
     null,
     "Non-admin, system, dbms procedure",
@@ -417,6 +420,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       List.empty[FieldSignature].asJava,
       Mode.READ,
       false,
+      false,
       null,
       "Internal procedure",
       null,
@@ -446,6 +450,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       List.empty[FieldSignature].asJava,
       Mode.READ,
       false,
+      true,
       "I'm deprecated",
       "Deprecated procedure",
       null,
@@ -456,17 +461,40 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       false,
       false
     )
-    when(procedures.proceduresGetAll()).thenReturn(Set(deprecatedProc).asJava)
+    val deprecatedProcWithoutReplacement = new ProcedureSignature(
+      new QualifiedName(List("proc").asJava, "deprecatedNoReplacement"),
+      List.empty[FieldSignature].asJava,
+      List.empty[FieldSignature].asJava,
+      Mode.READ,
+      false,
+      true,
+      null,
+      "Deprecated procedure",
+      null,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    )
+    when(procedures.proceduresGetAll()).thenReturn(Set(deprecatedProc, deprecatedProcWithoutReplacement).asJava)
 
     // When
     val showProcedures = ShowProceduresCommand(None, allColumns, List.empty, isCommunity = true)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 1
+    result should have size 2
     checkResult(
       result.head,
       name = "proc.deprecated",
+      isDeprecated = true,
+      option = Map("deprecated" -> Values.TRUE)
+    )
+    checkResult(
+      result(1),
+      name = "proc.deprecatedNoReplacement",
       isDeprecated = true,
       option = Map("deprecated" -> Values.TRUE)
     )

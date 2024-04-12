@@ -276,8 +276,11 @@ class ProcedureCompiler {
                 systemProcedure && method.getAnnotation(SystemProcedure.class).allowExpiredCredentials();
         boolean internal = method.isAnnotationPresent(Internal.class);
         boolean threadSafe = !method.isAnnotationPresent(NotThreadSafe.class);
+        boolean isDeprecated = method.isAnnotationPresent(Deprecated.class);
         String deprecated = deprecated(
-                method, procedure::deprecatedBy, "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName);
+                procedure::deprecatedBy,
+                "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName,
+                isDeprecated);
 
         List<FieldSetter> setters = allFieldInjections.setters(procDefinition);
         if (!fullAccess && !config.fullAccessFor(procName.toString())) {
@@ -291,7 +294,8 @@ class ProcedureCompiler {
                         outputSignature,
                         Mode.DEFAULT,
                         admin,
-                        null,
+                        isDeprecated,
+                        deprecated,
                         description,
                         null,
                         procedure.eager(),
@@ -310,6 +314,7 @@ class ProcedureCompiler {
                 outputSignature,
                 mode,
                 admin,
+                isDeprecated,
                 deprecated,
                 description,
                 null,
@@ -361,10 +366,11 @@ class ProcedureCompiler {
         UserFunction function = method.getAnnotation(UserFunction.class);
         boolean internal = method.isAnnotationPresent(Internal.class);
         boolean threadSafe = !method.isAnnotationPresent(NotThreadSafe.class);
+        boolean isDeprecated = method.isAnnotationPresent(Deprecated.class);
         String deprecated = deprecated(
-                method,
                 function::deprecatedBy,
-                "Use of @UserFunction(deprecatedBy) without @Deprecated in " + procName);
+                "Use of @UserFunction(deprecatedBy) without @Deprecated in " + procName,
+                isDeprecated);
 
         List<FieldSetter> setters = allFieldInjections.setters(procDefinition);
         if (!config.fullAccessFor(procName.toString())) {
@@ -376,6 +382,7 @@ class ProcedureCompiler {
                         procName,
                         inputSignature,
                         typeChecker.type(),
+                        isDeprecated,
                         deprecated,
                         description,
                         null,
@@ -391,6 +398,7 @@ class ProcedureCompiler {
                 procName,
                 inputSignature,
                 typeChecker.type(),
+                isDeprecated,
                 deprecated,
                 description,
                 null,
@@ -482,11 +490,11 @@ class ProcedureCompiler {
         TypeCheckers.TypeChecker valueConverter = typeCheckers.checkerFor(returnType);
         String description = description(create);
         UserAggregationFunction function = create.getAnnotation(UserAggregationFunction.class);
-
+        boolean isDeprecated = create.isAnnotationPresent(Deprecated.class);
         String deprecated = deprecated(
-                create,
                 function::deprecatedBy,
-                "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName);
+                "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName,
+                isDeprecated);
 
         boolean internal = create.isAnnotationPresent(Internal.class);
         boolean threadSafe = create.isAnnotationPresent(ThreadSafe.class);
@@ -501,6 +509,7 @@ class ProcedureCompiler {
                         funcName,
                         inputSignature,
                         valueConverter.type(),
+                        isDeprecated,
                         deprecated,
                         description,
                         null,
@@ -517,6 +526,7 @@ class ProcedureCompiler {
                 funcName,
                 inputSignature,
                 valueConverter.type(),
+                isDeprecated,
                 deprecated,
                 description,
                 null,
@@ -528,11 +538,11 @@ class ProcedureCompiler {
         return ProcedureCompilation.compileAggregation(signature, setters, create, update, result, parentClassLoader);
     }
 
-    private String deprecated(Method method, Supplier<String> supplier, String warning) {
+    private String deprecated(Supplier<String> supplier, String warning, Boolean isDeprecated) {
         String deprecatedBy = supplier.get();
         String deprecated = null;
-        if (method.isAnnotationPresent(Deprecated.class)) {
-            deprecated = deprecatedBy;
+        if (isDeprecated) {
+            deprecated = deprecatedBy.isEmpty() ? null : deprecatedBy;
         } else if (!deprecatedBy.isEmpty()) {
             log.warn(warning);
             deprecated = deprecatedBy;
