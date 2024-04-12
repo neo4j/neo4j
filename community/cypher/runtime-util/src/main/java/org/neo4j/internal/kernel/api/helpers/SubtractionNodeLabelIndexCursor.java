@@ -126,7 +126,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
             }
             negativeCursorHasData = localNegativeCursorHasData;
         }
-        return shouldContinue;
+        return false;
     }
 
     @Override
