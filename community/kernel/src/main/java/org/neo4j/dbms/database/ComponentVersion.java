@@ -34,6 +34,7 @@ public interface ComponentVersion {
             new SystemGraphComponent.Name("community-topology-graph");
     SystemGraphComponent.Name MULTI_DATABASE_COMPONENT = new SystemGraphComponent.Name("multi-database");
     SystemGraphComponent.Name DISCOVERY_COMPONENT = new SystemGraphComponent.Name("cluster-discovery");
+    SystemGraphComponent.Name SEED_SYNCING_COMPONENT = new SystemGraphComponent.Name("seed-syncing");
 
     /**
      * Get the version of the component. Component versions are expected to be ordered and the oldest version is 0.
@@ -88,5 +89,6 @@ public interface ComponentVersion {
         public static final String VERSION_516 = "Neo4j 5.16";
         public static final String VERSION_518 = "Neo4j 5.18";
         public static final String VERSION_519 = "Neo4j 5.19";
+        public static final String VERSION_520 = "Neo4j 5.20";
     }
 }

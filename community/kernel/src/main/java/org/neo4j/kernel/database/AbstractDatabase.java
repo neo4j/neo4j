@@ -112,6 +112,7 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
         this.databaseAvailabilityGuard = databaseAvailabilityGuardFactory.apply(availabilityGuardTimeout);
         this.databaseHealthFactory = databaseHealthFactory;
         this.databaseHealthFactory.newInstance();
+        this.databaseMonitors = new Monitors(parentMonitors, internalLogProvider);
     }
 
     /**
@@ -125,7 +126,6 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
         }
         try {
             databaseDependencies = new Dependencies(globalDependencies);
-            databaseMonitors = new Monitors(parentMonitors, internalLogProvider);
             life = new LifeSupport();
             databaseHealth = databaseHealthFactory.newInstance();
 
