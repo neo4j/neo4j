@@ -2975,7 +2975,7 @@ case class LogicalPlan2PlanDescription(
       case Repetition(min, Limited(n)) =>
         pretty"{${asPrettyString.raw(min.toString)}, ${asPrettyString.raw(n.toString)}}"
       case Repetition(min, Unlimited) =>
-        pretty"{${asPrettyString.raw(min.toString)}, *}"
+        pretty"{${asPrettyString.raw(min.toString)}, }"
     }
     pretty"(${asPrettyString(start.name)}) (...)$repString (${asPrettyString(end.name)})"
   }

@@ -7724,7 +7724,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "Repeat(Trail)",
         TwoChildren(lhsPD, rhsPD),
-        List(details("(start) (...){0, *} (end)")),
+        List(details("(start) (...){0, } (end)")),
         Set("r", "a", "anon_2", "start", "end")
       )
     )
@@ -7755,7 +7755,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "Repeat(Trail)",
         TwoChildren(lhsPD, rhsPD),
-        List(details("(anon_0) (...){0, *} (end)")),
+        List(details("(anon_0) (...){0, } (end)")),
         Set("r", "a", "anon_2", "anon_0", "end")
       )
     )
@@ -7797,7 +7797,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             Set("a")
           )
         ),
-        List(details("(anon_0) (...){0, *} (end)")),
+        List(details("(anon_0) (...){0, } (end)")),
         Set("r", "a", "anon_2", "anon_0", "end")
       )
     )
