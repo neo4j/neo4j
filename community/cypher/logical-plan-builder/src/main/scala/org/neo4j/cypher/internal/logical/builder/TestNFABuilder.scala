@@ -27,15 +27,14 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder.NodePredicate
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
-import org.neo4j.cypher.internal.logical.plans.NFA
-import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionTransition
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransition
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionNormalizer
@@ -78,32 +77,13 @@ object TestNFABuilder {
 /**
  * Builder used to build NFAs in test code together with an [[AbstractLogicalPlanBuilder]].
  */
-class TestNFABuilder(startStateId: Int, startStateName: String)
-    extends NFABuilder(startStateId, startStateName) {
-
-  def addTransition(from: (Int, String), to: (Int, String), nfaPredicate: NFA.Predicate): TestNFABuilder = {
-    val fromState = getOrCreateState(from._1, varFor(from._2))
-    val toState = getOrCreateState(to._1, varFor(to._2))
-    addTransition(fromState, toState, nfaPredicate)
-    this
-  }
-
-  def addTransition(
-    from: (Int, String),
-    to: (Int, String),
-    toPredicate: VariablePredicate,
-    nfaPredicate: NFA.Predicate
-  ): TestNFABuilder = {
-    val fromState = getOrCreateState(from._1, varFor(from._2))
-    val toState = getOrCreateState(to._1, varFor(to._2), Some(toPredicate))
-    addTransition(fromState, toState, nfaPredicate)
-    this
-  }
+class TestNFABuilder(startStateId: Int, startStateName: String) extends NFABuilder(startStateId, startStateName) {
 
   def addTransition(
     fromId: Int,
     toId: Int,
     pattern: String,
+    maybeRelPredicate: Option[VariablePredicate] = None,
     maybeToPredicate: Option[VariablePredicate] = None
   ): TestNFABuilder = {
 
@@ -137,7 +117,10 @@ class TestNFABuilder(startStateId: Int, startStateName: String)
           NodePredicate(toName, toNodePredicateFromRel)
         ) =>
         val types = LabelExpression.getRelTypes(relTypeExpression)
-        val relVariablePredicate = relPredicate.map(Expand.VariablePredicate(rel, _))
+        val relVariablePredicate = maybeRelPredicate match {
+          case somePred @ Some(_) => somePred
+          case None               => relPredicate.map(Expand.VariablePredicate(rel, _))
+        }
 
         val nfaPredicate = RelationshipExpansionPredicate(
           rel,
@@ -145,24 +128,29 @@ class TestNFABuilder(startStateId: Int, startStateName: String)
           types,
           direction
         )
+        val transition = RelationshipExpansionTransition(nfaPredicate, toId)
         val toNodePredicate = maybeToPredicate match {
           case somePred @ Some(_) => somePred
           case None               => toNodePredicateFromRel
         }
         val fromState = getOrCreateState(fromId, from)
         assertFromNameMatchesFromId(fromState, from.name)
-        val toState = getOrCreateState(toId, toName, toNodePredicate)
-
-        addTransition(fromState, toState, nfaPredicate)
+        getOrCreateState(toId, toName, toNodePredicate)
+        addTransition(fromState, transition)
 
       case PathConcatenation(Seq(
           NodePattern(Some(from: LogicalVariable), None, None, None),
-          NodePredicate(to, toNodePredicate)
+          NodePredicate(to, toNodePredicateFromPattern)
         )) =>
         val fromState = getOrCreateState(fromId, from)
         assertFromNameMatchesFromId(fromState, from.name)
-        val toState = getOrCreateState(toId, to, toNodePredicate)
-        addTransition(fromState, toState, NodeJuxtapositionPredicate)
+        val transition = NodeJuxtapositionTransition(toId)
+        val toNodePredicate = maybeToPredicate match {
+          case somePred @ Some(_) => somePred
+          case None               => toNodePredicateFromPattern
+        }
+        getOrCreateState(toId, to, toNodePredicate)
+        addTransition(fromState, transition)
 
       case _ => throw new IllegalArgumentException(s"Expected path pattern or two juxtaposed nodes but was: $pattern")
     }

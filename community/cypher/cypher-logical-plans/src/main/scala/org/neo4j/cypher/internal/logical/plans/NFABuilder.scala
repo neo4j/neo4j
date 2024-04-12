@@ -145,8 +145,8 @@ class NFABuilder protected (val startState: State) {
     this
   }
 
-  def addTransition(from: State, to: State, nfaPredicate: NFA.Predicate): NFABuilder = {
-    transitions.addOne(from.id -> Transition(nfaPredicate, to.id))
+  def addTransition(from: State, transition: NFA.Transition): NFABuilder = {
+    transitions.addOne(from.id -> transition)
     this
   }
 }

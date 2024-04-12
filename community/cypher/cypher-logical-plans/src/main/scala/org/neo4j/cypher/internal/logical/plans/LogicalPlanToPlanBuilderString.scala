@@ -66,10 +66,11 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
-import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
-import org.neo4j.cypher.internal.logical.plans.NFA.Predicate
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionTransition
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransition
 import org.neo4j.cypher.internal.logical.plans.NFA.State
+import org.neo4j.cypher.internal.logical.plans.NFA.Transition
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
@@ -1464,7 +1465,7 @@ object LogicalPlanToPlanBuilderString {
       s"${indent}new TestNFABuilder(${start.id}, ${wrapInQuotations(start.variable.name)})"
     val transitions = nfa.transitions.toSeq.sortBy(_._1).flatMap {
       case (from, transitions) =>
-        transitions.toSeq.sortBy(_.endId).map(t => transitionString(nfa.states(from), t.predicate, nfa.states(t.endId)))
+        transitions.toSeq.sortBy(_.endId).map(t => transitionString(nfa, nfa.states(from), t))
     }
     val finalState = s"${indent}${indent}.setFinalState(${nfa.finalState.id})"
     val build = s"${indent}${indent}.build()"
@@ -1473,15 +1474,17 @@ object LogicalPlanToPlanBuilderString {
     lines.mkString("", "\n", "\n")
   }
 
-  private def transitionString(from: State, nfaPredicate: Predicate, to: State): String = {
-    val patternString = nfaPredicate match {
-      case NodeJuxtapositionPredicate =>
+  private def transitionString(nfa: NFA, from: State, transition: Transition): String = {
+    val patternString = transition match {
+      case NodeJuxtapositionTransition(endId) =>
+        val to = nfa.states(endId)
         val whereString =
           to.predicate.map(vp =>
             s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         s""" "(${escapeIdentifier(from.variable.name)}) (${escapeIdentifier(to.variable.name)}$whereString)" """.trim
-      case RelationshipExpansionPredicate(relName, relPred, types, dir) =>
+      case RelationshipExpansionTransition(RelationshipExpansionPredicate(relName, relPred, types, dir), endId) =>
+        val to = nfa.states(endId)
         val relWhereString =
           relPred.map(vp =>
             s" WHERE ${expressionStringifier(vp.predicate)}"
@@ -1496,7 +1499,7 @@ object LogicalPlanToPlanBuilderString {
             relName.name
           )}$typeStr$relWhereString]$dirStrB(${escapeIdentifier(to.variable.name)}$nodeWhereString)" """.trim
     }
-    s"${indent}${indent}.addTransition(${from.id}, ${to.id}, $patternString)"
+    s"${indent}${indent}.addTransition(${from.id}, ${transition.endId}, $patternString)"
   }
 
   private def trailParametersString(

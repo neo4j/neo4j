@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Selector
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -2886,13 +2885,13 @@ abstract class StatefulShortestPathTestBase[CONTEXT <: RuntimeContext](
           .addTransition(1, 2, "(a_inner)-[r_inner]->(b_inner)")
           .addTransition(2, 1, "(b_inner) (a_inner)")
           .addTransition(
-            2 -> "b_inner",
-            3 -> "v_inner",
-            VariablePredicate(
+            2,
+            3,
+            "(b_inner) (v_inner)",
+            maybeToPredicate = Some(VariablePredicate(
               varFor("v_inner"),
               NestedPlanExistsExpression(npe, "EXISTS { (v_inner)-->(:N) }")(pos)
-            ),
-            NodeJuxtapositionPredicate
+            ))
           )
           .addTransition(3, 4, "(v_inner)-[`  UNNAMED22`]-(w)")
           .setFinalState(4)

@@ -347,7 +347,7 @@ object NFAToProductGraphCursorIT {
   private case class NFAStateWrapper(state: NFA.State, parent: NFABuilderWrapper) {
 
     def nodeJuxtaposition(other: NFAStateWrapper): Unit = {
-      parent.builder.addTransition(state, other.state, NFA.NodeJuxtapositionPredicate)
+      parent.builder.addTransition(state, NFA.NodeJuxtapositionTransition(other.state.id))
     }
 
     def relExpansion(
@@ -358,12 +358,14 @@ object NFAToProductGraphCursorIT {
     ): Unit = {
       parent.builder.addTransition(
         state,
-        other.state,
-        NFA.RelationshipExpansionPredicate(
-          parent.nextName("r"),
-          predicate,
-          types.map(RelTypeName(_)(InputPosition.NONE)),
-          dir
+        NFA.RelationshipExpansionTransition(
+          NFA.RelationshipExpansionPredicate(
+            parent.nextName("r"),
+            predicate,
+            types.map(RelTypeName(_)(InputPosition.NONE)),
+            dir
+          ),
+          other.state.id
         )
       )
     }

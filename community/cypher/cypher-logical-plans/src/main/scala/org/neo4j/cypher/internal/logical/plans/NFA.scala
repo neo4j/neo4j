@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
-import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransition
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFA.Transition
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -53,29 +53,59 @@ object NFA {
     }
   }
 
+  object Transition {
+
+    /**
+     * Extract the endId
+     */
+    def unapply(t: Transition): Some[Int] = Some(t.endId)
+  }
+
   /**
-   * A predicate that dictates whether a transition may be applied.
+   * A (potentially conditional) transition between two states.
+   * The start state is omitted, since it is the map key in the [[NFA.transitions]] map.
    */
-  sealed trait Predicate {
-    def variable: Option[LogicalVariable]
+  sealed trait Transition {
+
+    /**
+     * The end state of this transition.
+     */
+    val endId: Int
+
+    /**
+     * The variable of the predicate, for conditional transitions.
+     * @return
+     */
+    def predicateVariable: Option[LogicalVariable]
+
     def toDotString: String
   }
 
   /**
-   * This predicate is used when two nodes are juxtaposed in a pattern, e.g.
-   * {{{(a) (b)}}}
+   * A node juxtaposition transition. This transition is unconditional.
    */
-  object NodeJuxtapositionPredicate extends Predicate {
-    override def variable: Option[LogicalVariable] = None
+  case class NodeJuxtapositionTransition(endId: Int) extends Transition {
+    override def predicateVariable: Option[LogicalVariable] = None
     override def toDotString: String = ""
   }
 
   /**
+   * A relationship expansion transition. This transition can be conditional.
+   *
+   * @param predicate the condition under which the transition may be applied.
+   * @param endId     the end state of this transition.
+   */
+  case class RelationshipExpansionTransition(predicate: RelationshipExpansionPredicate, endId: Int) extends Transition {
+    override def predicateVariable: Option[LogicalVariable] = predicate.relPred.map(_.variable)
+    override def toDotString: String = predicate.toDotString
+  }
+
+  /**
    * This predicate is used for a relationship in a pattern.
-   * There are optional variablePredicates for both the relationship and the node of the end state of this transition.
+   * There is an optional variablePredicate (`relPred`) for the relationship of this transition.
    *
    * Below, we use this pattern as an example, assuming we're transitioning from a to b.
-   * {{{(a)-[r:R|Q WHERE r.prop = 5]->(b:B)}}}
+   * {{{(a)-[r:R|Q WHERE r.prop = 5]->(b)}}}
    *
    * @param relationshipVariable the relationship. `r` in the example.
    * @param relPred the predicate for the relationship `r.prop = 5` in the example.
@@ -89,12 +119,12 @@ object NFA {
     relPred: Option[VariablePredicate],
     types: Seq[RelTypeName],
     dir: SemanticDirection
-  ) extends Predicate {
+  ) {
 
-    override def variable: Option[LogicalVariable] =
+    def variable: Option[LogicalVariable] =
       relPred.map(_.variable)
 
-    override def toDotString: String = {
+    def toDotString: String = {
       val (dirStrA, dirStrB) = LogicalPlanToPlanBuilderString.arrows(dir)
       val typeStr = LogicalPlanToPlanBuilderString.relTypeStr(types)
       val relWhere = relPred.map(vp => s" WHERE ${State.expressionStringifier(vp.predicate)}").getOrElse("")
@@ -102,18 +132,6 @@ object NFA {
     }
 
   }
-
-  /**
-   * A conditional transition. The condition is expressed in the predicate.
-   * The start state is omitted, since it is the map key in the [[NFA.transitions]] map.
-   *
-   * @param predicate the condition under which the transition may be applied.
-   * @param endId the end state of this transition.
-   */
-  case class Transition(
-    predicate: Predicate,
-    endId: Int
-  )
 }
 
 /**
@@ -135,7 +153,7 @@ case class NFA(
 
   def predicateVariables: Set[LogicalVariable] =
     (states.iterator.flatMap(_.predicate).map(_.variable)
-      ++ transitions.values.flatten.iterator.flatMap(_.predicate.variable)).toSet
+      ++ transitions.values.flatten.iterator.flatMap(_.predicateVariable)).toSet
 
   def nodes: Set[LogicalVariable] =
     states.map(_.variable).toSet ++ states.flatMap(_.predicate).map(_.variable)
@@ -143,8 +161,7 @@ case class NFA(
   def relationships: Set[LogicalVariable] =
     transitions.iterator
       .flatMap(_._2)
-      .map(_.predicate)
-      .collect { case r: RelationshipExpansionPredicate => r }
+      .collect { case t: RelationshipExpansionTransition => t.predicate }
       .flatMap(r => Iterator(Some(r.relationshipVariable), r.relPred.map(_.variable)).flatten)
       .toSet
 
@@ -172,11 +189,11 @@ case class NFA(
       transitions.toSeq
         .flatMap { case (start, transitions) => transitions.map(start -> _) }
         .sortBy {
-          case (start, Transition(_, endId)) => (start, endId)
+          case (start, Transition(endId)) => (start, endId)
         }
         .map {
-          case (start, Transition(p, endId)) =>
-            s"""  ${start} -> ${endId} [label="${p.toDotString}"];"""
+          case (start, t @ Transition(endId)) =>
+            s"""  $start -> $endId [label="${t.toDotString}"];"""
         }
         .mkString("\n")
     s"digraph G {\n$nodes\n$edges\n}"

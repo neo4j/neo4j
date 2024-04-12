@@ -48,14 +48,11 @@ import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
-import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
-import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
@@ -1614,13 +1611,13 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       plan = nestedPlan,
       solvedExpressionAsString = solvedNestedExpressionAsString
     )(pos)
-    val varPredicate = VariablePredicate(v"v", patternExpressionPredicate)
+    val toPredicate = VariablePredicate(v"v", patternExpressionPredicate)
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
-      .addTransition(2 -> "b", 3 -> "v", varPredicate, NodeJuxtapositionPredicate)
+      .addTransition(2, 3, "(b) (v)", maybeToPredicate = Some(toPredicate))
       .addTransition(3, 4, "(v)-[s]->(w)")
       .setFinalState(4)
       .build()
@@ -1674,11 +1671,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       solvedExpressionAsString =
         solvedNestedExpressionAsString
     )(pos)
-    val varPredicate = VariablePredicate(v"  m@2", nestedPlanExpression)
+    val toPredicate = VariablePredicate(v"  m@2", nestedPlanExpression)
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (`  n@0`)")
-      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)", Some(varPredicate))
+      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)", maybeToPredicate = Some(toPredicate))
       .addTransition(2, 1, "(`  m@2`) (`  n@0`)")
       .addTransition(2, 3, "(`  m@2`) (`  v@6`)")
       .setFinalState(3)
@@ -1819,11 +1816,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       solvedExpressionAsString = solvedNestedExpressionAsString
     )(pos)
     val eq2 = equals(nestedPlanExpression, literalInt(2))
-    val varPredicate = VariablePredicate(v"  m@2", eq2)
+    val toPredicate = VariablePredicate(v"  m@2", eq2)
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (`  n@0`)")
-      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)", Some(varPredicate))
+      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)", maybeToPredicate = Some(toPredicate))
       .addTransition(2, 1, "(`  m@2`) (`  n@0`)")
       .addTransition(2, 3, "(`  m@2`) (`  v@6`)")
       .setFinalState(3)
@@ -2534,19 +2531,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       )(pos)
     )
 
-    val nfaPredicate = RelationshipExpansionPredicate(
-      v"r2",
-      Some(Expand.VariablePredicate(v"r2", expr)),
-      Seq.empty,
-      OUTGOING
-    )
+    val relPredicate = VariablePredicate(v"r2", expr)
 
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (n)")
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
-      .addTransition((3, "v"), (4, "w"), nfaPredicate)
+      .addTransition(3, 4, "(v)-[r2]->(w)", maybeRelPredicate = Some(relPredicate))
       .setFinalState(4)
       .build()
 

@@ -232,11 +232,11 @@ object CommandNFA {
       val transitions = logicalNFA.transitions.getOrElse(logicalState.id, Seq.empty)
 
       val (nodeTransitions, relTransitions) = transitions.partitionMap {
-        case NFA.Transition(NFA.NodeJuxtapositionPredicate, endId) =>
+        case NFA.NodeJuxtapositionTransition(endId) =>
           val end = logicalNFA.states(endId)
           Left(compileStubbedNodeJuxtaposition(end.predicate, stateLookup(end.id)))
 
-        case NFA.Transition(rp: NFA.RelationshipExpansionPredicate, endId) =>
+        case NFA.RelationshipExpansionTransition(rp: NFA.RelationshipExpansionPredicate, endId) =>
           val end = logicalNFA.states(endId)
           Right(compileStubbedRelationshipExpansion(rp, end.predicate, stateLookup(end.id)))
       }
