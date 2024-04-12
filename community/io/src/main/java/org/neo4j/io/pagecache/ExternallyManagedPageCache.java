@@ -77,6 +77,11 @@ public class ExternallyManagedPageCache implements PageCache {
     }
 
     @Override
+    public void flush(DatabaseFlushEvent flushEvent) throws IOException {
+        delegate.flush(flushEvent);
+    }
+
+    @Override
     public int pageSize() {
         return delegate.pageSize();
     }

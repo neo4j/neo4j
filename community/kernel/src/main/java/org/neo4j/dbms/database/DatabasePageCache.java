@@ -129,6 +129,11 @@ public class DatabasePageCache implements PageCache {
         flushAndForce(flushEvent, NO_BARRIER);
     }
 
+    @Override
+    public void flush(DatabaseFlushEvent flushEvent) throws IOException {
+        flushAndForce(flushEvent);
+    }
+
     private void flushAndForce(DatabaseFlushEvent flushEvent, Barrier barrier) throws IOException {
         for (DatabasePagedFile pagedFile : uniqueDatabasePagedFiles.values()) {
             if (barrier.canPass(pagedFile.flushTicket())) {

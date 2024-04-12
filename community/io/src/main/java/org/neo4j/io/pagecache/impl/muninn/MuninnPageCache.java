@@ -777,17 +777,27 @@ public class MuninnPageCache implements PageCache {
 
     @Override
     public void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException {
+        internalFlushAndForce(flushEvent, true);
+    }
+
+    @Override
+    public void flush(DatabaseFlushEvent flushEvent) throws IOException {
+        internalFlushAndForce(flushEvent, false);
+    }
+
+    private void internalFlushAndForce(DatabaseFlushEvent flushEvent, boolean force) throws IOException {
         var files = listExistingMappings();
 
         try (FileFlushEvent ignored = flushEvent.beginFileFlush()) {
             // When we flush whole page cache it can only happen on shutdown and we should be able to progress as fast
             // as we can with disabled io controller
-            flushAllPagesParallel(files, IOController.DISABLED);
+            flushAllPagesParallel(files, IOController.DISABLED, force);
         }
         clearEvictorException();
     }
 
-    private void flushAllPagesParallel(List<? extends PagedFile> files, IOController limiter) throws IOException {
+    private void flushAllPagesParallel(List<? extends PagedFile> files, IOController limiter, boolean force)
+            throws IOException {
         List<JobHandle<?>> flushes = new ArrayList<>(files.size());
 
         // Submit all flushes to the background thread
@@ -799,7 +809,7 @@ public class MuninnPageCache implements PageCache {
                             "Flushing changes to file '" + file.path().getFileName() + "'"),
                     () -> {
                         try {
-                            flushFile((MuninnPagedFile) file, limiter);
+                            flushFile((MuninnPagedFile) file, limiter, force);
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
@@ -816,10 +826,10 @@ public class MuninnPageCache implements PageCache {
         }
     }
 
-    private void flushFile(MuninnPagedFile muninnPagedFile, IOController limiter) throws IOException {
+    private void flushFile(MuninnPagedFile muninnPagedFile, IOController limiter, boolean force) throws IOException {
         try (FileFlushEvent flushEvent = pageCacheTracer.beginFileFlush(muninnPagedFile.swapper);
                 var buffer = bufferFactory.createBuffer()) {
-            muninnPagedFile.flushAndForceInternal(flushEvent, false, limiter, buffer);
+            muninnPagedFile.flushAndForceInternal(flushEvent, false, limiter, buffer, force);
         }
     }
 

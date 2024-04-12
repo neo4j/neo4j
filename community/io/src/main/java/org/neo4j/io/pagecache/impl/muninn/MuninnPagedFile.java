@@ -380,7 +380,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     @Override
     public void flushAndForce(FileFlushEvent flushEvent) throws IOException {
         try (var buffer = bufferFactory.createBuffer()) {
-            flushAndForceInternal(flushEvent, false, ioController, buffer);
+            flushAndForceInternal(flushEvent, false, ioController, buffer, true);
         }
         pageCache.clearEvictorException();
     }
@@ -395,7 +395,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         }
         try (FileFlushEvent flushEvent = pageCacheTracer.beginFileFlush(swapper);
                 var buffer = bufferFactory.createBuffer()) {
-            flushAndForceInternal(flushEvent, true, ioController, buffer);
+            flushAndForceInternal(flushEvent, true, ioController, buffer, true);
         }
         pageCache.clearEvictorException();
     }
@@ -508,10 +508,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     }
 
     void flushAndForceInternal(
-            FileFlushEvent flushEvent, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer)
+            FileFlushEvent flushEvent, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer, boolean force)
             throws IOException {
         try {
-            doFlushAndForceInternal(flushEvent, forClosing, limiter, ioBuffer);
+            doFlushAndForceInternal(flushEvent, forClosing, limiter, ioBuffer, force);
         } catch (ClosedChannelException e) {
             if (getRefCount() > 0) {
                 // The file is not supposed to be closed, since we have a positive ref-count, yet we got a
@@ -527,7 +527,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     }
 
     private void doFlushAndForceInternal(
-            FileFlushEvent flushes, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer)
+            FileFlushEvent flushes, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer, boolean force)
             throws IOException {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
         long[] pages = new long[TRANSLATION_TABLE_CHUNK_SIZE];
@@ -691,7 +691,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             chunkEvent.chunkFlushed(notModifiedPages, flushPerChunk, buffersPerChunk, mergesPerChunk);
         }
 
-        swapper.force();
+        if (force) {
+            swapper.force();
+        }
     }
 
     private void vectoredFlush(

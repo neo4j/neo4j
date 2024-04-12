@@ -186,6 +186,11 @@ public interface PageCache extends AutoCloseable {
     void flushAndForce(DatabaseFlushEvent flushEvent) throws IOException;
 
     /**
+     * Flush all dirty pages w/o forcing afterward.
+     */
+    void flush(DatabaseFlushEvent flushEvent) throws IOException;
+
+    /**
      * Close the page cache to prevent any future mapping of files.
      *
      * @throws IllegalStateException if not all files have been unmapped, with {@link PagedFile#close()}, prior to
