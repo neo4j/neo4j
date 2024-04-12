@@ -320,10 +320,10 @@ public class CypherParser extends Parser {
             YIELD = 286,
             ZONED = 287,
             IDENTIFIER = 288,
-            ErrorChar = 289,
-            ARROW_LINE = 290,
-            ARROW_LEFT_HEAD = 291,
-            ARROW_RIGHT_HEAD = 292;
+            ARROW_LINE = 289,
+            ARROW_LEFT_HEAD = 290,
+            ARROW_RIGHT_HEAD = 291,
+            ErrorChar = 292;
     public static final int RULE_statements = 0,
             RULE_statement = 1,
             RULE_periodicCommitQueryHintFailure = 2,
@@ -1247,10 +1247,10 @@ public class CypherParser extends Parser {
             "YIELD",
             "ZONED",
             "IDENTIFIER",
-            "ErrorChar",
             "ARROW_LINE",
             "ARROW_LEFT_HEAD",
-            "ARROW_RIGHT_HEAD"
+            "ARROW_RIGHT_HEAD",
+            "ErrorChar"
         };
     }
 
@@ -33884,8 +33884,8 @@ public class CypherParser extends Parser {
                     + "\u024a\u024c\u024e\u0250\u0252\u0254\u0256\u0258\u0000A\u0002\u0000\u0012"
                     + "\u0012LL\u0002\u0000\u0018\u0018GG\u0002\u0000II\u00a5\u00a5\u0002\u0000"
                     + "99\u0096\u0096\u0001\u0000\u00de\u00df\u0003\u0000!!77ff\u0002\u0000\u0011"
-                    + "\u0011\u00ea\u00ea\u0002\u0000\u0093\u0093\u0123\u0123\u0002\u0000\u0098"
-                    + "\u0098\u0122\u0122\u0002\u0000uu\u0124\u0124\u0002\u0000++\u0087\u0087"
+                    + "\u0011\u00ea\u00ea\u0002\u0000\u0093\u0093\u0122\u0122\u0002\u0000\u0098"
+                    + "\u0098\u0121\u0121\u0002\u0000uu\u0123\u0123\u0002\u0000++\u0087\u0087"
                     + "\u0002\u0000++\u0082\u0082\u0006\u0000__ppuu\u008b\u008b\u0093\u0093\u009a"
                     + "\u009b\u0002\u0000,,\u0108\u0108\u0001\u0000\u009f\u00a2\u0003\u0000P"
                     + "P\u0098\u0098\u00bc\u00bc\u0003\u0000MM\u0099\u0099\u00fc\u00fc\u0002"

@@ -253,6 +253,7 @@ object SyntaxErrorParserTest {
     def missing(missing: String, at: String, offset: Int): Missing = {
       Missing(missing, at, InputPosition(offset, 1, offset + 1))
     }
+
   }
   case class Mismatch(input: String, expected: String, pos: InputPosition) extends ParsingFailure
   case class Extraneous(input: String, expected: String, pos: InputPosition) extends ParsingFailure
@@ -278,7 +279,6 @@ object SyntaxErrorParserTest {
         s"""Missing $missing at $at ($pos)
            |"$query"
            | ${" ".repeat(pos.offset)}^""".stripMargin
-
     }
   }
 

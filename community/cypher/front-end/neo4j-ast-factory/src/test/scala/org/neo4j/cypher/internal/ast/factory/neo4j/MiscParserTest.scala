@@ -647,4 +647,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
       }
     }
   }
+
+  test("unicode arrow line and head") {
+    "MERGE (project)–[:HAS_FOLDER]-⟩(folder)" should parse[Statements]
+  }
 }

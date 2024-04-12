@@ -25,9 +25,12 @@ import static org.antlr.v4.runtime.IntStream.UNKNOWN_SOURCE_NAME;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
+import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CodePointBuffer;
+import org.antlr.v4.runtime.LexerNoViableAltException;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.misc.Interval;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.neo4j.cypher.internal.cst.factory.neo4j.CypherToken;
 import org.neo4j.cypher.internal.cst.factory.neo4j.OffsetTable;
@@ -58,6 +61,25 @@ public final class CypherAstLexer extends CypherLexer {
         return inputQuery.substring(
                 ((CypherToken) start).inputOffset(start.getStartIndex()),
                 ((CypherToken) stop).inputOffset(stop.getStopIndex()) + 1);
+    }
+
+    @Override
+    public void notifyListeners(LexerNoViableAltException e) {
+        String text = _input.getText(Interval.of(_tokenStartCharIndex, _input.index()));
+        String msg = "Unexpected query part: '" + getErrorDisplay(text) + "'";
+
+        ANTLRErrorListener listener = getErrorListenerDispatch();
+        Token dummyToken = getTokenFactory()
+                .create(
+                        _tokenFactorySourcePair,
+                        EOF,
+                        text,
+                        _channel,
+                        _tokenStartCharIndex,
+                        _input.index(),
+                        _tokenStartLine,
+                        _tokenStartCharPositionInLine);
+        listener.syntaxError(this, dummyToken, _tokenStartLine, _tokenStartCharPositionInLine, msg, e);
     }
 
     /**

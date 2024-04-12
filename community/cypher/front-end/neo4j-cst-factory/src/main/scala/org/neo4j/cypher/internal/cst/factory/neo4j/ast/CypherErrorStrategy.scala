@@ -205,7 +205,6 @@ final class CypherErrorVocabulary extends Vocabulary {
       case CypherParser.ALL_SHORTEST_PATHS       => "'allShortestPaths'"
       case CypherParser.SHORTEST_PATH            => "'shortestPath'"
       case Token.EOF                             => "<EOF>"
-      case CypherParser.ErrorChar                => "<ErrorChar>"
       case _ =>
         val displayNames = inner.getDisplayNames
         if (tokenType > 0 && tokenType < displayNames.length && displayNames(tokenType) != null) displayNames(tokenType)
@@ -301,7 +300,7 @@ final class CypherErrorVocabulary extends Vocabulary {
     set.getIntervals.asScala
       .flatMap(i =>
         Range.inclusive(i.a, i.b)
-          .filter(_ != Token.EPSILON)
+          .filter(t => t != Token.EPSILON || t != CypherParser.ErrorChar)
           .map(getDisplayName)
       )
       .toSeq

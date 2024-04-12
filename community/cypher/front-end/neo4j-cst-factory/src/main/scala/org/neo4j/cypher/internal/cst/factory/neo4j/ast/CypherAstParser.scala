@@ -163,7 +163,8 @@ object CypherAstParser {
     notificationLogger: Option[InternalNotificationLogger],
     f: CypherAstParser => T
   ): T = {
-    val tokens = preparsedTokens(query, exceptionFactory)
+    val listener = new SyntaxErrorListener(exceptionFactory)
+    val tokens = preparsedTokens(query, listener, exceptionFactory)
     val parser = new CypherAstParser(tokens, true, exceptionFactory, notificationLogger)
 
     // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
@@ -174,7 +175,7 @@ object CypherAstParser {
     parser.setErrorHandler(new BailErrorStrategy)
 
     try {
-      doParse(parser, f)
+      doParse(parser, listener, f)
     } catch {
       case NonFatal(_) =>
         // The fast route failed, now try again with full error handling and prediction mode
@@ -188,14 +189,15 @@ object CypherAstParser {
 
         // CypherErrorStrategy allows us to get the correct error messages in case we still fail
         parser.setErrorHandler(new CypherErrorStrategy)
-        parser.addErrorListener(new SyntaxErrorListener(exceptionFactory))
+        parser.addErrorListener(listener)
 
-        doParse(parser, f)
+        doParse(parser, listener, f)
     }
   }
 
   private def doParse[T <: AstRuleCtx](
     parser: CypherAstParser,
+    listener: SyntaxErrorListener,
     f: CypherAstParser => T
   ): T = {
     val result = f(parser)
@@ -206,19 +208,19 @@ object CypherAstParser {
     }
 
     // Throw any syntax errors
-    if (!parser.getErrorListeners.isEmpty) {
-      val errorListener = parser.getErrorListeners.get(0).asInstanceOf[SyntaxErrorListener]
-      if (errorListener.syntaxErrors.nonEmpty) {
-        throw errorListener.syntaxErrors.reduce(Exceptions.chain)
-      }
+    if (listener.syntaxErrors.nonEmpty) {
+      throw listener.syntaxErrors.reduce(Exceptions.chain)
     }
 
     result
   }
 
-  private def preparsedTokens(cypher: String, exceptionFactory: CypherExceptionFactory) =
+  private def preparsedTokens(cypher: String, listener: SyntaxErrorListener, exceptionFactory: CypherExceptionFactory) =
     try {
-      new CommonTokenStream(CypherAstLexer.fromString(cypher))
+      val lexer = CypherAstLexer.fromString(cypher)
+      lexer.removeErrorListeners()
+      lexer.addErrorListener(listener)
+      new CommonTokenStream(lexer)
     } catch {
       case e: InvalidUnicodeLiteral =>
         throw exceptionFactory.syntaxException(e.getMessage, InputPosition(e.offset, e.line, e.column))
