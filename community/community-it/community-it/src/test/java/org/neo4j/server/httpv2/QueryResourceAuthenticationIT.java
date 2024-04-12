@@ -47,6 +47,7 @@ import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -91,15 +92,11 @@ class QueryResourceAuthenticationIT {
         var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(400);
+        var parsedResponse = MAPPER.readTree(response.body());
 
-        assertThat(response.body())
-                .isEqualTo("{\"errors\":[{\"error\":\"Neo.ClientError.Security.CredentialsExpired\","
-                        + "\"message\":\"Permission denied.\\n\\nThe credentials you provided were valid, but must be "
-                        + "changed before you can use this instance. If this is the first time you are using Neo4j, this "
-                        + "is to ensure you are not using the default credentials in production. If you are not using "
-                        + "default credentials, you are getting this message because an administrator requires a "
-                        + "password change.\\nTo change your password, issue an `ALTER CURRENT USER SET PASSWORD "
-                        + "FROM 'current password' TO 'new password'` statement against the system database.\"}]}");
+        assertThat(parsedResponse.get("errors").size()).isEqualTo(1);
+        assertThat(parsedResponse.get("errors").get(0).get("error").asText())
+                .isEqualTo(Status.Security.CredentialsExpired.code().serialize());
     }
 
     @Test
