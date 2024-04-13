@@ -137,15 +137,11 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
                     + "following the migration and users should monitor the successful completion of that process.")
     private boolean forceBtreeToRange;
 
-    // This is a special option for Aura. It is generally guaranteed to work only on Aura DBMSes,
-    // because Aura does not use many of the advanced DBMS stuff like multi-database feature.
     @Option(
             names = "--force-system-database",
             hidden = true,
             fallbackValue = "true",
-            description = "A special option for forcing migration of Enterprise System database. "
-                    + "This is only for internal use, because it works only if a well-defined subset of the DBMS "
-                    + "features is used. The result is undefined in other cases.")
+            description = "A special option for forcing migration of Enterprise System database.")
     protected boolean forceSystemDatabase;
 
     public MigrateStoreCommand(ExecutionContext ctx) {
