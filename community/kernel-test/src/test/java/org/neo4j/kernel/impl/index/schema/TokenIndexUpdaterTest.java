@@ -93,7 +93,7 @@ class TokenIndexUpdaterTest {
         int labelId = 2;
         // GIVEN
         try (var updater = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
-            updater.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
+            updater.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT), false);
 
             // WHEN
             for (long i = 0; i < NODE_COUNT; i++) {
@@ -124,7 +124,7 @@ class TokenIndexUpdaterTest {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
         try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
-            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT), false);
 
             // WHEN
             for (int i = 0; i < NODE_COUNT * 3; i++) {
@@ -162,7 +162,7 @@ class TokenIndexUpdaterTest {
 
         // When
         try (TokenIndexUpdater writer = new TokenIndexUpdater(nodeCount, idLayout)) {
-            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext), false);
             for (int i = 0; i < nodeCount; i++) {
                 writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_INT_ARRAY, new int[] {1}));
             }
@@ -181,7 +181,7 @@ class TokenIndexUpdaterTest {
         // GIVEN
         assertThatThrownBy(() -> {
                     try (TokenIndexUpdater writer = new TokenIndexUpdater(1, idLayout)) {
-                        writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
+                        writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT), false);
 
                         // WHEN
                         writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_INT_ARRAY, new int[] {2, 1}));
@@ -196,7 +196,7 @@ class TokenIndexUpdaterTest {
         // GIVEN
         assertThatThrownBy(() -> {
                     try (TokenIndexUpdater writer = new TokenIndexUpdater(1, idLayout)) {
-                        writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
+                        writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT), false);
 
                         // WHEN
                         writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_INT_ARRAY, new int[] {2, -1}));
@@ -215,7 +215,7 @@ class TokenIndexUpdaterTest {
         int[] labels = {labelId};
         var idLayout = this.idLayout;
         try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
-            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT), false);
 
             // a couple of tree entries with a couple of nodes each
             // concept art: [xxxx          ][xxxx          ][xxxx          ] where x is used node.
@@ -231,7 +231,7 @@ class TokenIndexUpdaterTest {
         // when removing all the nodes from one of the tree nodes
         int treeEntryToRemoveFrom = 1;
         try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100), this.idLayout)) {
-            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
+            writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT), false);
             long baseNodeId = idLayout.firstIdOfRange(treeEntryToRemoveFrom);
             for (int i = 0; i < numberOfNodesInEach; i++) {
                 writer.process(TokenIndexEntryUpdate.change(baseNodeId + i, null, labels, EMPTY_INT_ARRAY));

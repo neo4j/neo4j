@@ -122,13 +122,15 @@ class TokenIndexUpdater implements IndexUpdater {
     private int lowestTokenId;
 
     private boolean closed = true;
+    private boolean parallel;
 
     TokenIndexUpdater(int batchSize, TokenIndexIdLayout idLayout) {
         this.pendingUpdates = new LogicalTokenUpdates[batchSize];
         this.idLayout = idLayout;
     }
 
-    TokenIndexUpdater initialize(Writer<TokenScanKey, TokenScanValue> writer) {
+    TokenIndexUpdater initialize(Writer<TokenScanKey, TokenScanValue> writer, boolean parallel) {
+        this.parallel = parallel;
         if (!closed) {
             throw new IllegalStateException("Updater still open");
         }
@@ -190,6 +192,9 @@ class TokenIndexUpdater implements IndexUpdater {
         }
         flushPendingRange();
         pendingUpdatesCursor = 0;
+        if (parallel) {
+            writer.yield();
+        }
     }
 
     private int extractChange(int[] tokens, int currentTokenId, long entityId, int nextTokenId, boolean addition) {

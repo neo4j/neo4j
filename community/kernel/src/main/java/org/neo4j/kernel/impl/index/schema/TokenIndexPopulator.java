@@ -81,7 +81,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
     public void add(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext)
             throws IndexEntryConflictException {
         try (TokenIndexUpdater updater =
-                singleUpdater.initialize(index.writer(W_BATCHED_SINGLE_THREADED, cursorContext))) {
+                singleUpdater.initialize(index.writer(W_BATCHED_SINGLE_THREADED, cursorContext), false)) {
             for (IndexEntryUpdate<?> update : updates) {
                 updater.process(update);
             }
@@ -93,7 +93,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
     @Override
     public IndexUpdater newPopulatingUpdater(CursorContext cursorContext) {
         try {
-            return singleUpdater.initialize(index.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
+            return singleUpdater.initialize(index.writer(W_BATCHED_SINGLE_THREADED, cursorContext), false);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
