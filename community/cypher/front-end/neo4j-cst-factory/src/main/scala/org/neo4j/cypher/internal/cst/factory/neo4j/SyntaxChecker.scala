@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.ListHasAsScala
 
 final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends ParseTreeListener {
   private var errors: Seq[Exception] = Seq.empty
