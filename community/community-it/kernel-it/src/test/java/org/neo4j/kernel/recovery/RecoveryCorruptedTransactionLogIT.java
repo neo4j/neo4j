@@ -208,7 +208,7 @@ class RecoveryCorruptedTransactionLogIT {
     @Test
     void recoverFromLastCorruptedBrokenCheckpointRecord() throws IOException {
         for (int iteration = 0; iteration < 10; iteration++) {
-            int bytesToAdd = random.nextInt(1, CHECKPOINT_RECORD_SIZE);
+            int bytesToAdd = random.nextInt(2, CHECKPOINT_RECORD_SIZE + 1);
 
             DatabaseManagementService managementService = databaseFactory.build();
             GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
