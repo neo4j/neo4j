@@ -433,68 +433,77 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
         VOLUMETRIC
     }
 
-    @Description("Configures the general policy for when check-points should occur. The default policy is the "
-            + "'periodic' check-point policy, as specified by the 'db.checkpoint.interval.tx' and "
-            + "'db.checkpoint.interval.time' settings. "
-            + "The Neo4j Enterprise Edition provides two alternative policies: "
-            + "The first is the 'continuous' check-point policy, which will ignore those settings and run the "
-            + "check-point process all the time. "
-            + "The second is the 'volumetric' check-point policy, which makes a best-effort at check-pointing "
-            + "often enough so that the database doesn't get too far behind on deleting old transaction logs in "
-            + "accordance with the 'db.tx_log.rotation.retention_policy' setting.")
+    @Description(
+            """
+            Configures the general policy for when checkpoints should occur.
+            Possible values are:
+
+            * `PERIODIC` (default) -- it runs a checkpoint as per the interval specified by
+              `<<config_db.checkpoint.interval.tx,db.checkpoint.interval.tx>>` and
+              `<<config_db.checkpoint.interval.time,db.checkpoint.interval.time>>`.
+
+            * `VOLUME` -- it runs a checkpoint when the size of the transaction logs reaches
+              the value specified by the `<<config_db.checkpoint.interval.volume,db.checkpoint.interval.volume>>` setting.
+              By default, it is set to `250.00MiB`.
+
+            * `CONTINUOUS` (Enterprise Edition) -- it ignores `<<config_db.checkpoint.interval.tx,db.checkpoint.interval.tx>>`
+              and `<<config_db.checkpoint.interval.time,db.checkpoint.interval.time>>` settings and runs the checkpoint process all the time.
+
+            * `VOLUMETRIC` -- it makes the best effort to checkpoint often enough so that the database does not get too far behind on
+              deleting old transaction logs as specified in the `<<config_db.tx_log.rotation.retention_policy,db.tx_log.rotation.retention_policy>>` setting.
+            """)
     public static final Setting<CheckpointPolicy> check_point_policy = newBuilder(
                     "db.checkpoint", ofEnum(CheckpointPolicy.class), CheckpointPolicy.PERIODIC)
             .build();
 
-    @Description("Configures the transaction interval between check-points. The database will not check-point more "
-            + "often  than this (unless check pointing is triggered by a different event), but might check-point "
-            + "less often than this interval, if performing a check-point takes longer time than the configured "
-            + "interval. A check-point is a point in the transaction logs, which recovery would start from. "
-            + "Longer check-point intervals typically mean that recovery will take longer to complete in case "
-            + "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that "
-            + "the database places on the system, as each check-point implies a flushing and forcing of all the "
-            + "store files.  The default is '100000' for a check-point every 100000 transactions.")
+    @Description("Configures the transaction interval between checkpoints. The database does not checkpoint more "
+            + "often the specified interval (unless checkpointing is triggered by a different event), but might checkpoint "
+            + "less often if performing a checkpoint takes longer time than the configured interval. "
+            + "A checkpoint is a point in the transaction logs from which recovery starts. "
+            + "Longer checkpoint intervals typically mean that recovery takes longer to complete in case "
+            + "of a crash. On the other hand, a longer checkpoint interval can also reduce the I/O load that "
+            + "the database places on the system, as each checkpoint implies a flushing and forcing of all the "
+            + "store files.  The default is `100000` for a checkpoint every 100000 transactions.")
     public static final Setting<Integer> check_point_interval_tx = newBuilder("db.checkpoint.interval.tx", INT, 100000)
             .addConstraint(min(1))
             .build();
 
-    @Description("Configures the time interval between check-points. The database will not check-point more often "
-            + "than this (unless check pointing is triggered by a different event), but might check-point less "
-            + "often than this interval, if performing a check-point takes longer time than the configured "
-            + "interval. A check-point is a point in the transaction logs, which recovery would start from. "
-            + "Longer check-point intervals typically mean that recovery will take longer to complete in case "
-            + "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that "
-            + "the database places on the system, as each check-point implies a flushing and forcing of all the "
+    @Description("Configures the time interval between checkpoints. The database does not checkpoint more "
+            + "often the specified interval (unless checkpointing is triggered by a different event), but might checkpoint "
+            + "less often if performing a checkpoint takes longer time than the configured interval. "
+            + "A checkpoint is a point in the transaction logs from which recovery starts. "
+            + "Longer checkpoint intervals typically mean that recovery takes longer to complete in case "
+            + "of a crash. On the other hand, a longer checkpoint interval can also reduce the I/O load that "
+            + "the database places on the system, as each checkpoint implies a flushing and forcing of all the "
             + "store files.")
     public static final Setting<Duration> check_point_interval_time =
             newBuilder("db.checkpoint.interval.time", DURATION, ofMinutes(15)).build();
 
-    @Description(
-            "Configures the volume of transaction logs between check-points. The database will not check-point more often "
-                    + "than this (unless check pointing is triggered by a different event), but might check-point less "
-                    + "often than this interval, if performing a check-point takes longer time than the configured "
-                    + "interval. A check-point is a point in the transaction logs, which recovery would start from. "
-                    + "Longer check-point intervals typically mean that recovery will take longer to complete in case "
-                    + "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that "
-                    + "the database places on the system, as each check-point implies a flushing and forcing of all the "
-                    + "store files.")
+    @Description("Configures the volume of transaction logs between checkpoints. The database does not checkpoint more "
+            + "often the specified interval (unless checkpointing is triggered by a different event), but might checkpoint "
+            + "less often if performing a checkpoint takes longer time than the configured interval. "
+            + "A checkpoint is a point in the transaction logs from which recovery starts. "
+            + "Longer checkpoint intervals typically mean that recovery takes longer to complete in case "
+            + "of a crash. On the other hand, a longer checkpoint interval can also reduce the I/O load that "
+            + "the database places on the system, as each checkpoint implies a flushing and forcing of all the "
+            + "store files.")
     public static final Setting<Long> check_point_interval_volume = newBuilder(
                     "db.checkpoint.interval.volume", BYTES, mebiBytes(250))
             .addConstraint(min(ByteUnit.kibiBytes(1)))
             .build();
 
-    @Description("Limit the number of IOs the background checkpoint process will consume per second. "
-            + "This setting is advisory, is ignored in Neo4j Community Edition, and is followed to "
+    @Description("Limit the number of IOs the background checkpoint process consumes per second. "
+            + "This setting is advisory. It is ignored in Neo4j Community Edition and is followed to "
             + "best effort in Enterprise Edition. "
-            + "An IO is in this case a 8 KiB (mostly sequential) write. Limiting the write IO in "
-            + "this way will leave more bandwidth in the IO subsystem to service random-read IOs, "
+            + "An IO is, in this case, an 8 KiB (mostly sequential) write. Limiting the write IO in "
+            + "this way leaves more bandwidth in the IO subsystem to service random-read IOs, "
             + "which is important for the response time of queries when the database cannot fit "
             + "entirely in memory. The only drawback of this setting is that longer checkpoint times "
             + "may lead to slightly longer recovery times in case of a database or system crash. "
-            + "A lower number means lower IO pressure, and consequently longer checkpoint times. "
-            + "Set this to -1 to disable the IOPS limit and remove the limitation entirely; "
-            + "this will let the checkpointer flush data as fast as the hardware will go. "
-            + "Removing the setting, or commenting it out, will set the default value of 600.")
+            + "A lower number means lower IO pressure and, consequently, longer checkpoint times. "
+            + "Set this to -1 to disable the IOPS limit and remove the limitation entirely. "
+            + "This lets the checkpointer flush data as fast as the hardware goes. "
+            + "Removing or commenting out the setting sets the default value of 600.")
     public static final Setting<Integer> check_point_iops_limit =
             newBuilder("db.checkpoint.iops.limit", INT, 600).dynamic().build();
 
