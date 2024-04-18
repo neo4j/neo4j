@@ -1245,6 +1245,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Number of shards for SPD; a feature toggle behind which sharded property database is developed")
+    public static final Setting<Integer> sharded_property_database_shard_count = newBuilder(
+                    "internal.dbms.sharded_property_database.shard_count", INT, 0)
+            .build();
+
+    @Internal
     @Description("A feature toggle behind which CALL IN TRANSACTIONS for composite databases is developed")
     public static final Setting<Boolean> composite_call_in_transactions = newBuilder(
                     "internal.dbms.composite.call_in_transactions", BOOL, true)

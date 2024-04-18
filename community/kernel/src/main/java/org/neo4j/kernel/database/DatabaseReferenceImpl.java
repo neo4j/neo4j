@@ -313,6 +313,10 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
     }
 
     public static final class SPD extends DatabaseReferenceImpl.Internal {
+        public static String shardName(String databaseName, int index) {
+            return String.format("%s-shard-%02d", databaseName, index);
+        }
+
         private final Map<Integer, DatabaseReference> entityDetailStores;
 
         /**
