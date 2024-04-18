@@ -1414,7 +1414,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description(
             "Feature flag to enable/disable the ANTLR parser as opposed to Javacc. If changed dynamically, query caches need to be cleared for it to take effect.")
     public static final Setting<Boolean> cypher_parser_antlr_enabled = newBuilder(
-                    "internal.cypher.parser.antlr_enabled", BOOL, false)
+                    "internal.cypher.parser.antlr_enabled", BOOL, true)
             .dynamic()
             .build();
 
