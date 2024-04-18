@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
+import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 
@@ -29,7 +30,7 @@ public class VectorSimilarityFunctions {
     abstract static class LuceneVectorSimilarityFunction implements VectorSimilarityFunction {
         @Override
         public float compare(float[] vector1, float[] vector2) {
-            return toLucene().compare(vector1, vector2);
+            return MathUtil.clamp(toLucene().compare(vector1, vector2), 0.f, 1.f);
         }
 
         abstract org.apache.lucene.index.VectorSimilarityFunction toLucene();

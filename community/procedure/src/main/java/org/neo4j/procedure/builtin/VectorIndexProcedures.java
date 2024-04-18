@@ -40,6 +40,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexSetting;
+import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -396,7 +397,7 @@ public class VectorIndexProcedures {
             return node;
         }
 
-        public static NodeNeighbor forExistingEntityOrNull(Transaction tx, long nodeId, float score) {
+        public static NodeNeighbor forExistingEntityOrNull(Transaction tx, long nodeId, double score) {
             try {
                 return new NodeNeighbor(tx.getNodeById(nodeId), score);
             } catch (NotFoundException ignore) {
@@ -417,7 +418,7 @@ public class VectorIndexProcedures {
             return relationship;
         }
 
-        public static RelationshipNeighbor forExistingEntityOrNull(Transaction tx, long relId, float score) {
+        public static RelationshipNeighbor forExistingEntityOrNull(Transaction tx, long relId, double score) {
             try {
                 return new RelationshipNeighbor(tx.getRelationshipById(relId), score);
             } catch (NotFoundException ignore) {
@@ -446,7 +447,8 @@ public class VectorIndexProcedures {
             implements NeighborSpliterator<NodeNeighbor> {
         @Override
         public NodeNeighbor neighbor() {
-            return NodeNeighbor.forExistingEntityOrNull(tx, cursor.nodeReference(), cursor.score());
+            return NodeNeighbor.forExistingEntityOrNull(
+                    tx, cursor.nodeReference(), MathUtil.clamp(cursor.score(), 0.0, 1.0));
         }
     }
 
@@ -454,7 +456,8 @@ public class VectorIndexProcedures {
             implements NeighborSpliterator<RelationshipNeighbor> {
         @Override
         public RelationshipNeighbor neighbor() {
-            return RelationshipNeighbor.forExistingEntityOrNull(tx, cursor.relationshipReference(), cursor.score());
+            return RelationshipNeighbor.forExistingEntityOrNull(
+                    tx, cursor.relationshipReference(), MathUtil.clamp(cursor.score(), 0.0, 1.0));
         }
     }
 
