@@ -112,7 +112,7 @@ object Foldable {
   class Folder(foldedOver: Any, cancellation: CancellationChecker) {
 
     def treeCollect[R](f: PartialFunction[Any, R]): Seq[R] =
-      fold(Seq.empty[R]) {
+      fold(Vector.empty[R]) {
         case x if f.isDefinedAt(x) => _ :+ f(x)
       }
 
