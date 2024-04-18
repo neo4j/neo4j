@@ -7918,7 +7918,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         RunQueryAt(
           lhsLP,
           """multi-line
-            |inner query""".stripMargin,
+            |  inner query""".stripMargin,
           GraphDirectReference(CatalogName("composite", "remote"))(pos),
           Set.empty,
           Map.empty,
@@ -7930,7 +7930,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "RunQueryAt",
         SingleChild(lhsPD),
-        Seq(details("multi-line inner query")),
+        Seq(details(
+          """multi-line
+            |  inner query""".stripMargin
+        )),
         Set("a", "col")
       )
     )

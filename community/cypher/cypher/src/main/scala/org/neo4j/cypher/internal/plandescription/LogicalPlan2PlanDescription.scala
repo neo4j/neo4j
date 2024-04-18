@@ -2607,7 +2607,7 @@ case class LogicalPlan2PlanDescription(
           id,
           "RunQueryAt",
           children,
-          arguments = Seq(Details(asPrettyString.raw(p.query.linesIterator.mkString(" ")))),
+          arguments = Seq(Details(asPrettyString.raw(p.query))),
           variables,
           withRawCardinalities,
           withDistinctness
