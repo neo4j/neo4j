@@ -43,24 +43,63 @@ public final class CypherAstLexer extends CypherLexer {
     // Note, this query string is not always identical to the one that the lexer/parser sees,
     // see inputText(Token, Token).
     private final String inputQuery;
+    private final OffsetTable offsetTable;
 
-    private CypherAstLexer(CharStream input, String inputQuery) {
+    private CypherAstLexer(CharStream input, String inputQuery, OffsetTable offsetTable) {
         super(input);
         this.inputQuery = inputQuery;
+        this.offsetTable = offsetTable;
     }
 
     /**
      * Returns a substring of the input query.
-     * NOTE!! The input query in this context is usually:
-     * - after pre-parsing of cypher options (profile/explain/cypher is not included)
-     * - before unicode escape replacement (unicode escape characters are included)
-     * - comments and white space are included
+     * Note! The query input string at this point is normally
+     *       - Not including preparser options (explain/profile/cypher)
+     *       - Including unicode escapes (replaced before parsing)
+     *       - Including whitespace and comments (on hidden channel in parser)
      * In most situations Token/RuleContext.getText is what you want.
      */
     public String inputText(Token start, Token stop) {
         return inputQuery.substring(
                 ((CypherToken) start).inputOffset(start.getStartIndex()),
                 ((CypherToken) stop).inputOffset(stop.getStopIndex()) + 1);
+    }
+
+    /**
+     * Converts character offset from the parser (in codepoints) to offset in the input query string.
+     * Note! The query input string at this point is normally
+     *       - Not including preparser options (explain/profile/cypher)
+     *       - Including unicode escapes (replaced before parsing)
+     *       - Including whitespace and comments (on hidden channel in parser)
+     */
+    public int inputOffset(int parserOffset) {
+        if (offsetTable == null || parserOffset < offsetTable.start()) {
+            return parserOffset;
+        } else {
+            return offsetTable.offsets()[(parserOffset - offsetTable.start()) * 3];
+        }
+    }
+
+    /**
+     * Returns the input query input position based on parser positions.
+     * Note! The query input string at this point is normally
+     *       - Not including preparser options (explain/profile/cypher)
+     *       - Including unicode escapes (replaced before parsing)
+     *       - Including whitespace and comments (on hidden channel in parser)
+     *
+     * @param parserIndex code point position as reported by the parser
+     * @param parserLine line number as reported by the parser
+     * @param parserColumn code point position in the line as reported by the parser
+     * @return input position relative to char (NOT codepoint) in the input query (before unicode escapement)
+     */
+    public InputPosition inputPosition(int parserIndex, int parserLine, int parserColumn) {
+        if (offsetTable == null || parserIndex < offsetTable.start()) {
+            return InputPosition.apply(parserIndex, parserLine, parserColumn + 1);
+        } else {
+            final int i = (parserIndex - offsetTable.start()) * 3;
+            final var o = offsetTable.offsets();
+            return InputPosition.apply(o[i], o[i + 1], o[i + 2]);
+        }
     }
 
     @Override
@@ -87,20 +126,25 @@ public final class CypherAstLexer extends CypherLexer {
      *  The returned lexer produces {@link CypherToken}s with input positions
      *  relative to the chars of the input string (which is not always the same
      *  as the codepoint based offset that antlr provides).
+     *
+     * @param cypher cypher query string
+     * @param fullTokens if false the lexer produces optimised ThinCypherTokens, if true full tokens are produced,
+     *                   that are needed for some error handling.
      */
-    public static CypherAstLexer fromString(final String cypher) throws IOException {
-        return fromString(cypher, 4096);
+    public static CypherAstLexer fromString(final String cypher, final boolean fullTokens) throws IOException {
+        return fromString(cypher, 4096, fullTokens);
     }
 
     @VisibleForTesting
-    static CypherAstLexer fromString(final String cypher, int maxBuffer) throws IOException {
+    static CypherAstLexer fromString(final String cypher, int maxBuffer, boolean fullTokens) throws IOException {
         final var antlrBuffer = CodePointBuffer.builder(cypher.length());
         final var cb = CharBuffer.allocate(min(maxBuffer, cypher.length()));
 
         try (final var reader = new UnicodeEscapeReader(cypher)) {
             while (reader.read(cb.clear()) != -1) antlrBuffer.append(cb.flip());
-            final var lexer = new CypherAstLexer(fromBuffer(antlrBuffer.build(), UNKNOWN_SOURCE_NAME), cypher);
-            lexer.setTokenFactory(CypherToken.factory(reader.offsetTable()));
+            final var charStream = fromBuffer(antlrBuffer.build(), UNKNOWN_SOURCE_NAME);
+            final var lexer = new CypherAstLexer(charStream, cypher, reader.offsetTable());
+            lexer.setTokenFactory(CypherToken.factory(fullTokens));
             return lexer;
         }
     }

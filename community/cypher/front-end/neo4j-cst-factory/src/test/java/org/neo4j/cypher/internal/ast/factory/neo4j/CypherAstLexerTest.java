@@ -26,8 +26,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.IntSupplier;
 import java.util.stream.IntStream;
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CodePointCharStream;
 import org.antlr.v4.runtime.TokenFactory;
+import org.antlr.v4.runtime.TokenSource;
+import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,7 +88,7 @@ public class CypherAstLexerTest {
         final var expectedLine = lines.size();
         final var expectedCol = lines.get(lines.size() - 1).indexOf("ohno") + 1;
 
-        assertThatThrownBy(() -> CypherAstLexer.fromString(in, rand.nextInt(in.length()) + 2))
+        assertThatThrownBy(() -> CypherAstLexer.fromString(in, rand.nextInt(in.length()) + 2, rand.nextBoolean()))
                 .isInstanceOf(InvalidUnicodeLiteral.class)
                 .hasMessage("Invalid input 'ohno': expected four hexadecimal digits specifying a unicode character")
                 .extracting("offset", "column", "line")
@@ -124,10 +127,12 @@ public class CypherAstLexerTest {
 
         final var read = read(Q1);
         assertThat(read.result).containsExactly(Q1_unescaped.codePoints().toArray());
+        final var tokens = (TokenFactory<CypherToken>) read.lexer.getTokenFactory();
+        final var src = new Pair<TokenSource, CharStream>(read.lexer, read.lexer.getInputStream());
 
         for (int i = 0; i < Q1_offset.length; i++) {
             final var c = read.result[i];
-            final var pos = read.tokens.create(null, -1, null, -1, i, -1, -1, 1).position();
+            final var pos = tokens.create(src, -1, null, -1, i, -1, -1, 1).position();
             assertEquals(Q1_offset[i], pos.offset());
             if (pos.offset() != i) {
                 assertEquals(Q1_line[i], pos.line());
@@ -144,24 +149,27 @@ public class CypherAstLexerTest {
     private void assertReasonableOffsets(String in, int[] expected) throws IOException {
         final var read = read(in);
         assertThat(read.result).containsExactly(expected);
-        assertReasonableInputPositions(in, read.result, read.tokens);
+        assertReasonableInputPositions(read);
     }
 
     private Read read(String in) throws IOException {
-        final var lexer = CypherAstLexer.fromString(in, rand.nextInt(4096) + 64);
-        final var tokens = (TokenFactory<CypherToken>) lexer.getTokenFactory();
+        final var lexer = CypherAstLexer.fromString(in, rand.nextInt(4096) + 64, rand.nextBoolean());
         final var stream = (CodePointCharStream) lexer.getInputStream();
         final var codepoints =
                 IntStream.range(0, stream.size()).map(i -> stream.LA(i + 1)).toArray();
-        return new Read(tokens, codepoints);
+        return new Read(in, lexer, codepoints);
     }
 
-    private record Read(TokenFactory<CypherToken> tokens, int[] result) {}
+    private record Read(String input, CypherAstLexer lexer, int[] result) {}
 
-    private void assertReasonableInputPositions(String in, int[] result, TokenFactory<CypherToken> tokens) {
+    private void assertReasonableInputPositions(Read read) {
+        final var in = read.input;
+        final var result = read.result;
+        final var tokens = (TokenFactory<CypherToken>) read.lexer.getTokenFactory();
+        final var src = new Pair<TokenSource, CharStream>(read.lexer, read.lexer.getInputStream());
         int totalLines = (int) in.lines().count();
         for (int i = 0; i < result.length; ++i) {
-            var t = tokens.create(null, -1, null, -1, i, -1, -1, -1);
+            var t = tokens.create(src, -1, null, -1, i, -1, -1, -1);
             var pos = t.position();
             if (!matches(Character.toChars(result[i]), in, pos.offset())) {
                 var inputSub = in.substring(pos.offset(), pos.offset() + 12);

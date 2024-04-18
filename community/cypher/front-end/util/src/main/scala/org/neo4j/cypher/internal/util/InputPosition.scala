@@ -58,7 +58,7 @@ object InputPosition {
 
   val NONE: InputPosition = Simple(0, 0, 0)
 
-  def apply(offset: Int, line: Int, column: Int): InputPosition = Simple(offset, line, column)
+  def apply(offset: Int, line: Int, column: Int): InputPosition = new Simple(offset, line, column)
 
-  def withLength(offset: Int, line: Int, column: Int, length: Int): Range = Range(offset, line, column, length)
+  def withLength(offset: Int, line: Int, column: Int, length: Int): Range = new Range(offset, line, column, length)
 }

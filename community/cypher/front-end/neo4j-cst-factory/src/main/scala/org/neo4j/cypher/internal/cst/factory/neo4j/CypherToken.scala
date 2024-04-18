@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.cst.factory.neo4j
 
 import org.antlr.v4.runtime.CharStream
+import org.antlr.v4.runtime.CommonToken
 import org.antlr.v4.runtime.Parser
 import org.antlr.v4.runtime.RuleContext
 import org.antlr.v4.runtime.Token
@@ -27,125 +28,115 @@ import org.antlr.v4.runtime.misc.Pair
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.ParseTreeVisitor
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.neo4j.cypher.internal.cst.factory.neo4j.CypherTokenFactory.Src
+import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
 import org.neo4j.cypher.internal.util.InputPosition
 
 import java.util
 
 /**
  * Implementation of [[Token]] that provides [[position()]] to retrieve correct [[InputPosition]]s.
- * Implements both [[Token]] and [[TerminalNode]] as a memory optimisation.
  */
-trait CypherToken extends Token with TerminalNode {
-  def position(): InputPosition
+trait CypherToken extends Token {
 
   /**
-   * Converts character offset from the parser (in codepoints) to offset in the input query string.
-   * Note! The query input string do normally NOT include pre-parser options (explain/profile/cypher),
-   * but do include whitespace and comments.
+   * See [[CypherAstLexer#inputPosition]] for caveats!
    */
-  def inputOffset(parserOffset: Int): Int
+  def position(): InputPosition = cypherLexer.inputPosition(getStartIndex, getLine, getCharPositionInLine)
 
-  protected def source: Pair[TokenSource, CharStream]
-  protected def text: String = null
+  /**
+   * See [[CypherAstLexer#inputOffset]] for caveats!
+   */
+  def inputOffset(parserOffset: Int): Int = cypherLexer.inputOffset(parserOffset)
 
-  final override def getText: String = {
+  @inline private def cypherLexer: CypherAstLexer = getTokenSource.asInstanceOf[CypherAstLexer]
+}
+
+object CypherToken {
+
+  def factory(fullTokens: Boolean): TokenFactory[CypherToken] = {
+    if (fullTokens) FullCypherTokenFactory else CypherTokenFactory
+  }
+}
+
+/**
+ * A slimmer implementation of [[Token]].
+ * Implements both [[CypherToken]] and [[TerminalNode]] as a memory optimisation.
+ * Note, do not support some methods!
+ */
+final private class ThinCypherToken(
+  source: Pair[TokenSource, CharStream],
+  override val getType: Int,
+  override val getChannel: Int,
+  override val getStartIndex: Int,
+  override val getStopIndex: Int,
+  override val getLine: Int,
+  override val getCharPositionInLine: Int
+) extends CypherToken with TerminalNode {
+
+  override def getText: String = {
     val input = getInputStream
     if (input == null) null
     else if (getStopIndex < input.size) input.getText(Interval.of(getStartIndex, getStopIndex))
     else "<EOF>"
   }
 
-  override def getTokenSource: TokenSource = if (source eq null) null else source.a
-  override def getInputStream: CharStream = if (source eq null) null else source.b
-  override def getTokenIndex: Int = -1
+  override def getTokenSource: TokenSource = source.a
+  override def getInputStream: CharStream = source.b
+  override def getTokenIndex: Int = -1 // Not supported
 
   override def getSymbol: Token = this
-  override def getParent: ParseTree = null // Looks like this is not needed for our purposes
-  override def getChild(i: Int): ParseTree = null
-  override def setParent(parent: RuleContext): Unit = {}
+  override def getParent: ParseTree = null // Not supported
+  override def getChild(i: Int): ParseTree = null // Not supported
+  override def setParent(parent: RuleContext): Unit = {} // Not supported
   override def accept[T](visitor: ParseTreeVisitor[_ <: T]): T = visitor.visitTerminal(this)
   override def toStringTree(parser: Parser): String = toString
   override def getSourceInterval: Interval = new Interval(getTokenIndex, getTokenIndex)
   override def getPayload: AnyRef = this
-  override def getChildCount: Int = 0
+  override def getChildCount: Int = 0 // Not supported
   override def toStringTree: String = getText
 }
 
-object CypherToken {
-
-  def factory(offsets: OffsetTable): TokenFactory[CypherToken] = {
-    if (offsets eq null) CypherTokenFactory else new OffsetCypherTokenFactory(offsets)
-  }
-}
+/** Implementation of [[CypherToken]] that supports all methods,
+ *  including [[org.antlr.v4.runtime.WritableToken]].
+ *  Needed to get better syntax error messages in some cases. */
+private class FullCypherToken(
+  src: Pair[TokenSource, CharStream],
+  typ: Int,
+  ch: Int,
+  start: Int,
+  stop: Int
+) extends CommonToken(src, typ, ch, start, stop) with CypherToken
 
 case class OffsetTable(offsets: Array[Int], start: Int) {
   override def toString: String = s"OffsetTable(${util.Arrays.toString(offsets)}, $start)"
 }
 
-final private class DefaultCypherToken(
-  val source: Pair[TokenSource, CharStream],
-  val getType: Int,
-  val getChannel: Int,
-  val getStartIndex: Int,
-  val getStopIndex: Int,
-  val getLine: Int,
-  val getCharPositionInLine: Int
-) extends CypherToken {
-  override def position(): InputPosition = InputPosition(getStartIndex, getLine, getCharPositionInLine + 1)
-  override def inputOffset(parserOffset: Int): Int = parserOffset
-}
-
-final private class OffsetCypherToken(
-  offsets: OffsetTable,
-  val source: Pair[TokenSource, CharStream],
-  val getType: Int,
-  val getChannel: Int,
-  val getStartIndex: Int,
-  val getStopIndex: Int,
-  val getLine: Int,
-  val getCharPositionInLine: Int
-) extends CypherToken {
-
-  override def position(): InputPosition = {
-    val start = getStartIndex
-    if (start >= offsets.start) {
-      val i = (start - offsets.start) * 3
-      val o = offsets.offsets
-      InputPosition(o(i), o(i + 1), o(i + 2))
-    } else {
-      InputPosition(getStartIndex, getLine, getCharPositionInLine + 1)
-    }
-  }
-
-  override def inputOffset(parserOffset: Int): Int = {
-    if (parserOffset >= offsets.start) {
-      offsets.offsets((parserOffset - offsets.start) * 3)
-    } else {
-      parserOffset
-    }
-  }
-}
-
 object CypherTokenFactory extends TokenFactory[CypherToken] {
-  type Src = Pair[TokenSource, CharStream]
+  private type Src = Pair[TokenSource, CharStream]
 
   override def create(src: Src, typ: Int, txt: String, ch: Int, start: Int, stop: Int, line: Int, charPos: Int)
-    : CypherToken = new DefaultCypherToken(src, typ, ch, start, stop, line, charPos)
+    : CypherToken = new ThinCypherToken(src, typ, ch, start, stop, line, charPos)
 
   override def create(typ: Int, text: String): CypherToken =
-    new DefaultCypherToken(null, typ, -1, -1, -1, -1, -1)
+    new ThinCypherToken(null, typ, -1, -1, -1, -1, -1)
 }
 
-class OffsetCypherTokenFactory(offsetTable: OffsetTable) extends TokenFactory[CypherToken] {
+// Similar to CommonTokenFactory.create
+object FullCypherTokenFactory extends TokenFactory[CypherToken] {
+  private type Src = Pair[TokenSource, CharStream]
 
   override def create(src: Src, typ: Int, txt: String, ch: Int, start: Int, stop: Int, line: Int, charPos: Int)
     : CypherToken = {
-    new OffsetCypherToken(offsetTable, src, typ, ch, start, stop, line, charPos)
+    val token = new FullCypherToken(src, typ, ch, start, stop)
+    token.setLine(line)
+    token.setCharPositionInLine(charPos)
+    if (txt != null) token.setText(txt)
+    token
   }
 
-  override def create(typ: Int, text: String): CypherToken =
-    new DefaultCypherToken(null, typ, -1, -1, -1, -1, -1)
-
-  override def toString: String = s"OffsetCypherTokenFactory($offsetTable)"
+  override def create(typ: Int, text: String): CypherToken = {
+    val token = new FullCypherToken(null, typ, -1, -1, -1)
+    token.setText(text)
+    token
+  }
 }

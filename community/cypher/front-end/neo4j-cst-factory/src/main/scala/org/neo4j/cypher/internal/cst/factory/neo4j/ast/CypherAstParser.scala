@@ -30,9 +30,9 @@ import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
-import org.neo4j.cypher.internal.cst.factory.neo4j.DefaultCypherToken
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
+import org.neo4j.cypher.internal.cst.factory.neo4j.ThinCypherToken
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
@@ -102,8 +102,8 @@ class CypherAstParser private (
 
   override def createTerminalNode(parent: ParserRuleContext, t: Token): TerminalNode = {
     t match {
-      case ct: DefaultCypherToken => ct
-      case _                      => super.createTerminalNode(parent, t)
+      case ct: ThinCypherToken => ct
+      case _                   => super.createTerminalNode(parent, t)
     }
   }
 
@@ -151,7 +151,7 @@ object CypherAstParser {
       statements.statements.head
     } else {
       throw exceptionFactory.syntaxException(
-        s"Expected exactly one statement per query but got: ${statements.size}",
+        s"Expected exactly one statement per query but got: ${statements.size()}",
         InputPosition.NONE
       )
     }
@@ -164,7 +164,7 @@ object CypherAstParser {
     f: CypherAstParser => T
   ): T = {
     val listener = new SyntaxErrorListener(exceptionFactory)
-    val tokens = preparsedTokens(query, listener, exceptionFactory)
+    val tokens = preparsedTokens(query, listener, exceptionFactory, fullTokens = false)
     val parser = new CypherAstParser(tokens, true, exceptionFactory, notificationLogger)
 
     // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
@@ -181,8 +181,8 @@ object CypherAstParser {
         // The fast route failed, now try again with full error handling and prediction mode
 
         // Reset parser and token stream
-        tokens.seek(0)
-        parser.reset()
+        // We do not reuse the TokenStream because we need `fullTokens = true` for better error handling
+        parser.setInputStream(preparsedTokens(query, listener, exceptionFactory, fullTokens = true))
 
         // Slower but correct prediction.
         parser.getInterpreter.setPredictionMode(PredictionMode.LL)
@@ -215,9 +215,14 @@ object CypherAstParser {
     result
   }
 
-  private def preparsedTokens(cypher: String, listener: SyntaxErrorListener, exceptionFactory: CypherExceptionFactory) =
+  private def preparsedTokens(
+    cypher: String,
+    listener: SyntaxErrorListener,
+    exceptionFactory: CypherExceptionFactory,
+    fullTokens: Boolean
+  ) =
     try {
-      val lexer = CypherAstLexer.fromString(cypher)
+      val lexer = CypherAstLexer.fromString(cypher, fullTokens)
       lexer.removeErrorListeners()
       lexer.addErrorListener(listener)
       new CommonTokenStream(lexer)

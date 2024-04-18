@@ -81,22 +81,12 @@ final class CypherErrorStrategy extends DefaultErrorStrategy {
 
   override protected def reportNoViableAlternative(recognizer: Parser, e: NoViableAltException): Unit = {
     def msg = {
-      val tokens = recognizer.getInputStream
-      val input = {
-        if (tokens != null) {
-          if (e.getStartToken.getType == Token.EOF) "<EOF>"
-          else tokens.getText(e.getStartToken, e.getOffendingToken)
-        } else {
-          "<unknown input>"
-        }
-      }
-      val inputPart = if (input.nonEmpty) " at input " + escapeWSAndQuote(input) else ""
       val expectedPart =
         vocabulary.displayNames(e.getCtx) match {
           case names if names.nonEmpty => s": expected ${names.mkString(", ")}"
           case _                       => ""
         }
-      "No viable alternative" + inputPart + expectedPart
+      "No viable alternative" + expectedPart
     }
     recognizer.notifyErrorListeners(e.getOffendingToken, Try(msg).getOrElse("No viable alternative"), e)
   }
@@ -130,8 +120,10 @@ final class CypherErrorStrategy extends DefaultErrorStrategy {
       case _              => "" // Hide errors from computing expected tokens (it's a pretty complex thing)
     }
     s"$desc ${getTokenErrorDisplay(offender)}$expected"
-
   }
+
+  override def getTokenErrorDisplay(t: Token): String =
+    if (t.getType == Token.EOF) "''" else super.getTokenErrorDisplay(t)
 }
 
 class ExpectedDisplayNameCollector(vocabulary: CypherErrorVocabulary, ctx: RuleContext) extends Look {
