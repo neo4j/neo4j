@@ -109,59 +109,88 @@ object renderAsTreeTable {
 
   protected[plandescription] def splitDetails(
     details: List[String],
-    length: Int = MAX_DETAILS_COLUMN_WIDTH
+    maxLineLength: Int = MAX_DETAILS_COLUMN_WIDTH
   ): Seq[String] = {
-    var currentLine = ""
-    var lines = Seq.empty[String]
-
     if (details.isEmpty) return Seq.empty
 
-    details.init
-      .foreach { detail =>
-        val (newCurrentLine, newLines) = splitDetail(detail, currentLine, length, isLastDetail = false)
-        currentLine = newCurrentLine
-        lines = lines ++ newLines
+    val results = new StringBuilder()
+    def lastLineLength: Int =
+      results.lastIndexOf('\n') match {
+        case -1 => results.length()
+        case i  => results.length() - i - 1
       }
 
-    val (newCurrentLine, newLines) = splitDetail(details.last, currentLine, length, isLastDetail = true)
-    lines ++= newLines
-    if (newCurrentLine.strip().nonEmpty) {
-      lines = lines :+ newCurrentLine
+    def appendDetail(detail: String, isLast: Boolean): Unit = {
+      val separatorLength = if (isLast) 0 else SEPARATOR.length
+      val prefixSpace = if (lastLineLength == 0) "" else " "
+
+      detail.replaceAll("\r", "").split("\n", -1).toSeq match {
+        case Seq(singlePart) =>
+          // A non-multiline detail
+          def spaceLeftOnCurrentLine = maxLineLength - lastLineLength
+
+          if (prefixSpace.length + singlePart.length + separatorLength <= spaceLeftOnCurrentLine) {
+            // Can fit in the current line
+            results.append(prefixSpace).append(singlePart)
+          } else if (detail.length + separatorLength <= maxLineLength) {
+            // Can't fit in the current line, but it can fit on the next line - add detail to new line
+            results.append('\n').append(singlePart)
+          } else if (prefixSpace.length < spaceLeftOnCurrentLine) {
+            // Too long to fit on it's own line - add to current line and continue on next line(s)
+            results.append(prefixSpace)
+            val (head, tail) = detail.splitAt(spaceLeftOnCurrentLine)
+            results.append(head)
+            tail.grouped(maxLineLength).foreach { singlePartLine =>
+              results.append('\n').append(singlePartLine)
+            }
+          } else {
+            // Too long to fit on it's own line - add to next line(s)
+            detail.grouped(maxLineLength).foreach { singlePartLine =>
+              results.append('\n').append(singlePartLine)
+            }
+          }
+
+          // Append separator
+          if (!isLast) {
+            if (lastLineLength + SEPARATOR.length <= maxLineLength) {
+              results.append(SEPARATOR)
+            } else {
+              results.append('\n').append(SEPARATOR)
+            }
+          }
+        case manyParts =>
+          // A multiline detail
+          manyParts.foreach { multiLineDetailLine =>
+            if (multiLineDetailLine.length > maxLineLength) {
+              multiLineDetailLine.grouped(maxLineLength).foreach { singlePartLine =>
+                if (lastLineLength > 0) {
+                  results.append('\n')
+                }
+                results.append(singlePartLine)
+              }
+            } else {
+              if (lastLineLength > 0) {
+                results.append('\n')
+              }
+              results.append(multiLineDetailLine)
+            }
+          }
+          // Append separator
+          if (!isLast) {
+            if (lastLineLength + SEPARATOR.length <= maxLineLength) {
+              results.append(SEPARATOR).append('\n')
+            } else {
+              results.append('\n').append(SEPARATOR)
+            }
+          }
+
+      }
     }
 
-    lines.map(_.strip())
-  }
+    details.init.foreach(appendDetail(_, isLast = false))
+    appendDetail(details.last, isLast = true)
 
-  private def splitDetail(
-    detail: String,
-    currentLine: String,
-    length: Int,
-    isLastDetail: Boolean
-  ): (String, Seq[String]) = {
-    val separator = if (isLastDetail) "" else SEPARATOR
-    val spaceLeftOnCurrentLine = length - currentLine.length
-
-    val (newCurrentLine, lines) =
-      if (detail.length + separator.length <= spaceLeftOnCurrentLine) {
-        // Can fit in the current line
-        (currentLine + detail + separator, Seq.empty)
-      } else if (detail.length + separator.length <= length) {
-        // Can't fit in the current line, but it can fit on the next line - add detail to new line
-        (detail + separator, Seq(currentLine))
-      } else {
-        // Too long to fit on it's own line - add to current line and continue on next line(s)
-        val firstLine = currentLine + detail.take(spaceLeftOnCurrentLine)
-        val multiLines = detail.drop(spaceLeftOnCurrentLine).grouped(length).toSeq
-        val lines = firstLine +: multiLines
-        if (lines.last.length + separator.length <= length) {
-          (lines.last + separator, lines.init)
-        } else {
-          (separator, lines)
-        }
-      }
-
-    // If it is the last detail on the row, the space will be removed
-    (s"$newCurrentLine ", lines)
+    results.result().linesIterator.toSeq
   }
 }
 

@@ -964,6 +964,60 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     )
   }
 
+  test("should write details with newlines") {
+    val leaf = planDescription(id, "NODE", NoChildren, Seq(details("String\nwith\nline\nbreaks")), Set())
+    val root = planDescription(id, "NODE", SingleChild(leaf), Seq(details("foo\r\nbar")), Set())
+
+    renderAsTreeTable(root) should equal(
+      """+----------+----+---------+
+        || Operator | Id | Details |
+        |+----------+----+---------+
+        || +NODE    | -1 | foo     |
+        || |        |    | bar     |
+        || |        +----+---------+
+        || +NODE    | -1 | String  |
+        ||          |    | with    |
+        ||          |    | line    |
+        ||          |    | breaks  |
+        |+----------+----+---------+
+        |""".stripMargin
+    )
+  }
+
+  test("should write details with newlines, but keep other details on one line as long as possible") {
+    val leaf = planDescription(
+      id,
+      "NODE",
+      NoChildren,
+      Seq(
+        details((0 until 35).map(_.toString) ++ Seq("String\nwith\nline\nbreaks") ++ (0 until 35).map(_.toString))
+      ),
+      Set()
+    )
+    val root = planDescription(id, "NODE", SingleChild(leaf), Seq(details(Seq("foo\r\nbar", "baz\r\nboom"))), Set())
+
+    renderAsTreeTable(root) should equal(
+      """+----------+----+---------------------------------------------------------------------------------------------------+
+        || Operator | Id | Details                                                                                           |
+        |+----------+----+---------------------------------------------------------------------------------------------------+
+        || +NODE    | -1 | foo                                                                                               |
+        || |        |    | bar,                                                                                              |
+        || |        |    | baz                                                                                               |
+        || |        |    | boom                                                                                              |
+        || |        +----+---------------------------------------------------------------------------------------------------+
+        || +NODE    | -1 | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, |
+        ||          |    | 27, 28, 29, 30, 31, 32, 33, 34,                                                                   |
+        ||          |    | String                                                                                            |
+        ||          |    | with                                                                                              |
+        ||          |    | line                                                                                              |
+        ||          |    | breaks,                                                                                           |
+        ||          |    | 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, |
+        ||          |    | 27, 28, 29, 30, 31, 32, 33, 34                                                                    |
+        |+----------+----+---------------------------------------------------------------------------------------------------+
+        |""".stripMargin
+    )
+  }
+
   test("should split too long word in details rows on multiple lines") {
     val leaf = PlanDescriptionImpl(
       id,
@@ -1096,6 +1150,123 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     renderAsTreeTable.splitDetails(List("123", "1234567890123456789"), 15) should be(Seq(
       "123, 1234567890",
       "123456789"
+    ))
+  }
+
+  test("does not strip leading and trailing whitespace from details") {
+    renderAsTreeTable.splitDetails(List("  123  ", "  1234567890123456789  ", "  123\n  456  "), 10) should be(Seq(
+      "  123  ,  ", // 1 separator space and first space of "  1235..."
+      " 123456789",
+      "0123456789",
+      "  ,",
+      "  123",
+      "  456  "
+    ))
+  }
+
+  test("format single multi-line detail") {
+    renderAsTreeTable.splitDetails(List("123\n1234567890123456789"), 100) should be(Seq(
+      "123",
+      "1234567890123456789"
+    ))
+  }
+
+  test("format single multi-line detail with indentation") {
+    val detail =
+      """
+        |[a, b, c]
+        |    ^
+        |    this is the error
+        |""".stripMargin
+    renderAsTreeTable.splitDetails(List(detail), 100) should be(Seq(
+      "[a, b, c]",
+      "    ^",
+      "    this is the error"
+    ))
+  }
+
+  test("format single multi-line detail that needs to be split because of max-line length") {
+    renderAsTreeTable.splitDetails(List("123\n1234567890123456789\n12345\n1234567"), 10) should be(Seq(
+      "123",
+      "1234567890",
+      "123456789",
+      "12345",
+      "1234567"
+    ))
+  }
+
+  test("format multi-line detail that needs to be split because of max-line length together with other details") {
+    renderAsTreeTable.splitDetails(
+      List("abc", "123\n1234567890123456789", "abc", "123\n12345678901234567890", "abc"),
+      10
+    ) should be(Seq(
+      "abc,",
+      "123",
+      "1234567890",
+      "123456789,",
+      "abc,",
+      "123",
+      "1234567890",
+      "1234567890",
+      ", abc"
+    ))
+  }
+
+  test("format multi-line detail before other detail - do not put on same line") {
+    renderAsTreeTable.splitDetails(List("123\n123", "456"), 10) should be(Seq(
+      "123",
+      "123,",
+      "456"
+    ))
+  }
+
+  test("format multi-line detail before other detail - does not fit on same line") {
+    renderAsTreeTable.splitDetails(List("123\n1234567", "123"), 10) should be(Seq(
+      "123",
+      "1234567,",
+      "123"
+    ))
+  }
+
+  test("format multi-line detail before other detail - does not fit on same line (including separator)") {
+    renderAsTreeTable.splitDetails(List("123\n1234567890", "123"), 10) should be(Seq(
+      "123",
+      "1234567890",
+      ", 123"
+    ))
+  }
+
+  test("format multi-line detail after other detail - do not put on same line") {
+    renderAsTreeTable.splitDetails(List("456", "123\n123"), 10) should be(Seq(
+      "456,",
+      "123",
+      "123"
+    ))
+  }
+
+  test("format multiple multi-line details") {
+    renderAsTreeTable.splitDetails(List("123\n1234567890123456789", "1\n2\r\n3"), 100) should be(Seq(
+      "123",
+      "1234567890123456789,",
+      "1",
+      "2",
+      "3"
+    ))
+  }
+
+  test("format multi-line details together with single-line details") {
+    renderAsTreeTable.splitDetails(
+      List("123", "456", "78\n1234567890123456789\n1", "12", "123456789012", "34", "56"),
+      10
+    ) should be(Seq(
+      "123, 456,",
+      "78",
+      "1234567890",
+      "123456789",
+      "1,",
+      "12, 123456",
+      "789012,",
+      "34, 56"
     ))
   }
 

@@ -55,6 +55,17 @@ object Arguments {
     EstimatedRows(effectiveCardinality, Some(effectiveCardinality))
   }
 
+  /**
+   * This will get rendered in the Details column.
+   * Each String in info can be of two kinds:
+   * 1) If the String contains no newline characters, it is considered a single-line detail.
+   *    We will try to render these together with other single-line detail on the same line,
+   *    until a line is full. If a single-line detail is longer than the maximal line length,
+   *    it will be split.
+   * 2) If the String contains newline characters, it is considered a multi-line detail.
+   *    A multi-line detail occupies multiple lines, and will not share a line with other details.
+   *    If a line of a multi-line detail is longer than the maximal line length, it will be split.
+   */
   case class Details(info: collection.Seq[PrettyString]) extends Argument
 
   case class Time(value: Long) extends Argument
