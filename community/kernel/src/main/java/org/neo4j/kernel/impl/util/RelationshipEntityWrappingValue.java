@@ -23,6 +23,7 @@ import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 
+import java.util.function.Consumer;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -34,6 +35,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.RelationshipVisitor;
 import org.neo4j.values.virtual.VirtualNodeReference;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -176,6 +178,18 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
             return entity.getTransaction().isOpen();
         }
         return true;
+    }
+
+    @Override
+    public long startNodeId(Consumer<RelationshipVisitor> consumer) {
+        long startNodeId = super.startNodeId(consumer);
+        return startNodeId != NO_ID ? startNodeId : startNode().id();
+    }
+
+    @Override
+    public long endNodeId(Consumer<RelationshipVisitor> consumer) {
+        long endNodeId = super.endNodeId(consumer);
+        return endNodeId != NO_ID ? endNodeId : endNode().id();
     }
 
     @Override

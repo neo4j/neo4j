@@ -84,6 +84,7 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarity;
 import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
+import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
@@ -1030,11 +1031,17 @@ public final class CypherFunctions {
         } else if (entity instanceof NodeValue node) {
             // Needed to get correct ids in certain fabric queries.
             return stringValue(node.elementId());
+        } else if (entity instanceof VirtualNodeValue node && node.id() < 0) {
+            // Don't format element ids for nodes with negative ids, such as db schema visualization
+            return stringValue(String.valueOf(node.id()));
         } else if (entity instanceof VirtualNodeValue node) {
             return stringValue(idMapper.nodeElementId(node.id()));
         } else if (entity instanceof RelationshipValue relationship) {
             // Needed to get correct ids in certain fabric queries.
             return stringValue(relationship.elementId());
+        } else if (entity instanceof VirtualRelationshipValue relationship && relationship.id() < 0) {
+            // Don't format element ids for relationships with negative ids, such as db schema visualization
+            return stringValue(String.valueOf(relationship.id()));
         } else if (entity instanceof VirtualRelationshipValue relationship) {
             return stringValue(idMapper.relationshipElementId(relationship.id()));
         }
@@ -1111,6 +1118,12 @@ public final class CypherFunctions {
     public static AnyValue labels(AnyValue item, DbAccess access, NodeCursor nodeCursor) {
         if (item == NO_VALUE) {
             return NO_VALUE;
+        } else if (item instanceof NodeEntityWrappingNodeValue node && node.id() < 0) {
+            // Labels for entities with negative id, such as db schema visualization, are already populated since
+            // the entity isn't a node in storage
+            var builder = ListValueBuilder.newListBuilder(node.labels().length());
+            node.labels().forEach(builder::add);
+            return builder.build();
         } else if (item instanceof VirtualNodeValue node) {
             return access.getLabelsForNode(node.id(), nodeCursor);
         } else {
