@@ -58,7 +58,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n)
       .withNfa { sb =>
-        sb.newState(true, true)
+        sb.newState(isStartState = true, isFinalState = true)
       }
       .paths()
 
@@ -73,7 +73,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n)
       .withNfa { sb =>
-        sb.newStartState().addNodeJuxtaposition(sb.newFinalState())
+        sb.newState(isStartState = true).addNodeJuxtaposition(sb.newState(isFinalState = true))
       }
       .paths()
 
@@ -88,8 +88,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n)
       .withNfa { sb =>
-        val e = sb.newFinalState()
-        sb.newStartState().addNodeJuxtaposition(e, (_: Long) => false)
+        val e = sb.newState(isFinalState = true)
+        sb.newState(isStartState = true).addNodeJuxtaposition(e, (_: Long) => false)
       }
       .paths()
 
@@ -107,7 +107,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n)
       .withNfa { sb =>
-        sb.newStartState().addRelationshipExpansion(sb.newFinalState())
+        sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
       }
       .paths()
 
@@ -126,7 +126,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        sb.newStartState().addRelationshipExpansion(sb.newFinalState())
+        sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
       }
       .paths()
 
@@ -145,7 +145,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        sb.newStartState().addRelationshipExpansion(sb.newFinalState())
+        sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
       }
       .paths()
 
@@ -161,7 +161,10 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        sb.newStartState().addRelationshipExpansion(sb.newFinalState(), Direction.OUTGOING)
+        sb.newState(isStartState = true).addRelationshipExpansion(
+          sb.newState(isFinalState = true),
+          direction = Direction.OUTGOING
+        )
       }
       .from(a)
       .paths()
@@ -180,7 +183,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        sb.newStartState().addRelationshipExpansion(sb.newFinalState())
+        sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
       }
       .paths()
 
@@ -202,8 +205,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        val e = sb.newFinalState()
-        sb.newStartState().addRelationshipExpansion(e, (n: Long) => n == n2)
+        val e = sb.newState(isFinalState = true)
+        sb.newState(isStartState = true).addRelationshipExpansion(e, nodePredicate = (n: Long) => n == n2)
       }
       .paths()
 
@@ -222,8 +225,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        val e = sb.newFinalState()
-        sb.newStartState().addRelationshipExpansion(e, RelationshipPredicate.onId(_ == r))
+        val e = sb.newState(isFinalState = true)
+        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onId(_ == r))
       }
       .paths()
 
@@ -242,8 +245,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        val e = sb.newFinalState()
-        sb.newStartState().addRelationshipExpansion(e, RelationshipPredicate.onType(_ == 66))
+        val e = sb.newState(isFinalState = true)
+        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onType(_ == 66))
       }
       .paths()
 
@@ -262,8 +265,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        val e = sb.newFinalState()
-        sb.newStartState().addRelationshipExpansion(e, Array(66))
+        val e = sb.newState(isFinalState = true)
+        sb.newState(isStartState = true).addRelationshipExpansion(e, types = Array(66))
       }
       .paths()
 
@@ -282,8 +285,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        val e = sb.newFinalState()
-        sb.newStartState().addRelationshipExpansion(e, Direction.INCOMING)
+        val e = sb.newState(isFinalState = true)
+        sb.newState(isStartState = true).addRelationshipExpansion(e, direction = Direction.INCOMING)
       }
       .paths()
 
@@ -302,8 +305,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        val e = sb.newFinalState()
-        sb.newStartState().addRelationshipExpansion(e, Direction.OUTGOING)
+        val e = sb.newState(isFinalState = true)
+        sb.newState(isStartState = true).addRelationshipExpansion(e, direction = Direction.OUTGOING)
       }
       .paths()
 
@@ -322,8 +325,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        val e = sb.newFinalState()
-        sb.newStartState().addRelationshipExpansion(e, RelationshipPredicate.onSource(_ == n2))
+        val e = sb.newState(isFinalState = true)
+        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onSource(_ == n2))
       }
       .paths()
 
@@ -342,8 +345,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        val e = sb.newFinalState()
-        sb.newStartState().addRelationshipExpansion(e, RelationshipPredicate.onTarget(_ == n2))
+        val e = sb.newState(isFinalState = true)
+        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onTarget(_ == n2))
       }
       .paths()
 
@@ -363,8 +366,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .from(n0)
       .withNfa { sb =>
         val s = sb.newState()
-        sb.newStartState().addRelationshipExpansion(s)
-        s.addRelationshipExpansion(sb.newFinalState())
+        sb.newState(isStartState = true).addRelationshipExpansion(s)
+        s.addRelationshipExpansion(sb.newState(isFinalState = true))
       }
       .paths()
 
@@ -410,12 +413,12 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val s = sb.newStartState()
+        val s = sb.newState(isStartState = true)
         val a = sb.newState()
-        val e = sb.newFinalState()
+        val e = sb.newState(isFinalState = true)
 
         s.addNodeJuxtaposition(a)
-        a.addRelationshipExpansion(e, Direction.OUTGOING)
+        a.addRelationshipExpansion(e, direction = Direction.OUTGOING)
         e.addNodeJuxtaposition(a)
       }
       .from(a)
@@ -437,9 +440,9 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val s = sb.newStartState()
+        val s = sb.newState(isStartState = true)
         val a = sb.newState()
-        val e = sb.newFinalState()
+        val e = sb.newState(isFinalState = true)
 
         s.addNodeJuxtaposition(a)
         a.addRelationshipExpansion(e)
@@ -464,10 +467,10 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val s = sb.newStartState("s")
+        val s = sb.newState("s", isStartState = true)
         val a = sb.newState("a")
         val b = sb.newState("b")
-        val e = sb.newFinalState("e")
+        val e = sb.newState("e", isFinalState = true)
 
         s.addNodeJuxtaposition(a)
         a.addRelationshipExpansion(b)
@@ -499,8 +502,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val s = sb.newStartState("s")
-        val e = sb.newFinalState("e")
+        val s = sb.newState("s", isStartState = true)
+        val e = sb.newState("e", isFinalState = true)
         s.addNodeJuxtaposition(e)
         e.addRelationshipExpansion(e)
       }
@@ -530,8 +533,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val s = sb.newStartState("s")
-        val e = sb.newFinalState("e")
+        val s = sb.newState("s", isStartState = true)
+        val e = sb.newState("e", isFinalState = true)
 
         s.addRelationshipExpansion(e)
         e.addRelationshipExpansion(e)
@@ -561,9 +564,9 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val s = sb.newStartState("s")
+        val s = sb.newState("s", isStartState = true)
         val a = sb.newState("a")
-        val e = sb.newFinalState("e")
+        val e = sb.newState("e", isFinalState = true)
 
         s.addNodeJuxtaposition(a)
         a.addRelationshipExpansion(e)
@@ -642,10 +645,10 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val start = sb.newStartState()
+        val start = sb.newState(isStartState = true)
         val a = sb.newState()
-        val end = sb.newFinalState()
-        start.addRelationshipExpansion(a, Direction.OUTGOING)
+        val end = sb.newState(isFinalState = true)
+        start.addRelationshipExpansion(a, direction = Direction.OUTGOING)
         a.addNodeJuxtaposition(start)
         a.addNodeJuxtaposition(end, (n: Long) => n == d)
       }
@@ -907,7 +910,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .from(a)
       .withNfa { sb =>
         val s = sb.newState("s", true, true)
-        s.addRelationshipExpansion(s, Direction.OUTGOING)
+        s.addRelationshipExpansion(s, direction = Direction.OUTGOING)
       }
       .from(a)
       .logged
@@ -952,9 +955,9 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val s = sb.newStartState("s")
+        val s = sb.newState("s", isStartState = true)
         s.addRelationshipExpansion(s)
-        val e = sb.newFinalState("e")
+        val e = sb.newState("e", isFinalState = true)
         s.addNodeJuxtaposition(e)
       }
       .from(a)
@@ -977,8 +980,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val s = sb.newStartState("s")
-        val e = sb.newFinalState("e")
+        val s = sb.newState("s", isStartState = true)
+        val e = sb.newState("e", isFinalState = true)
 
         s.addRelationshipExpansion(e)
         e.addNodeJuxtaposition(s)
@@ -1002,9 +1005,9 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(a)
       .withNfa { sb =>
-        val s = sb.newStartState("s")
+        val s = sb.newState("s", isStartState = true)
         val a = sb.newState("a")
-        val e = sb.newFinalState("e")
+        val e = sb.newState("e", isFinalState = true)
 
         s.addRelationshipExpansion(a)
         a.addNodeJuxtaposition(s)
@@ -1020,12 +1023,12 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
   }
 
   private def anyDirectedPath(sb: PGStateBuilder): Unit = {
-    val s = sb.newState(true, true)
-    s.addRelationshipExpansion(s, Direction.OUTGOING)
+    val s = sb.newState(isStartState = true, isFinalState = true)
+    s.addRelationshipExpansion(s, direction = Direction.OUTGOING)
   }
 
   private def singleRelPath(sb: PGStateBuilder): Unit = {
-    sb.newStartState().addRelationshipExpansion(sb.newFinalState())
+    sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
   }
 
   private def pathLength(path: TracedPath) = path.entities().count(_.entityType() == EntityType.RELATIONSHIP)
@@ -1067,14 +1070,14 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       new PGPathPropagatingBFS[A](
         source,
         intoTarget,
-        nfa.getStart.state(),
+        nfa.getStart.state,
         new MockGraphCursor(graph),
         createPathTracer(mt, hooks),
         projection(_),
         predicate(_),
         isGroup,
         k,
-        nfa.stateCount(),
+        nfa.stateCount,
         mt,
         hooks,
         assertOpen

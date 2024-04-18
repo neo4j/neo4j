@@ -64,20 +64,19 @@ import scala.collection.mutable
  *   builder.build()
  *  }}}
  */
-class NFABuilder protected (_startState: State) {
+class NFABuilder protected (val startState: State) {
 
-  private val states: mutable.SortedMap[Int, State] = mutable.SortedMap(_startState.id -> _startState)
-  private var startState: State = _startState
+  private val states: mutable.SortedMap[Int, State] = mutable.SortedMap(startState.id -> startState)
   private var finalState: State = _
   private val transitions: mutable.MultiDict[Int, Transition] = mutable.MultiDict.empty
   private var nextId: Int = 0
-  private var lastState: State = _startState
+  private var lastState: State = startState
 
   /**
-   * @param _startState the varName of the initial node of the start state of the NFA.
+   * @param startState the varName of the initial node of the start state of the NFA.
    */
-  def this(_startState: LogicalVariable) = {
-    this(State(0, _startState, None))
+  def this(startState: LogicalVariable) = {
+    this(State(0, startState, None))
     nextId += 1
   }
 
@@ -136,11 +135,6 @@ class NFABuilder protected (_startState: State) {
   }
 
   def getLastState: State = lastState
-
-  def setStartState(startState: State): NFABuilder = {
-    this.startState = startState
-    this
-  }
 
   def setFinalState(finalState: State): NFABuilder = {
     if (this.finalState != null) {

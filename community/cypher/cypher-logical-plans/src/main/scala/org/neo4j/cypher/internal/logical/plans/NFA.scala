@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicat
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFA.Transition
 import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.util.Foldable
-import org.neo4j.cypher.internal.util.Rewritable
 
 import scala.collection.immutable.ArraySeq
 
@@ -131,7 +129,7 @@ case class NFA(
   transitions: Map[Int, Set[Transition]],
   startId: Int,
   finalId: Int
-) extends Rewritable with Foldable {
+) {
   def startState: State = states(startId)
   def finalState: State = states(finalId)
 
@@ -184,23 +182,8 @@ case class NFA(
     s"digraph G {\n$nodes\n$edges\n}"
   }
 
-  // noinspection ZeroIndexToHead
-  def dup(children: Seq[AnyRef]): this.type = NFA(
-    children(0).asInstanceOf[ArraySeq[State]],
-    children(1).asInstanceOf[Map[Int, Set[Transition]]],
-    children(2).asInstanceOf[Int],
-    children(3).asInstanceOf[Int]
-  ).asInstanceOf[this.type]
-
-  private def assertSortedStates: Boolean = {
-    !states.zipWithIndex.exists {
-      case (state, index) => state.id != index
-      case _              => false
-    }
-  }
-
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-    assertSortedStates,
+    states.zipWithIndex.forall { case (s, i) => s.id == i },
     "NFA States should be sorted by internal State Id"
   )
 }
