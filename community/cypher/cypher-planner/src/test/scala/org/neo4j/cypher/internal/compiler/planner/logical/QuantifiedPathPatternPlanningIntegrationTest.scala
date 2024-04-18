@@ -2380,4 +2380,103 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .build()
     )
   }
+
+  test("should not inline ForAllRepetitions predicate into the wrong QPP") {
+    val query =
+      """MATCH
+        |  (a:N {start: "Yes"}) ((b)-[r]-(c) WHERE c in h)+ (d) ((g)-[s]-(h))+ (i)
+        |RETURN count(*)""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`count(*)`")
+        .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
+        .filter("d IN h", "all(anon_0 IN range(0, size(c) - 1) WHERE c[anon_0] IN h)")
+        .trail(TrailParameters(
+          1,
+          Unlimited,
+          "d",
+          "i",
+          "g",
+          "h",
+          Set(("h", "h")),
+          Set(),
+          Set("s"),
+          Set(),
+          Set("r"),
+          false
+        ))
+        .|.filterExpression(isRepeatTrailUnique("s"))
+        .|.expandAll("(g)-[s]-(h)")
+        .|.argument("g")
+        .trail(TrailParameters(
+          1,
+          Unlimited,
+          "a",
+          "d",
+          "b",
+          "c",
+          Set(("c", "c")),
+          Set(("r", "r")),
+          Set("r"),
+          Set(),
+          Set(),
+          false
+        ))
+        .|.filterExpression(isRepeatTrailUnique("r"))
+        .|.expandAll("(b)-[r]-(c)")
+        .|.argument("b")
+        .filter("a.start = 'Yes'")
+        .nodeByLabelScan("a", "N")
+        .build()
+    )
+  }
+
+  test("should inline ForAllRepetitions predicate if possible and plan afterwards if not") {
+    val query =
+      """MATCH
+        |  (z)-[r WHERE r.prop = z.prop]-+(a)((b)--(c) WHERE c.prop = a.prop AND b.prop = d.prop)+(d)-[s WHERE s.prop = e.prop]-+(e)
+        |RETURN count(*)""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`count(*)`")
+        .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
+        .filter(
+          "none(anon_4 IN r WHERE anon_4 IN anon_1)",
+          "none(anon_5 IN r WHERE anon_5 IN s)",
+          "all(anon_2 IN range(0, size(r) - 1) WHERE (r[anon_2]).prop = z.prop)"
+        )
+        .expand("(a)-[r*1..]-(z)", projectedDir = INCOMING)
+        .filter(
+          "cacheN[d.prop] = cacheNFromStore[a.prop]",
+          "cacheNFromStore[a.prop] = cacheNFromStore[d.prop]",
+          "all(anon_3 IN range(0, size(c) - 1) WHERE (c[anon_3]).prop = cacheNFromStore[a.prop])"
+        )
+        .trail(TrailParameters(
+          1,
+          Unlimited,
+          "d",
+          "a",
+          "c",
+          "b",
+          Set(("c", "c")),
+          Set(("anon_0", "anon_1")),
+          Set("anon_0"),
+          Set(),
+          Set("s"),
+          true
+        ))
+        .|.filterExpressionOrString("b.prop = cacheNFromStore[d.prop]", isRepeatTrailUnique("anon_0"))
+        .|.expandAll("(c)-[anon_0]-(b)")
+        .|.argument("c", "d")
+        .expand(
+          "(e)-[s*1..]-(d)",
+          projectedDir = INCOMING,
+          relationshipPredicates = Seq(Predicate("s", "s.prop = e.prop"))
+        )
+        .allNodeScan("e")
+        .build()
+    )
+  }
 }

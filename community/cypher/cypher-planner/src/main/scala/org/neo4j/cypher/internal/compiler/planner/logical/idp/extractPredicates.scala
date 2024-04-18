@@ -471,7 +471,9 @@ object extractQPPPredicates {
         val extracted = predicate.replaceAllOccurrencesBy(iterator, singletonVariable)
         ExtractedPredicate(original, extracted)
 
-      case far: ForAllRepetitions =>
+      case far: ForAllRepetitions
+        // only extract if this predicate is actually on this QPP
+        if availableLocalSymbolsMapping.contains(far.groupVariableAnchor) =>
         ExtractedPredicate(far, far.originalInnerPredicate)
     }
   }
