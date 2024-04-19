@@ -325,5 +325,5 @@ public abstract class ProgressMonitorFactory {
         public abstract void percentage(int percentage);
     }
 
-    private static final IndicatorListener NO_INDICATOR_LISTENER = (progress, total) -> {};
+    public static final IndicatorListener NO_INDICATOR_LISTENER = (progress, total) -> {};
 }
