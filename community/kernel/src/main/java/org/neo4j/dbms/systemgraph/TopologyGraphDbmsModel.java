@@ -294,6 +294,11 @@ public interface TopologyGraphDbmsModel {
     Set<DatabaseReferenceImpl.Composite> getAllCompositeDatabaseReferences();
 
     /**
+     * Fetches all known sharded property database references
+     */
+    Set<DatabaseReferenceImpl.SPD> getAllShardedPropertyDatabaseReferences();
+
+    /**
      * Fetches the {@link DatabaseReference} corresponding to the provided name.
      *
      * @param databaseName the database alias to resolve a {@link DatabaseReference} for.

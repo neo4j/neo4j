@@ -44,6 +44,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CO
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_IV_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_URI_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SHARD_COUNT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_FORMAT_NEW_DB_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_RANDOM_ID_PROPERTY;
@@ -386,6 +387,11 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             node.setProperty(DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY, password);
             node.setProperty(DATABASE_SEED_CREDENTIALS_IV_PROPERTY, iv);
             node.setProperty(DATABASE_SEED_CONFIG_PROPERTY, config);
+            return this;
+        }
+
+        public DatabaseNodeBuilder withShardCount(int shardCount) {
+            node.setProperty(DATABASE_SHARD_COUNT_PROPERTY, shardCount);
             return this;
         }
 

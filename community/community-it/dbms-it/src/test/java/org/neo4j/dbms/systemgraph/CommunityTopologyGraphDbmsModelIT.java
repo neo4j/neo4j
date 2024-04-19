@@ -22,6 +22,7 @@ package org.neo4j.dbms.systemgraph;
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
+import static org.neo4j.kernel.database.DatabaseReferenceImpl.SPD.shardName;
 
 import java.util.List;
 import java.util.Map;
@@ -160,6 +161,46 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         assertThat(dbmsModel.getAllExternalDatabaseReferences())
                 .isEqualTo(Set.of(
                         new DatabaseReferenceImpl.External(name("rem1"), name("remAlias"), remoteNeo4j, remAliasId1)));
+    }
+
+    @Test
+    void canReturnAllShardedPropertyDatabaseReferences() {
+        // given
+        var foo0 = newDatabase(b -> b.withDatabase(shardName("foo", 0)));
+        var foo1 = newDatabase(b -> b.withDatabase(shardName("foo", 1)));
+        var foo = newDatabase(b -> b.withDatabase("foo").withShardCount(2));
+        createInternalReferenceForDatabase(tx, foo0.name(), true, foo0);
+        createInternalReferenceForDatabase(tx, foo1.name(), true, foo1);
+        createInternalReferenceForDatabase(tx, foo.name(), true, foo);
+
+        var bar0 = newDatabase(b -> b.withDatabase(shardName("bar", 0)));
+        var bar1 = newDatabase(b -> b.withDatabase(shardName("bar", 1)));
+        var bar2 = newDatabase(b -> b.withDatabase(shardName("bar", 2)));
+        var bar3 = newDatabase(b -> b.withDatabase(shardName("bar", 3)));
+        var bar = newDatabase(b -> b.withDatabase("bar").withShardCount(4));
+        createInternalReferenceForDatabase(tx, bar0.name(), true, bar0);
+        createInternalReferenceForDatabase(tx, bar1.name(), true, bar1);
+        createInternalReferenceForDatabase(tx, bar2.name(), true, bar2);
+        createInternalReferenceForDatabase(tx, bar3.name(), true, bar3);
+        createInternalReferenceForDatabase(tx, bar.name(), true, bar);
+
+        // then
+        assertThat(dbmsModel.getAllShardedPropertyDatabaseReferences())
+                .isEqualTo(Set.of(
+                        new DatabaseReferenceImpl.SPD(
+                                new NormalizedDatabaseName(foo.name()),
+                                foo,
+                                Map.of(
+                                        0, new DatabaseReferenceImpl.Internal(name(foo0.name()), foo0, true),
+                                        1, new DatabaseReferenceImpl.Internal(name(foo1.name()), foo1, true))),
+                        new DatabaseReferenceImpl.SPD(
+                                new NormalizedDatabaseName(bar.name()),
+                                bar,
+                                Map.of(
+                                        0, new DatabaseReferenceImpl.Internal(name(bar0.name()), bar0, true),
+                                        1, new DatabaseReferenceImpl.Internal(name(bar1.name()), bar1, true),
+                                        2, new DatabaseReferenceImpl.Internal(name(bar2.name()), bar2, true),
+                                        3, new DatabaseReferenceImpl.Internal(name(bar3.name()), bar3, true)))));
     }
 
     @Test

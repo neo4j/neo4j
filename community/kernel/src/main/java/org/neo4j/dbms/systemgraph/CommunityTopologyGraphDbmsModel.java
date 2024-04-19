@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -66,11 +67,10 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     public Set<DatabaseReference> getAllDatabaseReferences() {
         var primaryRefs = CommunityTopologyGraphDbmsModelUtil.getAllPrimaryStandardDatabaseReferencesInRoot(tx);
         var internalAliasRefs = getAllInternalDatabaseReferencesInRoot();
-        var internalRefs = Stream.concat(primaryRefs, internalAliasRefs);
         var externalRefs = getAllExternalDatabaseReferencesInRoot();
         var compositeRefs = getAllCompositeDatabaseReferencesInRoot();
-
-        return Stream.of(internalRefs, externalRefs, compositeRefs)
+        var shardedPropertyRefs = getAllShardedPropertyDatabaseReferencesInRoot();
+        return Stream.of(primaryRefs, internalAliasRefs, externalRefs, compositeRefs, shardedPropertyRefs)
                 .flatMap(s -> s)
                 .collect(Collectors.toUnmodifiableSet());
     }
@@ -94,11 +94,17 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     @Override
+    public Set<DatabaseReferenceImpl.SPD> getAllShardedPropertyDatabaseReferences() {
+        return getAllShardedPropertyDatabaseReferencesInRoot().collect(Collectors.toUnmodifiableSet());
+    }
+
+    @Override
     public Optional<DatabaseReference> getDatabaseRefByAlias(String databaseName) {
         // A uniqueness constraint at the Cypher level should prevent two references from ever having the same name, but
         // in case they do, we simply prefer the internal reference.
-        return getCompositeDatabaseReferenceInRoot(databaseName)
-                .map(composite -> (DatabaseReference) composite)
+        return Optional.<DatabaseReference>empty()
+                .or(() -> getCompositeDatabaseReferenceInRoot(databaseName))
+                .or(() -> getShardedPropertyDatabaseReferenceInRoot(databaseName))
                 .or(() -> CommunityTopologyGraphDbmsModelUtil.getInternalDatabaseReference(tx, databaseName))
                 .or(() -> CommunityTopologyGraphDbmsModelUtil.getExternalDatabaseReference(tx, databaseName));
     }
@@ -148,10 +154,41 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     private Optional<DatabaseReferenceImpl.Composite> createCompositeReference(Node alias, Node db) {
         return CommunityTopologyGraphDbmsModelUtil.ignoreConcurrentDeletes(() -> {
             var aliasName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE_NAME, alias);
+            var databaseId = CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db);
             var compositeName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE, db);
             var components = getAllDatabaseReferencesInComposite(compositeName);
-            var databaseId = CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db);
             return Optional.of(new DatabaseReferenceImpl.Composite(aliasName, databaseId, components));
+        });
+    }
+
+    private Stream<DatabaseReferenceImpl.SPD> getAllShardedPropertyDatabaseReferencesInRoot() {
+        return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE)
+                .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
+                        .filter(db -> db.hasProperty(DATABASE_SHARD_COUNT_PROPERTY))
+                        .flatMap(db -> createShardedPropertyDatabaseReference(alias, db))
+                        .stream());
+    }
+
+    private Optional<DatabaseReferenceImpl.SPD> getShardedPropertyDatabaseReferenceInRoot(String databaseName) {
+        return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE, databaseName)
+                .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
+                        .filter(db -> db.hasProperty(DATABASE_SHARD_COUNT_PROPERTY))
+                        .flatMap(db -> createShardedPropertyDatabaseReference(alias, db))
+                        .stream())
+                .findFirst();
+    }
+
+    private Optional<DatabaseReferenceImpl.SPD> createShardedPropertyDatabaseReference(Node alias, Node db) {
+        return CommunityTopologyGraphDbmsModelUtil.ignoreConcurrentDeletes(() -> {
+            var aliasName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE_NAME, alias);
+            var databaseId = CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db);
+            int shardCount = (int) db.getProperty(DATABASE_SHARD_COUNT_PROPERTY, 0);
+            var shards = IntStream.range(0, shardCount)
+                    .boxed()
+                    .collect(Collectors.toMap(
+                            i -> i, i -> getDatabaseRefByAlias(DatabaseReferenceImpl.SPD.shardName(aliasName.name(), i))
+                                    .orElseThrow()));
+            return Optional.of(new DatabaseReferenceImpl.SPD(aliasName, databaseId, shards));
         });
     }
 
@@ -187,6 +224,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
         return getAliasNodesInNamespace(DATABASE_NAME_LABEL, namespace)
                 .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
                         .filter(node -> !node.hasProperty(DATABASE_VIRTUAL_PROPERTY))
+                        .filter(node -> !node.hasProperty(DATABASE_SHARD_COUNT_PROPERTY))
                         .map(CommunityTopologyGraphDbmsModelUtil::getDatabaseId)
                         .flatMap(db -> CommunityTopologyGraphDbmsModelUtil.createInternalReference(alias, db))
                         .stream());
