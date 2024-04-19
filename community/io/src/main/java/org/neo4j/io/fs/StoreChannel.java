@@ -67,6 +67,8 @@ public interface StoreChannel
      */
     void readAll(ByteBuffer dst) throws IOException;
 
+    void readAll(ByteBuffer dst, long position) throws IOException;
+
     void force(boolean metaData) throws IOException;
 
     @Override

@@ -215,6 +215,18 @@ public class StoreFileChannel implements StoreChannel {
     }
 
     @Override
+    public void readAll(ByteBuffer dst, long position) throws IOException {
+        long filePosition = position;
+        while (dst.hasRemaining()) {
+            int bytesRead = channel.read(dst, filePosition);
+            if (bytesRead < 0) {
+                throw new IllegalStateException("Channel has reached end-of-stream.");
+            }
+            filePosition += bytesRead;
+        }
+    }
+
+    @Override
     public void force(boolean metaData) throws IOException {
         channel.force(metaData);
     }

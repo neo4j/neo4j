@@ -103,6 +103,11 @@ public class StorageChannel implements StoreChannel {
     }
 
     @Override
+    public void readAll(ByteBuffer dst, long position) throws IOException {
+        position(position).readAll(dst);
+    }
+
+    @Override
     public int read(ByteBuffer dst) throws IOException {
         return channel.read(dst);
     }
