@@ -44,6 +44,10 @@ class asPrettyStringTest extends CypherFunSuite with AstConstructionTestSupport 
     pretty"Foo$p1$p2" should equal(asPrettyString("FooBarBaz"))
   }
 
+  test("should interpret escape sequences in interpolator") {
+    pretty"abc\ndef" should equal(asPrettyString.raw("abc\ndef"))
+  }
+
   test("should remove multiple layers of namespacer renamings") {
     pretty"var" shouldBe asPrettyString("    var@10@20")
   }

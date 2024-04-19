@@ -121,10 +121,10 @@ object asPrettyString {
     def pretty(args: PrettyString*): PrettyString = {
       val connectors = sc.parts.iterator
       val expressions = args.iterator
-      val buf = new StringBuffer(connectors.next())
+      val buf = new StringBuilder(StringContext.processEscapes(connectors.next()))
       while (connectors.hasNext) {
         buf append expressions.next().prettifiedString
-        buf append connectors.next()
+        buf append StringContext.processEscapes(connectors.next())
       }
       PrettyString(buf.toString)
     }
