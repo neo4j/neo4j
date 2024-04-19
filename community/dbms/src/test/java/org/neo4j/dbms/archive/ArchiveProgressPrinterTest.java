@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.dbms.archive.LoggingArchiveProgressPrinter.PercentageCondition;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.io.ByteUnit;
@@ -94,7 +95,7 @@ class ArchiveProgressPrinterTest {
     @Test
     void percentageConditionShouldBeReachedEveryPercent() {
         long maxBytes = 12345;
-        var condition = new ArchiveProgressPrinter.PercentageCondition(maxBytes);
+        var condition = new PercentageCondition(maxBytes);
 
         long progressSize = condition.bucket;
         long partialProgress = progressSize / 2;
@@ -110,7 +111,7 @@ class ArchiveProgressPrinterTest {
     private static List<String> executeSomeWork(OutputProgressPrinter outputPrinter) {
         List<String> expected = new ArrayList<>();
         var clock = Clocks.fakeClock();
-        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter(outputPrinter, clock::instant);
+        ArchiveProgressPrinter progressPrinter = new LoggingArchiveProgressPrinter(outputPrinter, clock::instant);
 
         progressPrinter.maxBytes(1000);
         progressPrinter.maxFiles(10);
@@ -146,7 +147,8 @@ class ArchiveProgressPrinterTest {
     private static List<String> executeSlowWorkload(OutputProgressPrinter outputProgressPrinter) {
         List<String> expected = new ArrayList<>();
         var clock = Clocks.fakeClock();
-        ArchiveProgressPrinter progressPrinter = new ArchiveProgressPrinter(outputProgressPrinter, clock::instant);
+        ArchiveProgressPrinter progressPrinter =
+                new LoggingArchiveProgressPrinter(outputProgressPrinter, clock::instant);
         var numFiles = 10;
         var numBytes = 10_000;
 

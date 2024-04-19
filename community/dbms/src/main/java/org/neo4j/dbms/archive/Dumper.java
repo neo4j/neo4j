@@ -46,6 +46,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.neo4j.commandline.Util;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
+import org.neo4j.dbms.archive.printer.ProgressPrinters.EmptyOutputProgressPrinter;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Resource;
@@ -75,7 +76,15 @@ public class Dumper {
 
     private Dumper(FileSystemAbstraction fs, OutputProgressPrinter progressPrinter) {
         this.fs = requireNonNull(fs);
-        this.progressPrinter = new ArchiveProgressPrinter(requireNonNull(progressPrinter), Instant::now);
+        this.progressPrinter = createProgressPrinter(progressPrinter);
+    }
+
+    private static ArchiveProgressPrinter createProgressPrinter(OutputProgressPrinter progressPrinter) {
+        requireNonNull(progressPrinter);
+        if (progressPrinter instanceof EmptyOutputProgressPrinter) {
+            return ArchiveProgressPrinter.EMPTY;
+        }
+        return new LoggingArchiveProgressPrinter(progressPrinter, Instant::now);
     }
 
     public void dump(Path path, Path archive, CompressionFormat format) throws IOException {

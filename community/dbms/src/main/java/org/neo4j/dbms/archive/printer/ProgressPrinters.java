@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.PrintStream;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.NullLog;
 
 public class ProgressPrinters {
     private ProgressPrinters() {}
@@ -33,20 +34,19 @@ public class ProgressPrinters {
     }
 
     public static OutputProgressPrinter emptyPrinter() {
-        return new EmptyOutputProgressPrinter();
+        return EmptyOutputProgressPrinter.EMPTY_PROGRESS_PRINTER;
     }
 
     public static OutputProgressPrinter logProviderPrinter(InternalLog log) {
         requireNonNull(log);
+        if (log instanceof NullLog) {
+            return emptyPrinter();
+        }
         return new LogOutputProgressPrinter(log);
     }
 
-    private static class EmptyOutputProgressPrinter implements OutputProgressPrinter {
-        @Override
-        public void print(String message) {}
-    }
-
     private static class PrintStreamOutputProgressPrinter implements OutputProgressPrinter {
+
         private final PrintStream printStream;
         private final boolean interactive;
 
@@ -71,6 +71,7 @@ public class ProgressPrinters {
     }
 
     private static class LogOutputProgressPrinter implements OutputProgressPrinter {
+
         private final InternalLog log;
 
         LogOutputProgressPrinter(InternalLog log) {
@@ -81,5 +82,15 @@ public class ProgressPrinters {
         public void print(String message) {
             log.info(message);
         }
+    }
+
+    public static final class EmptyOutputProgressPrinter implements OutputProgressPrinter {
+
+        static EmptyOutputProgressPrinter EMPTY_PROGRESS_PRINTER = new EmptyOutputProgressPrinter();
+
+        private EmptyOutputProgressPrinter() {}
+
+        @Override
+        public void print(String message) {}
     }
 }

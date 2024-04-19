@@ -66,7 +66,7 @@ public class Loader {
 
     public Loader(FileSystemAbstraction filesystem, OutputProgressPrinter progressPrinter) {
         this.filesystem = filesystem;
-        this.progressPrinter = new ArchiveProgressPrinter(progressPrinter, Instant::now);
+        this.progressPrinter = new LoggingArchiveProgressPrinter(progressPrinter, Instant::now);
     }
 
     public Loader(FileSystemAbstraction filesystem, InternalLogProvider logProvider) {
