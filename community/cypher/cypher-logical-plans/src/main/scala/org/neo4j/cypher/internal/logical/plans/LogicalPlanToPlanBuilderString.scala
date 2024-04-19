@@ -1479,7 +1479,7 @@ object LogicalPlanToPlanBuilderString {
       case NodeJuxtapositionTransition(endId) =>
         val to = nfa.states(endId)
         val whereString =
-          to.predicate.map(vp =>
+          to.variablePredicate.map(vp =>
             s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         s""" "(${escapeIdentifier(from.variable.name)}) (${escapeIdentifier(to.variable.name)}$whereString)" """.trim
@@ -1490,7 +1490,7 @@ object LogicalPlanToPlanBuilderString {
             s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         val nodeWhereString =
-          to.predicate.map(vp =>
+          to.variablePredicate.map(vp =>
             s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         val (dirStrA, dirStrB) = arrows(dir)

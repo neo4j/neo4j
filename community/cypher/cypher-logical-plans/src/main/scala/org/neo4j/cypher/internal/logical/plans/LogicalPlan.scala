@@ -2285,7 +2285,7 @@ case class StatefulShortestPath(
 
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
     // With ExpandInto, we must not have predicates on the target node
-    mode != ExpandInto || nfa.finalState.predicate.isEmpty,
+    mode != ExpandInto || nfa.finalState.variablePredicate.isEmpty,
     "Expand into and predicates on the target node are forbidden: \n" + nfa.toDotString
   )
 

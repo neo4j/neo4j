@@ -197,7 +197,7 @@ object CommandNFA {
       val commandState = new State(
         logicalState.id,
         getSlotOrName(logicalState.variable),
-        logicalState.predicate.map(convertPredicate),
+        logicalState.variablePredicate.map(convertPredicate),
         null,
         null
       )

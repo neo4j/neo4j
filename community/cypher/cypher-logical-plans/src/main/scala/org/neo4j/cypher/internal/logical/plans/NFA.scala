@@ -45,10 +45,10 @@ object NFA {
    * {{{(a) ( (b:B)-->() )*}}}
    * then the variablePredicate should contain `b:B`
    */
-  case class State(id: Int, variable: LogicalVariable, predicate: Option[VariablePredicate]) {
+  case class State(id: Int, variable: LogicalVariable, variablePredicate: Option[VariablePredicate]) {
 
     def toDotString: String = {
-      val nodeWhere = predicate.map(vp => s" WHERE ${State.expressionStringifier(vp.predicate)}").getOrElse("")
+      val nodeWhere = variablePredicate.map(vp => s" WHERE ${State.expressionStringifier(vp.predicate)}").getOrElse("")
       s"\"($id, ${variable.name}$nodeWhere)\""
     }
   }
@@ -152,11 +152,11 @@ case class NFA(
   def finalState: State = states(finalId)
 
   def predicateVariables: Set[LogicalVariable] =
-    (states.iterator.flatMap(_.predicate).map(_.variable)
+    (states.iterator.flatMap(_.variablePredicate).map(_.variable)
       ++ transitions.values.flatten.iterator.flatMap(_.predicateVariable)).toSet
 
   def nodes: Set[LogicalVariable] =
-    states.map(_.variable).toSet ++ states.flatMap(_.predicate).map(_.variable)
+    states.map(_.variable).toSet ++ states.flatMap(_.variablePredicate).map(_.variable)
 
   def relationships: Set[LogicalVariable] =
     transitions.iterator
