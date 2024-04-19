@@ -69,8 +69,8 @@ class LoaderTest {
 
         deleteLayoutFolders(databaseLayout);
 
-        NoSuchFileException exception = assertThrows(NoSuchFileException.class, () -> new Loader(fileSystem)
-                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
+        NoSuchFileException exception =
+                assertThrows(NoSuchFileException.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
         assertEquals(archive.toString(), exception.getMessage());
     }
 
@@ -84,8 +84,8 @@ class LoaderTest {
 
         deleteLayoutFolders(databaseLayout);
 
-        var incorrectFormat = assertThrows(IncorrectFormat.class, () -> new Loader(fileSystem)
-                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive), archive.toString()));
+        var incorrectFormat =
+                assertThrows(IncorrectFormat.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
         assertEquals(archive.toString(), incorrectFormat.getMessage());
     }
 
@@ -101,8 +101,8 @@ class LoaderTest {
 
         deleteLayoutFolders(databaseLayout);
 
-        var incorrectFormat = assertThrows(IncorrectFormat.class, () -> new Loader(fileSystem)
-                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive), archive.toString()));
+        var incorrectFormat =
+                assertThrows(IncorrectFormat.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
         assertEquals(archive.toString(), incorrectFormat.getMessage());
     }
 
@@ -119,9 +119,8 @@ class LoaderTest {
             tar.putArchiveEntry(archiveEntry);
             tar.closeArchiveEntry();
         }
-        final InvalidDumpEntryException exception =
-                assertThrows(InvalidDumpEntryException.class, () -> new Loader(fileSystem)
-                        .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
+        final InvalidDumpEntryException exception = assertThrows(
+                InvalidDumpEntryException.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
         assertThat(exception.getMessage()).contains("points to a location outside of the destination database.");
     }
 
@@ -132,9 +131,8 @@ class LoaderTest {
         fileSystem.deleteRecursively(databaseLayout.databaseDirectory());
         assertTrue(fileSystem.isDirectory(databaseLayout.getTransactionLogsDirectory()));
 
-        FileAlreadyExistsException exception =
-                assertThrows(FileAlreadyExistsException.class, () -> new Loader(fileSystem)
-                        .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
+        FileAlreadyExistsException exception = assertThrows(
+                FileAlreadyExistsException.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
         assertEquals(databaseLayout.getTransactionLogsDirectory().toString(), exception.getMessage());
     }
 
@@ -144,8 +142,8 @@ class LoaderTest {
         Path destination = Paths.get(testDirectory.absolutePath().toString(), "subdir", "the-destination");
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(destination);
 
-        NoSuchFileException noSuchFileException = assertThrows(NoSuchFileException.class, () -> new Loader(fileSystem)
-                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
+        NoSuchFileException noSuchFileException =
+                assertThrows(NoSuchFileException.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
         assertEquals(destination.getParent().toString(), noSuchFileException.getMessage());
     }
 
@@ -160,8 +158,8 @@ class LoaderTest {
                 .build();
         DatabaseLayout databaseLayout = DatabaseLayout.of(config);
         fileSystem.deleteRecursively(txLogsDestination);
-        NoSuchFileException noSuchFileException = assertThrows(NoSuchFileException.class, () -> new Loader(fileSystem)
-                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
+        NoSuchFileException noSuchFileException =
+                assertThrows(NoSuchFileException.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
         assertEquals(txLogsDestination.toString(), noSuchFileException.getMessage());
     }
 
@@ -176,8 +174,8 @@ class LoaderTest {
         fileSystem.write(destination.getParent()).close();
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(destination);
 
-        FileSystemException exception = assertThrows(FileSystemException.class, () -> new Loader(fileSystem)
-                .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
+        FileSystemException exception =
+                assertThrows(FileSystemException.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
         assertEquals(destination.getParent() + ": Not a directory", exception.getMessage());
     }
 
@@ -191,8 +189,8 @@ class LoaderTest {
 
         Path parentPath = databaseLayout.databaseDirectory().getParent();
         try (Closeable ignored = withPermissions(parentPath, emptySet())) {
-            AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> new Loader(fileSystem)
-                    .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
+            AccessDeniedException exception = assertThrows(
+                    AccessDeniedException.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
             assertEquals(parentPath.toString(), exception.getMessage());
         }
     }
@@ -212,8 +210,8 @@ class LoaderTest {
 
         Path txLogsRoot = databaseLayout.getTransactionLogsDirectory().getParent();
         try (Closeable ignored = withPermissions(txLogsRoot, emptySet())) {
-            AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> new Loader(fileSystem)
-                    .load(databaseLayout, () -> fileSystem.openAsInputStream(archive)));
+            AccessDeniedException exception = assertThrows(
+                    AccessDeniedException.class, () -> new Loader(fileSystem).load(databaseLayout, archive));
             assertEquals(txLogsRoot.toString(), exception.getMessage());
         }
     }

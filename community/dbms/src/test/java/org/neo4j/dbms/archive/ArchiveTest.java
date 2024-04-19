@@ -140,7 +140,8 @@ class ArchiveTest {
                 .equals("another-file"));
         Path txRootDirectory = testDirectory.directory("tx-root_directory");
         DatabaseLayout databaseLayout = layoutWithCustomTxRoot(txRootDirectory, "the-new-directory");
-        new Loader(testDirectory.getFileSystem()).load(databaseLayout, () -> filesystem.openAsInputStream(archive));
+        Loader loader = new Loader(testDirectory.getFileSystem());
+        loader.load(databaseLayout, archive);
 
         Path expectedOutput = testDirectory.directory("expected-output");
         filesystem.mkdirs(expectedOutput);
@@ -166,7 +167,8 @@ class ArchiveTest {
         Path txLogsRoot = testDirectory.directory("txLogsRoot");
         DatabaseLayout databaseLayout = layoutWithCustomTxRoot(txLogsRoot, "the-new-directory");
 
-        new Loader(testDirectory.getFileSystem()).load(databaseLayout, () -> filesystem.openAsInputStream(archive));
+        Loader loader = new Loader(testDirectory.getFileSystem());
+        loader.load(databaseLayout, archive);
 
         Path expectedOutput = testDirectory.directory("expected-output");
         filesystem.mkdirs(expectedOutput);
@@ -198,7 +200,8 @@ class ArchiveTest {
         Path newTxLogsRoot = testDirectory.directory("newTxLogsRoot");
         DatabaseLayout newDatabaseLayout = layoutWithCustomTxRoot(newTxLogsRoot, "the-new-database");
 
-        new Loader(testDirectory.getFileSystem()).load(newDatabaseLayout, () -> filesystem.openAsInputStream(archive));
+        Loader loader = new Loader(testDirectory.getFileSystem());
+        loader.load(newDatabaseLayout, archive);
 
         Path expectedOutput = testDirectory.directory("expected-output");
         touch(expectedOutput.resolve("dbfile"));
@@ -240,7 +243,8 @@ class ArchiveTest {
         dumper.dump(oldDirectory, oldDirectory, dumper.openForDump(archive), compressionFormat, alwaysFalse());
         Path newDirectory = testDirectory.file("the-new-directory");
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat(newDirectory);
-        new Loader(testDirectory.getFileSystem()).load(databaseLayout, () -> filesystem.openAsInputStream(archive));
+        Loader loader = new Loader(testDirectory.getFileSystem());
+        loader.load(databaseLayout, archive);
 
         assertEquals(describeRecursively(oldDirectory), describeRecursively(newDirectory));
     }

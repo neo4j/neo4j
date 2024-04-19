@@ -28,6 +28,7 @@ import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.archive.CheckDatabase.Source.PathSource;
+import org.neo4j.dbms.archive.Loader.SizeMeta;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils.AutoCloseables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -99,8 +100,12 @@ public class CheckDump implements CheckDatabase {
             return; // implies the usable space cannot be obtained
         }
 
-        final var dumpMeta = loader.getMetaData(() -> fs.openAsInputStream(dump));
-        final var dumpSize = ByteUnit.bytes(Long.parseLong(dumpMeta.byteCount()));
+        final var dumpMeta = loader.getMetaData(() -> fs.openAsInputStream(dump), DumpFormatSelector::decompress);
+        SizeMeta sizeMeta = dumpMeta.sizeMeta();
+        if (sizeMeta == null) {
+            return;
+        }
+        final var dumpSize = ByteUnit.bytes(sizeMeta.bytes());
         final var conservativeSize = ByteUnit.bytes((long) (dumpSize * CONSERVATIVE_DISK_SPACE_SCALAR));
         if (conservativeSize >= usableSpaceHint) {
             throw new FileSystemException(

@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -37,7 +38,6 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +48,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
+import org.neo4j.dbms.archive.Loader.SizeMeta;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
@@ -100,7 +101,8 @@ class LoadCommandTest {
         assertThat(baos.toString().trim())
                 .isEqualToIgnoringNewLines(
                         """
-                Load a database from an archive created with the dump command.
+                Load a database from an archive created with the dump command or from full
+                Neo4j Enterprise backup.
 
                 USAGE
 
@@ -111,13 +113,15 @@ class LoadCommandTest {
                 DESCRIPTION
 
                 Load a database from an archive. <archive-path> must be a directory containing
-                an archive(s) created with the dump command. If neither --from-path or
-                --from-stdin is supplied `server.directories.dumps.root` setting will be
-                searched for the archive. Existing databases can be replaced by specifying
-                --overwrite-destination. It is not possible to replace a database that is
-                mounted in a running Neo4j server. If --info is specified, then the database is
-                not loaded, but information (i.e. file count, byte count, and format of load
-                file) about the archive is printed instead.
+                an archive(s). Archive can be a databse dump created with the dump command, or
+                can be a full backup artifact created by the backup command from Neo4j
+                Enterprise. If neither --from-path or --from-stdin is supplied `server.
+                directories.dumps.root` setting will be searched for the archive. Existing
+                databases can be replaced by specifying --overwrite-destination. It is not
+                possible to replace a database that is mounted in a running Neo4j server. If
+                --info is specified, then the database is not loaded, but information (i.e.
+                file count, byte count, and format of load file) about the archive is printed
+                instead.
 
                 PARAMETERS
 
@@ -131,9 +135,8 @@ class LoadCommandTest {
                       --additional-config=<file>
                                            Configuration file with additional configuration.
                       --expand-commands    Allow command expansion in config value evaluation.
-                      --from-path=<path>   Path to directory containing archive(s) created with
-                                             the dump command.
-                      --from-stdin         Read dump from standard input.
+                      --from-path=<path>   Path to directory containing archive(s).
+                      --from-stdin         Read archive from standard input.
                   -h, --help               Show this help message and exit.
                       --info               Print meta-data information about the archive file,
                                              instead of loading the contained database.
@@ -146,18 +149,18 @@ class LoadCommandTest {
     @Test
     void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat {
         String dumpName = archive.resolve("foo.dump").toString();
-        doThrow(new NoSuchFileException(dumpName)).when(loader).load(any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
         assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
-        assertEquals(
-                "Archive does not exist: " + dumpName, commandFailed.getCause().getMessage());
+        assertEquals("No matching archives found", commandFailed.getCause().getMessage());
     }
 
     @Test
     void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat {
         createDummyDump("foo", archive);
-        doThrow(FileAlreadyExistsException.class).when(loader).load(any(), any(), any());
+        doThrow(FileAlreadyExistsException.class)
+                .when(loader)
+                .load(any(), anyBoolean(), anyBoolean(), any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
         assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
@@ -167,7 +170,7 @@ class LoadCommandTest {
     @Test
     void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable() throws IOException, IncorrectFormat {
         createDummyDump("foo", archive);
-        doThrow(AccessDeniedException.class).when(loader).load(any(), any(), any());
+        doThrow(AccessDeniedException.class).when(loader).load(any(), anyBoolean(), anyBoolean(), any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
         assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
@@ -180,7 +183,9 @@ class LoadCommandTest {
     void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectFormat {
         createDummyDump("foo", archive);
-        doThrow(new FileSystemException("the-message")).when(loader).load(any(), any(), any());
+        doThrow(new FileSystemException("the-message"))
+                .when(loader)
+                .load(any(), anyBoolean(), anyBoolean(), any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
         assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
@@ -192,7 +197,7 @@ class LoadCommandTest {
     @Test
     void shouldThrowIfTheArchiveFormatIsInvalid() throws IOException, IncorrectFormat {
         createDummyDump("foo", archive);
-        doThrow(IncorrectFormat.class).when(loader).load(any(), any(), any());
+        doThrow(IncorrectFormat.class).when(loader).load(any(), anyBoolean(), anyBoolean(), any(), any(), any());
         CommandFailedException commandFailed =
                 assertThrows(CommandFailedException.class, () -> execute("foo", archive));
         assertEquals("Load failed for databases: 'foo'", commandFailed.getMessage());
@@ -202,7 +207,8 @@ class LoadCommandTest {
 
     @Test
     void infoMustPrintArchiveMetaData() throws IOException {
-        when(loader.getMetaData(any())).thenReturn(new Loader.DumpMetaData("ZSTD", "42", "1337"));
+        createDummyDump("foo", archive);
+        when(loader.getMetaData(any(), any())).thenReturn(new Loader.DumpMetaData(true, new SizeMeta(42, 1337)));
         var baos = new ByteArrayOutputStream();
         try (PrintStream out = new PrintStream(baos)) {
             var command =

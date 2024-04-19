@@ -17,23 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.archive;
+package org.neo4j.dbms.archive.backup;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-public class DumpGzipFormatV1 implements CompressionFormat {
-    static final String MAGIC_HEADER = ArchiveFormat.DUMP_PREFIX + "GV1";
-
-    @Override
-    public OutputStream compress(OutputStream stream) throws IOException {
-        stream.write(MAGIC_HEADER.getBytes());
-        return StandardCompressionFormat.GZIP.compress(stream);
-    }
-
-    @Override
-    public InputStream decompress(InputStream stream) throws IOException {
-        return StandardCompressionFormat.GZIP.decompress(stream);
-    }
+/**
+ * Representation of backup artifact metadata.
+ * While metadata is specific to the particular backup format and its version we should be able to extract
+ * some description of backup artifact out of that.
+ */
+@FunctionalInterface
+public interface BackupMetadata {
+    BackupDescription toBackupDescription();
 }

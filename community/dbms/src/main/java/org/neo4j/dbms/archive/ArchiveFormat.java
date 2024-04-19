@@ -19,21 +19,8 @@
  */
 package org.neo4j.dbms.archive;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-public class DumpGzipFormatV1 implements CompressionFormat {
-    static final String MAGIC_HEADER = ArchiveFormat.DUMP_PREFIX + "GV1";
-
-    @Override
-    public OutputStream compress(OutputStream stream) throws IOException {
-        stream.write(MAGIC_HEADER.getBytes());
-        return StandardCompressionFormat.GZIP.compress(stream);
-    }
-
-    @Override
-    public InputStream decompress(InputStream stream) throws IOException {
-        return StandardCompressionFormat.GZIP.decompress(stream);
-    }
+public class ArchiveFormat {
+    public static final int MAGIC_PREFIX_LENGTH = 4;
+    public static final char DUMP_PREFIX = 'D';
+    public static final char BACKUP_PREFIX = 'B';
 }

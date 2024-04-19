@@ -153,7 +153,7 @@ public class Dumper {
     }
 
     /**
-     * @see Loader#readArchiveMetadata(InputStream)
+     * @see Loader#readArchiveSizeMetadata(InputStream)
      */
     void writeArchiveMetadata(OutputStream stream) throws IOException {
         DataOutputStream metadata = new DataOutputStream(stream); // Unbuffered. No need for flushing.

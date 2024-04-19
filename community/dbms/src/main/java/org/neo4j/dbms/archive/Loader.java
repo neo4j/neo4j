@@ -73,15 +73,9 @@ public class Loader {
         this(filesystem, ProgressPrinters.logProviderPrinter(logProvider.getLog(Loader.class)));
     }
 
-    public void load(DatabaseLayout databaseLayout, ThrowingSupplier<InputStream, IOException> streamSupplier)
-            throws IOException, IncorrectFormat {
-        load(databaseLayout, streamSupplier, "");
-    }
-
-    public void load(
-            DatabaseLayout databaseLayout, ThrowingSupplier<InputStream, IOException> streamSupplier, String inputName)
-            throws IOException, IncorrectFormat {
-        load(databaseLayout, false, true, DumpFormatSelector::decompress, streamSupplier, inputName);
+    @VisibleForTesting
+    public void load(DatabaseLayout databaseLayout, Path archive) throws IOException, IncorrectFormat {
+        load(archive, databaseLayout, false, true, DumpFormatSelector::decompress);
     }
 
     public void load(
@@ -139,20 +133,19 @@ public class Loader {
         }
     }
 
-    public DumpMetaData getMetaData(ThrowingSupplier<InputStream, IOException> streamSupplier) throws IOException {
-        try (InputStream decompressor = DumpFormatSelector.decompress(streamSupplier)) {
-            String format = "TAR+GZIP.";
-            String files = "?";
-            String bytes = "?";
-            if (StandardCompressionFormat.ZSTD.isFormat(decompressor)) {
-                format = "Neo4j ZSTD Dump.";
-                // Important: Only the ZSTD compressed archives have any archive metadata.
-                readArchiveMetadata(decompressor);
-                files = String.valueOf(progressPrinter.maxFiles());
-                bytes = String.valueOf(progressPrinter.maxBytes());
-            }
-            return new DumpMetaData(format, files, bytes);
+    public DumpMetaData getMetaData(
+            ThrowingSupplier<InputStream, IOException> streamSupplier, DecompressionSelector selector)
+            throws IOException {
+        try (InputStream decompressor = selector.decompress(streamSupplier)) {
+            return readDumpMetadata(decompressor);
         }
+    }
+
+    private DumpMetaData readDumpMetadata(InputStream decompressor) throws IOException {
+        if (StandardCompressionFormat.ZSTD.isFormat(decompressor)) {
+            return new DumpMetaData(true, readArchiveSizeMetadata(decompressor));
+        }
+        return new DumpMetaData(false, null);
     }
 
     private static void checkDatabasePresence(FileSystemAbstraction filesystem, DatabaseLayout databaseLayout)
@@ -222,7 +215,9 @@ public class Loader {
 
             if (StandardCompressionFormat.ZSTD.isFormat(decompressor)) {
                 // Important: Only the ZSTD compressed archives have any archive metadata.
-                readArchiveMetadata(decompressor);
+                SizeMeta fab = readArchiveSizeMetadata(decompressor);
+                progressPrinter.maxFiles(fab.files());
+                progressPrinter.maxBytes(fab.bytes());
             }
 
             return new TarArchiveInputStream(decompressor);
@@ -233,21 +228,19 @@ public class Loader {
         }
     }
 
-    /**
-     * @see Dumper#writeArchiveMetadata(OutputStream)
-     */
-    void readArchiveMetadata(InputStream stream) throws IOException {
+    SizeMeta readArchiveSizeMetadata(InputStream stream) throws IOException {
         DataInputStream metadata =
                 new DataInputStream(stream); // Unbuffered. Will not play naughty tricks with the file position.
         int version = metadata.readInt();
         if (version == 1) {
-            progressPrinter.maxFiles(metadata.readLong());
-            progressPrinter.maxBytes(metadata.readLong());
+            return new SizeMeta(metadata.readLong(), metadata.readLong());
         } else {
             throw new IOException(
                     "Cannot read archive meta-data. I don't recognise this archive version: " + version + ".");
         }
     }
 
-    public record DumpMetaData(String format, String fileCount, String byteCount) {}
+    public record SizeMeta(long files, long bytes) {}
+
+    public record DumpMetaData(boolean compressed, SizeMeta sizeMeta) {}
 }

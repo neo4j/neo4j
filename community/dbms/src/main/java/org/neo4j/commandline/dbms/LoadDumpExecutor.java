@@ -30,10 +30,9 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Path;
-import java.util.Optional;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.archive.DecompressionSelector;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.function.ThrowingSupplier;
@@ -46,6 +45,8 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 public class LoadDumpExecutor {
+
+    public static final String BACKUP_EXTENSION = ".backup";
     private final Config config;
 
     private final FileSystemAbstraction fs;
@@ -53,12 +54,19 @@ public class LoadDumpExecutor {
     private final PrintStream errorOutput;
 
     private final Loader loader;
+    private final DecompressionSelector decompressionSelector;
 
-    public LoadDumpExecutor(Config config, FileSystemAbstraction fs, PrintStream errorOutput, Loader loader) {
+    public LoadDumpExecutor(
+            Config config,
+            FileSystemAbstraction fs,
+            PrintStream errorOutput,
+            Loader loader,
+            DecompressionSelector decompressionSelector) {
         this.config = config;
         this.fs = fs;
         this.errorOutput = errorOutput;
         this.loader = loader;
+        this.decompressionSelector = decompressionSelector;
     }
 
     public void execute(DumpInput dumpInput, String database, boolean force) throws IOException {
@@ -92,7 +100,13 @@ public class LoadDumpExecutor {
 
     private void load(DumpInput dumpInput, DatabaseLayout databaseLayout) {
         try {
-            loader.load(databaseLayout, dumpInput.streamSupplier, dumpInput.description);
+            loader.load(
+                    databaseLayout,
+                    false,
+                    true,
+                    decompressionSelector,
+                    dumpInput.streamSupplier,
+                    dumpInput.description);
         } catch (FileAlreadyExistsException e) {
             throw new CommandFailedException("Database already exists: " + databaseLayout.getDatabaseName(), e);
         } catch (AccessDeniedException e) {
@@ -119,6 +133,5 @@ public class LoadDumpExecutor {
         }
     }
 
-    public record DumpInput(
-            ThrowingSupplier<InputStream, IOException> streamSupplier, Optional<Path> file, String description) {}
+    public record DumpInput(ThrowingSupplier<InputStream, IOException> streamSupplier, String description) {}
 }

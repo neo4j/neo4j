@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -42,7 +43,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -50,6 +50,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.function.ThrowingSupplier;
@@ -101,7 +102,7 @@ public class LoadDumpExecutorTest {
                 homeDir.resolve("data/databases"),
                 "foo",
                 homeDir.resolve("data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME));
-        verify(loader).load(eq(databaseLayout), any(), any());
+        verify(loader).load(eq(databaseLayout), anyBoolean(), anyBoolean(), any(), any(), any());
     }
 
     @Test
@@ -117,7 +118,7 @@ public class LoadDumpExecutorTest {
         execute("foo", archive);
         DatabaseLayout databaseLayout =
                 createDatabaseLayout(dataDir, databaseDir.getParent(), "foo", transactionLogsDir);
-        verify(loader).load(eq(databaseLayout), any(), any());
+        verify(loader).load(eq(databaseLayout), anyBoolean(), anyBoolean(), any(), any(), any());
     }
 
     @Test
@@ -131,7 +132,7 @@ public class LoadDumpExecutorTest {
 
         execute("foo", archive);
         DatabaseLayout databaseLayout = createDatabaseLayout(dataDir, databaseDir.getParent(), "foo", txLogsDir);
-        verify(loader).load(eq(databaseLayout), any(), any());
+        verify(loader).load(eq(databaseLayout), anyBoolean(), anyBoolean(), any(), any(), any());
     }
 
     @Test
@@ -156,7 +157,7 @@ public class LoadDumpExecutorTest {
 
         execute("foo", archive);
         DatabaseLayout databaseLayout = createDatabaseLayout(dataDir, databasesDir, "foo", txLogsDir);
-        verify(loader).load(eq(databaseLayout), any(), any());
+        verify(loader).load(eq(databaseLayout), anyBoolean(), anyBoolean(), any(), any(), any());
     }
 
     @Test
@@ -173,7 +174,7 @@ public class LoadDumpExecutorTest {
                     return null;
                 })
                 .when(loader)
-                .load(any(), any());
+                .load(any(), anyBoolean(), anyBoolean(), any(), any(), any());
 
         execute("foo", archive, true);
     }
@@ -189,7 +190,7 @@ public class LoadDumpExecutorTest {
                     return null;
                 })
                 .when(loader)
-                .load(any(), any());
+                .load(any(), anyBoolean(), anyBoolean(), any(), any(), any());
 
         execute("foo", archive);
     }
@@ -226,14 +227,12 @@ public class LoadDumpExecutorTest {
                 .set(GraphDatabaseSettings.neo4j_home, homeDir)
                 .build();
 
-        LoadDumpExecutor loadDumpExecutor =
-                new LoadDumpExecutor(config, testDirectory.getFileSystem(), System.err, loader);
+        LoadDumpExecutor loadDumpExecutor = new LoadDumpExecutor(
+                config, testDirectory.getFileSystem(), System.err, loader, DumpFormatSelector::decompress);
 
-        Optional<Path> dumpInputFile = Optional.ofNullable(archive);
         ThrowingSupplier<InputStream, IOException> dumpInputStreamSupplier = () -> Files.newInputStream(archive);
 
-        loadDumpExecutor.execute(
-                new LoadDumpExecutor.DumpInput(dumpInputStreamSupplier, dumpInputFile, ""), database, force);
+        loadDumpExecutor.execute(new LoadDumpExecutor.DumpInput(dumpInputStreamSupplier, ""), database, force);
     }
 
     private void execute(String database, Path archive) throws IOException {

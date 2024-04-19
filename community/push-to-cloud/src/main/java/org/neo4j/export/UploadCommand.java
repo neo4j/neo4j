@@ -32,8 +32,10 @@ import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.dbms.archive.DumpFormatSelector;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Loader;
+import org.neo4j.dbms.archive.Loader.SizeMeta;
 import org.neo4j.export.aura.AuraClient;
 import org.neo4j.export.aura.AuraConsole;
 import org.neo4j.export.aura.AuraJsonMapper.SignedURIBodyResponse;
@@ -138,14 +140,18 @@ public class UploadCommand extends AbstractAdminCommand {
     }
 
     public static long readSizeFromDumpMetaData(ExecutionContext ctx, Path dump) {
-        Loader.DumpMetaData metaData;
         try {
             final var fileSystem = ctx.fs();
-            metaData = new Loader(fileSystem, System.out).getMetaData(() -> fileSystem.openAsInputStream(dump));
+            Loader.DumpMetaData metaData = new Loader(fileSystem, System.out)
+                    .getMetaData(() -> fileSystem.openAsInputStream(dump), DumpFormatSelector::decompress);
+            SizeMeta sizeMeta = metaData.sizeMeta();
+            if (sizeMeta != null) {
+                return sizeMeta.bytes();
+            }
+            return fileSystem.getFileSize(dump);
         } catch (IOException e) {
             throw new CommandFailedException("Unable to check size of database dump.", e);
         }
-        return Long.parseLong(metaData.byteCount());
     }
 
     public static String sizeText(long size) {
@@ -160,17 +166,20 @@ public class UploadCommand extends AbstractAdminCommand {
         final var fileSystem = ctx.fs();
 
         try (TarArchiveInputStream tais = new TarArchiveInputStream(maybeGzipped(tar, fileSystem))) {
-            Loader.DumpMetaData metaData;
             TarArchiveEntry entry;
-            while ((entry = tais.getNextTarEntry()) != null) {
+            while ((entry = tais.getNextEntry()) != null) {
                 if (entry.getName().endsWith(dbName + ".dump")) {
 
-                    metaData = new Loader(fileSystem, System.out).getMetaData(() -> tais);
-                    return Long.parseLong(metaData.byteCount());
+                    Loader.DumpMetaData metaData =
+                            new Loader(fileSystem, System.out).getMetaData(() -> tais, DumpFormatSelector::decompress);
+                    SizeMeta sizeMeta = metaData.sizeMeta();
+                    if (sizeMeta != null) {
+                        return sizeMeta.bytes();
+                    }
+                    return fileSystem.getFileSize(tar);
                 }
             }
-            throw new CommandFailedException(
-                    String.format("TAR file %s does not contain dump for  database %s", tar, dbName));
+            throw new CommandFailedException("TAR file " + tar + " does not contain dump for  database " + dbName);
         } catch (IOException e) {
             throw new CommandFailedException("Unable to check size of tar dump database.", e);
         }
