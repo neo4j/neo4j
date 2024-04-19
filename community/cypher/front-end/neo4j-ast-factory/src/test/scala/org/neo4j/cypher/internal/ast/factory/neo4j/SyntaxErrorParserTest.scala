@@ -193,7 +193,7 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
       )
     )
 
-    assertSyntaxError("revoke deny all", notViable("", 15))
+    assertSyntaxError("revoke deny all", mismatch("", "'DATABASE', 'DBMS', 'GRAPH', 'PRIVILEGES', 'ON'", 15))
     assertSyntaxError("start", mismatch("", "'DATABASE'", 5))
     assertSyntaxError("start database", mismatch("", "an identifier, '$'", 14))
     assertSyntaxError("start database a wai", extraneous("wai", "';', <EOF>", 17))

@@ -19,7 +19,10 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.exceptions.SyntaxException
 
 class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   // Show supported privileges
@@ -665,7 +668,13 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "USERS"
          |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
 
-    assertFailsWithMessage[Statements](testName, exceptionMessage)
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessage(exceptionMessage))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'PRIVILAGES': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+          |"SHOW PRIVILAGES"
+          |      ^""".stripMargin
+      ))
   }
 
   test("SHOW PRIVELAGES") {
@@ -676,6 +685,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
     failsParsing[Statements]
   }
 
+  // TODO Check message, potential loss of information
   test("SHOW ALL USER user PRIVILEGES") {
     val exceptionMessage =
       s"""Invalid input 'USER': expected
@@ -690,34 +700,57 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "ROLE"
          |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
 
-    assertFailsWithMessage[Statements](testName, exceptionMessage)
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessage(exceptionMessage))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 10 (offset: 9))
+          |"SHOW ALL USER user PRIVILEGES"
+          |          ^""".stripMargin
+      ))
   }
 
   test("SHOW USER us%er PRIVILEGES") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '%': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 13 (offset: 12))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        """Invalid input '%': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 13 (offset: 12))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '%': expected ',', 'PRIVILEGE', 'PRIVILEGES' (line 1, column 13 (offset: 12))
+          |"SHOW USER us%er PRIVILEGES"
+          |             ^""".stripMargin
+      ))
   }
 
   test("SHOW ROLE PRIVILEGES") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 21 (offset: 20))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 21 (offset: 20))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Missing 'PRIVILEGE', 'PRIVILEGES' at '' (line 1, column 21 (offset: 20))
+          |"SHOW ROLE PRIVILEGES"
+          |                     ^""".stripMargin
+      ))
   }
 
+  // TODO Check message potential loss of information
   test("SHOW ALL ROLE role PRIVILEGES") {
-    assertFailsWithMessage[Statements](
-      testName,
-      s"""Invalid input 'role': expected "WHERE", "WITH", "YIELD" or <EOF> (line 1, column 15 (offset: 14))"""
-    )
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        s"""Invalid input 'role': expected "WHERE", "WITH", "YIELD" or <EOF> (line 1, column 15 (offset: 14))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'role': expected ';', <EOF> (line 1, column 15 (offset: 14))
+          |"SHOW ALL ROLE role PRIVILEGES"
+          |               ^""".stripMargin
+      ))
   }
 
   test("SHOW ROLE ro%le PRIVILEGES") {
     failsParsing[Statements]
   }
 
+  // TODO Check message, potential loss of information
   test("SHOW USER user PRIVILEGES YIELD *, blah RETURN user") {
     val exceptionMessage =
       s"""Invalid input ',': expected
@@ -728,7 +761,13 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "WHERE"
          |  <EOF> (line 1, column 34 (offset: 33))""".stripMargin
 
-    assertFailsWithMessage[Statements](testName, exceptionMessage)
+    testName should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessage(exceptionMessage))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input ',': expected ';', <EOF> (line 1, column 34 (offset: 33))
+          |"SHOW USER user PRIVILEGES YIELD *, blah RETURN user"
+          |                                  ^""".stripMargin
+      ))
   }
 
   test("SHOW USER user PRIVILEGES YIELD # RETURN user") {

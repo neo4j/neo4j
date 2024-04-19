@@ -526,7 +526,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
           |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'EXECUTABLE': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DATABASE', 'DATABASES', 'DEFAULT', 'HOME', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+        """Extraneous input 'EXECUTABLE': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
           |"SHOW EXECUTABLE FUNCTION"
           |      ^""".stripMargin
       ))
@@ -657,7 +657,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
     testName should notParse[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'UNKNOWN': expected"""))
       .parseIn(Antlr)(_.withMessage(
-        """Extraneous input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DATABASE', 'DATABASES', 'DEFAULT', 'HOME', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+        """Extraneous input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
           |"SHOW UNKNOWN FUNCTIONS"
           |      ^""".stripMargin
       ))

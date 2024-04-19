@@ -457,11 +457,11 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitPrivilege(CypherParser.PrivilegeContext ctx);
 
-    void exitAllDatabasePrivilege(CypherParser.AllDatabasePrivilegeContext ctx);
+    void exitAllPrivilege(CypherParser.AllPrivilegeContext ctx);
 
-    void exitAllGraphPrivilege(CypherParser.AllGraphPrivilegeContext ctx);
+    void exitAllPrivilegeType(CypherParser.AllPrivilegeTypeContext ctx);
 
-    void exitAllDbmsPrivilege(CypherParser.AllDbmsPrivilegeContext ctx);
+    void exitAllPrivilegeTarget(CypherParser.AllPrivilegeTargetContext ctx);
 
     void exitCreatePrivilege(CypherParser.CreatePrivilegeContext ctx);
 

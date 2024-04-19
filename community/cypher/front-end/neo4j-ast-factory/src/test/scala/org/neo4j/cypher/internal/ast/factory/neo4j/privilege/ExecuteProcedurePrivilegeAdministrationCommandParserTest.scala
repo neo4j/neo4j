@@ -22,7 +22,10 @@ import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.exceptions.SyntaxException
 
 class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -220,112 +223,146 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
 
               test(s"$verb$immutableString $execute * $preposition role") {
                 val offset = testName.length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input '': expected
-                     |  "*"
-                     |  "."
-                     |  "?"
-                     |  "ON"
-                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input '': expected
+                       |  "*"
+                       |  "."
+                       |  "?"
+                       |  "ON"
+                       |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    s"""Mismatched input '': expected '.', '?', '*', an identifier, ',', 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                  ))
               }
 
               test(s"$verb$immutableString $execute * ON DATABASE * $preposition role") {
                 val offset = testName.length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input '': expected
-                     |  "*"
-                     |  "."
-                     |  "?"
-                     |  "ON"
-                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input '': expected
+                       |  "*"
+                       |  "."
+                       |  "?"
+                       |  "ON"
+                       |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    s"""Mismatched input '': expected '.', '?', '*', an identifier, ',', 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                  ))
               }
 
               // Tests for invalid escaping
 
+              // TODO Difference in message
               test(s"$verb$immutableString $execute `ab?`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input 'ab?': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input 'ab?': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    """Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all."""
+                  ))
               }
 
+              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute a`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute a".length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input 'ab?': expected
-                     |  "*"
-                     |  "."
-                     |  "?"
-                     |  "ON"
-                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input 'ab?': expected
+                       |  "*"
+                       |  "."
+                       |  "?"
+                       |  "ON"
+                       |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    s"""Extraneous input '`ab?`': expected 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                  ))
               }
 
+              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute ab?`%ab`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ab?".length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input '%ab': expected
-                     |  "*"
-                     |  "."
-                     |  "?"
-                     |  "NFKD"
-                     |  "ON"
-                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input '%ab': expected
+                       |  "*"
+                       |  "."
+                       |  "?"
+                       |  "NFKD"
+                       |  "ON"
+                       |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    s"""Mismatched input '`%ab`': expected '.', '?', '*', an identifier, ',', 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                  ))
               }
 
+              // TODO Difference in message
               test(s"$verb$immutableString $execute apoc.`*`ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute apoc.".length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input '*': expected
-                     |  "*"
-                     |  "."
-                     |  "?"
-                     |  "NFKD"
-                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input '*': expected
+                       |  "*"
+                       |  "."
+                       |  "?"
+                       |  "NFKD"
+                       |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    """Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all."""
+                  ))
               }
 
+              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute apoc.*`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute apoc.*".length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input 'ab?': expected
-                     |  "*"
-                     |  "."
-                     |  "?"
-                     |  "ON"
-                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input 'ab?': expected
+                       |  "*"
+                       |  "."
+                       |  "?"
+                       |  "ON"
+                       |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    s"""Extraneous input '`ab?`': expected 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                  ))
               }
 
+              // TODO Difference in message
               test(s"$verb$immutableString $execute `ap`oc.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input 'ap': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input 'ap': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    """Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all."""
+                  ))
               }
 
+              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute ap`oc`.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ap".length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input 'oc': expected
-                     |  "*"
-                     |  "."
-                     |  "?"
-                     |  "ON"
-                     |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input 'oc': expected
+                       |  "*"
+                       |  "."
+                       |  "?"
+                       |  "ON"
+                       |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    s"""Mismatched input '`oc`': expected '.', '?', '*', an identifier, ',', 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                  ))
               }
           }
       }
@@ -353,28 +390,37 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
 
               test(s"$verb$immutableString $command * ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $command ".length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input '*': expected "ON" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input '*': expected "ON" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    s"""Extraneous input '*': expected 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                  ))
               }
 
               test(s"$verb$immutableString $command ON DATABASE * $preposition role") {
                 val offset = s"$verb$immutableString $command ON ".length
-                assertFailsWithMessage[Statements](
-                  testName,
-                  s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-                )
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessage(
+                    s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+                  ))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    s"""Mismatched input 'DATABASE': expected 'DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
+                  ))
               }
 
           }
 
           test(s"$verb$immutableString EXECUTE ADMIN PROCEDURE ON DBMS $preposition role") {
             val offset = s"$verb$immutableString EXECUTE ADMIN ".length
-            assertFailsWithMessage[Statements](
-              testName,
-              s"""Invalid input 'PROCEDURE': expected "PROCEDURES" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
+            testName should notParse[Statements]
+              .parseIn(JavaCc)(_.withMessage(
+                s"""Invalid input 'PROCEDURE': expected "PROCEDURES" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+              ))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                s"""Mismatched input 'PROCEDURE': expected 'PROCEDURES' (line 1, column ${offset + 1} (offset: $offset))"""
+              ))
           }
       }
   }

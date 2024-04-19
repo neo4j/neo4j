@@ -19,6 +19,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.exceptions.SyntaxException
 
 class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
   private val labelResource = ast.LabelsResource(Seq("label"))(_)
@@ -179,17 +182,29 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
               // LABELS instead of LABEL
 
               test(s"$verb$immutableString $setOrRemove LABELS label ON GRAPH * $preposition role") {
-                assertFailsWithMessageStart[Statements](testName, """Invalid input 'LABELS': expected""")
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'LABELS': expected"""))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    """Extraneous input 'LABELS': expected"""
+                  ))
               }
 
               // Database instead of graph keyword
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASES * $preposition role") {
-                assertFailsWithMessageStart[Statements](testName, """Invalid input 'DATABASES': expected""")
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASES': expected"""))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    """Mismatched input 'DATABASES': expected"""
+                  ))
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASE foo $preposition role") {
-                assertFailsWithMessageStart[Statements](testName, """Invalid input 'DATABASE': expected""")
+                testName should notParse[Statements]
+                  .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASE': expected"""))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    """Mismatched input 'DATABASE': expected"""
+                  ))
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON HOME DATABASE $preposition role") {

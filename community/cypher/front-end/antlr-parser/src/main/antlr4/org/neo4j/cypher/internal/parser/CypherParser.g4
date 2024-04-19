@@ -1159,9 +1159,7 @@ revokeRole
    ;
 
 privilege
-   : allDatabasePrivilege
-   | allGraphPrivilege
-   | allDbmsPrivilege
+   : allPrivilege
    | createPrivilege
    | databasePrivilege
    | dbmsPrivilege
@@ -1175,16 +1173,19 @@ privilege
    | writePrivilege
    ;
 
-allDatabasePrivilege
-   : ALL (DATABASE? PRIVILEGES)? ON databaseScope
+allPrivilege
+   : ALL allPrivilegeType? ON allPrivilegeTarget
    ;
 
-allGraphPrivilege
-   : ALL (GRAPH? PRIVILEGES)? ON graphScope
+allPrivilegeType
+   : (DATABASE | GRAPH | DBMS)? PRIVILEGES
    ;
 
-allDbmsPrivilege
-   : ALL (DBMS? PRIVILEGES)? ON DBMS
+allPrivilegeTarget
+   : (DEFAULT | HOME) (DATABASE | GRAPH)                    # DefaultTarget
+   | (DATABASE | DATABASES) (TIMES | symbolicAliasNameList) # DatabaseVariableTarget
+   | (GRAPH | GRAPHS) (TIMES | symbolicAliasNameList)       # GraphVariableTarget
+   | DBMS                                                   # DBMSTarget
    ;
 
 createPrivilege
@@ -1443,22 +1444,23 @@ stopDatabase
    ;
 
 waitClause
-   : (WAIT (UNSIGNED_DECIMAL_INTEGER SECONDS?)? | NOWAIT)
+   : WAIT (UNSIGNED_DECIMAL_INTEGER SECONDS?)?
+   | NOWAIT
    ;
 
 showDatabase
-   : (DATABASE | DATABASES) symbolicAliasNameOrParameter? showCommandYield
-   | (DEFAULT | HOME) DATABASE showCommandYield
+   : (DEFAULT | HOME) DATABASE showCommandYield
+   | (DATABASE | DATABASES) symbolicAliasNameOrParameter? showCommandYield
    ;
 
 databaseScope
-   : (DATABASE | DATABASES) (TIMES | symbolicAliasNameList)
-   | (DEFAULT | HOME) DATABASE
+   : (DEFAULT | HOME) DATABASE
+   | (DATABASE | DATABASES) (TIMES | symbolicAliasNameList)
    ;
 
 graphScope
-   : (GRAPH | GRAPHS) (TIMES | symbolicAliasNameList)
-   | (DEFAULT | HOME) GRAPH
+   : (DEFAULT | HOME) GRAPH
+   | (GRAPH | GRAPHS) (TIMES | symbolicAliasNameList)
    ;
 
 commandOptions

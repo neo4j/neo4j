@@ -19,6 +19,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.exceptions.SyntaxException
 
 class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -702,18 +705,24 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString TRAVERSE ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 13
-            assertFailsWithMessage[Statements](
-              testName,
-              s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
+            testName should notParse[Statements]
+              .parseIn(JavaCc)(_.withMessage(
+                s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+              ))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                s"""Mismatched input 'DATABASES': expected 'DEFAULT', 'HOME', 'GRAPH', 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
+              ))
           }
 
           test(s"$verb$immutableString TRAVERSE ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 13
-            assertFailsWithMessage[Statements](
-              testName,
-              s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
-            )
+            testName should notParse[Statements]
+              .parseIn(JavaCc)(_.withMessage(
+                s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
+              ))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                s"""Mismatched input 'DATABASE': expected 'DEFAULT', 'HOME', 'GRAPH', 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
+              ))
           }
 
           test(s"$verb$immutableString TRAVERSE ON HOME DATABASE $preposition role") {

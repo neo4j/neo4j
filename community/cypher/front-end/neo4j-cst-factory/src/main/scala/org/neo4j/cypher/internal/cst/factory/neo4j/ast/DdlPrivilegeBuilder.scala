@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.AllDatabasesQualifier
+import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AllDbmsAction
 import org.neo4j.cypher.internal.ast.AllGraphAction
+import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.AllLabelResource
 import org.neo4j.cypher.internal.ast.AllPrivilegeActions
@@ -60,6 +62,8 @@ import org.neo4j.cypher.internal.ast.DatabasePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
+import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.DeleteElementAction
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropAliasAction
@@ -83,6 +87,8 @@ import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphPrivilegeQualifier
 import org.neo4j.cypher.internal.ast.GraphScope
+import org.neo4j.cypher.internal.ast.HomeDatabaseScope
+import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
@@ -97,6 +103,8 @@ import org.neo4j.cypher.internal.ast.LoadUrlAction
 import org.neo4j.cypher.internal.ast.LoadUrlQualifier
 import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
+import org.neo4j.cypher.internal.ast.NamedDatabasesScope
+import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeType
@@ -226,25 +234,41 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     ctx.ast = ctxChild(ctx, 0).ast
   }
 
-  final override def exitAllDatabasePrivilege(
-    ctx: CypherParser.AllDatabasePrivilegeContext
+  final override def exitAllPrivilege(
+    ctx: CypherParser.AllPrivilegeContext
   ): Unit = {
-    val scope = ctx.databaseScope().ast[DatabaseScope]()
-    ctx.ast = allDbQualifier(DatabasePrivilege(AllDatabaseAction, scope)(pos(ctx)), None)
+    ctx.ast = ctx.allPrivilegeTarget() match {
+      case c: CypherParser.DefaultTargetContext =>
+        if (c.DATABASE() != null) {
+          val scope = if (c.DEFAULT() != null) DefaultDatabaseScope()(pos(ctx)) else HomeDatabaseScope()(pos(ctx))
+          allDbQualifier(DatabasePrivilege(AllDatabaseAction, scope)(pos(ctx)), None)
+        } else {
+          val scope = if (c.DEFAULT() != null) DefaultGraphScope()(pos(ctx)) else HomeGraphScope()(pos(ctx))
+          allQualifier(GraphPrivilege(AllGraphAction, scope)(pos(ctx)), None)
+        }
+      case c: CypherParser.DatabaseVariableTargetContext =>
+        val scope =
+          if (c.TIMES() != null) AllDatabasesScope()(pos(ctx))
+          else NamedDatabasesScope(c.symbolicAliasNameList().ast())(pos(ctx))
+        allDbQualifier(DatabasePrivilege(AllDatabaseAction, scope)(pos(ctx)), None)
+      case c: CypherParser.GraphVariableTargetContext =>
+        val scope =
+          if (c.TIMES() != null) AllGraphsScope()(pos(ctx))
+          else NamedGraphsScope(c.symbolicAliasNameList().ast())(pos(ctx))
+        allQualifier(GraphPrivilege(AllGraphAction, scope)(pos(ctx)), None)
+      case c: CypherParser.DBMSTargetContext =>
+        allQualifier(DbmsPrivilege(AllDbmsAction)(pos(ctx)), None)
+      case _ => throw new IllegalStateException("Unexpected privilege all command")
+    }
   }
 
-  final override def exitAllGraphPrivilege(
-    ctx: CypherParser.AllGraphPrivilegeContext
-  ): Unit = {
-    val scope = ctx.graphScope().ast[GraphScope]()
-    ctx.ast = allQualifier(GraphPrivilege(AllGraphAction, scope)(pos(ctx)), None)
-  }
+  final override def exitAllPrivilegeTarget(
+    ctx: CypherParser.AllPrivilegeTargetContext
+  ): Unit = {}
 
-  final override def exitAllDbmsPrivilege(
-    ctx: CypherParser.AllDbmsPrivilegeContext
-  ): Unit = {
-    ctx.ast = allQualifier(DbmsPrivilege(AllDbmsAction)(pos(ctx)), None)
-  }
+  final override def exitAllPrivilegeType(
+    ctx: CypherParser.AllPrivilegeTypeContext
+  ): Unit = {}
 
   final override def exitCreatePrivilege(
     ctx: CypherParser.CreatePrivilegeContext

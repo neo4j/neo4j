@@ -55,6 +55,9 @@ import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.exceptions.SyntaxException
 
 class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
@@ -119,63 +122,90 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
             test(s"$command$immutableString $privilege ON DATABASE $preposition role") {
               val offset = command.length + immutableString.length + 5 + privilege.length
-              assertFailsWithMessage[Statements](
-                testName,
-                s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
-              )
+              testName should notParse[Statements]
+                .parseIn(JavaCc)(_.withMessageStart(
+                  s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
+                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                  """Mismatched input 'DATABASE': expected 'DBMS'"""
+                ))
             }
 
             test(s"$command$immutableString $privilege ON HOME DATABASE $preposition role") {
               val offset = command.length + immutableString.length + 5 + privilege.length
-              assertFailsWithMessage[Statements](
-                testName,
-                s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
-              )
+              testName should notParse[Statements]
+                .parseIn(JavaCc)(_.withMessageStart(
+                  s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
+                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                  """Mismatched input 'HOME': expected 'DBMS'"""
+                ))
             }
 
             test(s"$command$immutableString $privilege DBMS $preposition role") {
               val offset = command.length + immutableString.length + 2 + privilege.length
               val expected = (command, immutable, privilege) match {
                 // this case looks like granting/revoking a role named MANAGEMENT to/from a user
-                case ("GRANT", false, "ROLE MANAGEMENT") =>
-                  s"""Invalid input 'DBMS': expected "," or "TO" (line 1, column ${offset + 1} (offset: $offset))"""
-                case ("REVOKE", false, "ROLE MANAGEMENT") =>
-                  s"""Invalid input 'DBMS': expected "," or "FROM" (line 1, column ${offset + 1} (offset: $offset))"""
+                case ("GRANT", false, "ROLE MANAGEMENT") | ("REVOKE", false, "ROLE MANAGEMENT") =>
+                  s"""Invalid input 'DBMS': expected "," or "$preposition" (line 1, column ${offset + 1} (offset: $offset))"""
                 case _ => s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 1} (offset: $offset))"""
               }
-              assertFailsWithMessage[Statements](testName, expected)
+
+              val antlrExpected = (command, immutable, privilege) match {
+                // this case looks like granting/revoking a role named MANAGEMENT to/from a user
+                // TODO Loss of information
+                case ("GRANT", false, "ROLE MANAGEMENT") | ("REVOKE", false, "ROLE MANAGEMENT") =>
+                  "No viable alternative"
+                case _ => s"Missing 'ON' at 'DBMS' (line 1, column ${offset + 1} (offset: $offset))"
+              }
+              testName should notParse[Statements]
+                .parseIn(JavaCc)(_.withMessageStart(expected))
+                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(antlrExpected))
             }
 
             test(s"$command$immutableString $privilege ON $preposition role") {
               val offset = command.length + immutableString.length + 5 + privilege.length
-              assertFailsWithMessage[Statements](
-                testName,
-                s"""Invalid input '$preposition': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
-              )
+              testName should notParse[Statements]
+                .parseIn(JavaCc)(_.withMessageStart(
+                  s"""Invalid input '$preposition': expected "DBMS" (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
+                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                  s"""Missing 'DBMS' at '$preposition' (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
             }
 
+            // TODO missing comma
             test(s"$command$immutableString $privilege ON DBMS $preposition r:ole") {
               val offset = command.length + immutableString.length + 12 + privilege.length + preposition.length
-              assertFailsWithMessage[Statements](
-                testName,
-                s"""Invalid input ':': expected "," or <EOF> (line 1, column ${offset + 1} (offset: $offset))"""
-              )
+              testName should notParse[Statements]
+                .parseIn(JavaCc)(_.withMessageStart(
+                  s"""Invalid input ':': expected "," or <EOF> (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
+                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                  s"""Mismatched input ':': expected ';', <EOF> (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
             }
 
             test(s"$command$immutableString $privilege ON DBMS $preposition") {
               val offset = command.length + immutableString.length + 10 + privilege.length + preposition.length
-              assertFailsWithMessage[Statements](
-                testName,
-                s"""Invalid input '': expected a parameter or an identifier (line 1, column ${offset + 1} (offset: $offset))"""
-              )
+              testName should notParse[Statements]
+                .parseIn(JavaCc)(_.withMessageStart(
+                  s"""Invalid input '': expected a parameter or an identifier (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
+                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                  s"""Mismatched input '': expected an identifier, '$$' (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
             }
 
             test(s"$command$immutableString $privilege ON DBMS") {
               val offset = command.length + immutableString.length + 9 + privilege.length
-              assertFailsWithMessage[Statements](
-                testName,
-                s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 1} (offset: $offset))"""
-              )
+              testName should notParse[Statements]
+                .parseIn(JavaCc)(_.withMessageStart(
+                  s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
+                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                  s"""Mismatched input '': expected '$preposition' (line 1, column ${offset + 1} (offset: $offset))"""
+                ))
             }
         }
 
@@ -206,119 +236,159 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DATABASE $preposition role") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Invalid input 'DATABASE': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
+            ))
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON HOME DATABASE $preposition role") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Invalid input 'HOME': expected "DBMS" (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
+            ))
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES DBMS $preposition role") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input 'DBMS': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Missing 'ON' at 'DBMS' (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
+            ))
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES $preposition") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input '$preposition': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input '$preposition': expected "ON" (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Mismatched input '$preposition': expected 'ON' (line 1, column ${offset + 21} (offset: ${offset + 20}))"""
+            ))
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON $preposition") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input '$preposition': expected
-               |  "DATABASE"
-               |  "DATABASES"
-               |  "DBMS"
-               |  "DEFAULT"
-               |  "GRAPH"
-               |  "GRAPHS"
-               |  "HOME" (line 1, column ${offset + 24} (offset: ${offset + 23}))""".stripMargin
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input '$preposition': expected
+                 |  "DATABASE"
+                 |  "DATABASES"
+                 |  "DBMS"
+                 |  "DEFAULT"
+                 |  "GRAPH"
+                 |  "GRAPHS"
+                 |  "HOME" (line 1, column ${offset + 24} (offset: ${offset + 23}))""".stripMargin
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Mismatched input '$preposition': expected 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'GRAPH', 'GRAPHS', 'DBMS' (line 1, column ${offset + 24} (offset: ${offset + 23}))"""
+            ))
         }
 
+        // TODO Missing comma in messsage
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS $preposition r:ole") {
           val finalOffset = offset + 30 + preposition.length
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input ':': expected "," or <EOF> (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input ':': expected "," or <EOF> (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Mismatched input ':': expected ';', <EOF> (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
+            ))
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS $preposition") {
           val finalOffset = offset + 28 + preposition.length
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input '': expected a parameter or an identifier (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input '': expected a parameter or an identifier (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Mismatched input '': expected an identifier, '$$' (line 1, column ${finalOffset + 1} (offset: $finalOffset))"""
+            ))
         }
 
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 28} (offset: ${offset + 27}))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input '': expected "$preposition" (line 1, column ${offset + 28} (offset: ${offset + 27}))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Mismatched input '': expected '$preposition' (line 1, column ${offset + 28} (offset: ${offset + 27}))"""
+            ))
         }
 
         // Tests for invalid alias management privileges (database keyword in wrong place)
 
         test(s"$command$immutableString DATABASE ALIAS MANAGEMENT ON DBMS $preposition role") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input 'ALIAS': expected "MANAGEMENT" (line 1, column ${offset + 10} (offset: ${offset + 9}))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input 'ALIAS': expected "MANAGEMENT" (line 1, column ${offset + 10} (offset: ${offset + 9}))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Extraneous input 'ALIAS': expected 'MANAGEMENT' (line 1, column ${offset + 10} (offset: ${offset + 9}))"""
+            ))
         }
 
         test(s"$command$immutableString CREATE DATABASE ALIAS ON DBMS $preposition role") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 17} (offset: ${offset + 16}))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 17} (offset: ${offset + 16}))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Extraneous input 'ALIAS': expected 'ON' (line 1, column ${offset + 17} (offset: ${offset + 16}))"""
+            ))
         }
 
         test(s"$command$immutableString DROP DATABASE ALIAS ON DBMS $preposition role") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 15} (offset: ${offset + 14}))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 15} (offset: ${offset + 14}))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Extraneous input 'ALIAS': expected 'ON' (line 1, column ${offset + 15} (offset: ${offset + 14}))"""
+            ))
         }
 
         test(s"$command$immutableString ALTER DATABASE ALIAS ON DBMS $preposition role") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 16} (offset: ${offset + 15}))"""
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input 'ALIAS': expected "ON" (line 1, column ${offset + 16} (offset: ${offset + 15}))"""
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Extraneous input 'ALIAS': expected 'ON' (line 1, column ${offset + 16} (offset: ${offset + 15}))"""
+            ))
         }
 
         test(s"$command$immutableString SHOW DATABASE ALIAS ON DBMS $preposition role") {
-          assertFailsWithMessage[Statements](
-            testName,
-            s"""Invalid input 'DATABASE': expected
-               |  "ALIAS"
-               |  "CONSTRAINT"
-               |  "CONSTRAINTS"
-               |  "INDEX"
-               |  "INDEXES"
-               |  "PRIVILEGE"
-               |  "ROLE"
-               |  "SERVER"
-               |  "SERVERS"
-               |  "SETTING"
-               |  "SETTINGS"
-               |  "TRANSACTION"
-               |  "TRANSACTIONS"
-               |  "USER" (line 1, column ${offset + 6} (offset: ${offset + 5}))""".stripMargin
-          )
+          testName should notParse[Statements]
+            .parseIn(JavaCc)(_.withMessage(
+              s"""Invalid input 'DATABASE': expected
+                 |  "ALIAS"
+                 |  "CONSTRAINT"
+                 |  "CONSTRAINTS"
+                 |  "INDEX"
+                 |  "INDEXES"
+                 |  "PRIVILEGE"
+                 |  "ROLE"
+                 |  "SERVER"
+                 |  "SERVERS"
+                 |  "SETTING"
+                 |  "SETTINGS"
+                 |  "TRANSACTION"
+                 |  "TRANSACTIONS"
+                 |  "USER" (line 1, column ${offset + 6} (offset: ${offset + 5}))""".stripMargin
+            ))
+            .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+              s"""Extraneous input 'DATABASE': expected 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'TRANSACTION', 'TRANSACTIONS', 'ALIAS', 'PRIVILEGE', 'ROLE', 'SERVER', 'SERVERS', 'SETTING', 'USER' (line 1, column ${offset + 6} (offset: ${offset + 5}))"""
+            ))
         }
     }
   }

@@ -318,11 +318,10 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_revokeCommand -> exitRevokeCommand((CypherParser.RevokeCommandContext) ctx);
             case CypherParser.RULE_revokeRole -> exitRevokeRole((CypherParser.RevokeRoleContext) ctx);
             case CypherParser.RULE_privilege -> exitPrivilege((CypherParser.PrivilegeContext) ctx);
-            case CypherParser.RULE_allDatabasePrivilege -> exitAllDatabasePrivilege(
-                    (CypherParser.AllDatabasePrivilegeContext) ctx);
-            case CypherParser.RULE_allGraphPrivilege -> exitAllGraphPrivilege(
-                    (CypherParser.AllGraphPrivilegeContext) ctx);
-            case CypherParser.RULE_allDbmsPrivilege -> exitAllDbmsPrivilege((CypherParser.AllDbmsPrivilegeContext) ctx);
+            case CypherParser.RULE_allPrivilege -> exitAllPrivilege((CypherParser.AllPrivilegeContext) ctx);
+            case CypherParser.RULE_allPrivilegeType -> exitAllPrivilegeType((CypherParser.AllPrivilegeTypeContext) ctx);
+            case CypherParser.RULE_allPrivilegeTarget -> exitAllPrivilegeTarget(
+                    (CypherParser.AllPrivilegeTargetContext) ctx);
             case CypherParser.RULE_createPrivilege -> exitCreatePrivilege((CypherParser.CreatePrivilegeContext) ctx);
             case CypherParser.RULE_createPrivilegeForDatabase -> exitCreatePrivilegeForDatabase(
                     (CypherParser.CreatePrivilegeForDatabaseContext) ctx);
