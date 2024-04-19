@@ -128,7 +128,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue = singleDbHit(inner.getLabelsForNode(node, nodeCursor))
 
-  override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): TextValue = singleDbHit(inner.getTypeForRelationship(id, cursor))
+  override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): AnyValue = singleDbHit(inner.getTypeForRelationship(id, cursor))
 
   override def getLabelName(id: Int): String = singleDbHit(inner.getLabelName(id))
 

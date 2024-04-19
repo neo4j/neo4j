@@ -33,9 +33,11 @@ import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Equality;
@@ -1052,7 +1054,7 @@ public final class CypherFunctions
         }
     }
 
-    public static TextValue type( AnyValue item, DbAccess access, RelationshipScanCursor relCursor )
+    public static AnyValue type( AnyValue item, DbAccess access, RelationshipScanCursor relCursor )
     {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( item instanceof RelationshipValue )
@@ -1063,13 +1065,24 @@ public final class CypherFunctions
         {
             int typeToken = ((VirtualRelationshipValue) item).relationshipTypeId( relationshipVisitor ->
                                                                                   {
-                                                                                      access.singleRelationship( relationshipVisitor.id(), relCursor );
-                                                                                      relCursor.next();
-                                                                                      relationshipVisitor.visit( relCursor.sourceNodeReference(),
-                                                                                                                 relCursor.targetNodeReference(),
-                                                                                                                 relCursor.type() );
+                                                                                      long id = relationshipVisitor.id();
+                                                                                      access.singleRelationship( id, relCursor );
+                                                                                      if ( relCursor.next() ||
+                                                                                           access.relationshipDeletedInThisTransaction( id ) )
+                                                                                      {
+                                                                                          relationshipVisitor.visit( relCursor.sourceNodeReference(),
+                                                                                                                     relCursor.targetNodeReference(),
+                                                                                                                     relCursor.type() );
+                                                                                      }
                                                                                   } );
-            return Values.stringValue( access.relationshipTypeName( typeToken ) );
+            if ( typeToken == TokenConstants.NO_TOKEN )
+            {
+                return NO_VALUE;
+            }
+            else
+            {
+                return Values.stringValue( access.relationshipTypeName( typeToken ) );
+            }
         }
         else
         {

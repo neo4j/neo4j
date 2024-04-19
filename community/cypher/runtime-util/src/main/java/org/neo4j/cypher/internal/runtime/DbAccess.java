@@ -112,7 +112,7 @@ public interface DbAccess extends EntityById
 
     ListValue getLabelsForNode( long id, NodeCursor nodeCursor );
 
-    TextValue getTypeForRelationship( long id, RelationshipScanCursor relationshipCursor );
+    AnyValue getTypeForRelationship( long id, RelationshipScanCursor relationshipCursor );
 
     boolean isLabelSetOnNode( int label, long id, NodeCursor nodeCursor );
 

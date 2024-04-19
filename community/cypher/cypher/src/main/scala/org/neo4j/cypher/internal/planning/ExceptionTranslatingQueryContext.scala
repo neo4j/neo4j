@@ -91,7 +91,7 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue =
     translateException(tokenNameLookup, inner.getLabelsForNode(node, nodeCursor))
 
-  override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): TextValue =
+  override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): AnyValue =
     translateException(tokenNameLookup, inner.getTypeForRelationship(id, cursor))
 
   override def getLabelName(id: Int): String =

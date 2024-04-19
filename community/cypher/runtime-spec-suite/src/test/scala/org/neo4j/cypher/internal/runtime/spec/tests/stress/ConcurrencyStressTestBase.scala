@@ -33,11 +33,16 @@ import java.util.concurrent.TimeUnit
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 abstract class ConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
                                                                      edition: Edition[CONTEXT],
                                                                      runtime: CypherRuntime[CONTEXT],
                                                                    ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  protected val TEST_TIMEOUT: FiniteDuration = Duration(5, TimeUnit.MINUTES)
+
 
   /**
    * Expects query result columns to all be Node/Relationship IDs
@@ -59,7 +64,7 @@ abstract class ConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  private def concurrentDelete(ids: Seq[Long], threadCount: Int, latch: CountDownLatch): Future[immutable.IndexedSeq[Unit]] = {
+  protected def concurrentDelete(ids: Seq[Long], threadCount: Int, latch: CountDownLatch): Future[immutable.IndexedSeq[Unit]] = {
     val threadIds = ids.grouped(ids.size / threadCount).toSeq
     Future.sequence((0 until threadCount).map(idsOffset => Future {
       val tx = newTx()

@@ -95,6 +95,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite
 import org.neo4j.internal.kernel.api.TokenPredicate
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenReadSession
+import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.helpers.Nodes
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
@@ -484,15 +485,29 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
     VirtualValues.list(labelArray: _*)
   }
 
-  override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): TextValue = {
-    reads().singleRelationship(id, cursor)
-    if (!cursor.next() && !relationshipReadOps.isDeletedInThisTx(id)) {
-      // we are allowed to read the type of relationships we have deleted, but
-      // if we have a concurrent delete by another tx we resort to NO_VALUE
-      Values.NO_VALUE
+   override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): AnyValue = {
+      reads().singleRelationship(id, cursor)
+      if (cursor.next()) {
+        Values.stringValue(tokenRead.relationshipTypeName(cursor.`type`()))
+      } else if (reads().relationshipDeletedInTransaction(id)) {
+        // We are slightly inconsistent here in that we allow the user to read the types of relationships which have
+        // been deleted in this transaction if they can be read (which is heavily dependent on underlying
+        // implementations), but not otherwise. This is mainly to be backwards compatible. Any proper solution would
+        // require that expected behaviour be well defined, like for example if
+        // https://github.com/opencypher/openCypher/pull/533 was accepted.
+        try {
+          Values.stringValue(tokenRead.relationshipTypeName(cursor.`type`()))
+        } catch {
+          case _: RelationshipTypeIdNotFoundKernelException =>
+            throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction")
+          case e: Throwable => throw e
+        }
+
+      } else {
+        // If the relationship was deleted by another transaction we return null
+        Values.NO_VALUE
+      }
     }
-    Values.stringValue(tokenRead.relationshipTypeName(cursor.`type`()))
-  }
 
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean = {
     CursorUtils.nodeHasLabel(reads(), nodeCursor, node, label)
