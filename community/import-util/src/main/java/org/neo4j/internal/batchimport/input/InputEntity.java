@@ -23,6 +23,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_OBJECT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,6 +55,8 @@ public class InputEntity implements InputEntityVisitor {
     public long propertyId;
     public boolean hasIntPropertyKeyIds;
     public final List<Object> properties = new ArrayList<>();
+    public ByteBuffer encodedProperties;
+    public boolean propertiesOffloaded;
 
     public boolean hasLongId;
     public long longId;
@@ -86,6 +89,14 @@ public class InputEntity implements InputEntityVisitor {
         hasPropertyId = true;
         propertyId = nextProp;
         return delegate.propertyId(nextProp);
+    }
+
+    @Override
+    public boolean properties(ByteBuffer properties, boolean offloaded) {
+        checkClear();
+        encodedProperties = properties;
+        propertiesOffloaded = offloaded;
+        return delegate.properties(properties, offloaded);
     }
 
     @Override
@@ -245,6 +256,8 @@ public class InputEntity implements InputEntityVisitor {
         propertyId = -1;
         hasIntPropertyKeyIds = false;
         properties.clear();
+        encodedProperties = null;
+        propertiesOffloaded = false;
         hasLongId = false;
         longId = -1;
         objectId = null;

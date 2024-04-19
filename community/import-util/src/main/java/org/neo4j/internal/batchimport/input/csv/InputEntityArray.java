@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputEntity;
@@ -43,6 +44,11 @@ public class InputEntityArray implements InputEntityVisitor {
     @Override
     public boolean propertyId(long nextProp) {
         return currentEntity().propertyId(nextProp);
+    }
+
+    @Override
+    public boolean properties(ByteBuffer properties, boolean offloaded) {
+        return currentEntity().properties(properties, offloaded);
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport.input;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.neo4j.internal.id.IdSequence;
 
 /**
@@ -29,6 +30,8 @@ import org.neo4j.internal.id.IdSequence;
  */
 public interface InputEntityVisitor extends Closeable {
     boolean propertyId(long nextProp);
+
+    boolean properties(ByteBuffer properties, boolean offloaded);
 
     boolean property(String key, Object value);
 
@@ -65,6 +68,11 @@ public interface InputEntityVisitor extends Closeable {
     class Adapter implements InputEntityVisitor {
         @Override
         public boolean property(String key, Object value) {
+            return true;
+        }
+
+        @Override
+        public boolean properties(ByteBuffer properties, boolean offloaded) {
             return true;
         }
 
@@ -153,6 +161,11 @@ public interface InputEntityVisitor extends Closeable {
         @Override
         public boolean propertyId(long nextProp) {
             return actual.propertyId(nextProp);
+        }
+
+        @Override
+        public boolean properties(ByteBuffer properties, boolean offloaded) {
+            return actual.properties(properties, offloaded);
         }
 
         @Override
