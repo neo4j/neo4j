@@ -103,7 +103,7 @@ case class StatefulShortestToFindShortestRewriter(
         if source.availableSymbols.contains(targetNode) &&
           selector.k == 1 && statefulShortest.nodeVariableGroupings.isEmpty =>
         exactlyOne(
-          solveds.get(statefulShortest.id).asSinglePlannerQuery.queryGraph.selectivePathPatterns.toSeq.distinct
+          solveds.get(statefulShortest.id).asSinglePlannerQuery.last.queryGraph.selectivePathPatterns.toSeq.distinct
         )
           .filter(_.relationships.size == 1)
           .flatMap(selectivePathPattern =>
