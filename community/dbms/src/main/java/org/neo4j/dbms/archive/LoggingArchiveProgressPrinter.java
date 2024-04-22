@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Supplier;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
+import org.neo4j.dbms.archive.printer.ProgressPrinters.EmptyOutputProgressPrinter;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.ByteUnit;
 
@@ -43,7 +44,16 @@ class LoggingArchiveProgressPrinter implements ArchiveProgressPrinter {
     private Deadline deadline = null;
     private PercentageCondition percentage = null;
 
-    LoggingArchiveProgressPrinter(OutputProgressPrinter progressPrinter, Supplier<Instant> timeSource) {
+    public static ArchiveProgressPrinter createProgressPrinter(
+            OutputProgressPrinter progressPrinter, Supplier<Instant> timeSource) {
+        requireNonNull(progressPrinter);
+        if (progressPrinter instanceof EmptyOutputProgressPrinter) {
+            return ArchiveProgressPrinter.EMPTY;
+        }
+        return new LoggingArchiveProgressPrinter(progressPrinter, timeSource);
+    }
+
+    private LoggingArchiveProgressPrinter(OutputProgressPrinter progressPrinter, Supplier<Instant> timeSource) {
         this.progressPrinter = requireNonNull(progressPrinter);
         this.timeSource = requireNonNull(timeSource);
     }

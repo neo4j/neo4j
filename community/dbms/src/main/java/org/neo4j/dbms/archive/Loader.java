@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.archive;
 
+import static org.neo4j.dbms.archive.LoggingArchiveProgressPrinter.createProgressPrinter;
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 import static org.neo4j.dbms.archive.printer.ProgressPrinters.emptyPrinter;
 import static org.neo4j.dbms.archive.printer.ProgressPrinters.printStreamPrinter;
@@ -66,7 +67,7 @@ public class Loader {
 
     public Loader(FileSystemAbstraction filesystem, OutputProgressPrinter progressPrinter) {
         this.filesystem = filesystem;
-        this.progressPrinter = new LoggingArchiveProgressPrinter(progressPrinter, Instant::now);
+        this.progressPrinter = createProgressPrinter(progressPrinter, Instant::now);
     }
 
     public Loader(FileSystemAbstraction filesystem, InternalLogProvider logProvider) {

@@ -111,7 +111,8 @@ class ArchiveProgressPrinterTest {
     private static List<String> executeSomeWork(OutputProgressPrinter outputPrinter) {
         List<String> expected = new ArrayList<>();
         var clock = Clocks.fakeClock();
-        ArchiveProgressPrinter progressPrinter = new LoggingArchiveProgressPrinter(outputPrinter, clock::instant);
+        ArchiveProgressPrinter progressPrinter =
+                LoggingArchiveProgressPrinter.createProgressPrinter(outputPrinter, clock::instant);
 
         progressPrinter.maxBytes(1000);
         progressPrinter.maxFiles(10);
@@ -148,7 +149,7 @@ class ArchiveProgressPrinterTest {
         List<String> expected = new ArrayList<>();
         var clock = Clocks.fakeClock();
         ArchiveProgressPrinter progressPrinter =
-                new LoggingArchiveProgressPrinter(outputProgressPrinter, clock::instant);
+                LoggingArchiveProgressPrinter.createProgressPrinter(outputProgressPrinter, clock::instant);
         var numFiles = 10;
         var numBytes = 10_000;
 

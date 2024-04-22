@@ -20,6 +20,7 @@
 package org.neo4j.dbms.archive;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.dbms.archive.LoggingArchiveProgressPrinter.createProgressPrinter;
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 import static org.neo4j.dbms.archive.Utils.copy;
 import static org.neo4j.io.fs.FileVisitors.justContinue;
@@ -46,7 +47,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.neo4j.commandline.Util;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
 import org.neo4j.dbms.archive.printer.ProgressPrinters;
-import org.neo4j.dbms.archive.printer.ProgressPrinters.EmptyOutputProgressPrinter;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Resource;
@@ -76,15 +76,7 @@ public class Dumper {
 
     private Dumper(FileSystemAbstraction fs, OutputProgressPrinter progressPrinter) {
         this.fs = requireNonNull(fs);
-        this.progressPrinter = createProgressPrinter(progressPrinter);
-    }
-
-    private static ArchiveProgressPrinter createProgressPrinter(OutputProgressPrinter progressPrinter) {
-        requireNonNull(progressPrinter);
-        if (progressPrinter instanceof EmptyOutputProgressPrinter) {
-            return ArchiveProgressPrinter.EMPTY;
-        }
-        return new LoggingArchiveProgressPrinter(progressPrinter, Instant::now);
+        this.progressPrinter = createProgressPrinter(progressPrinter, Instant::now);
     }
 
     public void dump(Path path, Path archive, CompressionFormat format) throws IOException {
