@@ -113,7 +113,7 @@ class LoadCommandTest {
                 DESCRIPTION
 
                 Load a database from an archive. <archive-path> must be a directory containing
-                an archive(s). Archive can be a databse dump created with the dump command, or
+                an archive(s). Archive can be a database dump created with the dump command, or
                 can be a full backup artifact created by the backup command from Neo4j
                 Enterprise. If neither --from-path or --from-stdin is supplied `server.
                 directories.dumps.root` setting will be searched for the archive. Existing
