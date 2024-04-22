@@ -113,6 +113,12 @@ public enum NotificationCodeWithDescription {
             // referencing that entity in a property definition in the same create clause
             "Creating an entity (%s) and referencing that entity in a property definition in the same CREATE is deprecated."),
 
+    DEPRECATED_PROPERTY_REFERENCE_IN_MERGE(
+            Status.Statement.FeatureDeprecationWarning,
+            GqlStatusInfoNotifications.STATUS_01N00,
+            // referencing that entity in a property definition in the same merge clause
+            "Merging an entity (%s) and referencing that entity in a property definition in the same MERGE is deprecated."),
+
     DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP(
             Status.Statement.FeatureDeprecationWarning,
             GqlStatusInfoNotifications.STATUS_01N01,
@@ -417,6 +423,15 @@ public enum NotificationCodeWithDescription {
                 position, new String[] {param}, new String[] {
                     String.format(
                             "Creating an entity (%s) and referencing that entity in a property definition in the same CREATE is deprecated.",
+                            param)
+                });
+    }
+
+    public static NotificationImplementation deprecatedPropertyReferenceInMerge(InputPosition position, String param) {
+        return DEPRECATED_PROPERTY_REFERENCE_IN_MERGE.notificationWithParameters(
+                position, new String[] {param}, new String[] {
+                    String.format(
+                            "Merging an entity (%s) and referencing that entity in a property definition in the same MERGE is deprecated.",
                             param)
                 });
     }

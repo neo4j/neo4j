@@ -36,6 +36,7 @@ import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedu
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureWithReplacement
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureWithoutReplacement
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate
+import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedPropertyReferenceInMerge
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship
 import org.neo4j.notifications.NotificationCodeWithDescription.deprecatedTextIndexProvider
@@ -474,6 +475,32 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       shouldContainNotification = true,
       "a",
       deprecatedPropertyReferenceInCreate
+    )
+
+    assertNoDeprecations(notDeprecated)
+  }
+
+  test("Deprecate property references across patterns in MERGE") {
+    val deprecated = Seq(
+      "MERGE (a {prop:'p'})-[:T]->(b {prop:a.prop})",
+      "MERGE (a {prop:'p'})<-[:T]-(b {prop:a.prop})",
+      "MERGE (a {prop:'p'})-[:T]-(b {prop:a.prop})",
+      "CREATE ({prop:'p'})-[:T]->({prop:'p'}) MERGE (b {prop:a.prop})-[:T]->(a {prop:'p'})",
+      "MERGE (a {prop:'p'})-[b:T {prop:a.prop}]->()",
+      "MERGE ()-[a:T {prop:'p'}]->()<-[b :S {prop:a.prop}]-()",
+      "FOREACH (x in [1,2,3] | MERGE (a {prop:'p'})-[:R]-(b {prop:a.prop}))"
+    )
+
+    val notDeprecated = Seq(
+      "MATCH (a {prop:'p'}) MERGE (b {prop:a.prop})",
+      "MERGE (a {prop:'p'}) MERGE (a)-[:T]->(b {prop:a.prop})"
+    )
+
+    assertNotification(
+      deprecated,
+      shouldContainNotification = true,
+      "a",
+      deprecatedPropertyReferenceInMerge
     )
 
     assertNoDeprecations(notDeprecated)

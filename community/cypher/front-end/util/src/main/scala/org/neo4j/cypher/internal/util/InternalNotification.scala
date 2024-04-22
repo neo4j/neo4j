@@ -36,6 +36,7 @@ object InternalNotification {
     "DeprecatedRelTypeSeparatorNotification",
     "DeprecatedNodesOrRelationshipsInSetClauseNotification",
     "DeprecatedPropertyReferenceInCreate",
+    "DeprecatedPropertyReferenceInMerge",
     "SubqueryVariableShadowing",
     "UnionReturnItemsInDifferentOrder",
     "HomeDatabaseNotPresent",
@@ -105,6 +106,8 @@ case class DeprecatedNodesOrRelationshipsInSetClauseNotification(
 ) extends InternalNotification
 
 case class DeprecatedPropertyReferenceInCreate(position: InputPosition, varName: String) extends InternalNotification
+
+case class DeprecatedPropertyReferenceInMerge(position: InputPosition, varName: String) extends InternalNotification
 
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
 

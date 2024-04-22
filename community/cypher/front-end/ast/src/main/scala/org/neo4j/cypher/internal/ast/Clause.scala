@@ -1043,8 +1043,9 @@ case class Merge(pattern: NonPrefixedPatternPart, actions: Seq[MergeAction], whe
     }
   }
 
-  override def clauseSpecificSemanticCheck: SemanticCheck =
-    SemanticPatternCheck.check(Pattern.SemanticContext.Merge, Pattern.ForUpdate(Seq(pattern))(pattern.position)) chain
+  override def clauseSpecificSemanticCheck: SemanticCheck = {
+    val updatePattern = Pattern.ForUpdate(Seq(pattern))(pattern.position)
+    SemanticPatternCheck.check(Pattern.SemanticContext.Merge, updatePattern) chain
       actions.semanticCheck chain
       checkRelTypes(pattern) chain
       where.semanticCheck chain
@@ -1053,7 +1054,9 @@ case class Merge(pattern: NonPrefixedPatternPart, actions: Seq[MergeAction], whe
         // Afterwards we can have rewritten PatternComprehensions to COLLECT subqueries which would now fail this check.
         if (state.semanticCheckHasRunOnce) success
         else checkNoSubqueryInMerge
-      }
+      } chain
+      SemanticState.recordCurrentScope(updatePattern)
+  }
 }
 
 case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) extends CreateOrInsert

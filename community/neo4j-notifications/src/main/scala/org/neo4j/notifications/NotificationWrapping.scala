@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInCreate
+import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInMerge
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRuntimeNotification
 import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
@@ -208,6 +209,11 @@ object NotificationWrapping {
       )
     case DeprecatedPropertyReferenceInCreate(pos, name) =>
       NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate(
+        pos.withOffset(offset).asInputPosition,
+        name
+      )
+    case DeprecatedPropertyReferenceInMerge(pos, name) =>
+      NotificationCodeWithDescription.deprecatedPropertyReferenceInMerge(
         pos.withOffset(offset).asInputPosition,
         name
       )

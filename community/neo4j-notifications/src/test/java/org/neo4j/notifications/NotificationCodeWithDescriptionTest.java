@@ -40,6 +40,7 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.deprecated
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureWithReplacement;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureWithoutReplacement;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedPropertyReferenceInMerge;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedRuntimeOption;
 import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship;
@@ -908,6 +909,21 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
+    void shouldConstructNotificationsFor_DEPRECATED_PROPERTY_REFERENCE_IN_MERGE() {
+        NotificationImplementation notification = deprecatedPropertyReferenceInMerge(InputPosition.empty, "n");
+
+        verifyNotification(
+                notification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                "Merging an entity (n) and referencing that entity in a property definition in the same MERGE is deprecated.",
+                NotificationCategory.DEPRECATION,
+                "01N00",
+                "Merging an entity (n) and referencing that entity in a property definition in the same MERGE is deprecated.");
+    }
+
+    @Test
     void shouldConstructNotificationsFor_SERVER_ALREADY_ENABLED() {
         NotificationImplementation notification = serverAlreadyEnabled(InputPosition.empty, "server");
 
@@ -1103,8 +1119,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            61, -18, 115, 70, 1, 103, -75, 57, -36, -99, -65, 46, -86, -60, -108, 106, 9, 55, -75, -92, 85, -58, -3, 90,
-            81, 70, -24, 54, -95, -1, -110, 40
+            -5, -109, 78, 102, -112, -122, -102, 85, 106, -83, -90, 43, -4, -120, 88, 63, 79, -110, 60, -10, -35, 25,
+            61, 111, -4, -98, 96, 102, -69, -28, -84, 6
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

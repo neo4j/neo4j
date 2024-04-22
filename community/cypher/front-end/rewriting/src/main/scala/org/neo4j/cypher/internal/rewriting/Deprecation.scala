@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
+import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
@@ -54,6 +55,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInCreate
+import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInMerge
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
@@ -175,8 +177,9 @@ object Deprecations {
   // add new semantically deprecated features here
   case object semanticallyDeprecatedFeatures extends SemanticDeprecations {
 
-    // Returns the set of variables that are defined in a `CREATE` and then used in the same `CREATE` for property read
+    // Returns the set of variables that are defined in a `CREATE` or `MERGE` and then used in the same `CREATE` or `MERGE` for property read
     // E.g. `CREATE (a {prop: 5}), (b {prop: a.prop})
+    // E.g. `MERGE (a {prop:'p'})-[:T]->(b {prop: a.prop})`
     def propertyUsageOfNewVariable(pattern: Pattern, semanticTable: SemanticTable): Set[LogicalVariable] = {
       val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
 
@@ -233,6 +236,13 @@ object Deprecations {
          */
         propertyUsageOfNewVariable(pattern, semanticTable).collectFirst { e =>
           Deprecation(None, Some(DeprecatedPropertyReferenceInCreate(e.position, e.name)))
+        }
+
+      case Merge(patternPart, _, _) =>
+        // Create an update pattern consisting of the one patternPart from the MERGE clause
+        val pattern = Pattern.ForUpdate(Seq(patternPart))(patternPart.position)
+        propertyUsageOfNewVariable(pattern, semanticTable).collectFirst { e =>
+          Deprecation(None, Some(DeprecatedPropertyReferenceInMerge(e.position, e.name)))
         }
 
       case _ => None
