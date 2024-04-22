@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.MapExpression
 
@@ -40,13 +42,31 @@ class MapExpressionParserTest extends AstParsingTestBase {
 
   test("map with non-string key should not parse") {
     "{42: 'value'}" should notParse[MapExpression]
+      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <UNSIGNED_DECIMAL_INTEGER> \"42\"\" at line 1, column 2."))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '42': expected an identifier, '}' (line 1, column 2 (offset: 1))
+          |"{42: 'value'}"
+          |  ^""".stripMargin
+      ))
   }
 
   test("map without comma separation should not parse") {
     "{key1: 'value' key2: 42}" should notParse[MapExpression]
+      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"key2\"\" at line 1, column 16."))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'key2': expected ',', '}' (line 1, column 16 (offset: 15))
+          |"{key1: 'value' key2: 42}"
+          |                ^""".stripMargin
+      ))
   }
 
   test("map with invalid start comma should not parse") {
     "{, key: 'value'}" should notParse[MapExpression]
+      .parseIn(JavaCc)(_.withMessageStart("Encountered \" \",\" \",\"\" at line 1, column 2."))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input ',': expected an identifier, '}' (line 1, column 2 (offset: 1))
+          |"{, key: 'value'}"
+          |  ^""".stripMargin
+      ))
   }
 }

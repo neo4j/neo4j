@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
@@ -67,8 +68,17 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
     }
   }
 
-  test("MATCH DIFFERENT RELATIONSHIPS BINDINGS (n)-->(m)") {
-    failsParsing[Clause]
+  test("MATCH DIFFERENT RELATIONSHIPS BINDINGS (n)-->(m) RETURN *") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'BINDINGS': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 31 (offset: 30))"
+      ))
+      // Error message is unhelpful :(
+      .parseIn(Antlr)(_.withMessageStart(
+        """Missing '=' at '(' (line 1, column 40 (offset: 39))
+          |"MATCH DIFFERENT RELATIONSHIPS BINDINGS (n)-->(m) RETURN *"
+          |                                        ^""".stripMargin
+      ))
   }
 
   test("MATCH REPEATABLE ELEMENTS (n)-->(m)") {
@@ -98,12 +108,30 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
     }
   }
 
-  test("MATCH REPEATABLE ELEMENTS BINDINGS (n)-->(m)") {
-    failsParsing[Clause]
+  test("MATCH REPEATABLE ELEMENTS BINDINGS (n)-->(m) RETURN *") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'BINDINGS': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 27 (offset: 26))"
+      ))
+      // Error message is unhelpful :(
+      .parseIn(Antlr)(_.withMessage(
+        """Missing '=' at '(' (line 1, column 36 (offset: 35))
+          |"MATCH REPEATABLE ELEMENTS BINDINGS (n)-->(m) RETURN *"
+          |                                    ^""".stripMargin
+      ))
   }
 
-  test("MATCH REPEATABLE ELEMENT ELEMENTS (n)-->(m)") {
-    failsParsing[Clause]
+  test("MATCH REPEATABLE ELEMENT ELEMENTS (n)-->(m) RETURN *") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'ELEMENTS': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 26 (offset: 25))"
+      ))
+      // Error message is unhelpful :(
+      .parseIn(Antlr)(_.withMessage(
+        """Missing '=' at '(' (line 1, column 35 (offset: 34))
+          |"MATCH REPEATABLE ELEMENT ELEMENTS (n)-->(m) RETURN *"
+          |                                   ^""".stripMargin
+      ))
   }
 
   test("MATCH () WHERE EXISTS {REPEATABLE ELEMENTS (n)-->(m)}") {
@@ -248,8 +276,16 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
     }
   }
 
-  test("MATCH () WHERE COLLECT {REPEATABLE ELEMENTS (n)-->(m) RETURN *}") {
-    failsParsing[Clause]
+  test("MATCH () WHERE COLLECT {REPEATABLE ELEMENTS (n)-->(m) RETURN *} RETURN *") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'ELEMENTS': expected \",\" or \"}\" (line 1, column 36 (offset: 35))"
+      ))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'ELEMENTS': expected ',', '}' (line 1, column 36 (offset: 35))
+          |"MATCH () WHERE COLLECT {REPEATABLE ELEMENTS (n)-->(m) RETURN *} RETURN *"
+          |                                    ^""".stripMargin
+      ))
   }
 
   // Antlr parser is able to successfully find a valid clause within the input which is correct, whilst ambiguous,

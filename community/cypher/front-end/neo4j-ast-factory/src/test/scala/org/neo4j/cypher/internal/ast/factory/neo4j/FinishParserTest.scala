@@ -19,7 +19,10 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.exceptions.SyntaxException
 
 class FinishParserTest extends AstParsingTestBase {
 
@@ -42,25 +45,62 @@ class FinishParserTest extends AstParsingTestBase {
 
   test("FINISH *") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Extraneous input '*': expected ';', <EOF> (line 1, column 8 (offset: 7))
+          |"FINISH *"
+          |        ^""".stripMargin
+      ))
   }
 
   test("FINISH a, b") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'a'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Mismatched input 'a': expected ';', <EOF> (line 1, column 8 (offset: 7))
+          |"FINISH a, b"
+          |        ^""".stripMargin
+      ))
     failsParsing[Statements]
   }
 
   test("FINISH DISTINCT *") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DISTINCT'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Mismatched input 'DISTINCT': expected ';', <EOF> (line 1, column 8 (offset: 7))
+          |"FINISH DISTINCT *"
+          |        ^""".stripMargin
+      ))
   }
 
   test("FINISH DISTINCT a, b") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DISTINCT'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Mismatched input 'DISTINCT': expected ';', <EOF> (line 1, column 8 (offset: 7))
+          |"FINISH DISTINCT a, b"
+          |        ^""".stripMargin
+      ))
   }
 
   test("FINISH n:A") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'n'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Mismatched input 'n': expected ';', <EOF> (line 1, column 8 (offset: 7))
+          |"FINISH n:A"
+          |        ^""".stripMargin
+      ))
   }
 
   test("FINISH n:A&B") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'n'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Mismatched input 'n': expected ';', <EOF> (line 1, column 8 (offset: 7))
+          |"FINISH n:A&B"
+          |        ^""".stripMargin
+      ))
   }
 }

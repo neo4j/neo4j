@@ -16,10 +16,13 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
+import org.neo4j.exceptions.SyntaxException
 
 /**
  * The aim of this class is to test parsing for all combinations of
@@ -83,10 +86,14 @@ class IsWhereRelationshipPatternParserTest extends AstParsingTestBase with Legac
 
         test(s"-[$maybeVariable WHERE $isOrWhere WHERE $isOrWhere2]->") {
           failsParsing[RelationshipPattern]
+            .parseIn(JavaCc)(_.withMessageStart("Encountered"))
+            .parseIn(Antlr)(_.throws[SyntaxException])
         }
 
         test(s"-[$maybeVariable IS $isOrWhere IS $isOrWhere2]->") {
           failsParsing[RelationshipPattern]
+            .parseIn(JavaCc)(_.withMessageStart("Encountered"))
+            .parseIn(Antlr)(_.throws[SyntaxException])
         }
 
         for {

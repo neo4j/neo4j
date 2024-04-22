@@ -17,8 +17,11 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.exceptions.SyntaxException
 
 class ConcatenationParserTest extends AstParsingTestBase {
 
@@ -63,17 +66,41 @@ class ConcatenationParserTest extends AstParsingTestBase {
 
   test("a ||") {
     failsParsing[Clause]
+      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"a\"\" at line 1, column 1"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'a': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 1 (offset: 0))
+          |"a ||"
+          | ^""".stripMargin
+      ))
   }
 
   test("|| b") {
     failsParsing[Clause]
+      .parseIn(JavaCc)(_.withMessageStart("Encountered \" \"||\" \"||\"\" at line 1, column 1."))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '||': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 1 (offset: 0))
+          |"|| b"
+          | ^""".stripMargin
+      ))
   }
 
   test("a ||| b") {
     failsParsing[Clause]
+      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"a\"\" at line 1, column 1."))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'a': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 1 (offset: 0))
+          |"a ||| b"
+          | ^""".stripMargin
+      ))
   }
 
   test("a || || b") {
     failsParsing[Clause]
+      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"a\"\" at line 1, column 1."))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'a': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 1 (offset: 0))
+          |"a || || b"
+          | ^""".stripMargin
+      ))
   }
 }

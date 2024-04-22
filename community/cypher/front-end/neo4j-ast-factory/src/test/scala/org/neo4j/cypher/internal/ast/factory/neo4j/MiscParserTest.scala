@@ -221,7 +221,13 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   }
 
   test("should not parse pattern comprehensions with single nodes") {
-    assertFails[PatternComprehension]("[p = (x) | p]")
+    "[p = (x) | p]" should notParse[PatternComprehension]
+      .parseIn(JavaCc)(_.withMessageStart("Encountered \" \"|\" \"|\"\" at line 1, column 10."))
+      .parseIn(Antlr)(_.withMessageStart(
+        """Mismatched input '|': expected '<', '-' (line 1, column 10 (offset: 9))
+          |"[p = (x) | p]"
+          |          ^""".stripMargin
+      ))
   }
 
   test("should handle escaping in string literals") {

@@ -21,16 +21,15 @@ import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOptFromList
+import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.cast
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintExistsContext
@@ -43,6 +42,8 @@ import org.neo4j.cypher.internal.parser.CypherParser.GlobRecursiveContext
 import org.neo4j.cypher.internal.parser.CypherParser.SymbolicAliasNameOrParameterContext
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.mutable
 
@@ -75,6 +76,8 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       case CypherParser.RULE_insertPattern                    => checkInsertPattern(cast(ctx))
       case CypherParser.RULE_insertNodeLabelExpression        => checkInsertLabelConjunction(cast(ctx))
       case CypherParser.RULE_functionInvocation               => checkFunctionInvocation(cast(ctx))
+      case CypherParser.RULE_typePart                         => checkTypePart(cast(ctx))
+      case CypherParser.RULE_hint                             => checkHint(cast(ctx))
       case _                                                  =>
     }
   }
@@ -158,7 +161,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   private def checkSubqueryInTransactionsParameters(ctx: CypherParser.SubqueryInTransactionsParametersContext): Unit = {
     errorOnDuplicateRule(ctx.subqueryInTransactionsBatchParameters(), "OF ROWS", isParam = true)
     errorOnDuplicateRule(ctx.subqueryInTransactionsErrorParameters(), "ON ERROR", isParam = true)
-    errorOnDuplicateRule(ctx.subqueryInTransactionsReportParameters(), "REPORT STATUS AS", isParam = true)
+    errorOnDuplicateRule(ctx.subqueryInTransactionsReportParameters(), "REPORT STATUS", isParam = true)
   }
 
   private def checkCreateAlias(ctx: CypherParser.CreateAliasContext): Unit = {
@@ -168,21 +171,21 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   }
 
   private def checkAlterAlias(ctx: CypherParser.AlterAliasContext): Unit = {
+    val aliasTargets = ctx.alterAliasTarget()
+    val hasUrl = !aliasTargets.isEmpty && aliasTargets.get(0).AT() != null
+    val usernames = ctx.alterAliasUser()
+    val passwords = ctx.alterAliasPassword()
+    val driverSettings = ctx.alterAliasDriver()
+
     // Should only be checked in case of remote
-    val aliasTargetCtx = ctx.alterAliasTarget()
-    val url =
-      if (aliasTargetCtx.isEmpty) None else astOpt[Either[String, Parameter]](aliasTargetCtx.get(0).stringOrParameter())
-    val username = astOptFromList[Expression](ctx.alterAliasUser(), None)
-    val password = astOptFromList[Expression](ctx.alterAliasPassword(), None)
-    val driverSettings = astOptFromList[Either[Map[String, Expression], Parameter]](ctx.alterAliasDriver(), None)
-    if (url.isDefined || username.isDefined || password.isDefined || driverSettings.isDefined)
+    if (hasUrl || !usernames.isEmpty || !passwords.isEmpty || !driverSettings.isEmpty)
       errorOnAliasNameContainingDots(java.util.List.of(ctx.symbolicAliasNameOrParameter()))
 
-    errorOnDuplicateCtx(ctx.alterAliasDriver(), "DRIVER")
-    errorOnDuplicateCtx(ctx.alterAliasUser, "USER")
-    errorOnDuplicateCtx(ctx.alterAliasPassword(), "PASSWORD")
+    errorOnDuplicateCtx(driverSettings, "DRIVER")
+    errorOnDuplicateCtx(usernames, "USER")
+    errorOnDuplicateCtx(passwords, "PASSWORD")
     errorOnDuplicateCtx(ctx.alterAliasProperties(), "PROPERTIES")
-    errorOnDuplicateCtx(aliasTargetCtx, "TARGET")
+    errorOnDuplicateCtx(aliasTargets, "TARGET")
   }
 
   private def checkCreateUser(ctx: CypherParser.CreateUserContext): Unit = {
@@ -280,26 +283,26 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       case c: ConstraintIsUniqueContext =>
         if (ctx.commandNodePattern() != null && (c.RELATIONSHIP() != null || c.REL() != null)) {
           errors :+= exceptionFactory.syntaxException(
-            ConstraintType.REL_UNIQUE.toString ++ " does not allow node patterns",
+            s"'${ConstraintType.REL_UNIQUE.description()}' does not allow node patterns",
             inputPosition(ctx.commandNodePattern().getStart)
           )
         }
         if (ctx.commandRelPattern() != null && c.NODE() != null) {
           errors :+= exceptionFactory.syntaxException(
-            ConstraintType.NODE_UNIQUE.toString ++ " does not allow relationship patterns",
+            s"'${ConstraintType.NODE_UNIQUE.description()}' does not allow relationship patterns",
             inputPosition(ctx.commandRelPattern().getStart)
           )
         }
       case c: ConstraintKeyContext =>
         if (ctx.commandNodePattern() != null && (c.RELATIONSHIP() != null || c.REL() != null)) {
           errors :+= exceptionFactory.syntaxException(
-            ConstraintType.REL_KEY.toString ++ " does not allow node patterns",
+            s"'${ConstraintType.REL_KEY.description()}' does not allow node patterns",
             inputPosition(ctx.commandNodePattern().getStart)
           )
         }
         if (ctx.commandRelPattern() != null && c.NODE() != null) {
           errors :+= exceptionFactory.syntaxException(
-            ConstraintType.NODE_KEY.toString ++ " does not allow relationship patterns",
+            s"'${ConstraintType.NODE_KEY.description()}' does not allow relationship patterns",
             inputPosition(ctx.commandRelPattern().getStart)
           )
         }
@@ -339,15 +342,15 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   private def checkDropConstraint(ctx: CypherParser.DropConstraintContext): Unit = {
     val relPattern = ctx.commandRelPattern()
     if (relPattern != null) {
-      val errorMessageEnd = " does not allow relationship patterns"
+      val errorMessageEnd = "does not allow relationship patterns"
       if (ctx.KEY() != null) {
         errors :+= exceptionFactory.syntaxException(
-          ConstraintType.NODE_KEY.toString ++ errorMessageEnd,
+          s"'${ConstraintType.NODE_KEY.description()}' $errorMessageEnd",
           inputPosition(relPattern.getStart)
         )
       } else if (ctx.UNIQUE() != null) {
         errors :+= exceptionFactory.syntaxException(
-          ConstraintType.NODE_UNIQUE.toString ++ errorMessageEnd,
+          s"'${ConstraintType.NODE_UNIQUE.description()}' $errorMessageEnd",
           inputPosition(relPattern.getStart)
         )
       }
@@ -447,9 +450,10 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
      */
     val relPattern = ctx.lookupIndexRelPattern()
     if (functionName.getText.toUpperCase() == "EACH" && relPattern != null && relPattern.EACH() == null) {
+
       errors :+= exceptionFactory.syntaxException(
         "Missing function name for the LOOKUP INDEX",
-        inputPosition(functionName.start)
+        inputPosition(ctx.LPAREN().getSymbol)
       )
     }
   }
@@ -490,6 +494,26 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
             ctx.expression(1).ast[Expression]().position
           )
         }
+      case _ =>
+    }
+  }
+
+  private def checkTypePart(ctx: CypherParser.TypePartContext): Unit = {
+    val cypherType = ctx.typeName().ast[CypherType]()
+    if (cypherType.isInstanceOf[ClosedDynamicUnionType] && ctx.typeNullability() != null) {
+      errors :+= exceptionFactory.syntaxException(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead.",
+        pos(ctx.typeNullability())
+      )
+    }
+  }
+
+  private def checkHint(ctx: CypherParser.HintContext): Unit = {
+    nodeChild(ctx, 1).getSymbol.getType match {
+      case CypherParser.BTREE => errors :+= exceptionFactory.syntaxException(
+          ASTExceptionFactory.invalidHintIndexType(HintIndexType.BTREE),
+          pos(nodeChild(ctx, 1))
+        )
       case _ =>
     }
   }

@@ -17,9 +17,21 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ExtractScope
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
+import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -29,6 +41,9 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
+import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 /**
@@ -711,12 +726,82 @@ class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with Legac
     }
   }
 
-  test("[x IN [1,2,3] WHERE n:A | (b | x)]") {
-    failsToParseOnlyJavaCC[Expression]()
+  test("RETURN [x IN [1,2,3] WHERE n:A | (b | x)]") {
+    // TODO Is this ok??
+    whenParsing[Statements]
+      .parseIn(JavaCc)(_.withAnyFailure.withMessageStart(
+        "Invalid input '(': expected \"+\" or \"-\" (line 1, column 34 (offset: 33))"
+      ))
+      .parseIn(Antlr)(_.toAst(
+        Statements(Seq(SingleQuery(Seq(Return(
+          distinct = false,
+          ReturnItems(
+            includeExisting = false,
+            Seq(UnaliasedReturnItem(
+              ListComprehension(
+                ExtractScope(
+                  varFor("x"),
+                  Some(LabelExpressionPredicate(
+                    varFor("n"),
+                    Disjunctions(Seq(
+                      Leaf(LabelOrRelTypeName("A")(pos)),
+                      Leaf(LabelOrRelTypeName("b")(pos)),
+                      Leaf(LabelOrRelTypeName("x")(pos))
+                    ))(pos)
+                  )(pos)),
+                  None
+                )(pos),
+                ListLiteral(Seq(literal(1), literal(2), literal(3)))(pos)
+              )(pos),
+              "[x IN [1,2,3] WHERE n:A | (b | x)]"
+            )(pos)),
+            None
+          )(pos),
+          None,
+          None,
+          None,
+          Set()
+        )(pos)))(pos)))
+      ))
   }
 
-  test("[x IN [1,2,3] WHERE n:A|B AND n:C|D | x]") {
-    failsToParseOnlyJavaCC[Expression]()
+  test("RETURN [x IN [1,2,3] WHERE n:A|B AND n:C|D | x]") {
+    // TODO Is this ok??
+    whenParsing[Statements]
+      .parseIn(JavaCc)(_.withAnyFailure.withMessageStart("Invalid input '|'"))
+      .parseIn(Antlr)(_.toAst(
+        Statements(Seq(SingleQuery(Seq(Return(
+          distinct = false,
+          ReturnItems(
+            includeExisting = false,
+            Seq(UnaliasedReturnItem(
+              ListComprehension(
+                ExtractScope(
+                  varFor("x"),
+                  Some(And(
+                    LabelExpressionPredicate(
+                      varFor("n"),
+                      Disjunctions(Vector(Leaf(LabelOrRelTypeName("A")(pos)), Leaf(LabelOrRelTypeName("B")(pos))))(pos)
+                    )(pos),
+                    LabelExpressionPredicate(
+                      varFor("n"),
+                      Disjunctions(Seq(Leaf(LabelOrRelTypeName("C")(pos)), Leaf(LabelOrRelTypeName("D")(pos))))(pos)
+                    )(pos)
+                  )(pos)),
+                  Some(varFor("x"))
+                )(pos),
+                ListLiteral(Seq(literal(1), literal(2), literal(3)))(pos)
+              )(pos),
+              "[x IN [1,2,3] WHERE n:A|B AND n:C|D | x]"
+            )(pos)),
+            None
+          )(pos),
+          None,
+          None,
+          None,
+          Set()
+        )(pos)))(pos)))
+      ))
   }
 
   test("[x IN [1,2,3] WHERE n:(A | x) | x]") {

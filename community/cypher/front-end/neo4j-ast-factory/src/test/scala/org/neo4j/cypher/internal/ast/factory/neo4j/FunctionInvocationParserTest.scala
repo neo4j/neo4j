@@ -16,11 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.exceptions.SyntaxException
 
-class FunctionInvocationParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class FunctionInvocationParserTest extends AstParsingTestBase {
 
   test("foo()") {
     parsesTo[FunctionInvocation](function("foo"))
@@ -52,10 +55,22 @@ class FunctionInvocationParserTest extends AstParsingTestBase with LegacyAstPars
   }
 
   test("function parameters without comma separation should not parse") {
-    "foo('test' 42)" should notParse[FunctionInvocation]
+    "return foo('test' 42)" should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '42': expected"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Extraneous input '42': expected ',', ')' (line 1, column 19 (offset: 18))
+          |"return foo('test' 42)"
+          |                   ^""".stripMargin
+      ))
   }
 
   test("function parameters with invalid start comma should not parse") {
-    "foo(, 'test', 42)" should notParse[FunctionInvocation]
+    "return foo(, 'test', 42)" should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ',': expected"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '(': expected ';', <EOF> (line 1, column 11 (offset: 10))
+          |"return foo(, 'test', 42)"
+          |           ^""".stripMargin
+      ))
   }
 }

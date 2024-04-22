@@ -18,6 +18,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.exceptions.SyntaxException
 
 class DropUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase {
 
@@ -53,13 +56,35 @@ class DropUserAdministrationCommandParserTest extends UserAdministrationCommandP
 
   test("DROP USER ") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected an identifier, '$' (line 1, column 10 (offset: 9))
+          |"DROP USER"
+          |          ^""".stripMargin
+      ))
   }
 
   test("DROP USER  IF EXISTS") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'EXISTS': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'EXISTS': expected ';', <EOF> (line 1, column 15 (offset: 14))
+          |"DROP USER  IF EXISTS"
+          |               ^""".stripMargin
+      ))
   }
 
   test("DROP USER foo IF NOT EXISTS") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT': expected \"EXISTS\" (line 1, column 18 (offset: 17))"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'NOT': expected 'EXISTS' (line 1, column 18 (offset: 17))
+          |"DROP USER foo IF NOT EXISTS"
+          |                  ^""".stripMargin
+      ))
   }
 }

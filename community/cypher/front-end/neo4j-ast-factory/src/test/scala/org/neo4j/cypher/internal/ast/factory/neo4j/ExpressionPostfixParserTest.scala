@@ -17,10 +17,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.exceptions.SyntaxException
 
 class ExpressionPostfixParserTest extends AstParsingTestBase {
 
@@ -72,6 +75,12 @@ class ExpressionPostfixParserTest extends AstParsingTestBase {
 
   test("a.[]") {
     failsParsing[Expression]
+      .parseIn(JavaCc)(_.withMessageStart("Encountered \" \"[\" \"[\"\" at line 1, column 3"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Mismatched input '[': expected an identifier (line 1, column 3 (offset: 2))
+          |"a.[]"
+          |   ^""".stripMargin
+      ))
   }
 
   test("a[0..1]") {

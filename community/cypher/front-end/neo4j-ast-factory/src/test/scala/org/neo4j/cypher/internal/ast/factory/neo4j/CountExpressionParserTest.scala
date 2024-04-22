@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -40,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.exceptions.SyntaxException
 
 class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -539,6 +542,8 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       |RETURN m""".stripMargin
   ) {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test(
@@ -547,5 +552,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       |RETURN m""".stripMargin
   ) {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Missing '}' at 'RETURN'"))
   }
 }

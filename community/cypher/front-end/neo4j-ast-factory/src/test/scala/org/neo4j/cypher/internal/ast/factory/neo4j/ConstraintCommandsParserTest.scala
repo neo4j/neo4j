@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -46,6 +48,7 @@ import org.neo4j.cypher.internal.util.symbols.RelationshipType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
 import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
+import org.neo4j.exceptions.SyntaxException
 
 /* Tests for creating and dropping constraints */
 class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -1623,12 +1626,13 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           test(
             s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop2, node.prop3) IS NOT NULL"
           ) {
-            assertFailsWithException[Statements](
-              testName,
-              new Neo4jASTConstructionException(
+            failsParsing[Statements]
+              .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException].withMessage(
                 ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
-              )
-            )
+              ))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_NOT_NULL)
+              ))
           }
 
           // Relationship property existence
@@ -1711,12 +1715,13 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           test(
             s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop2, r3.prop3) IS NOT NULL"
           ) {
-            assertFailsWithException[Statements](
-              testName,
-              new Neo4jASTConstructionException(
+            failsParsing[Statements]
+              .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException].withMessage(
                 ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
-              )
-            )
+              ))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_NOT_NULL)
+              ))
           }
 
           Seq("IS TYPED", "IS ::", "::").foreach(typeKeyword => {
@@ -1805,12 +1810,13 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop2, node.prop3) $typeKeyword STRING"
             ) {
-              assertFailsWithException[Statements](
-                testName,
-                new Neo4jASTConstructionException(
+              failsParsing[Statements]
+                .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException].withMessage(
                   ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
-                )
-              )
+                ))
+                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
+                ))
             }
 
             // Relationship property type
@@ -1898,12 +1904,13 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop2, r3.prop3) $typeKeyword STRING"
             ) {
-              assertFailsWithException[Statements](
-                testName,
-                new Neo4jASTConstructionException(
+              failsParsing[Statements]
+                .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException].withMessage(
                   ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
-                )
-              )
+                ))
+                .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
+                ))
             }
           })
 
@@ -1913,124 +1920,144 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY {indexProvider : 'range-1.0'}"
           ) {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{': expected ';', <EOF>"))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS"
           ) {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"{\" or a parameter"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '': expected '{', '$'"))
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop.part IS UNIQUE") {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input '.': expected \"::\" or \"IS\""))
+              // TODO Good enough suggestion?
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop.part) IS UNIQUE") {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input '.': expected \")\" or \",\""))
+              // TODO Good enough suggestion?
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE {indexProvider : 'range-1.0'}"
           ) {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{': expected ';', <EOF>"))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1, node.prop2) IS UNIQUE OPTIONS"
           ) {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"{\" or a parameter"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '': expected '{', '$'"))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1, node.prop2) IS NOT NULL"
           ) {
-            assertFailsWithMessage[Statements](
-              testName,
-              "Constraint type 'IS NOT NULL' does not allow multiple properties"
-            )
+            failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                "Constraint type 'IS NOT NULL' does not allow multiple properties"
+              ))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop1, r.prop2) IS NOT NULL"
           ) {
-            assertFailsWithMessage[Statements](
-              testName,
-              "Constraint type 'IS NOT NULL' does not allow multiple properties"
-            )
+            failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessage("Constraint type 'IS NOT NULL' does not allow multiple properties"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                "Constraint type 'IS NOT NULL' does not allow multiple properties"
+              ))
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE KEY") {
-            assertFailsWithMessageStart[Statements](
-              testName,
-              ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY)
-            )
+            failsParsing[Statements]
+              .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
+              .parseIn(Antlr)(_.throws[SyntaxException])
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE UNIQUE") {
-            assertFailsWithMessageStart[Statements](
-              testName,
-              ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE)
-            )
+            failsParsing[Statements]
+              .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
+              .parseIn(Antlr)(_.throws[SyntaxException])
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS RELATIONSHIP KEY") {
-            assertFailsWithMessageStart[Statements](
-              testName,
-              ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY)
-            )
+            failsParsing[Statements]
+              .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY))
+              .parseIn(Antlr)(_.throws[SyntaxException])
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS REL KEY") {
-            assertFailsWithMessageStart[Statements](
-              testName,
-              ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY)
-            )
+            failsParsing[Statements]
+              .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY))
+              .parseIn(Antlr)(_.throws[SyntaxException])
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS RELATIONSHIP UNIQUE"
           ) {
-            assertFailsWithMessageStart[Statements](
-              testName,
-              ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE)
-            )
+            failsParsing[Statements]
+              .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE))
+              .parseIn(Antlr)(_.throws[SyntaxException])
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS REL UNIQUE") {
-            assertFailsWithMessageStart[Statements](
-              testName,
-              ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE)
-            )
+            failsParsing[Statements]
+              .withMessageStart(ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE))
+              .parseIn(Antlr)(_.throws[SyntaxException])
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUENESS"
           ) {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NODE UNIQUENESS"
           ) {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS UNIQUENESS"
           ) {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS RELATIONSHIP UNIQUENESS"
           ) {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS REL UNIQUENESS"
           ) {
             failsParsing[Statements]
+              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
           }
 
           // constraint name parameter
@@ -2753,18 +2780,23 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT my_constraint FOR (n:L) REQUIRE n.p IS :: ANY<BOOLEAN | STRING> NOT NULL") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 61 (offset: 60))",
-      failsOnlyJavaCC = true
-    )
+    failsParsing[Statements]
+      .withMessageStart(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("CREATE CONSTRAINT my_constraint FOR (n:L) REQUIRE n.p IS :: BOOLEAN LIST NOT NULL NOT NULL") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'NOT': expected \"ARRAY\", \"LIST\", \"OPTIONS\" or <EOF> (line 1, column 83 (offset: 82))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'NOT': expected \"ARRAY\", \"LIST\", \"OPTIONS\" or <EOF> (line 1, column 83 (offset: 82))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'NOT': expected ';', <EOF> (line 1, column 83 (offset: 82))
+          |"CREATE CONSTRAINT my_constraint FOR (n:L) REQUIRE n.p IS :: BOOLEAN LIST NOT NULL NOT NULL"
+          |                                                                                   ^""".stripMargin
+      ))
   }
 
   // ASSERT EXISTS
@@ -2849,10 +2881,10 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT ON (node1:Label) ASSERT EXISTS (node2.prop1, node3.prop2)") {
-    assertFailsWithException[Statements](
-      testName,
-      new Neo4jASTConstructionException(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS))
-    )
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS))
+      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
@@ -2948,10 +2980,10 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT ON ()-[r1:REL]-() ASSERT EXISTS (r2.prop1, r3.prop2)") {
-    assertFailsWithException[Statements](
-      testName,
-      new Neo4jASTConstructionException(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_EXISTS))
-    )
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_EXISTS))
+      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop)") {
@@ -3074,13 +3106,19 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(
     s"CREATE CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop1, node.prop2)"
   ) {
-    assertFailsWithMessage[Statements](testName, "Constraint type 'EXISTS' does not allow multiple properties")
+    failsParsing[Statements]
+      .withMessageStart("Constraint type 'EXISTS' does not allow multiple properties")
+      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test(
     s"CREATE CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop1, r.prop2)"
   ) {
-    assertFailsWithMessage[Statements](testName, "Constraint type 'EXISTS' does not allow multiple properties")
+    failsParsing[Statements]
+      .withMessageStart("Constraint type 'EXISTS' does not allow multiple properties")
+      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("CREATE CONSTRAINT $my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
@@ -3189,78 +3227,166 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
 
   test("CREATE CONSTRAINT FOR (:A)-[n1:R]-() REQUIRE (n2.name) IS RELATIONSHIP KEY") {
     // label on node
-    assertFailsWithMessageStart[Statements](testName, """Invalid input ':': expected ")" or an identifier""")
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input ':': expected ")" or an identifier"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 24 (offset: 23))
+          |"CREATE CONSTRAINT FOR (:A)-[n1:R]-() REQUIRE (n2.name) IS RELATIONSHIP KEY"
+          |                        ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR ()-[n1:R]-(:A) REQUIRE (n2.name) IS UNIQUE") {
     // label on node
-    assertFailsWithMessageStart[Statements](testName, """Invalid input ':': expected ")"""")
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input ':': expected ')' (line 1, column 34 (offset: 33))
+          |"CREATE CONSTRAINT FOR ()-[n1:R]-(:A) REQUIRE (n2.name) IS UNIQUE"
+          |                                  ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (n2)-[n1:R]-() REQUIRE (n2.name) IS NOT NULL") {
     // variable on node
-    assertFailsWithMessageStart[Statements](testName, """Invalid input ')': expected ":"""")
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input ')': expected ":""""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input ')': expected ':' (line 1, column 26 (offset: 25))
+          |"CREATE CONSTRAINT FOR (n2)-[n1:R]-() REQUIRE (n2.name) IS NOT NULL"
+          |                          ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR ()-[n1:R]-(n2) REQUIRE (n2.name) IS :: STRING") {
     // variable on node
-    assertFailsWithMessageStart[Statements](testName, """Invalid input 'n2': expected ")"""")
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'n2': expected ")""""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'n2': expected ')' (line 1, column 34 (offset: 33))
+          |"CREATE CONSTRAINT FOR ()-[n1:R]-(n2) REQUIRE (n2.name) IS :: STRING"
+          |                                  ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (n2:A)-[n1:R]-() REQUIRE (n2.name) IS KEY") {
     // variable on node
-    assertFailsWithMessageStart[Statements](testName, """Invalid input '-': expected "ASSERT" or "REQUIRE"""")
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '-': expected "ASSERT" or "REQUIRE""""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '-': expected 'ASSERT', 'REQUIRE' (line 1, column 29 (offset: 28))
+          |"CREATE CONSTRAINT FOR (n2:A)-[n1:R]-() REQUIRE (n2.name) IS KEY"
+          |                             ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR ()-[n1:R]-(n2:A) REQUIRE (n2.name) IS RELATIONSHIP UNIQUE") {
     // variable on node
-    assertFailsWithMessageStart[Statements](testName, """Invalid input 'n2': expected ")"""")
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'n2': expected ")""""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'n2': expected ')' (line 1, column 34 (offset: 33))
+          |"CREATE CONSTRAINT FOR ()-[n1:R]-(n2:A) REQUIRE (n2.name) IS RELATIONSHIP UNIQUE"
+          |                                  ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'IS': expected "OPTIONS" or <EOF> (line 1, column 75 (offset: 74))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'IS': expected ';', <EOF> (line 1, column 75 (offset: 74))
+          |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL"
+          |                                                                           ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      "Invalid input 'IS': expected \"OPTIONS\" or <EOF> (line 1, column 71 (offset: 70))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'IS': expected \"OPTIONS\" or <EOF> (line 1, column 71 (offset: 70))"
+      ))
+      // TODO I believe this message can be improved
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'IS': expected ';', <EOF> (line 1, column 71 (offset: 70))
+          |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL"
+          |                                                                       ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (n:Label) REQUIRE (n.prop)") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input '': expected \"::\" or \"IS\" (line 1, column 49 (offset: 48))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '': expected \"::\" or \"IS\" (line 1, column 49 (offset: 48))"
+      ))
+      // TODO I believe this message can be improved
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 49 (offset: 48))
+          |"CREATE CONSTRAINT FOR (n:Label) REQUIRE (n.prop)"
+          |                                                 ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (node:Label) REQUIRE EXISTS (node.prop)") {
-    assertFailsWithMessage[Statements](testName, "Invalid input '(': expected \".\" (line 1, column 51 (offset: 50))")
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '(': expected \".\" (line 1, column 51 (offset: 50))"
+      ))
+      // TODO I believe this message can be improved
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 51 (offset: 50))
+          |"CREATE CONSTRAINT FOR (node:Label) REQUIRE EXISTS (node.prop)"
+          |                                                   ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE EXISTS (r.prop)") {
-    assertFailsWithMessage[Statements](testName, "Invalid input '(': expected \".\" (line 1, column 50 (offset: 49))")
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input '(': expected \".\" (line 1, column 50 (offset: 49))"
+      ))
+      // TODO I believe this message can be improved
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 50 (offset: 49))
+          |"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE EXISTS (r.prop)"
+          |                                                  ^""".stripMargin
+      ))
   }
 
   test(s"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'NULL': expected
-        |  "::"
-        |  "KEY"
-        |  "NODE"
-        |  "NOT"
-        |  "REL"
-        |  "RELATIONSHIP"
-        |  "TYPED"
-        |  "UNIQUE" (line 1, column 65 (offset: 64))""".stripMargin
+    failsParsing[Statements].parseIn(JavaCc)(
+      _.withMessageStart("""Invalid input 'NULL': expected
+                           |  "::"
+                           |  "KEY"
+                           |  "NODE"
+                           |  "NOT"
+                           |  "REL"
+                           |  "RELATIONSHIP"
+                           |  "TYPED"
+                           |  "UNIQUE" (line 1, column 65 (offset: 64))""".stripMargin)
     )
+      // TODO I believe this message can be improved
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 65 (offset: 64))
+          |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL"
+          |                                                                 ^""".stripMargin
+      ))
   }
 
   test(s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL") {
-    assertFailsWithMessage[Statements](
-      testName,
+    failsParsing[Statements].parseIn(JavaCc)(_.withMessageStart(
       """Invalid input 'NULL': expected
         |  "::"
         |  "KEY"
@@ -3270,233 +3396,285 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         |  "RELATIONSHIP"
         |  "TYPED"
         |  "UNIQUE" (line 1, column 67 (offset: 66))""".stripMargin
-    )
+    ))
+      // TODO I believe this message can be improved
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 67 (offset: 66))
+          |"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL"
+          |                                                                   ^""".stripMargin
+      ))
   }
 
   test(s"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'NULL': expected
-        |  "::"
-        |  "KEY"
-        |  "NODE"
-        |  "NOT"
-        |  "REL"
-        |  "RELATIONSHIP"
-        |  "TYPED"
-        |  "UNIQUE" (line 1, column 69 (offset: 68))""".stripMargin
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'NULL': expected
+          |  "::"
+          |  "KEY"
+          |  "NODE"
+          |  "NOT"
+          |  "REL"
+          |  "RELATIONSHIP"
+          |  "TYPED"
+          |  "UNIQUE" (line 1, column 69 (offset: 68))""".stripMargin
+      ))
+      // TODO I believe this message can be improved
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 69 (offset: 68))
+          |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL"
+          |                                                                     ^""".stripMargin
+      ))
   }
 
   test(s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NULL") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'NULL': expected
-        |  "::"
-        |  "KEY"
-        |  "NODE"
-        |  "NOT"
-        |  "REL"
-        |  "RELATIONSHIP"
-        |  "TYPED"
-        |  "UNIQUE" (line 1, column 71 (offset: 70))""".stripMargin
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'NULL': expected
+                                            |  "::"
+                                            |  "KEY"
+                                            |  "NODE"
+                                            |  "NOT"
+                                            |  "REL"
+                                            |  "RELATIONSHIP"
+                                            |  "TYPED"
+                                            |  "UNIQUE" (line 1, column 71 (offset: 70))""".stripMargin))
+      // TODO I believe this message can be improved
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """No viable alternative (line 1, column 71 (offset: 70))
+          |"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NULL"
+          |                                                                       ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS TYPED") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input '': expected
-        |  "ANY"
-        |  "ARRAY"
-        |  "BOOL"
-        |  "BOOLEAN"
-        |  "DATE"
-        |  "DURATION"
-        |  "EDGE"
-        |  "FLOAT"
-        |  "INT"
-        |  "INTEGER"
-        |  "LIST"
-        |  "LOCAL"
-        |  "MAP"
-        |  "NODE"
-        |  "NOTHING"
-        |  "PATH"
-        |  "POINT"
-        |  "PROPERTY"
-        |  "RELATIONSHIP"
-        |  "SIGNED"
-        |  "STRING"
-        |  "TIME"
-        |  "TIMESTAMP"
-        |  "VARCHAR"
-        |  "VERTEX"
-        |  "ZONED"
-        |  "null"""".stripMargin
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '': expected
+          |  "ANY"
+          |  "ARRAY"
+          |  "BOOL"
+          |  "BOOLEAN"
+          |  "DATE"
+          |  "DURATION"
+          |  "EDGE"
+          |  "FLOAT"
+          |  "INT"
+          |  "INTEGER"
+          |  "LIST"
+          |  "LOCAL"
+          |  "MAP"
+          |  "NODE"
+          |  "NOTHING"
+          |  "PATH"
+          |  "POINT"
+          |  "PROPERTY"
+          |  "RELATIONSHIP"
+          |  "SIGNED"
+          |  "STRING"
+          |  "TIME"
+          |  "TIMESTAMP"
+          |  "VARCHAR"
+          |  "VERTEX"
+          |  "ZONED"
+          |  "null"""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 49 (offset: 48))
+          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS TYPED"
+          |                                                 ^""".stripMargin
+      ))
+
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS ::") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input '': expected
-        |  "ANY"
-        |  "ARRAY"
-        |  "BOOL"
-        |  "BOOLEAN"
-        |  "DATE"
-        |  "DURATION"
-        |  "EDGE"
-        |  "FLOAT"
-        |  "INT"
-        |  "INTEGER"
-        |  "LIST"
-        |  "LOCAL"
-        |  "MAP"
-        |  "NODE"
-        |  "NOTHING"
-        |  "PATH"
-        |  "POINT"
-        |  "PROPERTY"
-        |  "RELATIONSHIP"
-        |  "SIGNED"
-        |  "STRING"
-        |  "TIME"
-        |  "TIMESTAMP"
-        |  "VARCHAR"
-        |  "VERTEX"
-        |  "ZONED"
-        |  "null"""".stripMargin
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '': expected
+          |  "ANY"
+          |  "ARRAY"
+          |  "BOOL"
+          |  "BOOLEAN"
+          |  "DATE"
+          |  "DURATION"
+          |  "EDGE"
+          |  "FLOAT"
+          |  "INT"
+          |  "INTEGER"
+          |  "LIST"
+          |  "LOCAL"
+          |  "MAP"
+          |  "NODE"
+          |  "NOTHING"
+          |  "PATH"
+          |  "POINT"
+          |  "PROPERTY"
+          |  "RELATIONSHIP"
+          |  "SIGNED"
+          |  "STRING"
+          |  "TIME"
+          |  "TIMESTAMP"
+          |  "VARCHAR"
+          |  "VERTEX"
+          |  "ZONED"
+          |  "null"""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 46 (offset: 45))
+          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS ::"
+          |                                              ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p ::") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input '': expected
-        |  "ANY"
-        |  "ARRAY"
-        |  "BOOL"
-        |  "BOOLEAN"
-        |  "DATE"
-        |  "DURATION"
-        |  "EDGE"
-        |  "FLOAT"
-        |  "INT"
-        |  "INTEGER"
-        |  "LIST"
-        |  "LOCAL"
-        |  "MAP"
-        |  "NODE"
-        |  "NOTHING"
-        |  "PATH"
-        |  "POINT"
-        |  "PROPERTY"
-        |  "RELATIONSHIP"
-        |  "SIGNED"
-        |  "STRING"
-        |  "TIME"
-        |  "TIMESTAMP"
-        |  "VARCHAR"
-        |  "VERTEX"
-        |  "ZONED"
-        |  "null"""".stripMargin
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input '': expected
+          |  "ANY"
+          |  "ARRAY"
+          |  "BOOL"
+          |  "BOOLEAN"
+          |  "DATE"
+          |  "DURATION"
+          |  "EDGE"
+          |  "FLOAT"
+          |  "INT"
+          |  "INTEGER"
+          |  "LIST"
+          |  "LOCAL"
+          |  "MAP"
+          |  "NODE"
+          |  "NOTHING"
+          |  "PATH"
+          |  "POINT"
+          |  "PROPERTY"
+          |  "RELATIONSHIP"
+          |  "SIGNED"
+          |  "STRING"
+          |  "TIME"
+          |  "TIMESTAMP"
+          |  "VARCHAR"
+          |  "VERTEX"
+          |  "ZONED"
+          |  "null"""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input '': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 43 (offset: 42))
+          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p ::"
+          |                                           ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: TYPED") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'TYPED': expected
-        |  "ANY"
-        |  "ARRAY"
-        |  "BOOL"
-        |  "BOOLEAN"
-        |  "DATE"
-        |  "DURATION"
-        |  "EDGE"
-        |  "FLOAT"
-        |  "INT"
-        |  "INTEGER"
-        |  "LIST"
-        |  "LOCAL"
-        |  "MAP"
-        |  "NODE"
-        |  "NOTHING"
-        |  "PATH"
-        |  "POINT"
-        |  "PROPERTY"
-        |  "RELATIONSHIP"
-        |  "SIGNED"
-        |  "STRING"
-        |  "TIME"
-        |  "TIMESTAMP"
-        |  "VARCHAR"
-        |  "VERTEX"
-        |  "ZONED"
-        |  "null" (line 1, column 44 (offset: 43))""".stripMargin
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'TYPED': expected
+          |  "ANY"
+          |  "ARRAY"
+          |  "BOOL"
+          |  "BOOLEAN"
+          |  "DATE"
+          |  "DURATION"
+          |  "EDGE"
+          |  "FLOAT"
+          |  "INT"
+          |  "INTEGER"
+          |  "LIST"
+          |  "LOCAL"
+          |  "MAP"
+          |  "NODE"
+          |  "NOTHING"
+          |  "PATH"
+          |  "POINT"
+          |  "PROPERTY"
+          |  "RELATIONSHIP"
+          |  "SIGNED"
+          |  "STRING"
+          |  "TIME"
+          |  "TIMESTAMP"
+          |  "VARCHAR"
+          |  "VERTEX"
+          |  "ZONED"
+          |  "null" (line 1, column 44 (offset: 43))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'TYPED': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 44 (offset: 43))
+          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: TYPED"
+          |                                            ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: UNIQUE") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'UNIQUE': expected
-        |  "ANY"
-        |  "ARRAY"
-        |  "BOOL"
-        |  "BOOLEAN"
-        |  "DATE"
-        |  "DURATION"
-        |  "EDGE"
-        |  "FLOAT"
-        |  "INT"
-        |  "INTEGER"
-        |  "LIST"
-        |  "LOCAL"
-        |  "MAP"
-        |  "NODE"
-        |  "NOTHING"
-        |  "PATH"
-        |  "POINT"
-        |  "PROPERTY"
-        |  "RELATIONSHIP"
-        |  "SIGNED"
-        |  "STRING"
-        |  "TIME"
-        |  "TIMESTAMP"
-        |  "VARCHAR"
-        |  "VERTEX"
-        |  "ZONED"
-        |  "null" (line 1, column 44 (offset: 43))""".stripMargin
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'UNIQUE': expected
+          |  "ANY"
+          |  "ARRAY"
+          |  "BOOL"
+          |  "BOOLEAN"
+          |  "DATE"
+          |  "DURATION"
+          |  "EDGE"
+          |  "FLOAT"
+          |  "INT"
+          |  "INTEGER"
+          |  "LIST"
+          |  "LOCAL"
+          |  "MAP"
+          |  "NODE"
+          |  "NOTHING"
+          |  "PATH"
+          |  "POINT"
+          |  "PROPERTY"
+          |  "RELATIONSHIP"
+          |  "SIGNED"
+          |  "STRING"
+          |  "TIME"
+          |  "TIMESTAMP"
+          |  "VARCHAR"
+          |  "VERTEX"
+          |  "ZONED"
+          |  "null" (line 1, column 44 (offset: 43))""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'UNIQUE': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 44 (offset: 43))
+          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: UNIQUE"
+          |                                            ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: BOOLEAN UNIQUE") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input 'UNIQUE': expected
-        |  "!"
-        |  "ARRAY"
-        |  "LIST"
-        |  "NOT"
-        |  "OPTIONS"
-        |  <EOF>""".stripMargin
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'UNIQUE': expected
+          |  "!"
+          |  "ARRAY"
+          |  "LIST"
+          |  "NOT"
+          |  "OPTIONS"
+          |  <EOF>""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'UNIQUE': expected ';', <EOF> (line 1, column 52 (offset: 51))
+          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: BOOLEAN UNIQUE"
+          |                                                    ^""".stripMargin
+      ))
   }
 
   test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS :: BOOL EAN") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      """Invalid input 'EAN': expected
-        |  "!"
-        |  "ARRAY"
-        |  "LIST"
-        |  "NOT"
-        |  "OPTIONS"
-        |  <EOF>""".stripMargin
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        """Invalid input 'EAN': expected
+          |  "!"
+          |  "ARRAY"
+          |  "LIST"
+          |  "NOT"
+          |  "OPTIONS"
+          |  <EOF>""".stripMargin
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'EAN': expected ';', <EOF> (line 1, column 52 (offset: 51))
+          |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS :: BOOL EAN"
+          |                                                    ^""".stripMargin
+      ))
   }
 
   // Drop constraint
@@ -3525,10 +3703,9 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS NODE KEY") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY)
-    )
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
@@ -3556,10 +3733,9 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS UNIQUE") {
-    assertFailsWithMessageStart[Statements](
-      testName,
-      ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE)
-    )
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
@@ -3617,31 +3793,27 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NOT NULL") {
-    assertFailsWithException[Statements](
-      testName,
-      new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand)
-    )
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS NOT NULL") {
-    assertFailsWithException[Statements](
-      testName,
-      new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand)
-    )
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT (r.prop) IS NOT NULL") {
-    assertFailsWithException[Statements](
-      testName,
-      new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand)
-    )
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
-    assertFailsWithException[Statements](
-      testName,
-      new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand)
-    )
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.EXISTS) IS NODE KEY") {
@@ -3704,9 +3876,14 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'ON': expected \"IF\" or <EOF> (line 1, column 31 (offset: 30))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(
+        _.withMessageStart("Invalid input 'ON': expected \"IF\" or <EOF> (line 1, column 31 (offset: 30))")
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'ON': expected ';', <EOF> (line 1, column 31 (offset: 30))
+          |"DROP CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY"
+          |                               ^""".stripMargin
+      ))
   }
 }

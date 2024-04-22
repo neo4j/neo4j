@@ -18,9 +18,11 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FilterScope
@@ -32,8 +34,9 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.exceptions.SyntaxException
 
-class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class ExistsExpressionParserTest extends AstParsingTestBase {
 
   test(
     """MATCH (m)
@@ -254,7 +257,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(7, 1, 8), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         return_(returnItem(existsExpression, "EXISTS { FINISH }"))
       )
@@ -272,7 +275,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(7, 1, 8), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
         return_(returnItem(existsExpression, "EXISTS { MATCH (n) FINISH }"))
       )
@@ -294,9 +297,9 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions[Statement] {
+    parses[Statement].toAstPositioned {
       singleQuery(
-        match_(nodePat(name = Some("m")), where = Some(where(eq(existsExpression, literal(1))))),
+        match_(nodePat(name = Some("m")), where = Some(where(equals(existsExpression, literal(1))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -307,7 +310,9 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       |WHERE EXISTS { MATCH (b) RETURN b WHERE true }
       |RETURN m""".stripMargin
   ) {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("""Mismatched input 'WHERE'""".stripMargin))
   }
 
   test(
@@ -315,6 +320,14 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       |WHERE EXISTS { (a)-[r]->(b) WHERE a.prop = 1 RETURN r }
       |RETURN m""".stripMargin
   ) {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'RETURN'"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Missing '}' at 'RETURN' (line 2, column 46 (offset: 55))
+          |"WHERE EXISTS { (a)-[r]->(b) WHERE a.prop = 1 RETURN r }"
+          |                                              ^""".stripMargin
+      ))
   }
 }

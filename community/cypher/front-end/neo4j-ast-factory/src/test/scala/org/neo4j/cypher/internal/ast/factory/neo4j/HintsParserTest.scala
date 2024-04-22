@@ -24,8 +24,10 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingPointIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint.UsingTextIndexType
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.exceptions.SyntaxException
 
 class HintsParserTest extends AstParsingTestBase {
 
@@ -42,11 +44,17 @@ class HintsParserTest extends AstParsingTestBase {
   }
 
   test("MATCH (n) USING BTREE INDEX n:N(p)") {
-    whenParsing[Statements].parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+    failsParsing[Statements]
+      .withMessageStart("Index type BTREE is no longer supported for USING index hint. Use TEXT, RANGE or POINT")
+      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("MATCH (n) USING BTREE INDEX SEEK n:N(p)") {
-    whenParsing[Statements].parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+    failsParsing[Statements]
+      .withMessageStart("Index type BTREE is no longer supported for USING index hint. Use TEXT, RANGE or POINT")
+      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("MATCH (n) USING RANGE INDEX n:N(p)") {

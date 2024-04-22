@@ -31,9 +31,9 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.exceptions.SyntaxException
 
 class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -360,36 +360,36 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
 
   // Negative tests
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK ON ERROR CONTINUE") {
-    failsParsing[SubqueryCall].withMessageStart(
-      "Duplicated ON ERROR parameter"
-    )
+    failsParsing[Statements].withMessageStart("Duplicated ON ERROR parameter")
   }
 
-  // TODO ERROR HANDLING
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK CONTINUE") {
     failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'CONTINUE'"))
-      .parseIn(Antlr)(_.withMessageStart(
-        "Extraneous input 'CONTINUE': expected ';', <EOF> (line 1, column 52 (offset: 51))"
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'CONTINUE'"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Extraneous input 'CONTINUE': expected ';', <EOF> (line 1, column 52 (offset: 51))
+          |"CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK CONTINUE"
+          |                                                    ^""".stripMargin
       ))
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK REPORT STATUS AS status ON ERROR CONTINUE") {
-    failsParsing[SubqueryCall].withMessageStart(
-      "Duplicated ON ERROR parameter"
-    )
+    failsParsing[Statements]
+      .withMessageStart("Duplicated ON ERROR parameter")
   }
 
   // TODO ERROR HANDLING
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status REPORT STATUS AS other") {
-    failsParsing[SubqueryCall](NotAnyAntlr).withMessageStart(
-      "Duplicated REPORT STATUS parameter"
-    )
+    failsParsing[Statements]
+      .withMessageStart("Duplicated REPORT STATUS parameter")
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 5 ROWS ON ERROR BREAK REPORT STATUS AS status OF 42 ROWS") {
-    failsParsing[SubqueryCall].withMessageStart(
-      "Duplicated OF ROWS parameter"
-    )
+    failsParsing[Statements]
+      .withMessageStart("Duplicated OF ROWS parameter")
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 }

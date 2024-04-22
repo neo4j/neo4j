@@ -69,7 +69,7 @@ class CypherAstParser private (
 
     if (bailErrors) {
       // In this mode we care more about speed than correct error handling
-      checker.check(localCtx)
+      checker.exitEveryRule(localCtx)
       astBuilder.exitEveryRule(localCtx)
     } else if (!hasFailed) {
       // Here we care about correct error handling.

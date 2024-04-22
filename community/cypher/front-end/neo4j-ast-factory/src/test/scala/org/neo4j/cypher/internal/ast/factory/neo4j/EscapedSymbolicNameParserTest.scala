@@ -17,10 +17,9 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.NodePattern
 
-class EscapedSymbolicNameParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
+class EscapedSymbolicNameParserTest extends AstParsingTestBase {
 
   test("escaped label name") {
     "(n:`Label`)" should parseTo[NodePattern](nodePat(Some("n"), Some(labelLeaf("Label"))))

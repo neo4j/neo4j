@@ -18,6 +18,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
@@ -485,59 +487,87 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   // The following cases will fail parsing for both CREATE and INSERT
 
   test("INSERT (:A n)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'n'"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input 'n'"))
   }
 
   test("INSERT ({prop:42} :A)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ':'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input ':'"))
   }
 
   test("INSERT ()-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '('"))
   }
 
   test("INSERT ()->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '>'"))
   }
 
   test("INSERT ()[]->()") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '['"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '['"))
   }
 
   test("INSERT ()-[]>()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ']'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input ']'"))
   }
 
   test("INSERT ()-]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input ']'"))
   }
 
   test("INSERT ()-[->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
   }
 
   test("INSERT ()-[{prop:42} :R]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input '{'"))
   }
 
   test("INSERT ()-[:R r]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input 'r'"))
   }
 
   test("INSERT ALL PATHS (n)-[:R]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ALL'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'PATHS'"))
   }
 
   test("INSERT ANY SHORTEST PATHS p = (n)-[:R]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ANY'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'SHORTEST'"))
   }
 
   test("INSERT SHORTEST 2 PATH (n)-[:R]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHORTEST'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '2'"))
   }
 
   test("INSERT SHORTEST 2 GROUPS (n)-[:R]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHORTEST'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '2'"))
   }
 
   // The following cases will parse but fail in semantic checking for both CREATE and INSERT.
@@ -568,222 +598,334 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   // For INSERT, they fail in parsing.
 
   test("INSERT (n:A|B)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '|'"))
   }
 
   test("INSERT (n:A|:B)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '|'"))
   }
 
   test("INSERT (n IS A|B)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '|'"))
   }
 
   test("INSERT (n IS A:B)") {
-    failsParsing[Statement]
+    failsParsing[Statements].withMessageStart("Colon `:` conjunction is not allowed in INSERT")
   }
 
   test("INSERT (n IS !(A&B))") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'IS'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '!'"))
   }
 
   test("INSERT (IS %)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '%'"))
+      .parseIn(Antlr)(_.withMessageStart("No viable alternative"))
   }
 
   test("INSERT (WHERE true)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'true'"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input 'true'"))
   }
 
   test("INSERT (n WHERE n.prop = 1)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT ({prop:2} WHERE true)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT (n {prop:2} WHERE n.prop = 1)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT (:A WHERE true)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT (n:A WHERE true)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT (:A {prop: 2} WHERE true)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT (n:A {prop: 2} WHERE n.prop > 42)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT ()--()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
   }
 
   test("INSERT ()-->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
   }
 
   test("INSERT ()<--()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
   }
 
   test("INSERT ()<-->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
   }
 
   test("INSERT ()-[:Rel1|Rel2]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '|'"))
   }
 
   test("INSERT ()-[:Rel1&Rel2]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '&'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '&'"))
   }
 
   test("INSERT ()-[:!Rel]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input '!'"))
   }
 
   test("INSERT ()-[]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ']'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input ']'"))
   }
 
   test("INSERT ()-[r]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input ']'"))
   }
 
   test("INSERT ()-[{prop: 2}]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input '{'"))
   }
 
   test("INSERT ()-[*1..3]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Missing ':'"))
   }
 
   test("INSERT ()<-[r {prop: 2}]-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '{'"))
   }
 
   test("INSERT ()<-[r *1..3]-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[r WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
+      .parseIn(Antlr)(_.withMessageStart(
+        """Missing ':', 'IS' at 'WHERE' (line 1, column 14 (offset: 13))
+          |"INSERT ()-[r WHERE true]->()"
+          |              ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-[*1..3 {prop:2} ]-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()<-[{prop:2} WHERE true]-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input '{'"))
   }
 
   test("INSERT ()<-[*1..3 WHERE true]-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[r *1..3 {prop:2}]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[r {prop:2} WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '{'"))
   }
 
   test("INSERT ()-[r *1..3 WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[r *1..3 {prop:2} WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[:R *1..3]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[:R WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT ()<-[r :R *1..3]-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[r :R WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT ()<-[:R *1..3 {prop:2} ]-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()<-[:R {prop:2} WHERE true]-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT ()<-[:R *1..3 WHERE true]-()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[r :R *1..3 {prop:2}]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[r :R {prop:2} WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
   }
 
   test("INSERT ()-[r :R *1..3 WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT ()-[r :R *1..3 {prop:2} WHERE true]->()") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
   }
 
   test("INSERT shortestPath((a)-[r]->(b))") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'shortestPath'"))
+      // Not very helpful :(
+      .parseIn(Antlr)(_.withMessageStart("Missing '=' at '('"))
   }
 
   test("INSERT allShortestPaths((a)-[r]->(b))") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'allShortestPaths'"))
+      // Not very helpful :(
+      .parseIn(Antlr)(_.withMessageStart("Missing '=' at '('"))
   }
 
   test("INSERT (a)-[:R]->(b)(a)") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input '('"))
   }
 
   test("INSERT ((n)-[r]->(m))*") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input '('"))
   }
 
   test("INSERT ((a)-->(b) WHERE a.prop > b.prop)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input '('"))
   }
 
   // The following cases will parse and be semantically correct for CREATE.
   // For INSERT, they fail in parsing.
 
   test("INSERT (:(A&B))") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ':'"))
+      .parseIn(Antlr)(_.withMessageStart("Extraneous input '('"))
   }
 
   test("INSERT (IS (A&B)&C)") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
+      .parseIn(Antlr)(_.withMessageStart("No viable alternative"))
   }
 
   test("INSERT (:A:B)") {
@@ -819,30 +961,64 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   // INSERT should not work as a synonym to CREATE for DDL
 
   test("INSERT USER foo SET PASSWORD 'password'") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'USER'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'foo'"))
   }
 
   test("INSERT ROLE role") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ROLE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'role'"))
   }
 
   test("INSERT DATABASE foo") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DATABASE'"))
+      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'foo'"))
   }
 
   test("INSERT COMPOSITE DATABASE name") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'COMPOSITE'"))
+      // Not very helpful
+      .parseIn(Antlr)(_.withMessageStart(
+        """Mismatched input 'DATABASE': expected '=' (line 1, column 18 (offset: 17))
+          |"INSERT COMPOSITE DATABASE name"
+          |                  ^""".stripMargin
+      ))
   }
 
   test("INSERT ALIAS alias FOR DATABASE foo") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ALIAS'"))
+      // Not very helpful
+      .parseIn(Antlr)(_.withMessageStart(
+        """Mismatched input 'alias': expected '=' (line 1, column 14 (offset: 13))
+          |"INSERT ALIAS alias FOR DATABASE foo"
+          |              ^""".stripMargin
+      ))
   }
 
   test("INSERT INDEX FOR (n:Label) ON n.prop") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'INDEX'"))
+      // Not very helpful
+      .parseIn(Antlr)(_.withMessageStart(
+        """Mismatched input 'FOR': expected '=' (line 1, column 14 (offset: 13))
+          |"INSERT INDEX FOR (n:Label) ON n.prop"
+          |              ^""".stripMargin
+      ))
   }
 
   test("INSERT CONSTRAINT FOR (n:Label) REQUIRE n.prop IS NOT NULL") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'CONSTRAINT'"))
+      // Not very helpful :(
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'FOR': expected '=' (line 1, column 19 (offset: 18))
+          |"INSERT CONSTRAINT FOR (n:Label) REQUIRE n.prop IS NOT NULL"
+          |                   ^""".stripMargin
+      ))
   }
 }

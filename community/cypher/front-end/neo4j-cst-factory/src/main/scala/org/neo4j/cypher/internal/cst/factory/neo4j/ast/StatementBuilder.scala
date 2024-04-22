@@ -348,6 +348,7 @@ trait StatementBuilder extends CypherParserListener {
       case CypherParser.POINT => indexHint(ctx, UsingPointIndexType)
       case CypherParser.JOIN  => UsingJoinHint(nonEmptyVariables(ctx.nonEmptyNameList()))(pos(ctx))
       case CypherParser.SCAN  => UsingScanHint(ctx.variable().ast(), ctx.labelOrRelType().ast())(pos(ctx))
+      case _                  => throw new IllegalStateException(s"Unexpected token $secondToken")
     }
   }
 
