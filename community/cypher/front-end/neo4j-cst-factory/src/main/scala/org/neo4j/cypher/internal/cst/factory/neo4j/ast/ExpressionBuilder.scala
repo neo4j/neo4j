@@ -138,6 +138,7 @@ import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
 import org.neo4j.cypher.internal.parser.javacc.DeprecatedChars
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
 import org.neo4j.cypher.internal.util.InputPosition
@@ -174,6 +175,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 trait ExpressionBuilder extends CypherParserListener {
+
+  protected def exceptionFactory: CypherExceptionFactory
 
   final override def exitQuantifier(ctx: CypherParser.QuantifierContext): Unit = {
     val firstToken = nodeChild(ctx, 0).getSymbol
@@ -279,8 +282,9 @@ trait ExpressionBuilder extends CypherParserListener {
       case p: PatternPartWithSelector =>
         val pathPatternKind = if (ctx.quantifier() == null) "parenthesized" else "quantified"
         // TODO Error handling
-        throw new RuntimeException(
-          s"Path selectors such as `${p.selector.prettified}` are not supported within $pathPatternKind path patterns."
+        throw exceptionFactory.syntaxException(
+          s"Path selectors such as `${p.selector.prettified}` are not supported within $pathPatternKind path patterns.",
+          p.position
         )
     }
     val quantifier = ctx.quantifier()

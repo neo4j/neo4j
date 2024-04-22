@@ -16,6 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
 
@@ -83,19 +86,31 @@ class TrimFunctionParserTest extends AstParsingTestBase {
   }
 
   // Failing tests
-  test("trim(' ' \"hello\")") {
-    failsParsing[Expression]
+  test("RETURN trim(' ' \"hello\")") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'hello'"))
+      .parseIn(Antlr)(_.withMessage(
+        """No viable alternative: expected an expression (line 1, column 17 (offset: 16))
+          |"RETURN trim(' ' "hello")"
+          |                 ^""".stripMargin
+      ))
   }
 
   Seq("BOTH", "LEADING", "TRAILING").foreach { trimSpec =>
-    test(s"trim($trimSpec \"hello\")") {
-      failsParsing[Expression]
+    test(s"RETURN trim($trimSpec \"hello\")") {
+      failsParsing[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input ')'"))
+        .parseIn(Antlr)(_.withMessageStart(
+          "Mismatched input ')': expected '.', ':', 'IS', '[', an expression, '=~', 'STARTS', 'ENDS', 'CONTAINS', 'IN', '::', 'FROM'"
+        ))
     }
   }
 
   Seq("BOTH", "LEADING", "TRAILING").foreach { trimSpec =>
-    test(s"trim($trimSpec ' ' \"hello\")") {
-      failsParsing[Expression]
+    test(s"RETURN trim($trimSpec ' ' \"hello\")") {
+      failsParsing[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input 'hello'"))
+        .parseIn(Antlr)(_.withMessageStart("Missing 'FROM' at '\"hello\"'"))
     }
   }
 }

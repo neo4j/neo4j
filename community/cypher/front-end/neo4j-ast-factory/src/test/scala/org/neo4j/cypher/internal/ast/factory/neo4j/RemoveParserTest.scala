@@ -18,6 +18,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class RemoveParserTest extends AstParsingTestBase {
@@ -107,29 +109,71 @@ class RemoveParserTest extends AstParsingTestBase {
 
   test("REMOVE n:A|B") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '|': expected ';', <EOF> (line 1, column 11 (offset: 10))
+          |"REMOVE n:A|B"
+          |           ^""".stripMargin
+      ))
   }
 
   test("REMOVE n:!A") {
-    failsParsing[Clause]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input '!': expected an identifier (line 1, column 10 (offset: 9))
+          |"REMOVE n:!A"
+          |          ^""".stripMargin
+      ))
   }
 
   test("REMOVE n:%") {
-    failsParsing[Clause]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '%'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '%': expected an identifier (line 1, column 10 (offset: 9))
+          |"REMOVE n:%"
+          |          ^""".stripMargin
+      ))
   }
 
   test("REMOVE n:A&B") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '&'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '&': expected ';', <EOF> (line 1, column 11 (offset: 10))
+          |"REMOVE n:A&B"
+          |           ^""".stripMargin
+      ))
   }
 
   test("REMOVE n IS A&B") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '&'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '&': expected ';', <EOF> (line 1, column 14 (offset: 13))
+          |"REMOVE n IS A&B"
+          |              ^""".stripMargin
+      ))
   }
 
   test("REMOVE :A") {
-    failsParsing[Clause]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ':'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input ':': expected an expression, a variable name (line 1, column 8 (offset: 7))
+          |"REMOVE :A"
+          |        ^""".stripMargin
+      ))
   }
 
   test("REMOVE IS A") {
-    failsParsing[Clause]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'A': expected \"IS\""))
+      .parseIn(Antlr)(_.withMessage(
+        """No viable alternative (line 1, column 11 (offset: 10))
+          |"REMOVE IS A"
+          |           ^""".stripMargin
+      ))
   }
 }

@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class SubqueryCallParserTest extends AstParsingTestBase {
@@ -37,7 +39,13 @@ class SubqueryCallParserTest extends AstParsingTestBase {
   }
 
   test("CALL { }") {
-    failsParsing[Clause]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '}'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '}': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 8 (offset: 7))
+          |"CALL { }"
+          |        ^""".stripMargin
+      ))
   }
 
   test("CALL { CREATE (n:N) }") {

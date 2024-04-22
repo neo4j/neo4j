@@ -55,50 +55,122 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
 
   test("RETURN x :: BOOLEAN NOT NULL NOT NULL") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'NOT': expected ';', <EOF> (line 1, column 30 (offset: 29))
+          |"RETURN x :: BOOLEAN NOT NULL NOT NULL"
+          |                              ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: BOOLEAN! NOT NULL") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'NOT': expected ';', <EOF> (line 1, column 22 (offset: 21))
+          |"RETURN x :: BOOLEAN! NOT NULL"
+          |                      ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: BOOLEAN NOT NULL!") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input '!': expected ';', <EOF> (line 1, column 29 (offset: 28))
+          |"RETURN x :: BOOLEAN NOT NULL!"
+          |                             ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: BOOLEAN!!") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input '!': expected ';', <EOF> (line 1, column 21 (offset: 20))
+          |"RETURN x :: BOOLEAN!!"
+          |                     ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: LIST<BOOLEAN> NOT NULL NOT NULL") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'NOT': expected ';', <EOF> (line 1, column 36 (offset: 35))
+          |"RETURN x :: LIST<BOOLEAN> NOT NULL NOT NULL"
+          |                                    ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: LIST<BOOLEAN>! NOT NULL") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'NOT': expected ';', <EOF> (line 1, column 28 (offset: 27))
+          |"RETURN x :: LIST<BOOLEAN>! NOT NULL"
+          |                            ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: LIST<BOOLEAN> NOT NULL!") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input '!': expected ';', <EOF> (line 1, column 35 (offset: 34))
+          |"RETURN x :: LIST<BOOLEAN> NOT NULL!"
+          |                                   ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: LIST<BOOLEAN>!!") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input '!': expected ';', <EOF> (line 1, column 27 (offset: 26))
+          |"RETURN x :: LIST<BOOLEAN>!!"
+          |                           ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: BOOLEAN LIST NOT NULL NOT NULL") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'NOT': expected ';', <EOF> (line 1, column 35 (offset: 34))
+          |"RETURN x :: BOOLEAN LIST NOT NULL NOT NULL"
+          |                                   ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: BOOLEAN LIST! NOT NULL") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input 'NOT': expected ';', <EOF> (line 1, column 27 (offset: 26))
+          |"RETURN x :: BOOLEAN LIST! NOT NULL"
+          |                           ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: BOOLEAN LIST NOT NULL !") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input '!': expected ';', <EOF> (line 1, column 35 (offset: 34))
+          |"RETURN x :: BOOLEAN LIST NOT NULL !"
+          |                                   ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: BOOLEAN LIST!!") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input '!': expected ';', <EOF> (line 1, column 26 (offset: 25))
+          |"RETURN x :: BOOLEAN LIST!!"
+          |                          ^""".stripMargin
+      ))
   }
 
   // The code that throws these next 2 errors is not inside of Cypher.jj, so the ANTLR parser doesn't know about it
@@ -134,44 +206,104 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
       .parseIn(Antlr)(_.withoutErrors) // TODO ANTLR
   }
 
-  test("x :: ANY VALUE<>") {
-    failsParsing[Expression]
+  test("RETURN x :: ANY VALUE<>") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '': expected an expression (line 1, column 24 (offset: 23))
+          |"RETURN x :: ANY VALUE<>"
+          |                        ^""".stripMargin
+      ))
   }
 
-  test("x :: ANY <>") {
-    failsParsing[Expression]
+  test("RETURN x :: ANY <>") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '': expected an expression (line 1, column 19 (offset: 18))
+          |"RETURN x :: ANY <>"
+          |                   ^""".stripMargin
+      ))
   }
 
-  test("x :: ") {
-    failsParsing[Expression]
+  test("RETURN x :: ") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 12 (offset: 11))
+          |"RETURN x ::"
+          |            ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: ANY VALUE<> NOT NULL") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NULL'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input 'NULL': expected ';', <EOF> (line 1, column 29 (offset: 28))
+          |"RETURN x :: ANY VALUE<> NOT NULL"
+          |                             ^""".stripMargin
+      ))
   }
 
   test("RETURN x :: ANY <> NOT NULL") {
     failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NULL'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input 'NULL': expected ';', <EOF> (line 1, column 24 (offset: 23))
+          |"RETURN x :: ANY <> NOT NULL"
+          |                        ^""".stripMargin
+      ))
   }
 
-  test("x :: NOT NULL") {
-    failsParsing[Expression]
+  test("RETURN x :: NOT NULL") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
+      .parseIn(Antlr)(_.withMessage(
+        """Extraneous input 'NOT': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 13 (offset: 12))
+          |"RETURN x :: NOT NULL"
+          |             ^""".stripMargin
+      ))
   }
 
-  test("x :: LIST<>") {
-    failsParsing[Expression]
+  test("RETURN x :: LIST<>") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '<>': expected \"<\" (line 1, column 17 (offset: 16))"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '<>': expected '<' (line 1, column 17 (offset: 16))
+          |"RETURN x :: LIST<>"
+          |                 ^""".stripMargin
+      ))
   }
 
-  test("x :: LIST") {
-    failsParsing[Expression]
+  test("RETURN x :: LIST") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"<\" (line 1, column 17 (offset: 16))"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '': expected '<' (line 1, column 17 (offset: 16))
+          |"RETURN x :: LIST"
+          |                 ^""".stripMargin
+      ))
   }
 
-  test("x :: ARRAY") {
-    failsParsing[Expression]
+  test("RETURN x :: ARRAY") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"<\" (line 1, column 18 (offset: 17))"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '': expected '<' (line 1, column 18 (offset: 17))
+          |"RETURN x :: ARRAY"
+          |                  ^""".stripMargin
+      ))
   }
 
-  test("x :: ARRAY<>") {
-    failsParsing[Expression]
+  test("RETURN x :: ARRAY<>") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '<>': expected \"<\" (line 1, column 18 (offset: 17))"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '<>': expected '<' (line 1, column 18 (offset: 17))
+          |"RETURN x :: ARRAY<>"
+          |                  ^""".stripMargin
+      ))
   }
 
   test("all combinations of types should behave") {

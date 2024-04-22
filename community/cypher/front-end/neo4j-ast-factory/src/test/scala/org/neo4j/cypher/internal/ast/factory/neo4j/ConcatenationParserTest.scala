@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
@@ -64,43 +64,43 @@ class ConcatenationParserTest extends AstParsingTestBase {
     }
   }
 
-  test("a ||") {
-    failsParsing[Clause]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"a\"\" at line 1, column 1"))
+  test("RETURN a ||") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"+\" or \"-\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'a': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 1 (offset: 0))
-          |"a ||"
-          | ^""".stripMargin
+        """Mismatched input '': expected an expression (line 1, column 12 (offset: 11))
+          |"RETURN a ||"
+          |            ^""".stripMargin
       ))
   }
 
-  test("|| b") {
-    failsParsing[Clause]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" \"||\" \"||\"\" at line 1, column 1."))
+  test("RETURN || b") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '||': expected \"*\", \"DISTINCT\" or an expression"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '||': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 1 (offset: 0))
-          |"|| b"
-          | ^""".stripMargin
+        """Extraneous input '||': expected 'DISTINCT', '*', an expression (line 1, column 8 (offset: 7))
+          |"RETURN || b"
+          |        ^""".stripMargin
       ))
   }
 
-  test("a ||| b") {
-    failsParsing[Clause]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"a\"\" at line 1, column 1."))
+  test("RETURN a ||| b") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '|': expected \"+\" or \"-\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'a': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 1 (offset: 0))
-          |"a ||| b"
-          | ^""".stripMargin
+        """Extraneous input '|': expected an expression (line 1, column 12 (offset: 11))
+          |"RETURN a ||| b"
+          |            ^""".stripMargin
       ))
   }
 
-  test("a || || b") {
-    failsParsing[Clause]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"a\"\" at line 1, column 1."))
+  test("RETURN a || || b") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '||': expected \"+\" or \"-\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'a': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 1 (offset: 0))
-          |"a || || b"
-          | ^""".stripMargin
+        """Extraneous input '||': expected an expression (line 1, column 13 (offset: 12))
+          |"RETURN a || || b"
+          |             ^""".stripMargin
       ))
   }
 }

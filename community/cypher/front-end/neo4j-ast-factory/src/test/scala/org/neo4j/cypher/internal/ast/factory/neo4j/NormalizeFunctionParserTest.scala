@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
@@ -36,16 +37,40 @@ class NormalizeFunctionParserTest extends AstParsingTestBase {
   }
 
   // Failing tests
-  test("normalize(\"hello\", \"NFC\")") {
-    failsParsing[Expression]
+  test("RETURN normalize(\"hello\", \"NFC\")") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'NFC': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
+      ))
+      .parseIn(Antlr)(_.withMessage(
+        """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
+          |"RETURN normalize("hello", "NFC")"
+          |                           ^""".stripMargin
+      ))
   }
 
-  test("normalize(\"hello\", null)") {
-    failsParsing[Expression]
+  test("RETURN normalize(\"hello\", null)") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'null': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
+      ))
+      .parseIn(Antlr)(_.withMessageStart(
+        """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
+          |"RETURN normalize("hello", null)"
+          |                           ^""".stripMargin
+      ))
   }
 
-  test("normalize(\"hello\", NFF)") {
-    failsParsing[Expression]
+  test("RETURN normalize(\"hello\", NFF)") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart(
+        "Invalid input 'NFF': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
+      ))
+      .parseIn(Antlr)(_.withMessageStart(
+        """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
+          |"RETURN normalize("hello", NFF)"
+          |                           ^""".stripMargin
+      ))
   }
 
   test("normalize(\"hello\", NFC, anotherVar)") {

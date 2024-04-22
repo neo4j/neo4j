@@ -17,6 +17,9 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class UnionParserTest extends AstParsingTestBase {
@@ -166,7 +169,13 @@ class UnionParserTest extends AstParsingTestBase {
   }
 
   test("RETURN 1 AS a UNION UNION RETURN 2 AS a") {
-    failsParsing[Statement]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNION'"))
+      .parseIn(Antlr)(_.withMessageStart(
+        """Extraneous input 'UNION': expected 'ALL', 'DISTINCT', 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 21 (offset: 20))
+          |"RETURN 1 AS a UNION UNION RETURN 2 AS a"
+          |                     ^""".stripMargin
+      ))
   }
 
   test("RETURN 1 AS a UNION RETURN 2 AS a UNION RETURN 3 AS a") {

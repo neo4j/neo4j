@@ -18,6 +18,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 
 class ProjectionClauseParserTest extends AstParsingTestBase {
@@ -41,7 +44,13 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
   }
 
   test("WITH ") {
-    failsParsing[Clause]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '': expected 'DISTINCT', '*', an expression (line 1, column 5 (offset: 4))
+          |"WITH"
+          |     ^""".stripMargin
+      ))
   }
 
   test("RETURN *") {
@@ -63,10 +72,22 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
   }
 
   test("RETURN ") {
-    failsParsing[Clause]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression"))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '': expected 'DISTINCT', '*', an expression (line 1, column 7 (offset: 6))
+          |"RETURN"
+          |       ^""".stripMargin
+      ))
   }
 
   test("RETURN GRAPH *") {
-    failsParsing[Clause]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"+\" or \"-\""))
+      .parseIn(Antlr)(_.withMessage(
+        """Mismatched input '': expected an expression (line 1, column 15 (offset: 14))
+          |"RETURN GRAPH *"
+          |               ^""".stripMargin
+      ))
   }
 }

@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.Expression
@@ -313,44 +315,52 @@ class CaseExpressionParserTest extends AstParsingTestBase {
     }
   }
 
-  test("CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
-    failsParsing[CaseExpression].parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-      """Extraneous input 'WHEN': expected 'THEN' (line 1, column 19 (offset: 18))
-        |"CASE when(v1) + 1 WHEN THEN v2 ELSE null END"
-        |                   ^""".stripMargin
-    ))
+  test("RETURN CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'v2'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'v2': expected ',', 'THEN' (line 1, column 36 (offset: 35))
+          |"RETURN CASE when(v1) + 1 WHEN THEN v2 ELSE null END"
+          |                                    ^""".stripMargin
+      ))
   }
 
-  test("CASE ELSE null END") {
-    failsParsing[CaseExpression].parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-      """Mismatched input 'ELSE': expected 'WHEN' (line 1, column 6 (offset: 5))
-        |"CASE ELSE null END"
-        |      ^""".stripMargin
-    ))
+  test("RETURN CASE ELSE null END") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ELSE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'ELSE': expected ';', <EOF> (line 1, column 13 (offset: 12))
+          |"RETURN CASE ELSE null END"
+          |             ^""".stripMargin
+      ))
   }
 
-  test("CASE WHEN THEN v2 ELSE null END") {
-    failsParsing[CaseExpression].parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-      """Missing 'THEN' at 'v2' (line 1, column 16 (offset: 15))
-        |"CASE WHEN THEN v2 ELSE null END"
-        |                ^""".stripMargin
-    ))
+  test("RETURN CASE WHEN THEN v2 ELSE null END") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'v2'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'WHEN': expected ';', <EOF> (line 1, column 13 (offset: 12))
+          |"RETURN CASE WHEN THEN v2 ELSE null END"
+          |             ^""".stripMargin
+      ))
   }
 
-  test("CASE WHEN true, false THEN v2 ELSE null END") {
-    failsParsing[CaseExpression].parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-      """No viable alternative: expected an expression (line 1, column 15 (offset: 14))
-        |"CASE WHEN true, false THEN v2 ELSE null END"
-        |               ^""".stripMargin
-    ))
+  test("RETURN CASE WHEN true, false THEN v2 ELSE null END") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input ','"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Mismatched input 'WHEN': expected ';', <EOF> (line 1, column 13 (offset: 12))
+          |"RETURN CASE WHEN true, false THEN v2 ELSE null END"
+          |             ^""".stripMargin
+      ))
   }
 
-  test("CASE n WHEN true, false, THEN 1 ELSE null END") {
-    failsParsing[CaseExpression].parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+  test("RETURN CASE n WHEN true, false, THEN 1 ELSE null END") {
+    failsParsing[Statements].parseIn(Antlr)(_.throws[SyntaxException].withMessage(
       // Pretty unhelpful suggestion :(
-      """Extraneous input 'n': expected 'WHEN' (line 1, column 6 (offset: 5))
-        |"CASE n WHEN true, false, THEN 1 ELSE null END"
-        |      ^""".stripMargin
+      """Extraneous input '1': expected ',', 'THEN' (line 1, column 38 (offset: 37))
+        |"RETURN CASE n WHEN true, false, THEN 1 ELSE null END"
+        |                                      ^""".stripMargin
     ))
   }
 

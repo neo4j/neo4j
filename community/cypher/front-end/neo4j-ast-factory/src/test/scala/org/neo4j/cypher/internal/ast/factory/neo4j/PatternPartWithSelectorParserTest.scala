@@ -20,7 +20,10 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
@@ -31,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.exceptions.SyntaxException
 
 class PatternPartWithSelectorParserTest extends AstParsingTestBase {
 
@@ -266,7 +270,9 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"FOREACH (x in [ ${selector._1} (a)-->(b) | a ] | SET x.prop = 12 )") {
-        failsParsing[Clause]
+        failsParsing[Statements]
+          .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
+          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative: expected an expression"))
       }
     }
   }
@@ -274,7 +280,9 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"RETURN reduce(sum=0, x IN [${selector._1} (a)-[:r]->(b) | b.prop] | sum + x)") {
-        failsParsing[Clause]
+        failsParsing[Statements]
+          .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
+          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative: expected an expression"))
       }
     }
   }
@@ -282,7 +290,9 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"MATCH shortestPath(${selector._1} (a)-[r]->(b))") {
-        failsParsing[Clause]
+        failsParsing[Statements]
+          .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
+          .parseIn(Antlr)(_.throws[SyntaxException])
       }
     }
   }
@@ -290,7 +300,9 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"MATCH allShortestPaths(${selector._1} (a)-[r]->(b))") {
-        failsParsing[Clause]
+        failsParsing[Statements]
+          .parseIn(JavaCc)(_.withMessageStart("Invalid input 'allShortestPaths'"))
+          .parseIn(Antlr)(_.throws[SyntaxException])
       }
     }
   }
@@ -298,7 +310,9 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"RETURN [ ${selector._1} (a)-->(b) | a ]") {
-        failsParsing[Clause]
+        failsParsing[Statements]
+          .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
+          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative: expected an expression"))
       }
     }
   }
@@ -309,18 +323,24 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   test("MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())") {
     selectors.foreach { case selector -> _ =>
       s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())" should notParse[Clause]
+        .parseIn(JavaCc)(_.withMessageStart("Path selectors such as"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Path selectors such as"))
     }
   }
 
   test("CREATE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
       s"CREATE $selector (a)-[r]->(b)" should notParse[Clause]
+        .parseIn(JavaCc)(_.withMessageStart("Path selectors such as"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Path selectors such as"))
     }
   }
 
   test("MERGE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
       s"MERGE $selector (a)-[r]->(b)" should notParse[Clause]
+        .parseIn(JavaCc)(_.withMessageStart("Path selectors such as"))
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Path selectors such as"))
     }
   }
 
@@ -338,14 +358,14 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
     Seq("+", "").foreach { quantifier =>
       test(s"MATCH ($selector (a)-[r]->(b))$quantifier") {
         val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
-        failsParsing[Clause].withMessageStart(
+        failsParsing[Statements].withMessageStart(
           s"Path selectors such as `${astSelector.prettified}` are not supported within $pathPatternKind path patterns."
         )
       }
 
       if (quantifier == "+") {
         test(s"MATCH (() ($selector (a)-[r]->(b))$quantifier ()--())") {
-          failsParsing[Clause].withMessageStart(
+          failsParsing[Statements].withMessageStart(
             s"Path selectors such as `${astSelector.prettified}` are not supported within quantified path patterns."
           )
         }
@@ -368,7 +388,9 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
     "SHORTEST -1 GROUP"
   ).foreach { selector =>
     test(s"MATCH $selector (a)-[r]->(b)") {
-      failsParsing[Clause]
+      failsParsing[Statements]
+        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
+        .parseIn(Antlr)(_.throws[SyntaxException])
     }
   }
 

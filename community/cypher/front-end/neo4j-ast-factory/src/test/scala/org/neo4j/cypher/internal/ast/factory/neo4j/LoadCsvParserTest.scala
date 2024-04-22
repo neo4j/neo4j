@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
@@ -46,24 +47,24 @@ class LoadCsvParserTest extends AstParsingTestBase with LegacyAstParsingTestSupp
   test("LOAD CSV WITH HEADERS FROM file:///ALL_PLANT_RMs_2.csv AS l") {
     // Message is asserted in org.neo4j.internal.cypher.acceptance.ParsingErrorsAcceptanceTest
     // The exception caught in this unit test do not reflect what the user gets
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("LOAD CSV WITH HEADERS FROM 'file:///ALL_PLANT_RMs_2.csv AS l") {
     // Message is asserted in org.neo4j.internal.cypher.acceptance.ParsingErrorsAcceptanceTest
     // The exception caught in this unit test do not reflect what the user gets
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("""LOAD CSV WITH HEADERS FROM "file:///ALL_PLANT_RMs_2.csv AS l""") {
     // Message is asserted in org.neo4j.internal.cypher.acceptance.ParsingErrorsAcceptanceTest
     // The exception caught in this unit test do not reflect what the user gets
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 
   test("LOAD CSV WITH HEADERS FROM `var AS l") {
     // Message is asserted in org.neo4j.internal.cypher.acceptance.ParsingErrorsAcceptanceTest
     // The exception caught in this unit test do not reflect what the user gets
-    failsParsing[Clause]
+    failsParsing[Statements]
   }
 }

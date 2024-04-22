@@ -73,13 +73,13 @@ class ExpressionPostfixParserTest extends AstParsingTestBase {
     parsesTo[Expression](containerIndex(varFor("a"), -1))
   }
 
-  test("a.[]") {
-    failsParsing[Expression]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered \" \"[\" \"[\"\" at line 1, column 3"))
+  test("RETURN a.[]") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '[': expected \"NFKD\" or an identifier"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '[': expected an identifier (line 1, column 3 (offset: 2))
-          |"a.[]"
-          |   ^""".stripMargin
+        """Mismatched input '[': expected an identifier (line 1, column 10 (offset: 9))
+          |"RETURN a.[]"
+          |          ^""".stripMargin
       ))
   }
 

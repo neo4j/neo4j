@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
@@ -389,17 +391,35 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
 
   // pattern expressions are not implemented, yet
   test("MATCH (n) WITH [ p = (n)--(m) ((a)-->(b))+ | p ] as paths RETURN *") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
+      .parseIn(Antlr)(_.withMessageStart(
+        """No viable alternative: expected an expression (line 1, column 31 (offset: 30))
+          |"MATCH (n) WITH [ p = (n)--(m) ((a)-->(b))+ | p ] as paths RETURN *"
+          |                               ^""".stripMargin
+      ))
   }
 
   // pattern expression are not implemented, yet
   test("MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m) RETURN *") {
-    failsToParse[Statements]()
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
+      .parseIn(Antlr)(_.withMessageStart(
+        """Mismatched input '(': expected ';', <EOF> (line 1, column 26 (offset: 25))
+          |"MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m) RETURN *"
+          |                          ^""".stripMargin
+      ))
   }
 
   // node abbreviations are not implemented, yet
   test("MATCH (n)--((a)-->(b))+") {
-    failsParsing[Clause]
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '(': expected \":\" or an identifier"))
+      .parseIn(Antlr)(_.withMessageStart(
+        """Extraneous input '(': expected a variable name, ':', 'IS', '{', '$', 'WHERE', ')' (line 1, column 13 (offset: 12))
+          |"MATCH (n)--((a)-->(b))+"
+          |             ^""".stripMargin
+      ))
   }
 }
 

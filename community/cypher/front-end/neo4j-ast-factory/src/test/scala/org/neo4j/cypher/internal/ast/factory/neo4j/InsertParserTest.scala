@@ -929,31 +929,31 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   }
 
   test("INSERT (:A:B)") {
-    failsParsing[Statement].withMessageStart(
+    failsParsing[Statements].withMessageStart(
       "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead. (line 1, column 11 (offset: 10))"
     )
   }
 
   test("INSERT (n:A&B:C)") {
-    failsParsing[Statement].withMessageStart(
+    failsParsing[Statements].withMessageStart(
       "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead. (line 1, column 14 (offset: 13))"
     )
   }
 
   test("INSERT (n:A)-[:R]->(:B:C)") {
-    failsParsing[Statement].withMessageStart(
+    failsParsing[Statements].withMessageStart(
       "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead. (line 1, column 23 (offset: 22))"
     )
   }
 
   test("INSERT p=()-[:R]->()") {
-    failsParsing[Statement].withMessageStart(
+    failsParsing[Statements].withMessageStart(
       "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name. (line 1, column 8 (offset: 7))"
     )
   }
 
   test("INSERT (), p=()-[:R]->()") {
-    failsParsing[Statement].withMessageStart(
+    failsParsing[Statements].withMessageStart(
       "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name. (line 1, column 12 (offset: 11))"
     )
   }
