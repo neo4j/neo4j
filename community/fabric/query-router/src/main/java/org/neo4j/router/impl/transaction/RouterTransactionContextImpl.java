@@ -58,7 +58,7 @@ public record RouterTransactionContextImpl(
 
     @Override
     public DatabaseTransaction transactionFor(Location location, TransactionMode mode) {
-        return routerTransaction.transactionFor(location, mode);
+        return routerTransaction.transactionFor(location, mode, locationService);
     }
 
     @Override

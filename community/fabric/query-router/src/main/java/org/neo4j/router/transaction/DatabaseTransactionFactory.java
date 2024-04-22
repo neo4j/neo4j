@@ -23,7 +23,9 @@ import java.util.function.Consumer;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
+import org.neo4j.router.location.LocationService;
 
 /**
  * A factory for starting database transactions at given locations
@@ -36,4 +38,9 @@ public interface DatabaseTransactionFactory<LOC extends Location> {
             TransactionBookmarkManager bookmarkManager,
             Consumer<Status> terminationCallback,
             ConstituentTransactionFactory constituentTransactionFactory);
+
+    default void addSpdInformationToTransaction(
+            InternalTransaction internalTransaction, LocationService locationService, Location location) {
+        throw new RuntimeException("Sharded property databases not supported in community edition.");
+    }
 }

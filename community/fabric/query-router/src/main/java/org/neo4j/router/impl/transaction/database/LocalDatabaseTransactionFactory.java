@@ -45,8 +45,8 @@ import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.TransactionInfo;
 
 public class LocalDatabaseTransactionFactory implements DatabaseTransactionFactory<Location.Local> {
-    private final DatabaseContextProvider<?> databaseContextProvider;
-    private final LocalGraphTransactionIdTracker transactionIdTracker;
+    protected final DatabaseContextProvider<?> databaseContextProvider;
+    protected final LocalGraphTransactionIdTracker transactionIdTracker;
 
     public LocalDatabaseTransactionFactory(
             DatabaseContextProvider<?> databaseContextProvider, LocalGraphTransactionIdTracker transactionIdTracker) {
@@ -103,7 +103,7 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
                 resolver.resolveDependency(KernelTransactionFactory.class));
     }
 
-    private InternalTransaction beginInternalTransaction(
+    protected InternalTransaction beginInternalTransaction(
             GraphDatabaseAPI databaseApi, TransactionInfo transactionInfo, Consumer<Status> terminationCallback) {
 
         InternalTransaction internalTransaction = databaseApi.beginTransaction(
@@ -137,7 +137,7 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
         throw new TransactionFailureException("Unable to complete transaction.", e);
     }
 
-    private static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
+    protected static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
         return () -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found");
     }
 }

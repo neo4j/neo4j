@@ -43,6 +43,7 @@ import org.neo4j.fabric.transaction.parent.CompoundTransaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.impl.transaction.database.LocalDatabaseTransaction;
+import org.neo4j.router.location.LocationService;
 import org.neo4j.router.transaction.DatabaseTransaction;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.RouterTransaction;
@@ -118,10 +120,12 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
     }
 
     @Override
-    public DatabaseTransaction transactionFor(Location location, TransactionMode mode) {
+    public DatabaseTransaction transactionFor(
+            Location location, TransactionMode mode, LocationService locationService) {
         var tx = databaseTransactions.computeIfAbsent(
                 location.databaseReference().id(),
-                ref -> registerNewChildTransaction(location, mode, () -> createTransactionFor(location)));
+                ref -> registerNewChildTransaction(
+                        location, mode, () -> createTransactionFor(location, locationService)));
         if (mode == TransactionMode.DEFINITELY_WRITE) {
             upgradeToWritingTransaction(tx);
         }
@@ -133,14 +137,19 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
         this.constituentTransactionFactory = constituentTransactionFactory;
     }
 
-    private DatabaseTransaction createTransactionFor(Location location) {
+    private DatabaseTransaction createTransactionFor(Location location, LocationService locationService) {
         if (location instanceof Location.Local local) {
-            return localDatabaseTransactionFactory.beginTransaction(
+            var transaction = localDatabaseTransactionFactory.beginTransaction(
                     local,
                     transactionInfo,
                     transactionBookmarkManager,
                     this::childTransactionTerminated,
                     constituentTransactionFactory);
+            if (location.databaseReference() instanceof DatabaseReferenceImpl.Internal.SPD) {
+                localDatabaseTransactionFactory.addSpdInformationToTransaction(
+                        ((LocalDatabaseTransaction) transaction).internalTransaction(), locationService, location);
+            }
+            return transaction;
         } else if (location instanceof Location.Remote remote) {
             return remoteDatabaseTransactionFactory.beginTransaction(
                     remote,
