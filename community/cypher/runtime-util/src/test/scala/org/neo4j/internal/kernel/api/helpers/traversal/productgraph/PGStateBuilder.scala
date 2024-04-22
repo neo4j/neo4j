@@ -37,14 +37,10 @@ object PGStateBuilder {
   class BuilderState(val state: State) {
 
     def addNodeJuxtaposition(target: PGStateBuilder.BuilderState): Unit = {
-      this.addNodeJuxtaposition(target, Predicates.ALWAYS_TRUE_LONG)
-    }
-
-    def addNodeJuxtaposition(target: PGStateBuilder.BuilderState, nodePredicate: LongPredicate): Unit = {
       val existing = this.state.getNodeJuxtapositions
       val longer = new Array[NodeJuxtaposition](existing.length + 1)
       System.arraycopy(existing, 0, longer, 0, existing.length)
-      longer(existing.length) = new NodeJuxtaposition(nodePredicate, target.state)
+      longer(existing.length) = new NodeJuxtaposition(target.state)
       this.state.setNodeJuxtapositions(longer)
     }
 
@@ -52,32 +48,32 @@ object PGStateBuilder {
       target: PGStateBuilder.BuilderState,
       relPredicate: Predicate[RelationshipDataReader] = Predicates.alwaysTrue(),
       types: Array[Int] = null,
-      direction: Direction = Direction.BOTH,
-      nodePredicate: LongPredicate = Predicates.ALWAYS_TRUE_LONG
+      direction: Direction = Direction.BOTH
     ): Unit = {
       val existing = this.state.getRelationshipExpansions
       val longer = new Array[RelationshipExpansion](existing.length + 1)
       System.arraycopy(existing, 0, longer, 0, existing.length)
       longer(existing.length) =
-        new RelationshipExpansion(relPredicate, types, direction, SlotOrName.none, nodePredicate, target.state)
+        new RelationshipExpansion(relPredicate, types, direction, SlotOrName.none, target.state)
       this.state.setRelationshipExpansions(longer)
     }
   }
 }
 
 class PGStateBuilder {
-  private var nextId = 0
   private val states = mutable.Map.empty[Int, BuilderState]
   private var startState: PGStateBuilder.BuilderState = null
 
   def newState(
     name: String = null,
     isStartState: Boolean = false,
-    isFinalState: Boolean = false
+    isFinalState: Boolean = false,
+    predicate: LongPredicate = Predicates.ALWAYS_TRUE_LONG
   ): BuilderState = {
     val state = new BuilderState(new State(
-      { this.nextId += 1; this.nextId - 1 },
+      states.size,
       if (name == null) SlotOrName.none else SlotOrName.VarName(name, isGroup = false),
+      predicate,
       new Array[NodeJuxtaposition](0),
       new Array[RelationshipExpansion](0),
       isStartState,
@@ -97,5 +93,5 @@ class PGStateBuilder {
   def getState(id: Int): BuilderState = states(id)
 
   def getStart: PGStateBuilder.BuilderState = this.startState
-  def stateCount: Int = this.nextId
+  def stateCount: Int = this.states.size
 }

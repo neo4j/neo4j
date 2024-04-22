@@ -33,7 +33,7 @@ import java.util.Collections
 
 import scala.collection.mutable
 
-case class ProductGraph(adjacencyLists: mutable.HashMap[PGNode, mutable.Set[PGRelationship]] = mutable.HashMap.empty) {
+class ProductGraph(val adjacencyLists: mutable.HashMap[PGNode, mutable.Set[PGRelationship]] = mutable.HashMap.empty) {
 
   def addNode(nodeId: Long, stateId: Int): ProductGraph = {
     adjacencyLists.put(PGNode(nodeId, stateId), new mutable.HashSet[PGRelationship])

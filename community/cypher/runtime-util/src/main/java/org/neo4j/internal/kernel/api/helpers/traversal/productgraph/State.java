@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
+import java.util.function.LongPredicate;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 
 public final class State {
@@ -26,22 +27,29 @@ public final class State {
     private final boolean isFinalState;
     private final int id;
     private final SlotOrName slotOrName;
+    private final LongPredicate predicate;
     private NodeJuxtaposition[] nodeJuxtapositions;
     private RelationshipExpansion[] relationshipExpansions;
 
     public State(
             int id,
             SlotOrName slotOrName,
+            LongPredicate predicate,
             NodeJuxtaposition[] nodeJuxtapositions,
             RelationshipExpansion[] relationshipExpansions,
             boolean isStartState,
             boolean isFinalState) {
         this.id = id;
         this.slotOrName = slotOrName;
+        this.predicate = predicate;
         this.nodeJuxtapositions = nodeJuxtapositions;
         this.relationshipExpansions = relationshipExpansions;
         this.isStartState = isStartState;
         this.isFinalState = isFinalState;
+    }
+
+    public boolean test(long nodeId) {
+        return this.predicate.test(nodeId);
     }
 
     public void setNodeJuxtapositions(NodeJuxtaposition[] nodeJuxtapositions) {

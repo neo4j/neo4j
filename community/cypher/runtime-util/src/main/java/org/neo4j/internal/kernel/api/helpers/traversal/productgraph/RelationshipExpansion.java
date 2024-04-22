@@ -21,7 +21,6 @@ package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.RelationshipDataReader;
@@ -33,7 +32,6 @@ public final class RelationshipExpansion implements Transition {
     private final int[] types;
     private final Direction direction;
     private final SlotOrName slotOrName;
-    private final LongPredicate nodePredicate;
     private State targetState;
 
     public RelationshipExpansion(
@@ -41,13 +39,11 @@ public final class RelationshipExpansion implements Transition {
             int[] types,
             Direction direction,
             SlotOrName slotOrName,
-            LongPredicate nodePredicate,
             State targetState) {
         this.relPredicate = relPredicate;
         this.types = types;
         this.direction = direction;
         this.slotOrName = slotOrName;
-        this.nodePredicate = nodePredicate;
         this.targetState = targetState;
     }
 
@@ -56,7 +52,7 @@ public final class RelationshipExpansion implements Transition {
     }
 
     public boolean testNode(long node) {
-        return nodePredicate.test(node);
+        return this.targetState.test(node);
     }
 
     public int[] types() {
@@ -93,13 +89,12 @@ public final class RelationshipExpansion implements Transition {
                 && Arrays.equals(this.types, that.types)
                 && Objects.equals(this.direction, that.direction)
                 && Objects.equals(this.slotOrName, that.slotOrName)
-                && Objects.equals(this.nodePredicate, that.nodePredicate)
                 && Objects.equals(this.targetState, that.targetState);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(relPredicate, Arrays.hashCode(types), direction, slotOrName, nodePredicate, targetState);
+        return Objects.hash(relPredicate, Arrays.hashCode(types), direction, slotOrName, targetState);
     }
 
     @Override
@@ -108,8 +103,7 @@ public final class RelationshipExpansion implements Transition {
                 + relPredicate + ", " + "types="
                 + Arrays.toString(types) + ", " + "direction="
                 + direction + ", " + "slotOrName="
-                + slotOrName + ", " + "nodePredicate="
-                + nodePredicate + ", " + "targetState="
+                + slotOrName + ", " + "targetState="
                 + targetState + ']';
     }
 }

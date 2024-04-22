@@ -20,20 +20,17 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
 import java.util.Objects;
-import java.util.function.LongPredicate;
 import org.neo4j.util.Preconditions;
 
 public final class NodeJuxtaposition implements Transition {
-    private final LongPredicate nodePredicate;
     private State targetState;
 
-    public NodeJuxtaposition(LongPredicate nodePredicate, State targetState) {
-        this.nodePredicate = nodePredicate;
+    public NodeJuxtaposition(State targetState) {
         this.targetState = targetState;
     }
 
     public boolean testNode(long node) {
-        return nodePredicate.test(node);
+        return targetState.test(node);
     }
 
     @Override
@@ -54,17 +51,16 @@ public final class NodeJuxtaposition implements Transition {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
         var that = (NodeJuxtaposition) obj;
-        return Objects.equals(this.nodePredicate, that.nodePredicate)
-                && Objects.equals(this.targetState, that.targetState);
+        return Objects.equals(this.targetState, that.targetState);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(nodePredicate, targetState);
+        return Objects.hash(targetState);
     }
 
     @Override
     public String toString() {
-        return "NodeJuxtaposition[" + "nodePredicates=" + nodePredicate + ", " + "targetState=" + targetState + ']';
+        return "NodeJuxtaposition[targetState=" + targetState + ']';
     }
 }

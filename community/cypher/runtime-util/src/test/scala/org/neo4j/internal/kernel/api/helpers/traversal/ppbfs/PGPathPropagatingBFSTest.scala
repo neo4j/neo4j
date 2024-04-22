@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.function.Predicates
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -88,8 +89,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n)
       .withNfa { sb =>
-        val e = sb.newState(isFinalState = true)
-        sb.newState(isStartState = true).addNodeJuxtaposition(e, (_: Long) => false)
+        val e = sb.newState(isFinalState = true, predicate = Predicates.ALWAYS_FALSE_LONG)
+        sb.newState(isStartState = true).addNodeJuxtaposition(e)
       }
       .paths()
 
@@ -205,8 +206,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withGraph(graph.build())
       .from(n0)
       .withNfa { sb =>
-        val e = sb.newState(isFinalState = true)
-        sb.newState(isStartState = true).addRelationshipExpansion(e, nodePredicate = (n: Long) => n == n2)
+        sb.newState(isStartState = true)
+          .addRelationshipExpansion(sb.newState(isFinalState = true, predicate = (n: Long) => n == n2))
       }
       .paths()
 
@@ -647,10 +648,10 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withNfa { sb =>
         val start = sb.newState(isStartState = true)
         val a = sb.newState()
-        val end = sb.newState(isFinalState = true)
+        val end = sb.newState(isFinalState = true, predicate = (n: Long) => n == d)
         start.addRelationshipExpansion(a, direction = Direction.OUTGOING)
         a.addNodeJuxtaposition(start)
-        a.addNodeJuxtaposition(end, (n: Long) => n == d)
+        a.addNodeJuxtaposition(end)
       }
       .grouped
       .withK(2)

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.kernel.api.helpers
 
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.kernel.api.helpers.ProductGraph.PGNode
 import org.neo4j.cypher.internal.kernel.api.helpers.ProductGraph.PGRelationship
@@ -59,8 +58,8 @@ class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseT
       val s0 = builder.newState(isStartState = true)
       val s1 = builder.newState()
       val s2 = builder.newState(isFinalState = true)
-      s0.addRelationshipExpansion(s1, types = Array[Int](R1))
-      s1.addRelationshipExpansion(s2, types = Array[Int](R2))
+      s0.addRelationshipExpansion(s1, types = Array(R1))
+      s1.addRelationshipExpansion(s2, types = Array(R2))
       val expected = new ProductGraph()
         .addNode(start, s0)
         .addNode(a1, s1)
@@ -88,9 +87,9 @@ class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseT
       val s0 = builder.newState(isStartState = true)
       val s1 = builder.newState()
       val s2 = builder.newState(isFinalState = true)
-      s0.addRelationshipExpansion(s1, types = Array[Int](R1), direction = Direction.OUTGOING)
+      s0.addRelationshipExpansion(s1, types = Array(R1), direction = Direction.OUTGOING)
       // can't be traversed from s1 in this direction
-      s1.addRelationshipExpansion(s2, types = Array[Int](R1), direction = Direction.OUTGOING)
+      s1.addRelationshipExpansion(s2, types = Array(R1), direction = Direction.OUTGOING)
 
       val expected = new ProductGraph()
         .addNode(start, s0)
@@ -120,7 +119,7 @@ class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseT
 
       s0.addRelationshipExpansion(s1, direction = Direction.OUTGOING)
       // can't be traversed from s1 in this direction
-      s1.addRelationshipExpansion(s2, types = Array[Int](R2), direction = Direction.INCOMING)
+      s1.addRelationshipExpansion(s2, types = Array(R2), direction = Direction.INCOMING)
 
       val expected = new ProductGraph()
         .addNode(start, s0)
@@ -151,7 +150,7 @@ class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseT
       s1.addRelationshipExpansion(
         s2,
         relPredicate = Predicates.alwaysFalse,
-        types = Array[Int](R2),
+        types = Array(R2),
         direction = Direction.INCOMING
       )
       val expected = new ProductGraph()
@@ -178,13 +177,12 @@ class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseT
       val builder = new PGStateBuilder
       val s0 = builder.newState(isStartState = true)
       val s1 = builder.newState()
-      val s2 = builder.newState(isFinalState = true)
+      val s2 = builder.newState(isFinalState = true, predicate = Predicates.ALWAYS_FALSE_LONG)
       s0.addRelationshipExpansion(s1, direction = Direction.OUTGOING)
       s1.addRelationshipExpansion(
         s2,
-        types = Array[Int](R2),
-        direction = Direction.INCOMING,
-        nodePredicate = LongPredicates.alwaysFalse
+        types = Array(R2),
+        direction = Direction.INCOMING
       )
       val expected = new ProductGraph()
         .addNode(start, s0)
@@ -233,11 +231,11 @@ class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseT
       val s3 = builder.newState()
       val s4 = builder.newState(isFinalState = true)
 
-      s0.addRelationshipExpansion(s1, types = Array[Int](O1), direction = Direction.OUTGOING)
-      s0.addRelationshipExpansion(s2, types = Array[Int](I1, I2), direction = Direction.INCOMING)
-      s0.addRelationshipExpansion(s3, types = Array[Int](L1, I3))
-      s3.addRelationshipExpansion(s4, types = Array[Int](O3, L2), direction = Direction.INCOMING)
-      s4.addRelationshipExpansion(s0, types = Array[Int](L3), direction = Direction.INCOMING)
+      s0.addRelationshipExpansion(s1, types = Array(O1), direction = Direction.OUTGOING)
+      s0.addRelationshipExpansion(s2, types = Array(I1, I2), direction = Direction.INCOMING)
+      s0.addRelationshipExpansion(s3, types = Array(L1, I3))
+      s3.addRelationshipExpansion(s4, types = Array(O3, L2), direction = Direction.INCOMING)
+      s4.addRelationshipExpansion(s0, types = Array(L3), direction = Direction.INCOMING)
       val expected = new ProductGraph()
         .addNode(start, s0)
         .addNode(a1, s1)
@@ -265,11 +263,11 @@ class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseT
       val builder = new PGStateBuilder
       val s0 = builder.newState(isStartState = true)
       val s1 = builder.newState()
-      val s2 = builder.newState(isFinalState = true)
+      val s2 = builder.newState(isFinalState = true, predicate = Predicates.ALWAYS_FALSE_LONG)
 
-      s0.addNodeJuxtaposition(s1, LongPredicates.alwaysTrue)
-      s0.addNodeJuxtaposition(s2, LongPredicates.alwaysFalse)
-      s1.addNodeJuxtaposition(s2, LongPredicates.alwaysFalse)
+      s0.addNodeJuxtaposition(s1)
+      s0.addNodeJuxtaposition(s2)
+      s1.addNodeJuxtaposition(s2)
 
       val expected = new ProductGraph()
         .addNode(start, s0)

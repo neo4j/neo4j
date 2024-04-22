@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands
-import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA.NodeJuxtapositionTransition
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA.RelationshipExpansionTransition
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA.State
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
@@ -62,8 +61,8 @@ case class CommandNFA(
    */
   def compile(row: CypherRow, queryState: QueryState): productgraph.State = {
 
-    def nodePredicate(transition: NodeJuxtapositionTransition): LongPredicate =
-      transition.inner match {
+    def statePredicate(state: State): LongPredicate =
+      state.predicate match {
         case Some(predicate) => (l: Long) => predicate(row, queryState, VirtualValues.node(l))
         case _               => LongPredicates.alwaysTrue()
       }
@@ -85,18 +84,13 @@ case class CommandNFA(
         case _ => Predicates.alwaysTrue()
       }
 
-    def targetNodePredicate(transition: RelationshipExpansionTransition): LongPredicate =
-      transition.innerNodePred match {
-        case Some(predicate) => (l: Long) => predicate(row, queryState, VirtualValues.node(l))
-        case _               => LongPredicates.alwaysTrue()
-      }
-
     // This is then used to retrieve each state given the id, completing the transition -> targetState.id -> targetState
     // mapping
     val stateLookup: Map[State, productgraph.State] = states.map(state =>
       state -> new productgraph.State(
         state.id,
         state.slotOrName,
+        statePredicate(state),
         null,
         null,
         startState == state,
@@ -107,7 +101,7 @@ case class CommandNFA(
     for ((state, pgState) <- stateLookup) {
       pgState.setNodeJuxtapositions(
         state.nodeTransitions.map(transition =>
-          new NodeJuxtaposition(nodePredicate(transition), stateLookup(transition.targetState))
+          new NodeJuxtaposition(stateLookup(transition.targetState))
         ).toArray
       )
 
@@ -118,7 +112,6 @@ case class CommandNFA(
             if (transition.types == null) null else transition.types.types(queryState.query),
             toGraphDb(transition.dir),
             transition.slotOrName,
-            targetNodePredicate(transition),
             stateLookup(transition.targetState)
           )
         }).toArray
@@ -136,6 +129,7 @@ object CommandNFA {
   class State(
     val id: Int,
     val slotOrName: SlotOrName,
+    val predicate: Option[CommandPredicateFunction],
     var nodeTransitions: Seq[NodeJuxtapositionTransition],
     var relTransitions: Seq[RelationshipExpansionTransition]
   ) {
@@ -148,7 +142,6 @@ object CommandNFA {
   }
 
   case class NodeJuxtapositionTransition(
-    inner: Option[CommandPredicateFunction],
     targetState: State
   )
 
@@ -157,7 +150,6 @@ object CommandNFA {
     slotOrName: SlotOrName,
     types: RelationshipTypes,
     dir: SemanticDirection,
-    innerNodePred: Option[CommandPredicateFunction],
     targetState: State
   )
 
@@ -176,21 +168,11 @@ object CommandNFA {
       }
     }
 
-    def compileStubbedNodeJuxtaposition(
-      nodePredicate: Option[VariablePredicate],
-      end: State
-    ): NodeJuxtapositionTransition = {
-      val commandPred = nodePredicate.map(convertPredicate)
-      NodeJuxtapositionTransition(commandPred, end)
-    }
-
     def compileStubbedRelationshipExpansion(
       logicalPredicate: NFA.RelationshipExpansionPredicate,
-      nodePredicate: Option[VariablePredicate],
       end: State
     )(implicit st: SemanticTable): RelationshipExpansionTransition = {
       val commandRelPred = logicalPredicate.relPred.map(convertPredicate)
-      val commandNodePred = nodePredicate.map(convertPredicate)
 
       // In planner land, empty type seq means all types. We use null in runtime land to represent all types
       val types = logicalPredicate.types
@@ -201,7 +183,6 @@ object CommandNFA {
         getSlotOrName(logicalPredicate.relationshipVariable),
         relTypes,
         logicalPredicate.dir,
-        commandNodePred,
         end
       )
     }
@@ -213,7 +194,13 @@ object CommandNFA {
 
     // first phase: create the states
     val stateLookup = logicalNFA.states.iterator.map { logicalState =>
-      val commandState = new State(logicalState.id, getSlotOrName(logicalState.variable), null, null)
+      val commandState = new State(
+        logicalState.id,
+        getSlotOrName(logicalState.variable),
+        logicalState.predicate.map(convertPredicate),
+        null,
+        null
+      )
 
       if (logicalNFA.startState == logicalState) {
         assert(startState == null, "There should only be one start state in an NFA")
@@ -234,11 +221,11 @@ object CommandNFA {
       val (nodeTransitions, relTransitions) = transitions.partitionMap {
         case NFA.NodeJuxtapositionTransition(endId) =>
           val end = logicalNFA.states(endId)
-          Left(compileStubbedNodeJuxtaposition(end.predicate, stateLookup(end.id)))
+          Left(NodeJuxtapositionTransition(stateLookup(end.id)))
 
         case NFA.RelationshipExpansionTransition(rp: NFA.RelationshipExpansionPredicate, endId) =>
           val end = logicalNFA.states(endId)
-          Right(compileStubbedRelationshipExpansion(rp, end.predicate, stateLookup(end.id)))
+          Right(compileStubbedRelationshipExpansion(rp, stateLookup(end.id)))
       }
       val commandState = stateLookup(logicalState.id)
       commandState.nodeTransitions = nodeTransitions.toSeq
