@@ -27,22 +27,33 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Panic;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionAppenderFactory {
     public static TransactionAppender createTransactionAppender(
             LogFiles logFiles,
             TransactionIdStore transactionIdStore,
+            AppendIndexProvider appendIndexProvider,
             Config config,
             Panic databasePanic,
             JobScheduler scheduler,
-            InternalLogProvider logProvider) {
+            InternalLogProvider logProvider,
+            TransactionMetadataCache metadataCache) {
         if (config.get(dedicated_transaction_appender)
                 || "multiversion".equals(config.get(GraphDatabaseSettings.db_format))) {
-            var queue = new TransactionLogQueue(logFiles, transactionIdStore, databasePanic, scheduler, logProvider);
+            var queue = new TransactionLogQueue(
+                    logFiles,
+                    transactionIdStore,
+                    databasePanic,
+                    appendIndexProvider,
+                    metadataCache,
+                    scheduler,
+                    logProvider);
             return new QueueTransactionAppender(queue);
         }
 
-        return new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic);
+        return new BatchingTransactionAppender(
+                logFiles, transactionIdStore, databasePanic, appendIndexProvider, metadataCache);
     }
 }

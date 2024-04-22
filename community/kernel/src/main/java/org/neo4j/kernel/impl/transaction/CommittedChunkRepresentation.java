@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryChunkStartV5_20;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -72,9 +73,15 @@ public record CommittedChunkRepresentation(
                 kernelVersion,
                 chunkStart.getTimeWritten(),
                 chunkStart.getChunkId(),
+                chunkStart.getAppendIndex(),
                 chunkStart.getPreviousBatchLogPosition());
         writer.serialize(commandBatch);
         return writer.writeChunkEndEntry(kernelVersion, chunkEnd.getTransactionId(), chunkEnd.getChunkId());
+    }
+
+    @Override
+    public long appendIndex() {
+        return chunkStart.getAppendIndex();
     }
 
     @Override
@@ -106,10 +113,11 @@ public record CommittedChunkRepresentation(
         if (start instanceof LogEntryChunkStart chunkStart) {
             return chunkStart;
         } else if (start instanceof LogEntryStart entryStart) {
-            return new LogEntryChunkStart(
+            return new LogEntryChunkStartV5_20(
                     entryStart.kernelVersion(),
                     entryStart.getTimeWritten(),
                     BASE_CHUNK_NUMBER,
+                    entryStart.getAppendIndex(),
                     LogPosition.UNSPECIFIED);
         } else {
             throw new IllegalArgumentException("Was expecting start record. Actual entry: " + start);

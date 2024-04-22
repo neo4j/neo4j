@@ -61,6 +61,8 @@ public class TransactionToApply implements CommandBatchToApply {
     // These fields are provided by commit process, storage engine, or recovery process
     private final Commitment commitment;
     private LongConsumer closedCallback;
+    private long appendIndex;
+    private LogPosition beforeCommit;
 
     public TransactionToApply(
             CommittedCommandBatch committedCommandBatch, CursorContext cursorContext, StoreCursors storeCursors) {
@@ -98,7 +100,7 @@ public class TransactionToApply implements CommandBatchToApply {
 
     @Override
     public void commit() {
-        commitment.publishAsCommitted(commandBatch.getTimeCommitted());
+        commitment.publishAsCommitted(commandBatch.getTimeCommitted(), appendIndex, beforeCommit);
     }
 
     @Override
@@ -147,15 +149,18 @@ public class TransactionToApply implements CommandBatchToApply {
     }
 
     @Override
-    public void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum) {
+    public void batchAppended(long appendIndex, LogPosition beforeCommit, LogPosition positionAfter, int checksum) {
         this.commitment.commit(
                 transactionId,
+                appendIndex,
                 commandBatch.kernelVersion(),
                 beforeCommit,
                 positionAfter,
                 checksum,
                 commandBatch.consensusIndex());
         this.cursorContext.getVersionContext().initWrite(transactionId);
+        this.appendIndex = appendIndex;
+        this.beforeCommit = beforeCommit;
     }
 
     @Override

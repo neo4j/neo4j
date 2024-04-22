@@ -45,6 +45,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -240,6 +241,7 @@ class LogFilesBuilderTest {
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withAppendIndexProvider(new SimpleAppendIndexProvider())
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
                 .withStoreId(storeId)
                 .build();
@@ -267,6 +269,7 @@ class LogFilesBuilderTest {
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withLogFileVersionTracker(tracker)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withAppendIndexProvider(new SimpleAppendIndexProvider())
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
                 .withStoreId(new StoreId(1, 2, "engine-1", "format-1", 3, 4))
                 .build();

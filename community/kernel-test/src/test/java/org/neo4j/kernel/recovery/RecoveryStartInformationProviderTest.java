@@ -60,7 +60,7 @@ class RecoveryStartInformationProviderTest {
     @BeforeEach
     void setUp() throws IOException {
         var logHeader = LATEST_LOG_FORMAT.newHeader(
-                0, 1, null, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                0, 1, 2, null, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
         when(logFile.extractHeader(0)).thenReturn(logHeader);
         when(logFiles.getLogFile()).thenReturn(logFile);
     }
@@ -96,7 +96,7 @@ class RecoveryStartInformationProviderTest {
         LogPosition checkpointPosition = new LogPosition(2, 4);
         LogPosition afterCheckpointPosition = new LogPosition(4, 8);
         LogPosition readerPostPosition = new LogPosition(5, 9);
-        TransactionId transactionId = new TransactionId(4L, LATEST_KERNEL_VERSION, 2, 5L, 6L);
+        TransactionId transactionId = new TransactionId(4L, 7L, LATEST_KERNEL_VERSION, 2, 5L, 6L);
         when(logFiles.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         new CheckpointInfo(
@@ -108,6 +108,7 @@ class RecoveryStartInformationProviderTest {
                                 LatestVersions.LATEST_KERNEL_VERSION,
                                 LatestVersions.LATEST_KERNEL_VERSION.version(),
                                 transactionId,
+                                transactionId.id() + 8,
                                 "test"),
                         true,
                         10L,

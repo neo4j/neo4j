@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.HealthEventGenerator;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
@@ -86,6 +88,7 @@ class QueueTransactionAppenderTestIT {
     private Config config;
     private DatabaseHealth databaseHealth;
     private NullLogProvider logProvider;
+    private SimpleAppendIndexProvider appendIndexProvider;
 
     @BeforeEach
     void setUp() {
@@ -93,6 +96,7 @@ class QueueTransactionAppenderTestIT {
 
         logVersionRepository = new SimpleLogVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
+        appendIndexProvider = new SimpleAppendIndexProvider();
         logProvider = NullLogProvider.getInstance();
         metadataCache = new TransactionMetadataCache();
         config = Config.defaults();
@@ -107,7 +111,7 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void sequentialProcessingOfTransaction() throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
         life.add(logFiles);
 
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
@@ -122,7 +126,7 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void failToProcessTransactionOnShutdownAppender() throws IOException {
-        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
         life.add(logFiles);
 
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
@@ -139,7 +143,7 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void failToProcessTransactionOnNotStartedAppender() throws IOException {
-        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
         life.add(logFiles);
 
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
@@ -151,7 +155,7 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void publishTransactionAsCommittedOnProcessing() throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
         life.add(logFiles);
 
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
@@ -172,7 +176,7 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void failToProcessTransactionOnNonHealthyDatabase() throws IOException {
-        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
         life.add(logFiles);
 
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
@@ -188,7 +192,7 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void processTransactionWithProperEvents() throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
         life.add(logFiles);
 
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
@@ -208,7 +212,7 @@ class QueueTransactionAppenderTestIT {
 
     @Test
     void failureOnProcessingUpdatesDatabaseHealth() throws IOException {
-        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore);
+        LogFiles logFiles = buildLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
         life.add(logFiles);
 
         QueueTransactionAppender transactionAppender = createAppender(logFiles);
@@ -234,7 +238,14 @@ class QueueTransactionAppenderTestIT {
     }
 
     private QueueTransactionAppender createAppender(LogFiles logFiles) {
-        var logQueue = new TransactionLogQueue(logFiles, transactionIdStore, databaseHealth, jobScheduler, logProvider);
+        var logQueue = new TransactionLogQueue(
+                logFiles,
+                transactionIdStore,
+                databaseHealth,
+                appendIndexProvider,
+                metadataCache,
+                jobScheduler,
+                logProvider);
         return new QueueTransactionAppender(logQueue);
     }
 
@@ -258,13 +269,16 @@ class QueueTransactionAppenderTestIT {
     }
 
     private LogFiles buildLogFiles(
-            SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore)
+            SimpleLogVersionRepository logVersionRepository,
+            SimpleTransactionIdStore transactionIdStore,
+            AppendIndexProvider appendIndexProvider)
             throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withTransactionIdStore(transactionIdStore)
+                .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();

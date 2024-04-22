@@ -875,7 +875,7 @@ public class Database extends AbstractDatabase {
             InternalLogProvider logProvider,
             JobScheduler scheduler,
             CheckPointerImpl.ForceOperation forceOperation,
-            TransactionIdStore transactionIdStore,
+            MetadataProvider metadataProvider,
             Monitors monitors,
             Dependencies databaseDependencies,
             CursorContextFactory cursorContextFactory,
@@ -887,8 +887,15 @@ public class Database extends AbstractDatabase {
         final LogPruning logPruning =
                 new LogPruningImpl(fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, pruneLock);
 
-        var transactionAppender =
-                createTransactionAppender(logFiles, transactionIdStore, config, databaseHealth, scheduler, logProvider);
+        var transactionAppender = createTransactionAppender(
+                logFiles,
+                metadataProvider,
+                metadataProvider,
+                config,
+                databaseHealth,
+                scheduler,
+                logProvider,
+                transactionMetadataCache);
         life.add(transactionAppender);
 
         final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore(
@@ -898,7 +905,7 @@ public class Database extends AbstractDatabase {
 
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
-                transactionIdStore,
+                metadataProvider,
                 threshold,
                 forceOperation,
                 logPruning,
@@ -920,7 +927,7 @@ public class Database extends AbstractDatabase {
         life.add(checkPointScheduler);
 
         TransactionLogServiceImpl transactionLogService = new TransactionLogServiceImpl(
-                transactionIdStore,
+                metadataProvider,
                 logFiles,
                 logicalTransactionStore,
                 pruneLock,

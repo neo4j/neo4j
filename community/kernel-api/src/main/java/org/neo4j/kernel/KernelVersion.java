@@ -60,6 +60,7 @@ public enum KernelVersion {
     V5_15((byte) 14), // 5.15. Changes around CDC logical keys
     V5_18((byte) 15), // 5.18. Introduce vector-2.0 index provider
     V5_19((byte) 16), // 5.19. Introduce commit timestamps to change identifiers
+    V5_20((byte) 17), // 5.20. Append index for commands, logs, checkpoint
 
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
@@ -69,7 +70,7 @@ public enum KernelVersion {
     public static final KernelVersion EARLIEST = V4_2;
     // The latest version should be kept private to be able to override it from tests.
     // getLatestVersion should be used when the latest version is required.
-    private static final KernelVersion LATEST = V5_19;
+    private static final KernelVersion LATEST = V5_20;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_RANGE_POINT_TEXT_INDEXES_ARE_INTRODUCED = V4_4;
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
@@ -86,6 +87,7 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED = GLORIOUS_FUTURE;
     public static final KernelVersion VERSION_VECTOR_2_INTRODUCED = V5_18;
     public static final KernelVersion VERSION_CDC_CHECKSUMS_INTRODUCED = V5_19;
+    public static final KernelVersion VERSION_APPEND_INDEX_INTRODUCED = V5_20;
 
     // Keep updated each time there is an new schema rule added
     // related to IntegrityValidator

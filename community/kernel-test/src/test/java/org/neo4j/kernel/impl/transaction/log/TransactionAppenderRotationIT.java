@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -62,6 +63,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.monitoring.Panic;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -86,6 +88,7 @@ class TransactionAppenderRotationIT {
 
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+    private final AppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
     private final TransactionMetadataCache metadataCache = new TransactionMetadataCache();
     private ThreadPoolJobScheduler jobScheduler;
 
@@ -103,7 +106,7 @@ class TransactionAppenderRotationIT {
     @Test
     void correctLastAppliedToPreviousLogTransactionInHeaderOnLogFileRotation()
             throws IOException, ExecutionException, InterruptedException {
-        LogFiles logFiles = getLogFiles(logVersionRepository, transactionIdStore);
+        LogFiles logFiles = getLogFiles(logVersionRepository, transactionIdStore, appendIndexProvider);
         life.add(logFiles);
         Panic databasePanic = getDatabaseHealth();
 
@@ -129,10 +132,12 @@ class TransactionAppenderRotationIT {
         return TransactionAppenderFactory.createTransactionAppender(
                 logFiles,
                 transactionIdStore,
+                new SimpleAppendIndexProvider(),
                 Config.defaults(),
                 databasePanic,
                 scheduler,
-                NullLogProvider.getInstance());
+                NullLogProvider.getInstance(),
+                new TransactionMetadataCache());
     }
 
     private TransactionToApply prepareTransaction() {
@@ -153,13 +158,16 @@ class TransactionAppenderRotationIT {
     }
 
     private LogFiles getLogFiles(
-            SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore)
+            SimpleLogVersionRepository logVersionRepository,
+            SimpleTransactionIdStore transactionIdStore,
+            AppendIndexProvider appendIndexProvider)
             throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.builder(layout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
+                .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();

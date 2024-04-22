@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
+import static org.neo4j.kernel.impl.transaction.log.entry.v520.DetachedCheckpointLogEntrySerializerV5_20.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
@@ -52,7 +52,7 @@ public class CheckpointLogPruningIT {
 
     static final String CHECKPOINT_REASON = "checkpoint for rotation test";
     static final LogPosition LOG_POSITION = new LogPosition(1000, 12345);
-    static final TransactionId TRANSACTION_ID = new TransactionId(100, LATEST_KERNEL_VERSION, 101, 102, 103);
+    static final TransactionId TRANSACTION_ID = new TransactionId(100, 101, LATEST_KERNEL_VERSION, 101, 102, 103);
 
     @Inject
     private LogFiles logFiles;
@@ -116,6 +116,7 @@ public class CheckpointLogPruningIT {
                 appender.checkPoint(
                         NULL,
                         TRANSACTION_ID,
+                        TRANSACTION_ID.id() + 77,
                         LatestVersions.LATEST_KERNEL_VERSION,
                         LOG_POSITION,
                         Instant.now(),

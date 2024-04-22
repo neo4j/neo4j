@@ -300,10 +300,12 @@ public class DetachedLogTailScanner {
                 checkpoint.kernelVersionByte(),
                 new TransactionId(
                         checkpoint.transactionId().id(),
+                        checkpoint.transactionId().appendIndex(),
                         checkpoint.transactionId().kernelVersion(),
                         checkpoint.transactionId().checksum(),
                         checkpoint.transactionId().commitTimestamp(),
                         consensusIndex),
+                checkpoint.appendIndex(),
                 checkpoint.reason());
     }
 

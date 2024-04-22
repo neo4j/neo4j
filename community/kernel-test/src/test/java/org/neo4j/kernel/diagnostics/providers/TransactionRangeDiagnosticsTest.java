@@ -135,7 +135,7 @@ class TransactionRangeDiagnosticsTest {
         LogPosition checkpointLogPosition = new LogPosition(checkpointLogHighVersion, 34);
         LogPosition afterCheckpointLogPosition = new LogPosition(checkpointLogHighVersion, 36);
         LogPosition readerPostPosition = new LogPosition(checkpointLogHighVersion, 36);
-        TransactionId transactionId = new TransactionId(37, LATEST_KERNEL_VERSION, 38, 39, 40);
+        TransactionId transactionId = new TransactionId(37, 42, LATEST_KERNEL_VERSION, 38, 39, 40);
         Database database = databaseWithLogFilesContainingLowestTxId(logs(
                 transactionLogsWithTransaction(txLogLowVersion, txLogHighVersion, 42),
                 checkpointLogsWithLastCheckpoint(
@@ -264,6 +264,7 @@ class TransactionRangeDiagnosticsTest {
                         .thenReturn(LATEST_LOG_FORMAT.newHeader(
                                 version,
                                 headerTxId,
+                                headerTxId + 9,
                                 new StoreId(12345, 56789, "engine-1", "format-1", 1, 1),
                                 UNKNOWN_LOG_SEGMENT_SIZE,
                                 BASE_TX_CHECKSUM,

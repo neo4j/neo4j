@@ -68,6 +68,8 @@ import org.neo4j.test.utils.TestDirectory;
 class LogEntrySerializerDispatcherTest {
     private final CommandReaderFactory commandReader = TestCommandReaderFactory.INSTANCE;
     private final LogPositionMarker marker = new LogPositionMarker();
+    private final LogPosition position = new LogPosition(0, 25);
+    private final LogPosition positionV5_20 = new LogPosition(0, 33);
 
     @Inject
     private FileSystemAbstraction fs;
@@ -83,9 +85,9 @@ class LogEntrySerializerDispatcherTest {
             StoreChannel storeChannel = fs.write(path);
             try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
                 var entryWriter = new LogEntryWriter<>(writeChannel, BINARY_VERSIONS);
-                entryWriter.writeStartEntry(version, 1, 2, 3, EMPTY_BYTE_ARRAY);
+                entryWriter.writeStartEntry(version, 1, 2, 3, 4, EMPTY_BYTE_ARRAY);
                 entryWriter.writeChunkEndEntry(version, 17, 13);
-                entryWriter.writeChunkStartEntry(version, 11, 13, new LogPosition(14, 15));
+                entryWriter.writeChunkStartEntry(version, 11, 13, 14, new LogPosition(14, 15));
                 entryWriter.writeCommitEntry(version, 7, 8);
             }
 
@@ -96,6 +98,7 @@ class LogEntrySerializerDispatcherTest {
                             fs.read(path), 1, LATEST_LOG_FORMAT, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
                     NO_MORE_CHANNELS,
                     LATEST_LOG_FORMAT.newHeader(
+                            1,
                             1,
                             0,
                             StoreId.UNKNOWN,
@@ -128,12 +131,22 @@ class LogEntrySerializerDispatcherTest {
     @KernelVersionSource(atLeast = "4.2") // Oldest version we can write
     void parseStartEntry(KernelVersion version) throws IOException {
         // given
-        final LogEntryStart start = newStartEntry(version, 1, 2, 3, new byte[] {4}, new LogPosition(0, 25));
+        final LogEntryStart start = newStartEntry(
+                version,
+                1,
+                2,
+                3,
+                4,
+                new byte[] {4},
+                version.isAtLeast(KernelVersion.VERSION_APPEND_INDEX_INTRODUCED) ? positionV5_20 : position);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong(start.getTimeWritten());
         channel.putLong(start.getLastCommittedTxWhenTransactionStarted());
         channel.putInt(start.getPreviousChecksum());
+        if (version.isAtLeast(KernelVersion.VERSION_APPEND_INDEX_INTRODUCED)) {
+            channel.putLong(start.getAppendIndex());
+        }
         channel.putInt(start.getAdditionalHeader().length);
         channel.put(start.getAdditionalHeader(), start.getAdditionalHeader().length);
 
@@ -168,6 +181,7 @@ class LogEntrySerializerDispatcherTest {
         expectedChecksums.put(KernelVersion.V5_15, 1135605354);
         expectedChecksums.put(KernelVersion.V5_18, 474688053);
         expectedChecksums.put(KernelVersion.V5_19, -1627967866);
+        expectedChecksums.put(KernelVersion.V5_20, -1055657255);
 
         final LogEntryCommit commit = newCommitEntry(version, 42, 21, expectedChecksums.get(version));
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();

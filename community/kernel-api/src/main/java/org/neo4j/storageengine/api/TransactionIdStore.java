@@ -19,23 +19,27 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
  * the changes to be made. After that the application of those transactions might be asynchronous and
- * completion of those are marked using {@link #transactionClosed(long, KernelVersion, long, long, int, long, long)}.
+ * completion of those are marked using {@link #transactionClosed(long, long, KernelVersion, long, long, int, long, long)}.
  * <p>
  * A transaction ID passes through a {@link TransactionIdStore} like this:
  * <ol>
  * <li>{@link #nextCommittingTransactionId()} is called and an id is returned to a committer.
  * At this point that id isn't visible from any getter.</li>
- * <li>{@link #transactionCommitted(long, KernelVersion, int, long, long)} is called with this id after the fact that the transaction
+ * <li>{@link #transactionCommitted(long, long, KernelVersion, int, long, long)} is called with this id after the fact that the transaction
  * has been committed, i.e. written forcefully to a log. After this call the id may be visible from
  * {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
- * <li>{@link #transactionClosed(long, KernelVersion, long, long, int, long, long)} is called with this id again, this time after all changes the
+ * <li>{@link #transactionClosed(long, long, KernelVersion, long, long, int, long, long)} is called with this id again, this time after all changes the
  * transaction imposes have been applied to the store.
  * </ol>
  */
@@ -78,6 +82,7 @@ public interface TransactionIdStore {
 
     TransactionId UNKNOWN_TRANSACTION_ID = new TransactionId(
             UNKNOWN_TX_ID,
+            UNKNOWN_APPEND_INDEX,
             KernelVersion.EARLIEST,
             UNKNOWN_TX_CHECKSUM,
             UNKNOWN_TX_COMMIT_TIMESTAMP,
@@ -87,13 +92,18 @@ public interface TransactionIdStore {
 
     static TransactionId emptyVersionedTransaction(KernelVersion version) {
         return new TransactionId(
-                BASE_TX_ID, version, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX);
+                BASE_TX_ID,
+                BASE_APPEND_INDEX,
+                version,
+                BASE_TX_CHECKSUM,
+                BASE_TX_COMMIT_TIMESTAMP,
+                UNKNOWN_CONSENSUS_INDEX);
     }
 
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}
-     * until handed to {@link #transactionCommitted(long, KernelVersion, int, long, long)}.
+     * until handed to {@link #transactionCommitted(long, long, KernelVersion, int, long, long)}.
      */
     long nextCommittingTransactionId();
 
@@ -108,16 +118,22 @@ public interface TransactionIdStore {
      * seen given to this method will be visible in {@link #getLastCommittedTransactionId()}.
      *
      * @param transactionId the applied transaction id.
+     * @param appendIndex the applied transaction append index.
      * @param kernelVersion applied transaction kernel version
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
      * @param consensusIndex consensus index of the transaction.
      */
     void transactionCommitted(
-            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex);
+            long transactionId,
+            long appendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex);
 
     /**
-     * @return highest seen {@link #transactionCommitted(long, KernelVersion, int, long, long)}  committed transaction id}.
+     * @return highest seen {@link #transactionCommitted(long, long, KernelVersion, int, long, long)}  committed transaction id}.
      */
     long getLastCommittedTransactionId();
 
@@ -130,7 +146,7 @@ public interface TransactionIdStore {
     TransactionId getLastCommittedTransaction();
 
     /**
-     * @return highest seen gap-free {@link #transactionClosed(long, KernelVersion, long, long, int, long, long)}  closed transaction id}.
+     * @return highest seen gap-free {@link #transactionClosed(long, long, KernelVersion, long, long, int, long, long)}  closed transaction id}.
      */
     long getLastClosedTransactionId();
 
@@ -151,6 +167,7 @@ public interface TransactionIdStore {
      * Used by recovery, where last committed/closed transaction ids are set.
      *
      * @param transactionId transaction id that will be the last closed/committed id.
+     * @param transactionAppendIndex append index to set sequence to
      * @param kernelVersion kernel version of transaction that was last closed/committed
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
@@ -160,18 +177,21 @@ public interface TransactionIdStore {
      */
     void setLastCommittedAndClosedTransactionId(
             long transactionId,
+            long transactionAppendIndex,
             KernelVersion kernelVersion,
             int checksum,
             long commitTimestamp,
             long consensusIndex,
             long byteOffset,
-            long logVersion);
+            long logVersion,
+            long logsAppendIndex);
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method
      * may come in out-of-transaction-id order.
      *
      * @param transactionId the applied transaction id.
+     * @param appendIndex first append index of the closed transaction
      * @param kernelVersion the applied transaction kernel version.
      * @param logVersion version of log the committed entry has been written into.
      * @param byteOffset offset in the log file where start writing the next log entry.
@@ -181,6 +201,7 @@ public interface TransactionIdStore {
      */
     void transactionClosed(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
@@ -193,6 +214,7 @@ public interface TransactionIdStore {
      * set or overwritten.
      *
      * @param transactionId new last closed transaction id.
+     * @param appendIndex new last value of append index
      * @param kernelVersion new last closed transaction kernel version.
      * @param logVersion new last closed transaction log version.
      * @param byteOffset new last closed transaction offset.
@@ -202,10 +224,18 @@ public interface TransactionIdStore {
      */
     void resetLastClosedTransaction(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
             int checksum,
             long commitTimestamp,
             long consensusIndex);
+
+    /**
+     * Signals that some new chunk of info was added to transaction logs with new provided index and position
+     * @param appendIndex transaction logs latest append index
+     * @param logPositionBeforeAppendIndex log position before providedAppendIndex
+     */
+    void appendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex);
 }

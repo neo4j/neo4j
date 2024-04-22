@@ -290,6 +290,16 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
             public long checkpointLogVersion() {
                 return tailMetadata.getCheckpointLogVersion();
             }
+
+            @Override
+            public long lastAppendIndex() {
+                return tailMetadata.getLastCheckpointedAppendIndex();
+            }
+
+            @Override
+            public long lastCommittedTransactionAppendIndex() {
+                return tailMetadata.getLastCommittedTransaction().appendIndex();
+            }
         };
     }
 }

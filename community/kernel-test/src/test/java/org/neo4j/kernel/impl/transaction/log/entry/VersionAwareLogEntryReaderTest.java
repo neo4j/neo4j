@@ -49,7 +49,7 @@ class VersionAwareLogEntryReaderTest {
     void shouldReadAStartLogEntry(KernelVersion kernelVersion) throws IOException {
         // given
         final LogEntryStart start =
-                newStartEntry(kernelVersion, 1, 2, BASE_TX_CHECKSUM, new byte[] {4}, new LogPosition(0, 0));
+                newStartEntry(kernelVersion, 1, 2, 3, BASE_TX_CHECKSUM, new byte[] {4}, new LogPosition(0, 0));
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
         writeEntry(channel, start, serializationSet(kernelVersion, BINARY_VERSIONS));
@@ -78,6 +78,7 @@ class VersionAwareLogEntryReaderTest {
         checksums.put(KernelVersion.V5_15, 478867198);
         checksums.put(KernelVersion.V5_18, 333704405);
         checksums.put(KernelVersion.V5_19, -1306209812);
+        checksums.put(KernelVersion.V5_20, -1118972985);
         final LogEntryCommit commit = newCommitEntry(kernelVersion, 42, 21, checksums.get(kernelVersion));
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 

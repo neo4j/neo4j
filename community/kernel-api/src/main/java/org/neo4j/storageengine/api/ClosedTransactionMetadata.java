@@ -28,6 +28,7 @@ public record ClosedTransactionMetadata(TransactionId transactionId, LogPosition
         this(
                 new TransactionId(
                         metadata.number(),
+                        metadata.meta().appendIndex(),
                         KernelVersion.getForVersion(metadata.meta().kernelVersion()),
                         metadata.meta().checksum(),
                         metadata.meta().commitTimestamp(),

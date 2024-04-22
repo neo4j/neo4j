@@ -40,6 +40,8 @@ public interface CommittedCommandBatch {
 
     boolean isRollback();
 
+    long appendIndex();
+
     LogPosition previousBatchLogPosition();
 
     /**
@@ -51,9 +53,15 @@ public interface CommittedCommandBatch {
                 commandBatch().kernelVersion(),
                 checksum(),
                 timeWritten(),
-                commandBatch().consensusIndex());
+                commandBatch().consensusIndex(),
+                appendIndex());
     }
 
     record BatchInformation(
-            long txId, KernelVersion kernelVersion, int checksum, long timeWritten, long consensusIndex) {}
+            long txId,
+            KernelVersion kernelVersion,
+            int checksum,
+            long timeWritten,
+            long consensusIndex,
+            long appendIndex) {}
 }

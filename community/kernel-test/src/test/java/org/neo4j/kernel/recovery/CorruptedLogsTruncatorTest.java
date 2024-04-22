@@ -54,6 +54,7 @@ import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushableLogPositionAwareChannel;
@@ -101,12 +102,14 @@ class CorruptedLogsTruncatorTest {
     private CorruptedLogsTruncator logPruner;
     private SimpleLogVersionRepository logVersionRepository;
     private SimpleTransactionIdStore transactionIdStore;
+    private SimpleAppendIndexProvider appendIndexProvider;
 
     @BeforeEach
     void setUp() throws Exception {
         databaseDirectory = testDirectory.homePath();
         logVersionRepository = new SimpleLogVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
+        appendIndexProvider = new SimpleAppendIndexProvider();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseDirectory, fs)
                 .withBufferSizeBytes(ROTATION_THRESHOLD)
@@ -115,6 +118,7 @@ class CorruptedLogsTruncatorTest {
                 .withKernelVersionProvider(LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
+                .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .withConfig(Config.newBuilder()
@@ -259,6 +263,7 @@ class CorruptedLogsTruncatorTest {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionId,
+                        transactionId.id() + 7,
                         LATEST_KERNEL_VERSION,
                         new LogPosition(highestCorrectLogFileIndex, byteOffset - 1),
                         Instant.now(),
@@ -270,6 +275,7 @@ class CorruptedLogsTruncatorTest {
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionId,
+                            transactionId.id() + 7,
                             LATEST_KERNEL_VERSION,
                             new LogPosition(highestCorrectLogFileIndex, byteOffset + 1),
                             Instant.now(),

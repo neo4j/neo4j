@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 
 import java.util.Arrays;
 import org.neo4j.kernel.KernelVersion;
@@ -59,6 +60,10 @@ public class LogEntryStart extends AbstractVersionAwareLogEntry {
 
     public byte[] getAdditionalHeader() {
         return additionalHeader;
+    }
+
+    public long getAppendIndex() {
+        return BASE_APPEND_INDEX;
     }
 
     public int getPreviousChecksum() {

@@ -82,11 +82,13 @@ public interface CommandBatchToApply extends CommandStream, AutoCloseable {
 
     /**
      * Invoked by commit process after this batch of commands was applied to transaction log
+     *
+     * @param appendIndex append index of newly added batch
      * @param beforeCommit log position before append
      * @param positionAfter log position after append
      * @param checksum checksum ot appended batch entries
      */
-    void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum);
+    void batchAppended(long appendIndex, LogPosition beforeCommit, LogPosition positionAfter, int checksum);
 
     @Override
     void close();

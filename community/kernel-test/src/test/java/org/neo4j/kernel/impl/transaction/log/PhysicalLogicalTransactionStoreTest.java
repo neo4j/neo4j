@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -75,6 +76,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.Panic;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -321,6 +323,7 @@ class PhysicalLogicalTransactionStoreTest {
         return LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withTransactionIdStore(transactionIdStore)
+                .withAppendIndexProvider(new SimpleAppendIndexProvider())
                 .withLogVersionRepository(mock(LogVersionRepository.class))
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
@@ -389,7 +392,14 @@ class PhysicalLogicalTransactionStoreTest {
     private static TransactionAppender createTransactionAppender(
             TransactionIdStore transactionIdStore, LogFiles logFiles, Config config, JobScheduler jobScheduler) {
         return TransactionAppenderFactory.createTransactionAppender(
-                logFiles, transactionIdStore, config, DATABASE_PANIC, jobScheduler, NullLogProvider.getInstance());
+                logFiles,
+                transactionIdStore,
+                new SimpleAppendIndexProvider(),
+                config,
+                DATABASE_PANIC,
+                jobScheduler,
+                NullLogProvider.getInstance(),
+                new TransactionMetadataCache());
     }
 
     private static class FakeRecoveryVisitor implements RecoveryApplier {
@@ -453,7 +463,8 @@ class PhysicalLogicalTransactionStoreTest {
         public LogPosition rollbackTransactions(
                 LogPosition writePosition,
                 TransactionIdTracker transactionTracker,
-                CommittedCommandBatch.BatchInformation commandBatch) {
+                CommittedCommandBatch.BatchInformation commandBatch,
+                AppendIndexProvider appendIndexProvider) {
             return writePosition;
         }
 
@@ -482,7 +493,8 @@ class PhysicalLogicalTransactionStoreTest {
 
         @Override
         public void transactionsRecovered(
-                CommittedCommandBatch.BatchInformation committedCommandBatch,
+                CommittedCommandBatch.BatchInformation highestTransactionHeadCommandBatch,
+                AppendIndexProvider appendIndexProvider,
                 LogPosition lastTransactionPosition,
                 LogPosition positionAfterLastRecoveredTransaction,
                 LogPosition checkpointPosition,

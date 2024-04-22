@@ -137,6 +137,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         channel = createLogChannelForVersion(
                 currentLogVersion,
                 () -> context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles),
+                context::appendIndex,
                 context.getKernelVersionProvider(),
                 BASE_TX_CHECKSUM);
 
@@ -193,11 +194,15 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     public PhysicalLogVersionedStoreChannel createLogChannelForVersion(
             long version,
             LongSupplier lastTransactionIdSupplier,
+            LongSupplier lastAppendIndexSupplier,
             KernelVersionProvider kernelVersionProvider,
             int previousLogFileChecksum)
             throws IOException {
         return channelAllocator.createLogChannel(
-                version, lastTransactionIdSupplier.getAsLong(), previousLogFileChecksum);
+                version,
+                lastTransactionIdSupplier.getAsLong(),
+                lastAppendIndexSupplier.getAsLong(),
+                previousLogFileChecksum);
     }
 
     /**
@@ -254,6 +259,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
             channel = createLogChannelForVersion(
                     targetVersion,
                     context::committingTransactionId,
+                    context::appendIndex,
                     context.getKernelVersionProvider(),
                     BASE_TX_CHECKSUM);
 
@@ -661,7 +667,11 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
          */
         int checksum = writer.currentChecksum().orElse(BASE_TX_CHECKSUM);
         PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(
-                newLogVersion, lastTransactionIdSupplier, context.getKernelVersionProvider(), checksum);
+                newLogVersion,
+                lastTransactionIdSupplier,
+                context::appendIndex,
+                context.getKernelVersionProvider(),
+                checksum);
         currentLog.close();
 
         try {

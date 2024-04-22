@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
+import static org.neo4j.kernel.impl.transaction.log.entry.v520.DetachedCheckpointLogEntrySerializerV5_20.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
@@ -54,7 +54,7 @@ public class CheckpointLogFileRotationIT {
 
     static final String CHECKPOINT_REASON = "checkpoint for rotation test";
     static final LogPosition LOG_POSITION = new LogPosition(1000, 12345);
-    static final TransactionId TRANSACTION_ID = new TransactionId(100, LATEST_KERNEL_VERSION, 101, 102, 103);
+    static final TransactionId TRANSACTION_ID = new TransactionId(100, 101, LATEST_KERNEL_VERSION, 101, 102, 103);
 
     @Inject
     LogFiles logFiles;
@@ -94,6 +94,7 @@ public class CheckpointLogFileRotationIT {
             checkpointAppender.checkPoint(
                     NULL,
                     TRANSACTION_ID,
+                    TRANSACTION_ID.id() + 10,
                     LatestVersions.LATEST_KERNEL_VERSION,
                     LOG_POSITION,
                     Instant.now(),
@@ -130,6 +131,7 @@ public class CheckpointLogFileRotationIT {
                 appender.checkPoint(
                         NULL,
                         TRANSACTION_ID,
+                        TRANSACTION_ID.id() + 77,
                         LatestVersions.LATEST_KERNEL_VERSION,
                         LOG_POSITION,
                         Instant.now(),

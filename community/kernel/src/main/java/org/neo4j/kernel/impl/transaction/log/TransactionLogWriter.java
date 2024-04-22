@@ -70,6 +70,7 @@ public class TransactionLogWriter {
             CommandBatch batch,
             long transactionId,
             long chunkId,
+            long appendIndex,
             int previousChecksum,
             LogPosition previousBatchPosition)
             throws IOException {
@@ -78,7 +79,7 @@ public class TransactionLogWriter {
             kernelVersion = versionProvider.kernelVersion();
         }
         if (batch.isRollback()) {
-            return writer.writeRollbackEntry(kernelVersion, transactionId, batch.getTimeCommitted());
+            return writer.writeRollbackEntry(kernelVersion, transactionId, appendIndex, batch.getTimeCommitted());
         }
 
         if (batch.isFirst()) {
@@ -86,10 +87,12 @@ public class TransactionLogWriter {
                     kernelVersion,
                     batch.getTimeStarted(),
                     batch.getLatestCommittedTxWhenStarted(),
+                    appendIndex,
                     previousChecksum,
                     encodeLogIndex(batch.consensusIndex()));
         } else {
-            writer.writeChunkStartEntry(kernelVersion, batch.getTimeCommitted(), chunkId, previousBatchPosition);
+            writer.writeChunkStartEntry(
+                    kernelVersion, batch.getTimeCommitted(), chunkId, appendIndex, previousBatchPosition);
         }
 
         // Write all the commands to the log channel

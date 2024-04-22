@@ -48,7 +48,9 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -66,6 +68,7 @@ public class DefaultRecoveryService implements RecoveryService {
     private final boolean doParallelRecovery;
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private final CursorContextFactory contextFactory;
+    private final MetadataProvider metadataProvider;
 
     DefaultRecoveryService(
             StorageEngine storageEngine,
@@ -79,7 +82,8 @@ public class DefaultRecoveryService implements RecoveryService {
             Clock clock,
             boolean doParallelRecovery,
             BinarySupportedKernelVersions binarySupportedKernelVersions,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            MetadataProvider metadataProvider) {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
@@ -91,6 +95,7 @@ public class DefaultRecoveryService implements RecoveryService {
         this.doParallelRecovery = doParallelRecovery;
         this.binarySupportedKernelVersions = binarySupportedKernelVersions;
         this.contextFactory = contextFactory;
+        this.metadataProvider = metadataProvider;
         this.recoveryStartInformationProvider = new RecoveryStartInformationProvider(logFiles, monitor);
     }
 
@@ -112,7 +117,8 @@ public class DefaultRecoveryService implements RecoveryService {
     public LogPosition rollbackTransactions(
             LogPosition writePosition,
             TransactionIdTracker transactionTracker,
-            CommittedCommandBatch.BatchInformation lastCommittedBatch)
+            CommittedCommandBatch.BatchInformation lastCommittedBatch,
+            AppendIndexProvider appendIndexProvider)
             throws IOException {
         long[] notCompletedTransactions = transactionTracker.notCompletedTransactions();
         if (notCompletedTransactions.length == 0) {
@@ -129,7 +135,8 @@ public class DefaultRecoveryService implements RecoveryService {
             var entryWriter = new LogEntryWriter<>(writerChannel, binarySupportedKernelVersions);
             long time = clock.millis();
             for (long notCompletedTransaction : notCompletedTransactions) {
-                entryWriter.writeRollbackEntry(kernelVersion, notCompletedTransaction, time);
+                entryWriter.writeRollbackEntry(
+                        kernelVersion, notCompletedTransaction, appendIndexProvider.nextAppendIndex(), time);
             }
             return writerChannel.getCurrentLogPosition();
         }
@@ -152,7 +159,8 @@ public class DefaultRecoveryService implements RecoveryService {
 
     @Override
     public void transactionsRecovered(
-            CommittedCommandBatch.BatchInformation lastRecoveredBatch,
+            CommittedCommandBatch.BatchInformation highestTransactionRecoveredBatch,
+            AppendIndexProvider recoverAppendIndexProvider,
             LogPosition lastRecoveredTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction,
             LogPosition checkpointPosition,
@@ -173,6 +181,7 @@ public class DefaultRecoveryService implements RecoveryService {
                     logVersion);
             transactionIdStore.resetLastClosedTransaction(
                     lastClosedTransactionId.id(),
+                    lastClosedTransaction.transactionId().appendIndex(),
                     versionProvider.kernelVersion(),
                     logVersion,
                     fromKernelVersion(versionProvider.kernelVersion()).getHeaderSize(),
@@ -182,22 +191,24 @@ public class DefaultRecoveryService implements RecoveryService {
             logVersionRepository.setCurrentLogVersion(logVersion);
 
             // cleanup checkpoint log files
-            tryRemoveLegacyCheckpointFiles();
             logVersionRepository.setCheckpointLogVersion(
                     Math.max(INITIAL_LOG_VERSION, logFiles.getCheckpointFile().getHighestLogVersion()));
+            tryRemoveLegacyCheckpointFiles();
 
             return;
         }
-        if (lastRecoveredBatch != null) {
+        if (highestTransactionRecoveredBatch != null) {
             transactionIdStore.setLastCommittedAndClosedTransactionId(
-                    lastRecoveredBatch.txId(),
-                    lastRecoveredBatch.kernelVersion(),
-                    lastRecoveredBatch.checksum(),
-                    lastRecoveredBatch.timeWritten(),
-                    lastRecoveredBatch.consensusIndex(),
+                    highestTransactionRecoveredBatch.txId(),
+                    highestTransactionRecoveredBatch.appendIndex(),
+                    highestTransactionRecoveredBatch.kernelVersion(),
+                    highestTransactionRecoveredBatch.checksum(),
+                    highestTransactionRecoveredBatch.timeWritten(),
+                    highestTransactionRecoveredBatch.consensusIndex(),
                     lastRecoveredTransactionPosition.getByteOffset(),
-                    lastRecoveredTransactionPosition.getLogVersion());
-            var lastRecoveredTxId = lastRecoveredBatch.txId();
+                    lastRecoveredTransactionPosition.getLogVersion(),
+                    recoverAppendIndexProvider.getLastAppendIndex());
+            var lastRecoveredTxId = highestTransactionRecoveredBatch.txId();
             // if there will be index population after that, it will have proper visibility
             contextFactory.init(() -> new TransactionIdSnapshot(lastRecoveredTxId), () -> lastRecoveredTxId);
         } else {
@@ -205,12 +216,13 @@ public class DefaultRecoveryService implements RecoveryService {
             // this happens when we read past end of the log file or can't read it at all but recovery was enforced
             // which means that log files after last recovered position can't be trusted, and we need to reset last
             // closed tx log info
-            long lastClosedTransactionId = transactionIdStore.getLastClosedTransactionId();
+            var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
             log.warn("Recovery detected that transaction logs tail can't be trusted. "
                     + "Resetting offset of last closed transaction to point to the last recoverable log position: "
                     + positionAfterLastRecoveredTransaction);
             transactionIdStore.resetLastClosedTransaction(
-                    lastClosedTransactionId,
+                    lastClosedTransaction.transactionId().id(),
+                    lastClosedTransaction.transactionId().appendIndex(),
                     versionProvider.kernelVersion(),
                     positionAfterLastRecoveredTransaction.getLogVersion(),
                     positionAfterLastRecoveredTransaction.getByteOffset(),

@@ -53,6 +53,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     previousCommittedTx,
+                    previousCommittedTx,
                     null,
                     getHeaderSize(),
                     UNKNOWN_LOG_SEGMENT_SIZE,
@@ -69,6 +70,7 @@ public enum LogFormat {
         public LogHeader newHeader(
                 long logVersion,
                 long lastCommittedTxId,
+                long appendIndex,
                 StoreId storeId,
                 int segmentBlockSize,
                 int previousLogFileChecksum,
@@ -104,6 +106,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     previousCommittedTx,
+                    previousCommittedTx,
                     null,
                     getHeaderSize(),
                     UNKNOWN_LOG_SEGMENT_SIZE,
@@ -120,6 +123,7 @@ public enum LogFormat {
         public LogHeader newHeader(
                 long logVersion,
                 long lastCommittedTxId,
+                long appendIndex,
                 StoreId storeId,
                 int segmentBlockSize,
                 int previousLogFileChecksum,
@@ -141,7 +145,7 @@ public enum LogFormat {
      *   |          version          | last tx | store id | reserved |
      *  </pre>
      */
-    V8((byte) 8, 128, KernelVersion.V5_0, KernelVersion.getLatestVersion(Config.defaults()), UNKNOWN_LOG_SEGMENT_SIZE) {
+    V8((byte) 8, 128, KernelVersion.V5_0, KernelVersion.V5_19, UNKNOWN_LOG_SEGMENT_SIZE) {
         @Override
         public LogHeader deserializeHeader(long logVersion, ByteBuffer buffer) throws IOException {
             long previousCommittedTx = buffer.getLong();
@@ -150,6 +154,7 @@ public enum LogFormat {
             return new LogHeader(
                     getVersionByte(),
                     logVersion,
+                    previousCommittedTx,
                     previousCommittedTx,
                     storeId,
                     getHeaderSize(),
@@ -182,6 +187,7 @@ public enum LogFormat {
         public LogHeader newHeader(
                 long logVersion,
                 long lastCommittedTxId,
+                long appendIndex,
                 StoreId storeId,
                 int segmentBlockSize,
                 int previousLogFileChecksum,
@@ -190,6 +196,74 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     lastCommittedTxId,
+                    lastCommittedTxId,
+                    storeId,
+                    getHeaderSize(),
+                    UNKNOWN_LOG_SEGMENT_SIZE,
+                    BASE_TX_CHECKSUM,
+                    null);
+        }
+    },
+
+    V9(
+            (byte) 9,
+            128,
+            KernelVersion.V5_20,
+            KernelVersion.getLatestVersion(Config.defaults()),
+            UNKNOWN_LOG_SEGMENT_SIZE) {
+        @Override
+        public LogHeader deserializeHeader(long logVersion, ByteBuffer buffer) throws IOException {
+            long previousCommittedTx = buffer.getLong();
+            long appendIndex = buffer.getLong();
+            StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(buffer);
+            buffer.position(getHeaderSize()); // rest is reserved
+            return new LogHeader(
+                    getVersionByte(),
+                    logVersion,
+                    previousCommittedTx,
+                    appendIndex,
+                    storeId,
+                    getHeaderSize(),
+                    UNKNOWN_LOG_SEGMENT_SIZE,
+                    BASE_TX_CHECKSUM,
+                    null);
+        }
+
+        @Override
+        public void serializeHeader(ByteBuffer buffer, LogHeader logHeader) throws IOException {
+            ByteOrder originalOrder = buffer.order();
+            try {
+                buffer.order(ByteOrder.BIG_ENDIAN);
+                buffer.putLong(encodeLogVersion(
+                        logHeader.getLogVersion(),
+                        logHeader.getLogFormatVersion().getVersionByte()));
+                buffer.putLong(logHeader.getLastCommittedTxId());
+                buffer.putLong(logHeader.getLastAppendIndex());
+                StoreIdSerialization.serializeWithFixedSize(logHeader.getStoreId(), buffer);
+
+                // Pad rest with zeroes
+                while (buffer.position() < getHeaderSize()) {
+                    buffer.put((byte) 0);
+                }
+            } finally {
+                buffer.order(originalOrder);
+            }
+        }
+
+        @Override
+        public LogHeader newHeader(
+                long logVersion,
+                long lastCommittedTxId,
+                long appendIndex,
+                StoreId storeId,
+                int segmentBlockSize,
+                int previousLogFileChecksum,
+                KernelVersion kernelVersion) {
+            return new LogHeader(
+                    getVersionByte(),
+                    logVersion,
+                    lastCommittedTxId,
+                    appendIndex,
                     storeId,
                     getHeaderSize(),
                     UNKNOWN_LOG_SEGMENT_SIZE,
@@ -214,8 +288,8 @@ public enum LogFormat {
      *   |          version          | last tx | store id | block size | previous checksum | reserved |
      *  </pre>
      */
-    V9(
-            (byte) 9,
+    V10(
+            (byte) 10,
             128,
             KernelVersion.GLORIOUS_FUTURE,
             KernelVersion.GLORIOUS_FUTURE,
@@ -231,6 +305,7 @@ public enum LogFormat {
             return new LogHeader(
                     getVersionByte(),
                     logVersion,
+                    previousCommittedTx,
                     previousCommittedTx,
                     storeId,
                     getHeaderSize(),
@@ -266,6 +341,7 @@ public enum LogFormat {
         public LogHeader newHeader(
                 long logVersion,
                 long lastCommittedTxId,
+                long appendIndex,
                 StoreId storeId,
                 int segmentBlockSize,
                 int previousLogFileChecksum,
@@ -273,6 +349,7 @@ public enum LogFormat {
             return new LogHeader(
                     getVersionByte(),
                     logVersion,
+                    lastCommittedTxId,
                     lastCommittedTxId,
                     storeId,
                     getHeaderSize(),
@@ -324,6 +401,7 @@ public enum LogFormat {
     public abstract LogHeader newHeader(
             long logVersion,
             long lastCommittedTxId,
+            long lastAppendIndex,
             StoreId storeId,
             int segmentBlockSize,
             int previousLogFileChecksum,

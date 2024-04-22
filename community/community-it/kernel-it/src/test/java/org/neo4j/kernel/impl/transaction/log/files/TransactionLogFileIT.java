@@ -43,8 +43,8 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -69,14 +69,15 @@ class TransactionLogFileIT {
     private LogVersionRepository logVersionRepository;
 
     @Inject
-    private TransactionIdStore transactionIdStore;
+    private MetadataProvider metadataProvider;
 
     @Test
     @EnabledOnOs(OS.LINUX)
     void doNotScanDirectoryOnRotate() throws IOException {
         LogFiles logFiles = LogFilesBuilder.builder(
                         databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
-                .withTransactionIdStore(transactionIdStore)
+                .withTransactionIdStore(metadataProvider)
+                .withAppendIndexProvider(metadataProvider)
                 .withLogVersionRepository(logVersionRepository)
                 .withStoreId(STORE_ID)
                 .build();
@@ -112,8 +113,9 @@ class TransactionLogFileIT {
         var life = new LifeSupport();
         LogFiles logFiles = LogFilesBuilder.builder(
                         databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
-                .withTransactionIdStore(transactionIdStore)
+                .withTransactionIdStore(metadataProvider)
                 .withLogVersionRepository(logVersionRepository)
+                .withAppendIndexProvider(metadataProvider)
                 .withStoreId(STORE_ID)
                 .withMemoryTracker(memoryTracker)
                 .build();

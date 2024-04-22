@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryCommitV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryStartV4_2;
+import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryChunkStartV5_20;
+import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryRollbackV5_20;
+import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryStartV5_20;
 
 public final class LogEntryFactory {
     private LogEntryFactory() {}
@@ -33,12 +37,30 @@ public final class LogEntryFactory {
             KernelVersion version,
             long timeWritten,
             long lastCommittedTxWhenTransactionStarted,
+            long appendIndex,
             int previousChecksum,
             byte[] additionalHeader,
             LogPosition startPosition) {
         if (version.isAtLeast(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED)) {
-            return new LogEntryStart(
-                    version, timeWritten, lastCommittedTxWhenTransactionStarted, additionalHeader, startPosition);
+            // TODO: misha different log entry for envelops
+            return new LogEntryStartV5_20(
+                    version,
+                    timeWritten,
+                    lastCommittedTxWhenTransactionStarted,
+                    appendIndex,
+                    previousChecksum,
+                    additionalHeader,
+                    startPosition);
+        }
+        if (version.isAtLeast(VERSION_APPEND_INDEX_INTRODUCED)) {
+            return new LogEntryStartV5_20(
+                    version,
+                    timeWritten,
+                    lastCommittedTxWhenTransactionStarted,
+                    appendIndex,
+                    previousChecksum,
+                    additionalHeader,
+                    startPosition);
         }
         return new LogEntryStartV4_2(
                 version,
@@ -54,5 +76,19 @@ public final class LogEntryFactory {
             return new LogEntryCommit(version, txId, timeWritten);
         }
         return new LogEntryCommitV4_2(version, txId, timeWritten, checksum);
+    }
+
+    public static AbstractVersionAwareLogEntry newRollbackEntry(
+            KernelVersion kernelVersion, long transactionId, long appendIndex, long timeWritten) {
+        return new LogEntryRollbackV5_20(kernelVersion, transactionId, appendIndex, timeWritten, 0);
+    }
+
+    public static LogEntry newChunkStartEntry(
+            KernelVersion kernelVersion,
+            long timeWritten,
+            long chunkId,
+            long appendIndex,
+            LogPosition previousChunkStart) {
+        return new LogEntryChunkStartV5_20(kernelVersion, timeWritten, chunkId, appendIndex, previousChunkStart);
     }
 }

@@ -39,6 +39,7 @@ public class HighestTransactionId {
      * This method is thread-safe.
      *
      * @param transactionId transaction id to compare for highest.
+     * @param appendIndex transaction append index
      * @param kernelVersion transaction kernel version.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp commit time for transaction with {@code transaction}.
@@ -47,14 +48,19 @@ public class HighestTransactionId {
      * {@code false}.
      */
     public boolean offer(
-            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
+            long transactionId,
+            long appendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
         TransactionId high = highest.get();
         if (transactionId < high.id()) { // a higher id has already been offered
             return false;
         }
 
         TransactionId update =
-                new TransactionId(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex);
+                new TransactionId(transactionId, appendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
         while (!highest.compareAndSet(high, update)) {
             high = highest.get();
             if (high.id()
@@ -70,14 +76,21 @@ public class HighestTransactionId {
      * Overrides the highest transaction id value, no matter what it currently is. Used for initialization purposes.
      *
      * @param transactionId id of the transaction.
+     * @param appendIndex transaction append index
      * @param kernelVersion transaction kernel version.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp commit time for transaction with {@code transaction}.
      * @param consensusIndex consensus index for transaction with {@code transaction}.
      */
     public final void set(
-            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
-        highest.set(new TransactionId(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex));
+            long transactionId,
+            long appendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
+        highest.set(new TransactionId(
+                transactionId, appendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex));
     }
 
     /**

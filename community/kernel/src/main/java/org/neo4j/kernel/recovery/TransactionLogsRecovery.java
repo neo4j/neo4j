@@ -28,6 +28,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
 
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Stopwatch;
 
@@ -104,7 +106,9 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
 
         LogPosition recoveryToPosition = recoveryStartPosition;
         LogPosition lastTransactionPosition = recoveryStartPosition;
-        CommittedCommandBatch.BatchInformation lastCommandBatch = null;
+        CommittedCommandBatch.BatchInformation lastHighestTransactionBatchInfo = null;
+        CommittedCommandBatch.BatchInformation lastBatchInfo = null;
+        RecoveryRollbackAppendIndexProvider appendIndexProvider = null;
         if (!recoveryStartInformation.isMissingLogs()) {
             try {
                 reverseRecovery(recoveryStartInformation, transactionIdTracker, recoveryStartPosition);
@@ -124,9 +128,9 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                     while (fullRecovery && transactionsToRecover.next()) {
                         var nextCommandBatch = transactionsToRecover.get();
                         if (!recoveryPredicate.test(nextCommandBatch)) {
-                            monitor.partialRecovery(recoveryPredicate, lastCommandBatch);
+                            monitor.partialRecovery(recoveryPredicate, lastHighestTransactionBatchInfo);
                             fullRecovery = false;
-                            if (lastCommandBatch == null) {
+                            if (lastHighestTransactionBatchInfo == null) {
                                 // First transaction after checkpoint failed predicate test
                                 // we can't always load transaction before checkpoint to check what values we had there
                                 // since those logs may be pruned,
@@ -153,7 +157,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                                             + "Observed transaction id: %d, recovery criteria: %s.",
                                                     candidate.txId(), recoveryPredicate.describe()));
                                         }
-                                        lastCommandBatch = candidate.batchInformation();
+                                        lastHighestTransactionBatchInfo = candidate.batchInformation();
                                         lastTransactionPosition = beforeCheckpointCursor.position();
                                     } else {
                                         throw new RecoveryPredicateException(format(
@@ -180,9 +184,11 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                             } else {
                                 monitor.batchApplySkipped(nextCommandBatch);
                             }
-                            if (lastCommandBatch == null || lastCommandBatch.txId() < nextCommandBatch.txId()) {
-                                lastCommandBatch = nextCommandBatch.batchInformation();
+                            if (lastHighestTransactionBatchInfo == null
+                                    || lastHighestTransactionBatchInfo.txId() < nextCommandBatch.txId()) {
+                                lastHighestTransactionBatchInfo = nextCommandBatch.batchInformation();
                             }
+                            lastBatchInfo = nextCommandBatch.batchInformation();
                             lastTransactionPosition = transactionsToRecover.position();
                             recoveryToPosition = lastTransactionPosition;
                             reportProgress();
@@ -202,14 +208,17 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 if (failOnCorruptedLogFiles) {
                     throwUnableToCleanRecover(t);
                 }
-                if (lastCommandBatch != null) {
-                    monitor.failToRecoverTransactionsAfterCommit(t, lastCommandBatch, recoveryToPosition);
+                if (lastHighestTransactionBatchInfo != null) {
+                    monitor.failToRecoverTransactionsAfterCommit(
+                            t, lastHighestTransactionBatchInfo, recoveryToPosition);
                 } else {
                     monitor.failToRecoverTransactionsAfterPosition(t, recoveryStartPosition);
                 }
             }
             logsTruncator.truncate(recoveryToPosition);
-            recoveryService.rollbackTransactions(recoveryToPosition, transactionIdTracker, lastCommandBatch);
+            appendIndexProvider = new RecoveryRollbackAppendIndexProvider(lastBatchInfo);
+            recoveryService.rollbackTransactions(
+                    recoveryToPosition, transactionIdTracker, lastHighestTransactionBatchInfo, appendIndexProvider);
 
             closeProgress();
         }
@@ -217,7 +226,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         try (var cursorContext = contextFactory.create(RECOVERY_COMPLETED_TAG)) {
             final boolean missingLogs = recoveryStartInformation.isMissingLogs();
             recoveryService.transactionsRecovered(
-                    lastCommandBatch,
+                    lastHighestTransactionBatchInfo,
+                    appendIndexProvider,
                     lastTransactionPosition,
                     recoveryToPosition,
                     recoveryStartInformation.getCheckpointPosition(),
@@ -310,5 +320,25 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     @Override
     public void shutdown() throws Exception {
         schemaLife.shutdown();
+    }
+
+    private static class RecoveryRollbackAppendIndexProvider implements AppendIndexProvider {
+        private final MutableLong rollbackIndex;
+
+        public RecoveryRollbackAppendIndexProvider(CommittedCommandBatch.BatchInformation lastBatchInfo) {
+            this.rollbackIndex = lastBatchInfo == null
+                    ? new MutableLong(BASE_APPEND_INDEX)
+                    : new MutableLong(lastBatchInfo.appendIndex());
+        }
+
+        @Override
+        public long nextAppendIndex() {
+            return rollbackIndex.incrementAndGet();
+        }
+
+        @Override
+        public long getLastAppendIndex() {
+            return rollbackIndex.longValue();
+        }
     }
 }

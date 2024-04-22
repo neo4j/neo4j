@@ -49,6 +49,7 @@ import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryR
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -81,6 +82,7 @@ import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -133,7 +135,8 @@ class BatchingTransactionAppenderTest {
         path = testDirectory.file("transactions");
         when(logFiles.getLogFile()).thenReturn(logFile);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(new TransactionId(BASE_TX_ID, DEFAULT_BOOTSTRAP_VERSION, BASE_TX_CHECKSUM, 1, 2));
+                .thenReturn(new TransactionId(
+                        BASE_TX_ID, BASE_APPEND_INDEX, DEFAULT_BOOTSTRAP_VERSION, BASE_TX_CHECKSUM, 1, 2));
     }
 
     @Test
@@ -149,6 +152,7 @@ class BatchingTransactionAppenderTest {
             when(transactionIdStore.getLastCommittedTransaction())
                     .thenReturn(new TransactionId(
                             txId,
+                            txId + 2,
                             DEFAULT_BOOTSTRAP_VERSION,
                             BASE_TX_CHECKSUM,
                             BASE_TX_COMMIT_TIMESTAMP,
@@ -190,6 +194,7 @@ class BatchingTransactionAppenderTest {
             when(transactionIdStore.getLastCommittedTransaction())
                     .thenReturn(new TransactionId(
                             txId,
+                            txId + 2,
                             DEFAULT_BOOTSTRAP_VERSION,
                             BASE_TX_CHECKSUM,
                             BASE_TX_COMMIT_TIMESTAMP,
@@ -231,9 +236,9 @@ class BatchingTransactionAppenderTest {
             TransactionToApply batch = batchOf(batch1, batch2, batch3);
             appender.append(batch, logAppendEvent);
 
-            verify(logWriterSpy).append(eq(batch1), eq(2L), anyLong(), anyInt(), any(LogPosition.class));
-            verify(logWriterSpy).append(eq(batch2), eq(3L), anyLong(), anyInt(), any(LogPosition.class));
-            verify(logWriterSpy).append(eq(batch3), eq(4L), anyLong(), anyInt(), any(LogPosition.class));
+            verify(logWriterSpy).append(eq(batch1), eq(2L), anyLong(), anyLong(), anyInt(), any(LogPosition.class));
+            verify(logWriterSpy).append(eq(batch2), eq(3L), anyLong(), anyLong(), anyInt(), any(LogPosition.class));
+            verify(logWriterSpy).append(eq(batch3), eq(4L), anyLong(), anyLong(), anyInt(), any(LogPosition.class));
         }
     }
 
@@ -248,6 +253,7 @@ class BatchingTransactionAppenderTest {
                 LATEST_KERNEL_VERSION,
                 timeStarted,
                 latestCommittedTxWhenStarted,
+                latestCommittedTxWhenStarted + 7,
                 0,
                 additionalHeader,
                 LogPosition.UNSPECIFIED);
@@ -263,14 +269,15 @@ class BatchingTransactionAppenderTest {
             doReturn(nextTxId).when(transactionIdStore).nextCommittingTransactionId();
             doReturn(new TransactionId(
                             nextTxId,
+                            nextTxId + 2,
                             DEFAULT_BOOTSTRAP_VERSION,
                             BASE_TX_CHECKSUM,
                             BASE_TX_COMMIT_TIMESTAMP,
                             UNKNOWN_CONSENSUS_INDEX))
                     .when(transactionIdStore)
                     .getLastCommittedTransaction();
-            TransactionAppender appender =
-                    life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic));
+            TransactionAppender appender = life.add(new BatchingTransactionAppender(
+                    logFiles, transactionIdStore, databasePanic, new SimpleAppendIndexProvider(), positionCache));
 
             appender.append(
                     new TransactionToApply(
@@ -312,7 +319,13 @@ class BatchingTransactionAppenderTest {
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(latestCommittedTxWhenStarted);
 
         LogEntryStart start = newStartEntry(
-                LATEST_KERNEL_VERSION, 0L, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
+                LATEST_KERNEL_VERSION,
+                0L,
+                latestCommittedTxWhenStarted,
+                latestCommittedTxWhenStarted + 8,
+                0,
+                additionalHeader,
+                LogPosition.UNSPECIFIED);
         LogEntryCommit commit = newCommitEntry(
                 LATEST_KERNEL_VERSION, latestCommittedTxWhenStarted + 2, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
@@ -337,7 +350,7 @@ class BatchingTransactionAppenderTest {
         long txId = 3;
         String failureMessage = "Forces a failure";
         final var logHeader = LATEST_LOG_FORMAT.newHeader(
-                0, BASE_TX_ID, StoreId.UNKNOWN, 512, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                0, BASE_TX_ID, BASE_APPEND_INDEX, StoreId.UNKNOWN, 512, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
         PhysicalLogVersionedStoreChannel logChannel = mock(PhysicalLogVersionedStoreChannel.class);
         when(logChannel.getLogFormatVersion()).thenReturn(LATEST_LOG_FORMAT);
         FlushableLogPositionAwareChannel channel =
@@ -351,6 +364,7 @@ class BatchingTransactionAppenderTest {
         when(transactionIdStore.getLastCommittedTransaction())
                 .thenReturn(new TransactionId(
                         txId,
+                        txId + 2,
                         DEFAULT_BOOTSTRAP_VERSION,
                         BASE_TX_CHECKSUM,
                         BASE_TX_COMMIT_TIMESTAMP,
@@ -379,7 +393,14 @@ class BatchingTransactionAppenderTest {
         verify(transactionIdStore).nextCommittingTransactionId();
         verify(transactionIdStore, never())
                 .transactionClosed(
-                        eq(txId), eq(DEFAULT_BOOTSTRAP_VERSION), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
+                        eq(txId),
+                        anyLong(),
+                        eq(DEFAULT_BOOTSTRAP_VERSION),
+                        anyLong(),
+                        anyLong(),
+                        anyInt(),
+                        anyLong(),
+                        anyLong());
         verify(databasePanic).panic(failure);
     }
 
@@ -407,12 +428,13 @@ class BatchingTransactionAppenderTest {
         when(transactionIdStore.getLastCommittedTransaction())
                 .thenReturn(new TransactionId(
                         txId,
+                        txId + 2,
                         DEFAULT_BOOTSTRAP_VERSION,
                         BASE_TX_CHECKSUM,
                         BASE_TX_COMMIT_TIMESTAMP,
                         UNKNOWN_CONSENSUS_INDEX));
-        TransactionAppender appender =
-                life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic));
+        TransactionAppender appender = life.add(new BatchingTransactionAppender(
+                logFiles, transactionIdStore, databasePanic, new SimpleAppendIndexProvider(), metadataCache));
 
         // WHEN
         CommandBatch commandBatch = mock(CommandBatch.class);
@@ -436,7 +458,14 @@ class BatchingTransactionAppenderTest {
         verify(transactionIdStore).nextCommittingTransactionId();
         verify(transactionIdStore, never())
                 .transactionClosed(
-                        eq(txId), eq(DEFAULT_BOOTSTRAP_VERSION), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
+                        eq(txId),
+                        anyLong(),
+                        eq(DEFAULT_BOOTSTRAP_VERSION),
+                        anyLong(),
+                        anyLong(),
+                        anyInt(),
+                        anyLong(),
+                        anyLong());
     }
 
     @Test
@@ -449,7 +478,7 @@ class BatchingTransactionAppenderTest {
         var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         var transaction = new CommittedTransactionRepresentation(
-                newStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                newStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, 4, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 singleTestCommand(),
                 newCommitEntry(LATEST_KERNEL_VERSION, 11, 1L, BASE_TX_CHECKSUM));
         TransactionToApply batch = new TransactionToApply(
@@ -460,7 +489,12 @@ class BatchingTransactionAppenderTest {
     }
 
     private BatchingTransactionAppender createTransactionAppender() {
-        return new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic);
+        return new BatchingTransactionAppender(
+                logFiles,
+                transactionIdStore,
+                databasePanic,
+                new SimpleAppendIndexProvider(),
+                new TransactionMetadataCache());
     }
 
     private static CommandBatch transaction(

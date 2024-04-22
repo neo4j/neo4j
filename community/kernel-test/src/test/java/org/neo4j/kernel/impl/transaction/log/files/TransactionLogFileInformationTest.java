@@ -67,7 +67,13 @@ class TransactionLogFileInformationTest {
         when(logHeaderCache.getLogHeader(version)).thenReturn(null);
         when(logFiles.getLogFile().versionExists(version)).thenReturn(true);
         LogHeader expectedHeader = LATEST_LOG_FORMAT.newHeader(
-                2, expected - 1L, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                2,
+                expected - 1L,
+                expected + 1L,
+                storeId,
+                UNKNOWN_LOG_SEGMENT_SIZE,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION);
         when(logFiles.getLogFile().extractHeader(version)).thenReturn(expectedHeader);
 
         long firstCommittedTxId = info.getFirstEntryId(version);
@@ -105,7 +111,13 @@ class TransactionLogFileInformationTest {
 
         long version = 10L;
         LogHeader expectedHeader = LATEST_LOG_FORMAT.newHeader(
-                2, expected - 1L, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                2,
+                expected - 1L,
+                expected + 1L,
+                storeId,
+                UNKNOWN_LOG_SEGMENT_SIZE,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION);
         when(logHeaderCache.getLogHeader(version)).thenReturn(expectedHeader);
 
         long firstCommittedTxId = info.getFirstEntryId(version);
@@ -122,7 +134,13 @@ class TransactionLogFileInformationTest {
         when(logHeaderCache.getLogHeader(version)).thenReturn(null);
         when(logFile.versionExists(version)).thenReturn(true);
         LogHeader expectedHeader = LATEST_LOG_FORMAT.newHeader(
-                2, expected - 1L, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                2,
+                expected - 1L,
+                expected + 1L,
+                storeId,
+                UNKNOWN_LOG_SEGMENT_SIZE,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION);
         when(logFile.extractHeader(version)).thenReturn(expectedHeader);
         when(logFile.hasAnyEntries(version)).thenReturn(true);
 
@@ -141,7 +159,13 @@ class TransactionLogFileInformationTest {
         when(logFile.versionExists(version)).thenReturn(true);
 
         LogHeader expectedHeader = LATEST_LOG_FORMAT.newHeader(
-                2, expected - 1L, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                2,
+                expected - 1L,
+                expected + 1L,
+                storeId,
+                UNKNOWN_LOG_SEGMENT_SIZE,
+                BASE_TX_CHECKSUM,
+                LATEST_KERNEL_VERSION);
         when(logHeaderCache.getLogHeader(version)).thenReturn(expectedHeader);
         when(logFile.hasAnyEntries(version)).thenReturn(true);
 
@@ -171,7 +195,7 @@ class TransactionLogFileInformationTest {
         var fileInfo = new TransactionLogFileInformation(logFiles, logHeaderCache, context, () -> logEntryReader);
 
         var expectedHeader = LATEST_LOG_FORMAT.newHeader(
-                2, 3, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                2, 3, 4, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
         when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
         when(logFile.versionExists(anyLong())).thenReturn(true);
@@ -189,11 +213,11 @@ class TransactionLogFileInformationTest {
         var readableLogChannel = mock(ReadableLogChannel.class);
         when(logEntryReader.readLogEntry(readableLogChannel))
                 .thenReturn(newStartEntry(
-                        LatestVersions.LATEST_KERNEL_VERSION, 1, 1, 1, new byte[] {}, LogPosition.UNSPECIFIED));
+                        LatestVersions.LATEST_KERNEL_VERSION, 1, 1, 1, 1, new byte[] {}, LogPosition.UNSPECIFIED));
         var fileInfo = new TransactionLogFileInformation(logFiles, logHeaderCache, context, () -> logEntryReader);
 
         var expectedHeader = LATEST_LOG_FORMAT.newHeader(
-                2, 3, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                2, 3, 4, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
         when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
         when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
         when(logFile.versionExists(anyLong())).thenReturn(true);

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
 
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -45,6 +47,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     public SimpleTransactionIdStore() {
         this(
                 BASE_TX_ID,
+                BASE_APPEND_INDEX,
                 KernelVersion.DEFAULT_BOOTSTRAP_VERSION,
                 BASE_TX_CHECKSUM,
                 BASE_TX_COMMIT_TIMESTAMP,
@@ -55,6 +58,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
 
     public SimpleTransactionIdStore(
             long previouslyCommittedTxId,
+            long appendIndex,
             KernelVersion kernelVersion,
             int checksum,
             long previouslyCommittedTxCommitTimestamp,
@@ -64,12 +68,14 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
         assert previouslyCommittedTxId >= BASE_TX_ID : "cannot start from a tx id less than BASE_TX_ID";
         setLastCommittedAndClosedTransactionId(
                 previouslyCommittedTxId,
+                appendIndex,
                 kernelVersion,
                 checksum,
                 previouslyCommittedTxCommitTimestamp,
                 previousConsensusIndex,
                 previouslyCommittedTxLogByteOffset,
-                previouslyCommittedTxLogVersion);
+                previouslyCommittedTxLogVersion,
+                appendIndex);
     }
 
     @Override
@@ -84,11 +90,16 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
 
     @Override
     public synchronized void transactionCommitted(
-            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
+            long transactionId,
+            long appendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
         TransactionId current = committedTransactionId.get();
         if (current == null || transactionId > current.id()) {
-            committedTransactionId.set(
-                    new TransactionId(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex));
+            committedTransactionId.set(new TransactionId(
+                    transactionId, appendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex));
         }
     }
 
@@ -120,23 +131,33 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId,
+            long transactionAppendIndex,
             KernelVersion kernelVersion,
             int checksum,
             long commitTimestamp,
             long consensusIndex,
             long byteOffset,
-            long logVersion) {
+            long logVersion,
+            long appendIndex) {
         committingTransactionId.set(transactionId);
-        committedTransactionId.set(
-                new TransactionId(transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex));
+        committedTransactionId.set(new TransactionId(
+                transactionId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex));
         closedTransactionId.set(
                 transactionId,
-                new Meta(logVersion, byteOffset, kernelVersion.version(), checksum, commitTimestamp, consensusIndex));
+                new Meta(
+                        logVersion,
+                        byteOffset,
+                        kernelVersion.version(),
+                        checksum,
+                        commitTimestamp,
+                        consensusIndex,
+                        transactionAppendIndex));
     }
 
     @Override
     public void transactionClosed(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
@@ -145,12 +166,20 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
             long consensusIndex) {
         closedTransactionId.offer(
                 transactionId,
-                new Meta(logVersion, byteOffset, kernelVersion.version(), checksum, commitTimestamp, consensusIndex));
+                new Meta(
+                        logVersion,
+                        byteOffset,
+                        kernelVersion.version(),
+                        checksum,
+                        commitTimestamp,
+                        consensusIndex,
+                        appendIndex));
     }
 
     @Override
     public void resetLastClosedTransaction(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             long byteOffset,
             long logVersion,
@@ -159,6 +188,16 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
             long consensusIndex) {
         closedTransactionId.set(
                 transactionId,
-                new Meta(logVersion, byteOffset, kernelVersion.version(), checksum, commitTimestamp, consensusIndex));
+                new Meta(
+                        logVersion,
+                        byteOffset,
+                        kernelVersion.version(),
+                        checksum,
+                        commitTimestamp,
+                        consensusIndex,
+                        appendIndex));
     }
+
+    @Override
+    public void appendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex) {}
 }

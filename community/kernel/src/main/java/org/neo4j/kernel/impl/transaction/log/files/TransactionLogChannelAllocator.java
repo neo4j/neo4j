@@ -59,7 +59,8 @@ public class TransactionLogChannelAllocator {
     }
 
     public PhysicalLogVersionedStoreChannel createLogChannel(
-            long version, long lastCommittedTransactionId, int previousLogFileChecksum) throws IOException {
+            long version, long lastCommittedTransactionId, long lastAppendIndex, int previousLogFileChecksum)
+            throws IOException {
         AllocatedFile allocatedFile = allocateFile(version);
         var storeChannel = allocatedFile.storeChannel();
         var logFile = allocatedFile.path();
@@ -74,6 +75,7 @@ public class TransactionLogChannelAllocator {
                         .newHeader(
                                 version,
                                 lastCommittedTransactionId,
+                                lastAppendIndex,
                                 logFilesContext.getStoreId(),
                                 logFilesContext.getEnvelopeSegmentBlockSizeBytes(),
                                 previousLogFileChecksum,

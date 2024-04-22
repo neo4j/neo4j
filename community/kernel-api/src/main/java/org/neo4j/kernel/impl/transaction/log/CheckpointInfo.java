@@ -37,6 +37,7 @@ public record CheckpointInfo(
         KernelVersion kernelVersion,
         byte kernelVersionByte,
         TransactionId transactionId,
+        long appendIndex,
         String reason,
         boolean consensusIndexInCheckpoint)
         implements KernelVersionProvider {
@@ -49,6 +50,7 @@ public record CheckpointInfo(
             KernelVersion kernelVersion,
             byte kernelVersionByte,
             TransactionId transactionId,
+            long appendIndex,
             String reason) {
         this(
                 transactionLogPosition,
@@ -59,6 +61,7 @@ public record CheckpointInfo(
                 kernelVersion,
                 kernelVersionByte,
                 transactionId,
+                appendIndex,
                 reason,
                 true);
     }

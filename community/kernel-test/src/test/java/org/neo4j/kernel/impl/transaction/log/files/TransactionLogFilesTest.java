@@ -257,8 +257,8 @@ class TransactionLogFilesTest {
     @Test
     void fileWithoutEntriesDoesNotHaveThemIndependentlyOfItsSize() throws Exception {
         final var logFile = (TransactionLogFile) createLogFiles().getLogFile();
-        try (PhysicalLogVersionedStoreChannel channel =
-                logFile.createLogChannelForVersion(1, () -> 1L, LATEST_KERNEL_VERSION_PROVIDER, BASE_TX_CHECKSUM)) {
+        try (PhysicalLogVersionedStoreChannel channel = logFile.createLogChannelForVersion(
+                1, () -> 1L, () -> 1L, LATEST_KERNEL_VERSION_PROVIDER, BASE_TX_CHECKSUM)) {
             assertThat(channel.size()).isGreaterThanOrEqualTo(LATEST_LOG_FORMAT.getHeaderSize());
             assertFalse(logFile.hasAnyEntries(1));
         }

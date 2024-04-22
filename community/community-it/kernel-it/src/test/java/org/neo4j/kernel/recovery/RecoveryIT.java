@@ -835,13 +835,12 @@ class RecoveryIT {
 
         // restart in normal mode
         GraphDatabaseAPI db = createDatabase();
-        // and we can see that checkpoint files sequence was also reset to 0 again
-        assertEquals(
-                0,
-                db.getDependencyResolver()
-                        .resolveDependency(LogFiles.class)
-                        .getCheckpointFile()
-                        .getCurrentDetachedLogVersion());
+
+        // we have only one checkpoint file now with the highest version
+        var restoredCheckpoint =
+                db.getDependencyResolver().resolveDependency(LogFiles.class).getCheckpointFile();
+        assertEquals(12, restoredCheckpoint.getCurrentDetachedLogVersion());
+        assertEquals(1, restoredCheckpoint.getDetachedCheckpointFiles().length);
     }
 
     @Test
@@ -1940,11 +1939,12 @@ class RecoveryIT {
         var checkpointFile =
                 db.getDependencyResolver().resolveDependency(LogFiles.class).getCheckpointFile();
         var appender = (DetachedCheckpointAppender) checkpointFile.getCheckpointAppender();
-        var transactionId = new TransactionId(100, LATEST_KERNEL_VERSION, 101, 102, 103);
+        var transactionId = new TransactionId(100, 101, LATEST_KERNEL_VERSION, 101, 102, 103);
         appender.rotate();
         appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,
+                transactionId.id() + 1,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
                 Instant.now(),
@@ -1953,6 +1953,7 @@ class RecoveryIT {
         appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,
+                transactionId.id() + 1,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
                 Instant.now(),
@@ -1961,6 +1962,7 @@ class RecoveryIT {
         appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,
+                transactionId.id() + 1,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
                 Instant.now(),

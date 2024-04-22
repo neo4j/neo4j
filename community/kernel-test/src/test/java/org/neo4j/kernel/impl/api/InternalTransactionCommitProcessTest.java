@@ -110,13 +110,22 @@ class InternalTransactionCommitProcessTest {
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
         verify(transactionIdStore)
                 .transactionClosed(
-                        eq(txId), any(KernelVersion.class), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
+                        eq(txId),
+                        anyLong(),
+                        any(KernelVersion.class),
+                        anyLong(),
+                        anyLong(),
+                        anyInt(),
+                        anyLong(),
+                        anyLong());
     }
 
     @Test
     void shouldSuccessfullyCommitTransactionWithNoCommands() throws Exception {
         // GIVEN
         long txId = 11;
+        long appendIndex = txId + 7;
+
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
         TransactionAppender appender = new TestableTransactionAppender();
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
@@ -141,7 +150,7 @@ class InternalTransactionCommitProcessTest {
                         noCommandTx,
                         NULL_CONTEXT,
                         StoreCursors.NULL,
-                        new FakeCommitment(txId, transactionIdStore, true),
+                        new FakeCommitment(txId, appendIndex, transactionIdStore, true),
                         new IdStoreTransactionIdGenerator(transactionIdStore)),
                 transactionWriteEvent,
                 INTERNAL);
@@ -149,6 +158,7 @@ class InternalTransactionCommitProcessTest {
         verify(transactionIdStore)
                 .transactionCommitted(
                         txId,
+                        appendIndex,
                         DEFAULT_BOOTSTRAP_VERSION,
                         FakeCommitment.CHECKSUM,
                         FakeCommitment.TIMESTAMP,

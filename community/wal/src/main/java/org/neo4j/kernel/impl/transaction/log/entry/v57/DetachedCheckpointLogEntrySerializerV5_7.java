@@ -126,8 +126,9 @@ public class DetachedCheckpointLogEntrySerializerV5_7 extends LogEntrySerializer
         byte[] storeIdBuffer = new byte[MAX_STORE_ID_LENGTH];
         channel.get(storeIdBuffer, storeIdBuffer.length);
         StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(ByteBuffer.wrap(storeIdBuffer));
+        long txId = channel.getLong();
         var transactionId =
-                new TransactionId(channel.getLong(), version, channel.getInt(), channel.getLong(), channel.getLong());
+                new TransactionId(txId, txId, version, channel.getInt(), channel.getLong(), channel.getLong());
         short reasonBytesLength = channel.getShort();
         byte[] bytes = new byte[MAX_DESCRIPTION_LENGTH];
         channel.get(bytes, MAX_DESCRIPTION_LENGTH);

@@ -78,6 +78,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
@@ -187,6 +188,7 @@ class RecoveryCorruptedTransactionLogIT {
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionIdStore.getLastCommittedTransaction(),
+                            transactionIdStore.getLastCommittedTransaction().id() + 1,
                             LATEST_KERNEL_VERSION,
                             logOffsetBeforeTestTransactions,
                             Instant.now(),
@@ -233,6 +235,7 @@ class RecoveryCorruptedTransactionLogIT {
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionIdStore.getLastCommittedTransaction(),
+                            transactionIdStore.getLastCommittedTransaction().id() + 1,
                             LATEST_KERNEL_VERSION,
                             logOffsetBeforeTestTransactions,
                             Instant.now(),
@@ -277,6 +280,7 @@ class RecoveryCorruptedTransactionLogIT {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionIdStore.getLastCommittedTransaction(),
+                        transactionIdStore.getLastCommittedTransaction().id() + 7,
                         LATEST_KERNEL_VERSION,
                         logOffsetBeforeTestTransactions,
                         Instant.now(),
@@ -544,6 +548,7 @@ class RecoveryCorruptedTransactionLogIT {
                 checkpointAppender.checkPoint(
                         LogCheckPointEvent.NULL,
                         UNKNOWN_TRANSACTION_ID,
+                        UNKNOWN_TRANSACTION_ID.id() + 8,
                         LATEST_KERNEL_VERSION,
                         new LogPosition(0, HEADER_OFFSET),
                         Instant.now(),
@@ -1098,6 +1103,7 @@ class RecoveryCorruptedTransactionLogIT {
         LogFiles internalLogFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(versionRepository)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withAppendIndexProvider(new SimpleAppendIndexProvider())
                 .withStoreId(new StoreId(4, 5, "engine-1", "format-1", 1, 2))
                 .withStorageEngineFactory(StorageEngineFactory.selectStorageEngine(Config.defaults()))
                 .build();
@@ -1115,7 +1121,7 @@ class RecoveryCorruptedTransactionLogIT {
             commands.add(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(2), new NodeRecord(3)));
             CompleteTransaction transaction = new CompleteTransaction(
                     commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LATEST_KERNEL_VERSION, ANONYMOUS);
-            writer.append(transaction, 1000, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM, LogPosition.UNSPECIFIED);
+            writer.append(transaction, 1000, 1001, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM, LogPosition.UNSPECIFIED);
         }
     }
 
@@ -1136,6 +1142,7 @@ class RecoveryCorruptedTransactionLogIT {
         return LogFilesBuilder.builder(databaseLayout, fileSystem, LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withAppendIndexProvider(new SimpleAppendIndexProvider())
                 .withStoreId(storeId)
                 .withLogProvider(logProvider)
                 .withStorageEngineFactory(StorageEngineFactory.selectStorageEngine(Config.defaults()))
@@ -1256,6 +1263,7 @@ class RecoveryCorruptedTransactionLogIT {
                 KernelVersion version,
                 long timeWritten,
                 long latestCommittedTxWhenStarted,
+                long appendIndex,
                 int previousChecksum,
                 byte[] additionalHeaderData)
                 throws IOException {
@@ -1277,6 +1285,7 @@ class RecoveryCorruptedTransactionLogIT {
                 KernelVersion version,
                 long timeWritten,
                 long latestCommittedTxWhenStarted,
+                long appendIndex,
                 int previousChecksum,
                 byte[] additionalHeaderData)
                 throws IOException {

@@ -26,6 +26,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
@@ -40,6 +41,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -54,6 +56,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.HealthEventGenerator;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -77,8 +80,9 @@ class DetachedCheckpointAppenderTest {
     private final long rotationThreshold = ByteUnit.mebiBytes(1);
     private final DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
+    private final AppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
-            2L, LATEST_KERNEL_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
+            2L, 3L, LATEST_KERNEL_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
     private CheckpointAppender checkpointAppender;
     private LogFiles logFiles;
 
@@ -106,6 +110,7 @@ class DetachedCheckpointAppenderTest {
                 () -> checkpointAppender.checkPoint(
                         LogCheckPointEvent.NULL,
                         UNKNOWN_TRANSACTION_ID,
+                        BASE_APPEND_INDEX,
                         LATEST_KERNEL_VERSION,
                         logPosition,
                         Instant.now(),
@@ -125,6 +130,7 @@ class DetachedCheckpointAppenderTest {
         assertDoesNotThrow(() -> appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
+                BASE_APPEND_INDEX,
                 LATEST_KERNEL_VERSION,
                 UNSPECIFIED,
                 Instant.now(),
@@ -142,6 +148,7 @@ class DetachedCheckpointAppenderTest {
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
+                BASE_APPEND_INDEX,
                 LATEST_KERNEL_VERSION,
                 logPosition1,
                 Instant.now(),
@@ -149,6 +156,7 @@ class DetachedCheckpointAppenderTest {
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
+                BASE_APPEND_INDEX,
                 LATEST_KERNEL_VERSION,
                 logPosition2,
                 Instant.now(),
@@ -156,6 +164,7 @@ class DetachedCheckpointAppenderTest {
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
+                BASE_APPEND_INDEX,
                 LATEST_KERNEL_VERSION,
                 logPosition3,
                 Instant.now(),
@@ -173,6 +182,7 @@ class DetachedCheckpointAppenderTest {
         return LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)
+                .withAppendIndexProvider(appendIndexProvider)
                 .withDatabaseHealth(databaseHealth)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)

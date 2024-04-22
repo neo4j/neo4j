@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
 
 public record RollbackChunkRepresentation(
-        KernelVersion kernelVersion, long transactionId, long timeWritten, int checksum)
+        KernelVersion kernelVersion, long transactionId, long appendIndex, long timeWritten, int checksum)
         implements CommittedCommandBatch {
 
     @Override
@@ -58,7 +58,7 @@ public record RollbackChunkRepresentation(
 
     @Override
     public int serialize(LogEntryWriter<? extends WritableChannel> writer) throws IOException {
-        return writer.writeRollbackEntry(kernelVersion, transactionId, timeWritten);
+        return writer.writeRollbackEntry(kernelVersion, transactionId, appendIndex, timeWritten);
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.DEFAULT_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
@@ -95,6 +96,7 @@ public final class LogChannelUtils {
 
     private static LogHeader getLogHeader(KernelVersion kernelVersion) {
         LogFormat logFormat = LogFormat.fromKernelVersion(kernelVersion);
-        return logFormat.newHeader(0, 0, StoreId.UNKNOWN, DEFAULT_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, kernelVersion);
+        return logFormat.newHeader(
+                0, 0, BASE_APPEND_INDEX, StoreId.UNKNOWN, DEFAULT_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM, kernelVersion);
     }
 }

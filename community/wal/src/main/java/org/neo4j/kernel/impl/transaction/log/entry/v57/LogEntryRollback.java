@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.string.Mask;
 
 public class LogEntryRollback extends AbstractVersionAwareLogEntry {
-    private final long transactionId;
-    private final long timeWritten;
-    private final int checksum;
+    protected final long transactionId;
+    protected final long timeWritten;
+    protected final int checksum;
 
     public LogEntryRollback(KernelVersion kernelVersion, long transactionId, long timeWritten, int checksum) {
         super(kernelVersion, TX_ROLLBACK);
@@ -38,6 +38,10 @@ public class LogEntryRollback extends AbstractVersionAwareLogEntry {
     }
 
     public long getTransactionId() {
+        return transactionId;
+    }
+
+    public long getAppendIndex() {
         return transactionId;
     }
 

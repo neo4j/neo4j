@@ -30,6 +30,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corr
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
@@ -54,6 +55,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogIndexEncoding;
@@ -88,6 +90,7 @@ class DetachedLogTailScannerTest {
     protected AssertableLogProvider logProvider;
     protected LogVersionRepository logVersionRepository;
     protected TransactionIdStore transactionIdStore;
+    private SimpleAppendIndexProvider appendIndexProvider;
 
     private static Stream<Arguments> params() {
         return Stream.of(arguments(1, 2), arguments(42, 43));
@@ -97,6 +100,7 @@ class DetachedLogTailScannerTest {
     void setUp() throws IOException {
         logVersionRepository = new SimpleLogVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
+        appendIndexProvider = new SimpleAppendIndexProvider();
         logProvider = new AssertableLogProvider();
         logFiles = createLogFiles();
     }
@@ -106,6 +110,7 @@ class DetachedLogTailScannerTest {
         return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
+                .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .withLogProvider(logProvider)
@@ -121,7 +126,14 @@ class DetachedLogTailScannerTest {
             throws IOException {
         separateCheckpointFile
                 .getCheckpointAppender()
-                .checkPoint(LogCheckPointEvent.NULL, transactionId, kernelVersion, logPosition, Instant.now(), "test");
+                .checkPoint(
+                        LogCheckPointEvent.NULL,
+                        transactionId,
+                        transactionId.id() + 7,
+                        kernelVersion,
+                        logPosition,
+                        Instant.now(),
+                        "test");
     }
 
     @Test
@@ -547,6 +559,7 @@ class DetachedLogTailScannerTest {
                         commit(transactionId),
                         checkPoint(new TransactionId(
                                 transactionId,
+                                transactionId,
                                 LATEST_KERNEL_VERSION,
                                 BASE_TX_CHECKSUM,
                                 BASE_TX_COMMIT_TIMESTAMP,
@@ -578,6 +591,7 @@ class DetachedLogTailScannerTest {
                         start(999),
                         commit(transactionId),
                         checkPoint(new TransactionId(
+                                transactionId,
                                 transactionId,
                                 LATEST_KERNEL_VERSION,
                                 BASE_TX_CHECKSUM,
@@ -612,6 +626,7 @@ class DetachedLogTailScannerTest {
                         commit(transactionId),
                         checkPoint(new TransactionId(
                                 transactionId,
+                                transactionId,
                                 LATEST_KERNEL_VERSION,
                                 BASE_TX_CHECKSUM,
                                 BASE_TX_COMMIT_TIMESTAMP,
@@ -645,6 +660,7 @@ class DetachedLogTailScannerTest {
                         KernelVersion.V5_0,
                         checkPoint(new TransactionId(
                                 transactionId,
+                                transactionId,
                                 LATEST_KERNEL_VERSION,
                                 BASE_TX_CHECKSUM,
                                 BASE_TX_COMMIT_TIMESTAMP,
@@ -673,6 +689,7 @@ class DetachedLogTailScannerTest {
                         start(consensusIndex),
                         commit(transactionId),
                         checkPoint(new TransactionId(
+                                transactionId,
                                 transactionId,
                                 LATEST_KERNEL_VERSION,
                                 BASE_TX_CHECKSUM,
@@ -728,7 +745,12 @@ class DetachedLogTailScannerTest {
                         positions.put(entry, currentPosition);
                         if (entry instanceof StartEntry startEntry) {
                             writer.writeStartEntry(
-                                    kernelVersion, 0, 0, previousChecksum, startEntry.additionalHeader());
+                                    kernelVersion,
+                                    0,
+                                    0,
+                                    BASE_APPEND_INDEX,
+                                    previousChecksum,
+                                    startEntry.additionalHeader());
                         } else if (entry instanceof CommitEntry commitEntry) {
                             previousChecksum = writer.writeCommitEntry(kernelVersion, commitEntry.txId, 0);
                             lastTxId.set(commitEntry.txId);

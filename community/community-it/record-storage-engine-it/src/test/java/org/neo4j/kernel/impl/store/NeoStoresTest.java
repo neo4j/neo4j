@@ -376,23 +376,25 @@ class NeoStoresTest {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId(
                     40,
+                    41,
                     DEFAULT_BOOTSTRAP_VERSION,
                     4444,
                     BASE_TX_COMMIT_TIMESTAMP,
                     7,
                     LATEST_LOG_FORMAT.getHeaderSize(),
-                    0);
+                    0,
+                    44);
 
             // WHEN
-            store.transactionCommitted(42, DEFAULT_BOOTSTRAP_VERSION, 6666, BASE_TX_COMMIT_TIMESTAMP, 8);
+            store.transactionCommitted(42, 43, DEFAULT_BOOTSTRAP_VERSION, 6666, BASE_TX_COMMIT_TIMESTAMP, 8);
 
             // THEN
             assertEquals(
-                    new TransactionId(42, DEFAULT_BOOTSTRAP_VERSION, 6666, BASE_TX_COMMIT_TIMESTAMP, 8),
+                    new TransactionId(42, 43, DEFAULT_BOOTSTRAP_VERSION, 6666, BASE_TX_COMMIT_TIMESTAMP, 8),
                     store.getLastCommittedTransaction());
             assertEquals(
                     new ClosedTransactionMetadata(
-                            new TransactionId(40, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 7),
+                            new TransactionId(40, 41, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 7),
                             new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize())),
                     store.getLastClosedTransaction());
         }
@@ -407,23 +409,25 @@ class NeoStoresTest {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId(
                     40,
+                    41,
                     DEFAULT_BOOTSTRAP_VERSION,
                     4444,
                     BASE_TX_COMMIT_TIMESTAMP,
                     8,
                     LATEST_LOG_FORMAT.getHeaderSize(),
-                    0);
+                    0,
+                    44);
 
             // WHEN
-            store.transactionCommitted(39, DEFAULT_BOOTSTRAP_VERSION, 3333, BASE_TX_COMMIT_TIMESTAMP, 9);
+            store.transactionCommitted(39, 40, DEFAULT_BOOTSTRAP_VERSION, 3333, BASE_TX_COMMIT_TIMESTAMP, 9);
 
             // THEN
             assertEquals(
-                    new TransactionId(40, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 8),
+                    new TransactionId(40, 41, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 8),
                     store.getLastCommittedTransaction());
             assertEquals(
                     new ClosedTransactionMetadata(
-                            new TransactionId(40, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 8),
+                            new TransactionId(40, 41, DEFAULT_BOOTSTRAP_VERSION, 4444, BASE_TX_COMMIT_TIMESTAMP, 8),
                             new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize())),
                     store.getLastClosedTransaction());
         }

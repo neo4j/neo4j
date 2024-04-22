@@ -63,6 +63,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -81,6 +82,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -107,6 +109,7 @@ public class TransactionAppenderConcurrencyTest {
     private final LogFiles logFiles = mock(TransactionLogFiles.class);
     private final LogFile logFile = mock(LogFile.class);
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+    private final AppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
 
     @BeforeAll
@@ -242,10 +245,12 @@ public class TransactionAppenderConcurrencyTest {
         return TransactionAppenderFactory.createTransactionAppender(
                 logFiles,
                 transactionIdStore,
+                appendIndexProvider,
                 Config.defaults(),
                 databaseHealth,
                 scheduler,
-                NullLogProvider.getInstance());
+                NullLogProvider.getInstance(),
+                new TransactionMetadataCache());
     }
 
     private static class OutOfMemoryAwareFileSystem extends EphemeralFileSystemAbstraction {

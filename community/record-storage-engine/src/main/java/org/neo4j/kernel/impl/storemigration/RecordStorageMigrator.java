@@ -229,10 +229,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         directoryLayout,
                         migrationLayout,
                         lastTxId,
+                        lastTxInfo.appendIndex(),
                         lastTxInfo.checksum(),
                         lastTxLogPosition.getLogVersion(),
                         lastTxLogPosition.getByteOffset(),
                         checkpointLogVersion,
+                        tailMetadata.getLastCheckpointedAppendIndex(),
                         progressListener,
                         oldFormat,
                         newFormat,
@@ -322,10 +324,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             RecordDatabaseLayout sourceDirectoryStructure,
             RecordDatabaseLayout migrationDirectoryStructure,
             long lastTxId,
+            long lastTxAppendIndex,
             int lastTxChecksum,
             long lastTxLogVersion,
             long lastTxLogByteOffset,
             long lastCheckpointLogVersion,
+            long lastAppendIndex,
             ProgressListener progressListener,
             RecordFormats oldFormat,
             RecordFormats newFormat,
@@ -338,7 +342,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
         try (NeoStores legacyStore = instantiateLegacyStore(oldFormat, sourceDirectoryStructure)) {
             Configuration importConfig = new Configuration.Overridden(defaultConfiguration(), config);
             AdditionalInitialIds additionalInitialIds = readAdditionalIds(
-                    lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset, lastCheckpointLogVersion);
+                    lastTxId,
+                    lastTxAppendIndex,
+                    lastTxChecksum,
+                    lastTxLogVersion,
+                    lastTxLogByteOffset,
+                    lastCheckpointLogVersion,
+                    lastAppendIndex);
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
             BatchImporter importer = batchImporterFactory.instantiate(
@@ -538,10 +548,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
 
     private static AdditionalInitialIds readAdditionalIds(
             final long lastTxId,
+            final long lastTxAppendIndex,
             final int lastTxChecksum,
             final long lastTxLogVersion,
             final long lastTxLogByteOffset,
-            long lastCheckpointLogVersion) {
+            long lastCheckpointLogVersion,
+            long lastAppendIndex) {
         return new AdditionalInitialIds() {
             @Override
             public long lastCommittedTransactionId() {
@@ -566,6 +578,16 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             @Override
             public long checkpointLogVersion() {
                 return lastCheckpointLogVersion;
+            }
+
+            @Override
+            public long lastAppendIndex() {
+                return lastAppendIndex;
+            }
+
+            @Override
+            public long lastCommittedTransactionAppendIndex() {
+                return lastTxAppendIndex;
             }
         };
     }

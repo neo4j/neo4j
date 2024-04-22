@@ -33,4 +33,6 @@ public interface LogTailLogVersionsMetadata {
     TransactionId getLastCommittedTransaction();
 
     LogPosition getLastTransactionLogPosition();
+
+    long getLastCheckpointedAppendIndex();
 }

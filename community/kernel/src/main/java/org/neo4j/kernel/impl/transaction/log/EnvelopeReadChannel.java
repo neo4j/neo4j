@@ -720,7 +720,8 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
 
         checkState(segmentBlockSize == logHeader.getSegmentBlockSize(), "Changing segmentBlockSize not supported");
         checkState(
-                LogFormat.V9.getVersionByte() >= logHeader.getLogFormatVersion().getVersionByte(),
+                LogFormat.V10.getVersionByte()
+                        >= logHeader.getLogFormatVersion().getVersionByte(),
                 "Envelopes are not supported in old versions");
         checkState(previousChecksum == logHeader.getPreviousLogFileChecksum(), "Checksum chain broken");
         enforceTerminalZeros();

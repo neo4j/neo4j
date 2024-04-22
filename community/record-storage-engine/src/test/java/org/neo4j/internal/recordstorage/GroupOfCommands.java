@@ -98,7 +98,7 @@ public class GroupOfCommands implements CommandBatchToApply {
     }
 
     @Override
-    public void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum) {}
+    public void batchAppended(long appendIndex, LogPosition beforeCommit, LogPosition positionAfter, int checksum) {}
 
     @Override
     public void close() {}

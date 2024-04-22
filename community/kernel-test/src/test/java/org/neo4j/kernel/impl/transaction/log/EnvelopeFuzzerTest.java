@@ -28,6 +28,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.transaction.log.EnvelopeWriteChannel.START_INDEX;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
@@ -99,8 +100,14 @@ class EnvelopeFuzzerTest {
 
         // Create first file and write header
         PhysicalLogVersionedStoreChannel storeChannel = storeChannel(0, preAllocate, rotationSize);
-        LogHeader logHeader = LogFormat.V9.newHeader(
-                INITIAL_LOG_VERSION, BASE_TX_ID, StoreId.UNKNOWN, segmentSize, initialChecksum, LATEST_KERNEL_VERSION);
+        LogHeader logHeader = LogFormat.V10.newHeader(
+                INITIAL_LOG_VERSION,
+                BASE_TX_ID,
+                BASE_APPEND_INDEX,
+                StoreId.UNKNOWN,
+                segmentSize,
+                initialChecksum,
+                LATEST_KERNEL_VERSION);
         writeLogHeader(storeChannel, logHeader, INSTANCE);
         storeChannel.position(segmentSize);
 
@@ -231,9 +238,10 @@ class EnvelopeFuzzerTest {
                 try (var event = logRotateEvents.beginLogRotate()) {
                     final var logChannel = storeChannel(currentVersion.incrementAndGet(), preAllocate, maxFileSize);
                     int previousChecksum = writeChannel.currentChecksum();
-                    LogHeader logHeader = LogFormat.V9.newHeader(
+                    LogHeader logHeader = LogFormat.V10.newHeader(
                             currentVersion.intValue(),
                             BASE_TX_ID,
+                            BASE_APPEND_INDEX,
                             StoreId.UNKNOWN,
                             segmentSize,
                             previousChecksum,

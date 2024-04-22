@@ -37,6 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -88,6 +89,7 @@ class VersionAwareLogEntryReaderIT {
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withAppendIndexProvider(new SimpleAppendIndexProvider())
                 .withStoreId(STORE_ID)
                 .build();
         try (Lifespan lifespan = new Lifespan(logFiles)) {
@@ -107,6 +109,7 @@ class VersionAwareLogEntryReaderIT {
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withAppendIndexProvider(new SimpleAppendIndexProvider())
                 .withStoreId(STORE_ID)
                 .build();
         try (Lifespan lifespan = new Lifespan(logFiles)) {

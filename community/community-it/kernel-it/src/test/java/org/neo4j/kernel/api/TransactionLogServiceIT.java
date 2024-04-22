@@ -874,7 +874,7 @@ class TransactionLogServiceIT {
         var eofPosition = findEndOfFile(lastTransactionId.id());
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
         String testReason = "Should checkpoint at end of file when transaction doesn't exist";
-        logService.appendCheckpoint(new TransactionId(789, LATEST_KERNEL_VERSION, 7, 8, 9), testReason);
+        logService.appendCheckpoint(new TransactionId(789, 798, LATEST_KERNEL_VERSION, 7, 8, 9), testReason);
 
         var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
         assertThat(checkpointInfo.reason()).contains(testReason);

@@ -52,6 +52,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -123,6 +124,7 @@ class TransactionLogAppendAndRotateIT {
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withMonitors(monitors)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withAppendIndexProvider(new SimpleAppendIndexProvider())
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
@@ -167,7 +169,14 @@ class TransactionLogAppendAndRotateIT {
     private TransactionAppender createBatchAppender(
             LogFiles logFiles, TransactionIdStore txIdStore, Panic panic, JobScheduler jobScheduler, Config config) {
         return createTransactionAppender(
-                logFiles, txIdStore, config, panic, jobScheduler, NullLogProvider.getInstance());
+                logFiles,
+                txIdStore,
+                new SimpleAppendIndexProvider(),
+                config,
+                panic,
+                jobScheduler,
+                NullLogProvider.getInstance(),
+                new TransactionMetadataCache());
     }
 
     private static Runnable endAfterMax(

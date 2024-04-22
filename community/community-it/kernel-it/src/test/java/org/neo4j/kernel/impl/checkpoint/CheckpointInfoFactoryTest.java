@@ -62,7 +62,7 @@ class CheckpointInfoFactoryTest {
         LogPosition positionAfterCheckpoint = new LogPosition(0, 640);
         LogPosition postReaderPosition = new LogPosition(0, 640);
         var restoredTransactionId =
-                new TransactionId(73, KernelVersion.V4_4, 614900954, 1645458411645L, UNKNOWN_CONSENSUS_INDEX);
+                new TransactionId(73, 73, KernelVersion.V4_4, 614900954, 1645458411645L, UNKNOWN_CONSENSUS_INDEX);
 
         prepareTestResources();
 
@@ -87,7 +87,7 @@ class CheckpointInfoFactoryTest {
         LogPosition position = new LogPosition(1, 2);
         LogPosition positionAfterCheckpoint = new LogPosition(3, 4);
         LogPosition postReaderPosition = new LogPosition(5, 6);
-        TransactionId transactionId = new TransactionId(6, LATEST_KERNEL_VERSION, 7, 8, 9);
+        TransactionId transactionId = new TransactionId(6, 7, LATEST_KERNEL_VERSION, 7, 8, 9);
         var checkpointInfo = ofLogEntry(
                 new LogEntryDetachedCheckpointV5_0(
                         LatestVersions.LATEST_KERNEL_VERSION, transactionId, logPosition, 2, storeId, "checkpoint"),

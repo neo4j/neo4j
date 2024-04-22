@@ -30,11 +30,13 @@ public class FakeCommitment implements Commitment {
     public static final long TIMESTAMP = 8194639457389L;
     public static final long CONSENSUS_INDEX = 1456L;
     private final long id;
+    private final long appendIndex;
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
 
-    public FakeCommitment(long id, TransactionIdStore transactionIdStore, boolean markedAsCommitted) {
+    public FakeCommitment(long id, long appendIndex, TransactionIdStore transactionIdStore, boolean markedAsCommitted) {
         this.id = id;
+        this.appendIndex = appendIndex;
         this.transactionIdStore = transactionIdStore;
         this.committed = markedAsCommitted;
     }
@@ -42,6 +44,7 @@ public class FakeCommitment implements Commitment {
     @Override
     public void commit(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             LogPosition beforeCommit,
             LogPosition logPositionAfterCommit,
@@ -49,16 +52,17 @@ public class FakeCommitment implements Commitment {
             long consensusIndex) {}
 
     @Override
-    public void publishAsCommitted(long transactionCommitTimestamp) {
+    public void publishAsCommitted(long transactionCommitTimestamp, long appendIndex, LogPosition beforeCommit) {
         committed = true;
-        transactionIdStore.transactionCommitted(id, DEFAULT_BOOTSTRAP_VERSION, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
+        transactionIdStore.transactionCommitted(
+                id, appendIndex, DEFAULT_BOOTSTRAP_VERSION, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
     }
 
     @Override
     public void publishAsClosed() {
         if (committed) {
             transactionIdStore.transactionClosed(
-                    id, DEFAULT_BOOTSTRAP_VERSION, 1, 2, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
+                    id, appendIndex, DEFAULT_BOOTSTRAP_VERSION, 1, 2, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
         }
     }
 }

@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
+import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryDetachedCheckpointV5_20;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.storageengine.api.TransactionId;
@@ -74,6 +75,7 @@ public final class CheckpointInfoFactory {
                     transactionId.kernelVersion(),
                     transactionId.kernelVersion().version(),
                     transactionId,
+                    transactionId.id(),
                     checkpoint42.getReason());
         } else if (entry instanceof LogEntryDetachedCheckpointV5_0 checkpoint50) {
             return new CheckpointInfo(
@@ -85,8 +87,22 @@ public final class CheckpointInfoFactory {
                     checkpoint50.kernelVersion(),
                     checkpoint50.kernelVersion().version(),
                     checkpoint50.getTransactionId(),
+                    checkpoint50.getTransactionId().id(),
                     checkpoint50.getReason(),
                     checkpoint50.consensusIndexInCheckpoint());
+        } else if (entry instanceof LogEntryDetachedCheckpointV5_20 checkpoint520) {
+            return new CheckpointInfo(
+                    checkpoint520.getLogPosition(),
+                    checkpoint520.getStoreId(),
+                    checkpointEntryPosition,
+                    channelPositionAfterCheckpoint,
+                    checkpointFilePostReadPosition,
+                    checkpoint520.kernelVersion(),
+                    checkpoint520.kernelVersion().version(),
+                    checkpoint520.getTransactionId(),
+                    checkpoint520.getLastAppendIndex(),
+                    checkpoint520.getReason(),
+                    checkpoint520.consensusIndexInCheckpoint());
         } else {
             throw new UnsupportedOperationException(
                     "Expected to observe only checkpoint entries, but: `" + entry + "` was found.");
@@ -116,6 +132,7 @@ public final class CheckpointInfoFactory {
                     }
                     return new TransactionId(
                             commit.getTxId(),
+                            commit.getTxId(),
                             logEntryStart.kernelVersion(),
                             commit.getChecksum(),
                             commit.getTimeWritten(),
@@ -128,6 +145,7 @@ public final class CheckpointInfoFactory {
             if (!context.getConfig().get(fail_on_corrupted_log_files)) {
                 return new TransactionId(
                         UNKNOWN_TRANSACTION_ID.id(),
+                        UNKNOWN_TRANSACTION_ID.appendIndex(),
                         KernelVersion.V4_4,
                         UNKNOWN_TRANSACTION_ID.checksum(),
                         UNKNOWN_TRANSACTION_ID.commitTimestamp(),
@@ -193,8 +211,8 @@ public final class CheckpointInfoFactory {
             long transactionId = maybeReverse(fallbackReader.getLong(), reverseBytes);
             long timeWritten = maybeReverse(fallbackReader.getLong(), reverseBytes);
             int checksum = skipChecksum ? 0 : maybeReverse(fallbackReader.getInt(), reverseBytes);
-            return Optional.of(
-                    new TransactionId(transactionId, kernelVersion, checksum, timeWritten, UNKNOWN_CONSENSUS_INDEX));
+            return Optional.of(new TransactionId(
+                    transactionId, transactionId, kernelVersion, checksum, timeWritten, UNKNOWN_CONSENSUS_INDEX));
         } catch (Exception e) {
             context.getLogProvider()
                     .getLog(CheckpointInfoFactory.class)

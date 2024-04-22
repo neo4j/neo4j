@@ -40,6 +40,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Panic;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -53,6 +54,8 @@ public class TransactionLogQueue extends LifecycleAdapter {
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
     private final Panic databasePanic;
+    private final AppendIndexProvider appendIndexProvider;
+    private final TransactionMetadataCache metadataCache;
     private final MpscUnboundedXaddArrayQueue<TxQueueElement> txAppendQueue;
     private final JobScheduler jobScheduler;
     private final InternalLog log;
@@ -64,12 +67,16 @@ public class TransactionLogQueue extends LifecycleAdapter {
             LogFiles logFiles,
             TransactionIdStore transactionIdStore,
             Panic databasePanic,
+            AppendIndexProvider appendIndexProvider,
+            TransactionMetadataCache metadataCache,
             JobScheduler jobScheduler,
             InternalLogProvider logProvider) {
         this.logFiles = logFiles;
         this.logRotation = logFiles.getLogFile().getLogRotation();
         this.transactionIdStore = transactionIdStore;
         this.databasePanic = databasePanic;
+        this.appendIndexProvider = appendIndexProvider;
+        this.metadataCache = metadataCache;
         this.txAppendQueue = new MpscUnboundedXaddArrayQueue<>(INITIAL_CAPACITY);
         this.jobScheduler = jobScheduler;
         this.stopped = true;
@@ -93,7 +100,14 @@ public class TransactionLogQueue extends LifecycleAdapter {
     @Override
     public synchronized void start() {
         transactionWriter = new TransactionWriter(
-                txAppendQueue, logFiles.getLogFile(), transactionIdStore, databasePanic, logRotation, log);
+                txAppendQueue,
+                logFiles.getLogFile(),
+                transactionIdStore,
+                databasePanic,
+                logRotation,
+                log,
+                appendIndexProvider,
+                metadataCache);
         logAppender = jobScheduler.threadFactory(Group.LOG_WRITER).newThread(transactionWriter);
         logAppender.start();
         stopped = false;
@@ -166,6 +180,8 @@ public class TransactionLogQueue extends LifecycleAdapter {
         private final LogRotation logRotation;
         private final InternalLog log;
         private final int checksum;
+        private final AppendIndexProvider appendIndexProvider;
+        private final TransactionMetadataCache metadataCache;
         private volatile boolean stopped;
         private final MessagePassingQueue.WaitStrategy waitStrategy;
 
@@ -175,20 +191,25 @@ public class TransactionLogQueue extends LifecycleAdapter {
                 TransactionIdStore transactionIdStore,
                 Panic databasePanic,
                 LogRotation logRotation,
-                InternalLog log) {
+                InternalLog log,
+                AppendIndexProvider appendIndexProvider,
+                TransactionMetadataCache metadataCache) {
             this.txQueue = txQueue;
             this.transactionLogWriter = logFile.getTransactionLogWriter();
             this.logFile = logFile;
             this.checksum = transactionIdStore.getLastCommittedTransaction().checksum();
             this.databasePanic = databasePanic;
             this.logRotation = logRotation;
+            this.appendIndexProvider = appendIndexProvider;
+            this.metadataCache = metadataCache;
             this.log = log;
             this.waitStrategy = new SpinParkCombineWaitingStrategy();
         }
 
         @Override
         public void run() {
-            TxConsumer txConsumer = new TxConsumer(databasePanic, transactionLogWriter, checksum);
+            TxConsumer txConsumer =
+                    new TxConsumer(databasePanic, transactionLogWriter, checksum, appendIndexProvider, metadataCache);
 
             int idleCounter = 0;
             while (!stopped) {
@@ -227,15 +248,24 @@ public class TransactionLogQueue extends LifecycleAdapter {
             private final TransactionLogWriter transactionLogWriter;
 
             private int checksum;
+            private final AppendIndexProvider appendIndexProvider;
+            private final TransactionMetadataCache metadataCache;
             private final TxQueueElement[] txElements = new TransactionLogQueue.TxQueueElement[CONSUMER_MAX_BATCH];
             private int index;
             private TxQueueElement[] elements;
             private long[] txIds;
 
-            TxConsumer(Panic databasePanic, TransactionLogWriter transactionLogWriter, int checksum) {
+            TxConsumer(
+                    Panic databasePanic,
+                    TransactionLogWriter transactionLogWriter,
+                    int checksum,
+                    AppendIndexProvider appendIndexProvider,
+                    TransactionMetadataCache metadataCache) {
                 this.databasePanic = databasePanic;
                 this.transactionLogWriter = transactionLogWriter;
                 this.checksum = checksum;
+                this.appendIndexProvider = appendIndexProvider;
+                this.metadataCache = metadataCache;
             }
 
             @Override
@@ -275,15 +305,18 @@ public class TransactionLogQueue extends LifecycleAdapter {
                 var logPositionBeforeCommit = transactionLogWriter.getCurrentPosition();
                 transactionLogWriter.resetAppendedBytesCounter();
                 CommandBatch commandBatch = commandBatchToApply.commandBatch();
+                long appendIndex = appendIndexProvider.nextAppendIndex();
                 this.checksum = transactionLogWriter.append(
                         commandBatch,
                         transactionId,
                         commandBatchToApply.chunkId(),
+                        appendIndex,
                         checksum,
                         commandBatchToApply.previousBatchLogPosition());
                 var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
                 logAppendEvent.appendedBytes(transactionLogWriter.getAppendedBytes());
-                commandBatchToApply.batchAppended(logPositionBeforeCommit, logPositionAfterCommit, checksum);
+                commandBatchToApply.batchAppended(
+                        appendIndex, logPositionBeforeCommit, logPositionAfterCommit, checksum);
             }
 
             public void complete() {

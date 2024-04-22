@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.LOG_VERSION_MASK;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V8;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V10;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V9;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.encodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogFormatVersion;
@@ -60,6 +61,7 @@ class LogHeaderWriterTest {
 
     private long expectedLogVersion;
     private long expectedTxId;
+    private long expectedAppendIndex;
     private StoreId expectedStoreId;
     private int expectedBlockSize;
     private int expectedChecksum;
@@ -68,6 +70,7 @@ class LogHeaderWriterTest {
     void setUp() {
         expectedLogVersion = random.nextLong(0, LOG_VERSION_MASK);
         expectedTxId = random.nextLong(0, Long.MAX_VALUE);
+        expectedAppendIndex = random.nextLong(0, Long.MAX_VALUE);
         expectedStoreId = new StoreId(
                 random.nextLong(),
                 random.nextLong(),
@@ -90,8 +93,9 @@ class LogHeaderWriterTest {
         LogHeader logHeader = logFormat.newHeader(
                 expectedLogVersion,
                 expectedTxId,
+                expectedAppendIndex,
                 expectedStoreId,
-                logFormat == V8 ? UNKNOWN_LOG_SEGMENT_SIZE : expectedBlockSize,
+                logFormat != V10 ? UNKNOWN_LOG_SEGMENT_SIZE : expectedBlockSize,
                 expectedChecksum,
                 KernelVersion.GLORIOUS_FUTURE);
 
@@ -109,15 +113,19 @@ class LogHeaderWriterTest {
 
         final var encodedLogVersions = result.getLong();
         final var txId = result.getLong();
+        final var appendIndex = logFormat == V9 ? result.getLong() : -1;
         StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(result);
 
         assertEquals(encodeLogVersion(expectedLogVersion, logFormat.getVersionByte()), encodedLogVersions);
         assertEquals(logFormat.getVersionByte(), decodeLogFormatVersion(encodedLogVersions));
         assertEquals(expectedLogVersion, decodeLogVersion(encodedLogVersions));
         assertEquals(expectedTxId, txId);
+        if (logFormat == V9) {
+            assertEquals(expectedAppendIndex, appendIndex);
+        }
         assertEquals(expectedStoreId, storeId);
 
-        if (logFormat != V8) {
+        if (logFormat == V10) {
             assertEquals(expectedBlockSize, result.getInt());
             assertEquals(expectedChecksum, result.getInt());
         }

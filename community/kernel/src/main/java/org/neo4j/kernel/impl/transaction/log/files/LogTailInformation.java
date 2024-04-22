@@ -166,4 +166,12 @@ public class LogTailInformation implements LogTailMetadata {
         }
         return lastCheckPoint.transactionLogPosition();
     }
+
+    @Override
+    public long getLastCheckpointedAppendIndex() {
+        if (lastCheckPoint == null) {
+            return EMPTY_LOG_TAIL.getLastCheckpointedAppendIndex();
+        }
+        return lastCheckPoint.appendIndex();
+    }
 }

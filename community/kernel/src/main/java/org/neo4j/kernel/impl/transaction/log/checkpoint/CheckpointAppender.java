@@ -33,6 +33,7 @@ public interface CheckpointAppender {
      *
      * @param logCheckPointEvent a trace event for the given check point operation.
      * @param transactionId last closed transaction id at time of checkpoint
+     * @param appendIndex checkpointed append index
      * @param kernelVersion kernel version of checkpoint
      * @param logPosition the log position contained in the written check point
      * @param checkpointTime time when checkpoint occurred
@@ -43,6 +44,7 @@ public interface CheckpointAppender {
     void checkPoint(
             LogCheckPointEvent logCheckPointEvent,
             TransactionId transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             LogPosition logPosition,
             Instant checkpointTime,

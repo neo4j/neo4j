@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 /**
  * Represents a commitment that is result of applying batch of commands to transaction logs
  * means. As a transaction is carried through the commit process this commitment is updated
- * when {@link #publishAsCommitted(long)} committed (which happens when appending to log), but also
+ * when {@link #publishAsCommitted(long, long, LogPosition)} committed (which happens when appending to log), but also
  * when {@link #publishAsClosed()} closing.
  */
 public interface Commitment {
@@ -34,6 +34,7 @@ public interface Commitment {
         @Override
         public void commit(
                 long transactionId,
+                long appendIndex,
                 KernelVersion kernelVersion,
                 LogPosition beforeCommit,
                 LogPosition logPositionAfterCommit,
@@ -41,7 +42,8 @@ public interface Commitment {
                 long consensusIndex) {}
 
         @Override
-        public void publishAsCommitted(long transactionCommitTimestamp) {}
+        public void publishAsCommitted(
+                long transactionCommitTimestamp, long firstAppendIndex, LogPosition positionBeforeCommit) {}
 
         @Override
         public void publishAsClosed() {}
@@ -49,6 +51,7 @@ public interface Commitment {
 
     void commit(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             LogPosition beforeCommit,
             LogPosition logPositionAfterCommit,
@@ -58,7 +61,7 @@ public interface Commitment {
     /**
      * Marks the transaction as committed and makes this fact public.
      */
-    void publishAsCommitted(long transactionCommitTimestamp);
+    void publishAsCommitted(long transactionCommitTimestamp, long firstAppendIndex, LogPosition positionBeforeCommit);
 
     /**
      * Marks the transaction as closed and makes this fact public.

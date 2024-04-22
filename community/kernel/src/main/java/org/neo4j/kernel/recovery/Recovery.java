@@ -707,7 +707,8 @@ public final class Recovery {
                 recoveryPredicate,
                 cursorContextFactory,
                 mode,
-                new BinarySupportedKernelVersions(config));
+                new BinarySupportedKernelVersions(config),
+                metadataProvider);
 
         CheckPointerImpl.ForceOperation forceOperation =
                 new DefaultForceOperation(indexingService, storageEngine, databasePageCache);
@@ -842,7 +843,8 @@ public final class Recovery {
             RecoveryPredicate recoveryPredicate,
             CursorContextFactory contextFactory,
             RecoveryMode mode,
-            BinarySupportedKernelVersions binarySupportedKernelVersions) {
+            BinarySupportedKernelVersions binarySupportedKernelVersions,
+            MetadataProvider metadataProvider) {
         RecoveryService recoveryService = new DefaultRecoveryService(
                 storageEngine,
                 transactionIdStore,
@@ -855,7 +857,8 @@ public final class Recovery {
                 clock,
                 doParallelRecovery,
                 binarySupportedKernelVersions,
-                contextFactory);
+                contextFactory,
+                metadataProvider);
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator(
                 databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker);
         var loggerPrintWriterAdaptor = new LoggerPrintWriterAdaptor(log, Level.INFO);

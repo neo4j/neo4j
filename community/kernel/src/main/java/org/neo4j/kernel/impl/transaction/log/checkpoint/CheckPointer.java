@@ -93,12 +93,14 @@ public interface CheckPointer {
      * It is used by clustering to force checkpoint on logs after store copy.
      *
      * @param transactionId transaction id to checkpoint.
+     * @param appendIndex append index to checkpoint
      * @param position position of provided transaction id to checkpoint.
      * @param triggerInfo the info describing why check pointing has been triggered.
      * @return the transaction id used for the check pointing
      * @throws IOException if writing the check point fails
      */
-    long forceCheckPoint(TransactionId transactionId, LogPosition position, TriggerInfo triggerInfo) throws IOException;
+    long forceCheckPoint(TransactionId transactionId, long appendIndex, LogPosition position, TriggerInfo triggerInfo)
+            throws IOException;
 
     /**
      * @return Info about latest checkpoint that was made. If there's no checkpoint then

@@ -25,6 +25,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public interface RecoveryService {
@@ -42,11 +43,13 @@ public interface RecoveryService {
     LogPosition rollbackTransactions(
             LogPosition writePosition,
             TransactionIdTracker transactionTracker,
-            CommittedCommandBatch.BatchInformation lastCommandBatch)
+            CommittedCommandBatch.BatchInformation lastCommandBatch,
+            AppendIndexProvider appendIndexProvider)
             throws IOException;
 
     void transactionsRecovered(
-            CommittedCommandBatch.BatchInformation lastRecoveredBatch,
+            CommittedCommandBatch.BatchInformation highestTransactionRecoveredBatch,
+            AppendIndexProvider recoverAppendIndexProvider,
             LogPosition lastTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction,
             LogPosition checkpointPosition,

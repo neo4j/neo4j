@@ -68,11 +68,17 @@ public record CommittedTransactionRepresentation(
                 kernelVersion,
                 startEntry.getTimeWritten(),
                 startEntry.getLastCommittedTxWhenTransactionStarted(),
+                startEntry.getAppendIndex(),
                 startEntry.getPreviousChecksum(),
                 startEntry.getAdditionalHeader());
 
         writer.serialize(commandBatch);
         return writer.writeCommitEntry(kernelVersion, commitEntry.getTxId(), commitEntry.getTimeWritten());
+    }
+
+    @Override
+    public long appendIndex() {
+        return startEntry.getAppendIndex();
     }
 
     @Override

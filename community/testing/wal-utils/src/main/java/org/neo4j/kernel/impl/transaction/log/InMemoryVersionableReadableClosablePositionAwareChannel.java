@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V8;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V9;
 
 import java.io.IOException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
@@ -37,7 +37,7 @@ public class InMemoryVersionableReadableClosablePositionAwareChannel extends InM
 
     @Override
     public LogFormat getLogFormatVersion() {
-        return V8;
+        return V9;
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
@@ -41,10 +42,12 @@ import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadUtils;
+import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
+import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryDetachedCheckpointV5_20;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
@@ -106,6 +109,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         channel = channelAllocator.createLogChannel(
                 currentLogVersion,
                 context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles),
+                context.appendIndex(),
                 BASE_TX_CHECKSUM);
 
         context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), currentLogVersion);
@@ -173,6 +177,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     public void checkPoint(
             LogCheckPointEvent logCheckPointEvent,
             TransactionId transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             LogPosition logPosition,
             Instant checkpointTime,
@@ -191,13 +196,15 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                         .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0)
                         .write(
                                 writer,
-                                new LogEntryDetachedCheckpointV5_0(
-                                        kernelVersion,
+                                createCheckpointEntry(
                                         transactionId,
+                                        appendIndex,
+                                        kernelVersion,
                                         logPosition,
-                                        checkpointTime.toEpochMilli(),
-                                        storeId,
-                                        reason));
+                                        checkpointTime,
+                                        reason,
+                                        storeId));
+
                 logCheckPointEvent.appendedBytes(writer.getAppendedBytes());
                 forceAfterAppend(logCheckPointEvent);
                 logRotation.rotateLogIfNeeded(logCheckPointEvent);
@@ -230,8 +237,31 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         writer.prepareForFlush().flush();
 
         int checksum = writer.currentChecksum().orElse(BASE_TX_CHECKSUM);
-        var newChannel = channelAllocator.createLogChannel(newLogVersion, context.committingTransactionId(), checksum);
+        var newChannel = channelAllocator.createLogChannel(
+                newLogVersion, context.committingTransactionId(), context.appendIndex(), checksum);
         channel.close();
         return newChannel;
+    }
+
+    private static AbstractVersionAwareLogEntry createCheckpointEntry(
+            TransactionId transactionId,
+            long appendIndex,
+            KernelVersion kernelVersion,
+            LogPosition logPosition,
+            Instant checkpointTime,
+            String reason,
+            StoreId storeId) {
+        if (kernelVersion.isAtLeast(VERSION_APPEND_INDEX_INTRODUCED)) {
+            return new LogEntryDetachedCheckpointV5_20(
+                    kernelVersion,
+                    transactionId,
+                    appendIndex,
+                    logPosition,
+                    checkpointTime.toEpochMilli(),
+                    storeId,
+                    reason);
+        }
+        return new LogEntryDetachedCheckpointV5_0(
+                kernelVersion, transactionId, logPosition, checkpointTime.toEpochMilli(), storeId, reason);
     }
 }

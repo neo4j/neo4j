@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry.v57;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_START;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -27,9 +28,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.string.Mask;
 
 public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
-    private final long timeWritten;
-    private final long chunkId;
-    private final LogPosition previousBatchLogPosition;
+    protected final long timeWritten;
+    protected final long chunkId;
+    protected final LogPosition previousBatchLogPosition;
 
     public LogEntryChunkStart(
             KernelVersion kernelVersion, long timeWritten, long chunkId, LogPosition previousBatchLogPosition) {
@@ -45,6 +46,10 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
 
     public long getChunkId() {
         return chunkId;
+    }
+
+    public long getAppendIndex() {
+        return BASE_APPEND_INDEX;
     }
 
     public LogPosition getPreviousBatchLogPosition() {

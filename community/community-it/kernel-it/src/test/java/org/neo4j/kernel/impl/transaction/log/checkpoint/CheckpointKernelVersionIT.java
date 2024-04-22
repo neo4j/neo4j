@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -54,6 +55,18 @@ public class CheckpointKernelVersionIT {
         assertThat(checkpoint.kernelVersion())
                 .as("kernel version from last checkpoint")
                 .isEqualTo(kernelVersionRepository.kernelVersion());
+    }
+
+    @Test
+    void checkPointRecordContainsAppendIndex() throws IOException {
+        kernelVersionRepository.setKernelVersion(KernelVersion.V5_20);
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced " + kernelVersionRepository.kernelVersion()));
+
+        final var checkpoint =
+                logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        assertThat(checkpoint.appendIndex())
+                .as("Append index should be positive number")
+                .isGreaterThan(AppendIndexProvider.BASE_APPEND_INDEX);
     }
 
     @Test

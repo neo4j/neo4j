@@ -54,11 +54,17 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition(1000, 12345);
-        var transactionId = new TransactionId(100, LATEST_KERNEL_VERSION, 101, 102, 103);
+        var transactionId = new TransactionId(100, 101, LATEST_KERNEL_VERSION, 101, 102, 103);
         var reason = "checkpoints in preallocated file";
         for (int i = 0; i < 2; i++) {
             checkpointAppender.checkPoint(
-                    NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
+                    NULL,
+                    transactionId,
+                    transactionId.id() + 7,
+                    LatestVersions.LATEST_KERNEL_VERSION,
+                    logPosition,
+                    Instant.now(),
+                    reason);
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat(matchedFiles).hasSize(1);
@@ -69,7 +75,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition(1000, 12345);
-        var transactionId = new TransactionId(100, LATEST_KERNEL_VERSION, 101, 102, 103);
+        var transactionId = new TransactionId(100, 101, LATEST_KERNEL_VERSION, 101, 102, 103);
         var reason = "checkpoint in preallocated file";
 
         checkpointFile.rotate();
@@ -80,7 +86,13 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
                         .hasSize(fileCount)
                         .allMatch(this::sizeEqualsToPreallocatedFile);
                 checkpointAppender.checkPoint(
-                        NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
+                        NULL,
+                        transactionId,
+                        transactionId.id() + 7,
+                        LatestVersions.LATEST_KERNEL_VERSION,
+                        logPosition,
+                        Instant.now(),
+                        reason);
             }
         }
 

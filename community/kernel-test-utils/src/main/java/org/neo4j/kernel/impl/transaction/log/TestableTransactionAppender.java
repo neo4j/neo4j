@@ -31,7 +31,7 @@ public class TestableTransactionAppender extends LifecycleAdapter implements Tra
         long txId = TransactionIdStore.BASE_TX_ID;
         while (batch != null) {
             txId = batch.transactionId();
-            batch.batchAppended(new LogPosition(txId, 128), new LogPosition(txId, 256), 1);
+            batch.batchAppended(txId + 7, new LogPosition(txId, 128), new LogPosition(txId, 256), 1);
             batch.commit();
             batch = batch.next();
         }

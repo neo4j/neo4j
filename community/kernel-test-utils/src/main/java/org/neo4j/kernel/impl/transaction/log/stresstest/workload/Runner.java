@@ -34,9 +34,11 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -46,6 +48,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
@@ -73,8 +76,8 @@ public class Runner implements Callable<Long> {
             TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
             LogFiles logFiles = life.add(createLogFiles(transactionIdStore, fileSystem));
 
-            TransactionAppender transactionAppender = life.add(
-                    createBatchingTransactionAppender(logFiles, transactionIdStore, Config.defaults(), jobScheduler));
+            TransactionAppender transactionAppender = life.add(createBatchingTransactionAppender(
+                    logFiles, transactionIdStore, new SimpleAppendIndexProvider(), Config.defaults(), jobScheduler));
 
             ExecutorService executorService = Executors.newFixedThreadPool(threads);
             try {
@@ -98,21 +101,34 @@ public class Runner implements Callable<Long> {
     }
 
     private static TransactionAppender createBatchingTransactionAppender(
-            LogFiles logFiles, TransactionIdStore transactionIdStore, Config config, JobScheduler jobScheduler) {
+            LogFiles logFiles,
+            TransactionIdStore transactionIdStore,
+            AppendIndexProvider appendIndexProvider,
+            Config config,
+            JobScheduler jobScheduler) {
         InternalLog log = NullLog.getInstance();
         DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, log);
         return createTransactionAppender(
-                logFiles, transactionIdStore, config, databaseHealth, jobScheduler, NullLogProvider.getInstance());
+                logFiles,
+                transactionIdStore,
+                appendIndexProvider,
+                config,
+                databaseHealth,
+                jobScheduler,
+                NullLogProvider.getInstance(),
+                new TransactionMetadataCache());
     }
 
     private LogFiles createLogFiles(TransactionIdStore transactionIdStore, FileSystemAbstraction fileSystemAbstraction)
             throws IOException {
+        AppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         return LogFilesBuilder.builder(
                         databaseLayout, fileSystemAbstraction, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
+                .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();

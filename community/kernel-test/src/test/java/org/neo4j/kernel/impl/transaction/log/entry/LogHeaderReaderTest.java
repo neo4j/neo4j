@@ -65,6 +65,7 @@ class LogHeaderReaderTest {
 
     private long expectedLogVersion;
     private long expectedTxId;
+    private long expectedAppendIndex;
     private StoreId expectedStoreId;
     private int expectedSegmentSize;
     private int expectedChecksum;
@@ -72,7 +73,8 @@ class LogHeaderReaderTest {
     @BeforeEach
     void setUp() {
         expectedLogVersion = random.nextLong(0, LOG_VERSION_MASK);
-        expectedTxId = random.nextLong();
+        expectedTxId = random.nextLong(0, Long.MAX_VALUE - 20);
+        expectedAppendIndex = expectedTxId + 7;
         expectedStoreId = new StoreId(
                 random.nextLong(),
                 random.nextLong(),
@@ -89,12 +91,23 @@ class LogHeaderReaderTest {
     void shouldReadALogHeaderFromAByteChannel(TestCase testCase) throws IOException {
         var buffer = ByteBuffers.allocate(LogFormat.BIGGEST_HEADER, ByteOrder.BIG_ENDIAN, INSTANCE);
         testCase.write(
-                buffer, expectedLogVersion, expectedTxId, expectedStoreId, expectedSegmentSize, expectedChecksum);
+                buffer,
+                expectedLogVersion,
+                expectedTxId,
+                expectedAppendIndex,
+                expectedStoreId,
+                expectedSegmentSize,
+                expectedChecksum);
 
         try (var channel = new InMemoryClosableChannel(buffer.array(), true, true, ByteOrder.LITTLE_ENDIAN)) {
             assertThat(readLogHeader(channel, true, null, INSTANCE))
                     .isEqualTo(testCase.expected(
-                            expectedLogVersion, expectedTxId, expectedStoreId, expectedSegmentSize, expectedChecksum));
+                            expectedLogVersion,
+                            expectedTxId,
+                            expectedAppendIndex,
+                            expectedStoreId,
+                            expectedSegmentSize,
+                            expectedChecksum));
         }
     }
 
@@ -105,13 +118,24 @@ class LogHeaderReaderTest {
 
         var buffer = ByteBuffers.allocate(LogFormat.BIGGEST_HEADER, ByteOrder.BIG_ENDIAN, INSTANCE);
         testCase.write(
-                buffer, expectedLogVersion, expectedTxId, expectedStoreId, expectedSegmentSize, expectedChecksum);
+                buffer,
+                expectedLogVersion,
+                expectedTxId,
+                expectedAppendIndex,
+                expectedStoreId,
+                expectedSegmentSize,
+                expectedChecksum);
 
         try (var stream = fileSystem.openAsOutputStream(file, false)) {
             stream.write(buffer.array());
         }
         LogHeader expected = testCase.expected(
-                expectedLogVersion, expectedTxId, expectedStoreId, expectedSegmentSize, expectedChecksum);
+                expectedLogVersion,
+                expectedTxId,
+                expectedAppendIndex,
+                expectedStoreId,
+                expectedSegmentSize,
+                expectedChecksum);
         assertThat(readLogHeader(fileSystem, file, INSTANCE)).isEqualTo(expected);
     }
 
@@ -151,6 +175,7 @@ class LogHeaderReaderTest {
                             ByteBuffer buffer,
                             long logVersion,
                             long txId,
+                            long appendIndex,
                             StoreId storeId,
                             int segmentSize,
                             int checksum) {
@@ -160,10 +185,16 @@ class LogHeaderReaderTest {
 
                     @Override
                     LogHeader expected(
-                            long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
+                            long logVersion,
+                            long previousCommittedTx,
+                            long appendIndex,
+                            StoreId storeId,
+                            int segmentSize,
+                            int checksum) {
                         return new LogHeader(
                                 LogFormat.V6.getVersionByte(),
                                 logVersion,
+                                previousCommittedTx,
                                 previousCommittedTx,
                                 null,
                                 LogFormat.V6.getHeaderSize(),
@@ -178,6 +209,7 @@ class LogHeaderReaderTest {
                             ByteBuffer buffer,
                             long logVersion,
                             long txId,
+                            long appendIndex,
                             StoreId storeId,
                             int segmentSize,
                             int checksum) {
@@ -193,10 +225,16 @@ class LogHeaderReaderTest {
 
                     @Override
                     LogHeader expected(
-                            long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
+                            long logVersion,
+                            long previousCommittedTx,
+                            long appendIndex,
+                            StoreId storeId,
+                            int segmentSize,
+                            int checksum) {
                         return new LogHeader(
                                 LogFormat.V7.getVersionByte(),
                                 logVersion,
+                                previousCommittedTx,
                                 previousCommittedTx,
                                 null,
                                 LogFormat.V7.getHeaderSize(),
@@ -211,6 +249,7 @@ class LogHeaderReaderTest {
                             ByteBuffer buffer,
                             long logVersion,
                             long txId,
+                            long appendIndex,
                             StoreId storeId,
                             int segmentSize,
                             int checksum)
@@ -228,9 +267,15 @@ class LogHeaderReaderTest {
 
                     @Override
                     LogHeader expected(
-                            long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
+                            long logVersion,
+                            long previousCommittedTx,
+                            long appendIndex,
+                            StoreId storeId,
+                            int segmentSize,
+                            int checksum) {
                         return LogFormat.V8.newHeader(
                                 logVersion,
+                                previousCommittedTx,
                                 previousCommittedTx,
                                 storeId,
                                 UNKNOWN_LOG_SEGMENT_SIZE,
@@ -244,6 +289,47 @@ class LogHeaderReaderTest {
                             ByteBuffer buffer,
                             long logVersion,
                             long txId,
+                            long appendIndex,
+                            StoreId storeId,
+                            int segmentSize,
+                            int checksum)
+                            throws IOException {
+                        buffer.putLong(encodeLogVersion(logVersion, versionByte()));
+                        buffer.putLong(txId);
+                        buffer.putLong(appendIndex);
+                        StoreIdSerialization.serializeWithFixedSize(storeId, buffer);
+                        buffer.putLong(0); // reserved
+                        buffer.putLong(0); // reserved
+                        buffer.putLong(0); // reserved
+                        buffer.putLong(0); // reserved
+                        buffer.putLong(0); // reserved
+                    }
+
+                    @Override
+                    LogHeader expected(
+                            long logVersion,
+                            long previousCommittedTx,
+                            long appendIndex,
+                            StoreId storeId,
+                            int segmentSize,
+                            int checksum) {
+                        return LogFormat.V9.newHeader(
+                                logVersion,
+                                previousCommittedTx,
+                                appendIndex,
+                                storeId,
+                                UNKNOWN_LOG_SEGMENT_SIZE,
+                                BASE_TX_CHECKSUM,
+                                null);
+                    }
+                },
+                new TestCase(LogFormat.V10) {
+                    @Override
+                    void write(
+                            ByteBuffer buffer,
+                            long logVersion,
+                            long txId,
+                            long appendIndex,
                             StoreId storeId,
                             int segmentSize,
                             int checksum)
@@ -254,14 +340,25 @@ class LogHeaderReaderTest {
                         buffer.putInt(segmentSize);
                         buffer.putInt(checksum);
                         buffer.put(LATEST_KERNEL_VERSION.version());
-                        buffer.position(LogFormat.V9.getHeaderSize()); // Rest is reserved
+                        buffer.position(LogFormat.V10.getHeaderSize()); // Rest is reserved
                     }
 
                     @Override
                     LogHeader expected(
-                            long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum) {
-                        return LogFormat.V9.newHeader(
-                                logVersion, previousCommittedTx, storeId, segmentSize, checksum, LATEST_KERNEL_VERSION);
+                            long logVersion,
+                            long previousCommittedTx,
+                            long appendIndex,
+                            StoreId storeId,
+                            int segmentSize,
+                            int checksum) {
+                        return LogFormat.V10.newHeader(
+                                logVersion,
+                                previousCommittedTx,
+                                appendIndex,
+                                storeId,
+                                segmentSize,
+                                checksum,
+                                LATEST_KERNEL_VERSION);
                     }
                 });
     }
@@ -274,11 +371,22 @@ class LogHeaderReaderTest {
         }
 
         abstract void write(
-                ByteBuffer buffer, long logVersion, long txId, StoreId storeId, int segmentSize, int checksum)
+                ByteBuffer buffer,
+                long logVersion,
+                long txId,
+                long appendIndex,
+                StoreId storeId,
+                int segmentSize,
+                int checksum)
                 throws IOException;
 
         abstract LogHeader expected(
-                long logVersion, long previousCommittedTx, StoreId storeId, int segmentSize, int checksum);
+                long logVersion,
+                long previousCommittedTx,
+                long appendIndex,
+                StoreId storeId,
+                int segmentSize,
+                int checksum);
 
         byte versionByte() {
             return format.getVersionByte();

@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Panic;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -36,14 +37,23 @@ import org.neo4j.storageengine.api.TransactionIdStore;
  */
 class BatchingTransactionAppender extends LifecycleAdapter implements TransactionAppender {
     private final LogFile logFile;
+    private final AppendIndexProvider appendIndexProvider;
+    private final TransactionMetadataCache metadataCache;
     private final LogRotation logRotation;
     private final Panic databasePanic;
 
     private TransactionLogWriter transactionLogWriter;
     private int previousChecksum;
 
-    BatchingTransactionAppender(LogFiles logFiles, TransactionIdStore transactionIdStore, Panic databasePanic) {
+    BatchingTransactionAppender(
+            LogFiles logFiles,
+            TransactionIdStore transactionIdStore,
+            Panic databasePanic,
+            AppendIndexProvider appendIndexProvider,
+            TransactionMetadataCache metadataCache) {
         this.logFile = logFiles.getLogFile();
+        this.appendIndexProvider = appendIndexProvider;
+        this.metadataCache = metadataCache;
         this.logRotation = logFile.getLogRotation();
         this.databasePanic = databasePanic;
         this.previousChecksum = transactionIdStore.getLastCommittedTransaction().checksum();
@@ -109,15 +119,17 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         try {
             var logPositionBeforeCommit = transactionLogWriter.getCurrentPosition();
             transactionLogWriter.resetAppendedBytesCounter();
+            long appendIndex = appendIndexProvider.nextAppendIndex();
             this.previousChecksum = transactionLogWriter.append(
                     commands.commandBatch(),
                     transactionId,
                     commands.chunkId(),
+                    appendIndex,
                     previousChecksum,
                     commands.previousBatchLogPosition());
             var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
             logAppendEvent.appendedBytes(transactionLogWriter.getAppendedBytes());
-            commands.batchAppended(logPositionBeforeCommit, logPositionAfterCommit, previousChecksum);
+            commands.batchAppended(appendIndex, logPositionBeforeCommit, logPositionAfterCommit, previousChecksum);
         } catch (final Throwable panic) {
             databasePanic.panic(panic);
             throw panic;

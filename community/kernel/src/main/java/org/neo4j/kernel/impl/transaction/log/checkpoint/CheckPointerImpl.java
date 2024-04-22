@@ -41,8 +41,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Panic;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Stopwatch;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
@@ -53,7 +53,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private static final String UNLIMITED_IO_CONTROLLER_LIMIT = "unlimited";
 
     private final CheckpointAppender checkpointAppender;
-    private final TransactionIdStore transactionIdStore;
+    private final MetadataProvider metadataProvider;
     private final CheckPointThreshold threshold;
     private final ForceOperation forceOperation;
     private final LogPruning logPruning;
@@ -70,7 +70,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private volatile LatestCheckpointInfo latestCheckPointInfo = UNKNOWN_CHECKPOINT_INFO;
 
     public CheckPointerImpl(
-            TransactionIdStore transactionIdStore,
+            MetadataProvider metadataProvider,
             CheckPointThreshold threshold,
             ForceOperation forceOperation,
             LogPruning logPruning,
@@ -84,7 +84,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             IOController ioController,
             KernelVersionProvider versionProvider) {
         this.checkpointAppender = checkpointAppender;
-        this.transactionIdStore = transactionIdStore;
+        this.metadataProvider = metadataProvider;
         this.threshold = threshold;
         this.forceOperation = forceOperation;
         this.logPruning = logPruning;
@@ -100,7 +100,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     @Override
     public void start() {
-        var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+        var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
         threshold.initialize(lastClosedTransaction.transactionId().id(), lastClosedTransaction.logPosition());
     }
 
@@ -119,10 +119,11 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     }
 
     @Override
-    public long forceCheckPoint(TransactionId transactionId, LogPosition position, TriggerInfo triggerInfo)
+    public long forceCheckPoint(
+            TransactionId transactionId, long appendIndex, LogPosition position, TriggerInfo triggerInfo)
             throws IOException {
         try (Resource lock = mutex.checkPoint()) {
-            return checkpointByExternalParams(transactionId, position, triggerInfo);
+            return checkpointByExternalParams(transactionId, position, appendIndex, triggerInfo);
         }
     }
 
@@ -158,7 +159,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     @Override
     public long checkPointIfNeeded(TriggerInfo info) throws IOException {
-        var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+        var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
         if (threshold.isCheckPointingNeeded(
                 lastClosedTransaction.transactionId().id(), lastClosedTransaction.logPosition(), info)) {
             try (Resource lock = mutex.checkPoint()) {
@@ -173,21 +174,27 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             logShutdownMessage(triggerInfo);
             return NO_TRANSACTION_ID;
         }
-        var lastClosedTxData = transactionIdStore.getLastClosedTransaction();
+        var lastClosedTxData = metadataProvider.getLastClosedTransaction();
         var lastClosedTransaction = lastClosedTxData.transactionId();
-        return checkpointByExternalParams(lastClosedTransaction, lastClosedTxData.logPosition(), triggerInfo);
+        return checkpointByExternalParams(
+                lastClosedTransaction,
+                lastClosedTxData.logPosition(),
+                metadataProvider.getLastAppendIndex(),
+                triggerInfo);
     }
 
     private long checkpointByExternalParams(
-            TransactionId transactionId, LogPosition logPosition, TriggerInfo triggerInfo) throws IOException {
+            TransactionId transactionId, LogPosition logPosition, long appendIndex, TriggerInfo triggerInfo)
+            throws IOException {
         if (shutdown) {
             logShutdownMessage(triggerInfo);
             return NO_TRANSACTION_ID;
         }
-        return doCheckpoint(transactionId, logPosition, triggerInfo);
+        return doCheckpoint(transactionId, appendIndex, logPosition, triggerInfo);
     }
 
-    private long doCheckpoint(TransactionId transactionId, LogPosition logPosition, TriggerInfo triggerInfo)
+    private long doCheckpoint(
+            TransactionId transactionId, long appendIndex, LogPosition logPosition, TriggerInfo triggerInfo)
             throws IOException {
         var databaseTracer = tracers.getDatabaseTracer();
         try (var cursorContext = cursorContextFactory.create(CHECKPOINT_TAG);
@@ -195,7 +202,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             long lastClosedTransactionId = transactionId.id();
             cursorContext.getVersionContext().initWrite(lastClosedTransactionId);
             KernelVersion kernelVersion = versionProvider.kernelVersion();
-            var ongoingCheckpoint = new LatestCheckpointInfo(transactionId);
+            var ongoingCheckpoint = new LatestCheckpointInfo(transactionId, appendIndex);
             String checkpointReason = triggerInfo.describe(ongoingCheckpoint);
             /*
              * Check kernel health before going into waiting for transactions to be closed, to avoid
@@ -222,7 +229,13 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
              */
             databasePanic.assertNoPanic(IOException.class);
             checkpointAppender.checkPoint(
-                    checkPointEvent, transactionId, kernelVersion, logPosition, clock.instant(), checkpointReason);
+                    checkPointEvent,
+                    transactionId,
+                    appendIndex,
+                    kernelVersion,
+                    logPosition,
+                    clock.instant(),
+                    checkpointReason);
             threshold.checkPointHappened(lastClosedTransactionId, logPosition);
             long durationMillis = startTime.elapsed(MILLISECONDS);
             checkPointEvent.checkpointCompleted(durationMillis);

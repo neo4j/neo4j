@@ -168,7 +168,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
                 storeCursors,
                 commitmentFactory.newCommitment(),
                 transactionIdGenerator);
-        tx.batchAppended(new LogPosition(1, 2), new LogPosition(3, 4), 1);
+        tx.batchAppended(2, new LogPosition(1, 2), new LogPosition(3, 4), 1);
         return tx;
     }
 

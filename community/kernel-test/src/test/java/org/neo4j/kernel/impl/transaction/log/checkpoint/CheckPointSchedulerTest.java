@@ -205,7 +205,8 @@ class CheckPointSchedulerTest {
             }
 
             @Override
-            public long forceCheckPoint(TransactionId transactionId, LogPosition position, TriggerInfo triggerInfo) {
+            public long forceCheckPoint(
+                    TransactionId transactionId, long appendIndex, LogPosition position, TriggerInfo triggerInfo) {
                 return 0;
             }
 
@@ -352,7 +353,8 @@ class CheckPointSchedulerTest {
         }
 
         @Override
-        public long forceCheckPoint(TransactionId transactionId, LogPosition position, TriggerInfo triggerInfo) {
+        public long forceCheckPoint(
+                TransactionId transactionId, long appendIndex, LogPosition position, TriggerInfo triggerInfo) {
             throw new UnsupportedOperationException();
         }
 
@@ -407,7 +409,8 @@ class CheckPointSchedulerTest {
         }
 
         @Override
-        public long forceCheckPoint(TransactionId transactionId, LogPosition position, TriggerInfo triggerInfo) {
+        public long forceCheckPoint(
+                TransactionId transactionId, long appendIndex, LogPosition position, TriggerInfo triggerInfo) {
             throw new UnsupportedOperationException("This should have not been called");
         }
 

@@ -1175,10 +1175,10 @@ class EnvelopeReadChannelTest {
 
     private static void writeZeroSegment(ByteBuffer buffer, int segmentSize, int previousLogFileChecksum) {
         try {
-            LogFormat.V9.serializeHeader(
+            LogFormat.V10.serializeHeader(
                     buffer,
-                    LogFormat.V9.newHeader(
-                            42, 1, StoreId.UNKNOWN, segmentSize, previousLogFileChecksum, LATEST_KERNEL_VERSION));
+                    LogFormat.V10.newHeader(
+                            42, 1, 1, StoreId.UNKNOWN, segmentSize, previousLogFileChecksum, LATEST_KERNEL_VERSION));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

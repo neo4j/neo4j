@@ -56,9 +56,11 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.ReadOnlyLogVersionRepository;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
@@ -91,6 +93,7 @@ public class LogFilesBuilder {
     private LogVersionRepository logVersionRepository;
     private LogFileVersionTracker logFileVersionTracker;
     private TransactionIdStore transactionIdStore;
+    private AppendIndexProvider appendIndexProvider;
     private LongSupplier lastCommittedTransactionIdSupplier;
     private ThrowingSupplier<LogPosition, IOException> lastClosedPositionSupplier;
     private boolean fileBasedOperationsOnly;
@@ -286,6 +289,11 @@ public class LogFilesBuilder {
         return this;
     }
 
+    public LogFilesBuilder withAppendIndexProvider(AppendIndexProvider appendIndexProvider) {
+        this.appendIndexProvider = appendIndexProvider;
+        return this;
+    }
+
     public LogFilesBuilder withLogsDirectory(Path logsDirectory) {
         this.logsDirectory = logsDirectory;
         return this;
@@ -329,6 +337,7 @@ public class LogFilesBuilder {
         LogVersionRepositoryProvider logVersionRepositorySupplier = getLogVersionRepositoryProvider();
         LogFileVersionTracker versionTracker = getLogFileVersionTracker();
         LastCommittedTransactionIdProvider lastCommittedIdSupplier = lastCommittedIdProvider();
+        LastAppendIndexProvider lastAppendIndexProvider = lastAppendIndexProvider();
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
         LastClosedPositionProvider lastClosedTransactionPositionProvider = closePositionProvider();
 
@@ -347,6 +356,7 @@ public class LogFilesBuilder {
                 tryPreallocateTransactionLogs,
                 commandReaderFactory(),
                 lastCommittedIdSupplier,
+                lastAppendIndexProvider,
                 committingTransactionIdSupplier,
                 lastClosedTransactionPositionProvider,
                 logVersionRepositorySupplier,
@@ -369,6 +379,20 @@ public class LogFilesBuilder {
                 readOnlyLogs,
                 envelopeSegmentBlockSizeBytes,
                 getBufferSizeBytes());
+    }
+
+    private LastAppendIndexProvider lastAppendIndexProvider() {
+        if (appendIndexProvider != null) {
+            return appendIndexProvider::getLastAppendIndex;
+        }
+        if (dependencies != null && dependencies.containsDependency(MetadataProvider.class)) {
+            MetadataProvider metadataProvider = resolveDependency(MetadataProvider.class);
+            return metadataProvider::getLastAppendIndex;
+        }
+        return () -> {
+            throw new UnsupportedOperationException(
+                    "Unable to provide last append index in this mode. Please build full version of log files to be able to use real append index provider.");
+        };
     }
 
     private CommandReaderFactory commandReaderFactory() {

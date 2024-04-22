@@ -25,6 +25,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory.ofLogEntry;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.checkpointLogRotation;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
 
 import java.io.IOException;
@@ -219,6 +220,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     null,
                     lastObservedKernelVersion,
                     null,
+                    BASE_APPEND_INDEX,
                     "Corrupt checkpoint file"));
         }
         return Optional.empty();

@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.transaction;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -35,6 +37,7 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     private final SimpleTransactionIdStore transactionIdStore;
     private final SimpleLogVersionRepository logVersionRepository;
     private final ExternalStoreId externalStoreId = new ExternalStoreId(UUID.randomUUID());
+    private final AtomicLong appendIndex = new AtomicLong();
 
     public SimpleMetaDataProvider() {
         transactionIdStore = new SimpleTransactionIdStore();
@@ -96,9 +99,14 @@ public class SimpleMetaDataProvider implements MetadataProvider {
 
     @Override
     public void transactionCommitted(
-            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
+            long transactionId,
+            long appendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
         transactionIdStore.transactionCommitted(
-                transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex);
+                transactionId, appendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
@@ -129,19 +137,31 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId,
+            long transactionAppendIndex,
             KernelVersion kernelVersion,
             int checksum,
             long commitTimestamp,
             long consensusIndex,
             long byteOffset,
-            long logVersion) {
+            long logVersion,
+            long appendIndex) {
         transactionIdStore.setLastCommittedAndClosedTransactionId(
-                transactionId, kernelVersion, checksum, commitTimestamp, consensusIndex, byteOffset, logVersion);
+                transactionId,
+                transactionAppendIndex,
+                kernelVersion,
+                checksum,
+                commitTimestamp,
+                consensusIndex,
+                byteOffset,
+                logVersion,
+                appendIndex);
+        this.appendIndex.set(appendIndex);
     }
 
     @Override
     public void transactionClosed(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
@@ -149,12 +169,20 @@ public class SimpleMetaDataProvider implements MetadataProvider {
             long commitTimestamp,
             long consensusIndex) {
         transactionIdStore.transactionClosed(
-                transactionId, kernelVersion, logVersion, byteOffset, checksum, commitTimestamp, consensusIndex);
+                transactionId,
+                appendIndex,
+                kernelVersion,
+                logVersion,
+                byteOffset,
+                checksum,
+                commitTimestamp,
+                consensusIndex);
     }
 
     @Override
     public void resetLastClosedTransaction(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
@@ -162,8 +190,18 @@ public class SimpleMetaDataProvider implements MetadataProvider {
             long commitTimestamp,
             long consensusIndex) {
         transactionIdStore.resetLastClosedTransaction(
-                transactionId, kernelVersion, byteOffset, logVersion, checksum, commitTimestamp, consensusIndex);
+                transactionId,
+                appendIndex,
+                kernelVersion,
+                byteOffset,
+                logVersion,
+                checksum,
+                commitTimestamp,
+                consensusIndex);
     }
+
+    @Override
+    public void appendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex) {}
 
     @Override
     public Optional<UUID> getDatabaseIdUuid(CursorContext cursorContext) {
@@ -178,5 +216,15 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     @Override
     public void regenerateMetadata(StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext) {
         throw new UnsupportedOperationException("RegenerateMetadata is not supported.");
+    }
+
+    @Override
+    public long nextAppendIndex() {
+        return appendIndex.incrementAndGet();
+    }
+
+    @Override
+    public long getLastAppendIndex() {
+        return appendIndex.getAcquire();
     }
 }

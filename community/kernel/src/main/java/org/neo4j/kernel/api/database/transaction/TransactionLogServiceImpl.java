@@ -138,7 +138,8 @@ public class TransactionLogServiceImpl implements TransactionLogService {
                 txId, position);
 
         // Write checkpoint at the end of txId
-        checkPointer.forceCheckPoint(transactionId, position, new SimpleTriggerInfo(reason));
+        // TODO:misha for now we shipping duplicate of transaction id as append index
+        checkPointer.forceCheckPoint(transactionId, transactionId.id(), position, new SimpleTriggerInfo(reason));
     }
 
     private ArrayList<LogChannel> collectChannels(

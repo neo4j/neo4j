@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newChunkStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newRollbackEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_END;
@@ -36,8 +38,6 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
-import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
-import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryRollback;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.util.VisibleForTesting;
@@ -57,6 +57,7 @@ public class LogEntryWriter<T extends WritableChannel> {
             KernelVersion kernelVersion,
             long timeWritten,
             long latestCommittedTxWhenStarted,
+            long appendIndex,
             int previousChecksum,
             byte[] additionalHeaderData)
             throws IOException {
@@ -70,19 +71,26 @@ public class LogEntryWriter<T extends WritableChannel> {
                                 kernelVersion,
                                 timeWritten,
                                 latestCommittedTxWhenStarted,
+                                appendIndex,
                                 previousChecksum,
                                 additionalHeaderData,
                                 null));
     }
 
     public void writeChunkStartEntry(
-            KernelVersion kernelVersion, long timeWritten, long chunkId, LogPosition previousChunkStart)
+            KernelVersion kernelVersion,
+            long timeWritten,
+            long chunkId,
+            long appendIndex,
+            LogPosition previousChunkStart)
             throws IOException {
         updateSerializationSet(kernelVersion);
 
         logEntrySerializationSet
                 .select(CHUNK_START)
-                .write(channel, new LogEntryChunkStart(kernelVersion, timeWritten, chunkId, previousChunkStart));
+                .write(
+                        channel,
+                        newChunkStartEntry(kernelVersion, timeWritten, chunkId, appendIndex, previousChunkStart));
     }
 
     public int writeChunkEndEntry(KernelVersion kernelVersion, long transactionId, long chunkId) throws IOException {
@@ -93,13 +101,13 @@ public class LogEntryWriter<T extends WritableChannel> {
                 .write(channel, new LogEntryChunkEnd(kernelVersion, transactionId, chunkId, 0));
     }
 
-    public int writeRollbackEntry(KernelVersion kernelVersion, long transactionId, long timeWritten)
+    public int writeRollbackEntry(KernelVersion kernelVersion, long transactionId, long appendIndex, long timeWritten)
             throws IOException {
         updateSerializationSet(kernelVersion);
 
         return logEntrySerializationSet
                 .select(TX_ROLLBACK)
-                .write(channel, new LogEntryRollback(kernelVersion, transactionId, timeWritten, 0));
+                .write(channel, newRollbackEntry(kernelVersion, transactionId, appendIndex, timeWritten));
     }
 
     public int writeCommitEntry(KernelVersion kernelVersion, long transactionId, long timeWritten) throws IOException {

@@ -25,4 +25,9 @@ import org.neo4j.kernel.KernelVersion;
  * Transaction id plus meta data that says something about its contents, for comparison.
  */
 public record TransactionId(
-        long id, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {}
+        long id,
+        long appendIndex,
+        KernelVersion kernelVersion,
+        int checksum,
+        long commitTimestamp,
+        long consensusIndex) {}

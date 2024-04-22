@@ -30,10 +30,12 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     private final LogPosition logPosition;
     private final TransactionId lastCommittedTransaction;
+    private final long appendIndex;
 
     public ReadOnlyTransactionIdStore(LogTailLogVersionsMetadata logTailMetadata) {
         this.lastCommittedTransaction = logTailMetadata.getLastCommittedTransaction();
         logPosition = logTailMetadata.getLastTransactionLogPosition();
+        appendIndex = logTailMetadata.getLastCheckpointedAppendIndex();
     }
 
     @Override
@@ -48,7 +50,12 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
 
     @Override
     public void transactionCommitted(
-            long transactionId, KernelVersion kernelVersion, int checksum, long commitTimestamp, long consensusIndex) {
+            long transactionId,
+            long appendIndex,
+            KernelVersion kernelVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
@@ -80,18 +87,21 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId,
+            long transactionAppendIndex,
             KernelVersion kernelVersion,
             int checksum,
             long commitTimestamp,
             long consensusIndex,
             long logByteOffset,
-            long logVersion) {
+            long logVersion,
+            long appendIndex) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
     @Override
     public void transactionClosed(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             long logVersion,
             long logByteOffset,
@@ -104,6 +114,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     @Override
     public void resetLastClosedTransaction(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             long logVersion,
             long byteOffset,
@@ -112,4 +123,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
             long consensusIndex) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
+
+    @Override
+    public void appendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex) {}
 }

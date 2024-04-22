@@ -35,6 +35,7 @@ public class LogHeader {
     private final LogFormat logFormatVersion;
     private final long logVersion;
     private final long lastCommittedTxId;
+    private final long lastAppendIndex;
     private final StoreId storeId;
     private final LogPosition startPosition;
     private final int segmentBlockSize;
@@ -45,6 +46,7 @@ public class LogHeader {
             byte logFormatVersion,
             long logVersion,
             long lastCommittedTxId,
+            long lastAppendIndex,
             StoreId storeId,
             long headerSize,
             int segmentBlockSize,
@@ -53,6 +55,7 @@ public class LogHeader {
         this.logFormatVersion = LogFormat.fromByteVersion(logFormatVersion);
         this.logVersion = logVersion;
         this.lastCommittedTxId = lastCommittedTxId;
+        this.lastAppendIndex = lastAppendIndex;
         this.storeId = storeId;
         this.segmentBlockSize = segmentBlockSize;
         if (segmentBlockSize != UNKNOWN_LOG_SEGMENT_SIZE) {
@@ -69,6 +72,7 @@ public class LogHeader {
         logFormatVersion = logHeader.logFormatVersion;
         logVersion = version;
         lastCommittedTxId = logHeader.lastCommittedTxId;
+        lastAppendIndex = logHeader.lastAppendIndex;
         storeId = logHeader.storeId;
         segmentBlockSize = logHeader.segmentBlockSize;
         startPosition = new LogPosition(version, logHeader.startPosition.getByteOffset());
@@ -108,6 +112,10 @@ public class LogHeader {
         return kernelVersion;
     }
 
+    public long getLastAppendIndex() {
+        return lastAppendIndex;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -120,6 +128,7 @@ public class LogHeader {
         return logFormatVersion == logHeader.logFormatVersion
                 && logVersion == logHeader.logVersion
                 && lastCommittedTxId == logHeader.lastCommittedTxId
+                && lastAppendIndex == logHeader.lastAppendIndex
                 && Objects.equals(storeId, logHeader.storeId)
                 && Objects.equals(startPosition, logHeader.startPosition)
                 && segmentBlockSize == logHeader.segmentBlockSize
@@ -133,6 +142,7 @@ public class LogHeader {
                 logFormatVersion,
                 logVersion,
                 lastCommittedTxId,
+                lastAppendIndex,
                 storeId,
                 startPosition,
                 segmentBlockSize,
@@ -142,14 +152,10 @@ public class LogHeader {
 
     @Override
     public String toString() {
-        return "LogHeader{" + "logFormatVersion="
-                + logFormatVersion + ", logVersion="
-                + logVersion + ", lastCommittedTxId="
-                + lastCommittedTxId + ", storeId="
-                + storeId + ", startPosition="
-                + startPosition + ", segmentBlockSize="
-                + segmentBlockSize + ", previousLogFileChecksum="
-                + previousLogFileChecksum + ", kernelVersion="
-                + kernelVersion + '}';
+        return "LogHeader{" + "logFormatVersion=" + logFormatVersion + ", logVersion=" + logVersion
+                + ", lastCommittedTxId=" + lastCommittedTxId + ", lastAppendIndex="
+                + lastAppendIndex + ", storeId=" + storeId + ", startPosition=" + startPosition + ", segmentBlockSize="
+                + segmentBlockSize
+                + ", previousLogFileChecksum=" + previousLogFileChecksum + ", kernelVersion=" + kernelVersion + '}';
     }
 }

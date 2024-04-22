@@ -74,6 +74,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -84,6 +85,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -118,8 +120,9 @@ class TransactionLogFileTest {
 
     private final long rotationThreshold = ByteUnit.mebiBytes(1);
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
+    private final AppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
-            2L, DEFAULT_BOOTSTRAP_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
+            2L, 3L, DEFAULT_BOOTSTRAP_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
 
     @BeforeEach
     void setUp() {
@@ -158,7 +161,7 @@ class TransactionLogFileTest {
         fileSystem
                 .write(logFiles.getLogFile().getLogFileForVersion(logVersionRepository.getCurrentLogVersion()))
                 .close();
-        transactionIdStore.transactionCommitted(5L, DEFAULT_BOOTSTRAP_VERSION, 5, 5L, 6L);
+        transactionIdStore.transactionCommitted(5L, 6L, DEFAULT_BOOTSTRAP_VERSION, 5, 5L, 6L);
 
         TransactionLogVersionLocator versionLocator = new TransactionLogVersionLocator(4L);
         logFiles.getLogFile().accept(versionLocator);
@@ -174,6 +177,7 @@ class TransactionLogFileTest {
         LogFilesBuilder.builder(databaseLayout, fileSystem, () -> kernelVersion)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
+                .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(STORE_ID)
                 .withNativeAccess(capturingNativeAccess)
@@ -820,6 +824,7 @@ class TransactionLogFileTest {
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withLogFileVersionTracker(logFileVersionTracker)
+                .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(STORE_ID)
                 .build();
@@ -839,6 +844,7 @@ class TransactionLogFileTest {
         LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, () -> kernelVersion)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
+                .withAppendIndexProvider(appendIndexProvider)
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(STORE_ID)
                 .withNativeAccess(capturingNativeAccess)
@@ -856,8 +862,8 @@ class TransactionLogFileTest {
         var filesHelper = new TransactionLogFilesHelper(fileSystem, filePath);
         try (StoreChannel storeChannel = fileSystem.write(filesHelper.getLogFileForVersion(version))) {
             LogFormat logFormat = LogFormat.fromKernelVersion(kernelVersion);
-            LogHeader logHeader =
-                    logFormat.newHeader(version, lastCommittedTxId, STORE_ID, 256, BASE_TX_CHECKSUM, kernelVersion);
+            LogHeader logHeader = logFormat.newHeader(
+                    version, lastCommittedTxId, lastCommittedTxId + 5, STORE_ID, 256, BASE_TX_CHECKSUM, kernelVersion);
             writeLogHeader(storeChannel, logHeader, INSTANCE);
         }
     }

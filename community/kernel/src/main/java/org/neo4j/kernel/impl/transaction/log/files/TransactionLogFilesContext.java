@@ -44,6 +44,7 @@ public class TransactionLogFilesContext {
     private final AtomicBoolean tryPreallocateTransactionLogs;
     private final CommandReaderFactory commandReaderFactory;
     private final LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier;
+    private final LastAppendIndexProvider lastAppendIndexProvider;
     private final LongSupplier committingTransactionIdSupplier;
     private final LastClosedPositionProvider lastClosedPositionProvider;
     private final LogVersionRepositoryProvider logVersionRepositoryProvider;
@@ -73,6 +74,7 @@ public class TransactionLogFilesContext {
             AtomicBoolean tryPreallocateTransactionLogs,
             CommandReaderFactory commandReaderFactory,
             LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier,
+            LastAppendIndexProvider lastAppendIndexProvider,
             LongSupplier committingTransactionIdSupplier,
             LastClosedPositionProvider lastClosedPositionProvider,
             LogVersionRepositoryProvider logVersionRepositoryProvider,
@@ -100,6 +102,7 @@ public class TransactionLogFilesContext {
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.commandReaderFactory = commandReaderFactory;
         this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
+        this.lastAppendIndexProvider = lastAppendIndexProvider;
         this.committingTransactionIdSupplier = committingTransactionIdSupplier;
         this.lastClosedPositionProvider = lastClosedPositionProvider;
         this.logVersionRepositoryProvider = logVersionRepositoryProvider;
@@ -150,6 +153,10 @@ public class TransactionLogFilesContext {
 
     public long committingTransactionId() {
         return committingTransactionIdSupplier.getAsLong();
+    }
+
+    public long appendIndex() {
+        return lastAppendIndexProvider.lastAppendIndex();
     }
 
     LastClosedPositionProvider getLastClosedTransactionPositionProvider() {

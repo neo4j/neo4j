@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
@@ -49,6 +50,10 @@ public interface AdditionalInitialIds {
 
     long checkpointLogVersion();
 
+    long lastAppendIndex();
+
+    long lastCommittedTransactionAppendIndex();
+
     /**
      * High ids of zero, useful when creating a completely new store with {@link BatchImporter}.
      */
@@ -76,6 +81,16 @@ public interface AdditionalInitialIds {
         @Override
         public long checkpointLogVersion() {
             return INITIAL_LOG_VERSION;
+        }
+
+        @Override
+        public long lastAppendIndex() {
+            return BASE_APPEND_INDEX;
+        }
+
+        @Override
+        public long lastCommittedTransactionAppendIndex() {
+            return BASE_APPEND_INDEX;
         }
     };
 }

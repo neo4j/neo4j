@@ -130,6 +130,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
@@ -163,6 +164,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
@@ -195,6 +197,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
@@ -227,6 +230,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
@@ -304,6 +308,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
@@ -344,6 +349,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        anyLong(),
                         any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
@@ -369,7 +375,6 @@ class CheckPointerImplTest {
             try {
                 checkPointer.forceCheckPoint(INFO);
             } catch (Throwable e) {
-                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         });
@@ -415,10 +420,10 @@ class CheckPointerImplTest {
 
     private void mockTxIdStore() {
         var initialCommitted = new ClosedTransactionMetadata(
-                new TransactionId(initialTransactionId, LATEST_KERNEL_VERSION, 4, 5, UNKNOWN_CONSENSUS_INDEX),
+                new TransactionId(initialTransactionId, 6, LATEST_KERNEL_VERSION, 4, 5, UNKNOWN_CONSENSUS_INDEX),
                 logPosition);
         var otherCommitted = new ClosedTransactionMetadata(
-                new TransactionId(transactionId, LATEST_KERNEL_VERSION, 6, 7, UNKNOWN_CONSENSUS_INDEX), logPosition);
+                new TransactionId(transactionId, 8, LATEST_KERNEL_VERSION, 6, 7, UNKNOWN_CONSENSUS_INDEX), logPosition);
         when(metadataProvider.getLastClosedTransaction()).thenReturn(initialCommitted, otherCommitted);
         when(metadataProvider.getLastClosedTransactionId())
                 .thenReturn(initialTransactionId, transactionId, transactionId);
@@ -436,6 +441,7 @@ class CheckPointerImplTest {
                         .checkPoint(
                                 any(LogCheckPointEvent.class),
                                 any(TransactionId.class),
+                                anyLong(),
                                 any(KernelVersion.class),
                                 any(LogPosition.class),
                                 any(Instant.class),

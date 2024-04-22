@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
@@ -51,5 +52,10 @@ public class EmptyLogTailLogVersionsMetadata implements LogTailLogVersionsMetada
     @Override
     public LogPosition getLastTransactionLogPosition() {
         return START_POSITION;
+    }
+
+    @Override
+    public long getLastCheckpointedAppendIndex() {
+        return BASE_APPEND_INDEX;
     }
 }

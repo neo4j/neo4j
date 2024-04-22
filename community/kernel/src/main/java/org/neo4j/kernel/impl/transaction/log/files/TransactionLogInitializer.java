@@ -55,7 +55,7 @@ import org.neo4j.storageengine.api.TransactionId;
  */
 public class TransactionLogInitializer {
     private final FileSystemAbstraction fs;
-    private final MetadataProvider store;
+    private final MetadataProvider metadataProvider;
     private final StorageEngineFactory storageEngineFactory;
     private final MetadataCache metadataCache;
 
@@ -68,14 +68,14 @@ public class TransactionLogInitializer {
             @Override
             public void initializeLogFiles(
                     DatabaseLayout databaseLayout,
-                    MetadataProvider store,
+                    MetadataProvider metadataProvider,
                     MetadataCache metadataCache,
                     FileSystemAbstraction fileSystem,
                     String checkpointReason) {
                 try {
                     TransactionLogInitializer initializer = new TransactionLogInitializer(
                             fileSystem,
-                            store,
+                            metadataProvider,
                             StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout)
                                     .orElseThrow(),
                             metadataCache);
@@ -89,14 +89,14 @@ public class TransactionLogInitializer {
             @Override
             public void clearHistoryAndInitializeLogFiles(
                     DatabaseLayout databaseLayout,
-                    MetadataProvider store,
+                    MetadataProvider metadataProvider,
                     MetadataCache metadataCache,
                     FileSystemAbstraction fileSystem,
                     String checkpointReason) {
                 try {
                     TransactionLogInitializer initializer = new TransactionLogInitializer(
                             fileSystem,
-                            store,
+                            metadataProvider,
                             StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout)
                                     .orElseThrow(),
                             metadataCache);
@@ -112,11 +112,11 @@ public class TransactionLogInitializer {
 
     public TransactionLogInitializer(
             FileSystemAbstraction fs,
-            MetadataProvider store,
+            MetadataProvider metadataProvider,
             StorageEngineFactory storageEngineFactory,
             MetadataCache metadataCache) {
         this.fs = fs;
-        this.store = store;
+        this.metadataProvider = metadataProvider;
         this.storageEngineFactory = storageEngineFactory;
         this.metadataCache = metadataCache;
     }
@@ -154,9 +154,10 @@ public class TransactionLogInitializer {
 
     private LogFilesSpan buildLogFiles(DatabaseLayout layout, Path transactionLogsDirectory) throws IOException {
         LogFiles logFiles = LogFilesBuilder.builder(layout, fs, metadataCache)
-                .withLogVersionRepository(store)
-                .withTransactionIdStore(store)
-                .withStoreId(store.getStoreId())
+                .withLogVersionRepository(metadataProvider)
+                .withTransactionIdStore(metadataProvider)
+                .withAppendIndexProvider(metadataProvider)
+                .withStoreId(metadataProvider.getStoreId())
                 .withLogsDirectory(transactionLogsDirectory)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withDatabaseHealth(new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance()))
@@ -165,25 +166,34 @@ public class TransactionLogInitializer {
     }
 
     private long appendEmptyTransactionAndCheckPoint(LogFiles logFiles, String reason) throws IOException {
-        TransactionId committedTx = store.getLastCommittedTransaction();
+        TransactionId committedTx = metadataProvider.getLastCommittedTransaction();
         long consensusIndex = UNKNOWN_CONSENSUS_INDEX;
         long timestamp = committedTx.commitTimestamp();
-        long upgradeTransactionId = store.nextCommittingTransactionId();
+        long upgradeTransactionId = metadataProvider.nextCommittingTransactionId();
+        long appendIndex = metadataProvider.nextAppendIndex();
         KernelVersion kernelVersion = metadataCache.kernelVersion();
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
         CompleteTransaction emptyTx = emptyTransaction(timestamp, upgradeTransactionId, kernelVersion, consensusIndex);
         int checksum = transactionLogWriter.append(
-                emptyTx, upgradeTransactionId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM, LogPosition.UNSPECIFIED);
+                emptyTx,
+                upgradeTransactionId,
+                NOT_SPECIFIED_CHUNK_ID,
+                appendIndex,
+                BASE_TX_CHECKSUM,
+                LogPosition.UNSPECIFIED);
         logFile.forceAfterAppend(LogAppendEvent.NULL);
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint(
                 logFiles,
                 reason,
                 position,
-                new TransactionId(upgradeTransactionId, kernelVersion, checksum, timestamp, consensusIndex),
+                new TransactionId(
+                        upgradeTransactionId, appendIndex, kernelVersion, checksum, timestamp, consensusIndex),
+                appendIndex,
                 kernelVersion);
-        store.transactionCommitted(upgradeTransactionId, kernelVersion, checksum, timestamp, consensusIndex);
+        metadataProvider.transactionCommitted(
+                upgradeTransactionId, appendIndex, kernelVersion, checksum, timestamp, consensusIndex);
         return upgradeTransactionId;
     }
 
@@ -201,9 +211,15 @@ public class TransactionLogInitializer {
     }
 
     private static void appendCheckpoint(
-            LogFiles logFiles, String reason, LogPosition position, TransactionId transactionId, KernelVersion version)
+            LogFiles logFiles,
+            String reason,
+            LogPosition position,
+            TransactionId transactionId,
+            long appendIndex,
+            KernelVersion version)
             throws IOException {
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
-        checkpointAppender.checkPoint(LogCheckPointEvent.NULL, transactionId, version, position, Instant.now(), reason);
+        checkpointAppender.checkPoint(
+                LogCheckPointEvent.NULL, transactionId, appendIndex, version, position, Instant.now(), reason);
     }
 }

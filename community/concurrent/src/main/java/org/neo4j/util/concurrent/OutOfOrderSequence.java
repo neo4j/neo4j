@@ -36,9 +36,10 @@ public interface OutOfOrderSequence {
             byte kernelVersion,
             int checksum,
             long commitTimestamp,
-            long consensusIndex) {}
+            long consensusIndex,
+            long appendIndex) {}
 
-    Meta EMPTY_META = new Meta(-1L, -1L, (byte) -1, 0, -1L, -1L);
+    Meta EMPTY_META = new Meta(-1L, -1L, (byte) -1, 0, -1L, -1L, -1L);
 
     record NumberWithMeta(long number, Meta meta) {}
     /**

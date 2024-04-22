@@ -305,7 +305,7 @@ class PhysicalFlushableChannelTest {
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 storeChannel, 1, LATEST_LOG_FORMAT, file, nativeChannelAccessor, databaseTracer);
         final var logHeader =
-                LATEST_LOG_FORMAT.newHeader(1, 0, StoreId.UNKNOWN, 1024, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
+                LATEST_LOG_FORMAT.newHeader(1, 0, 1, StoreId.UNKNOWN, 1024, BASE_TX_CHECKSUM, LATEST_KERNEL_VERSION);
         try (var channel = new PhysicalFlushableLogPositionAwareChannel(versionedStoreChannel, logHeader, INSTANCE)) {
             LogPosition initialPosition = channel.getCurrentLogPosition();
 

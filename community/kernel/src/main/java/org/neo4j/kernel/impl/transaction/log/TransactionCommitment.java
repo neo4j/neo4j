@@ -29,10 +29,11 @@ public class TransactionCommitment implements Commitment {
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
     private long transactionId;
+    private long appendIndex;
     private int checksum;
     private long consensusIndex;
     private KernelVersion kernelVersion;
-    private LogPosition logPosition;
+    private LogPosition logPositionAfterCommit;
     private long transactionCommitTimestamp;
 
     TransactionCommitment(TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore) {
@@ -43,6 +44,7 @@ public class TransactionCommitment implements Commitment {
     @Override
     public void commit(
             long transactionId,
+            long appendIndex,
             KernelVersion kernelVersion,
             LogPosition beforeCommit,
             LogPosition logPositionAfterCommit,
@@ -50,18 +52,20 @@ public class TransactionCommitment implements Commitment {
             long consensusIndex) {
         this.transactionId = transactionId;
         this.kernelVersion = kernelVersion;
-        this.logPosition = logPositionAfterCommit;
+        this.logPositionAfterCommit = logPositionAfterCommit;
         this.checksum = checksum;
         this.consensusIndex = consensusIndex;
-        this.transactionMetadataCache.cacheTransactionMetadata(transactionId, beforeCommit);
+        transactionIdStore.appendBatch(appendIndex, beforeCommit);
     }
 
     @Override
-    public void publishAsCommitted(long transactionCommitTimestamp) {
+    public void publishAsCommitted(long transactionCommitTimestamp, long appendIndex, LogPosition beforeCommit) {
         this.committed = true;
+        this.appendIndex = appendIndex;
         this.transactionCommitTimestamp = transactionCommitTimestamp;
+        this.transactionMetadataCache.cacheTransactionMetadata(transactionId, beforeCommit);
         transactionIdStore.transactionCommitted(
-                transactionId, kernelVersion, checksum, transactionCommitTimestamp, consensusIndex);
+                transactionId, appendIndex, kernelVersion, checksum, transactionCommitTimestamp, consensusIndex);
     }
 
     @Override
@@ -69,9 +73,10 @@ public class TransactionCommitment implements Commitment {
         if (committed) {
             transactionIdStore.transactionClosed(
                     transactionId,
+                    appendIndex,
                     kernelVersion,
-                    logPosition.getLogVersion(),
-                    logPosition.getByteOffset(),
+                    logPositionAfterCommit.getLogVersion(),
+                    logPositionAfterCommit.getByteOffset(),
                     checksum,
                     transactionCommitTimestamp,
                     consensusIndex);

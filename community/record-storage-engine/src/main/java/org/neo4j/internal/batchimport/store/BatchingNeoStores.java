@@ -305,12 +305,14 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             metaDataStore.setLastCommittedAndClosedTransactionId(
                     initialIds.lastCommittedTransactionId(),
+                    initialIds.lastCommittedTransactionAppendIndex(),
                     logTailMetadata.getLastCommittedTransaction().kernelVersion(),
                     initialIds.lastCommittedTransactionChecksum(),
                     BASE_TX_COMMIT_TIMESTAMP,
                     UNKNOWN_CONSENSUS_INDEX,
                     initialIds.lastCommittedTransactionLogByteOffset(),
-                    initialIds.lastCommittedTransactionLogVersion());
+                    initialIds.lastCommittedTransactionLogVersion(),
+                    initialIds.lastAppendIndex());
             metaDataStore.setCheckpointLogVersion(initialIds.checkpointLogVersion());
         }
     }

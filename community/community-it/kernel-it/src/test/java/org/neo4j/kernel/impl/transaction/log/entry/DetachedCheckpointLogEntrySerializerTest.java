@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
+import org.neo4j.kernel.impl.transaction.log.entry.v520.LogEntryDetachedCheckpointV5_20;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -102,7 +103,7 @@ class DetachedCheckpointLogEntrySerializerTest {
                 assertEquals(new LogPosition(100, 200), checkpointV50.getLogPosition());
                 assertEquals(TEST_STORE_ID, checkpointV50.getStoreId());
                 assertEquals(
-                        new TransactionId(70, KernelVersion.V5_0, 80, 90, UNKNOWN_CONSENSUS_INDEX),
+                        new TransactionId(70, 70, KernelVersion.V5_0, 80, 90, UNKNOWN_CONSENSUS_INDEX),
                         checkpointV50.getTransactionId());
             }
         }
@@ -193,14 +194,26 @@ class DetachedCheckpointLogEntrySerializerTest {
 
     private static void writeCheckpoint(WritableChannel channel, KernelVersion kernelVersion, String reason)
             throws IOException {
-        var transactionId = new TransactionId(70, LATEST_KERNEL_VERSION, 80, 90, 10);
+        var transactionId = new TransactionId(70, 70, LATEST_KERNEL_VERSION, 80, 90, 10);
         LogPosition logPosition = new LogPosition(100, 200);
         serializationSet(kernelVersion, LatestVersions.BINARY_VERSIONS)
                 .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0)
-                .write(
-                        channel,
-                        new LogEntryDetachedCheckpointV5_0(
-                                kernelVersion, transactionId, logPosition, 1, TEST_STORE_ID, reason));
+                .write(channel, checkpointEntry(kernelVersion, reason, transactionId, logPosition));
+    }
+
+    private static AbstractVersionAwareLogEntry checkpointEntry(
+            KernelVersion kernelVersion, String reason, TransactionId transactionId, LogPosition logPosition) {
+        if (kernelVersion.isAtLeast(KernelVersion.VERSION_APPEND_INDEX_INTRODUCED)) {
+            return new LogEntryDetachedCheckpointV5_20(
+                    kernelVersion,
+                    transactionId,
+                    transactionId.appendIndex() + 7,
+                    logPosition,
+                    1,
+                    TEST_STORE_ID,
+                    reason);
+        }
+        return new LogEntryDetachedCheckpointV5_0(kernelVersion, transactionId, logPosition, 1, TEST_STORE_ID, reason);
     }
 
     private LogEntryDetachedCheckpointV5_0 readCheckpoint(
