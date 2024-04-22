@@ -38,12 +38,15 @@ import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsModelIT {
-
     private CommunityTopologyGraphDbmsModel dbmsModel;
 
     @Override
     protected void createModel(Transaction tx) {
         dbmsModel = new CommunityTopologyGraphDbmsModel(tx);
+    }
+
+    protected TopologyGraphDbmsModel dbmsModel() {
+        return dbmsModel;
     }
 
     private static NormalizedDatabaseName name(String name) {
@@ -55,6 +58,9 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         // given
         var fooDb = newDatabase(b -> b.withDatabase("foo"));
         var barDb = newDatabase(b -> b.withDatabase("bar"));
+        createInternalReferenceForDatabase(tx, "foo", true, fooDb);
+        // reference should be returned without default alias too
+        // createInternalReferenceForDatabase(tx, "bar", true, barDb);
         createInternalReferenceForDatabase(tx, "fooAlias", false, fooDb);
         createInternalReferenceForDatabase(tx, "fooOtherAlias", false, fooDb);
         createInternalReferenceForDatabase(tx, "barAlias", false, barDb);
@@ -67,7 +73,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
                 new DatabaseReferenceImpl.Internal(name("barAlias"), barDb, false));
 
         // when
-        var aliases = dbmsModel.getAllInternalDatabaseReferences();
+        var aliases = dbmsModel().getAllInternalDatabaseReferences();
 
         // then
         assertThat(aliases).isEqualTo(expected);
@@ -91,7 +97,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
                 new DatabaseReferenceImpl.External(name("bar"), name("barAlias"), remoteNeo4j, barId));
 
         // when
-        var aliases = dbmsModel.getAllExternalDatabaseReferences();
+        var aliases = dbmsModel().getAllExternalDatabaseReferences();
 
         // then
         assertThat(aliases).isEqualTo(expected);
@@ -124,7 +130,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createExternalReferenceForDatabase(tx, compDb2.name(), "remAlias3", "rem5", remoteNeo4j, remAliasId5);
 
         // then
-        assertThat(dbmsModel.getAllCompositeDatabaseReferences())
+        assertThat(dbmsModel().getAllCompositeDatabaseReferences())
                 .isEqualTo(Set.of(
                         new DatabaseReferenceImpl.Composite(
                                 compDb1Name,
@@ -153,12 +159,12 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
                                                 remoteNeo4j,
                                                 remAliasId5)))));
 
-        assertThat(dbmsModel.getAllInternalDatabaseReferences())
+        assertThat(dbmsModel().getAllInternalDatabaseReferences())
                 .isEqualTo(Set.of(
                         new DatabaseReferenceImpl.Internal(name("loc"), locDb, true),
                         new DatabaseReferenceImpl.Internal(name("locAlias"), locDb, false)));
 
-        assertThat(dbmsModel.getAllExternalDatabaseReferences())
+        assertThat(dbmsModel().getAllExternalDatabaseReferences())
                 .isEqualTo(Set.of(
                         new DatabaseReferenceImpl.External(name("rem1"), name("remAlias"), remoteNeo4j, remAliasId1)));
     }
@@ -185,7 +191,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createInternalReferenceForDatabase(tx, bar.name(), true, bar);
 
         // then
-        assertThat(dbmsModel.getAllShardedPropertyDatabaseReferences())
+        assertThat(dbmsModel().getAllShardedPropertyDatabaseReferences())
                 .isEqualTo(Set.of(
                         new DatabaseReferenceImpl.SPD(
                                 new NormalizedDatabaseName(foo.name()),
@@ -232,7 +238,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
                                         name("rem"), name("remAlias"), compDb1Name, remoteNeo4j, barId2))));
 
         // when
-        var aliases = dbmsModel.getAllDatabaseReferences();
+        var aliases = dbmsModel().getAllDatabaseReferences();
 
         // then
         assertThat(aliases).isEqualTo(expected);
@@ -247,7 +253,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createExternalReferenceForDatabase(tx, aliasName, "foo", remoteNeo4j, randomUUID());
 
         // when
-        var result = dbmsModel.getDriverSettings(aliasName, DEFAULT_NAMESPACE);
+        var result = dbmsModel().getDriverSettings(aliasName, DEFAULT_NAMESPACE);
 
         // then
         assertThat(result).isEmpty();
@@ -266,7 +272,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createDriverSettingsForExternalAlias(tx, aliasNode, driverSettings);
 
         // when
-        var result = dbmsModel.getDriverSettings(aliasName, DEFAULT_NAMESPACE);
+        var result = dbmsModel().getDriverSettings(aliasName, DEFAULT_NAMESPACE);
 
         // then
         assertThat(result).isPresent();
@@ -287,7 +293,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createPropertiesForAlias(tx, aliasNode, properties);
 
         // when
-        var result = dbmsModel.getAliasProperties(aliasName, aliasNamespace);
+        var result = dbmsModel().getAliasProperties(aliasName, aliasNamespace);
 
         // then
         assertThat(result).isPresent();
@@ -306,7 +312,7 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createPropertiesForAlias(tx, aliasNode, properties);
 
         // when
-        var result = dbmsModel.getAliasProperties(aliasName, aliasNamespace);
+        var result = dbmsModel().getAliasProperties(aliasName, aliasNamespace);
 
         // then
         assertThat(result).isPresent();

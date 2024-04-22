@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -183,11 +182,8 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
             var aliasName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE_NAME, alias);
             var databaseId = CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db);
             int shardCount = (int) db.getProperty(DATABASE_SHARD_COUNT_PROPERTY, 0);
-            var shards = IntStream.range(0, shardCount)
-                    .boxed()
-                    .collect(Collectors.toMap(
-                            i -> i, i -> getDatabaseRefByAlias(DatabaseReferenceImpl.SPD.shardName(aliasName.name(), i))
-                                    .orElseThrow()));
+            var shards = DatabaseReferenceImpl.SPD.createForShards(
+                    aliasName.name(), shardCount, this::getDatabaseRefByAlias);
             return Optional.of(new DatabaseReferenceImpl.SPD(aliasName, databaseId, shards));
         });
     }

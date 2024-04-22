@@ -20,6 +20,8 @@
 package org.neo4j.dbms.systemgraph;
 
 import static java.time.Duration.ofSeconds;
+import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
+import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_MAX_LIFETIME;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_ACQUISITION_TIMEOUT;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_IDLE_TEST;
@@ -77,6 +79,12 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOVED_INSTANCE
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.SUPPORTED_COMPONENT_VERSIONS_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGET_NAME_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_ALLOCATOR_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_AUTO_ENABLE_FREE_SERVERS_FLAG;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_SECONDARIES_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TOPOLOGY_GRAPH_CONFIG_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.URL_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.VERSION_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.WAS_HOSTED_ON_RELATIONSHIP;
@@ -100,6 +108,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.provider.Arguments;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
@@ -558,5 +567,19 @@ public abstract class BaseTopologyGraphDbmsModelIT {
 
         return Stream.of(
                 Arguments.of(completeSettings), Arguments.of(missingSettings), Arguments.of(missingOtherSettings));
+    }
+
+    protected void createVersionNode() {
+        try (var tx = this.db.beginTx()) {
+            var versionNode = tx.createNode(VERSION_LABEL);
+            versionNode.setProperty(DBMS_RUNTIME_COMPONENT.name(), DbmsRuntimeVersion.GLORIOUS_FUTURE.getVersion());
+            var configNode = tx.createNode(TOPOLOGY_GRAPH_CONFIG_LABEL);
+            configNode.setProperty(TOPOLOGY_GRAPH_CONFIG_ALLOCATOR_PROPERTY, "foo");
+            configNode.setProperty(TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_PRIMARIES_PROPERTY, 9L);
+            configNode.setProperty(TOPOLOGY_GRAPH_CONFIG_DEFAULT_NUMBER_OF_SECONDARIES_PROPERTY, 10L);
+            configNode.setProperty(TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY, "bar");
+            configNode.setProperty(TOPOLOGY_GRAPH_CONFIG_AUTO_ENABLE_FREE_SERVERS_FLAG, false);
+            tx.commit();
+        }
     }
 }
