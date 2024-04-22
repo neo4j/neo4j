@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
-import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,7 +51,7 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
 
     public TransactionMemoryPool(
             ScopedMemoryPool delegate, Config config, BooleanSupplier openCheck, LogProvider logProvider) {
-        super(new MemoryPoolImpl(delegate.totalSize(), true, memory_transaction_database_max_size.name()));
+        super(new MemoryPoolImpl(delegate.totalSize(), true, memory_transaction_max_size.name()));
         this.delegate = delegate;
         this.config = config;
         this.openCheck = openCheck;
