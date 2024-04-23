@@ -30,7 +30,6 @@ import org.neo4j.fabric.planning.Fragment.Apply
 import org.neo4j.fabric.planning.Fragment.Init
 import org.neo4j.fabric.planning.Fragment.Leaf
 import org.neo4j.fabric.planning.Fragment.Union
-import org.neo4j.fabric.util.Errors
 
 class FabricFragmenter(
   defaultGraphName: String,

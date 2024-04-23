@@ -444,6 +444,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         (_, result) => result,
         subscriber,
         profile = false,
+        prePopulateResults = true,
         testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
       )
     newRecordingRuntimeResult(result, subscriber)
@@ -464,6 +465,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         (_, result) => result,
         subscriber,
         profile = false,
+        prePopulateResults = true,
         testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
       )
     newRecordingRuntimeResult(result, subscriber)

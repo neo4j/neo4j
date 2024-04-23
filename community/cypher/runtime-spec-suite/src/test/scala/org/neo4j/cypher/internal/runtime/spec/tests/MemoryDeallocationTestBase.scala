@@ -46,6 +46,7 @@ import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.UUID
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.util.Random
@@ -1058,7 +1059,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       consume(runtimeResult)
     } catch {
       case _: ReadAndDeleteTransactionConflictException =>
-        //some node is missing, ignore
+      // some node is missing, ignore
     }
 
     if (isParallel) {
