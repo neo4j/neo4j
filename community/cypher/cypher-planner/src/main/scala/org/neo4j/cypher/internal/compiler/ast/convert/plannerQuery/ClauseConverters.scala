@@ -526,14 +526,6 @@ object ClauseConverters {
     val converter = new PatternConverters(anonymousVariableNameGenerator)
     val pathPatterns = converter.convertPattern(clause.pattern)
 
-    // If a QPP depends on a non-local variable from a previous clause, we need to insert a horizon. This is to
-    // guarantee that the non-local variable is bound prior to QPP plan, so that the QPP plan may use it.
-    def qppHasDependencyToPreviousClauses: Boolean = {
-      val qppDependencies = pathPatterns.allQuantifiedPathPatterns.flatMap(_.dependencies)
-      val availableVars = acc.currentlyAvailableVariables
-      qppDependencies.intersect(availableVars).nonEmpty
-    }
-
     // If a selective path contains an interior variable that overlaps with another pattern node, we need to insert a
     // horizon.
     def hasPatternOverlapOnInteriorVars: Boolean = {
@@ -587,7 +579,7 @@ object ClauseConverters {
     }
 
     val accWithMaybeHorizon =
-      if (qppHasDependencyToPreviousClauses || hasPatternOverlapOnInteriorVars || isPotentiallyUnsolvable) {
+      if (hasPatternOverlapOnInteriorVars || isPotentiallyUnsolvable) {
         acc
           .withHorizon(PassthroughAllHorizon())
           .withTail(RegularSinglePlannerQuery(QueryGraph()))

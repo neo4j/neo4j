@@ -825,7 +825,11 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   test("Should plan quantified path pattern with a WHERE clause with multiple references to previous MATCH") {
     val query =
       """MATCH (a), (b)
-        |MATCH (a) ((n)-[r]->(m) WHERE n.prop > a.prop AND n.prop > b.prop)+ (b)
+        |CALL {
+        |  WITH a, b
+        |  MATCH (a) ((n)-[r]->(m) WHERE n.prop > a.prop AND n.prop > b.prop)+ (b)
+        |  RETURN n, m
+        |}
         |RETURN n, m""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
@@ -1859,7 +1863,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   test(
     "Should not plan VarExpand instead of Trail on quantified path pattern with pre-filter predicate that has only previously matched dependencies"
   ) {
-    val query = "match (z) MATCH (a) ((n)-[r]->(m) WHERE z.prop = true)+ (b) RETURN r"
+    val query = "MATCH (z) WITH * SKIP 0 MATCH (a) ((n)-[r]->(m) WHERE z.prop = true)+ (b) RETURN r"
     val plan = planner.plan(query).stripProduceResults
     val `(a) ((n)-[r]-(m))+ (b)` =
       TrailParameters(
@@ -1886,6 +1890,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.|.argument("n", "z")
       .|.allNodeScan("a", "z")
       .cacheProperties("cacheNFromStore[z.prop]")
+      .skip(0)
       .allNodeScan("z")
       .build()
   }
@@ -1950,7 +1955,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   test(
     "Should plan VarExpand instead of Trail on quantified path pattern with predicates that has dependency on variables from previous clauses"
   ) {
-    val query = s"MATCH (z) MATCH (a) ((n)-[r]->(m) WHERE r.p = z.p)+ (b) RETURN r"
+    val query = s"MATCH (z) WITH * SKIP 0 MATCH (a) ((n)-[r]->(m) WHERE r.p = z.p)+ (b) RETURN r"
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldEqual planner.subPlanBuilder()
@@ -1958,6 +1963,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .apply()
       .|.allNodeScan("a", "z")
       .cacheProperties("cacheNFromStore[z.p]")
+      .skip(0)
       .allNodeScan("z")
       .build()
   }
@@ -2311,7 +2317,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test("should plan pattern predicate with dependency on a variable from previous MATCH inside Trail") {
-    val query = s"MATCH (z) MATCH (a) ((n)-[r]->(m) WHERE EXISTS { (m)-[mzRel]-(z) })+ (b) RETURN r"
+    val query = s"MATCH (z) WITH * SKIP 0 MATCH (a) ((n)-[r]->(m) WHERE EXISTS { (m)-[mzRel]-(z) })+ (b) RETURN r"
     val plan = planner.plan(query).stripProduceResults
 
     val trailParameters = TrailParameters(
@@ -2338,6 +2344,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.|.expandAll("(n)-[r]->(m)")
       .|.|.argument("n", "z")
       .|.allNodeScan("a", "z")
+      .skip(0)
       .allNodeScan("z")
       .build()
   }
@@ -2478,5 +2485,44 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .allNodeScan("e")
         .build()
     )
+  }
+
+  test("should plan cartesian product for components connected only by a predicate inside QPP") {
+    // could be improved to plan Apply
+    val query =
+      """
+        |MATCH (a:User)
+        |MATCH (b) ((c)-[r]->(d) WHERE r.x > a.y)+ (e)
+        |RETURN a, b, c, d, e
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val trailParameters = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "b",
+      end = "e",
+      innerStart = "c",
+      innerEnd = "d",
+      groupNodes = Set(("c", "c"), ("d", "d")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
+    )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .filter("all(anon_0 IN range(0, size(r) - 1) WHERE (r[anon_0]).x > cacheN[a.y])")
+      .cartesianProduct()
+      .|.trail(trailParameters)
+      .|.|.filterExpression(isRepeatTrailUnique("r"))
+      .|.|.expandAll("(c)-[r]->(d)")
+      .|.|.argument("c")
+      .|.allNodeScan("b")
+      .cacheProperties("cacheNFromStore[a.y]")
+      .nodeByLabelScan("a", "User")
+      .build()
   }
 }
