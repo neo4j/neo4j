@@ -69,8 +69,8 @@ public class SelfSignedCertificateFactory {
     /** The maximum possible value in X.509 specification: 9999-12-31 23:59:59 */
     private static final Date NOT_AFTER = new Date(253_402_300_799_000L);
 
-    private static final String DEFAULT_KEY_FILE_NAME = "private.key";
-    private static final String DEFAULT_CERT_FILE_NAME = "public.crt";
+    public static final String DEFAULT_KEY_FILE_NAME = "private.key";
+    public static final String DEFAULT_CERT_FILE_NAME = "public.crt";
     private static final String DEFAULT_HOST_NAME = "localhost";
 
     private static volatile boolean cleanupRequired = true;
