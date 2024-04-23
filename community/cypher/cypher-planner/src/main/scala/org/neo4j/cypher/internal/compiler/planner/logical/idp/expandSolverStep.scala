@@ -315,10 +315,12 @@ object expandSolverStep {
     )
 
     // We only retain the relevant label infos to get more cache hits.
-    val filteredLabelInfo = updatedLabelInfo.view.filterKeys(Set(
-      quantifiedPathPattern.leftBinding.outer,
-      quantifiedPathPattern.rightBinding.outer
-    )).toMap
+    val filteredLabelInfo = updatedLabelInfo.view.filterKeys(
+      extractedPredicates.requiredSymbols ++ Set(
+        quantifiedPathPattern.leftBinding.outer,
+        quantifiedPathPattern.rightBinding.outer
+      )
+    ).toMap
 
     val innerPlan = qppInnerPlanner.planQPP(quantifiedPathPattern, fromLeft, extractedPredicates, filteredLabelInfo)
     val innerPlanPredicates = extractedPredicates.predicates.map(_.original)

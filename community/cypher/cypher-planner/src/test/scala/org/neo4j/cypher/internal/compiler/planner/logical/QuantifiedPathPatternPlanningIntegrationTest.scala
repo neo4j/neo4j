@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
@@ -49,7 +51,7 @@ import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
-    with AstConstructionTestSupport {
+    with AstConstructionTestSupport with LogicalPlanningAttributesTestSupport {
 
   private def disjoint(lhs: String, rhs: String, unnamedOffset: Int = 0): String =
     s"NONE(anon_$unnamedOffset IN $lhs WHERE anon_$unnamedOffset IN $rhs)"
@@ -2593,4 +2595,71 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     plan shouldEqual expected
   }
 
+  test("should pass label info to QPP planner to estimate cardinality correctly") {
+
+    val placeCount = 10
+    val toPlaceCount = 9500
+    val relsPerPlace = toPlaceCount / placeCount
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setLabelCardinality("Place", placeCount)
+      .setLabelCardinality("Start", 10)
+      .setRelationshipCardinality("(:Start)-[:TO_PLACE]->(:Place)", 10)
+      .setRelationshipCardinality("(:Start)-[:TO_PLACE]->()", 10)
+      .setRelationshipCardinality("(:Start)-[]->()", 5000)
+      .setRelationshipCardinality("()-[]->()", 10000)
+      .setRelationshipCardinality("()-[:TO_PLACE]->()", toPlaceCount)
+      .setRelationshipCardinality("()-[:TO_PLACE]->(:Place)", toPlaceCount)
+      .build()
+
+    val query =
+      """
+        |MATCH (start:Start)-[r:TO_PLACE]->(place:Place)
+        |MATCH
+        |  (start)
+        |  ((b)-[p]->(c)
+        |    WHERE EXISTS { (x)-[q:TO_PLACE]->(place) WHERE x.prop > p.prop }
+        |  )+
+        |  (end)
+        |RETURN start, end, b, c
+        |""".stripMargin
+
+    val plan = planner.planState(query)
+
+    val trailParameters = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "start",
+      end = "end",
+      innerStart = "b",
+      innerEnd = "c",
+      groupNodes = Set(("b", "b"), ("c", "c")),
+      groupRelationships = Set(),
+      innerRelationships = Set("p"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
+    )
+
+    val expected = planner.subPlanBuilder()
+      .produceResults("start", "end", "b", "c")
+      .trail(trailParameters)
+      .|.filterExpression(isRepeatTrailUnique("p"))
+      .|.semiApply()
+      .|.|.filter("x.prop > cacheR[p.prop]")
+      .|.|.expandAll("(place)<-[q:TO_PLACE]-(x)").withCardinality(relsPerPlace) // <-- testing this
+      .|.|.cacheProperties("cacheRFromStore[p.prop]")
+      .|.|.argument("place", "p")
+      .|.expandAll("(b)-[p]->(c)")
+      .|.argument("b", "place")
+      .filter("place:Place")
+      .expandAll("(start)-[r:TO_PLACE]->(place)")
+      .nodeByLabelScan("start", "Start")
+
+    plan should haveSamePlanAndCardinalitiesAsBuilder(
+      expected,
+      AttributeComparisonStrategy.ComparingProvidedAttributesOnly
+    )
+  }
 }

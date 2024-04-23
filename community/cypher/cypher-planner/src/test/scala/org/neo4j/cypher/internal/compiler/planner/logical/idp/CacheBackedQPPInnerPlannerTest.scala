@@ -26,6 +26,7 @@ import org.mockito.Mockito.when
 import org.mockito.verification.VerificationMode
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlanner.CacheKeyInner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlanner.CacheKeyOuter
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlannerTest.QPPInnerPlannerOps
@@ -55,7 +56,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.jdk.CollectionConverters.MapHasAsScala
 
-class CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
+class CacheBackedQPPInnerPlannerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("Should plan 1 time even for identical requests") {
     val planner = mockPlanner()
@@ -75,7 +76,7 @@ class CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
     cache.planQPP(`(a) ((n)-[r]->(m))+ (b)`, fromLeft)
 
     cache.entries(`(a) ((n)-[r]->(m))+ (b)`, fromLeft) should contain theSameElementsAs Map(
-      CacheKeyInner(Set.empty) -> dummyPlan
+      CacheKeyInner(Set.empty, LabelInfo.empty) -> dummyPlan
     )
   }
 
@@ -109,13 +110,13 @@ class CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
     cache.planQPP(`(c) ((x)-[r]->(y))+ (d)`, fromLeft)
 
     cache.entries(`(a) ((n)-[r]->(m))+ (b)`, fromLeft) should contain theSameElementsAs Map(
-      CacheKeyInner(Set.empty) -> dummyPlan
+      CacheKeyInner(Set.empty, LabelInfo.empty) -> dummyPlan
     )
     cache.entries(`(a) ((n)-[r]->(m))+ (b)`, fromRight) should contain theSameElementsAs Map(
-      CacheKeyInner(Set.empty) -> dummyPlan
+      CacheKeyInner(Set.empty, LabelInfo.empty) -> dummyPlan
     )
     cache.entries(`(c) ((x)-[r]->(y))+ (d)`, fromLeft) should contain theSameElementsAs Map(
-      CacheKeyInner(Set.empty) -> dummyPlan
+      CacheKeyInner(Set.empty, LabelInfo.empty) -> dummyPlan
     )
     cache.isEmpty(`(c) ((x)-[r]->(y))+ (d)`, fromRight) shouldBe true
   }
@@ -133,6 +134,21 @@ class CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
     })
 
     cache.entries(`(a) ((n)-[r]->(m))+ (b)`, fromLeft).size shouldBe cache.CACHE_MAX_SIZE
+  }
+
+  test("Should keep separate entries for different label info maps") {
+    val planner = mockPlanner()
+    val cache = new CacheBackedQPPInnerPlanner(planner)
+
+    val nonEmptyLabelInfo: LabelInfo = LabelInfo(v"a" -> Set(labelName("Label")))
+
+    cache.planQPP(`(a) ((n)-[r]->(m))+ (b)`, fromLeft, labelInfoOuter = LabelInfo.empty)
+    cache.planQPP(`(a) ((n)-[r]->(m))+ (b)`, fromLeft, labelInfoOuter = nonEmptyLabelInfo)
+
+    cache.entries(`(a) ((n)-[r]->(m))+ (b)`, fromLeft) should contain theSameElementsAs Seq(
+      CacheKeyInner(Set.empty, LabelInfo.empty) -> dummyPlan,
+      CacheKeyInner(Set.empty, nonEmptyLabelInfo) -> dummyPlan
+    )
   }
 }
 

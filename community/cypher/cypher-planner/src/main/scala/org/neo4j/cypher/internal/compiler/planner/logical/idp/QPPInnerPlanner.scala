@@ -117,7 +117,7 @@ class CacheBackedQPPInnerPlanner(planner: => QPPInnerPlanner) extends QPPInnerPl
     val cacheKeyOuter = CacheKeyOuter(qpp, fromLeft)
     val cacheMaxSize = CacheSize.Static(CACHE_MAX_SIZE)
     val cache = caches.getOrElse(cacheKeyOuter, ExecutorBasedCaffeineCacheFactory.createCache(cacheMaxSize))
-    val cacheKeyInner = CacheKeyInner(extractedPredicates.requiredSymbols)
+    val cacheKeyInner = CacheKeyInner(extractedPredicates.requiredSymbols, labelInfoOuter)
 
     Option(cache.getIfPresent(cacheKeyInner)) match {
       case Some(plan) =>
@@ -148,7 +148,7 @@ object CacheBackedQPPInnerPlanner {
 
   case class CacheKeyOuter(qpp: QuantifiedPathPattern, fromLeft: Boolean)
 
-  case class CacheKeyInner(requiredSymbols: Set[LogicalVariable])
+  case class CacheKeyInner(requiredSymbols: Set[LogicalVariable], labelInfoOuter: LabelInfo)
 
 }
 
@@ -208,7 +208,9 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
     }
 
     val inferredLabelInfo = inferLabelInfoFromJuxtaposedNodes()
-    updatedContext = updatedContext.withModifiedPlannerState(_.withFusedLabelInfo(inferredLabelInfo))
+    updatedContext = updatedContext.withModifiedPlannerState(_
+      .withFusedLabelInfo(labelInfoOuter)
+      .withFusedLabelInfo(inferredLabelInfo))
 
     // We use InterestingOrderConfig.empty because the order from a RHS of Trail is not propagated anyway
     val plan =
