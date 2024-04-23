@@ -311,7 +311,6 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           types = Nil,
           length = SimplePatternLength
         )),
-        argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, Unlimited),
         nodeVariableGroupings = Set("a", "b").map(name => variableGrouping(varFor(name), varFor(name))),
@@ -328,7 +327,6 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           types = Nil,
           length = SimplePatternLength
         )),
-        argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, Unlimited),
         nodeVariableGroupings = Set("c", "d").map(name => variableGrouping(varFor(name), varFor(name))),

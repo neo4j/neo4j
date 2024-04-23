@@ -182,7 +182,6 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite with AstConstructio
     rightBinding = NodeBinding(v"m", v"b"),
     patternRelationships =
       NonEmptyList(PatternRelationship(v"r", (v"n", v"m"), OUTGOING, Seq.empty, SimplePatternLength)),
-    argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),
     nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
@@ -194,7 +193,6 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite with AstConstructio
     rightBinding = NodeBinding(v"y", v"d"),
     patternRelationships =
       NonEmptyList(PatternRelationship(v"r", (v"x", v"y"), OUTGOING, Seq.empty, SimplePatternLength)),
-    argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),
     nodeVariableGroupings = Set(variableGrouping(v"x", v"x"), variableGrouping(v"y", v"y")),

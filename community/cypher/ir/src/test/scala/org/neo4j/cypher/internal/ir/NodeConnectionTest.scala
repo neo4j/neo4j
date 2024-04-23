@@ -64,7 +64,6 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
         length = SimplePatternLength
       )
     ),
-    argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(0, UpperBound.Unlimited),
     nodeVariableGroupings = Set("a", "b", "c").map(name => variableGrouping(varFor(name), varFor(name))),

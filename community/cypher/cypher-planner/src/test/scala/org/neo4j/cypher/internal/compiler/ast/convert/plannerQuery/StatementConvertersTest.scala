@@ -2195,7 +2195,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           Seq.empty,
           SimplePatternLength
         )),
-      argumentIds = Set(v"a"),
       repetition = Repetition(min = 1, max = UpperBound.Unlimited),
       nodeVariableGroupings = Set(variableGrouping(n, n), variableGrouping(m, m)),
       relationshipVariableGroupings = Set(variableGrouping(r, r))
@@ -2371,7 +2370,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ex should have message cancellationChecker.errorMessage
   }
 
-  val createKeywords = Seq("CREATE", "INSERT")
+  private val createKeywords = Seq("CREATE", "INSERT")
 
   test("CREATE/INSERT/DELETE alone have empty projection") {
     for {
@@ -2505,7 +2504,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           types = Nil,
           length = SimplePatternLength
         )),
-        argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.Limited(5)),
         nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
@@ -2657,7 +2655,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           types = List(relTypeName("R")),
           length = SimplePatternLength
         )),
-        argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.Unlimited),
         nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),

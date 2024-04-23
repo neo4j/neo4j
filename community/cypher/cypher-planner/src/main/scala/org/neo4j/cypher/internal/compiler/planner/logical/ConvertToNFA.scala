@@ -361,7 +361,6 @@ object ConvertToNFA {
               leftBinding,
               rightBinding,
               patternRelationships,
-              _,
               qppSelections,
               repetition,
               _,

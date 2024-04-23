@@ -42,7 +42,6 @@ class extractQppPredicatesTest extends CypherFunSuite with AstConstructionTestSu
     rightBinding = NodeBinding(v"m_inner", v"b"),
     patternRelationships =
       NonEmptyList(PatternRelationship(v"r_inner", (v"n_inner", v"m_inner"), OUTGOING, Seq.empty, SimplePatternLength)),
-    argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),
     nodeVariableGroupings = Set(variableGrouping(v"n_inner", v"n"), variableGrouping(v"m_inner", v"m")),
@@ -54,7 +53,6 @@ class extractQppPredicatesTest extends CypherFunSuite with AstConstructionTestSu
     rightBinding = NodeBinding(v"p_inner", v"b"),
     patternRelationships =
       NonEmptyList(PatternRelationship(v"s_inner", (v"o_inner", v"p_inner"), OUTGOING, Seq.empty, SimplePatternLength)),
-    argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),
     nodeVariableGroupings = Set(variableGrouping(v"o_inner", v"o"), variableGrouping(v"p_inner", v"p")),

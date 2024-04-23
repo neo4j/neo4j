@@ -91,7 +91,6 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
           types = List(relTypeName("R")),
           length = SimplePatternLength
         )),
-        argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.unlimited),
         nodeVariableGroupings = Set(variableGrouping(v"a", v"a"), variableGrouping(v"b", v"b")),
@@ -208,7 +207,6 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
           types = List(relTypeName("R")),
           length = SimplePatternLength
         )),
-        argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.unlimited),
         nodeVariableGroupings = Set(variableGrouping(v"a", v"a"), variableGrouping(v"b", v"b")),

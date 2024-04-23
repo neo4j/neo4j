@@ -65,7 +65,6 @@ class ForAllRepetitionsPredicateRewriterTest extends CypherFunSuite with AstCons
         SimplePatternLength
       )
     ),
-    argumentIds = Set(v"argument"),
     selections = Selections.empty,
     repetition = Repetition(0, UpperBound.Unlimited),
     nodeVariableGroupings = Set(

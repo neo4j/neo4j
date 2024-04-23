@@ -143,18 +143,6 @@ object PlannerQueryBuilder {
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
-    def fixArgumentIdsOnQPPs(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
-      val qpps = plannerQuery.queryGraph.quantifiedPathPatterns
-      val arguments = plannerQuery.queryGraph.argumentIds
-
-      // A QPP can currently only refer to variables from previous clauses,
-      // so we can use the arguments of the current QG
-      val qppsWithArguments = qpps.map(qpp => qpp.copy(argumentIds = arguments))
-      plannerQuery
-        .amendQueryGraph(_.withQuantifiedPathPatterns(qppsWithArguments))
-        .updateTail(fixArgumentIdsOnQPPs)
-    }
-
     def groupInequalities(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
 
       plannerQuery
@@ -184,7 +172,6 @@ object PlannerQueryBuilder {
     Function.chain[SinglePlannerQuery](List(
       fixArgumentIds,
       fixArgumentIdsOnOptionalMatch,
-      fixArgumentIdsOnQPPs,
       groupInequalities,
       fixStandaloneArgumentPatternNodes
     )).apply(q)

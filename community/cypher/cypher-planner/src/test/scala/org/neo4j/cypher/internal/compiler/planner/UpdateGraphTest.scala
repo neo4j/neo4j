@@ -617,7 +617,6 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
         types = List(relTypeName("R")),
         length = SimplePatternLength
       )),
-      argumentIds = Set.empty,
       selections = Selections.empty,
       repetition = Repetition(1, UpperBound.Unlimited),
       nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),

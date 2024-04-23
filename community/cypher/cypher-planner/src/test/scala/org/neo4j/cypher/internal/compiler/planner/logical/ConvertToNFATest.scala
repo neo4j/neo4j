@@ -52,7 +52,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       types = Nil,
       length = SimplePatternLength
     )),
-    argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.Unlimited),
     nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
@@ -78,7 +77,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         length = SimplePatternLength
       )
     ),
-    argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.Unlimited),
     nodeVariableGroupings = Set(v"a", v"b", v"c").map(name => variableGrouping(name, name)),
@@ -97,7 +95,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         types = Seq(relTypeName("T")),
         length = SimplePatternLength
       )),
-      argumentIds = Set.empty,
       selections = Selections.from(Seq(
         hasLabels("a", "A"),
         hasLabels("b", "B"),
@@ -263,7 +260,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
           length = SimplePatternLength
         )
       ),
-      argumentIds = Set.empty,
       selections = Selections.from(differentRelationships(v"r", v"s")),
       repetition = Repetition(0, UpperBound.Unlimited),
       nodeVariableGroupings = Set(v"a", v"b", v"c").map(name => variableGrouping(name, name)),
@@ -344,7 +340,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         types = Seq.empty,
         length = SimplePatternLength
       )),
-      argumentIds = Set.empty,
       selections = Selections.from(Seq(
         equals(prop("a", "prop"), v"foo"),
         equals(prop("r", "prop"), v"foo"),
@@ -404,7 +399,6 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         types = Seq.empty,
         length = SimplePatternLength
       )),
-      argumentIds = Set.empty,
       selections = Selections.empty,
       repetition = Repetition(1, UpperBound.Unlimited),
       nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),

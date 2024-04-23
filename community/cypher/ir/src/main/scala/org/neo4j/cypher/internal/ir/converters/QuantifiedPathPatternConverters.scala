@@ -130,7 +130,6 @@ object QuantifiedPathPatternConverters {
         leftBinding = NodeBinding(leftMostNode, outerLeft),
         rightBinding = NodeBinding(rightMostNode, outerRight),
         patternRelationships = patternRelationships,
-        argumentIds = Set.empty,
         selections = selections,
         repetition = repetition,
         nodeVariableGroupings = nodeVariableGroupings,

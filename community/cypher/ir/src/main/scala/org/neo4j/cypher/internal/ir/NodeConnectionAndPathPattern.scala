@@ -211,7 +211,6 @@ final case class QuantifiedPathPattern(
   leftBinding: NodeBinding,
   rightBinding: NodeBinding,
   patternRelationships: NonEmptyList[PatternRelationship],
-  argumentIds: Set[LogicalVariable] = Set.empty,
   selections: Selections = Selections(),
   repetition: Repetition,
   nodeVariableGroupings: Set[VariableGrouping],
@@ -282,7 +281,7 @@ final case class QuantifiedPathPattern(
   override def solvedString: String =
     s"(${backtick(leftBinding.outer.name)})$solvedStringSuffix"
 
-  val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies) ++ argumentIds
+  val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies)
 
   /**
    * Creates a QueryGraph representation of the Quantified Path Pattern and collects all dependent selections eg.
@@ -294,7 +293,6 @@ final case class QuantifiedPathPattern(
       .empty
       .addPatternRelationships(patternRelationships.toSet)
       .addPatternNodes(patternNodes.toList: _*)
-      .addArgumentIds(argumentIds.toList)
       .addSelections(selections)
 }
 
