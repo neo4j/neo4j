@@ -1188,8 +1188,6 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
 
   test("Selectivity of argument labels should not be applied multiple times") {
     val query = """MATCH (a:A)-[r:T1]->(b) WITH a, r, b SKIP 0 MATCH (a:A)-[r]->(b:B)"""
-    println(plannerBuilder().build().plan(query + " RETURN a, r, b"))
-
     planShouldHaveCardinality(
       query,
       {
