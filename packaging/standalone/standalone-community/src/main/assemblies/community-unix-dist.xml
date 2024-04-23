@@ -78,7 +78,7 @@
     <dependencySet>
       <outputDirectory>lib</outputDirectory>
       <directoryMode>0755</directoryMode>
-      <fileMode>0755</fileMode>
+      <fileMode>0644</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <useStrictFiltering>true</useStrictFiltering>
