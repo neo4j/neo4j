@@ -26,15 +26,16 @@ import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
 /**
  * When doing ORDER BY c1,c2,...,cn LIMIT e, we don't have to sort the full result in one go
  */
-case object useTop extends Rewriter {
+case object useTop extends Rewriter with BottomUpMergeableRewriter {
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case o @ Limit(Sort(src, sortDescriptions), limit) =>
       Top(src, sortDescriptions, limit)(SameId(o.id))
     // NOTE: it is only safe to rewrite ExhaustiveLimit + Sort not ExhaustiveLimit + PartialSort
@@ -43,7 +44,9 @@ case object useTop extends Rewriter {
       Top(src, sortDescriptions, limit)(SameId(o.id))
     case o @ Limit(PartialSort(src, alreadySortedPrefix, stillToSortSuffix, skipSortingPrefixLength), limit) =>
       PartialTop(src, alreadySortedPrefix, stillToSortSuffix, limit, skipSortingPrefixLength)(SameId(o.id))
-  })
+  }
+
+  private val instance: Rewriter = bottomUp(innerRewriter)
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -30,15 +31,17 @@ import org.neo4j.cypher.internal.util.bottomUp
  * The input to PartialSort is already sorted by a prefix.
  * If there is a SKIP as well, we can skip over whole chunks before we need to start sorting.
  */
-case object skipInPartialSort extends Rewriter {
+case object skipInPartialSort extends Rewriter with BottomUpMergeableRewriter {
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case s @ Skip(ps @ PartialSort(_, _, _, None), skip) =>
       s.copy(source = ps.copy(skipSortingPrefixLength = Some(skip))(SameId(ps.id)))(SameId(s.id))
 
     case s @ Skip(ptop @ PartialTop(_, _, _, _, None), skip) =>
       s.copy(source = ptop.copy(skipSortingPrefixLength = Some(skip))(SameId(ptop.id)))(SameId(s.id))
-  })
+  }
+
+  private val instance: Rewriter = bottomUp(innerRewriter)
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }

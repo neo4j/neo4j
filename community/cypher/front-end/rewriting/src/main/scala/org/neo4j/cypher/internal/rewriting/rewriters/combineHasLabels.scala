@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.HasAnyLabel
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
@@ -28,13 +29,13 @@ import org.neo4j.cypher.internal.util.collection.immutable.ListSet
  * Optimisation that combines multiple has label predicates, like
  * `n:SomeLabel OR n:OtherLabel` into the specialised `HasAnyLabel` expression.
  */
-case object combineHasLabels extends Rewriter {
+case object combineHasLabels extends Rewriter with BottomUpMergeableRewriter {
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
-  private val instance: Rewriter = bottomUp(
-    Rewriter.lift { case ors: Ors => rewrite(ors) }
-  )
+  override val innerRewriter: Rewriter = Rewriter.lift { case ors: Ors => rewrite(ors) }
+
+  private val instance: Rewriter = bottomUp(innerRewriter)
 
   private def rewrite(ors: Ors): Expression = {
     val (lonelyHasLabels, nonRewritable) = ors.exprs.partitionMap {

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
 import org.neo4j.cypher.internal.util.topDown
 
 /**
@@ -35,11 +36,11 @@ import org.neo4j.cypher.internal.util.topDown
  * This makes it possible to remove more NodeGroupVariables later in [[RemoveUnusedGroupVariablesRewriter]]
  * so it needs to be run before that rewriter
  */
-case object RepeatPathStepToMultiRelationshipRewriter extends Rewriter {
+case object RepeatPathStepToMultiRelationshipRewriter extends Rewriter with TopDownMergeableRewriter {
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
-  val instance: Rewriter = topDown {
+  override val innerRewriter: Rewriter =
     Rewriter.lift {
       case repeatPathStep @ RepeatPathStep(variables: Seq[NodeRelPair], toNode: LogicalVariable, next: PathStep)
         if variables.size == 1 =>
@@ -47,5 +48,6 @@ case object RepeatPathStepToMultiRelationshipRewriter extends Rewriter {
           repeatPathStep.position
         )
     }
-  }
+
+  val instance: Rewriter = topDown(innerRewriter)
 }

@@ -29,13 +29,15 @@ import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
-case class cleanUpEager(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
+case class cleanUpEager(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter
+    with BottomUpMergeableRewriter {
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
 
     // E E L => E L
     case Eager(inner: LogicalUnaryPlan with EagerLogicalPlan, _) => inner
@@ -58,7 +60,9 @@ case class cleanUpEager(cardinalities: Cardinalities, attributes: Attributes[Log
       val newEager = eager.copy(source = newLimit, reasons)(attributes.copy(eager.id))
       cardinalities.copy(limit.id, newEager.id)
       newEager
-  })
+  }
+
+  private val instance: Rewriter = bottomUp(innerRewriter)
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }

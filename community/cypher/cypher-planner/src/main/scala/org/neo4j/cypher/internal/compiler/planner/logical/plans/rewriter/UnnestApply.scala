@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
@@ -53,7 +54,7 @@ case class UnnestApply(
   override val cardinalities: Cardinalities,
   override val providedOrders: ProvidedOrders,
   override val attributes: Attributes[LogicalPlan]
-) extends Rewriter with UnnestingRewriter {
+) extends Rewriter with UnnestingRewriter with TopDownMergeableRewriter {
 
   /*
   Based on the paper
@@ -72,7 +73,7 @@ case class UnnestApply(
     BP : Binary Plan
    */
 
-  private val instance: Rewriter = topDown(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     // Arg Ax R => R
     case orig @ Apply(arg: Argument, rhs) =>
       assertArgumentHasCardinality1(arg)
@@ -154,7 +155,9 @@ case class UnnestApply(
       cardinalities.set(res.id, cardinalities(apply.id))
       providedOrders.copy(apply.id, res.id)
       res
-  })
+  }
+
+  private val instance: Rewriter = topDown(innerRewriter)
 
   private def putOnTopOf(bottom: LogicalPlan, top: LogicalPlan): LogicalPlan = {
     top match {

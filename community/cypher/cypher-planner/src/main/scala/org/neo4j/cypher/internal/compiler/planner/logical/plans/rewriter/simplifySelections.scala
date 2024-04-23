@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -35,16 +36,18 @@ import org.neo4j.cypher.internal.util.bottomUp
  * Removes impossible predicates from the plan. Note that this rewriter assumes
  * we have already folded things like `true AND false`, `true OR true`, etcetera.
  */
-case object simplifySelections extends Rewriter {
+case object simplifySelections extends Rewriter with BottomUpMergeableRewriter {
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case s @ Selection(Ands(preds), source) if isFalse(preds) =>
       planLimitOnTopOf(source, SignedDecimalIntegerLiteral("0")(InputPosition.NONE))(SameId(s.id))
 
     case Selection(Ands(preds), source) if isTrue(preds) => source
-  })
+  }
+
+  private val instance: Rewriter = bottomUp(innerRewriter)
 
   private def isTrue(predicates: Iterable[Expression]): Boolean = predicates.forall {
     case _: True => true

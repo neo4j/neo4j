@@ -34,7 +34,7 @@ import scala.collection.mutable
  */
 case class removeIdenticalPlans(attributes: Attributes[LogicalPlan]) extends Rewriter {
 
-  override def apply(input: AnyRef) = {
+  override def apply(input: AnyRef): AnyRef = {
     val seenIDs = mutable.Set.empty[Int]
 
     val rewriter: Rewriter = bottomUp(Rewriter.lift {

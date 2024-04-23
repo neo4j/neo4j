@@ -29,14 +29,16 @@ import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
 import org.neo4j.cypher.internal.util.topDown
 
 /**
  * Removes [[Disjoint]] and [[Unique]] predicates into expressions that the runtime can evaluate.
  */
-case class UniquenessRewriter(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
+case class UniquenessRewriter(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter
+    with TopDownMergeableRewriter {
 
-  private val instance = topDown(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case d @ Disjoint(x, y) =>
       val innerX = Variable(anonymousVariableNameGenerator.nextName)(x.position)
       NoneIterablePredicate(
@@ -63,7 +65,9 @@ case class UniquenessRewriter(anonymousVariableNameGenerator: AnonymousVariableN
 
     case p @ DifferentRelationships(rel1, rel2) =>
       Not(Equals(rel1, rel2)(p.position))(p.position)
-  })
+  }
+
+  private val instance = topDown(innerRewriter)
 
   override def apply(value: AnyRef): AnyRef = instance(value)
 }

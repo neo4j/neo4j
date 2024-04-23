@@ -32,6 +32,30 @@ object Rewriter {
     f.orElse({ case x => x })
 
   val noop: Rewriter = Rewriter.lift(PartialFunction.empty)
+
+  trait TopDownMergeableRewriter {
+    def innerRewriter: Rewriter
+  }
+
+  trait BottomUpMergeableRewriter {
+    def innerRewriter: Rewriter
+  }
+
+  def mergeTopDown(rewriters: TopDownMergeableRewriter*): Rewriter = {
+    new Rewriter {
+      override def apply(v1: AnyRef): AnyRef = instance.apply(v1)
+
+      private val instance = topDown(rewriters.map(_.innerRewriter).reduce(_ andThen _))
+    }
+  }
+
+  def mergeBottomUp(rewriters: BottomUpMergeableRewriter*): Rewriter = {
+    new Rewriter {
+      override def apply(v1: AnyRef): AnyRef = instance.apply(v1)
+
+      private val instance = bottomUp(rewriters.map(_.innerRewriter).reduce(_ andThen _))
+    }
+  }
 }
 
 object RewriterWithParent {

@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.topDown
@@ -60,13 +61,14 @@ case class ForAllRepetitionsPredicateRewriter(
   cardinalities: Cardinalities,
   providedOrders: ProvidedOrders,
   idGen: IdGen
-) extends Rewriter {
+) extends Rewriter with BottomUpMergeableRewriter {
   implicit val implicitIdGen: IdGen = idGen
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case far: ForAllRepetitions =>
       rewriteToAllIterablePredicate(far)
-  })
+  }
+  private val instance: Rewriter = bottomUp(innerRewriter)
 
   def rewriteToAllIterablePredicate(
     far: ForAllRepetitions

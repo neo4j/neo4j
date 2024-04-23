@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
@@ -70,13 +71,13 @@ import org.neo4j.cypher.internal.util.bottomUp
 case class groupPercentileFunctions(
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   attributes: Attributes[LogicalPlan]
-) extends Rewriter {
+) extends Rewriter with BottomUpMergeableRewriter {
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
   private val pos: InputPosition = InputPosition.NONE
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case aggregation @ OrderedAggregation(_, _, aggregations: Map[LogicalVariable, Expression], _) =>
       val groupedFunctions = groupFunctions(aggregations)
       if (groupedFunctions.isEmpty) {
@@ -97,7 +98,9 @@ case class groupPercentileFunctions(
         val id = attributes.copy(aggregation.id).id()
         Projection(newAggregation, projectExpressions)(SameId(id))
       }
-  })
+  }
+
+  private val instance: Rewriter = bottomUp(innerRewriter)
 
   private def newExpressions(
     groupedPercentileFunctions: Map[(Expression, Boolean, ArgumentOrder), Map[LogicalVariable, FunctionInvocation]],

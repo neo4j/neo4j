@@ -18,16 +18,19 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.VarLengthBound
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
 import org.neo4j.cypher.internal.util.topDown
 
 /**
  * Rewrites [[VarLengthLowerBound]] and [[VarLengthUpperBound]] predicates into expressions that the runtime can evaluate.
  */
-case object VarLengthRewriter extends Rewriter {
+case object VarLengthRewriter extends Rewriter with TopDownMergeableRewriter {
 
-  private val instance = topDown(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case predicate: VarLengthBound => predicate.getRewrittenPredicate
-  })
+  }
+
+  private val instance = topDown(innerRewriter)
 
   override def apply(value: AnyRef): AnyRef = instance(value)
 }

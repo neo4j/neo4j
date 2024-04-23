@@ -29,14 +29,15 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ListType
 
-case object simplifyPredicates extends Rewriter {
+case object simplifyPredicates extends Rewriter with BottomUpMergeableRewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case in @ In(exp, ListLiteral(values @ Seq(idValueExpr))) if values.size == 1 =>
       Equals(exp, idValueExpr)(in.position)
 
@@ -56,5 +57,6 @@ case object simplifyPredicates extends Rewriter {
       selection.copy(
         predicate = ands.copy(exprs = flatExprs)(ands.position)
       )(SameId(selection.id))
-  })
+  }
+  private val instance: Rewriter = bottomUp(innerRewriter)
 }

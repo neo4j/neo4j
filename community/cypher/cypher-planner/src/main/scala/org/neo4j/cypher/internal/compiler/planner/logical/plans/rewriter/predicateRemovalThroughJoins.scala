@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
@@ -44,11 +45,11 @@ case class predicateRemovalThroughJoins(
   solveds: Solveds,
   cardinalities: Cardinalities,
   attributes: Attributes[LogicalPlan]
-) extends Rewriter {
+) extends Rewriter with BottomUpMergeableRewriter {
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case n @ NodeHashJoin(nodeIds, lhs, rhs @ Selection(Ands(rhsPredicates), rhsLeaf)) =>
       val lhsPredicates =
         predicatesDependingOnTheJoinIds(solveds.get(lhs.id).asSinglePlannerQuery.lastQueryGraph, nodeIds)
@@ -66,7 +67,9 @@ case class predicateRemovalThroughJoins(
         cardinalities.copy(rhsLeaf.id, newSelection.id)
         NodeHashJoin(nodeIds, lhs, newSelection)(SameId(n.id))
       }
-  })
+  }
+
+  private val instance: Rewriter = bottomUp(innerRewriter)
 
   private def predicatesDependingOnTheJoinIds(qg: QueryGraph, nodeIds: Set[LogicalVariable]): Set[Expression] =
     qg.selections.predicates.filter(p => (p.dependencies intersect nodeIds) == nodeIds).map(_.expr)

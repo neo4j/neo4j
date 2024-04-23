@@ -22,15 +22,18 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
-case object fuseSelections extends Rewriter {
+case object fuseSelections extends Rewriter with BottomUpMergeableRewriter {
 
-  override def apply(input: AnyRef) = instance.apply(input)
+  override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case topSelection @ Selection(Ands(predicates1), Selection(Ands(predicates2), lhs)) =>
       Selection(Ands(predicates1 ++ predicates2)(predicates1.head.position), lhs)(SameId(topSelection.id))
-  })
+  }
+
+  private val instance: Rewriter = bottomUp(innerRewriter)
 }

@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LabelAndRelTypeI
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
@@ -77,35 +78,35 @@ import org.neo4j.cypher.internal.util.topDown
 case class TrailToVarExpandRewriter(
   labelAndRelTypeInfos: LabelAndRelTypeInfos,
   otherAttributes: Attributes[LogicalPlan]
-) extends Rewriter {
+) extends Rewriter with TopDownMergeableRewriter {
 
-  val instance: Rewriter = topDown {
-    Rewriter.lift {
-      case trail @ Trail(
-          _,
-          RewritableTrailRhs(
-            expand,
-            relationshipPredicates
-          ),
-          RewritableTrailQuantifier(quantifier),
-          _,
-          _,
-          _,
-          _,
-          VariableGroupings.Empty(),
-          VariableGroupings.Maybe(relationship),
-          _,
-          _,
-          _,
-          _
-        ) =>
-        val varExpandRel = relationship.map(_.group).getOrElse(trail.innerRelationships.head)
-        val varExpand = createVarExpand(trail, expand, quantifier, relationshipPredicates, varExpandRel)
-        val expandWithUniqueRel = maybeAddRelUniquenessPredicates(trail, varExpandRel, varExpand)
-        val expandWithUniqueGroupRel = maybeAddGroupRelUniquenessPredicates(trail, varExpandRel, expandWithUniqueRel)
-        expandWithUniqueGroupRel
-    }
+  override val innerRewriter: Rewriter = Rewriter.lift {
+    case trail @ Trail(
+        _,
+        RewritableTrailRhs(
+          expand,
+          relationshipPredicates
+        ),
+        RewritableTrailQuantifier(quantifier),
+        _,
+        _,
+        _,
+        _,
+        VariableGroupings.Empty(),
+        VariableGroupings.Maybe(relationship),
+        _,
+        _,
+        _,
+        _
+      ) =>
+      val varExpandRel = relationship.map(_.group).getOrElse(trail.innerRelationships.head)
+      val varExpand = createVarExpand(trail, expand, quantifier, relationshipPredicates, varExpandRel)
+      val expandWithUniqueRel = maybeAddRelUniquenessPredicates(trail, varExpandRel, varExpand)
+      val expandWithUniqueGroupRel = maybeAddGroupRelUniquenessPredicates(trail, varExpandRel, expandWithUniqueRel)
+      expandWithUniqueGroupRel
   }
+
+  private val instance: Rewriter = topDown(innerRewriter)
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 

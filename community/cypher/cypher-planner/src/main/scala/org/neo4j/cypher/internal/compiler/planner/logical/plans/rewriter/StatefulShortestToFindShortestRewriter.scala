@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
@@ -79,39 +80,38 @@ import scala.collection.Set
 case class StatefulShortestToFindShortestRewriter(
   solveds: Solveds,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-) extends Rewriter {
+) extends Rewriter with TopDownMergeableRewriter {
 
-  val instance: Rewriter = topDown {
-    Rewriter.lift {
-      case statefulShortest @ StatefulShortestPath(
-          source,
-          _,
-          targetNode,
-          _,
-          _,
-          _,
-          _,
-          _,
-          _,
-          _,
-          selector,
-          _,
-          _,
-          _
-        )
-        // 2.0 start and end nodes are bound and 6.0 selection asks for shortest 1
-        if source.availableSymbols.contains(targetNode) &&
-          selector.k == 1 && statefulShortest.nodeVariableGroupings.isEmpty =>
-        exactlyOne(
-          solveds.get(statefulShortest.id).asSinglePlannerQuery.last.queryGraph.selectivePathPatterns.toSeq.distinct
-        )
-          .filter(_.relationships.size == 1)
-          .flatMap(selectivePathPattern =>
-            findShortestFromVarLengthShortest(selectivePathPattern, statefulShortest) orElse
-              findShortestFromQppShortest(selectivePathPattern, statefulShortest)
-          ).getOrElse(statefulShortest)
-    }
+  override val innerRewriter: Rewriter = Rewriter.lift {
+    case statefulShortest @ StatefulShortestPath(
+        source,
+        _,
+        targetNode,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        selector,
+        _,
+        _,
+      _)
+      // 2.0 start and end nodes are bound and 6.0 selection asks for shortest 1
+      if source.availableSymbols.contains(targetNode) &&
+        selector.k == 1 && statefulShortest.nodeVariableGroupings.isEmpty =>
+      exactlyOne(
+        solveds.get(statefulShortest.id).asSinglePlannerQuery.last.queryGraph.selectivePathPatterns.toSeq.distinct
+      )
+        .filter(_.relationships.size == 1)
+        .flatMap(selectivePathPattern =>
+          findShortestFromVarLengthShortest(selectivePathPattern, statefulShortest) orElse
+            findShortestFromQppShortest(selectivePathPattern, statefulShortest)
+        ).getOrElse(statefulShortest)
   }
+
+  private val instance: Rewriter = topDown(innerRewriter)
 
   private def findShortestFromVarLengthShortest(
     selectivePathPattern: SelectivePathPattern,

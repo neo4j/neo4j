@@ -44,6 +44,8 @@ import org.neo4j.cypher.internal.rewriting.rewriters.VarLengthRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.combineHasLabels
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
+import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
@@ -72,73 +74,95 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     readOnly: Boolean
   ): Rewriter = {
+    val allRewriters: Seq[Rewriter] = Seq(
+      Some(ForAllRepetitionsPredicateRewriter(
+        anonymousVariableNameGenerator,
+        solveds,
+        cardinalities,
+        providedOrders,
+        context.logicalPlanIdGen
+      )),
+      Some(RepeatPathStepToMultiRelationshipRewriter),
+      Some(RemoveUnusedGroupVariablesRewriter),
+      if (context.config.gpmShortestToLegacyShortestEnabled)
+        Some(StatefulShortestToFindShortestRewriter(solveds, anonymousVariableNameGenerator))
+      else None,
+      Some(TrailToVarExpandRewriter(
+        labelAndRelTypeInfos,
+        otherAttributes.withAlso(solveds, cardinalities, effectiveCardinalities, providedOrders)
+      )),
+      Some(fuseSelections),
+      Some(UnnestApply(
+        solveds,
+        cardinalities,
+        providedOrders,
+        otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos)
+      )),
+      Some(unnestCartesianProduct),
+      if (context.eagerAnalyzer == CypherEagerAnalyzerOption.lp) None
+      else Some(cleanUpEager(
+        cardinalities,
+        otherAttributes.withAlso(solveds, effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
+      )),
+      Some(simplifyPredicates),
+      Some(unnestOptional),
+      Some(predicateRemovalThroughJoins(
+        solveds,
+        cardinalities,
+        otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
+      )),
+      Some(removeIdenticalPlans(otherAttributes.withAlso(
+        cardinalities,
+        effectiveCardinalities,
+        labelAndRelTypeInfos,
+        solveds,
+        providedOrders
+      ))),
+      Some(pruningVarExpander(anonymousVariableNameGenerator, VarExpandRewritePolicy.default)),
+      // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
+      if (readOnly) Some(bfsAggregationRemover) else None,
+      // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
+      // Parallel runtime does currently not support PartialSort/PartialTop, which is introduced in bfsDepthOrderer
+      if (context.executionModel.providedOrderPreserving && readOnly) Some(bfsDepthOrderer) else None,
+      Some(useTop),
+      Some(skipInPartialSort),
+      Some(simplifySelections),
+      Some(limitNestedPlanExpressions(
+        cardinalities,
+        otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos, solveds, providedOrders)
+      )),
+      Some(combineHasLabels),
+      Some(truncateDatabaseDeeagerizer),
+      Some(UniquenessRewriter(anonymousVariableNameGenerator)),
+      Some(VarLengthRewriter),
+      Some(extractRuntimeConstants(anonymousVariableNameGenerator)),
+      Some(groupPercentileFunctions(
+        anonymousVariableNameGenerator,
+        otherAttributes.withAlso(solveds, cardinalities, effectiveCardinalities, providedOrders)
+      ))
+    ).flatten
+
+    val (bottomUps, topDowns, others) = allRewriters.foldLeft((
+      Vector.empty[BottomUpMergeableRewriter],
+      Vector.empty[TopDownMergeableRewriter],
+      Vector.empty[Rewriter]
+    )) {
+      case ((bottomUps, topDowns, others), r: BottomUpMergeableRewriter) =>
+        (bottomUps :+ r, topDowns, others)
+      case ((bottomUps, topDowns, others), r: TopDownMergeableRewriter) =>
+        (bottomUps, topDowns :+ r, others)
+      case ((bottomUps, topDowns, others), r) =>
+        (bottomUps, topDowns, others :+ r)
+    }
+
+    val allRewritersMerged = Seq(
+      Rewriter.mergeBottomUp(bottomUps: _*),
+      Rewriter.mergeTopDown(topDowns: _*)
+    ) ++ others
+
     fixedPoint(context.cancellationChecker)(
       inSequence(context.cancellationChecker)(
-        ForAllRepetitionsPredicateRewriter(
-          anonymousVariableNameGenerator,
-          solveds,
-          cardinalities,
-          providedOrders,
-          context.logicalPlanIdGen
-        ),
-        RepeatPathStepToMultiRelationshipRewriter,
-        RemoveUnusedGroupVariablesRewriter,
-        if (context.config.gpmShortestToLegacyShortestEnabled)
-          StatefulShortestToFindShortestRewriter(solveds, anonymousVariableNameGenerator)
-        else identity,
-        TrailToVarExpandRewriter(
-          labelAndRelTypeInfos,
-          otherAttributes.withAlso(solveds, cardinalities, effectiveCardinalities, providedOrders)
-        ),
-        fuseSelections,
-        UnnestApply(
-          solveds,
-          cardinalities,
-          providedOrders,
-          otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos)
-        ),
-        unnestCartesianProduct,
-        if (context.eagerAnalyzer == CypherEagerAnalyzerOption.lp) identity
-        else cleanUpEager(
-          cardinalities,
-          otherAttributes.withAlso(solveds, effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
-        ),
-        simplifyPredicates,
-        unnestOptional,
-        predicateRemovalThroughJoins(
-          solveds,
-          cardinalities,
-          otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
-        ),
-        removeIdenticalPlans(otherAttributes.withAlso(
-          cardinalities,
-          effectiveCardinalities,
-          labelAndRelTypeInfos,
-          solveds,
-          providedOrders
-        )),
-        pruningVarExpander(anonymousVariableNameGenerator, VarExpandRewritePolicy.default),
-        // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
-        if (readOnly) bfsAggregationRemover else identity,
-        // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
-        // Parallel runtime does currently not support PartialSort/PartialTop, which is introduced in bfsDepthOrderer
-        if (context.executionModel.providedOrderPreserving && readOnly) bfsDepthOrderer else identity,
-        useTop,
-        skipInPartialSort,
-        simplifySelections,
-        limitNestedPlanExpressions(
-          cardinalities,
-          otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos, solveds, providedOrders)
-        ),
-        combineHasLabels,
-        truncateDatabaseDeeagerizer,
-        UniquenessRewriter(anonymousVariableNameGenerator),
-        VarLengthRewriter,
-        extractRuntimeConstants(anonymousVariableNameGenerator),
-        groupPercentileFunctions(
-          anonymousVariableNameGenerator,
-          otherAttributes.withAlso(solveds, cardinalities, effectiveCardinalities, providedOrders)
-        )
+        allRewritersMerged: _*
       )
     )
   }

@@ -106,8 +106,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
     val plan = all_if_possible_planner.plan(query).stripProduceResults
     val expected = all_if_possible_planner.subPlanBuilder()
       .projection(Map("p" -> multiOutgoingRelationshipPath("a", "r", "b")))
-      .apply()
-      .|.shortestPath(
+      .shortestPath(
         "(a)-[r*1..]->(b)",
         pathName = Some("anon_0"),
         all = true,
@@ -115,8 +114,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
         relationshipPredicates = Seq(),
         sameNodeMode = AllowSameNode
       )
-      .|.filterExpression(andsReorderableAst(hasLabels("a", "User"), hasLabels("b", "User")))
-      .|.argument("a", "b")
+      .filterExpression(andsReorderableAst(hasLabels("a", "User"), hasLabels("b", "User")))
       .skip(1)
       .cartesianProduct()
       .|.allNodeScan("b")
@@ -249,8 +247,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
          |""".stripMargin
     val plan = all_if_possible_planner.plan(query).stripProduceResults
     plan should equal(all_if_possible_planner.subPlanBuilder()
-      .apply()
-      .|.shortestPath(
+      .shortestPath(
         "(a)-[r*0..]->(b)",
         pathName = Some("anon_0"),
         all = true,
@@ -258,7 +255,6 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
         relationshipPredicates = Seq(),
         sameNodeMode = AllowSameNode
       )
-      .|.argument("a", "b")
       .skip(1)
       .cartesianProduct()
       .|.allNodeScan("b")
@@ -364,15 +360,13 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
     val plan = planner.plan(query).stripProduceResults
     plan should equal(
       planner.subPlanBuilder()
-        .apply()
-        .|.shortestPath(
+        .shortestPath(
           "(a)-[anon_0*0..1]-(b)",
           pathName = Some("anon_1"),
           nodePredicates = Seq(),
           relationshipPredicates = Seq(),
           sameNodeMode = AllowSameNode
         )
-        .|.argument("a", "b")
         .skip(0)
         .cartesianProduct()
         .|.nodeByLabelScan("b", "User")

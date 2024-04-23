@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.Rewriter.BottomUpMergeableRewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -46,7 +47,7 @@ import org.neo4j.cypher.internal.util.bottomUp
  * These expressions are `head`, `ContainerIndex`, and `ListSlice`.
  */
 case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttributes: Attributes[LogicalPlan])
-    extends Rewriter {
+    extends Rewriter with BottomUpMergeableRewriter {
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
   /**
@@ -59,7 +60,7 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
       !plan.isInstanceOf[Top] &&
       !plan.isInstanceOf[PartialTop]
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override val innerRewriter: Rewriter = Rewriter.lift {
     case fi @ FunctionInvocation(
         FunctionName(Namespace(List()), Head.name),
         _,
@@ -99,5 +100,7 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
         planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position)
-  })
+  }
+
+  private val instance: Rewriter = bottomUp(innerRewriter)
 }
