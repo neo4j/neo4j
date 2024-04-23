@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -55,7 +53,6 @@ public class Neo4jError {
 
     @Override
     public String toString() {
-        cause.printStackTrace();
         return String.format("%s[%s, cause=\"%s\"]", getClass().getSimpleName(), status.code(), cause);
     }
 
@@ -69,16 +66,5 @@ public class Neo4jError {
 
     public String getMessage() {
         return cause.getMessage();
-    }
-
-    public boolean shouldSerializeStackTrace() {
-        return status.code().classification() != Status.Classification.ClientError;
-    }
-
-    public String getStackTraceAsString() {
-        StringWriter stringWriter = new StringWriter();
-        PrintWriter printWriter = new PrintWriter(stringWriter);
-        cause.printStackTrace(printWriter);
-        return stringWriter.toString();
     }
 }

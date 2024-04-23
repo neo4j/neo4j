@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.repr;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,11 +40,6 @@ public class ExceptionRepresentation extends MappingRepresentation {
         super(RepresentationType.EXCEPTION);
         this.errors.add(new Neo4jError(statusCode(exception), exception));
         this.includeLegacyRepresentation = includeLegacyRepresentation;
-    }
-
-    public ExceptionRepresentation(Neo4jError... errors) {
-        super(RepresentationType.EXCEPTION);
-        this.errors.addAll(Arrays.asList(errors));
     }
 
     @Override
@@ -101,9 +95,6 @@ public class ExceptionRepresentation extends MappingRepresentation {
         protected void serialize(MappingSerializer serializer) {
             serializer.putString("code", error.status().code().serialize());
             serializer.putString("message", error.getMessage());
-            if (error.shouldSerializeStackTrace()) {
-                serializer.putString("stackTrace", error.getStackTraceAsString());
-            }
         }
 
         public static ListRepresentation list(Collection<Neo4jError> errors) {

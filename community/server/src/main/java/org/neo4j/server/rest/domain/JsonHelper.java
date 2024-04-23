@@ -30,10 +30,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.server.rest.web.PropertyValueException;
 
 public final class JsonHelper {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -71,21 +69,6 @@ public final class JsonHelper {
         } catch (IOException e) {
             throw new JsonParseException(e);
         }
-    }
-
-    public static Object assertSupportedPropertyValue(Object jsonObject) throws PropertyValueException {
-        if (jsonObject instanceof Collection<?>) {
-            return jsonObject;
-        }
-        if (jsonObject == null) {
-            throw new PropertyValueException("null value not supported");
-        }
-        if (!(jsonObject instanceof String || jsonObject instanceof Number || jsonObject instanceof Boolean)) {
-            throw new PropertyValueException("Unsupported value type " + jsonObject.getClass() + "."
-                    + " Supported value types are all java primitives (byte, char, short, int, "
-                    + "long, float, double) and String, as well as arrays of all those types");
-        }
-        return jsonObject;
     }
 
     public static String createJsonFrom(Object data) throws JsonBuildRuntimeException {
