@@ -165,21 +165,7 @@ trait DdlBuilder extends CypherParserListener {
   final override def exitRenameCommand(
     ctx: CypherParser.RenameCommandContext
   ): Unit = {
-    ctx.ast = ctxChild(ctx, 1) match {
-      case c: CypherParser.RenameRoleContext =>
-        val names = c.commandNameExpression()
-        RenameRole(names.get(0).ast(), names.get(1).ast(), c.EXISTS() != null)(pos(ctx))
-      case c: CypherParser.RenameServerContext =>
-        val names = c.stringOrParameter()
-        RenameServer(
-          names.get(0).ast[Either[String, Parameter]](),
-          names.get(1).ast[Either[String, Parameter]]()
-        )(pos(ctx))
-      case c: CypherParser.RenameUserContext =>
-        val names = c.commandNameExpression()
-        RenameUser(names.get(0).ast(), names.get(1).ast(), c.EXISTS() != null)(pos(ctx))
-      case _ => throw new IllegalStateException()
-    }
+    ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitEnableServerCommand(
@@ -477,7 +463,13 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitRenameServer(
     ctx: CypherParser.RenameServerContext
-  ): Unit = {}
+  ): Unit = {
+    val names = ctx.stringOrParameter()
+    ctx.ast = RenameServer(
+      names.get(0).ast[Either[String, Parameter]](),
+      names.get(1).ast[Either[String, Parameter]]()
+    )(pos(ctx.getParent))
+  }
 
   final override def exitDropServer(
     ctx: CypherParser.DropServerContext
@@ -501,7 +493,10 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitRenameRole(
     ctx: CypherParser.RenameRoleContext
-  ): Unit = {}
+  ): Unit = {
+    val names = ctx.commandNameExpression()
+    ctx.ast = RenameRole(names.get(0).ast(), names.get(1).ast(), ctx.EXISTS() != null)(pos(ctx.getParent))
+  }
 
   final override def exitDropUser(
     ctx: CypherParser.DropUserContext
@@ -511,7 +506,10 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitRenameUser(
     ctx: CypherParser.RenameUserContext
-  ): Unit = {}
+  ): Unit = {
+    val names = ctx.commandNameExpression()
+    ctx.ast = RenameUser(names.get(0).ast(), names.get(1).ast(), ctx.EXISTS() != null)(pos(ctx.getParent))
+  }
 
   final override def exitAlterCurrentUser(
     ctx: CypherParser.AlterCurrentUserContext
