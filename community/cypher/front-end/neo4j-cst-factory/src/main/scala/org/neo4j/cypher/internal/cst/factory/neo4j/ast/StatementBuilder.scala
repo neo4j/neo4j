@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
-import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.Query
@@ -184,19 +183,13 @@ trait StatementBuilder extends CypherParserListener {
   }
 
   final override def exitReturnBody(ctx: CypherParser.ReturnBodyContext): Unit = {
-    val distinct = ctx.DISTINCT() != null
-    val returnItems = ctx.returnItems().ast[ReturnItems]()
-    val orderBy = if (ctx.ORDER() == null) None
-    else {
-      Some(
-        OrderBy(
-          astSeq(ctx.orderItem())
-        )(pos(ctx.ORDER()))
-      )
-    }
-    val skip = astOpt(ctx.skip())
-    val limit = astOpt(ctx.limit())
-    ctx.ast = Return(distinct, returnItems, orderBy, skip, limit)(pos(ctx))
+    ctx.ast = Return(
+      ctx.DISTINCT() != null,
+      ctx.returnItems().ast[ReturnItems](),
+      astOpt(ctx.orderBy()),
+      astOpt(ctx.skip()),
+      astOpt(ctx.limit())
+    )(pos(ctx))
   }
 
   final override def exitReturnItems(ctx: CypherParser.ReturnItemsContext): Unit = {
@@ -418,7 +411,7 @@ trait StatementBuilder extends CypherParserListener {
     val procedureArguments =
       if (ctx.RPAREN() == null) None
       else
-        Some(astSeq[Expression](ctx.procedureArgument()))
+        Some(astSeq[Expression](ctx.expression()))
     val yieldAll = ctx.TIMES() != null
     val procedureResults = {
       if (ctx.YIELD() == null || yieldAll) None
@@ -428,12 +421,6 @@ trait StatementBuilder extends CypherParserListener {
       }
     }
     ctx.ast = UnresolvedCall(namespace, procedureName, procedureArguments, procedureResults, yieldAll)(pos(ctx))
-  }
-
-  final override def exitProcedureArgument(
-    ctx: CypherParser.ProcedureArgumentContext
-  ): Unit = {
-    ctx.ast = ctxChild(ctx, 0).ast
   }
 
   final override def exitProcedureResultItem(

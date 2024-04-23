@@ -48,6 +48,7 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_returnItem -> exitReturnItem((CypherParser.ReturnItemContext) ctx);
             case CypherParser.RULE_returnItems -> exitReturnItems((CypherParser.ReturnItemsContext) ctx);
             case CypherParser.RULE_orderItem -> exitOrderItem((CypherParser.OrderItemContext) ctx);
+            case CypherParser.RULE_orderBy -> exitOrderBy((CypherParser.OrderByContext) ctx);
             case CypherParser.RULE_skip -> exitSkip((CypherParser.SkipContext) ctx);
             case CypherParser.RULE_limit -> exitLimit((CypherParser.LimitContext) ctx);
             case CypherParser.RULE_whereClause -> exitWhereClause((CypherParser.WhereClauseContext) ctx);
@@ -66,8 +67,6 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_mergeAction -> exitMergeAction((CypherParser.MergeActionContext) ctx);
             case CypherParser.RULE_unwindClause -> exitUnwindClause((CypherParser.UnwindClauseContext) ctx);
             case CypherParser.RULE_callClause -> exitCallClause((CypherParser.CallClauseContext) ctx);
-            case CypherParser.RULE_procedureArgument -> exitProcedureArgument(
-                    (CypherParser.ProcedureArgumentContext) ctx);
             case CypherParser.RULE_procedureResultItem -> exitProcedureResultItem(
                     (CypherParser.ProcedureResultItemContext) ctx);
             case CypherParser.RULE_loadCSVClause -> exitLoadCSVClause((CypherParser.LoadCSVClauseContext) ctx);
@@ -202,7 +201,6 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_yieldItem -> exitYieldItem((CypherParser.YieldItemContext) ctx);
             case CypherParser.RULE_yieldSkip -> exitYieldSkip((CypherParser.YieldSkipContext) ctx);
             case CypherParser.RULE_yieldLimit -> exitYieldLimit((CypherParser.YieldLimitContext) ctx);
-            case CypherParser.RULE_yieldOrderBy -> exitYieldOrderBy((CypherParser.YieldOrderByContext) ctx);
             case CypherParser.RULE_yieldClause -> exitYieldClause((CypherParser.YieldClauseContext) ctx);
             case CypherParser.RULE_showBriefAndYield -> exitShowBriefAndYield(
                     (CypherParser.ShowBriefAndYieldContext) ctx);

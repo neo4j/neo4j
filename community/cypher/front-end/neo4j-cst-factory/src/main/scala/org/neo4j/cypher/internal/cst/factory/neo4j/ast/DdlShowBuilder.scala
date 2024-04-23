@@ -154,32 +154,33 @@ trait DdlShowBuilder extends CypherParserListener {
   }
 
   final override def exitYieldSkip(ctx: CypherParser.YieldSkipContext): Unit = {
-    ctx.ast = if (ctx.SKIPROWS() != null) Some(Skip(ctx.signedIntegerLiteral().ast[Expression]())(pos(ctx))) else None
+    ctx.ast = Skip(ctx.signedIntegerLiteral().ast[Expression]())(pos(ctx))
   }
 
   final override def exitYieldLimit(ctx: CypherParser.YieldLimitContext): Unit = {
-    ctx.ast = if (ctx.LIMITROWS() != null) Some(Limit(ctx.signedIntegerLiteral().ast[Expression]())(pos(ctx))) else None
+    ctx.ast = Limit(ctx.signedIntegerLiteral().ast[Expression]())(pos(ctx))
   }
 
-  final override def exitYieldOrderBy(ctx: CypherParser.YieldOrderByContext): Unit = {
-    ctx.ast =
-      if (ctx.ORDER() != null) Some(OrderBy(astSeq[SortItem](ctx.orderItem()))(pos(ctx.ORDER().getSymbol))) else None
+  final override def exitOrderBy(ctx: CypherParser.OrderByContext): Unit = {
+    ctx.ast = OrderBy(astSeq[SortItem](ctx.orderItem()))(pos(ctx.ORDER().getSymbol))
   }
 
   final override def exitYieldClause(
     ctx: CypherParser.YieldClauseContext
   ): Unit = {
-    val returnItems = if (ctx.TIMES() != null)
-      ReturnItems(includeExisting = true, Seq.empty)(pos(ctx.YIELD().getSymbol))
-    else {
-      ReturnItems(includeExisting = false, astSeq[ReturnItem](ctx.yieldItem()))(pos(ctx.yieldItem().get(0)))
-    }
-    val orderBy = ctx.yieldOrderBy().ast[Option[OrderBy]]()
-    val skip = ctx.yieldSkip().ast[Option[Skip]]()
-    val limit = ctx.yieldLimit().ast[Option[Limit]]()
-    val where = astOpt[Where](ctx.whereClause())
-
-    ctx.ast = Yield(returnItems, orderBy, skip, limit, where)(pos(ctx))
+    val returnItems =
+      if (ctx.TIMES() != null)
+        ReturnItems(includeExisting = true, Seq.empty)(pos(ctx.YIELD().getSymbol))
+      else {
+        ReturnItems(includeExisting = false, astSeq[ReturnItem](ctx.yieldItem()))(pos(ctx.yieldItem().get(0)))
+      }
+    ctx.ast = Yield(
+      returnItems,
+      astOpt[OrderBy](ctx.orderBy()),
+      astOpt[Skip](ctx.yieldSkip()),
+      astOpt[Limit](ctx.yieldLimit()),
+      astOpt[Where](ctx.whereClause())
+    )(pos(ctx))
   }
 
   final override def exitShowBriefAndYield(

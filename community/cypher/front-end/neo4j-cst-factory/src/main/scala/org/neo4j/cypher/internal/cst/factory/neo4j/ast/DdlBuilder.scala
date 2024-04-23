@@ -64,7 +64,6 @@ import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameServer
 import org.neo4j.cypher.internal.ast.RenameUser
-import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -100,7 +99,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.exceptions.SyntaxException
 
@@ -149,185 +147,13 @@ trait DdlBuilder extends CypherParserListener {
   final override def exitDropCommand(
     ctx: CypherParser.DropCommandContext
   ): Unit = {
-    val cPos = pos(ctx)
-    ctx.ast = ctxChild(ctx, 1) match {
-      case c: CypherParser.DropAliasContext =>
-        DropDatabaseAlias(c.symbolicAliasNameOrParameter().ast[DatabaseName](), c.EXISTS() != null)(cPos)
-      case c: CypherParser.DropConstraintContext => dropConstraintBuilder(c, cPos)
-      case c: CypherParser.DropDatabaseContext =>
-        val databaseName = c.symbolicAliasNameOrParameter().ast[DatabaseName]()
-        val additionalAction = if (c.DUMP() != null) DumpData else DestroyData
-        val waitUntilComplete = astOpt[WaitUntilComplete](c.waitClause(), NoWait)
-        DropDatabase(databaseName, c.EXISTS() != null, c.COMPOSITE() != null, additionalAction, waitUntilComplete)(cPos)
-      case c: CypherParser.DropIndexContext =>
-        val indexName = c.symbolicNameOrStringParameter()
-        if (indexName != null) {
-          DropIndexOnName(indexName.ast[Either[String, Parameter]](), c.EXISTS() != null)(cPos)
-        } else {
-          val labelName = c.labelType().ast[LabelName]
-          val properties = c.nonEmptyNameList().ast[ArraySeq[PropertyKeyName]].toList
-          DropIndex(labelName, properties)(cPos)
-        }
-      case c: CypherParser.DropRoleContext =>
-        DropRole(c.commandNameExpression().ast(), c.EXISTS() != null)(cPos)
-      case c: CypherParser.DropServerContext =>
-        DropServer(c.stringOrParameter().ast[Either[String, Parameter]])(cPos)
-      case c: CypherParser.DropUserContext =>
-        DropUser(c.commandNameExpression().ast(), c.EXISTS() != null)(cPos)
-      case _ => throw new IllegalStateException()
-    }
-  }
-
-  private def dropConstraintBuilder(ctx: CypherParser.DropConstraintContext, pos: InputPosition): SchemaCommand = {
-    val constraintName = ctx.symbolicNameOrStringParameter()
-    if (constraintName != null) {
-      DropConstraintOnName(constraintName.ast(), ctx.EXISTS() != null)(pos)
-    } else {
-      val properties = ctx.propertyList().ast[ArraySeq[Property]]()
-      val nodePattern = ctx.commandNodePattern()
-      val isNode = nodePattern != null
-      if (isNode) {
-        val variable = nodePattern.variable().ast[Variable]()
-        val label = nodePattern.labelType.ast[LabelName]()
-        if (ctx.EXISTS() != null) {
-          DropNodePropertyExistenceConstraint(variable, label, properties(0))(pos)
-        } else if (ctx.UNIQUE() != null) {
-          DropPropertyUniquenessConstraint(variable, label, properties)(pos)
-        } else if (ctx.KEY() != null) {
-          DropNodeKeyConstraint(variable, label, properties)(pos)
-        } else {
-          throw new SyntaxException("Unsupported drop constraint command: Please delete the constraint by name instead")
-        }
-      } else {
-        if (ctx.EXISTS() != null) {
-          val relPattern = ctx.commandRelPattern()
-          val variable = relPattern.variable().ast[Variable]()
-          val relType = relPattern.relType().ast[RelTypeName]()
-          DropRelationshipPropertyExistenceConstraint(variable, relType, properties(0))(pos)
-        } else {
-          throw new SyntaxException("Unsupported drop constraint command: Please delete the constraint by name instead")
-        }
-      }
-    }
+    ctx.ast = ctxChild(ctx, 1).ast
   }
 
   final override def exitAlterCommand(
     ctx: CypherParser.AlterCommandContext
   ): Unit = {
-    val p = pos(ctx)
-    ctx.ast = ctxChild(ctx, 1) match {
-      case c: CypherParser.AlterAliasContext =>
-        val aliasName = c.symbolicAliasNameOrParameter().ast[DatabaseName]()
-        val aliasTargetCtx = c.alterAliasTarget()
-        val (targetName, url) = {
-          if (aliasTargetCtx.isEmpty) (None, None)
-          else
-            (
-              Some(aliasTargetCtx.get(0).symbolicAliasNameOrParameter().ast[DatabaseName]()),
-              astOpt[Either[String, Parameter]](aliasTargetCtx.get(0).stringOrParameter())
-            )
-        }
-        val username = astOptFromList[Expression](c.alterAliasUser(), None)
-        val password = astOptFromList[Expression](c.alterAliasPassword(), None)
-        val driverSettings = astOptFromList[Either[Map[String, Expression], Parameter]](c.alterAliasDriver(), None)
-        val properties = astOptFromList[Either[Map[String, Expression], Parameter]](c.alterAliasProperties(), None)
-        if (url.isEmpty && username.isEmpty && password.isEmpty && driverSettings.isEmpty) {
-          AlterLocalDatabaseAlias(aliasName, targetName, c.EXISTS() != null, properties)(p)
-        } else {
-          AlterRemoteDatabaseAlias(
-            aliasName,
-            targetName,
-            c.EXISTS() != null,
-            url,
-            username,
-            password,
-            driverSettings,
-            properties
-          )(p)
-        }
-      case c: CypherParser.AlterCurrentUserContext =>
-        SetOwnPassword(c.passwordExpression(1).ast[Expression](), c.passwordExpression(0).ast[Expression]())(p)
-      case c: CypherParser.AlterDatabaseContext =>
-        val dbName = c.symbolicAliasNameOrParameter().ast[DatabaseName]()
-        val waitUntilComplete = astOpt[WaitUntilComplete](c.waitClause(), NoWait)
-        if (!c.REMOVE().isEmpty) {
-          val optionsToRemove = Set.from(astSeq[String](c.symbolicNameString()))
-          AlterDatabase(dbName, c.EXISTS() != null, None, None, NoOptions, optionsToRemove, waitUntilComplete)(p)
-        } else {
-          val access = astOptFromList(c.alterDatabaseAccess(), None)
-          val topology = astOptFromList(c.alterDatabaseTopology(), None)
-          val options = if (c.alterDatabaseOption().isEmpty) NoOptions
-          else OptionsMap(astSeq[Map[String, Expression]](c.alterDatabaseOption()).reduce(_ ++ _))
-          AlterDatabase(dbName, c.EXISTS() != null, access, topology, options, Set.empty, waitUntilComplete)(p)
-        }
-      case c: CypherParser.AlterServerContext =>
-        AlterServer(c.stringOrParameter().ast[Either[String, Parameter]](), c.commandOptions().ast())(p)
-      case c: CypherParser.AlterUserContext =>
-        val username = c.commandNameExpression().ast[Expression]()
-        val passCtx = c.password()
-        val (isEncrypted, initPass) = if (!passCtx.isEmpty)
-          (Some(passCtx.get(0).ENCRYPTED() != null), Some(passCtx.get(0).passwordExpression().ast[Expression]()))
-        else (None, None)
-        val passwordReq =
-          if (passCtx.isEmpty && c.passwordChangeRequired().isEmpty) None
-          else if (!c.passwordChangeRequired().isEmpty) Some(c.passwordChangeRequired().get(0).ast[Boolean]())
-          else if (!passCtx.isEmpty) {
-            if (passCtx.get(0).passwordChangeRequired() != null)
-              Some(passCtx.get(0).passwordChangeRequired().ast[Boolean]())
-            else None
-          } else None
-        val suspended = astOptFromList[Boolean](c.userStatus(), None)
-        val homeDatabaseAction = if (c.REMOVE() != null) Some(RemoveHomeDatabaseAction)
-        else astOptFromList[HomeDatabaseAction](c.homeDatabase(), None)
-        val userOptions = UserOptions(passwordReq, suspended, homeDatabaseAction)
-        AlterUser(username, isEncrypted, initPass, userOptions, c.EXISTS() != null)(p)
-      case _ => throw new IllegalStateException()
-    }
-  }
-
-  override def exitPassword(ctx: CypherParser.PasswordContext): Unit = {}
-
-  override def exitAlterAliasTarget(ctx: CypherParser.AlterAliasTargetContext): Unit = {
-    val target = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
-    val url = astOpt[Either[String, Parameter]](ctx.stringOrParameter())
-    ctx.ast = (target, url)
-  }
-
-  override def exitAlterAliasUser(ctx: CypherParser.AlterAliasUserContext): Unit = {
     ctx.ast = ctxChild(ctx, 1).ast
-  }
-
-  override def exitAlterAliasPassword(ctx: CypherParser.AlterAliasPasswordContext): Unit = {
-    ctx.ast = ctxChild(ctx, 1).ast
-  }
-
-  override def exitAlterAliasDriver(ctx: CypherParser.AlterAliasDriverContext): Unit = {
-    ctx.ast = ctxChild(ctx, 1).ast
-  }
-
-  override def exitAlterAliasProperties(ctx: CypherParser.AlterAliasPropertiesContext): Unit = {
-    ctx.ast = ctxChild(ctx, 1).ast
-  }
-
-  final override def exitAlterDatabaseAccess(ctx: CypherParser.AlterDatabaseAccessContext): Unit = {
-    ctx.ast = if (ctx.ONLY() != null) {
-      ReadOnlyAccess
-    } else {
-      ReadWriteAccess
-    }
-  }
-
-  final override def exitAlterDatabaseTopology(ctx: CypherParser.AlterDatabaseTopologyContext): Unit = {
-    ctx.ast =
-      if (ctx.TOPOLOGY() != null) {
-        val pT = astOptFromList[Int](ctx.primaryTopology(), None)
-        val sT = astOptFromList[Int](ctx.secondaryTopology(), None)
-        Topology(pT, sT)
-      } else None
-  }
-
-  final override def exitAlterDatabaseOption(ctx: CypherParser.AlterDatabaseOptionContext): Unit = {
-    ctx.ast = Map((ctx.symbolicNameString().ast[String], ctx.expression().ast[Expression]))
   }
 
   final override def exitTerminateCommand(
@@ -376,21 +202,61 @@ trait DdlBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitCreateDatabase(
-    ctx: CypherParser.CreateDatabaseContext
-  ): Unit = {}
-
-  final override def exitCreateCompositeDatabase(
-    ctx: CypherParser.CreateCompositeDatabaseContext
-  ): Unit = {}
-
   final override def exitDropDatabase(
     ctx: CypherParser.DropDatabaseContext
-  ): Unit = {}
+  ): Unit = {
+    val additionalAction = if (ctx.DUMP() != null) DumpData else DestroyData
+    ctx.ast = DropDatabase(
+      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
+      ctx.EXISTS() != null,
+      ctx.COMPOSITE() != null,
+      additionalAction,
+      astOpt[WaitUntilComplete](ctx.waitClause(), NoWait)
+    )(pos(ctx.getParent))
+  }
 
   final override def exitAlterDatabase(
     ctx: CypherParser.AlterDatabaseContext
-  ): Unit = {}
+  ): Unit = {
+    val dbName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
+    val waitUntilComplete = astOpt[WaitUntilComplete](ctx.waitClause(), NoWait)
+    ctx.ast = if (!ctx.REMOVE().isEmpty) {
+      val optionsToRemove = Set.from(astSeq[String](ctx.symbolicNameString()))
+      AlterDatabase(dbName, ctx.EXISTS() != null, None, None, NoOptions, optionsToRemove, waitUntilComplete)(
+        pos(ctx.getParent)
+      )
+    } else {
+      val access = astOptFromList(ctx.alterDatabaseAccess(), None)
+      val topology = astOptFromList(ctx.alterDatabaseTopology(), None)
+      val options =
+        if (ctx.alterDatabaseOption().isEmpty) NoOptions
+        else OptionsMap(astSeq[Map[String, Expression]](ctx.alterDatabaseOption()).reduce(_ ++ _))
+      AlterDatabase(dbName, ctx.EXISTS() != null, access, topology, options, Set.empty, waitUntilComplete)(
+        pos(ctx.getParent)
+      )
+    }
+  }
+
+  final override def exitAlterDatabaseAccess(ctx: CypherParser.AlterDatabaseAccessContext): Unit = {
+    ctx.ast = if (ctx.ONLY() != null) {
+      ReadOnlyAccess
+    } else {
+      ReadWriteAccess
+    }
+  }
+
+  final override def exitAlterDatabaseTopology(ctx: CypherParser.AlterDatabaseTopologyContext): Unit = {
+    ctx.ast =
+      if (ctx.TOPOLOGY() != null) {
+        val pT = astOptFromList[Int](ctx.primaryTopology(), None)
+        val sT = astOptFromList[Int](ctx.secondaryTopology(), None)
+        Topology(pT, sT)
+      } else None
+  }
+
+  final override def exitAlterDatabaseOption(ctx: CypherParser.AlterDatabaseOptionContext): Unit = {
+    ctx.ast = Map((ctx.symbolicNameString().ast[String], ctx.expression().ast[Expression]))
+  }
 
   final override def exitStartDatabase(
     ctx: CypherParser.StartDatabaseContext
@@ -450,17 +316,68 @@ trait DdlBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitCreateAlias(
-    ctx: CypherParser.CreateAliasContext
-  ): Unit = {}
-
   final override def exitDropAlias(
     ctx: CypherParser.DropAliasContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = DropDatabaseAlias(ctx.symbolicAliasNameOrParameter().ast[DatabaseName](), ctx.EXISTS() != null)(pos(
+      ctx.getParent
+    ))
+  }
 
   final override def exitAlterAlias(
     ctx: CypherParser.AlterAliasContext
-  ): Unit = {}
+  ): Unit = {
+    val aliasName = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
+    val aliasTargetCtx = ctx.alterAliasTarget()
+    val (targetName, url) = {
+      if (aliasTargetCtx.isEmpty) (None, None)
+      else
+        (
+          Some(aliasTargetCtx.get(0).symbolicAliasNameOrParameter().ast[DatabaseName]()),
+          astOpt[Either[String, Parameter]](aliasTargetCtx.get(0).stringOrParameter())
+        )
+    }
+    val username = astOptFromList[Expression](ctx.alterAliasUser(), None)
+    val password = astOptFromList[Expression](ctx.alterAliasPassword(), None)
+    val driverSettings = astOptFromList[Either[Map[String, Expression], Parameter]](ctx.alterAliasDriver(), None)
+    val properties = astOptFromList[Either[Map[String, Expression], Parameter]](ctx.alterAliasProperties(), None)
+    ctx.ast = if (url.isEmpty && username.isEmpty && password.isEmpty && driverSettings.isEmpty) {
+      AlterLocalDatabaseAlias(aliasName, targetName, ctx.EXISTS() != null, properties)(pos(ctx.getParent))
+    } else {
+      AlterRemoteDatabaseAlias(
+        aliasName,
+        targetName,
+        ctx.EXISTS() != null,
+        url,
+        username,
+        password,
+        driverSettings,
+        properties
+      )(pos(ctx.getParent))
+    }
+  }
+
+  override def exitAlterAliasTarget(ctx: CypherParser.AlterAliasTargetContext): Unit = {
+    val target = ctx.symbolicAliasNameOrParameter().ast[DatabaseName]()
+    val url = astOpt[Either[String, Parameter]](ctx.stringOrParameter())
+    ctx.ast = (target, url)
+  }
+
+  override def exitAlterAliasUser(ctx: CypherParser.AlterAliasUserContext): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast
+  }
+
+  override def exitAlterAliasPassword(ctx: CypherParser.AlterAliasPasswordContext): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast
+  }
+
+  override def exitAlterAliasDriver(ctx: CypherParser.AlterAliasDriverContext): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast
+  }
+
+  override def exitAlterAliasProperties(ctx: CypherParser.AlterAliasPropertiesContext): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast
+  }
 
   final override def exitSymbolicAliasNameList(
     ctx: CypherParser.SymbolicAliasNameListContext
@@ -490,11 +407,56 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitDropConstraint(
     ctx: CypherParser.DropConstraintContext
-  ): Unit = {}
+  ): Unit = {
+    val p = pos(ctx.getParent)
+    val constraintName = ctx.symbolicNameOrStringParameter()
+    ctx.ast = if (constraintName != null) {
+      DropConstraintOnName(constraintName.ast(), ctx.EXISTS() != null)(p)
+    } else {
+      val properties = ctx.propertyList().ast[ArraySeq[Property]]()
+      val nodePattern = ctx.commandNodePattern()
+      val isNode = nodePattern != null
+      if (isNode) {
+        val variable = nodePattern.variable().ast[Variable]()
+        val label = nodePattern.labelType.ast[LabelName]()
+        if (ctx.EXISTS() != null) {
+          DropNodePropertyExistenceConstraint(variable, label, properties(0))(p)
+        } else if (ctx.UNIQUE() != null) {
+          DropPropertyUniquenessConstraint(variable, label, properties)(p)
+        } else if (ctx.KEY() != null) {
+          DropNodeKeyConstraint(variable, label, properties)(p)
+        } else {
+          throw new SyntaxException("Unsupported drop constraint command: Please delete the constraint by name instead")
+        }
+      } else {
+        if (ctx.EXISTS() != null) {
+          val relPattern = ctx.commandRelPattern()
+          val variable = relPattern.variable().ast[Variable]()
+          val relType = relPattern.relType().ast[RelTypeName]()
+          DropRelationshipPropertyExistenceConstraint(variable, relType, properties(0))(p)
+        } else {
+          throw new SyntaxException("Unsupported drop constraint command: Please delete the constraint by name instead")
+        }
+      }
+    }
+  }
 
   final override def exitDropIndex(
     ctx: CypherParser.DropIndexContext
-  ): Unit = {}
+  ): Unit = {
+    val indexName = ctx.symbolicNameOrStringParameter()
+    ctx.ast = if (indexName != null) {
+      DropIndexOnName(
+        indexName.ast[Either[String, Parameter]](),
+        ctx.EXISTS() != null
+      )(pos(ctx.getParent))
+    } else {
+      DropIndex(
+        ctx.labelType().ast[LabelName],
+        ctx.nonEmptyNameList().ast[ArraySeq[PropertyKeyName]].toList
+      )(pos(ctx.getParent))
+    }
+  }
 
   final override def exitPropertyList(
     ctx: CypherParser.PropertyListContext
@@ -506,7 +468,12 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitAlterServer(
     ctx: CypherParser.AlterServerContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = AlterServer(
+      ctx.stringOrParameter().ast[Either[String, Parameter]](),
+      ctx.commandOptions().ast()
+    )(pos(ctx.getParent))
+  }
 
   final override def exitRenameServer(
     ctx: CypherParser.RenameServerContext
@@ -514,7 +481,9 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitDropServer(
     ctx: CypherParser.DropServerContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = DropServer(ctx.stringOrParameter().ast[Either[String, Parameter]])(pos(ctx.getParent))
+  }
 
   final override def exitDeallocateDatabaseFromServers(
     ctx: CypherParser.DeallocateDatabaseFromServersContext
@@ -524,25 +493,21 @@ trait DdlBuilder extends CypherParserListener {
     ctx: CypherParser.ReallocateDatabasesContext
   ): Unit = {}
 
-  final override def exitCreateRole(
-    ctx: CypherParser.CreateRoleContext
-  ): Unit = {}
-
   final override def exitDropRole(
     ctx: CypherParser.DropRoleContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = DropRole(ctx.commandNameExpression().ast(), ctx.EXISTS() != null)(pos(ctx.getParent))
+  }
 
   final override def exitRenameRole(
     ctx: CypherParser.RenameRoleContext
   ): Unit = {}
 
-  final override def exitCreateUser(
-    ctx: CypherParser.CreateUserContext
-  ): Unit = {}
-
   final override def exitDropUser(
     ctx: CypherParser.DropUserContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = DropUser(ctx.commandNameExpression().ast(), ctx.EXISTS() != null)(pos(ctx.getParent))
+  }
 
   final override def exitRenameUser(
     ctx: CypherParser.RenameUserContext
@@ -550,11 +515,37 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitAlterCurrentUser(
     ctx: CypherParser.AlterCurrentUserContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = SetOwnPassword(
+      ctx.passwordExpression(1).ast[Expression](),
+      ctx.passwordExpression(0).ast[Expression]()
+    )(pos(ctx.getParent))
+  }
 
   final override def exitAlterUser(
     ctx: CypherParser.AlterUserContext
-  ): Unit = {}
+  ): Unit = {
+    val username = ctx.commandNameExpression().ast[Expression]()
+    val passCtx = ctx.password()
+    val (isEncrypted, initPass) = if (!passCtx.isEmpty)
+      (Some(passCtx.get(0).ENCRYPTED() != null), Some(passCtx.get(0).passwordExpression().ast[Expression]()))
+    else (None, None)
+    val passwordReq =
+      if (passCtx.isEmpty && ctx.passwordChangeRequired().isEmpty) None
+      else if (!ctx.passwordChangeRequired().isEmpty) Some(ctx.passwordChangeRequired().get(0).ast[Boolean]())
+      else if (!passCtx.isEmpty) {
+        if (passCtx.get(0).passwordChangeRequired() != null)
+          Some(passCtx.get(0).passwordChangeRequired().ast[Boolean]())
+        else None
+      } else None
+    val suspended = astOptFromList[Boolean](ctx.userStatus(), None)
+    val homeDatabaseAction = if (ctx.REMOVE() != null) Some(RemoveHomeDatabaseAction)
+    else astOptFromList[HomeDatabaseAction](ctx.homeDatabase(), None)
+    val userOptions = UserOptions(passwordReq, suspended, homeDatabaseAction)
+    ctx.ast = AlterUser(username, isEncrypted, initPass, userOptions, ctx.EXISTS() != null)(pos(ctx.getParent))
+  }
+
+  override def exitPassword(ctx: CypherParser.PasswordContext): Unit = {}
 
   final override def exitPasswordExpression(
     ctx: CypherParser.PasswordExpressionContext

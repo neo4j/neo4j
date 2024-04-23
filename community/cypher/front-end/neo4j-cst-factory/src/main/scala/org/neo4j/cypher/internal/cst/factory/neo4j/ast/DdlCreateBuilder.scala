@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
-import org.neo4j.cypher.internal.ast.CreateConstraint
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
@@ -53,11 +52,9 @@ import org.neo4j.cypher.internal.ast.HomeDatabaseAction
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.Options
-import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
-import org.neo4j.cypher.internal.ast.WriteAdministrationCommand
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOptFromList
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
@@ -84,13 +81,8 @@ import org.neo4j.cypher.internal.parser.CypherParser.ConstraintIsNotNullContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintIsUniqueContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintKeyContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintTypedContext
-import org.neo4j.cypher.internal.parser.CypherParser.CreateConstraintContext
-import org.neo4j.cypher.internal.parser.CypherParser.CreateDatabaseContext
-import org.neo4j.cypher.internal.parser.CypherParser.CreateIndexContext
-import org.neo4j.cypher.internal.parser.CypherParser.CreateRoleContext
-import org.neo4j.cypher.internal.parser.CypherParser.CreateUserContext
+import org.neo4j.cypher.internal.parser.CypherParser.CreateCommandContext
 import org.neo4j.cypher.internal.parser.CypherParserListener
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.immutable.ArraySeq
@@ -100,86 +92,69 @@ trait DdlCreateBuilder extends CypherParserListener {
   final override def exitCreateCommand(
     ctx: CypherParser.CreateCommandContext
   ): Unit = {
-    val replace = ctx.REPLACE() != null
-    val createCmd = lastChild[AstRuleCtx](ctx)
-    ctx.ast = createCmd match {
-      case c: CypherParser.CreateAliasContext             => createAliasBuilder(c, replace, pos(ctx))
-      case c: CypherParser.CreateCompositeDatabaseContext => createCompositeDatabase(c, replace, pos(ctx))
-      case c: CypherParser.CreateConstraintContext        => createConstraintBuilder(c, replace, pos(ctx))
-      case c: CypherParser.CreateDatabaseContext          => createDatabaseBuilder(c, replace, pos(ctx))
-      case c: CypherParser.CreateIndexContext             => createIndexBuilder(c, replace, pos(ctx))
-      case c: CypherParser.CreateRoleContext              => createRoleBuilder(c, replace, pos(ctx))
-      case c: CypherParser.CreateUserContext              => createUserBuilder(c, replace, pos(ctx))
-      case _                                              => null // TODO ERROR HANDLING
+    ctx.ast = lastChild[AstRuleCtx](ctx).ast
+  }
+
+  final override def exitCreateAlias(
+    ctx: CypherParser.CreateAliasContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    val aliasName = ctx.symbolicAliasNameOrParameter(0).ast[DatabaseName]()
+    val dbName = ctx.symbolicAliasNameOrParameter(1).ast[DatabaseName]()
+    val ifNotExists = ctx.EXISTS() != null
+    val properties =
+      if (ctx.PROPERTIES() != null) {
+        if (ctx.DRIVER() != null) Some(ctx.mapOrParameter(1).ast[Either[Map[String, Expression], Parameter]]())
+        else Some(ctx.mapOrParameter(0).ast[Either[Map[String, Expression], Parameter]]())
+      } else None
+
+    ctx.ast = if (ctx.AT() == null) {
+      CreateLocalDatabaseAlias(aliasName, dbName, ifExistsDo(parent.REPLACE() != null, ifNotExists), properties)(pos(
+        parent
+      ))
+    } else {
+      val driverSettings =
+        if (ctx.DRIVER() != null) Some(ctx.mapOrParameter(0).ast[Either[Map[String, Expression], Parameter]]())
+        else None
+      CreateRemoteDatabaseAlias(
+        aliasName,
+        dbName,
+        ifExistsDo(parent.REPLACE() != null, ifNotExists),
+        ctx.stringOrParameter().ast[Either[String, Parameter]](),
+        ctx.commandNameExpression().ast[Expression](),
+        ctx.passwordExpression().ast[Expression](),
+        driverSettings,
+        properties
+      )(pos(parent))
     }
   }
 
-  private def createRoleBuilder(c: CreateRoleContext, replace: Boolean, pos: InputPosition): CreateRole = {
-    val nameExpressions = c.commandNameExpression()
-    val roleName = nameExpressions.get(0).ast[Expression]()
-    val from =
-      if (nameExpressions.size > 1) {
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(nameExpressions.size == 2)
-        Some(nameExpressions.get(1).ast[Expression])
-      } else
-        None
-    val ifNotExists = c.EXISTS() != null
-    CreateRole(roleName, from, ifExistsDo(replace, ifNotExists))(pos)
+  final override def exitCreateCompositeDatabase(
+    ctx: CypherParser.CreateCompositeDatabaseContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    ctx.ast = CreateCompositeDatabase(
+      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
+      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
+      astOpt[Options](ctx.commandOptions(), NoOptions),
+      astOpt[WaitUntilComplete](ctx.waitClause(), NoWait)
+    )(pos(parent))
   }
 
-  private def createUserBuilder(c: CreateUserContext, replace: Boolean, pos: InputPosition): CreateUser = {
-    val userName = c.commandNameExpression().ast[Expression]()
-    val passCtx = c.password()
-    val isEncryptedPassword = passCtx.ENCRYPTED() != null
-    val initialPassword = passCtx.passwordExpression().ast[Expression]()
-    val passwordReq = if (passCtx.passwordChangeRequired() != null) {
-      Some(passCtx.passwordChangeRequired().ast[Boolean]())
-    } else astOptFromList[Boolean](c.passwordChangeRequired(), Some(true))
-    val suspended = astOptFromList[Boolean](c.userStatus(), None)
-    val homeDatabaseAction = astOptFromList[HomeDatabaseAction](c.homeDatabase(), None)
-    val userOptions = UserOptions(passwordReq, suspended, homeDatabaseAction)
-    val ifNotExists = c.EXISTS() != null
-    CreateUser(userName, isEncryptedPassword, initialPassword, userOptions, ifExistsDo(replace, ifNotExists))(pos)
-  }
+  final override def exitCreateConstraint(
+    ctx: CypherParser.CreateConstraintContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    val isNode = ctx.commandNodePattern() != null
+    val constraintName = astOpt[Either[String, Parameter]](ctx.symbolicNameOrStringParameter())
+    val ifNotExists = ctx.EXISTS() != null
+    val containsOn = ctx.ON() != null
+    val options = astOpt[Options](ctx.commandOptions(), NoOptions)
+    val cT = ctx.constraintType()
 
-  private def createDatabaseBuilder(c: CreateDatabaseContext, replace: Boolean, pos: InputPosition): CreateDatabase = {
-    val dbNameCtx = c.symbolicAliasNameOrParameter()
-    val dbName = dbNameCtx.ast[DatabaseName]()
-    val ifNotExists = c.EXISTS() != null
-    val options = astOpt[Options](c.commandOptions(), NoOptions)
-    val waitUntilComplete = astOpt[WaitUntilComplete](c.waitClause(), NoWait)
-    val topology =
-      if (c.TOPOLOGY() != null) {
-        val pT = astOptFromList[Int](c.primaryTopology(), None)
-        val sT = astOptFromList[Int](c.secondaryTopology(), None)
-        Some(Topology(pT, sT))
-      } else None
-    CreateDatabase(dbName, ifExistsDo(replace, ifNotExists), options, waitUntilComplete, topology)(pos)
-  }
-
-  final override def exitPrimaryTopology(ctx: CypherParser.PrimaryTopologyContext): Unit = {
-    ctx.ast = nodeChild(ctx, 0).getText.toInt
-  }
-
-  final override def exitSecondaryTopology(ctx: CypherParser.SecondaryTopologyContext): Unit = {
-    ctx.ast = nodeChild(ctx, 0).getText.toInt
-  }
-
-  private def createConstraintBuilder(
-    c: CreateConstraintContext,
-    replace: Boolean,
-    pos: InputPosition
-  ): CreateConstraint = {
-    val isNode = c.commandNodePattern() != null
-    val constraintName = astOpt[Either[String, Parameter]](c.symbolicNameOrStringParameter())
-    val ifNotExists = c.EXISTS() != null
-    val containsOn = c.ON() != null
-    val options = astOpt[Options](c.commandOptions(), NoOptions)
-    val cT = c.constraintType()
-
-    if (isNode) {
-      val variable = c.commandNodePattern().variable().ast[Variable]()
-      val label = c.commandNodePattern().labelType().ast[LabelName]()
+    ctx.ast = if (isNode) {
+      val variable = ctx.commandNodePattern().variable().ast[Variable]()
+      val label = ctx.commandNodePattern().labelType().ast[LabelName]()
       cT match {
         case cTC: ConstraintExistsContext =>
           val constraintVersion = ConstraintVersion0
@@ -189,11 +164,11 @@ trait DdlCreateBuilder extends CypherParserListener {
             label,
             property,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
+          )(pos(parent))
         case cTC: ConstraintIsNotNullContext =>
           val constraintVersion =
             if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion1
@@ -203,11 +178,11 @@ trait DdlCreateBuilder extends CypherParserListener {
             label,
             property,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
+          )(pos(parent))
         case cTC: ConstraintTypedContext =>
           val constraintVersion =
             if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
@@ -219,11 +194,11 @@ trait DdlCreateBuilder extends CypherParserListener {
             property,
             propertyType,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
+          )(pos(parent))
         case cTC: ConstraintIsUniqueContext =>
           val constraintVersion =
             if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
@@ -233,11 +208,11 @@ trait DdlCreateBuilder extends CypherParserListener {
             label,
             properties,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
+          )(pos(parent))
         case cTC: ConstraintKeyContext =>
           val constraintVersion =
             if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
@@ -247,16 +222,16 @@ trait DdlCreateBuilder extends CypherParserListener {
             label,
             properties,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
-        case _ => throw new RuntimeException("Unknown Constraint") // TODO Error handling
+          )(pos(parent))
+        case _ => throw new IllegalStateException("Unknown Constraint Command")
       }
     } else {
-      val variable = c.commandRelPattern().variable().ast[Variable]()
-      val relType = c.commandRelPattern().relType().ast[RelTypeName]()
+      val variable = ctx.commandRelPattern().variable().ast[Variable]()
+      val relType = ctx.commandRelPattern().relType().ast[RelTypeName]()
       cT match {
         case cTC: ConstraintExistsContext =>
           val constraintVersion = ConstraintVersion0
@@ -266,11 +241,11 @@ trait DdlCreateBuilder extends CypherParserListener {
             relType,
             property,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
+          )(pos(parent))
         case cTC: ConstraintIsNotNullContext =>
           val constraintVersion =
             if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion1
@@ -280,11 +255,11 @@ trait DdlCreateBuilder extends CypherParserListener {
             relType,
             property,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
+          )(pos(parent))
         case cTC: ConstraintTypedContext =>
           val constraintVersion =
             if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
@@ -296,11 +271,11 @@ trait DdlCreateBuilder extends CypherParserListener {
             property,
             propertyType,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
+          )(pos(parent))
         case cTC: ConstraintIsUniqueContext =>
           val constraintVersion =
             if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
@@ -310,11 +285,11 @@ trait DdlCreateBuilder extends CypherParserListener {
             relType,
             properties,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
+          )(pos(parent))
         case cTC: ConstraintKeyContext =>
           val constraintVersion =
             if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
@@ -324,27 +299,54 @@ trait DdlCreateBuilder extends CypherParserListener {
             relType,
             properties,
             constraintName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options,
             containsOn,
             constraintVersion
-          )(pos)
-        case _ => throw new RuntimeException("Unknown Constraint") // TODO Error handling
+          )(pos(parent))
+        case _ => throw new IllegalStateException("Unexpected Constraint Command")
       }
     }
   }
 
   override def exitConstraintType(ctx: CypherParser.ConstraintTypeContext): Unit = {}
 
-  private def createIndexBuilder(
-    c: CreateIndexContext,
-    replace: Boolean,
-    pos: InputPosition
-  ): SchemaCommand = {
-    val token = nodeChild(c, 0).getSymbol.getType
-    token match {
+  final override def exitCreateDatabase(
+    ctx: CypherParser.CreateDatabaseContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    val topology =
+      if (ctx.TOPOLOGY() != null) {
+        val pT = astOptFromList[Int](ctx.primaryTopology(), None)
+        val sT = astOptFromList[Int](ctx.secondaryTopology(), None)
+        Some(Topology(pT, sT))
+      } else None
+    ctx.ast = CreateDatabase(
+      ctx.symbolicAliasNameOrParameter().ast[DatabaseName](),
+      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null),
+      astOpt[Options](ctx.commandOptions(), NoOptions),
+      astOpt[WaitUntilComplete](ctx.waitClause(), NoWait),
+      topology
+    )(pos(parent))
+  }
+
+  final override def exitPrimaryTopology(ctx: CypherParser.PrimaryTopologyContext): Unit = {
+    ctx.ast = nodeChild(ctx, 0).getText.toInt
+  }
+
+  final override def exitSecondaryTopology(ctx: CypherParser.SecondaryTopologyContext): Unit = {
+    ctx.ast = nodeChild(ctx, 0).getText.toInt
+  }
+
+  final override def exitCreateIndex(
+    ctx: CypherParser.CreateIndexContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+
+    val token = nodeChild(ctx, 0).getSymbol.getType
+    ctx.ast = token match {
       case CypherParser.LOOKUP =>
-        val cIndex = c.createLookupIndex()
+        val cIndex = ctx.createLookupIndex()
         val ifNotExists = cIndex.EXISTS() != null
         val options = astOpt[Options](cIndex.commandOptions(), NoOptions)
         val indexName = astOpt[Either[String, Parameter]](cIndex.symbolicNameOrStringParameter())
@@ -364,11 +366,11 @@ trait DdlCreateBuilder extends CypherParserListener {
           isNode,
           function,
           indexName,
-          ifExistsDo(replace, ifNotExists),
+          ifExistsDo(parent.REPLACE() != null, ifNotExists),
           options
-        )(pos)
+        )(pos(parent))
       case CypherParser.FULLTEXT =>
-        val cIndex = c.createFulltextIndex()
+        val cIndex = ctx.createFulltextIndex()
         val ifNotExists = cIndex.EXISTS() != null
         val options = astOpt[Options](cIndex.commandOptions(), NoOptions)
         val indexName = astOpt[Either[String, Parameter]](cIndex.symbolicNameOrStringParameter())
@@ -387,9 +389,9 @@ trait DdlCreateBuilder extends CypherParserListener {
             labels,
             propertyList,
             indexName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options
-          )(pos)
+          )(pos(parent))
         } else {
           val relPattern = cIndex.fulltextRelPattern()
           val variable = relPattern.variable().ast[Variable]()
@@ -400,19 +402,18 @@ trait DdlCreateBuilder extends CypherParserListener {
             relTypes,
             propertyList,
             indexName,
-            ifExistsDo(replace, ifNotExists),
+            ifExistsDo(parent.REPLACE() != null, ifNotExists),
             options
-          )(pos)
+          )(pos(parent))
         }
       case CypherParser.INDEX =>
-        if (c.ON() != null) {
-          val cIndex = c.oldCreateIndex()
+        if (ctx.ON() != null) {
+          val cIndex = ctx.oldCreateIndex()
           val label = cIndex.labelType().ast[LabelName]()
           val propertyList = nonEmptyPropertyKeyName(cIndex.nonEmptyNameList()).toList
-          CreateIndexOldSyntax(label, propertyList)(pos)
+          CreateIndexOldSyntax(label, propertyList)(pos(parent))
         } else {
-          // TODO Find a way to merge with RangeNodeIndex?
-          val cIndex = c.createIndex_()
+          val cIndex = ctx.createIndex_()
           val ifNotExists = cIndex.EXISTS() != null
           val options = astOpt[Options](cIndex.commandOptions(), NoOptions)
           val indexName = astOpt[Either[String, Parameter]](cIndex.symbolicNameOrStringParameter())
@@ -427,10 +428,10 @@ trait DdlCreateBuilder extends CypherParserListener {
               label,
               propertyList,
               indexName,
-              ifExistsDo(replace, ifNotExists),
+              ifExistsDo(parent.REPLACE() != null, ifNotExists),
               options,
               fromDefault = true
-            )(pos)
+            )(pos(parent))
           } else {
             val relPattern = cIndex.commandRelPattern()
             val variable = relPattern.variable().ast[Variable]()
@@ -440,14 +441,14 @@ trait DdlCreateBuilder extends CypherParserListener {
               relType,
               propertyList,
               indexName,
-              ifExistsDo(replace, ifNotExists),
+              ifExistsDo(parent.REPLACE() != null, ifNotExists),
               options,
               fromDefault = true
-            )(pos)
+            )(pos(parent))
           }
         }
       case _ =>
-        val cIndex = c.createIndex_()
+        val cIndex = ctx.createIndex_()
         val ifNotExists = cIndex.EXISTS() != null
         val options = astOpt[Options](cIndex.commandOptions(), NoOptions)
         val indexName = astOpt[Either[String, Parameter]](cIndex.symbolicNameOrStringParameter())
@@ -469,9 +470,9 @@ trait DdlCreateBuilder extends CypherParserListener {
                 label,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options
-              )(pos)
+              )(pos(parent))
             } else {
               val relType = labelOrRelType.asInstanceOf[RelTypeName]
               CreateBtreeRelationshipIndex(
@@ -479,9 +480,9 @@ trait DdlCreateBuilder extends CypherParserListener {
                 relType,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options
-              )(pos)
+              )(pos(parent))
             }
           case CypherParser.RANGE =>
             if (isNode) {
@@ -491,10 +492,10 @@ trait DdlCreateBuilder extends CypherParserListener {
                 label,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options,
                 fromDefault = false
-              )(pos)
+              )(pos(parent))
             } else {
               val relType = labelOrRelType.asInstanceOf[RelTypeName]
               CreateRangeRelationshipIndex(
@@ -502,10 +503,10 @@ trait DdlCreateBuilder extends CypherParserListener {
                 relType,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options,
                 fromDefault = false
-              )(pos)
+              )(pos(parent))
             }
           case CypherParser.TEXT =>
             if (isNode) {
@@ -515,9 +516,9 @@ trait DdlCreateBuilder extends CypherParserListener {
                 label,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options
-              )(pos)
+              )(pos(parent))
             } else {
               val relType = labelOrRelType.asInstanceOf[RelTypeName]
               CreateTextRelationshipIndex(
@@ -525,9 +526,9 @@ trait DdlCreateBuilder extends CypherParserListener {
                 relType,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options
-              )(pos)
+              )(pos(parent))
             }
           case CypherParser.POINT =>
             if (isNode) {
@@ -537,9 +538,9 @@ trait DdlCreateBuilder extends CypherParserListener {
                 label,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options
-              )(pos)
+              )(pos(parent))
             } else {
               val relType = labelOrRelType.asInstanceOf[RelTypeName]
               CreatePointRelationshipIndex(
@@ -547,9 +548,9 @@ trait DdlCreateBuilder extends CypherParserListener {
                 relType,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options
-              )(pos)
+              )(pos(parent))
             }
           case CypherParser.VECTOR =>
             if (isNode) {
@@ -559,9 +560,9 @@ trait DdlCreateBuilder extends CypherParserListener {
                 label,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options
-              )(pos)
+              )(pos(parent))
             } else {
               val relType = labelOrRelType.asInstanceOf[RelTypeName]
               CreateVectorRelationshipIndex(
@@ -569,17 +570,13 @@ trait DdlCreateBuilder extends CypherParserListener {
                 relType,
                 propertyList,
                 indexName,
-                ifExistsDo(replace, ifNotExists),
+                ifExistsDo(parent.REPLACE() != null, ifNotExists),
                 options
-              )(pos)
+              )(pos(parent))
             }
         }
     }
   }
-
-  final override def exitCreateIndex(
-    ctx: CypherParser.CreateIndexContext
-  ): Unit = {}
 
   final override def exitOldCreateIndex(
     ctx: CypherParser.OldCreateIndexContext
@@ -604,55 +601,41 @@ trait DdlCreateBuilder extends CypherParserListener {
     ctx: CypherParser.CreateLookupIndexContext
   ): Unit = {}
 
-  private def createAliasBuilder(
-    c: CypherParser.CreateAliasContext,
-    replace: Boolean,
-    pos: InputPosition
-  ): WriteAdministrationCommand = {
-    val aliasName = c.symbolicAliasNameOrParameter(0).ast[DatabaseName]()
-    val dbName = c.symbolicAliasNameOrParameter(1).ast[DatabaseName]()
-    val ifNotExists = c.EXISTS() != null
-    val properties =
-      if (c.PROPERTIES() != null) {
-        if (c.DRIVER() != null) Some(c.mapOrParameter(1).ast[Either[Map[String, Expression], Parameter]]())
-        else Some(c.mapOrParameter(0).ast[Either[Map[String, Expression], Parameter]]())
-      } else None
-
-    if (c.AT() == null) {
-      CreateLocalDatabaseAlias(aliasName, dbName, ifExistsDo(replace, ifNotExists), properties)(pos)
-    } else {
-      val url = c.stringOrParameter().ast[Either[String, Parameter]]()
-      val username = c.commandNameExpression().ast[Expression]()
-      val password = c.passwordExpression().ast[Expression]()
-      val driverSettings =
-        if (c.DRIVER() != null) Some(c.mapOrParameter(0).ast[Either[Map[String, Expression], Parameter]]()) else None
-      CreateRemoteDatabaseAlias(
-        aliasName,
-        dbName,
-        ifExistsDo(replace, ifNotExists),
-        url,
-        username,
-        password,
-        driverSettings,
-        properties
-      )(pos)
-    }
+  final override def exitCreateRole(
+    ctx: CypherParser.CreateRoleContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    val nameExpressions = ctx.commandNameExpression()
+    val from =
+      if (nameExpressions.size > 1) {
+        AssertMacros.checkOnlyWhenAssertionsAreEnabled(nameExpressions.size == 2)
+        Some(nameExpressions.get(1).ast[Expression])
+      } else
+        None
+    ctx.ast = CreateRole(
+      nameExpressions.get(0).ast[Expression](),
+      from,
+      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null)
+    )(pos(parent))
   }
 
-  private def createCompositeDatabase(
-    c: CypherParser.CreateCompositeDatabaseContext,
-    replace: Boolean,
-    pos: InputPosition
-  ): CreateCompositeDatabase = {
-    val dbName = c.symbolicAliasNameOrParameter().ast[DatabaseName]()
-    val ifNotExists = c.EXISTS() != null
-    val options = astOpt[Options](c.commandOptions(), NoOptions)
-    val waitUntilComplete = astOpt[WaitUntilComplete](c.waitClause(), NoWait)
-    CreateCompositeDatabase(dbName, ifExistsDo(replace, ifNotExists), options, waitUntilComplete)(pos)
+  final override def exitCreateUser(
+    ctx: CypherParser.CreateUserContext
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
+    val passCtx = ctx.password()
+    val passwordReq =
+      if (passCtx.passwordChangeRequired() != null) {
+        Some(passCtx.passwordChangeRequired().ast[Boolean]())
+      } else astOptFromList[Boolean](ctx.passwordChangeRequired(), Some(true))
+    val suspended = astOptFromList[Boolean](ctx.userStatus(), None)
+    val homeDatabaseAction = astOptFromList[HomeDatabaseAction](ctx.homeDatabase(), None)
+    ctx.ast = CreateUser(
+      ctx.commandNameExpression().ast[Expression](),
+      passCtx.ENCRYPTED() != null,
+      passCtx.passwordExpression().ast[Expression](),
+      UserOptions(passwordReq, suspended, homeDatabaseAction),
+      ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null)
+    )(pos(parent))
   }
-
-  final override def exitCreateConstraint(
-    ctx: CypherParser.CreateConstraintContext
-  ): Unit = {}
-
 }

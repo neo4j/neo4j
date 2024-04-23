@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
 import org.neo4j.cypher.internal.cst.factory.neo4j.CypherToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
@@ -58,6 +59,15 @@ object Util {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(list.size() < 2)
     if (list.isEmpty) default else Some(list.get(0).ast[T]())
   }
+
+  def optUnsignedDecimalInt(token: Token): Option[UnsignedDecimalIntegerLiteral] = {
+    if (token != null) Some(unsignedDecimalInt(token)) else None
+  }
+
+  def unsignedDecimalInt(token: Token): UnsignedDecimalIntegerLiteral = {
+    UnsignedDecimalIntegerLiteral(token.getText)(pos(token))
+  }
+
   @inline def ctxChild(ctx: AstRuleCtx, index: Int): AstRuleCtx = ctx.getChild(index).asInstanceOf[AstRuleCtx]
 
   @inline def astChild[T <: Any](ctx: AstRuleCtx, index: Int): T =

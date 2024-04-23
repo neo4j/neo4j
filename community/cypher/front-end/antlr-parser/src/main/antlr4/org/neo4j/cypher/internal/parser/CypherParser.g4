@@ -76,7 +76,7 @@ returnClause
    ;
 
 returnBody
-   : DISTINCT? returnItems (ORDER BY orderItem (COMMA orderItem)*)? skip? limit?
+   : DISTINCT? returnItems orderBy? skip? limit?
    ;
 
 returnItem
@@ -89,6 +89,10 @@ returnItems
 
 orderItem
    : expression (ASC | DESC)?
+   ;
+
+orderBy
+   : ORDER BY orderItem (COMMA orderItem)*
    ;
 
 skip
@@ -176,11 +180,7 @@ unwindClause
    ;
 
 callClause
-   : CALL namespace symbolicNameString (LPAREN (procedureArgument (COMMA procedureArgument)*)? RPAREN)? (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?
-   ;
-
-procedureArgument
-   : expression
+   : CALL namespace symbolicNameString (LPAREN (expression (COMMA expression)*)? RPAREN)? (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?
    ;
 
 procedureResultItem
@@ -239,7 +239,8 @@ quantifier
    ;
 
 anonymousPattern
-   : (shortestPathPattern | patternElement)
+   : shortestPathPattern
+   | patternElement
    ;
 
 shortestPathPattern
@@ -731,19 +732,15 @@ yieldItem
    ;
 
 yieldSkip
-   : (SKIPROWS signedIntegerLiteral)?
+   : SKIPROWS signedIntegerLiteral
    ;
 
 yieldLimit
-   : (LIMITROWS signedIntegerLiteral)?
-   ;
-
-yieldOrderBy
-   : (ORDER BY orderItem (COMMA orderItem)*)?
+   : LIMITROWS signedIntegerLiteral
    ;
 
 yieldClause
-   : YIELD (TIMES | yieldItem (COMMA yieldItem)*) yieldOrderBy yieldSkip yieldLimit whereClause?
+   : YIELD (TIMES | yieldItem (COMMA yieldItem)*) orderBy? yieldSkip? yieldLimit? whereClause?
    ;
 
 showBriefAndYield
@@ -918,7 +915,8 @@ typeName
    ;
 
 typeNullability
-   : (NOT NULL | EXCLAMATION_MARK)
+   : NOT NULL
+   | EXCLAMATION_MARK
    ;
 
 typeListSuffix

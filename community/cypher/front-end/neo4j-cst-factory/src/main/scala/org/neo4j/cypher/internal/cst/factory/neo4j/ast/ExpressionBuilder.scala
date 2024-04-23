@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
-import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -44,7 +43,9 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChildType
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.optUnsignedDecimalInt
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.unsignedDecimalInt
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -192,14 +193,6 @@ trait ExpressionBuilder extends CypherParserListener {
     }
   }
 
-  private def optUnsignedDecimalInt(token: Token): Option[UnsignedDecimalIntegerLiteral] = {
-    if (token != null) Some(unsignedDecimalInt(token)) else None
-  }
-
-  private def unsignedDecimalInt(token: Token): UnsignedDecimalIntegerLiteral = {
-    UnsignedDecimalIntegerLiteral(token.getText)(pos(token))
-  }
-
   final override def exitAnonymousPattern(ctx: CypherParser.AnonymousPatternContext): Unit = {
     ctx.ast = ctxChild(ctx, 0) match {
       case peCtx: CypherParser.PatternElementContext      => PathPatternPart(peCtx.ast())
@@ -281,7 +274,7 @@ trait ExpressionBuilder extends CypherParserListener {
       case p: NonPrefixedPatternPart => p
       case p: PatternPartWithSelector =>
         val pathPatternKind = if (ctx.quantifier() == null) "parenthesized" else "quantified"
-        // TODO Error handling
+
         throw exceptionFactory.syntaxException(
           s"Path selectors such as `${p.selector.prettified}` are not supported within $pathPatternKind path patterns.",
           p.position
@@ -298,25 +291,13 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx.ast = ctxChild(ctx, 0).ast
   }
 
-  final override def exitLeftArrow(
-    ctx: CypherParser.LeftArrowContext
-  ): Unit = {}
-
-  final override def exitArrowLine(
-    ctx: CypherParser.ArrowLineContext
-  ): Unit = {}
-
-  final override def exitRightArrow(
-    ctx: CypherParser.RightArrowContext
-  ): Unit = {}
-
   final override def exitPathLength(
     ctx: CypherParser.PathLengthContext
   ): Unit = {
     // This is weird, we should refactor range to be more sensible and not use nested options
     ctx.ast = if (ctx.DOTDOT() != null) {
-      val from = if (ctx.from != null) Some(UnsignedDecimalIntegerLiteral(ctx.from.getText)(pos(ctx.from))) else None
-      val to = if (ctx.to != null) Some(UnsignedDecimalIntegerLiteral(ctx.to.getText)(pos(ctx.to))) else None
+      val from = optUnsignedDecimalInt(ctx.from)
+      val to = optUnsignedDecimalInt(ctx.to)
       Some(org.neo4j.cypher.internal.expressions.Range(from, to)(from.map(_.position).getOrElse(pos(ctx))))
     } else if (ctx.single != null) {
       val single = Some(UnsignedDecimalIntegerLiteral(ctx.single.getText)(pos(ctx.single)))
@@ -542,7 +523,7 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitExpression1(ctx: CypherParser.Expression1Context): Unit = {
     ctx.ast = ctx.children.size match {
       case 1 => ctxChild(ctx, 0).ast()
-      case _ => null
+      case _ => throw new IllegalStateException("Unexpected expression")
     }
   }
 
@@ -684,7 +665,7 @@ trait ExpressionBuilder extends CypherParserListener {
     val p = pos(ctx)
     val variable = ctx.variable().ast[Variable]()
     val inExp = ctx.inExp.ast[Expression]()
-    val where = if (ctx.whereExp != null) Some(ctx.whereExp.ast[Expression]()) else None
+    val where = astOpt[Expression](ctx.whereExp)
     ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
       case CypherParser.ALL    => AllIterablePredicate(variable, inExp, where)(p)
       case CypherParser.ANY    => AnyIterablePredicate(variable, inExp, where)(p)
@@ -699,7 +680,9 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitParenthesizedExpression(
     ctx: CypherParser.ParenthesizedExpressionContext
-  ): Unit = { ctx.ast = ctxChild(ctx, 1).ast }
+  ): Unit = {
+    ctx.ast = ctxChild(ctx, 1).ast
+  }
 
   final override def exitMapProjection(
     ctx: CypherParser.MapProjectionContext
@@ -935,13 +918,12 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitSymbolicNameString(
     ctx: CypherParser.SymbolicNameStringContext
   ): Unit = {
-    ctx.ast = child[AstRuleCtx](ctx, 0).ast
+    ctx.ast = ctxChild(ctx, 0).ast
   }
 
   final override def exitEscapedSymbolicNameString(ctx: CypherParser.EscapedSymbolicNameStringContext): Unit = {
-    val textWithoutEscapes =
-      ctx.start.getInputStream.getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1))
-    ctx.ast = textWithoutEscapes.replace("``", "`")
+    ctx.ast = ctx.start.getInputStream
+      .getText(new Interval(ctx.start.getStartIndex + 1, ctx.stop.getStopIndex - 1)).replace("``", "`")
   }
 
   protected def notificationLogger: Option[InternalNotificationLogger]
@@ -965,7 +947,7 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitSymbolicLabelNameString(
     ctx: CypherParser.SymbolicLabelNameStringContext
   ): Unit = {
-    ctx.ast = child[AstRuleCtx](ctx, 0).ast
+    ctx.ast = ctxChild(ctx, 0).ast
   }
 
   final override def exitUnescapedLabelSymbolicNameString(
@@ -992,8 +974,8 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitTrimFunction(
     ctx: CypherParser.TrimFunctionContext
   ): Unit = {
-    val trimSource: Expression = ctx.trimSource.ast[Expression]()
-    val trimCharacterString: Option[Expression] = astOpt[Expression](ctx.trimCharacterString)
+    val trimSource = ctx.trimSource.ast[Expression]()
+    val trimCharacterString = astOpt[Expression](ctx.trimCharacterString)
     var trimSpecification = ParserTrimSpecification.BOTH.description()
     if (ctx.LEADING() != null) trimSpecification = ParserTrimSpecification.LEADING.description()
     if (ctx.TRAILING() != null) trimSpecification = ParserTrimSpecification.TRAILING.description()
@@ -1023,5 +1005,4 @@ trait ExpressionBuilder extends CypherParserListener {
       )
     }
   }
-
 }

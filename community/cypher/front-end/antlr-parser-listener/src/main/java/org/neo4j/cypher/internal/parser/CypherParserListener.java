@@ -51,6 +51,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitOrderItem(CypherParser.OrderItemContext ctx);
 
+    void exitOrderBy(CypherParser.OrderByContext ctx);
+
     void exitSkip(CypherParser.SkipContext ctx);
 
     void exitLimit(CypherParser.LimitContext ctx);
@@ -86,8 +88,6 @@ public interface CypherParserListener extends ParseTreeListener {
     void exitUnwindClause(CypherParser.UnwindClauseContext ctx);
 
     void exitCallClause(CypherParser.CallClauseContext ctx);
-
-    void exitProcedureArgument(CypherParser.ProcedureArgumentContext ctx);
 
     void exitProcedureResultItem(CypherParser.ProcedureResultItemContext ctx);
 
@@ -290,8 +290,6 @@ public interface CypherParserListener extends ParseTreeListener {
     void exitYieldSkip(CypherParser.YieldSkipContext ctx);
 
     void exitYieldLimit(CypherParser.YieldLimitContext ctx);
-
-    void exitYieldOrderBy(CypherParser.YieldOrderByContext ctx);
 
     void exitYieldClause(CypherParser.YieldClauseContext ctx);
 
