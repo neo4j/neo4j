@@ -824,7 +824,7 @@ class NotificationCodeWithDescriptionTest {
                 "The role already has the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
                 "00N70",
-                "`GRANT WRITE ON GRAPH * TO editor` has no effect. The role already has the privilege.");
+                "`GRANT WRITE ON GRAPH * TO editor` has no effect. The role or privilege is already assigned.");
     }
 
     @Test
@@ -840,7 +840,7 @@ class NotificationCodeWithDescriptionTest {
                 "The role does not have the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
                 "00N71",
-                "`REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader` has no effect. The role does not have the privilege.");
+                "`REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader` has no effect. The role or privilege is not assigned.");
     }
 
     @Test
@@ -855,8 +855,8 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The user already has the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                "00N72",
-                "`GRANT ROLE aliceRole TO alice` has no effect. The user already has the role.");
+                "00N70",
+                "`GRANT ROLE aliceRole TO alice` has no effect. The role or privilege is already assigned.");
     }
 
     @Test
@@ -871,8 +871,8 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Security.CommandHasNoEffect",
                 "The user does not have the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
-                "00N73",
-                "`REVOKE ROLE other FROM alice` has no effect. The user does not have the role.");
+                "00N71",
+                "`REVOKE ROLE other FROM alice` has no effect. The role or privilege is not assigned.");
     }
 
     @Test
@@ -1103,8 +1103,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -35, 56, 115, -51, 99, 124, -55, -78, -55, -2, -124, 7, -23, 127, 106, 98, -39, 91, -65, 1, 12, 15, -85,
-            -86, 57, -69, -42, 53, 73, -99, 26, 108
+            61, -18, 115, 70, 1, 103, -75, 57, -36, -99, -65, 46, -86, -60, -108, 106, 9, 55, -75, -92, 85, -58, -3, 90,
+            81, 70, -24, 54, -95, -1, -110, 40
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

@@ -23,10 +23,8 @@ public enum GqlStatusInfoNotifications implements GqlStatusInfo {
     STATUS_00N50(
             new GqlStatus("00N50"),
             "The database `%s` does not exist. Verify that the spelling is correct or create the database for the command to take effect."),
-    STATUS_00N70(new GqlStatus("00N70"), "`%s` has no effect. The role already has the privilege."),
-    STATUS_00N71(new GqlStatus("00N71"), "`%s` has no effect. The role does not have the privilege."),
-    STATUS_00N72(new GqlStatus("00N72"), "`%s` has no effect. The user already has the role."),
-    STATUS_00N73(new GqlStatus("00N73"), "`%s` has no effect. The user does not have the role."),
+    STATUS_00N70(new GqlStatus("00N70"), "`%s` has no effect. The role or privilege is already assigned."),
+    STATUS_00N71(new GqlStatus("00N71"), "`%s` has no effect. The role or privilege is not assigned."),
     STATUS_00N80(
             new GqlStatus("00N80"),
             "`ENABLE SERVER` has no effect. Server `%s` is already enabled. Verify that this is the intended server."),

@@ -238,12 +238,12 @@ public enum NotificationCodeWithDescription {
 
     COMMAND_HAS_NO_EFFECT_GRANT_ROLE(
             Status.Security.CommandHasNoEffect,
-            GqlStatusInfoNotifications.STATUS_00N72,
+            GqlStatusInfoNotifications.STATUS_00N70,
             "The user already has the role. See Status Codes documentation for more information."),
 
     COMMAND_HAS_NO_EFFECT_REVOKE_ROLE(
             Status.Security.CommandHasNoEffect,
-            GqlStatusInfoNotifications.STATUS_00N73,
+            GqlStatusInfoNotifications.STATUS_00N71,
             "The user does not have the role. See Status Codes documentation for more information."),
 
     IMPOSSIBLE_REVOKE_COMMAND(
