@@ -211,6 +211,39 @@ class ForAllRepetitionsPredicateRewriterTest extends CypherFunSuite with AstCons
     }
   }
 
+  test("nested plan expression with non-QPP dependencies") {
+
+    val nonQppVar = "nonQppVar"
+
+    val previousNestedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .filter(s"s.prop > $nonQppVar.prop")
+      .expandInto("(x)-[s]->(z)")
+      .argument("x", "z", nonQppVar)
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      plan = previousNestedPlan,
+      solvedExpressionAsString = ""
+    )(pos)
+    val far = ForAllRepetitions(qpp, nestedPlanExpression)
+
+    far.dependencies shouldBe Set(v"xGroup", v"zGroup", v"s", varFor(nonQppVar))
+    val iterVar = v"  UNNAMED0"
+
+    val expectedNestedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .apply()
+      .|.filter(s"s.prop > $nonQppVar.prop")
+      .|.expandInto("(`  x@1`)-[s]->(`  z@2`)")
+      .|.argument("  x@1", "  z@2", nonQppVar)
+      .projection(s"xGroup[`${iterVar.name}`] AS `  x@1`", s"zGroup[`${iterVar.name}`] AS `  z@2`")
+      .argument("xGroup", "zGroup", iterVar.name, nonQppVar)
+      .build()
+
+    getRewriter.rewriteToAllIterablePredicate(far) shouldBe {
+      allInList(iterVar, rangeForGroupVariable("xGroup"), NestedPlanExistsExpression(expectedNestedPlan, "")(pos))
+    }
+  }
+
   private def getRewriter =
     ForAllRepetitionsPredicateRewriter(
       new AnonymousVariableNameGenerator,

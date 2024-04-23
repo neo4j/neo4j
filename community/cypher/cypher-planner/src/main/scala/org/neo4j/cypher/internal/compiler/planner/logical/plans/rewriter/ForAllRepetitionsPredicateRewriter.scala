@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -173,10 +174,17 @@ case class ForAllRepetitionsPredicateRewriter(
     newVariableGroupings: Map[LogicalVariable, VariableGrouping],
     plan: LogicalPlan
   ): Apply = {
+
+    val leftmostLeaf = plan.leftmostLeaf
+
     // Argument
-    val argumentIds = newVariableGroupings.values.map(_.group.copyId).toSet + iterVar.copyId
-    val argument = Argument(argumentIds)
-    solveds.set(argument.id, solveds.get(plan.leftmostLeaf.id))
+    val argumentIdsToPreserve: Set[LogicalVariable] = leftmostLeaf match {
+      case leaf: LogicalLeafPlan => leaf.argumentIds -- newVariableGroupings.keySet
+      case _                     => Set.empty
+    }
+    val introducedArgumentIds = newVariableGroupings.values.map(_.group.copyId).toSet + iterVar.copyId
+    val argument = Argument(introducedArgumentIds ++ argumentIdsToPreserve)
+    solveds.set(argument.id, solveds.get(leftmostLeaf.id))
     cardinalities.set(argument.id, Cardinality.SINGLE)
     providedOrders.set(argument.id, ProvidedOrder.empty)
 
@@ -186,7 +194,7 @@ case class ForAllRepetitionsPredicateRewriter(
         newSingleton -> ContainerIndex(groupVar.copyId, iterVar.copyId)(InputPosition.NONE)
     }.toMap
     val projection = Projection(argument, projectExpressions)
-    val projectionSolveds = solveds.get(plan.leftmostLeaf.id).asSinglePlannerQuery.updateTailOrSelf(
+    val projectionSolveds = solveds.get(leftmostLeaf.id).asSinglePlannerQuery.updateTailOrSelf(
       _.updateQueryProjection(_.withAddedProjections(projectExpressions))
     )
     solveds.set(projection.id, projectionSolveds)

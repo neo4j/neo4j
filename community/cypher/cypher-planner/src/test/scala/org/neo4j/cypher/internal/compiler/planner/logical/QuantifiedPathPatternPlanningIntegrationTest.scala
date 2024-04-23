@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -2525,4 +2526,71 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .nodeByLabelScan("a", "User")
       .build()
   }
+
+  test("should plan cartesian product for components connected only by a predicate inside QPP, subquery expression") {
+    // could be improved to plan Apply
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("User", 50)
+      .setRelationshipCardinality("()-[]->()", 1500)
+      .setRelationshipCardinality("(:User)-[]->()", 900)
+      .enableDeduplicateNames(enable = false)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:User)
+        |MATCH (b) ((c)-[r]->(d) WHERE EXISTS { (a)-[rr]->(d) } )+ (e)
+        |RETURN a, b, c, d, e
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val trailParameters = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "b",
+      end = "e",
+      innerStart = "  c@0",
+      innerEnd = "  d@2",
+      groupNodes = Set(("  c@0", "  c@3"), ("  d@2", "  d@4")),
+      groupRelationships = Set(),
+      innerRelationships = Set("  r@1"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
+    )
+
+    val nestedPlan = planner.subPlanBuilder()
+      .expandInto("(a)-[rr]->(`  d@5`)")
+      .projection("`  d@4`[`  UNNAMED0`] AS `  d@5`")
+      .argument("  d@4", "  UNNAMED0", "a")
+      .build()
+
+    val patternExpressionPredicate = NestedPlanExistsExpression(
+      plan = nestedPlan,
+      solvedExpressionAsString = "EXISTS { MATCH (a)-[rr]->(`  d@2`) }"
+    )(pos)
+
+    // all(anon_0 IN range(0, size(d) - 1) WHERE ...)
+    val allInPredicate = allInList(
+      v"  UNNAMED0",
+      function("range", literalInt(0), subtract(function("size", v"  d@4"), literalInt(1))),
+      patternExpressionPredicate
+    )
+
+    val expected = planner.subPlanBuilder()
+      .filterExpression(allInPredicate)
+      .cartesianProduct()
+      .|.trail(trailParameters)
+      .|.|.filterExpression(isRepeatTrailUnique("  r@1"))
+      .|.|.expandAll("(`  c@0`)-[`  r@1`]->(`  d@2`)")
+      .|.|.argument("  c@0")
+      .|.allNodeScan("b")
+      .nodeByLabelScan("a", "User")
+      .build()
+
+    plan shouldEqual expected
+  }
+
 }

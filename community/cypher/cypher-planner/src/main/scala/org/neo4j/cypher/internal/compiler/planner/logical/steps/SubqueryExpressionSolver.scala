@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
 import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
+import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -420,7 +421,10 @@ object SubqueryExpressionSolver {
               case _: ContainerIndex     => true
               case _: ListSlice          => true
               case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
-              case _                     => false
+              // Rewritten at a later stage, requires additional processing
+              case _: ForAllRepetitions => true
+
+              case _ => false
             },
             cancellation = context.staticComponents.cancellationChecker
           )
