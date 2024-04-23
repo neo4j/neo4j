@@ -56,11 +56,11 @@ class GBPTreeTestUtil {
     }
 
     static boolean consistencyCheck(MultiRootGBPTree<?, ?, ?> tree, GBPTreeConsistencyCheckVisitor visitor) {
-        return tree.consistencyCheck(
-                visitor,
-                true,
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors(),
-                ProgressMonitorFactory.NONE);
+        return consistencyCheck(tree, visitor, Runtime.getRuntime().availableProcessors());
+    }
+
+    static boolean consistencyCheck(
+            MultiRootGBPTree<?, ?, ?> tree, GBPTreeConsistencyCheckVisitor visitor, int numThreads) {
+        return tree.consistencyCheck(visitor, true, NULL_CONTEXT_FACTORY, numThreads, ProgressMonitorFactory.NONE);
     }
 }

@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -40,6 +42,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -114,6 +118,10 @@ class GBPTreeConsistencyChecker<KEY> {
      * Checks so that all pages between {@link IdSpace#MIN_TREE_NODE_ID} and highest allocated id
      * are either in use in the tree, on the free-list or free-list nodes, and that their interlinks are correct.
      *
+     * NOTE that not all task are necessarily finished when this one returns, some can still be running in the
+     * executor. Use state.awaitAllSubtasks to wait them out when ready.
+     * Not done here to avoid wasting a thread on just waiting.
+     *
      * @param visitor {@link GBPTreeConsistencyCheckVisitor} visitor to report inconsistencies to.
      * @throws IOException on {@link PageCursor} error.
      */
@@ -135,8 +143,8 @@ class GBPTreeConsistencyChecker<KEY> {
                     context,
                     rightmostPerLevel,
                     progress,
-                    monitor);
-            rightmostPerLevel.assertLast(visitor);
+                    monitor,
+                    () -> rightmostPerLevel.assertLast(visitor));
         }
     }
 
@@ -164,7 +172,8 @@ class GBPTreeConsistencyChecker<KEY> {
             CursorContext cursorContext,
             RightmostInChainShard rightmostPerLevel,
             ProgressListener progress,
-            Monitor monitor)
+            Monitor monitor,
+            Runnable taskToRunAsLastCheck)
             throws IOException {
         long pageId = cursor.getCurrentPageId();
         addToSeenList(file, seenIds, pageId, state.lastId, visitor);
@@ -293,7 +302,9 @@ class GBPTreeConsistencyChecker<KEY> {
 
         if (level == 0 && numThreads > 1) {
             // Let's parallelize checking the children in the root, one child is one task
-            var futures = new ArrayList<Future<?>>();
+            var futures = new ArrayList<Future<Void>>();
+            AtomicInteger nbrRunning = new AtomicInteger();
+            AtomicBoolean lastOneSeen = new AtomicBoolean();
             var rightmostPerLevelFromShards = new ArrayList<RightmostInChainShard>();
             visitChildren(
                     cursor,
@@ -303,11 +314,15 @@ class GBPTreeConsistencyChecker<KEY> {
                     visitor,
                     cursorContext,
                     generationTarget,
-                    (pos, treeNodeId, generation, childRange) -> {
+                    (pos, treeNodeId, generation, childRange, isLast) -> {
                         // Add the RightmostInChain in child order, i.e. when visiting and not when checking (which is
                         // done by another thread)
                         var shardRightmostPerLevel = new RightmostInChainShard(file, pos == 0);
                         rightmostPerLevelFromShards.add(shardRightmostPerLevel);
+                        nbrRunning.incrementAndGet();
+                        if (isLast) {
+                            lastOneSeen.set(true);
+                        }
                         futures.add(state.executor.submit(() -> {
                             try (var shardContext = contextFactory.create(TAG_CHECK);
                                     var shardCursor = cursorFactory.apply(shardContext);
@@ -325,13 +340,21 @@ class GBPTreeConsistencyChecker<KEY> {
                                         cursorContext,
                                         shardRightmostPerLevel,
                                         shardProgress,
-                                        monitor);
+                                        monitor,
+                                        () -> {});
+                                int running = nbrRunning.decrementAndGet();
+                                if (lastOneSeen.get() && running == 0) {
+                                    checkRightmostInChainSeams(visitor, rightmostPerLevelFromShards);
+                                    // This is guaranteed to be last since we know checkSubtree doesn't add
+                                    // any new tasks on level > 0.
+                                    taskToRunAsLastCheck.run();
+                                }
                                 return null;
                             }
                         }));
                     });
-            awaitAllFutures(futures);
-            checkRightmostInChainSeams(visitor, rightmostPerLevelFromShards);
+            removeAlreadyFinishedTasks(futures);
+            state.trackSubtasks(futures);
         } else {
             visitChildren(
                     cursor,
@@ -341,7 +364,7 @@ class GBPTreeConsistencyChecker<KEY> {
                     visitor,
                     cursorContext,
                     generationTarget,
-                    (pos, treeNodeId, generation, childRange) -> {
+                    (pos, treeNodeId, generation, childRange, isLast) -> {
                         goTo(cursor, "child at pos " + pos, treeNodeId);
                         checkSubtree(
                                 cursor,
@@ -355,10 +378,39 @@ class GBPTreeConsistencyChecker<KEY> {
                                 cursorContext,
                                 rightmostPerLevel,
                                 progress,
-                                monitor);
+                                monitor,
+                                () -> {});
                         goTo(cursor, "parent", pageId);
                     });
+            // This is guaranteed to be last since we know checkSubtree doesn't add
+            // any new tasks on level > 0
+            taskToRunAsLastCheck.run();
         }
+    }
+
+    // Try to keep down the list of tasks to keep track of, by removing any that have already finished.
+    // When checking a tree with many children on few threads it is likely that some didn't fit in the executor
+    // queue and ran in the current thread
+    private static void removeAlreadyFinishedTasks(ArrayList<Future<Void>> tasks) throws IOException {
+        try {
+            Iterator<Future<Void>> iterator = tasks.iterator();
+            while (iterator.hasNext()) {
+                Future<Void> next = iterator.next();
+                if (next.isDone()) {
+                    iterator.remove();
+                    next.get();
+                }
+            }
+        } catch (ExecutionException | InterruptedException e) {
+            unwrapAndThrowException(e);
+        }
+    }
+
+    private static void unwrapAndThrowException(Exception e) throws IOException {
+        // There may be multiple layers of ExecutionException here, so unwrap those to get to the real cause
+        var cause = Exceptions.findCauseOrSuppressed(e, t -> !(t instanceof ExecutionException))
+                .orElse(e);
+        Exceptions.throwIfInstanceOfOrUnchecked(cause, IOException.class, IOException::new);
     }
 
     private static void checkRightmostInChainSeams(
@@ -372,17 +424,6 @@ class GBPTreeConsistencyChecker<KEY> {
                 totalRightmost.assertAndMergeNext(shard, visitor);
             }
             totalRightmost.assertLast(visitor);
-        }
-    }
-
-    private static void awaitAllFutures(Iterable<Future<?>> futures) throws IOException {
-        try {
-            Futures.getAll(futures);
-        } catch (ExecutionException e) {
-            // There may be multiple layers of ExecutionException here, so unwrap those to get to the real cause
-            var cause = Exceptions.findCauseOrSuppressed(e, t -> !(t instanceof ExecutionException))
-                    .orElse(e);
-            Exceptions.throwIfInstanceOfOrUnchecked(cause, IOException.class, IOException::new);
         }
     }
 
@@ -447,7 +488,7 @@ class GBPTreeConsistencyChecker<KEY> {
                 childRange = childRange.restrictLeft(prev);
             }
 
-            childVisitor.accept(pos, child, childGeneration, childRange);
+            childVisitor.accept(pos, child, childGeneration, childRange, false);
             layout.copyKey(readKey, prev);
             pos++;
         }
@@ -470,7 +511,7 @@ class GBPTreeConsistencyChecker<KEY> {
         } while (cursor.shouldRetry());
         checkAfterShouldRetry(cursor);
         var childRange = range.newSubRange(level, pageId).restrictLeft(prev);
-        childVisitor.accept(pos, child, childGeneration, childRange);
+        childVisitor.accept(pos, child, childGeneration, childRange, true);
     }
 
     private static void checkAfterShouldRetry(PageCursor cursor) throws CursorException {
@@ -700,6 +741,7 @@ class GBPTreeConsistencyChecker<KEY> {
         final ExecutorService executor;
         final ProgressListener progress;
         final int numThreads;
+        final LinkedList<Future<?>> subTasks;
 
         ConsistencyCheckState(
                 Path file,
@@ -735,10 +777,35 @@ class GBPTreeConsistencyChecker<KEY> {
             IdProvider.IdProviderVisitor freelistSeenIdsVisitor =
                     new FreelistSeenIdsVisitor(file, mainSeenIds, lastId, visitor, progress);
             idProvider.visitFreelist(freelistSeenIdsVisitor, cursorCreator);
+            this.subTasks = new LinkedList<>();
         }
 
         BitSet threadLocalSeenIds() {
             return threadLocalSeenIds.get();
+        }
+
+        synchronized void trackSubtasks(List<Future<Void>> tasks) throws IOException {
+            if (tasks != null) {
+                subTasks.addAll(tasks);
+                // While we're here let's try to keep the list size down a bit.
+                try {
+                    while (!subTasks.isEmpty() && subTasks.peekFirst().isDone()) {
+                        subTasks.removeFirst().get();
+                    }
+                } catch (ExecutionException | InterruptedException e) {
+                    unwrapAndThrowException(e);
+                }
+            }
+        }
+
+        synchronized void awaitAllSubtasks() throws IOException {
+            try {
+                Futures.getAll(subTasks);
+            } catch (ExecutionException e) {
+                unwrapAndThrowException(e);
+            } finally {
+                subTasks.clear();
+            }
         }
 
         private long highId() {
@@ -748,6 +815,10 @@ class GBPTreeConsistencyChecker<KEY> {
         @Override
         public void close() throws IOException {
             shutdownExecutor();
+
+            // Should have already waited for the subtasks before getting here,
+            // but let's make sure and check anyway.
+            awaitAllSubtasks();
 
             for (var threadLocalSeenIds : allThreadLocalSeenIds) {
                 if (threadLocalSeenIds != mainSeenIds) {
@@ -783,7 +854,7 @@ class GBPTreeConsistencyChecker<KEY> {
     }
 
     interface ChildVisitor<KEY> {
-        void accept(int pos, long treeNodeId, long generation, KeyRange<KEY> range) throws IOException;
+        void accept(int pos, long treeNodeId, long generation, KeyRange<KEY> range, boolean isLast) throws IOException;
     }
 
     private static class RightmostInChainShard {

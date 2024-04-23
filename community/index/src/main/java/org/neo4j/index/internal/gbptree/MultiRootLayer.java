@@ -276,6 +276,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                         root,
                         contextFactory)
                 .check(isRootTreeClean, state.progress, dataRootCount::add);
+        state.awaitAllSubtasks();
 
         if (!isRootTreeClean.isConsistent()) {
             // The root tree has inconsistencies, we essentially cannot trust to read it in order to get
@@ -329,6 +330,9 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 }
             }
             Futures.getAll(futures);
+            // When we have waited for all the root batches here we know that all child tasks have either finished
+            // or at least been added to the executor. We need to wait out the tasks on the executor before returning.
+            state.awaitAllSubtasks();
         } catch (ExecutionException | InterruptedException e) {
             throw new IOException(e);
         }
@@ -350,17 +354,17 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             var high = dataLayout.newKey();
             dataLayout.initializeAsLowest(low);
             dataLayout.initializeAsHighest(high);
-            // Temporarily disable concurrency as there is a bug causing the checker to hang
             try (var partitionProgress = state.progress.threadLocalReporter();
-            /*var seeker = support.internalAllocateSeeker(dataLayout, dataTreeNode, CursorContext.NULL_CONTEXT)*/ ) {
+                    var seeker = support.internalAllocateSeeker(
+                            dataLayout, CursorContext.NULL_CONTEXT, dataLeafNode, dataInternalNode)) {
                 for (var root : batch) {
-                    // int treeDepth = depthOf(root, seeker, low, high);
+                    int treeDepth = depthOf(root, seeker, low, high);
                     new GBPTreeConsistencyChecker<>(
                                     dataLeafNode,
                                     dataInternalNode,
                                     dataLayout,
                                     state,
-                                    /*treeDepth >= 2 ? state.numThreads : 1*/ 1,
+                                    treeDepth >= 2 ? state.numThreads : 1,
                                     stableGeneration,
                                     unstableGeneration,
                                     reportDirty,

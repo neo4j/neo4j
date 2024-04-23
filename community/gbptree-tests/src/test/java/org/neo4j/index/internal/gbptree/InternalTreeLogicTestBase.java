@@ -1744,6 +1744,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                     root,
                     NULL_CONTEXT_FACTORY);
             consistencyChecker.check(visitor, state.progress, GBPTreeConsistencyChecker.NO_MONITOR);
+            state.awaitAllSubtasks();
         }
         goTo(readCursor, currentPageId);
     }

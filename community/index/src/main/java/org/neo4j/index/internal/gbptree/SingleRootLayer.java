@@ -132,6 +132,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
                         root,
                         contextFactory)
                 .check(visitor, state.progress, GBPTreeConsistencyChecker.NO_MONITOR);
+        state.awaitAllSubtasks();
     }
 
     @Override

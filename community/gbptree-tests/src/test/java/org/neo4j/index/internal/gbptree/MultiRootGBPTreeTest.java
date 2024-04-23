@@ -428,6 +428,36 @@ class MultiRootGBPTreeTest {
     }
 
     @Test
+    void dontHangParallelCheckingOfMultiRootTrees() throws IOException {
+        // A simple test that would deadlock in consistency checker before the corresponding fix.
+        // One thread was waiting on everything started for the MultiRootLayer.consistencyCheck and the other one was
+        // hanging waiting for all of its child tasks to finish in GBPTreeConsistencyChecker.checkSubtree.
+        // The fix removed the inner waiting for children to not block one thread for each subtree on just waiting.
+
+        Map<Long, RootContents> roots = new ConcurrentHashMap<>();
+        var numWrites = new AtomicInteger();
+
+        var random = ThreadLocalRandom.current();
+        createRoot(roots, random);
+        createRoot(roots, random);
+        while (numWrites.get() <= 15000) {
+            var root = findRoot(roots, random, rootContents -> rootContents.exists.get());
+            if (root != null) {
+                try {
+                    writeToRoot(random, root);
+                    numWrites.incrementAndGet();
+                } catch (DataTreeNotFoundException e) {
+                    // This is OK since this test doesn't actively prevent roots from being deleted while writing to
+                    // them
+                }
+            }
+        }
+
+        assertThat(GBPTreeTestUtil.consistencyCheck(tree, new GBPTreeConsistencyCheckVisitor.Adaptor(), 2))
+                .isTrue();
+    }
+
+    @Test
     void shouldCreateDeleteAndUpdateRootsConcurrently() throws IOException {
         // when
         var ops = new AtomicInteger();
