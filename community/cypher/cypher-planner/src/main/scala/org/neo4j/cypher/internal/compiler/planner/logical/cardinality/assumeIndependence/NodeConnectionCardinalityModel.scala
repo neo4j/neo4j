@@ -37,7 +37,8 @@ trait NodeConnectionCardinalityModel
     context: QueryGraphCardinalityContext,
     predicates: QueryGraphPredicates,
     boundNodesAndArguments: BoundNodesAndArguments,
-    nodeConnection: NodeConnection
+    nodeConnection: NodeConnection,
+    coveredIdsForPattern: Set[LogicalVariable]
   ): (BoundNodesAndArguments, Multiplier) =
     nodeConnection match {
       case relationship: PatternRelationship =>
@@ -67,7 +68,7 @@ trait NodeConnectionCardinalityModel
             extractQPPPredicates(
               predicates.otherPredicates.map(_.expr).toSeq,
               quantifiedPathPattern.variableGroupings,
-              boundNodesAndArguments.boundNodes ++ boundNodesAndArguments.argumentIds
+              coveredIdsForPattern ++ boundNodesAndArguments.argumentIds
             )
 
           quantifiedPathPattern.copy(selections =

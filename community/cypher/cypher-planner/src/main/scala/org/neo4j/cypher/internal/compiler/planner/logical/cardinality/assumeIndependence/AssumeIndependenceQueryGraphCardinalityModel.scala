@@ -117,6 +117,9 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
     predicates: QueryGraphPredicates,
     context: QueryGraphCardinalityContext
   ): (LabelInfo, Cardinality) = {
+
+    val coveredIdsForPattern = queryGraph.coveredIdsForPatterns
+
     // Calculate the multiplier for each node connection, accumulating bound nodes and arguments and threading them through
     val (boundNodesAndArguments, nodeConnectionMultipliers) =
       queryGraph
@@ -124,7 +127,13 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
         .toSeq
         .foldMap(BoundNodesAndArguments.withArguments(queryGraph.argumentIds)) {
           (boundNodesAndArguments, nodeConnection) =>
-            getNodeConnectionMultiplier(context, predicates, boundNodesAndArguments, nodeConnection)
+            getNodeConnectionMultiplier(
+              context,
+              predicates,
+              boundNodesAndArguments,
+              nodeConnection,
+              coveredIdsForPattern
+            )
         }
 
     // Number of nodes with no labels at all, different from the number of nodes with any labels (i.e. the total number of nodes)
