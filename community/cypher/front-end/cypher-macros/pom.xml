@@ -4,14 +4,14 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-front-end-parent</artifactId>
-        <version>4.4.33-SNAPSHOT</version>
+        <version>4.4.34-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-cypher-macros</artifactId>
     <packaging>jar</packaging>
-    <version>4.4.33-SNAPSHOT</version>
+    <version>4.4.34-SNAPSHOT</version>
     <name>Neo4j - Cypher Macros</name>
 
     <description>Cypher runtime utilities</description>
