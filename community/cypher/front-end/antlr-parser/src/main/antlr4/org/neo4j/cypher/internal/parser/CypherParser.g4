@@ -453,7 +453,7 @@ expression2
    ;
 
 postFix
-   : DOT propertyKeyName                                                # PropertyPostfix
+   : property                                                           # PropertyPostfix
    | labelExpression                                                    # LabelPostfix
    | LBRACKET expression RBRACKET                                       # IndexPostfix
    | LBRACKET fromExp = expression? DOTDOT toExp = expression? RBRACKET # RangePostfix
@@ -464,7 +464,7 @@ property
    ;
 
 propertyExpression
-   : expression1 (DOT propertyKeyName)+
+   : expression1 property+
    ;
 
 expression1
@@ -583,7 +583,7 @@ mapProjection
 
 mapProjectionElement
    : propertyKeyName COLON expression
-   | DOT propertyKeyName
+   | property
    | variable
    | DOT TIMES
    ;

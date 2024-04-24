@@ -493,7 +493,7 @@ trait ExpressionBuilder extends CypherParserListener {
   private def postFix(lhs: Expression, rhs: CypherParser.PostFixContext): Expression = {
     val p = lhs.position
     rhs match {
-      case propCtx: CypherParser.PropertyPostfixContext => Property(lhs, ctxChild(propCtx, 1).ast())(p)
+      case propCtx: CypherParser.PropertyPostfixContext => Property(lhs, ctxChild(propCtx, 0).ast())(p)
       case indexCtx: CypherParser.IndexPostfixContext =>
         ContainerIndex(lhs, ctxChild(indexCtx, 1).ast())(pos(ctxChild(indexCtx, 1)))
       case labelCtx: CypherParser.LabelPostfixContext => LabelExpressionPredicate(lhs, ctxChild(labelCtx, 0).ast())(p)
@@ -510,12 +510,12 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitPropertyExpression(ctx: CypherParser.PropertyExpressionContext): Unit = {
-    var result = Property(ctxChild(ctx, 0).ast(), ctxChild(ctx, 2).ast())(pos(ctx))
-    val size = ctx.children.size(); var i = 4
+    var result = Property(ctxChild(ctx, 0).ast(), ctxChild(ctx, 1).ast())(pos(ctx))
+    val size = ctx.children.size(); var i = 2
     while (i < size) {
       val key = ctxChild(ctx, i).ast[PropertyKeyName]()
       result = Property(result, key)(key.position)
-      i += 2
+      i += 1
     }
     ctx.ast = result
   }
@@ -696,14 +696,15 @@ trait ExpressionBuilder extends CypherParserListener {
     val colon = ctx.COLON()
     val variable = ctx.variable()
     val propertyKeyName = ctx.propertyKeyName()
+    val property = ctx.property()
     ctx.ast =
       if (colon != null) {
         val expr = ctx.expression().ast[Expression]()
         LiteralEntry(propertyKeyName.ast(), expr)(expr.position)
       } else if (variable != null) {
         VariableSelector(variable.ast())(pos(ctx))
-      } else if (propertyKeyName != null) {
-        val prop = propertyKeyName.ast[PropertyKeyName]()
+      } else if (property != null) {
+        val prop = property.ast[PropertyKeyName]()
         PropertySelector(prop)(prop.position)
       } else {
         AllPropertiesSelector()(pos(ctx.TIMES().getSymbol))
