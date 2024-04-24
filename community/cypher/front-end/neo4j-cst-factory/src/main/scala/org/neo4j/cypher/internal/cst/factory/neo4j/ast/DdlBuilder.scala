@@ -183,7 +183,7 @@ trait DdlBuilder extends CypherParserListener {
     } else {
       DeallocateServers(
         dryRun,
-        astSeq[Either[String, Parameter]](ctx.deallocateDatabaseFromServers().stringOrParameter())
+        ctx.deallocateDatabaseFromServers().ast()
       )(pos(ctx.deallocateDatabaseFromServers()))
     }
   }
@@ -479,7 +479,9 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitDeallocateDatabaseFromServers(
     ctx: CypherParser.DeallocateDatabaseFromServersContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = astSeq[Either[String, Parameter]](ctx.stringOrParameter())
+  }
 
   final override def exitReallocateDatabases(
     ctx: CypherParser.ReallocateDatabasesContext
