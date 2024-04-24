@@ -226,7 +226,7 @@ object LogicalPlans {
    * unless you really know what you're doing. The same ACC instance might
    * be passed into several callback with the expectation of it being unchanged.
    *
-   * @param f                   called on any leaf and unary plans. maps (currentAcc, plan) => acc for plan
+   * @param f maps (currentAcc, plan) => acc for plan
    */
   def simpleFoldPlan[ACC](initialAcc: ACC)(
     root: LogicalPlan,
