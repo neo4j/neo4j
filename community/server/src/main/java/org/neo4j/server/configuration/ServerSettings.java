@@ -225,4 +225,15 @@ public class ServerSettings implements SettingsDeclaration {
     @Description("Toggle WADL generation. Matching the underlying jersey server config")
     public static final Setting<Boolean> wadl_enabled =
             newBuilder("internal.dbms.wadl_generation_enabled", BOOL, false).build();
+
+    @Internal
+    @Description("Enable Clacks module")
+    public static final Setting<Boolean> clacks_enabled =
+            newBuilder("internal.dbms.clacks_enabled", BOOL, false).build();
+
+    @Internal
+    @Description("Clacks module names")
+    public static final Setting<String> clacks_names = newBuilder(
+                    "internal.dbms.clacks_names", STRING, "Richard Macaskill")
+            .build();
 }

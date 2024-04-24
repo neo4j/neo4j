@@ -37,6 +37,7 @@ import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.modules.AuthorizationModule;
+import org.neo4j.server.modules.ClacksModule;
 import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.QueryModule;
@@ -94,6 +95,11 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer {
 
             serverModules.add(createAuthorizationModule());
         }
+
+        if (config.get(ServerSettings.clacks_enabled)) {
+            serverModules.add(new ClacksModule(webServer, config.get(ServerSettings.clacks_names)));
+        }
+
         return serverModules;
     }
 
