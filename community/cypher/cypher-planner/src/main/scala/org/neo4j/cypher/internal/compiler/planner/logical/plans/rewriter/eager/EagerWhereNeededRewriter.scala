@@ -112,7 +112,7 @@ object EagerWhereNeededRewriter {
       get(plan.id).contains(child.id.x)
     }
 
-    def recordChildren(plan: LogicalPlan): ChildrenIds = {
+    def recordChildren(plan: LogicalPlan): Unit = {
       if (!isDefinedAt(plan.id)) {
         val childrenIds = plan match {
           case _: LogicalLeafPlan =>
@@ -134,7 +134,6 @@ object EagerWhereNeededRewriter {
         }
         set(plan.id, childrenIds)
       }
-      this
     }
   }
 }
