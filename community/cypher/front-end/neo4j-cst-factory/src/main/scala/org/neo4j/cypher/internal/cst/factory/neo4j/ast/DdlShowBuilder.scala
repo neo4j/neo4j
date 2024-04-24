@@ -647,11 +647,17 @@ trait DdlShowBuilder extends CypherParserListener {
     val stringList = ctx.stringList()
     ctx.ast = if (stringList != null) {
       Left[List[String], Expression](
-        astSeq[StringLiteral](stringList.stringLiteral()).map(_.value).toList
+        stringList.ast[Seq[StringLiteral]]().map(_.value).toList
       )
     } else {
       Right[List[String], Expression](ctx.expression.ast())
     }
+  }
+
+  final override def exitStringList(
+    ctx: CypherParser.StringListContext
+  ): Unit = {
+    ctx.ast = astSeq[StringLiteral](ctx.stringLiteral())
   }
 
   override def exitComposableShowCommandClauses(

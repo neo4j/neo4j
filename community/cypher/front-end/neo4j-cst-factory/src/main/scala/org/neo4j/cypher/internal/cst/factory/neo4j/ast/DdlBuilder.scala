@@ -606,10 +606,6 @@ trait DdlBuilder extends CypherParserListener {
     }
   }
 
-  final override def exitStringList(
-    ctx: CypherParser.StringListContext
-  ): Unit = {}
-
   final override def exitStringOrParameter(
     ctx: CypherParser.StringOrParameterContext
   ): Unit = {
