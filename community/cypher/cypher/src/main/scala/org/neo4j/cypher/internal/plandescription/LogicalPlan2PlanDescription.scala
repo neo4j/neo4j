@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.Expression
@@ -1945,13 +1946,60 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case StatefulShortestPath(_, _, _, _, mode, _, _, _, _, _, _, solvedExpressionString, _) =>
+      case StatefulShortestPath(
+          _,
+          sourceNode,
+          _,
+          nfa,
+          mode,
+          nonInlinedPreFilters,
+          _,
+          _,
+          _,
+          _,
+          _,
+          solvedExpressionString,
+          _
+        ) =>
+        def predicateLines(preds: Seq[PrettyString], prefix: PrettyString): PrettyString = {
+          preds.tail
+            .map(e => pretty"${pretty" ".repeat(prefix.prettifiedString.length)}$e")
+            .mkPrettyString(
+              pretty"\n$prefix${preds.head}\n".prettifiedString,
+              "\n",
+              ""
+            )
+        }
+
         val modeDescr = expandModeDescription(mode)
+        val patternStr = asPrettyString.solvedExpressionString(solvedExpressionString)
+        val expandDirStr = pretty"\n        expanding from: ${asPrettyString(sourceNode)}"
+        val inlinedPredicatesStr = {
+          val prefix = pretty"    inlined predicates: "
+          val inlinedPredicates = nfa.predicates.flatMap {
+            case Ands(exprs) => exprs
+            case x           => Set(x)
+          }.toSeq
+          inlinedPredicates match {
+            case Seq() => pretty""
+            case preds => predicateLines(preds.map(asPrettyString(_)).sorted, prefix)
+          }
+        }
+        val nonInlinedPredicatesStr = {
+          val prefix = pretty"non-inlined predicates: "
+          nonInlinedPreFilters match {
+            case Some(Ands(preds)) => predicateLines(preds.toSeq.map(asPrettyString(_)).sorted, prefix)
+            case Some(singleExpr)  => pretty"$prefix${asPrettyString(singleExpr)}"
+            case None              => pretty""
+          }
+        }
+
+        val detailsStr = pretty"$patternStr$expandDirStr$inlinedPredicatesStr$nonInlinedPredicatesStr"
         PlanDescriptionImpl(
           id = id,
           name = s"StatefulShortestPath($modeDescr)",
           children = children,
-          arguments = Seq(Details(asPrettyString.solvedExpressionString(solvedExpressionString))),
+          arguments = Seq(Details(detailsStr)),
           variables = variables,
           withRawCardinalities = withRawCardinalities,
           withDistinctness = withDistinctness

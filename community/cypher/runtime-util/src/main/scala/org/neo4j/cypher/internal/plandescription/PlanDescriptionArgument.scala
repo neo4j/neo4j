@@ -31,6 +31,9 @@ sealed abstract class Argument extends Product {
  */
 case class PrettyString private[plandescription] (prettifiedString: String) {
   override def toString: String = prettifiedString
+
+  def repeat(count: Int): PrettyString = PrettyString(prettifiedString.repeat(count))
+  def stripMargin: PrettyString = PrettyString(prettifiedString.stripMargin)
 }
 
 object PrettyString {

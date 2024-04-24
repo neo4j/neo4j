@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.CommandResultItem
@@ -273,6 +274,7 @@ import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.logical.plans.NamedScope
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
@@ -6085,7 +6087,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "StatefulShortestPath(All)",
         SingleChild(lhsPD),
         Seq(details(
-          "SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)"
+          """SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)
+            |        expanding from: a""".stripMargin
         )),
         Set("a")
       )
@@ -6114,7 +6117,80 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "StatefulShortestPath(Into)",
         SingleChild(lhsPD),
         Seq(details(
-          "SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)"
+          """SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)
+            |        expanding from: a""".stripMargin
+        )),
+        Set("a")
+      )
+    )
+  }
+
+  test("StatefulShortestPath with predicates") {
+    val solvedExpressionStr = "SHORTEST 5 PATHS (a)-[`  UNNAMED0`]->*(`  b@45`)"
+    val nfa = {
+      val builder = new NFABuilder(v"a")
+      builder
+        .addTransition(
+          builder.getLastState,
+          NFA.NodeJuxtapositionTransition(builder.addAndGetState(
+            v"b",
+            Some(VariablePredicate(v"b", propEquality("b", "prop", 5)))
+          ).id)
+        )
+        .addTransition(
+          builder.getLastState,
+          NFA.RelationshipExpansionTransition(
+            NFA.RelationshipExpansionPredicate(
+              v"r",
+              Some(VariablePredicate(v"r", propEquality("r", "prop", 5))),
+              Seq.empty,
+              SemanticDirection.OUTGOING
+            ),
+            builder.addAndGetState(
+              v"c",
+              Some(VariablePredicate(v"c", propEquality("c", "prop", 5)))
+            ).id
+          )
+        )
+        .setFinalState(builder.getLastState)
+        .build()
+    }
+    assertGood(
+      attach(
+        StatefulShortestPath(
+          lhsLP,
+          varFor("a"),
+          varFor("d"),
+          nfa,
+          ExpandAll,
+          Some(ands(
+            propGreaterThan("b", "prop", 10),
+            propGreaterThan("r", "prop", 10),
+            propGreaterThan("c", "prop", 10)
+          )),
+          Set.empty,
+          Set.empty,
+          Set.empty,
+          Set.empty,
+          Selector.Shortest(5),
+          solvedExpressionStr,
+          false
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "StatefulShortestPath(All)",
+        SingleChild(lhsPD),
+        Seq(details(
+          """SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)
+            |        expanding from: a
+            |    inlined predicates: b.prop = 5
+            |                        c.prop = 5
+            |                        r.prop = 5
+            |non-inlined predicates: b.prop > 10
+            |                        c.prop > 10
+            |                        r.prop > 10""".stripMargin
         )),
         Set("a")
       )
