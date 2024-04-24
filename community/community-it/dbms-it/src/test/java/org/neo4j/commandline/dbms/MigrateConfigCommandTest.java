@@ -389,7 +389,8 @@ class MigrateConfigCommandTest {
         // This is a test to notice when we change JVM arguments in the config template and decide if we want to add it
         // to migrated configs
         Path root = Path.of("").toAbsolutePath();
-        while (!root.getFileName().toString().equals("public")) {
+        while (!(root.getFileName().toString().equals("public")
+                || root.getFileName().toString().equals("neo4j"))) {
             root = root.getParent();
         }
         // Not the most robust way to get hold of the template but I guess it works
