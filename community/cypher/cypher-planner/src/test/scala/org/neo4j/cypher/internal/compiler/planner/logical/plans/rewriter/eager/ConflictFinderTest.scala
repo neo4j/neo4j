@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.mostDownstreamPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.pathFromRoot
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.readMightNotBeInitialized
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.ChildrenIds
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
@@ -134,6 +135,8 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
       .nodeByLabelScan("x", "X")
       .build()
 
+    val childrenIds: ChildrenIds = childrenIdsForPlan(wholePlan)
+
     val ds = wholePlan.lhs.get
     val nbls = ds.lhs.get
 
@@ -143,7 +146,7 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
       case SetExtractor() => // Do nothing
       case plans =>
         val expected = plans.toSeq.maxBy(inOrder.indexOf)
-        mostDownstreamPlan(wholePlan, plans) should be(Some(expected))
+        childrenIds.mostDownstreamPlan(plans.toSeq: _*) should be(expected)
     }
   }
 
@@ -159,6 +162,8 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
       .argument("1")
       .build()
 
+    val childrenIds: ChildrenIds = childrenIdsForPlan(wholePlan)
+
     val a2 = wholePlan.lhs.get
     val nhj = a2.rhs.get
     val arg4 = nhj.rhs.get
@@ -173,7 +178,7 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
       case SetExtractor() => // Do nothing
       case plans =>
         val expected = plans.toSeq.maxBy(inOrder.indexOf)
-        mostDownstreamPlan(wholePlan, plans) should be(Some(expected))
+        childrenIds.mostDownstreamPlan(plans.toSeq: _*) should be(expected)
     }
   }
 
@@ -263,5 +268,11 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
       .build()
 
     ConflictFinder.containsNestedPlanExpression(plan) shouldBe true
+  }
+
+  private def childrenIdsForPlan(lp: LogicalPlan): ChildrenIds = {
+    val childrenIds = new ChildrenIds
+    LogicalPlans.simpleFoldPlan(())(lp, (_, p) => childrenIds.recordChildren(p))
+    childrenIds
   }
 }

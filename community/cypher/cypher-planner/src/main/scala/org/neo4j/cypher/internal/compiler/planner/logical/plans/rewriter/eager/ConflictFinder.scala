@@ -107,7 +107,7 @@ sealed trait ConflictFinder {
       read @ PlanWithAccessor(readPlan, _) <- plansReadingProperty(readsAndWrites.reads, prop)
       write @ PlanWithAccessor(writePlan, _) <- writePlans
 
-      conflictType = mostDownstreamPlan(wholePlan, Set(readPlan, writePlan)).get match {
+      conflictType = planChildrenLookup.mostDownstreamPlan(readPlan, writePlan) match {
         case `readPlan` => WriteReadConflict
         case _          => ReadWriteConflict
       }
@@ -658,24 +658,6 @@ sealed trait ConflictFinder {
 
     val parents = pathFromRoot(plan, wholePlan).get
     recurse(parents.reverse.toList)
-  }
-
-  /**
-   * In `wholePlan`, finds the plan among `plans` that is most downstream.
-   */
-  private[eager] def mostDownstreamPlan(wholePlan: LogicalPlan, plans: Set[LogicalPlan]): Option[LogicalPlan] = {
-    if (plans.contains(wholePlan)) {
-      return Some(wholePlan)
-    }
-
-    wholePlan match {
-      case p: LogicalBinaryPlan =>
-        mostDownstreamPlan(p.right, plans).orElse(mostDownstreamPlan(p.left, plans))
-      case p: LogicalUnaryPlan =>
-        mostDownstreamPlan(p.source, plans)
-      case _ =>
-        None
-    }
   }
 
   /**

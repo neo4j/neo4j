@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.BestPositionFinder.pickPlansToEagerize
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.CandidateListFinder.findCandidateLists
@@ -104,16 +105,35 @@ object EagerWhereNeededRewriter {
 
   private[eager] trait PlanChildrenLookup {
     def hasChild(plan: LogicalPlan, child: LogicalPlan): Boolean
+
+    /**
+     * Finds the plan among `plans` that is most downstream.
+     */
+    def mostDownstreamPlan(plans: LogicalPlan*): LogicalPlan
   }
 
   private[eager] class ChildrenIds extends Attribute[LogicalPlan, BitSet] with PlanChildrenLookup {
+
+    /**
+     * Maps a plan ID to the position of the plan in the whole plan.
+     * The position is 0-based and in execution order.
+     */
+    private val plansIDToPosition = new IntIntHashMap()
 
     override def hasChild(plan: LogicalPlan, child: LogicalPlan): Boolean = {
       get(plan.id).contains(child.id.x)
     }
 
+    override def mostDownstreamPlan(plans: LogicalPlan*): LogicalPlan = plans.maxBy(p => plansIDToPosition.get(p.id.x))
+
+    /**
+     * This method must be called with the plans in execution order.
+     * It must be called for children of a plan before it can get called on the parents.
+     */
     def recordChildren(plan: LogicalPlan): Unit = {
       if (!isDefinedAt(plan.id)) {
+        plansIDToPosition.put(plan.id.x, plansIDToPosition.size())
+
         val childrenIds = plan match {
           case _: LogicalLeafPlan =>
             BitSet.empty

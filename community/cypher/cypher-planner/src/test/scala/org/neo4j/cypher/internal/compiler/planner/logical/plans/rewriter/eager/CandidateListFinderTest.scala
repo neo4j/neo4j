@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.C
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.ChildrenIds
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -377,7 +378,7 @@ class CandidateListFinderTest extends CypherFunSuite {
 
   private def childrenIdsForPlan(lp: LogicalPlan): ChildrenIds = {
     val childrenIds = new ChildrenIds
-    lp.flatten.reverseIterator.foreach(childrenIds.recordChildren)
+    LogicalPlans.simpleFoldPlan(())(lp, (_, p) => childrenIds.recordChildren(p))
     childrenIds
   }
 }
