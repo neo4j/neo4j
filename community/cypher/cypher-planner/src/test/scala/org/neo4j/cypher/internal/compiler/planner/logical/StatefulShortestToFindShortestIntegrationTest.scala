@@ -336,7 +336,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`anon_0`)-[`r`]->(`anon_1`) WHERE `anon_0`.prop IN [1] AND `anon_1`.prop IN [1]){0, } (b) WHERE unique(`r`))",
+          "SHORTEST 1 (a) ((`anon_0`)-[`r`]->(`anon_1`)){0, } (b)",
           None,
           Set(),
           Set(("r", "r")),
@@ -404,7 +404,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`anon_0`)-[`r`]->(`anon_1`) WHERE `anon_0`.prop IN [1] AND `anon_1`.prop IN [2]){0, } (b) WHERE unique(`r`))",
+          "SHORTEST 1 (a) ((`anon_0`)-[`r`]->(`anon_1`)){0, } (b)",
           None,
           Set(),
           Set(("r", "r")),
@@ -447,7 +447,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`anon_0`)-[`anon_1`]->(`anon_2`)){1, } (`x`) ((`anon_3`)-[`anon_4`]->(`anon_5`)){1, } (b) WHERE `x` = x AND disjoint(`anon_11`, `anon_17`) AND unique(`anon_11`) AND unique(`anon_17`))",
+          "SHORTEST 1 (a) ((`anon_0`)-[`anon_1`]->(`anon_2`)){1, } (`x`) ((`anon_3`)-[`anon_4`]->(`anon_5`)){1, } (b)",
           None,
           Set(),
           Set(),
@@ -511,7 +511,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .statefulShortestPath(
         "anon_0",
         "anon_1",
-        "SHORTEST 1 ((`anon_0`) ((`anon_2`)-[`r`]->(`anon_3`)){1, } (`anon_1`) WHERE none(rel IN `r` WHERE rel.prop IN [5]) AND unique(`r`))",
+        "SHORTEST 1 (`anon_0`) ((`anon_2`)-[`r`]->(`anon_3`)){1, } (`anon_1`)",
         Some("none(rel IN r WHERE rel.prop = 5)"),
         Set(),
         Set(("r", "r")),

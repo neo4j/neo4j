@@ -142,16 +142,20 @@ final case class PatternRelationship(
     case _                          => (left, right)
   }
 
-  override def toString: String = solvedString
+  override def toString: String = solvedString(withTypes = true)
 
-  override def solvedString: String =
-    s"(${backtick(boundaryNodes._1.name)})$solvedStringSuffix"
+  override def solvedString: String = solvedString(withTypes = false)
 
-  override def solvedStringSuffix: String = {
+  def solvedString(withTypes: Boolean): String =
+    s"(${backtick(boundaryNodes._1.name)})${solvedStringSuffix(withTypes)}"
+
+  override def solvedStringSuffix: String = solvedStringSuffix(withTypes = false)
+
+  private def solvedStringSuffix(withTypes: Boolean): String = {
     val lArrow = if (dir == SemanticDirection.INCOMING) "<" else ""
     val rArrow = if (dir == SemanticDirection.OUTGOING) ">" else ""
     val typesStr =
-      if (types.isEmpty) {
+      if (!withTypes || types.isEmpty) {
         ""
       } else {
         types.map(_.name).mkString(":", "|", "")
@@ -272,12 +276,8 @@ final case class QuantifiedPathPattern(
   override def toString: String =
     s"QPP($leftBinding, $rightBinding, $asQueryGraph, $repetition, $nodeVariableGroupings, $relationshipVariableGroupings)"
 
-  override def solvedStringSuffix: String = {
-    val where =
-      if (selections.isEmpty) ""
-      else selections.flatPredicates.map(QueryGraph.stringifier(_)).mkString(" WHERE ", " AND ", "")
-    s" (${ExhaustiveNodeConnection.solvedString(patternRelationships.toIndexedSeq)}$where)${repetition.solvedString} (${backtick(rightBinding.outer.name)})"
-  }
+  override def solvedStringSuffix: String =
+    s" (${ExhaustiveNodeConnection.solvedString(patternRelationships.toIndexedSeq)})${repetition.solvedString} (${backtick(rightBinding.outer.name)})"
 
   override def solvedString: String =
     s"(${backtick(leftBinding.outer.name)})$solvedStringSuffix"
@@ -422,13 +422,8 @@ final case class SelectivePathPattern(
 
   val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies)
 
-  def solvedString: String = {
-    val where =
-      if (selections.isEmpty) ""
-      else selections.flatPredicates.map(QueryGraph.stringifier(_)).sorted.mkString(" WHERE ", " AND ", "")
-
-    s"${selector.solvedString} (${ExhaustiveNodeConnection.solvedString(pathPattern.connections.toIndexedSeq)}$where)"
-  }
+  def solvedString: String =
+    s"${selector.solvedString} ${ExhaustiveNodeConnection.solvedString(pathPattern.connections.toIndexedSeq)}"
 
   /**
    * Creates a QueryGraph representation of the Selective Path Pattern without the QPPs outer nodes and collects all dependent selections eg.

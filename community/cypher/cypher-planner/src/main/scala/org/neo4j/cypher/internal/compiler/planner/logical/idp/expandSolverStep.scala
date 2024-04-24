@@ -543,12 +543,6 @@ object expandSolverStep {
     val rewrittenNfa = nfa.endoRewrite(bottomUp(Rewriter.lift {
       case variable: LogicalVariable => rewriteLookup.getOrElse(variable, variable)
     }))
-    val solvedExpressionAsString =
-      spp.copy(selections =
-        selectionsWithOriginalPredicates(spp) ++ unsolvedPredicatesOnEndNode
-      )
-        .solvedString
-
     val selector = convertSelectorFromIr(spp.selector)
     val nodeVariableGroupings =
       spp.allQuantifiedPathPatterns.flatMap(_.nodeVariableGroupings)
@@ -575,7 +569,7 @@ object expandSolverStep {
         singletonNodeVariables.result(),
         singletonRelVariables.result(),
         selector,
-        solvedExpressionAsString,
+        spp.solvedString,
         originalSpp,
         unsolvedPredicatesOnEndNode,
         reverseGroupVariableProjections = !fromLeft,
@@ -676,13 +670,6 @@ object expandSolverStep {
         _._2.map(_._1)
       }.getOrElse(Iterable.empty)
   }
-
-  private def selectionsWithOriginalPredicates(spp: SelectivePathPattern): Selections =
-    Selections.from(spp.selections.flatPredicates.map {
-      case far: ForAllRepetitions =>
-        far.originalInnerPredicate
-      case expr: Expression => expr
-    })
 
   private val convertSelectorFromIr: SelectivePathPattern.Selector => StatefulShortestPath.Selector = {
     // for now we will implement ANY via SHORTEST.

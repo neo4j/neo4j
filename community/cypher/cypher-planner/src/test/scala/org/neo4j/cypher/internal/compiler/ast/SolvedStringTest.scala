@@ -33,28 +33,28 @@ class SolvedStringTest extends CypherFunSuite with LogicalPlanningTestSupport wi
   private val tests = Table(
     "Cypher" -> "Expected",
     // Test different selectors
-    "ANY SHORTEST (a)-[r]->(b)" -> "SHORTEST 1 ((a)-[r]->(b))",
-    "SHORTEST 1 (a)-[r]->(b)" -> "SHORTEST 1 ((a)-[r]->(b))",
-    "SHORTEST 2 (a)-[r]->(b)" -> "SHORTEST 2 ((a)-[r]->(b))",
-    "SHORTEST 1 GROUPS (a)-[r]->+(b)" -> "SHORTEST 1 GROUPS ((a) ((anon_2)-[r]->(anon_4)){1, } (b) WHERE unique(r))",
+    "ANY SHORTEST (a)-[r]->(b)" -> "SHORTEST 1 (a)-[r]->(b)",
+    "SHORTEST 1 (a)-[r]->(b)" -> "SHORTEST 1 (a)-[r]->(b)",
+    "SHORTEST 2 (a)-[r]->(b)" -> "SHORTEST 2 (a)-[r]->(b)",
+    "SHORTEST 1 GROUPS (a)-[r]->+(b)" -> "SHORTEST 1 GROUPS (a) ((anon_2)-[r]->(anon_4)){1, } (b)",
     // Test different quantifiers
-    "ANY SHORTEST (a) ((b)-[r]->(c))+ (d)" -> "SHORTEST 1 ((a) ((b)-[r]->(c)){1, } (d) WHERE unique(r))",
-    "ANY SHORTEST (a) ((b)-[r]->(c))* (d)" -> "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) WHERE unique(r))",
-    "ANY SHORTEST (a) ((b)-[r]->(c)){2, 5} (d)" -> "SHORTEST 1 ((a) ((b)-[r]->(c)){2, 5} (d) WHERE unique(r))",
-    "ANY SHORTEST (a) ((b)-[r]->(c)){2, } (d)" -> "SHORTEST 1 ((a) ((b)-[r]->(c)){2, } (d) WHERE unique(r))",
-    "ANY SHORTEST (a) ((b)-[r]->(c)){2} (d)" -> "SHORTEST 1 ((a) ((b)-[r]->(c)){2, 2} (d) WHERE unique(r))",
-    "ANY SHORTEST (a) ((b)-[r]->(c)){, 5} (d)" -> "SHORTEST 1 ((a) ((b)-[r]->(c)){0, 5} (d) WHERE unique(r))",
-    // Test predicates
-    "ANY SHORTEST (a:A)-[r:R]->(b:B)" -> "SHORTEST 1 ((a)-[r:R]->(b))", // Note: Predicates on boundary nodes are moved to outer QG
-    "ANY SHORTEST ((a)-[r:R]->(b:B)-[r2:R2]->(c) WHERE a.prop + b.prop = c.prop)" -> "SHORTEST 1 ((a)-[r:R]->(b)-[r2:R2]->(c) WHERE b:B AND c.prop IN [a.prop + b.prop])",
-    "ANY SHORTEST ((a)-[r:R]->(b:B)-[r2:R2]->(c) WHERE r.prop = 0 AND r2.prop = 0)" -> "SHORTEST 1 ((a)-[r:R]->(b)-[r2:R2]->(c) WHERE b:B AND r.prop IN [0] AND r2.prop IN [0])",
-    "ANY SHORTEST (a) ((b:B)-[r:R]->(c:C) WHERE r.prop = 0)+ (d)" -> "SHORTEST 1 ((a) ((b)-[r:R]->(c) WHERE b:B AND c:C AND r.prop IN [0]){1, } (d) WHERE unique(r))",
+    "ANY SHORTEST (a) ((b)-[r]->(c))+ (d)" -> "SHORTEST 1 (a) ((b)-[r]->(c)){1, } (d)",
+    "ANY SHORTEST (a) ((b)-[r]->(c))* (d)" -> "SHORTEST 1 (a) ((b)-[r]->(c)){0, } (d)",
+    "ANY SHORTEST (a) ((b)-[r]->(c)){2, 5} (d)" -> "SHORTEST 1 (a) ((b)-[r]->(c)){2, 5} (d)",
+    "ANY SHORTEST (a) ((b)-[r]->(c)){2, } (d)" -> "SHORTEST 1 (a) ((b)-[r]->(c)){2, } (d)",
+    "ANY SHORTEST (a) ((b)-[r]->(c)){2} (d)" -> "SHORTEST 1 (a) ((b)-[r]->(c)){2, 2} (d)",
+    "ANY SHORTEST (a) ((b)-[r]->(c)){, 5} (d)" -> "SHORTEST 1 (a) ((b)-[r]->(c)){0, 5} (d)",
+    // Test predicates are not rendered
+    "ANY SHORTEST (a:A)-[r:R]->(b:B)" -> "SHORTEST 1 (a)-[r]->(b)",
+    "ANY SHORTEST ((a)-[r:R]->(b:B)-[r2:R2]->(c) WHERE a.prop + b.prop = c.prop)" -> "SHORTEST 1 (a)-[r]->(b)-[r2]->(c)",
+    "ANY SHORTEST ((a)-[r:R]->(b:B)-[r2:R2]->(c) WHERE r.prop = 0 AND r2.prop = 0)" -> "SHORTEST 1 (a)-[r]->(b)-[r2]->(c)",
+    "ANY SHORTEST (a) ((b:B)-[r:R]->(c:C) WHERE r.prop = 0)+ (d)" -> "SHORTEST 1 (a) ((b)-[r]->(c)){1, } (d)",
     // Test different patterns
-    "ANY SHORTEST (a)-[r:R]-(b)<-[r2:R2]-(c) ((c_in)-[q:Q]->(d_in))+ (d) ((d_in2)-[q2:Q2]->(e_in))+ (e)" -> "SHORTEST 1 ((a)-[r:R]-(b)<-[r2:R2]-(c) ((c_in)-[q:Q]->(d_in)){1, } (d) ((d_in2)-[q2:Q2]->(e_in)){1, } (e) WHERE unique(q) AND unique(q2))",
-    "ANY SHORTEST (a) ((a_in)-[r:R]->(b_in)<-[r2:R2]-(c_in))+ (c)-[r3:R3]-(d)" -> "SHORTEST 1 ((a) ((a_in)-[r:R]->(b_in)<-[r2:R2]-(c_in)){1, } (c)-[r3:R3]-(d) WHERE unique(r + r2))",
+    "ANY SHORTEST (a)-[r:R]-(b)<-[r2:R2]-(c) ((c_in)-[q:Q]->(d_in))+ (d) ((d_in2)-[q2:Q2]->(e_in))+ (e)" -> "SHORTEST 1 (a)-[r]-(b)<-[r2]-(c) ((c_in)-[q]->(d_in)){1, } (d) ((d_in2)-[q2]->(e_in)){1, } (e)",
+    "ANY SHORTEST (a) ((a_in)-[r:R]->(b_in)<-[r2:R2]-(c_in))+ (c)-[r3:R3]-(d)" -> "SHORTEST 1 (a) ((a_in)-[r]->(b_in)<-[r2]-(c_in)){1, } (c)-[r3]-(d)",
     // Test backticked identifiers
-    "ANY SHORTEST (` n@0`)-[`r`]->(`123`)" -> "SHORTEST 1 ((` n@0`)-[r]->(`123`))",
-    "ANY SHORTEST (` UNNAMED`) ((` n@0`)-[`r`]->(`123`))+ (`987other`)" -> "SHORTEST 1 ((` UNNAMED`) ((` n@0`)-[r]->(`123`)){1, } (`987other`) WHERE unique(r))"
+    "ANY SHORTEST (` n@0`)-[`r`]->(`123`)" -> "SHORTEST 1 (` n@0`)-[r]->(`123`)",
+    "ANY SHORTEST (` UNNAMED`) ((` n@0`)-[`r`]->(`123`))+ (`987other`)" -> "SHORTEST 1 (` UNNAMED`) ((` n@0`)-[r]->(`123`)){1, } (`987other`)"
   )
 
   test("solvedString is correct") {

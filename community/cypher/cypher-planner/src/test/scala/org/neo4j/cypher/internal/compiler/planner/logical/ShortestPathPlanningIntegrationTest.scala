@@ -134,7 +134,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -177,7 +177,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "s",
           "t",
-          "SHORTEST 1 ((s) ((`anon_0`)-[`anon_1`:R]->(`anon_2`)-[`anon_3`:T]-(`anon_4`)-[`anon_5`:T]-(`anon_6`)-[`anon_7`:T]-(`anon_8`)-[`anon_9`:R]->(`anon_10`)){1, } (t) WHERE NOT `anon_5` = `anon_3` AND NOT `anon_7` = `anon_3` AND NOT `anon_7` = `anon_5` AND NOT `anon_9` = `anon_1` AND unique((((`anon_20` + `anon_12`) + `anon_15`) + `anon_16`) + `anon_19`))",
+          "SHORTEST 1 (s) ((`anon_0`)-[`anon_1`]->(`anon_2`)-[`anon_3`]-(`anon_4`)-[`anon_5`]-(`anon_6`)-[`anon_7`]-(`anon_8`)-[`anon_9`]->(`anon_10`)){1, } (t)",
           None,
           groupNodes = Set(
             ("anon_0", "anon_13"),
@@ -231,7 +231,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u)-[r:R*]->(v) WHERE size(r) >= 1 AND unique(r))",
+          "SHORTEST 1 (u)-[r*]->(v)",
           None,
           groupNodes = Set(),
           groupRelationships = Set(("r", "r")),
@@ -274,7 +274,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "b",
-          "SHORTEST 1 ((u)-[`  next@0`:R*1..5]->(b) WHERE `  next@0` = next)",
+          "SHORTEST 1 (u)-[`  next@0`*1..5]->(b)",
           Some("`  next@0` = next"),
           Set(),
           Set(("  next@2", "  next@0")),
@@ -329,10 +329,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "x",
-          "SHORTEST 1 ((u)-[r:R*]->(v)-[s]->(w)-[t:R|T*1..2]->(x) WHERE" +
-            " NOT s IN r AND NOT s IN t AND all(`anon_0` IN r WHERE `anon_0`.prop IN [42])" +
-            " AND disjoint(t, r) AND size(r) >= 1 AND size(t) <= 2 AND size(t) >= 1 AND unique(r) AND unique(t)" +
-            " AND v.prop IN [3] AND w.prop IN [4])",
+          "SHORTEST 1 (u)-[r*]->(v)-[s]->(w)-[t*1..2]->(x)",
           Some("all(anon_0 IN r WHERE anon_0.prop = 42)"),
           groupNodes = Set(),
           groupRelationships = Set(("r", "r"), ("t", "t")),
@@ -372,7 +369,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "g",
-          "SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){0, } (`d`) ((`e`)-[`s`]->(`f`)){0, } (g) WHERE `d` = d AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){0, } (`d`) ((`e`)-[`s`]->(`f`)){0, } (g)",
           None,
           groupNodes = Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
           groupRelationships = Set(("r", "r"), ("s", "s")),
@@ -409,7 +406,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "d",
-          "SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){0, } (d) WHERE unique(`r`))",
+          "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){0, } (d)",
           None,
           Set(("b", "b"), ("c", "c")),
           Set(("r", "r")),
@@ -452,7 +449,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "g",
-          "SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){0, } (`d`) ((`e`)-[`s`]->(`f`)){0, } (g) WHERE `d` = d AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){0, } (`d`) ((`e`)-[`s`]->(`f`)){0, } (g)",
           None,
           Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
           Set(("r", "r"), ("s", "s")),
@@ -496,7 +493,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "d",
-          "SHORTEST 1 ((a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (d) WHERE `  d@0` = d AND d.prop IN [5] AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
+          "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (d)",
           Some("`  d@0` = d"),
           Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
           Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
@@ -541,7 +538,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "d",
           "a",
-          "SHORTEST 1 ((a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (d) WHERE `  d@0` = d AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
+          "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (d)",
           None,
           Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
           Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
@@ -587,7 +584,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "d",
           "a",
-          "SHORTEST 1 ((a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  a@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (d) WHERE `  a@0` = a AND a.prop IN [5] AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
+          "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  a@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (d)",
           Some("`  a@0` = a"),
           Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
           Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
@@ -635,7 +632,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "d",
-          "SHORTEST 1 ((a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (d) WHERE `  d@0` = d AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
+          "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (d)",
           None,
           Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
           Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
@@ -682,7 +679,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "g",
-          "SHORTEST 1 ((a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (g) WHERE `  d@0` = d AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
+          "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (`  d@0`) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (g)",
           None,
           Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
           Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
@@ -725,7 +722,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "from",
           "e",
-          "SHORTEST 1 ((from)-[`  r@0`:R]->(b) ((`  c@1`)-[`  r2@2`]->(`  d@3`)){0, } (e) WHERE NOT r IN `  r2@5` AND `  r@0` = r AND unique(`  r2@5`))",
+          "SHORTEST 1 (from)-[`  r@0`]->(b) ((`  c@1`)-[`  r2@2`]->(`  d@3`)){0, } (e)",
           None,
           Set(("  c@1", "  c@4"), ("  d@3", "  d@6")),
           Set(("  r2@2", "  r2@5")),
@@ -772,7 +769,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "d",
-          "SHORTEST 1 ((a) ((`  b@2`)-[`  r@3`]->(`  c@4`)){0, } (`  d@0`) ((`  e@8`)-[`  s@9`]->(`  f@10`)){0, } (`  d@1`) ((`  g@14`)-[`  t@15`]->(`  h@16`)){0, } (d) WHERE `  d@0` = d AND `  d@1` = d AND disjoint(`  r@6`, `  s@12`) AND disjoint(`  r@6`, `  t@18`) AND disjoint(`  s@12`, `  t@18`) AND unique(`  r@6`) AND unique(`  s@12`) AND unique(`  t@18`))",
+          "SHORTEST 1 (a) ((`  b@2`)-[`  r@3`]->(`  c@4`)){0, } (`  d@0`) ((`  e@8`)-[`  s@9`]->(`  f@10`)){0, } (`  d@1`) ((`  g@14`)-[`  t@15`]->(`  h@16`)){0, } (d)",
           Some("`  d@0` = d AND `  d@1` = d"),
           Set(
             ("  h@16", "  h@19"),
@@ -824,7 +821,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "d",
-          "SHORTEST 1 ((a) ((`  b@2`)-[`  r@3`]->(`  c@4`)){0, } (`  a@0`) ((`  e@8`)-[`  s@9`]->(`  f@10`)){0, } (`  a@1`) ((`  g@14`)-[`  t@15`]->(`  h@16`)){0, } (d) WHERE `  a@0` = a AND `  a@1` = a AND disjoint(`  r@6`, `  s@12`) AND disjoint(`  r@6`, `  t@18`) AND disjoint(`  s@12`, `  t@18`) AND unique(`  r@6`) AND unique(`  s@12`) AND unique(`  t@18`))",
+          "SHORTEST 1 (a) ((`  b@2`)-[`  r@3`]->(`  c@4`)){0, } (`  a@0`) ((`  e@8`)-[`  s@9`]->(`  f@10`)){0, } (`  a@1`) ((`  g@14`)-[`  t@15`]->(`  h@16`)){0, } (d)",
           None,
           Set(
             ("  h@16", "  h@19"),
@@ -876,7 +873,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "i",
-          "SHORTEST 1 ((a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (d) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (`  d@0`) ((`  g@13`)-[`  t@14`]->(`  h@15`)){0, } (i) WHERE `  d@0` = d AND disjoint(`  r@5`, `  s@11`) AND disjoint(`  r@5`, `  t@17`) AND disjoint(`  s@11`, `  t@17`) AND unique(`  r@5`) AND unique(`  s@11`) AND unique(`  t@17`))",
+          "SHORTEST 1 (a) ((`  b@1`)-[`  r@2`]->(`  c@3`)){0, } (d) ((`  e@7`)-[`  s@8`]->(`  f@9`)){0, } (`  d@0`) ((`  g@13`)-[`  t@14`]->(`  h@15`)){0, } (i)",
           Some("`  d@0` = d"),
           Set(
             ("  e@7", "  e@10"),
@@ -918,7 +915,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "a",
-          "SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){0, } (a) WHERE unique(`r`))",
+          "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){0, } (a)",
           None,
           Set(("b", "b"), ("c", "c")),
           Set(("r", "r")),
@@ -950,7 +947,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "v",
           "u",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -1007,7 +1004,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           sourceNode = "u",
           targetNode = "w",
           solvedExpressionString =
-            "SHORTEST 1 ((u) ((`a`)-[`r`]->(`b`)){1, } (v) ((`c`)-[`s`]->(`d`)){1, } (w) WHERE disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+            "SHORTEST 1 (u) ((`a`)-[`r`]->(`b`)){1, } (v) ((`c`)-[`s`]->(`d`)){1, } (w)",
           nonInlinedPreFilters = None,
           groupNodes = Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           groupRelationships = Set(("r", "r"), ("s", "s")),
@@ -1043,7 +1040,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((`a`)-[`r`:R]->(`b`) WHERE `b`:B){1, } (v)-[s]->(w) WHERE NOT s IN `r` AND unique(`r`) AND v.prop IN [42] AND v:B AND w:N)",
+          "SHORTEST 1 (u) ((`a`)-[`r`]->(`b`)){1, } (v)-[s]->(w)",
           None,
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
@@ -1080,7 +1077,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`a`)-[`r`:R]-(`b`) WHERE `b`:B AND `r`.prop > 0){1, } (v) WHERE unique(`r`) AND v:B)",
+          "SHORTEST 1 (u) ((`a`)-[`r`]-(`b`)){1, } (v)",
           None,
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
@@ -1116,7 +1113,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((`a`)-[`r`:R]->(`b`) WHERE `b`:B){1, } (v)-[s]->(w) WHERE NOT s IN `r` AND s.prop = u.prop AND unique(`r`) AND v.prop = u.prop AND v:B AND w:N)",
+          "SHORTEST 1 (u) ((`a`)-[`r`]->(`b`)){1, } (v)-[s]->(w)",
           None,
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
@@ -1152,7 +1149,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((`a`)-[`r`]->(`b`)){1, } (v)-[s]-(w) WHERE NOT s IN `r` AND NOT size(`a`) IN [5] AND unique(`r`) AND v.prop = w.prop)",
+          "SHORTEST 1 (u) ((`a`)-[`r`]->(`b`)){1, } (v)-[s]-(w)",
           Some("v.prop = w.prop AND NOT size(a) = 5"),
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
@@ -1195,7 +1192,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           sourceNode = "u",
           targetNode = "x",
           solvedExpressionString =
-            "SHORTEST 1 ((u) ((`a`)-[`r`]->(`b`)){1, } (v) ((`c`)-[`s`]->(`d`)){1, } (w)-[t]->(x) WHERE NOT t IN `r` AND NOT t IN `s` AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+            "SHORTEST 1 (u) ((`a`)-[`r`]->(`b`)){1, } (v) ((`c`)-[`s`]->(`d`)){1, } (w)-[t]->(x)",
           nonInlinedPreFilters = None,
           groupNodes = Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           groupRelationships = Set(("r", "r"), ("s", "s")),
@@ -1229,7 +1226,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "u",
         "c",
-        "SHORTEST 1 ((u) ((`b`)-[`anon_0`]-(`b`)){0, } (c) WHERE `b` = `b` AND unique(`anon_6`))",
+        "SHORTEST 1 (u) ((`b`)-[`anon_0`]-(`b`)){0, } (c)",
         Some("all(anon_1 IN range(0, size(b) - 1) WHERE b[anon_1] = b[anon_1])"),
         Set(("b", "b")),
         Set(),
@@ -1263,7 +1260,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "u",
         "d",
-        "SHORTEST 1 ((u) ((`b`)-[`anon_0`]-(`c`)){0, } (d) WHERE `b`.prop < `c`.prop AND unique(`anon_5`))",
+        "SHORTEST 1 (u) ((`b`)-[`anon_0`]-(`c`)){0, } (d)",
         Some("all(anon_1 IN range(0, size(b) - 1) WHERE (b[anon_1]).prop < (c[anon_1]).prop)"),
         Set(("b", "b"), ("c", "c")),
         Set(),
@@ -1299,7 +1296,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "u",
         "d",
-        "SHORTEST 1 ((u) ((`b`)-[`r`]-(`c`)){0, } (d) WHERE `r`.prop < `c`.prop AND unique(`r`))",
+        "SHORTEST 1 (u) ((`b`)-[`r`]-(`c`)){0, } (d)",
         Some("all(anon_0 IN range(0, size(c) - 1) WHERE (r[anon_0]).prop < (c[anon_0]).prop)"),
         Set(("b", "b"), ("c", "c")),
         Set(("r", "r")),
@@ -1333,7 +1330,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -1373,7 +1370,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -1416,7 +1413,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -1454,7 +1451,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE unique(`r`) AND v:NN)",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -1492,7 +1489,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "n",
           "m",
-          "SHORTEST 1 ((n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m) WHERE unique(`r_inner`))",
+          "SHORTEST 1 (n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m)",
           None,
           groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
           groupRelationships = Set(("r_inner", "r_inner")),
@@ -1536,7 +1533,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "n",
           "o",
-          "SHORTEST 1 ((n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m)-[r2]->(o) WHERE NOT r2 IN `r_inner` AND m.prop = o.prop AND unique(`r_inner`))",
+          "SHORTEST 1 (n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m)-[r2]->(o)",
           None,
           groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
           groupRelationships = Set(("r_inner", "r_inner")),
@@ -1572,7 +1569,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE unique(`r`) AND v.prop = u.prop)",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -1627,7 +1624,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "u",
           "w",
-          s"SHORTEST 1 ((u) ((`a`)-[`r`]->(`b`)){1, } (v)-[s]->(w) WHERE $solvedNestedExpressionAsString AND NOT s IN `r` AND unique(`r`))",
+          "SHORTEST 1 (u) ((`a`)-[`r`]->(`b`)){1, } (v)-[s]->(w)",
           None,
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
@@ -1687,8 +1684,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "u",
           "v",
-          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`) WHERE EXISTS { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
-            |  WHERE `  UNNAMED1`:N }){1, } (v) WHERE unique(`  r@4`))""".stripMargin,
+          "SHORTEST 1 (u) ((`  n@0`)-[`  r@1`]->(`  m@2`)){1, } (v)",
           None,
           Set(("  n@0", "  n@3"), ("  m@2", "  m@5")),
           Set(("  r@1", "  r@4")),
@@ -1763,11 +1759,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "u",
           "v",
-          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`)){1, } (v) WHERE CASE
-            |  WHEN EXISTS { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
-            |  WHERE `  UNNAMED1`:N } THEN `  n@0`.prop > `  m@2`.prop
-            |  ELSE false
-            |END AND unique(`  r@4`))""".stripMargin,
+          "SHORTEST 1 (u) ((`  n@0`)-[`  r@1`]->(`  m@2`)){1, } (v)",
           Some(nonInlineablePredicate),
           Set(("  n@0", "  n@3"), ("  m@2", "  m@5")),
           Set(("  r@1", "  r@4")),
@@ -1832,8 +1824,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "u",
           "v",
-          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`) WHERE COUNT { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
-            |  WHERE `  UNNAMED1`:N } = 2){1, } (v) WHERE unique(`  r@4`))""".stripMargin,
+          "SHORTEST 1 (u) ((`  n@0`)-[`  r@1`]->(`  m@2`)){1, } (v)",
           None,
           Set(("  n@0", "  n@3"), ("  m@2", "  m@5")),
           Set(("  r@1", "  r@4")),
@@ -1885,7 +1876,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "u",
           "x",
-          s"SHORTEST 1 ((u) ((`a`)-[`r`]->(`b`)){1, } (v)-[s]->(w)-[t]->(x) WHERE $solvedNestedExpressionAsString AND NOT s IN `r` AND NOT t = s AND NOT t IN `r` AND unique(`r`))",
+          "SHORTEST 1 (u) ((`a`)-[`r`]->(`b`)){1, } (v)-[s]->(w)-[t]->(x)",
           Some(nestedPlanExpression),
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
@@ -1927,7 +1918,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "a",
         "d",
-        "SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){1, } (d) WHERE unique(`r`))",
+        "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){1, } (d)",
         None,
         Set.empty,
         Set(("r", "r")),
@@ -1978,7 +1969,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "a",
         "f",
-        "SHORTEST 1 ((a)-[`anon_0`]-(b) ((`c`)-[`r`]->(`d`)){1, } (e)-[`anon_1`]-(f) WHERE NOT `anon_0` = `anon_1` AND NOT `anon_0` IN `r` AND NOT `anon_1` IN `r` AND unique(`r`))",
+        "SHORTEST 1 (a)-[`anon_0`]-(b) ((`c`)-[`r`]->(`d`)){1, } (e)-[`anon_1`]-(f)",
         None,
         Set.empty,
         Set(("r", "r")),
@@ -2021,7 +2012,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "a",
         "b",
-        "SHORTEST 1 ((a)-[r]->(b))",
+        "SHORTEST 1 (a)-[r]->(b)",
         None,
         Set(),
         Set(),
@@ -2052,7 +2043,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "a",
         "b",
-        "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+        "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
         None,
         groupNodes = Set(("n", "n"), ("m", "m")),
         groupRelationships = Set(("r", "r")),
@@ -2076,7 +2067,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "b",
         "a",
-        "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE a:A AND unique(`r`))",
+        "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
         None,
         groupNodes = Set(("n", "n"), ("m", "m")),
         groupRelationships = Set(("r", "r")),
@@ -2138,7 +2129,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPathExpr(
         "a",
         "g",
-        s"SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){1, } (d) ((`e`)<-[`s`]-(`f`)){1, } (g) WHERE disjoint(`r`, `s`) AND length((a) ((b)-[r]-())* (d) ((e)-[s]-())* (g)) > 3 AND unique(`r`) AND unique(`s`))",
+        "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){1, } (d) ((`e`)<-[`s`]-(`f`)){1, } (g)",
         Some(greaterThan(length(path), literalInt(3))),
         Set.empty,
         Set(("r", "r"), ("s", "s")),
@@ -2195,7 +2186,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "a",
           "g",
-          s"SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){1, } (d) ((`e`)<-[`s`]-(`f`)){1, } (g) WHERE disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){1, } (d) ((`e`)<-[`s`]-(`f`)){1, } (g)",
           None,
           Set.empty,
           Set(("r", "r"), ("s", "s")),
@@ -2230,7 +2221,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPathExpr(
         "a",
         "g",
-        s"SHORTEST 1 ((a) ((`b`)-[`r`]->(`c`)){1, } (d) ((`e`)<-[`s`]-(`f`)){1, } (g) WHERE disjoint(`r`, `s`) AND length((a) ((b)-[r]-())* (d) ((e)-[s]-())* (g)) > 3 AND unique(`r`) AND unique(`s`))",
+        "SHORTEST 1 (a) ((`b`)-[`r`]->(`c`)){1, } (d) ((`e`)<-[`s`]-(`f`)){1, } (g)",
         Some(greaterThan(length(path), literalInt(3))),
         Set.empty,
         Set(("r", "r"), ("s", "s")),
@@ -2272,7 +2263,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2305,7 +2296,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`) WHERE `n`.prop > `m`.prop){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2338,7 +2329,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v)<-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)<-[r2]-(w)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2371,7 +2362,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "w",
           "u",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v)<-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)<-[r2]-(w)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2405,7 +2396,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "w",
           "u",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2439,7 +2430,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]-(w)",
           Some("v.prop > r2.prop + w.prop"),
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2492,7 +2483,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "u",
           "w",
-          s"SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w) WHERE $solvedNestedExpressionAsString AND NOT r2 IN `r` AND unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w)",
           Some(nestedPlanExpression),
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2548,7 +2539,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar, baz: r2.baz})",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)-[r2]->(w)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2582,7 +2573,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "u",
         "v",
-        "SHORTEST 1 ((u) ((`n`)-[`r`]->(`c`)-[`anon_0`]->(`m`) WHERE `c`:B){1, } (v) WHERE NOT `anon_0` = `r` AND `n`.prop <= `m`.prop AND unique(`r` + `anon_7`))",
+        "SHORTEST 1 (u) ((`n`)-[`r`]->(`c`)-[`anon_0`]->(`m`)){1, } (v)",
         Some("all(anon_1 IN range(0, size(m) - 1) WHERE (n[anon_1]).prop <= (m[anon_1]).prop)"),
         Set(("n", "n"), ("c", "c"), ("m", "m")),
         Set(("r", "r")),
@@ -2611,7 +2602,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a)-[r]->(b) WHERE r.prop = n.prop)",
+          "SHORTEST 1 (a)-[r]->(b)",
           None,
           Set(),
           Set(),
@@ -2648,7 +2639,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`) WHERE a.prop = `n`.prop){1, } (v) WHERE unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           Set(("n", "n"), ("m", "m")),
           Set(("r", "r")),
@@ -2686,7 +2677,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE $param AND unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           Some("all(anon_0 IN range(0, size(m) - 1) WHERE $param)"),
           Set(("n", "n"), ("m", "m")),
           Set(("r", "r")),
@@ -2720,7 +2711,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`) WHERE `m`.prop IN [$param]){1, } (v) WHERE unique(`r`) AND v.prop IN [$param])",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           Set(("n", "n"), ("m", "m")),
           Set(("r", "r")),
@@ -2757,7 +2748,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`) WHERE `m`.prop = foo.prop){1, } (v) WHERE unique(`r`) AND v.prop = foo.prop)",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           Set(("n", "n"), ("m", "m")),
           Set(("r", "r")),
@@ -2798,7 +2789,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2842,7 +2833,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "n",
           "m",
-          "SHORTEST 1 ((n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m) WHERE unique(`r_inner`))",
+          "SHORTEST 1 (n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m)",
           None,
           groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
           groupRelationships = Set(("r_inner", "r_inner")),
@@ -2879,7 +2870,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((`n`)-[`r`]->(`m`)){1, } (v) WHERE unique(`r`))",
+          "SHORTEST 1 (u) ((`n`)-[`r`]->(`m`)){1, } (v)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -2917,7 +2908,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "n",
           "m",
-          "SHORTEST 1 ((n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m) WHERE unique(`r_inner`))",
+          "SHORTEST 1 (n) ((`n_inner`)-[`r_inner`]->(`m_inner`)){1, } (m)",
           None,
           groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
           groupRelationships = Set(("r_inner", "r_inner")),
@@ -2987,7 +2978,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "u",
         "end",
-        "SHORTEST 1 ((u)<-[`anon_0`:R]-(`anon_1`)-[`anon_2`:R]->(`anon_3`) ((`anon_10`)-[`anon_11`:R]->(`anon_12`)){1, } (`anon_4`) ((`sx1`)<-[`anon_13`:R]-(`anon_14`)-[`anon_15`:R]->(`x`)<-[`anon_16`:R]-(`anon_17`)-[`anon_18`:R]->(`sx2`) WHERE `sx1`:B AND `anon_17`:B AND `x`:B AND `sx2`:B AND `anon_14`:B){0, 1} (`anon_5`) ((`anon_19`)-[`anon_20`:R]->(`anon_21`)){0, } (`anon_6`)<-[`anon_7`:R]-(`anon_8`)-[`anon_9`:R]->(end) WHERE NOT `anon_0` = `anon_7` AND NOT `anon_0` = `anon_9` AND NOT `anon_0` IN ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40` AND NOT `anon_0` IN `anon_26` AND NOT `anon_0` IN `anon_50` AND NOT `anon_7` IN ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40` AND NOT `anon_7` IN `anon_26` AND NOT `anon_7` IN `anon_50` AND NOT `anon_9` = `anon_7` AND NOT `anon_9` IN ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40` AND NOT `anon_9` IN `anon_26` AND NOT `anon_9` IN `anon_50` AND NOT `anon_2` = `anon_0` AND NOT `anon_2` = `anon_7` AND NOT `anon_2` = `anon_9` AND NOT `anon_2` IN ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40` AND NOT `anon_2` IN `anon_26` AND NOT `anon_2` IN `anon_50` AND NOT `anon_15` = `anon_13` AND NOT `anon_16` = `anon_13` AND NOT `anon_16` = `anon_15` AND NOT `anon_18` = `anon_13` AND NOT `anon_18` = `anon_15` AND NOT `anon_18` = `anon_16` AND `anon_6`:B AND `anon_1`:B AND `anon_8`:B AND `anon_3`:B AND `sx1`.prop + `sx2`.prop <= 60 AND disjoint(((`anon_37` + `anon_38`) + `anon_42`) + `anon_40`, `anon_50`) AND disjoint(`anon_26`, ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40`) AND disjoint(`anon_26`, `anon_50`) AND end:B AND unique(((`anon_37` + `anon_38`) + `anon_42`) + `anon_40`) AND unique(`anon_26`) AND unique(`anon_50`))",
+        "SHORTEST 1 (u)<-[`anon_0`]-(`anon_1`)-[`anon_2`]->(`anon_3`) ((`anon_10`)-[`anon_11`]->(`anon_12`)){1, } (`anon_4`) ((`sx1`)<-[`anon_13`]-(`anon_14`)-[`anon_15`]->(`x`)<-[`anon_16`]-(`anon_17`)-[`anon_18`]->(`sx2`)){0, 1} (`anon_5`) ((`anon_19`)-[`anon_20`]->(`anon_21`)){0, } (`anon_6`)<-[`anon_7`]-(`anon_8`)-[`anon_9`]->(end)",
         Some("all(anon_32 IN range(0, size(sx1) - 1) WHERE (sx1[anon_32]).prop + (sx2[anon_32]).prop <= 60)"),
         Set(("sx1", "sx1"), ("x", "x"), ("sx2", "sx2")),
         Set(),
@@ -3061,7 +3052,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "u",
         "end",
-        "SHORTEST 1 ((u)<-[r1:R]-(b1)-[r2:R]->(b2) ((`b3`)-[`r3`:R]->(`b4`)){1, } (b5) ((`sx1`)<-[`r4`:R]-(`b6`)-[`r5`:R]->(`x`)<-[`r6`:R]-(`b7`)-[`r7`:R]->(`sx2`) WHERE `sx1`:B AND `b6`:B AND `x`:B AND `b7`:B AND `sx2`:B){0, 1} (b8) ((`b9`)-[`r8`:R]->(`b10`)){0, } (b11)<-[r9:R]-(b12)-[r10:R]->(end) WHERE NOT `r5` = `r4` AND NOT `r6` = `r4` AND NOT `r6` = `r5` AND NOT `r7` = `r4` AND NOT `r7` = `r5` AND NOT `r7` = `r6` AND NOT r1 = r10 AND NOT r1 = r9 AND NOT r1 IN ((`r4` + `r5`) + `r6`) + `r7` AND NOT r1 IN `r3` AND NOT r1 IN `r8` AND NOT r10 = r9 AND NOT r10 IN ((`r4` + `r5`) + `r6`) + `r7` AND NOT r10 IN `r3` AND NOT r10 IN `r8` AND NOT r2 = r1 AND NOT r2 = r10 AND NOT r2 = r9 AND NOT r2 IN ((`r4` + `r5`) + `r6`) + `r7` AND NOT r2 IN `r3` AND NOT r2 IN `r8` AND NOT r9 IN ((`r4` + `r5`) + `r6`) + `r7` AND NOT r9 IN `r3` AND NOT r9 IN `r8` AND `sx1`.prop + `sx2`.prop <= 60 AND b11:B AND b12:B AND b1:B AND b2:B AND disjoint(((`r4` + `r5`) + `r6`) + `r7`, `r8`) AND disjoint(`r3`, ((`r4` + `r5`) + `r6`) + `r7`) AND disjoint(`r3`, `r8`) AND end:B AND unique(((`r4` + `r5`) + `r6`) + `r7`) AND unique(`r3`) AND unique(`r8`))",
+        "SHORTEST 1 (u)<-[r1]-(b1)-[r2]->(b2) ((`b3`)-[`r3`]->(`b4`)){1, } (b5) ((`sx1`)<-[`r4`]-(`b6`)-[`r5`]->(`x`)<-[`r6`]-(`b7`)-[`r7`]->(`sx2`)){0, 1} (b8) ((`b9`)-[`r8`]->(`b10`)){0, } (b11)<-[r9]-(b12)-[r10]->(end)",
         Some("all(anon_0 IN range(0, size(sx1) - 1) WHERE (sx1[anon_0]).prop + (sx2[anon_0]).prop <= 60)"),
         Set(
           ("b10", "b10"),
@@ -3120,7 +3111,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b.prop > 0 AND b:B AND unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           Set(("n", "n"), ("m", "m")),
           Set(("r", "r")),
@@ -3163,7 +3154,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "c",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) ((`o`)-[`s`]->(`p`)){1, } (c) WHERE b:B AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b) ((`o`)-[`s`]->(`p`)){1, } (c)",
           None,
           Set(("n", "n"), ("m", "m"), ("o", "o"), ("p", "p")),
           Set(("r", "r"), ("s", "s")),
@@ -3202,7 +3193,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           Set(("n", "n"), ("m", "m")),
           Set(("r", "r")),
@@ -3240,7 +3231,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -3278,7 +3269,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -3316,7 +3307,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -3364,7 +3355,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b.p IN [1] AND b:B AND unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           Set(("n", "n"), ("m", "m")),
           Set(("r", "r")),
@@ -3404,7 +3395,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           Set(("n", "n"), ("m", "m")),
           Set(("r", "r")),
@@ -3450,7 +3441,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 10 GROUPS ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          "SHORTEST 10 GROUPS (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -3488,7 +3479,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 10 GROUPS ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE unique(`r`))",
+          "SHORTEST 10 GROUPS (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -3591,7 +3582,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -3633,7 +3624,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){1, } (b) WHERE unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){1, } (b)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -3699,7 +3690,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]-(`m`)){1, } (b) WHERE b:B AND unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]-(`m`)){1, } (b)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -3753,7 +3744,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .|.statefulShortestPath(
           "a",
           "b",
-          "SHORTEST 1 ((a) ((`n`)-[`r`]-(`m`)){1, } (b) WHERE unique(`r`))",
+          "SHORTEST 1 (a) ((`n`)-[`r`]-(`m`)){1, } (b)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -3807,7 +3798,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "a",
         "b",
-        "SHORTEST 1 ((a) ((`n`)-[`r`]->(`m`)){3, } (b) WHERE unique(`r`))",
+        "SHORTEST 1 (a) ((`n`)-[`r`]->(`m`)){3, } (b)",
         None,
         groupNodes = Set(),
         groupRelationships = Set(("r", "r")),
@@ -3866,7 +3857,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .statefulShortestPath(
         "a",
         "b",
-        "SHORTEST 1 ((a) ((`anon_0`)-[`q`:KNOWS]->(`anon_1`)){2, } (b) WHERE unique(`q`))",
+        "SHORTEST 1 (a) ((`anon_0`)-[`q`]->(`anon_1`)){2, } (b)",
         None,
         groupNodes = Set(),
         groupRelationships = Set(("q", "q")),
@@ -3966,7 +3957,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPathExpr(
           "  s@0",
           "  t@8",
-          "SHORTEST 1 ((`  s@0`) ((`  a@1`)-[`  r1@2`]->(`  b@3`)-[`  r2@4`]->(`  c@5`)){1, } (`  t@8`) WHERE EXISTS { MATCH (`  c@5`)-[`  UNNAMED0`]->(`  a@1`) } AND NOT `  r2@4` = `  r1@2` AND unique(`  r1@10` + `  r2@7`))",
+          "SHORTEST 1 (`  s@0`) ((`  a@1`)-[`  r1@2`]->(`  b@3`)-[`  r2@4`]->(`  c@5`)){1, } (`  t@8`)",
           Some(nonInlineablePredicate),
           Set(("  a@1", "  a@6"), ("  c@5", "  c@7")),
           Set(),
