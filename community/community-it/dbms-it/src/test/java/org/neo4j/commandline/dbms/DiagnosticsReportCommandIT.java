@@ -435,8 +435,7 @@ class DiagnosticsReportCommandIT {
         fs.mkdirs(pidFile.getParent());
         FileSystemUtils.writeString(fs, pidFile, format("%s%n", getPID()), EmptyMemoryTracker.INSTANCE);
 
-        JMXDumper jmxDumper =
-                new JMXDumper(config, fs, NullPrintStream.NULL_PRINT_STREAM, NullPrintStream.NULL_PRINT_STREAM, true);
+        JMXDumper jmxDumper = new JMXDumper(config, fs, NullPrintStream.INSTANCE, NullPrintStream.INSTANCE, true);
         Optional<JmxDump> maybeDump = jmxDumper.getJMXDump();
         assumeThat(maybeDump).isPresent(); // IF not, then no point in running tests
         maybeDump.get().close();
@@ -463,8 +462,7 @@ class DiagnosticsReportCommandIT {
         fs.mkdirs(pidFile.getParent());
         FileSystemUtils.writeString(fs, pidFile, format("%s%n", getPID()), EmptyMemoryTracker.INSTANCE);
 
-        JMXDumper jmxDumper =
-                new JMXDumper(config, fs, NullPrintStream.NULL_PRINT_STREAM, NullPrintStream.NULL_PRINT_STREAM, true);
+        JMXDumper jmxDumper = new JMXDumper(config, fs, NullPrintStream.INSTANCE, NullPrintStream.INSTANCE, true);
         Optional<JmxDump> maybeDump = jmxDumper.getJMXDump();
         assumeThat(maybeDump).isPresent(); // IF not, then no point in running tests
         maybeDump.get().close();
