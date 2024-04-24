@@ -320,9 +320,21 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
             case CypherParser.START  => withQualifier(StartDatabaseAction)
             case CypherParser.STOP   => withQualifier(StopDatabaseAction)
             case CypherParser.TERMINATE =>
-              (TerminateTransactionAction, ctx.userQualifier().ast[List[PrivilegeQualifier]]())
+              (
+                TerminateTransactionAction,
+                astOpt[List[DatabasePrivilegeQualifier]](
+                  ctx.userQualifier(),
+                  List(UserAllQualifier()(InputPosition.NONE))
+                )
+              )
             case CypherParser.TRANSACTION =>
-              (AllTransactionActions, ctx.userQualifier().ast[List[PrivilegeQualifier]]())
+              (
+                AllTransactionActions,
+                astOpt[List[DatabasePrivilegeQualifier]](
+                  ctx.userQualifier(),
+                  List(UserAllQualifier()(InputPosition.NONE))
+                )
+              )
             case _ => throw new IllegalStateException()
           }
         case _ => throw new IllegalStateException("Unexpected action for Database Privilege")
@@ -358,7 +370,13 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
             case CypherParser.COMPOSITE => withQualifier(CompositeDatabaseManagementActions)
             case CypherParser.DATABASE  => withQualifier(AllDatabaseManagementActions)
             case CypherParser.IMPERSONATE =>
-              (ImpersonateUserAction, ctx.userQualifier().ast[List[PrivilegeQualifier]])
+              (
+                ImpersonateUserAction,
+                astOpt[List[DatabasePrivilegeQualifier]](
+                  ctx.userQualifier(),
+                  List(UserAllQualifier()(InputPosition.NONE))
+                )
+              )
             case CypherParser.PRIVILEGE => withQualifier(AllPrivilegeActions)
             case CypherParser.RENAME => nodeChild(ctx, 1).getSymbol.getType match {
                 case CypherParser.ROLE => withQualifier(RenameRoleAction)
@@ -469,7 +487,10 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
         case _: CypherParser.ConstraintTokenContext => withQualifier(ShowConstraintAction)
         case _: CypherParser.IndexTokenContext      => withQualifier(ShowIndexAction)
         case _: CypherParser.TransactionTokenContext =>
-          (ShowTransactionAction, ctx.userQualifier().ast[List[DatabasePrivilegeQualifier]]())
+          (
+            ShowTransactionAction,
+            astOpt[List[DatabasePrivilegeQualifier]](ctx.userQualifier(), List(UserAllQualifier()(InputPosition.NONE)))
+          )
         case _ => throw new IllegalStateException()
       }
       val scope = ctx.databaseScope().ast[DatabaseScope]()

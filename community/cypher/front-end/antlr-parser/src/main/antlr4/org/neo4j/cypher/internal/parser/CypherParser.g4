@@ -724,7 +724,8 @@ showCommand
    ;
 
 showCommandYield
-   : (yieldClause returnClause? | whereClause)?
+   : yieldClause returnClause?
+   | whereClause
    ;
 
 yieldItem
@@ -744,11 +745,9 @@ yieldClause
    ;
 
 showBriefAndYield
-   : (
-      (BRIEF | VERBOSE) OUTPUT?
-      | yieldClause returnClause?
-      | whereClause
-   )?
+   : (BRIEF | VERBOSE) OUTPUT?
+   | yieldClause returnClause?
+   | whereClause
    ;
 
 showIndexCommand
@@ -764,11 +763,11 @@ showIndexCommand
    ;
 
 showIndexesAllowBrief
-   : indexToken showBriefAndYield composableCommandClauses?
+   : indexToken showBriefAndYield? composableCommandClauses?
    ;
 
 showIndexesNoBrief
-   : indexToken showCommandYield composableCommandClauses?
+   : indexToken showCommandYield? composableCommandClauses?
    ;
 
 showConstraintCommand
@@ -802,7 +801,7 @@ constraintBriefAndYieldType
    ;
 
 showConstraintsAllowBriefAndYield
-   : constraintToken showBriefAndYield composableCommandClauses?
+   : constraintToken showBriefAndYield? composableCommandClauses?
    ;
 
 showConstraintsAllowBrief
@@ -810,23 +809,25 @@ showConstraintsAllowBrief
    ;
 
 showConstraintsAllowYield
-   : constraintToken showCommandYield composableCommandClauses?
+   : constraintToken showCommandYield? composableCommandClauses?
    ;
 
 showProcedures
-   : (PROCEDURE | PROCEDURES) executableBy showCommandYield composableCommandClauses?
+   : (PROCEDURE | PROCEDURES) executableBy? showCommandYield? composableCommandClauses?
    ;
 
 showFunctions
-   : showFunctionsType FUNCTIONS executableBy showCommandYield composableCommandClauses?
+   : showFunctionsType? FUNCTIONS executableBy? showCommandYield? composableCommandClauses?
    ;
 
 executableBy
-   : (EXECUTABLE (BY (CURRENT USER | symbolicNameString))?)?
+   : EXECUTABLE (BY (CURRENT USER | symbolicNameString))?
    ;
 
 showFunctionsType
-   : (ALL | BUILT IN | USER DEFINED)?
+   : ALL
+   | BUILT IN
+   | USER DEFINED
    ;
 
 showTransactions
@@ -846,7 +847,7 @@ showSettings
    ;
 
 namesAndClauses
-   : (showCommandYield | stringsOrExpression showCommandYield) composableCommandClauses?
+   : (showCommandYield? | stringsOrExpression showCommandYield?) composableCommandClauses?
    ;
 
 composableCommandClauses
@@ -1015,7 +1016,7 @@ dropServer
    ;
 
 showServers
-   : (SERVER | SERVERS) showCommandYield
+   : (SERVER | SERVERS) showCommandYield?
    ;
 
 allocationCommand
@@ -1043,7 +1044,7 @@ renameRole
    ;
 
 showRoles
-   : (ALL | POPULATED)? roleToken (WITH (USER | USERS))? showCommandYield
+   : (ALL | POPULATED)? roleToken (WITH (USER | USERS))? showCommandYield?
    ;
 
  roleToken
@@ -1098,31 +1099,31 @@ homeDatabase
    ;
 
 showUsers
-   : (USER | USERS) showCommandYield
+   : (USER | USERS) showCommandYield?
    ;
 
 showCurrentUser
-   : CURRENT USER showCommandYield
+   : CURRENT USER showCommandYield?
    ;
 
 showPrivileges
-   : ALL? privilegeToken privilegeAsCommand showCommandYield
+   : ALL? privilegeToken privilegeAsCommand? showCommandYield?
    ;
 
 showSupportedPrivileges
-   : SUPPORTED privilegeToken showCommandYield
+   : SUPPORTED privilegeToken showCommandYield?
    ;
 
 showRolePrivileges
-   : (ROLE | ROLES) symbolicNameOrStringParameterList privilegeToken privilegeAsCommand showCommandYield
+   : (ROLE | ROLES) symbolicNameOrStringParameterList privilegeToken privilegeAsCommand? showCommandYield?
    ;
 
 showUserPrivileges
-   : (USER | USERS) symbolicNameOrStringParameterList? privilegeToken privilegeAsCommand showCommandYield
+   : (USER | USERS) symbolicNameOrStringParameterList? privilegeToken privilegeAsCommand? showCommandYield?
    ;
 
 privilegeAsCommand
-   : (AS REVOKE? (COMMAND | COMMANDS))?
+   : AS REVOKE? (COMMAND | COMMANDS)
    ;
 
 privilegeToken
@@ -1237,7 +1238,7 @@ loadPrivilege
 
 showPrivilege
    : SHOW (
-      (indexToken | constraintToken | transactionToken userQualifier) ON databaseScope
+      (indexToken | constraintToken | transactionToken userQualifier?) ON databaseScope
       | (ALIAS | PRIVILEGE | ROLE | SERVER | SERVERS | SETTING settingQualifier | USER) ON DBMS
    )
    ;
@@ -1272,7 +1273,7 @@ databasePrivilege
       | START
       | STOP
       | (indexToken | constraintToken | NAME) MANAGEMENT?
-      | (TRANSACTION MANAGEMENT? | TERMINATE transactionToken) userQualifier
+      | (TRANSACTION MANAGEMENT? | TERMINATE transactionToken) userQualifier?
    )
    ON databaseScope
    ;
@@ -1284,7 +1285,7 @@ dbmsPrivilege
       | (ALIAS | COMPOSITE? DATABASE | PRIVILEGE | ROLE | SERVER | USER) MANAGEMENT
       | dbmsPrivilegeExecute
       | RENAME (ROLE | USER)
-      | IMPERSONATE userQualifier
+      | IMPERSONATE userQualifier?
    )
    ON DBMS
    ;
@@ -1325,7 +1326,7 @@ transactionToken
    ;
 
 userQualifier
-   : (LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN)?
+   : LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN
    ;
 
 executeFunctionQualifier
@@ -1447,8 +1448,8 @@ waitClause
    ;
 
 showDatabase
-   : (DEFAULT | HOME) DATABASE showCommandYield
-   | (DATABASE | DATABASES) symbolicAliasNameOrParameter? showCommandYield
+   : (DEFAULT | HOME) DATABASE showCommandYield?
+   | (DATABASE | DATABASES) symbolicAliasNameOrParameter? showCommandYield?
    ;
 
 databaseScope
@@ -1516,7 +1517,7 @@ alterAliasProperties
    ;
 
 showAliases
-   : (ALIAS | ALIASES) symbolicAliasNameOrParameter? FOR (DATABASE | DATABASES) showCommandYield
+   : (ALIAS | ALIASES) symbolicAliasNameOrParameter? FOR (DATABASE | DATABASES) showCommandYield?
    ;
 
 symbolicAliasNameList

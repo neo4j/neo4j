@@ -201,16 +201,16 @@ object Util {
   }
 
   def buildClauses(
-    returnCtx: CypherParser.ReturnClauseContext,
-    yieldCtx: CypherParser.YieldClauseContext,
+    y: Option[Yield],
+    r: Option[Return],
     composable: CypherParser.ComposableCommandClausesContext,
     cmdClause: Clause
   ): Seq[Clause] = {
-    val yClause = if (yieldCtx != null) ArraySeq(turnYieldToWith(yieldCtx.ast())) else Seq.empty
-    val rClause = if (returnCtx != null) ArraySeq(returnCtx.ast[Return]()) else Seq.empty
-    val cClause = if (composable != null) composable.ast[Seq[Clause]]() else Seq.empty
+    val yClause = if (y.isDefined) ArraySeq(turnYieldToWith(y.get)) else ArraySeq.empty
+    val rClause = if (r.isDefined) ArraySeq(r.get) else ArraySeq.empty
+    val cClause = if (composable != null) composable.ast[Seq[Clause]]() else ArraySeq.empty
 
-    Seq(cmdClause) ++ yClause ++ rClause ++ cClause
+    ArraySeq(cmdClause) ++ yClause ++ rClause ++ cClause
   }
 
   private def turnYieldToWith(yieldClause: Yield): Clause = {
