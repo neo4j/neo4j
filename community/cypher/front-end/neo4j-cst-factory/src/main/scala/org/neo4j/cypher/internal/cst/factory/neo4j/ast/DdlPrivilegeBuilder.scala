@@ -615,17 +615,17 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     ctx.ast = if (token != null) {
       val isAll = ctx.TIMES() != null
       val strings = ctx.nonEmptyStringList()
-      ctxChild(token, 0) match {
-        case _: CypherParser.RelTokenContext =>
+      val graphToken = token.ast[GraphToken]
+      graphToken match {
+        case RelGraphToken =>
           if (isAll) List(RelationshipAllQualifier()(pos(ctx)))
           else strings.ast[Seq[String]]().map(a => RelationshipQualifier(a)(pos(ctx))).toList
-        case _: CypherParser.NodeTokenContext =>
+        case NodeGraphToken =>
           if (isAll) List(LabelAllQualifier()(pos(ctx)))
           else strings.ast[Seq[String]]().map(a => LabelQualifier(a)(pos(ctx))).toList
-        case _: CypherParser.ElementTokenContext =>
+        case ElementGraphToken =>
           if (isAll) List(ElementsAllQualifier()(pos(ctx)))
           else strings.ast[Seq[String]].map(a => ElementQualifier(a)(pos(ctx))).toList
-        case _ => throw new IllegalStateException("Unexpected token in Graph Qualifier")
       }
     } else if (ctx.FOR() != null) {
       val variable = astOpt[Variable](ctx.variable())
@@ -634,6 +634,20 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
       } else List(LabelAllQualifier()(pos(ctx)))
       List(PatternQualifier(qualifiers, variable, astOpt[Expression](ctx.expression(), ctx.map.ast[Expression]())))
     } else List(ElementsAllQualifier()(pos(ctx)))
+  }
+
+  sealed private trait GraphToken
+  final private case object RelGraphToken extends GraphToken
+  final private case object NodeGraphToken extends GraphToken
+  final private case object ElementGraphToken extends GraphToken
+
+  override def exitGraphQualifierToken(ctx: CypherParser.GraphQualifierTokenContext): Unit = {
+    ctx.ast = ctxChild(ctx, 0) match {
+      case _: CypherParser.RelTokenContext     => RelGraphToken
+      case _: CypherParser.NodeTokenContext    => NodeGraphToken
+      case _: CypherParser.ElementTokenContext => ElementGraphToken
+      case _                                   => throw new IllegalStateException("Unexpected token in Graph Qualifier")
+    }
   }
 
   final override def exitSettingQualifier(
@@ -704,7 +718,6 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     ctx.ast = CreateRelationshipTypeAction
   }
   override def exitElementToken(ctx: CypherParser.ElementTokenContext): Unit = {}
-  override def exitGraphQualifierToken(ctx: CypherParser.GraphQualifierTokenContext): Unit = {}
   override def exitIndexToken(ctx: CypherParser.IndexTokenContext): Unit = { ctx.ast = CreateIndexAction }
   override def exitNodeToken(ctx: CypherParser.NodeTokenContext): Unit = {}
   override def exitPasswordToken(ctx: CypherParser.PasswordTokenContext): Unit = {}
