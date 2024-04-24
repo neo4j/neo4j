@@ -114,4 +114,9 @@ public abstract class AbstractBufferingIdGeneratorFactory extends LifecycleAdapt
     protected abstract IdGenerator wrapAndKeep(IdType idType, IdGenerator generator);
 
     public abstract void maintenance(CursorContext cursorContext);
+
+    @Override
+    public void clear() {
+        delegate.clear();
+    }
 }
