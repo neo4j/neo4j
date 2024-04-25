@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -254,6 +257,10 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> implements
      * @see WritableIndexSnapshotFileIterator
      */
     public ResourceIterator<Path> snapshotFiles() throws IOException {
+        if (indexStorage.getStoredIndexFailure() != null) {
+            return asResourceIterator(iterator(indexStorage.getIndexFailureFile()));
+        }
+
         ensureOpen();
         List<ResourceIterator<Path>> snapshotIterators = null;
         try {

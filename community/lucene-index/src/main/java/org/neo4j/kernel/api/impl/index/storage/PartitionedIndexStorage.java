@@ -119,6 +119,10 @@ public class PartitionedIndexStorage {
         return failureStorage.loadIndexFailure();
     }
 
+    public Path getIndexFailureFile() {
+        return failureStorage.failureFile();
+    }
+
     /**
      * For the given {@link Path folder} removes all nested folders from both {@link FileSystemAbstraction file system}
      * and {@link Directory lucene directories}.
