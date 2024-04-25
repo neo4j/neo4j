@@ -42,7 +42,6 @@ public final class LogEntryFactory {
             byte[] additionalHeader,
             LogPosition startPosition) {
         if (version.isAtLeast(VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED)) {
-            // TODO: misha different log entry for envelops
             return new LogEntryStartV5_20(
                     version,
                     timeWritten,

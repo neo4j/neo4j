@@ -113,7 +113,7 @@ class LogHeaderWriterTest {
 
         final var encodedLogVersions = result.getLong();
         final var txId = result.getLong();
-        final var appendIndex = logFormat == V9 ? result.getLong() : -1;
+        final var appendIndex = V9.compareTo(logFormat) <= 0 ? result.getLong() : -1;
         StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(result);
 
         assertEquals(encodeLogVersion(expectedLogVersion, logFormat.getVersionByte()), encodedLogVersions);

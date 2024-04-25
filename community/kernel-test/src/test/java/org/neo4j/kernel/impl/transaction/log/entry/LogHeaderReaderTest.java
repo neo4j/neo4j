@@ -336,6 +336,7 @@ class LogHeaderReaderTest {
                             throws IOException {
                         buffer.putLong(encodeLogVersion(logVersion, versionByte()));
                         buffer.putLong(txId);
+                        buffer.putLong(appendIndex);
                         StoreIdSerialization.serializeWithFixedSize(storeId, buffer);
                         buffer.putInt(segmentSize);
                         buffer.putInt(checksum);

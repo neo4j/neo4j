@@ -276,11 +276,12 @@ public enum LogFormat {
      * Total 128 bytes
      * - 8 bytes version
      * - 8 bytes last committed tx id
+     * - 8 bytes append index
      * - 64 bytes Store ID
      * - 4 bytes segment block size
      * - 4 bytes previous checksum, i.e. last checksum in the previous file
      * - 1 byte kernel version
-     * - 39 bytes reserved
+     * - 31 bytes reserved
      * <pre>
      *   |<-                      LOG_HEADER_SIZE                                                   ->|
      *   |<-LOG_HEADER_VERSION_SIZE->|                                                                |
@@ -297,6 +298,7 @@ public enum LogFormat {
         @Override
         public LogHeader deserializeHeader(long logVersion, ByteBuffer buffer) throws IOException {
             long previousCommittedTx = buffer.getLong();
+            long appendIndex = buffer.getLong();
             StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(buffer);
             int segmentBlockSize = buffer.getInt();
             int previousChecksum = buffer.getInt();
@@ -306,7 +308,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     previousCommittedTx,
-                    previousCommittedTx,
+                    appendIndex,
                     storeId,
                     getHeaderSize(),
                     segmentBlockSize,
@@ -323,6 +325,7 @@ public enum LogFormat {
                         logHeader.getLogVersion(),
                         logHeader.getLogFormatVersion().getVersionByte()));
                 buffer.putLong(logHeader.getLastCommittedTxId());
+                buffer.putLong(logHeader.getLastAppendIndex());
                 StoreIdSerialization.serializeWithFixedSize(logHeader.getStoreId(), buffer);
                 buffer.putInt(logHeader.getSegmentBlockSize());
                 buffer.putInt(logHeader.getPreviousLogFileChecksum());
@@ -350,7 +353,7 @@ public enum LogFormat {
                     getVersionByte(),
                     logVersion,
                     lastCommittedTxId,
-                    lastCommittedTxId,
+                    appendIndex,
                     storeId,
                     getHeaderSize(),
                     segmentBlockSize,
