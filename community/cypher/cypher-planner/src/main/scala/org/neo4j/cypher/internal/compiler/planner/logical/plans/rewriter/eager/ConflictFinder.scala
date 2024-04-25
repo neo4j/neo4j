@@ -120,7 +120,7 @@ sealed trait ConflictFinder {
         // That is because changing the property of a node `n` and committing these changes might put `n`
         // at a different position in the index that is being traversed by the read, so that `n` could potentially
         // be encountered again.
-        (isInTransactionalApply(writePlan, wholePlan) && readPlan.isInstanceOf[LogicalLeafPlan])
+        (planChildrenLookup.isInTransactionalApply(writePlan) && readPlan.isInstanceOf[LogicalLeafPlan])
 
       // Discard distinct Write -> Read conflicts (keep non WriteReadConflict)
       if conflictType != WriteReadConflict ||
@@ -363,10 +363,11 @@ sealed trait ConflictFinder {
   private def callInTxConflict(
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan
-  ): Iterable[ConflictingPlanPair] = {
+  )(implicit planChildrenLookup: PlanChildrenLookup): Iterable[ConflictingPlanPair] = {
     if (readsAndWrites.reads.callInTxPlans.nonEmpty) {
       for {
-        updatingPlan <- wholePlan.folder.findAllByClass[UpdatingPlan].filterNot(isInTransactionalApply(_, wholePlan))
+        updatingPlan <-
+          wholePlan.folder.findAllByClass[UpdatingPlan].filterNot(planChildrenLookup.isInTransactionalApply)
         txPlan <- readsAndWrites.reads.callInTxPlans
       } yield {
         ConflictingPlanPair(Ref(txPlan), Ref(updatingPlan), Set(EagernessReason.WriteAfterCallInTransactions))
@@ -587,7 +588,7 @@ sealed trait ConflictFinder {
     def conflictsWithUnstablePlan =
       (readPlan ne leftMostLeaf) ||
         !readPlan.isInstanceOf[StableLeafPlan] ||
-        isInTransactionalApply(writePlan, wholePlan)
+        planChildrenLookup.isInTransactionalApply(writePlan)
 
     /**
      * Deleting plans can conflict, if they evaluate expressions. Otherwise not.
@@ -603,15 +604,6 @@ sealed trait ConflictFinder {
     !mergeConflictWithChild &&
     !foreachConflictWithRHS &&
     conflictsWithUnstablePlan
-  }
-
-  private def isInTransactionalApply(plan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
-    val parents = pathFromRoot(plan, wholePlan).get
-    parents.exists {
-      case _: TransactionApply   => true
-      case _: TransactionForeach => true
-      case _                     => false
-    }
   }
 
   private def isDistinctLeafPlan(readPlan: LogicalPlan): Boolean = readPlan match {

@@ -33,6 +33,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
@@ -44,6 +46,7 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.immutable.BitSet
+import scala.collection.mutable
 
 /**
  * Insert Eager only where it's needed to maintain correct semantics.
@@ -104,12 +107,21 @@ object EagerWhereNeededRewriter {
   })
 
   private[eager] trait PlanChildrenLookup {
+
+    /**
+     * @return `true` if `child` is a child of `plan`
+     */
     def hasChild(plan: LogicalPlan, child: LogicalPlan): Boolean
 
     /**
      * Finds the plan among `plans` that is most downstream.
      */
     def mostDownstreamPlan(plans: LogicalPlan*): LogicalPlan
+
+    /**
+     * @return `true` if `plan` is a child of a TransactionApply/TransactionForeach.
+     */
+    def isInTransactionalApply(plan: LogicalPlan): Boolean
   }
 
   private[eager] class ChildrenIds extends Attribute[LogicalPlan, BitSet] with PlanChildrenLookup {
@@ -120,11 +132,18 @@ object EagerWhereNeededRewriter {
      */
     private val plansIDToPosition = new IntIntHashMap()
 
+    /**
+     * All plan IDs of plans that are a child of a TransactionApply/TransactionForeach.
+     */
+    private val transactionalApplyNestedPlans = mutable.BitSet.empty
+
     override def hasChild(plan: LogicalPlan, child: LogicalPlan): Boolean = {
       get(plan.id).contains(child.id.x)
     }
 
     override def mostDownstreamPlan(plans: LogicalPlan*): LogicalPlan = plans.maxBy(p => plansIDToPosition.get(p.id.x))
+
+    override def isInTransactionalApply(plan: LogicalPlan): Boolean = transactionalApplyNestedPlans.contains(plan.id.x)
 
     /**
      * This method must be called with the plans in execution order.
@@ -145,8 +164,12 @@ object EagerWhereNeededRewriter {
           case plan: LogicalBinaryPlan =>
             val lhs = plan.left.id
             val rhs = plan.right.id
-            get(lhs).incl(lhs.x) union
-              get(rhs).incl(rhs.x)
+            val res = get(lhs).incl(lhs.x) union get(rhs).incl(rhs.x)
+            plan match {
+              case _: TransactionApply | _: TransactionForeach => transactionalApplyNestedPlans |= res
+              case _                                           =>
+            }
+            res
 
           case _ =>
             plan.lhs.fold(BitSet.empty)(lhs => get(lhs.id).incl(lhs.id.x)) union
