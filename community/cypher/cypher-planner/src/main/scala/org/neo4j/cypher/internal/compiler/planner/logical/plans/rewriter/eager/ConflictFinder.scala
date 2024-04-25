@@ -97,7 +97,6 @@ sealed trait ConflictFinder {
 
   private def propertyConflicts(
     readsAndWrites: ReadsAndWrites,
-    wholePlan: LogicalPlan,
     leftMostLeaf: LogicalPlan,
     writtenProperties: ReadsAndWritesFinder.Sets => Seq[(Option[PropertyKeyName], Seq[PlanWithAccessor])],
     plansReadingProperty: (ReadsAndWritesFinder.Reads, Option[PropertyKeyName]) => Seq[PlanWithAccessor]
@@ -114,7 +113,7 @@ sealed trait ConflictFinder {
 
       // Potentially discard distinct Read -> Write conflicts (keep non ReadWriteConflicts)
       if conflictType != ReadWriteConflict ||
-        !distinctConflictOnSameSymbol(read, write, wholePlan) ||
+        !distinctConflictOnSameSymbol(read, write) ||
         // For property conflicts, we cannot disregard all conflicts with distinct reads on the same variable.
         // We have to keep conflicts between property reads from leaf plans and writes in TransactionalApply.
         // That is because changing the property of a node `n` and committing these changes might put `n`
@@ -125,9 +124,9 @@ sealed trait ConflictFinder {
       // Discard distinct Write -> Read conflicts (keep non WriteReadConflict)
       if conflictType != WriteReadConflict ||
         // invoke distinctConflictOnSameSymbol with swapped read and write to check that the write is unique.
-        !distinctConflictOnSameSymbol(write, read, wholePlan)
+        !distinctConflictOnSameSymbol(write, read)
 
-      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
+      if isValidConflict(readPlan, writePlan, leftMostLeaf)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
       val reasons = Set[EagernessReason](prop.map(PropertyReadSetConflict(_).withConflict(conflict))
@@ -137,14 +136,14 @@ sealed trait ConflictFinder {
     }
   }
 
-  private def labelConflicts(readsAndWrites: ReadsAndWrites, wholePlan: LogicalPlan, leftMostLeaf: LogicalPlan)(implicit
+  private def labelConflicts(readsAndWrites: ReadsAndWrites, leftMostLeaf: LogicalPlan)(implicit
   planChildrenLookup: PlanChildrenLookup): Iterable[ConflictingPlanPair] = {
     for {
       (label, writePlans) <- readsAndWrites.writes.sets.writtenLabels
       read @ PlanWithAccessor(readPlan, _) <- readsAndWrites.reads.plansReadingLabel(label)
       write @ PlanWithAccessor(writePlan, _) <- writePlans
-      if !distinctConflictOnSameSymbol(read, write, wholePlan)
-      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
+      if !distinctConflictOnSameSymbol(read, write)
+      if isValidConflict(readPlan, writePlan, leftMostLeaf)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
       writePlan match {
@@ -172,7 +171,6 @@ sealed trait ConflictFinder {
 
   private def createConflicts[T <: LabelExpressionLeafName, C <: WriteFinder.CreatedEntity[T]](
     readsAndWrites: ReadsAndWrites,
-    wholePlan: LogicalPlan,
     leftMostLeaf: LogicalPlan,
     createdEntities: ReadsAndWritesFinder.Creates => Map[Ref[LogicalPlan], Set[C]],
     filterExpressionSnapshots: (
@@ -218,7 +216,7 @@ sealed trait ConflictFinder {
       })
 
       Ref(readPlan) <- readPlans
-      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
+      if isValidConflict(readPlan, writePlan, leftMostLeaf)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
       // If no labels are read or written this is a ReadCreateConflict, otherwise a LabelReadSetConflict
@@ -284,7 +282,6 @@ sealed trait ConflictFinder {
 
   private def deleteVariableConflicts(
     readsAndWrites: ReadsAndWrites,
-    wholePlan: LogicalPlan,
     leftMostLeaf: LogicalPlan,
     deletedEntities: ReadsAndWritesFinder.Deletes => Map[Ref[LogicalPlan], Set[Variable]],
     filterExpressions: ReadsAndWritesFinder.Reads => Map[LogicalVariable, FilterExpressions],
@@ -319,10 +316,9 @@ sealed trait ConflictFinder {
       // For delete, we can only disregard ReadWriteConflicts. We therefore have to keep all WriteReadConflicts.
       if conflictType == WriteReadConflict || !distinctConflictOnSameSymbol(
         PlanWithAccessor(readPlan, Some(variable)),
-        PlanWithAccessor(writePlan, Some(deletedEntity)),
-        wholePlan
+        PlanWithAccessor(writePlan, Some(deletedEntity))
       )
-      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
+      if isValidConflict(readPlan, writePlan, leftMostLeaf)
     } yield {
       deleteConflict(variable, readPlan, writePlan)
     }
@@ -330,7 +326,6 @@ sealed trait ConflictFinder {
 
   private def deleteExpressionConflicts(
     readsAndWrites: ReadsAndWrites,
-    wholePlan: LogicalPlan,
     leftMostLeaf: LogicalPlan,
     deleteExpressions: ReadsAndWritesFinder.Deletes => Seq[LogicalPlan],
     possibleDeleteConflictPlans: ReadsAndWritesFinder.Reads => Map[LogicalVariable, PossibleDeleteConflictPlans],
@@ -354,7 +349,7 @@ sealed trait ConflictFinder {
         case ReadWriteConflict => plansThatReferenceVariable
         case WriteReadConflict => plansThatIntroduceVar.map(_.plan)
       }
-      if isValidConflict(readPlan, writePlan, wholePlan, leftMostLeaf)
+      if isValidConflict(readPlan, writePlan, leftMostLeaf)
     } yield {
       deleteConflict(variable, readPlan, writePlan)
     }
@@ -438,7 +433,6 @@ sealed trait ConflictFinder {
     // Conflict between a Node property read and a property write
     propertyConflicts(
       readsAndWrites,
-      wholePlan,
       leftMostLeaf,
       _.writtenNodeProperties.nodeEntries,
       _.plansReadingNodeProperty(_)
@@ -447,19 +441,17 @@ sealed trait ConflictFinder {
     // Conflict between a Relationship property read and a property write
     propertyConflicts(
       readsAndWrites,
-      wholePlan,
       leftMostLeaf,
       _.writtenRelProperties.relEntries,
       _.plansReadingRelProperty(_)
     ).foreach(addConflict)
 
     // Conflicts between a label read and a label SET
-    labelConflicts(readsAndWrites, wholePlan, leftMostLeaf).foreach(addConflict)
+    labelConflicts(readsAndWrites, leftMostLeaf).foreach(addConflict)
 
     // Conflicts between a label read (determined by a snapshot filterExpressions) and a label CREATE
     createConflicts[LabelName, CreatedNode](
       readsAndWrites,
-      wholePlan,
       leftMostLeaf,
       _.createdNodes,
       _.nodeFilterExpressionsSnapshots(_),
@@ -470,7 +462,6 @@ sealed trait ConflictFinder {
     // Conflicts between a type read (determined by a snapshot filterExpressions) and a type CREATE
     createConflicts[RelTypeName, CreatedRelationship](
       readsAndWrites,
-      wholePlan,
       leftMostLeaf,
       _.createdRelationships,
       _.relationshipFilterExpressionsSnapshots(_),
@@ -481,7 +472,6 @@ sealed trait ConflictFinder {
     // Conflicts between a MATCH and a DELETE with a node variable
     deleteVariableConflicts(
       readsAndWrites,
-      wholePlan,
       leftMostLeaf,
       _.deletedNodeVariables,
       _.nodeFilterExpressions,
@@ -492,7 +482,6 @@ sealed trait ConflictFinder {
     // Conflicts between a MATCH and a DELETE with a relationship variable
     deleteVariableConflicts(
       readsAndWrites,
-      wholePlan,
       leftMostLeaf,
       _.deletedRelationshipVariables,
       _.relationshipFilterExpressions,
@@ -503,7 +492,6 @@ sealed trait ConflictFinder {
     // Conflicts between a MATCH and a DELETE with a node expression
     deleteExpressionConflicts(
       readsAndWrites,
-      wholePlan,
       leftMostLeaf,
       _.plansThatDeleteNodeExpressions,
       _.possibleNodeDeleteConflictPlans,
@@ -513,7 +501,6 @@ sealed trait ConflictFinder {
     // Conflicts between a MATCH and a DELETE with a relationship expression
     deleteExpressionConflicts(
       readsAndWrites,
-      wholePlan,
       leftMostLeaf,
       _.plansThatDeleteRelationshipExpressions,
       _.possibleRelDeleteConflictPlans,
@@ -536,15 +523,13 @@ sealed trait ConflictFinder {
    */
   private def distinctConflictOnSameSymbol(
     read: PlanWithAccessor,
-    write: PlanWithAccessor,
-    wholePlan: LogicalPlan
-  ): Boolean = {
+    write: PlanWithAccessor
+  )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
     read.accessor match {
       case Some(variable) =>
         write.accessor.contains(variable) && isGloballyUniqueAndCursorInitialized(
           variable,
           read.plan,
-          wholePlan,
           write.plan
         )
       case None => false
@@ -554,7 +539,6 @@ sealed trait ConflictFinder {
   private def isValidConflict(
     readPlan: LogicalPlan,
     writePlan: LogicalPlan,
-    wholePlan: LogicalPlan,
     leftMostLeaf: LogicalPlan
   )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
     // A plan can never conflict with itself
@@ -618,9 +602,8 @@ sealed trait ConflictFinder {
   private def isGloballyUniqueAndCursorInitialized(
     variable: LogicalVariable,
     readPlan: LogicalPlan,
-    wholePlan: LogicalPlan,
     writePlan: LogicalPlan
-  ): Boolean = {
+  )(implicit planChildrenLookup: PlanChildrenLookup): Boolean = {
     // plan.distinctness is "per argument"
     // In order to make sure a column is "globally unique", i.e. over multiple invocations,
     // we need to make sure the operator does only execute once.
@@ -628,56 +611,7 @@ sealed trait ConflictFinder {
     // time the write for the same variable happens.
     (isSimpleDeleteAndDistinctLeaf(readPlan, writePlan) || readPlan.distinctness.covers(
       Seq(variable)
-    )) && !readMightNotBeInitialized(readPlan, wholePlan)
-  }
-
-  /**
-   * Tests whether then plan is nested on the RHS of a binary plan that might not have initialized the rhs
-   * before yielding a row.
-   */
-  private[eager] def readMightNotBeInitialized(plan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
-    def rhsMightNotBeInitializedBeforeYieldingFirstRow(b: LogicalBinaryPlan): Boolean = b match {
-      case _: ApplyPlan              => true
-      case _: CartesianProduct       => true
-      case _: AssertSameNode         => true
-      case _: AssertSameRelationship => true
-      case _: RepeatOptions          => true
-      case _: LeftOuterHashJoin      => false
-      case _: NodeHashJoin           => false
-      case _: RightOuterHashJoin     => false
-      case _: ValueHashJoin          => false
-      case _: Union                  => true
-      case _: OrderedUnion           => false
-    }
-
-    @tailrec
-    def recurse(plans: List[LogicalPlan]): Boolean = plans match {
-      case head :: (p: LogicalBinaryPlan) :: _
-        if (p.right eq head) && rhsMightNotBeInitializedBeforeYieldingFirstRow(p) => true
-      case _ :: tail => recurse(tail)
-      case Seq()     => false
-    }
-
-    val parents = pathFromRoot(plan, wholePlan).get
-    recurse(parents.reverse.toList)
-  }
-
-  /**
-   * Traverses the logical plan tree of `outerPlan` to find the path to `innerPlan`.
-   * Returns the path from the root (`outerPlan`) to `innerPlan`, including both plans.
-   */
-  private[eager] def pathFromRoot(
-    innerPlan: LogicalPlan,
-    outerPlan: LogicalPlan,
-    acc: Seq[LogicalPlan] = Seq.empty
-  ): Option[Seq[LogicalPlan]] = {
-    outerPlan match {
-      case plan: LogicalPlan if plan eq innerPlan => Some(acc :+ innerPlan)
-      case _ =>
-        def recurse = plan => pathFromRoot(innerPlan, plan, acc :+ outerPlan)
-        val maybeLhs = outerPlan.lhs.flatMap(recurse)
-        maybeLhs.orElse(outerPlan.rhs.flatMap(recurse))
-    }
+    )) && !planChildrenLookup.readMightNotBeInitialized(readPlan)
   }
 
   /**

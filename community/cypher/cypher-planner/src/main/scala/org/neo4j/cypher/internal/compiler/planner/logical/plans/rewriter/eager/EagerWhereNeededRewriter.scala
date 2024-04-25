@@ -28,13 +28,24 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.E
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.collectReadsAndWrites
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.ReasonWithConflict
+import org.neo4j.cypher.internal.logical.plans.ApplyPlan
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.OrderedUnion
+import org.neo4j.cypher.internal.logical.plans.RepeatOptions
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
+import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
@@ -122,6 +133,12 @@ object EagerWhereNeededRewriter {
      * @return `true` if `plan` is a child of a TransactionApply/TransactionForeach.
      */
     def isInTransactionalApply(plan: LogicalPlan): Boolean
+
+    /**
+     * Tests whether the plan is nested on the RHS of a binary plan that might not have initialized the rhs
+     * before yielding a row.
+     */
+    def readMightNotBeInitialized(plan: LogicalPlan): Boolean
   }
 
   private[eager] class ChildrenIds extends Attribute[LogicalPlan, BitSet] with PlanChildrenLookup {
@@ -137,6 +154,11 @@ object EagerWhereNeededRewriter {
      */
     private val transactionalApplyNestedPlans = mutable.BitSet.empty
 
+    /**
+     * All plan IDs of plans that are on the RHS of a binary plan that may yield a row before initializing the RHS.
+     */
+    private val yieldBeforeInitRhs = mutable.BitSet.empty
+
     override def hasChild(plan: LogicalPlan, child: LogicalPlan): Boolean = {
       get(plan.id).contains(child.id.x)
     }
@@ -144,6 +166,8 @@ object EagerWhereNeededRewriter {
     override def mostDownstreamPlan(plans: LogicalPlan*): LogicalPlan = plans.maxBy(p => plansIDToPosition.get(p.id.x))
 
     override def isInTransactionalApply(plan: LogicalPlan): Boolean = transactionalApplyNestedPlans.contains(plan.id.x)
+
+    override def readMightNotBeInitialized(plan: LogicalPlan): Boolean = yieldBeforeInitRhs.contains(plan.id.x)
 
     /**
      * This method must be called with the plans in execution order.
@@ -164,10 +188,19 @@ object EagerWhereNeededRewriter {
           case plan: LogicalBinaryPlan =>
             val lhs = plan.left.id
             val rhs = plan.right.id
-            val res = get(lhs).incl(lhs.x) union get(rhs).incl(rhs.x)
+            val lhsBits = get(lhs).incl(lhs.x)
+            val rhsBits = get(rhs).incl(rhs.x)
+            val res = lhsBits union rhsBits
+            // Update transactionalApplyNestedPlans
             plan match {
               case _: TransactionApply | _: TransactionForeach => transactionalApplyNestedPlans |= res
               case _                                           =>
+            }
+            // Update yieldBeforeInitRhs
+            plan match {
+              case _: ApplyPlan | _: CartesianProduct | _: AssertSameNode | _: AssertSameRelationship | _: RepeatOptions | _: Union =>
+                yieldBeforeInitRhs |= rhsBits
+              case _: LeftOuterHashJoin | _: NodeHashJoin | _: RightOuterHashJoin | _: ValueHashJoin | _: OrderedUnion =>
             }
             res
 

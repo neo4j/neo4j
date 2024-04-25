@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.pathFromRoot
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.readMightNotBeInitialized
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.ChildrenIds
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -52,12 +50,14 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
       .nodeByLabelScan("x", "X")
       .build()
 
+    val childrenIds: ChildrenIds = childrenIdsForPlan(wholePlan)
+
     (wholePlan #:: LazyList.unfold(wholePlan) {
       case p: LogicalUnaryPlan => Some((p.source, p.source))
       case _                   => None
     }).foreach { p =>
       withClue(p) {
-        readMightNotBeInitialized(p, wholePlan) should be(false)
+        childrenIds.readMightNotBeInitialized(p) should be(false)
       }
     }
   }
@@ -72,13 +72,15 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
       .nodeByLabelScan("x", "X")
       .build()
 
+    val childrenIds: ChildrenIds = childrenIdsForPlan(wholePlan)
+
     (wholePlan #:: LazyList.unfold(wholePlan) {
       case p: LogicalUnaryPlan  => Some((p.source, p.source))
       case p: LogicalBinaryPlan => Some((p.left, p.left))
       case _                    => None
     }).foreach { p =>
       withClue(p) {
-        readMightNotBeInitialized(p, wholePlan) should be(false)
+        childrenIds.readMightNotBeInitialized(p) should be(false)
       }
     }
   }
@@ -101,22 +103,24 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
       .argument("not here")
       .build()
 
+    val childrenIds: ChildrenIds = childrenIdsForPlan(wholePlan)
+
     wholePlan.folder.treeFold(()) {
       case p @ Argument(SetExtractor(Variable("here"))) =>
         withClue(p) {
-          readMightNotBeInitialized(p, wholePlan) should be(true)
+          childrenIds.readMightNotBeInitialized(p) should be(true)
         }
         acc => SkipChildren(acc)
 
       case p @ NodeHashJoin(SetExtractor(Variable("here")), _, _) =>
         withClue(p) {
-          readMightNotBeInitialized(p, wholePlan) should be(true)
+          childrenIds.readMightNotBeInitialized(p) should be(true)
         }
         acc => SkipChildren(acc)
 
       case p: LogicalPlan =>
         withClue(p) {
-          readMightNotBeInitialized(p, wholePlan) should be(false)
+          childrenIds.readMightNotBeInitialized(p) should be(false)
         }
         acc => TraverseChildren(acc)
 
@@ -180,46 +184,6 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
         val expected = plans.toSeq.maxBy(inOrder.indexOf)
         childrenIds.mostDownstreamPlan(plans.toSeq: _*) should be(expected)
     }
-  }
-
-  // ------------
-  // pathFromRoot
-  // ------------
-
-  test("pathFromRoot") {
-    val wholePlan = new LogicalPlanBuilder()
-      .produceResults("x")
-      .apply() // 2
-      .|.nodeHashJoin("x")
-      .|.|.argument("4")
-      .|.argument("3")
-      .apply() // 1
-      .|.argument("2")
-      .argument("1")
-      .build()
-
-    val a2 = wholePlan.lhs.get
-    val nhj = a2.rhs.get
-    val arg4 = nhj.rhs.get
-    val arg3 = nhj.lhs.get
-    val a1 = a2.lhs.get
-    val arg2 = a1.rhs.get
-    val arg1 = a1.lhs.get
-
-    val otherPlan = new LogicalPlanBuilder(false)
-      .argument("asd")
-      .build()
-
-    pathFromRoot(wholePlan, wholePlan) should be(Some(Seq(wholePlan)))
-    pathFromRoot(a2, wholePlan) should be(Some(Seq(wholePlan, a2)))
-    pathFromRoot(nhj, wholePlan) should be(Some(Seq(wholePlan, a2, nhj)))
-    pathFromRoot(arg4, wholePlan) should be(Some(Seq(wholePlan, a2, nhj, arg4)))
-    pathFromRoot(arg3, wholePlan) should be(Some(Seq(wholePlan, a2, nhj, arg3)))
-    pathFromRoot(a1, wholePlan) should be(Some(Seq(wholePlan, a2, a1)))
-    pathFromRoot(arg2, wholePlan) should be(Some(Seq(wholePlan, a2, a1, arg2)))
-    pathFromRoot(arg1, wholePlan) should be(Some(Seq(wholePlan, a2, a1, arg1)))
-
-    pathFromRoot(otherPlan, wholePlan) should be(None)
   }
 
   // ----------------------------
