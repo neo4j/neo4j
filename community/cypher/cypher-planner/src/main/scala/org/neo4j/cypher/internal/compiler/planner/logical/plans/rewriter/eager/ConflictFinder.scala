@@ -421,13 +421,11 @@ sealed trait ConflictFinder {
     wholePlan: LogicalPlan
   )(implicit planChildrenLookup: PlanChildrenLookup): Seq[ConflictingPlanPair] = {
     val leftMostLeaf = wholePlan.leftmostLeaf
-    val map = mutable.Map[Set[Ref[LogicalPlan]], Set[EagernessReason]]()
+    val map = mutable.Map[Set[Ref[LogicalPlan]], mutable.Set[EagernessReason]]()
 
     def addConflict(conflictingPlanPair: ConflictingPlanPair): Unit = {
-      map(Set(conflictingPlanPair.first, conflictingPlanPair.second)) = map.getOrElse(
-        Set(conflictingPlanPair.first, conflictingPlanPair.second),
-        Set.empty[EagernessReason]
-      ) ++ conflictingPlanPair.reasons
+      map.getOrElseUpdate(Set(conflictingPlanPair.first, conflictingPlanPair.second), mutable.Set.empty[EagernessReason])
+        .addAll(conflictingPlanPair.reasons)
     }
 
     // Conflict between a Node property read and a property write
@@ -512,7 +510,7 @@ sealed trait ConflictFinder {
     callInTxConflict(readsAndWrites, wholePlan).foreach(addConflict)
 
     map.map {
-      case (SetExtractor(plan1, plan2), reasons) => ConflictingPlanPair(plan1, plan2, reasons)
+      case (SetExtractor(plan1, plan2), reasons) => ConflictingPlanPair(plan1, plan2, reasons.toSet)
       case (set, _) => throw new IllegalStateException(s"Set must have 2 elements. Got: $set")
     }.toSeq
   }
