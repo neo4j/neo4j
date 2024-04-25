@@ -31,7 +31,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.DEFAULT_LO
 import static org.neo4j.kernel.recovery.RecoveryHelpers.getLatestCheckpoint;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.UpgradeTestUtil.assertKernelVersion;
 import static org.neo4j.test.UpgradeTestUtil.createWriteTransaction;
@@ -316,9 +315,7 @@ class TransactionLogsUpgradeIT {
                 INITIAL_LOG_VERSION + 1,
                 GLORIOUS_FUTURE,
                 lastClosedTransactionIdBeforeUpgrade + 1,
-                BASE_TX_CHECKSUM);
-        // TODO this checksum is wrong, should be switched to the below when ready
-        // latestChecksum.get());
+                latestChecksum.get());
         assertWholeTransactionsWithCorrectVersionInSpecificLogVersion(
                 logFiles.getLogFile(), INITIAL_LOG_VERSION + 1, GLORIOUS_FUTURE, 1);
     }

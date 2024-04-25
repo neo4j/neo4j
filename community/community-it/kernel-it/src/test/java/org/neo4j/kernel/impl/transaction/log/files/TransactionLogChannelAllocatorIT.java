@@ -225,6 +225,7 @@ class TransactionLogChannelAllocatorIT {
                 any -> 1L,
                 () -> 1L,
                 any -> new LogPosition(0, 1),
+                any -> BASE_TX_CHECKSUM,
                 any -> new SimpleLogVersionRepository(),
                 LogFileVersionTracker.NO_OP,
                 fileSystem,

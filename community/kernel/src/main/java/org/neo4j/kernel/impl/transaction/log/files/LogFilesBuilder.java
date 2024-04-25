@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
@@ -94,6 +95,7 @@ public class LogFilesBuilder {
     private LogFileVersionTracker logFileVersionTracker;
     private TransactionIdStore transactionIdStore;
     private AppendIndexProvider appendIndexProvider;
+    private IntSupplier lastCommittedChecksumProvider;
     private ThrowingSupplier<LogPosition, IOException> lastClosedPositionSupplier;
     private boolean fileBasedOperationsOnly;
     private DatabaseTracers databaseTracers = DatabaseTracers.EMPTY;
@@ -218,6 +220,11 @@ public class LogFilesBuilder {
         return this;
     }
 
+    public LogFilesBuilder withLastCommittedChecksumProvider(IntSupplier checksumProvider) {
+        this.lastCommittedChecksumProvider = checksumProvider;
+        return this;
+    }
+
     public LogFilesBuilder withConfig(Config config) {
         this.config = config;
         return this;
@@ -336,6 +343,7 @@ public class LogFilesBuilder {
                 lastAppendIndexLogFilesProvider(availableAppendIndexProvider);
         var appendIndexProvider = lastAppendIndexProvider(availableAppendIndexProvider);
         LastClosedPositionProvider lastClosedTransactionPositionProvider = closePositionProvider();
+        LastCommittedChecksumProvider lastCommittedChecksumProvider = lastCommittedChecksumProvider();
 
         // Register listener for rotation threshold
         AtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
@@ -354,6 +362,7 @@ public class LogFilesBuilder {
                 lastAppendIndexLogFilesProvider,
                 appendIndexProvider,
                 lastClosedTransactionPositionProvider,
+                lastCommittedChecksumProvider,
                 logVersionRepositorySupplier,
                 versionTracker,
                 fileSystem,
@@ -562,6 +571,35 @@ public class LogFilesBuilder {
         }
     }
 
+    private LastCommittedChecksumProvider lastCommittedChecksumProvider() {
+        if (lastCommittedChecksumProvider != null) {
+            return new IntSupplierLastCommittedChecksumProvider(lastCommittedChecksumProvider);
+        }
+        if (transactionIdStore != null) {
+            return new IntSupplierLastCommittedChecksumProvider(
+                    () -> transactionIdStore.getLastCommittedTransaction().checksum());
+        }
+        if (fileBasedOperationsOnly) {
+            return any -> {
+                throw new UnsupportedOperationException("Current version of log files can't perform any "
+                        + "operation that require availability of transaction id store. Please build full version of log files "
+                        + "to be able to use them.");
+            };
+        }
+        if (readOnlyStores) {
+            requireNonNull(databaseLayout, "Store directory is required.");
+            return new ReadOnlyLastCommittedChecksumProvider();
+        } else {
+            requireNonNull(
+                    dependencies,
+                    TransactionIdStore.class.getSimpleName() + " is required. "
+                            + "Please provide an instance or a dependencies where it can be found.");
+            return new IntSupplierLastCommittedChecksumProvider(() -> resolveDependency(TransactionIdStore.class)
+                    .getLastCommittedTransaction()
+                    .checksum());
+        }
+    }
+
     private LastClosedPositionProvider closePositionProvider() {
         if (lastClosedPositionSupplier != null) {
             return any -> lastClosedPositionSupplier.get();
@@ -625,6 +663,26 @@ public class LogFilesBuilder {
         @Override
         public long getLastAppendIndex(LogFiles logFiles) {
             return logFiles.getTailMetadata().getLastCheckpointedAppendIndex();
+        }
+    }
+
+    private static class IntSupplierLastCommittedChecksumProvider implements LastCommittedChecksumProvider {
+        private final IntSupplier supplier;
+
+        IntSupplierLastCommittedChecksumProvider(IntSupplier supplier) {
+            this.supplier = supplier;
+        }
+
+        @Override
+        public int getLastCommittedChecksum(LogFiles logFiles) {
+            return supplier.getAsInt();
+        }
+    }
+
+    private static class ReadOnlyLastCommittedChecksumProvider implements LastCommittedChecksumProvider {
+        @Override
+        public int getLastCommittedChecksum(LogFiles logFiles) {
+            return logFiles.getTailMetadata().getLastCommittedTransaction().checksum();
         }
     }
 

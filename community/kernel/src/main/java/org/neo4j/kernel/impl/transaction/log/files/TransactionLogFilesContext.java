@@ -45,6 +45,7 @@ public class TransactionLogFilesContext {
     private final LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider;
     private final LastAppendIndexProvider lastAppendIndexProvider;
     private final LastClosedPositionProvider lastClosedPositionProvider;
+    private final LastCommittedChecksumProvider lastCommittedChecksumProvider;
     private final LogVersionRepositoryProvider logVersionRepositoryProvider;
     private final LogFileVersionTracker versionTracker;
     private final FileSystemAbstraction fileSystem;
@@ -74,6 +75,7 @@ public class TransactionLogFilesContext {
             LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider,
             LastAppendIndexProvider lastAppendIndexProvider,
             LastClosedPositionProvider lastClosedPositionProvider,
+            LastCommittedChecksumProvider lastCommittedChecksumProvider,
             LogVersionRepositoryProvider logVersionRepositoryProvider,
             LogFileVersionTracker versionTracker,
             FileSystemAbstraction fileSystem,
@@ -101,6 +103,7 @@ public class TransactionLogFilesContext {
         this.lastAppendIndexLogFilesProvider = lastAppendIndexLogFilesProvider;
         this.lastAppendIndexProvider = lastAppendIndexProvider;
         this.lastClosedPositionProvider = lastClosedPositionProvider;
+        this.lastCommittedChecksumProvider = lastCommittedChecksumProvider;
         this.logVersionRepositoryProvider = logVersionRepositoryProvider;
         this.versionTracker = versionTracker;
         this.fileSystem = fileSystem;
@@ -153,6 +156,10 @@ public class TransactionLogFilesContext {
 
     LastClosedPositionProvider getLastClosedTransactionPositionProvider() {
         return lastClosedPositionProvider;
+    }
+
+    public LastCommittedChecksumProvider getLastCommittedChecksumProvider() {
+        return lastCommittedChecksumProvider;
     }
 
     public FileSystemAbstraction getFileSystem() {

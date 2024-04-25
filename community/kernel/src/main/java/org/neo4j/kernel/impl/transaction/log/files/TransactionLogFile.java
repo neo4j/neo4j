@@ -136,7 +136,10 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     public void start() throws IOException {
         long currentLogVersion = logVersionRepository.getCurrentLogVersion();
         channel = createLogChannelForVersion(
-                currentLogVersion, context::appendIndex, context.getKernelVersionProvider(), BASE_TX_CHECKSUM);
+                currentLogVersion,
+                context::appendIndex,
+                context.getKernelVersionProvider(),
+                context.getLastCommittedChecksumProvider().getLastCommittedChecksum(logFiles));
 
         LogHeader logHeader = extractHeader(currentLogVersion);
         KernelVersion currentKernelVersion = context.getKernelVersionProvider().kernelVersion();
@@ -189,9 +192,11 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         final var endSize = channel.position();
         channel.truncate(endSize);
 
-        // TODO checksum wrong here, but not used until envelopes so this is okay.
         PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(
-                newLogVersion, context::appendIndex, context.getKernelVersionProvider(), BASE_TX_CHECKSUM);
+                newLogVersion,
+                context::appendIndex,
+                context.getKernelVersionProvider(),
+                context.getLastCommittedChecksumProvider().getLastCommittedChecksum(logFiles));
         channel.close();
         channel = newLog;
 
