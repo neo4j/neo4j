@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
+import org.neo4j.cypher.internal.ast.ConstraintVersion
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
@@ -147,82 +148,58 @@ trait DdlCreateBuilder extends CypherParserListener {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
     val isNode = ctx.commandNodePattern() != null
     val constraintName = astOpt[Either[String, Parameter]](ctx.symbolicNameOrStringParameter())
-    val ifNotExists = ctx.EXISTS() != null
+    val existsDo = ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null)
     val containsOn = ctx.ON() != null
     val options = astOpt[Options](ctx.commandOptions(), NoOptions)
     val cT = ctx.constraintType()
+    val (constraintVersion, properties, propertyType) =
+      cT.ast[(ConstraintVersion, ArraySeq[Property], Option[CypherType])]
 
     ctx.ast = if (isNode) {
       val variable = ctx.commandNodePattern().variable().ast[Variable]()
       val label = ctx.commandNodePattern().labelType().ast[LabelName]()
       cT match {
-        case cTC: ConstraintExistsContext =>
-          val constraintVersion = ConstraintVersion0
-          val property = cTC.propertyList.ast[ArraySeq[Property]]()(0)
+        case _: ConstraintExistsContext | _: ConstraintIsNotNullContext =>
           CreateNodePropertyExistenceConstraint(
             variable,
             label,
-            property,
+            properties(0),
             constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
+            existsDo,
             options,
             containsOn,
             constraintVersion
           )(pos(parent))
-        case cTC: ConstraintIsNotNullContext =>
-          val constraintVersion =
-            if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion1
-          val property = cTC.propertyList.ast[ArraySeq[Property]]()(0)
-          CreateNodePropertyExistenceConstraint(
-            variable,
-            label,
-            property,
-            constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
-            options,
-            containsOn,
-            constraintVersion
-          )(pos(parent))
-        case cTC: ConstraintTypedContext =>
-          val constraintVersion =
-            if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
-          val property = cTC.propertyList.ast[ArraySeq[Property]]()(0)
-          val propertyType = cTC.`type`().ast[CypherType]()
+        case _: ConstraintTypedContext =>
           CreateNodePropertyTypeConstraint(
             variable,
             label,
-            property,
-            propertyType,
+            properties(0),
+            propertyType.get,
             constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
+            existsDo,
             options,
             containsOn,
             constraintVersion
           )(pos(parent))
-        case cTC: ConstraintIsUniqueContext =>
-          val constraintVersion =
-            if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
-          val properties = cTC.propertyList.ast[ArraySeq[Property]]()
+        case _: ConstraintIsUniqueContext =>
           CreateNodePropertyUniquenessConstraint(
             variable,
             label,
             properties,
             constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
+            existsDo,
             options,
             containsOn,
             constraintVersion
           )(pos(parent))
-        case cTC: ConstraintKeyContext =>
-          val constraintVersion =
-            if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
-          val properties = cTC.propertyList().ast[Seq[Property]]()
+        case _: ConstraintKeyContext =>
           CreateNodeKeyConstraint(
             variable,
             label,
             properties,
             constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
+            existsDo,
             options,
             containsOn,
             constraintVersion
@@ -233,73 +210,47 @@ trait DdlCreateBuilder extends CypherParserListener {
       val variable = ctx.commandRelPattern().variable().ast[Variable]()
       val relType = ctx.commandRelPattern().relType().ast[RelTypeName]()
       cT match {
-        case cTC: ConstraintExistsContext =>
-          val constraintVersion = ConstraintVersion0
-          val property = cTC.propertyList.ast[ArraySeq[Property]]()(0)
+        case _: ConstraintExistsContext | _: ConstraintIsNotNullContext =>
           CreateRelationshipPropertyExistenceConstraint(
             variable,
             relType,
-            property,
+            properties(0),
             constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
+            existsDo,
             options,
             containsOn,
             constraintVersion
           )(pos(parent))
-        case cTC: ConstraintIsNotNullContext =>
-          val constraintVersion =
-            if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion1
-          val property = cTC.propertyList.ast[ArraySeq[Property]]()(0)
-          CreateRelationshipPropertyExistenceConstraint(
-            variable,
-            relType,
-            property,
-            constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
-            options,
-            containsOn,
-            constraintVersion
-          )(pos(parent))
-        case cTC: ConstraintTypedContext =>
-          val constraintVersion =
-            if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
-          val property = cTC.propertyList.ast[ArraySeq[Property]]()(0)
-          val propertyType = cTC.`type`().ast[CypherType]()
+        case _: ConstraintTypedContext =>
           CreateRelationshipPropertyTypeConstraint(
             variable,
             relType,
-            property,
-            propertyType,
+            properties(0),
+            propertyType.get,
             constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
+            existsDo,
             options,
             containsOn,
             constraintVersion
           )(pos(parent))
-        case cTC: ConstraintIsUniqueContext =>
-          val constraintVersion =
-            if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
-          val properties = cTC.propertyList.ast[ArraySeq[Property]]()
+        case _: ConstraintIsUniqueContext =>
           CreateRelationshipPropertyUniquenessConstraint(
             variable,
             relType,
             properties,
             constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
+            existsDo,
             options,
             containsOn,
             constraintVersion
           )(pos(parent))
-        case cTC: ConstraintKeyContext =>
-          val constraintVersion =
-            if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
-          val properties = cTC.propertyList().ast[Seq[Property]]()
+        case _: ConstraintKeyContext =>
           CreateRelationshipKeyConstraint(
             variable,
             relType,
             properties,
             constraintName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
+            existsDo,
             options,
             containsOn,
             constraintVersion
@@ -309,7 +260,36 @@ trait DdlCreateBuilder extends CypherParserListener {
     }
   }
 
-  override def exitConstraintType(ctx: CypherParser.ConstraintTypeContext): Unit = {}
+  override def exitConstraintType(ctx: CypherParser.ConstraintTypeContext): Unit = {
+    ctx.ast = ctx match {
+      case cTC: ConstraintExistsContext =>
+        val constraintVersion = ConstraintVersion0
+        val properties = cTC.propertyList.ast[ArraySeq[Property]]()
+        (constraintVersion, properties, None)
+      case cTC: ConstraintIsNotNullContext =>
+        val constraintVersion =
+          if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion1
+        val properties = cTC.propertyList.ast[ArraySeq[Property]]()
+        (constraintVersion, properties, None)
+      case cTC: ConstraintTypedContext =>
+        val constraintVersion =
+          if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
+        val properties = cTC.propertyList.ast[ArraySeq[Property]]()
+        val propertyType = cTC.`type`().ast[CypherType]()
+        (constraintVersion, properties, Some(propertyType))
+      case cTC: ConstraintIsUniqueContext =>
+        val constraintVersion =
+          if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
+        val properties = cTC.propertyList.ast[ArraySeq[Property]]()
+        (constraintVersion, properties, None)
+      case cTC: ConstraintKeyContext =>
+        val constraintVersion =
+          if (cTC.REQUIRE() != null) ConstraintVersion2 else ConstraintVersion0
+        val properties = cTC.propertyList().ast[Seq[Property]]()
+        (constraintVersion, properties, None)
+      case _ => throw new IllegalStateException("Unknown Constraint Command")
+    }
+  }
 
   final override def exitCreateDatabase(
     ctx: CypherParser.CreateDatabaseContext
