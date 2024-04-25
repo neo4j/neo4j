@@ -17,8 +17,10 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.Explicit
 
 class UseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -78,6 +80,22 @@ class UseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport 
         singleQuery(use(List("foo"))),
         singleQuery(return_(returnItem(literal(1), "1")))
       ).all
+    }
+  }
+
+  test("USE GRAPH neo4j RETURN 1") {
+    parsesTo[Statements] {
+      singleQuery(
+        use(List("neo4j")),
+        return_(returnItem(literal(1), "1"))
+      )
+    }
+  }
+
+  // Should be able to have database name "graph" (only works in Antlr).
+  test("USE GRAPH RETURN 1") {
+    parsesTo[Statements](Explicit(Antlr)) {
+      singleQuery(use(List("GRAPH")), return_(returnItem(literal(1), "1")))
     }
   }
 }
