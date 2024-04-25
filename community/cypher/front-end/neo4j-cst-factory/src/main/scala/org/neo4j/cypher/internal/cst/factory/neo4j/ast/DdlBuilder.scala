@@ -385,11 +385,21 @@ trait DdlBuilder extends CypherParserListener {
 
   final override def exitCommandNodePattern(
     ctx: CypherParser.CommandNodePatternContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = (
+      ctx.variable().ast[Variable](),
+      ctx.labelType.ast[LabelName]()
+    )
+  }
 
   final override def exitCommandRelPattern(
     ctx: CypherParser.CommandRelPatternContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = (
+      ctx.variable().ast[Variable](),
+      ctx.relType().ast[RelTypeName]()
+    )
+  }
 
   final override def exitDropConstraint(
     ctx: CypherParser.DropConstraintContext
@@ -403,8 +413,7 @@ trait DdlBuilder extends CypherParserListener {
       val nodePattern = ctx.commandNodePattern()
       val isNode = nodePattern != null
       if (isNode) {
-        val variable = nodePattern.variable().ast[Variable]()
-        val label = nodePattern.labelType.ast[LabelName]()
+        val (variable, label) = nodePattern.ast[(Variable, LabelName)]()
         if (ctx.EXISTS() != null) {
           DropNodePropertyExistenceConstraint(variable, label, properties(0))(p)
         } else if (ctx.UNIQUE() != null) {
@@ -416,9 +425,7 @@ trait DdlBuilder extends CypherParserListener {
         }
       } else {
         if (ctx.EXISTS() != null) {
-          val relPattern = ctx.commandRelPattern()
-          val variable = relPattern.variable().ast[Variable]()
-          val relType = relPattern.relType().ast[RelTypeName]()
+          val (variable, relType) = ctx.commandRelPattern().ast[(Variable, RelTypeName)]()
           DropRelationshipPropertyExistenceConstraint(variable, relType, properties(0))(p)
         } else {
           throw new SyntaxException("Unsupported drop constraint command: Please delete the constraint by name instead")

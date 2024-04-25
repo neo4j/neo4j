@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
@@ -83,6 +84,7 @@ import org.neo4j.cypher.internal.parser.CypherParser.ConstraintIsUniqueContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintKeyContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintTypedContext
 import org.neo4j.cypher.internal.parser.CypherParser.CreateCommandContext
+import org.neo4j.cypher.internal.parser.CypherParser.CreateIndexContext
 import org.neo4j.cypher.internal.parser.CypherParserListener
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
@@ -146,7 +148,8 @@ trait DdlCreateBuilder extends CypherParserListener {
     ctx: CypherParser.CreateConstraintContext
   ): Unit = {
     val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
-    val isNode = ctx.commandNodePattern() != null
+    val nodePattern = ctx.commandNodePattern()
+    val isNode = nodePattern != null
     val constraintName = astOpt[Either[String, Parameter]](ctx.symbolicNameOrStringParameter())
     val existsDo = ifExistsDo(parent.REPLACE() != null, ctx.EXISTS() != null)
     val containsOn = ctx.ON() != null
@@ -156,8 +159,7 @@ trait DdlCreateBuilder extends CypherParserListener {
       cT.ast[(ConstraintVersion, ArraySeq[Property], Option[CypherType])]
 
     ctx.ast = if (isNode) {
-      val variable = ctx.commandNodePattern().variable().ast[Variable]()
-      val label = ctx.commandNodePattern().labelType().ast[LabelName]()
+      val (variable, label) = nodePattern.ast[(Variable, LabelName)]()
       cT match {
         case _: ConstraintExistsContext | _: ConstraintIsNotNullContext =>
           CreateNodePropertyExistenceConstraint(
@@ -207,8 +209,7 @@ trait DdlCreateBuilder extends CypherParserListener {
         case _ => throw new IllegalStateException("Unknown Constraint Command")
       }
     } else {
-      val variable = ctx.commandRelPattern().variable().ast[Variable]()
-      val relType = ctx.commandRelPattern().relType().ast[RelTypeName]()
+      val (variable, relType) = ctx.commandRelPattern().ast[(Variable, RelTypeName)]()
       cT match {
         case _: ConstraintExistsContext | _: ConstraintIsNotNullContext =>
           CreateRelationshipPropertyExistenceConstraint(
@@ -321,265 +322,242 @@ trait DdlCreateBuilder extends CypherParserListener {
   final override def exitCreateIndex(
     ctx: CypherParser.CreateIndexContext
   ): Unit = {
-    val parent = ctx.getParent.asInstanceOf[CreateCommandContext]
-
-    val token = nodeChild(ctx, 0).getSymbol.getType
-    ctx.ast = token match {
-      case CypherParser.LOOKUP =>
-        val cIndex = ctx.createLookupIndex()
-        val ifNotExists = cIndex.EXISTS() != null
-        val options = astOpt[Options](cIndex.commandOptions(), NoOptions)
-        val indexName = astOpt[Either[String, Parameter]](cIndex.symbolicNameOrStringParameter())
-        val isNode = cIndex.lookupIndexNodePattern() != null
-        val functionName = cIndex.symbolicNameString
-        val functionPos = Util.pos(functionName)
-        val function = FunctionInvocation(
-          FunctionName(functionName.ast[String]())(functionPos),
-          distinct = false,
-          IndexedSeq(cIndex.variable().ast[Variable]())
-        )(functionPos)
-        val variable =
-          if (isNode) cIndex.lookupIndexNodePattern().variable().ast[Variable]()
-          else cIndex.lookupIndexRelPattern().variable().ast[Variable]()
-        CreateLookupIndex(
-          variable,
-          isNode,
-          function,
-          indexName,
-          ifExistsDo(parent.REPLACE() != null, ifNotExists),
-          options
-        )(pos(parent))
-      case CypherParser.FULLTEXT =>
-        val cIndex = ctx.createFulltextIndex()
-        val ifNotExists = cIndex.EXISTS() != null
-        val options = astOpt[Options](cIndex.commandOptions(), NoOptions)
-        val indexName = astOpt[Either[String, Parameter]](cIndex.symbolicNameOrStringParameter())
-        val isNode = cIndex.fulltextNodePattern() != null
-        val propertyList = {
-          val exprs = astSeq[Expression](cIndex.variable())
-          val propertyKeyNames = astSeq[PropertyKeyName](cIndex.property())
-          exprs.zip(propertyKeyNames).map { case (e, p) => Property(e, p)(Util.pos(cIndex.LBRACKET().getSymbol)) }
-        }.toList
-        if (isNode) {
-          val nodePattern = cIndex.fulltextNodePattern()
-          val variable = nodePattern.variable().ast[Variable]()
-          val labels = astSeqPositioned[LabelName, String](nodePattern.symbolicNameString(), LabelName.apply).toList
-          CreateFulltextNodeIndex(
-            variable,
-            labels,
-            propertyList,
-            indexName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
-            options
-          )(pos(parent))
-        } else {
-          val relPattern = cIndex.fulltextRelPattern()
-          val variable = relPattern.variable().ast[Variable]()
-          val relTypes =
-            astSeqPositioned[RelTypeName, String](relPattern.symbolicNameString(), RelTypeName.apply).toList
-          CreateFulltextRelationshipIndex(
-            variable,
-            relTypes,
-            propertyList,
-            indexName,
-            ifExistsDo(parent.REPLACE() != null, ifNotExists),
-            options
-          )(pos(parent))
-        }
-      case CypherParser.INDEX =>
-        if (ctx.ON() != null) {
-          val cIndex = ctx.oldCreateIndex()
-          val label = cIndex.labelType().ast[LabelName]()
-          val propertyList = nonEmptyPropertyKeyName(cIndex.nonEmptyNameList()).toList
-          CreateIndexOldSyntax(label, propertyList)(pos(parent))
-        } else {
-          val cIndex = ctx.createIndex_()
-          val ifNotExists = cIndex.EXISTS() != null
-          val options = astOpt[Options](cIndex.commandOptions(), NoOptions)
-          val indexName = astOpt[Either[String, Parameter]](cIndex.symbolicNameOrStringParameter())
-          val isNode = cIndex.commandNodePattern() != null
-          val propertyList = cIndex.propertyList().ast[ArraySeq[Property]]().toList
-          if (isNode) {
-            val nodePattern = cIndex.commandNodePattern()
-            val variable = nodePattern.variable().ast[Variable]()
-            val label = nodePattern.labelType().ast[LabelName]()
-            CreateRangeNodeIndex(
-              variable,
-              label,
-              propertyList,
-              indexName,
-              ifExistsDo(parent.REPLACE() != null, ifNotExists),
-              options,
-              fromDefault = true
-            )(pos(parent))
-          } else {
-            val relPattern = cIndex.commandRelPattern()
-            val variable = relPattern.variable().ast[Variable]()
-            val relType = relPattern.relType().ast[RelTypeName]()
-            CreateRangeRelationshipIndex(
-              variable,
-              relType,
-              propertyList,
-              indexName,
-              ifExistsDo(parent.REPLACE() != null, ifNotExists),
-              options,
-              fromDefault = true
-            )(pos(parent))
-          }
-        }
-      case _ =>
-        val cIndex = ctx.createIndex_()
-        val ifNotExists = cIndex.EXISTS() != null
-        val options = astOpt[Options](cIndex.commandOptions(), NoOptions)
-        val indexName = astOpt[Either[String, Parameter]](cIndex.symbolicNameOrStringParameter())
-
-        val nodePattern = cIndex.commandNodePattern()
-        val relPattern = cIndex.commandRelPattern()
-        val isNode = nodePattern != null
-        val propertyList = cIndex.propertyList().ast[ArraySeq[Property]]().toList
-        val variable = if (isNode) nodePattern.variable().ast[Variable]() else relPattern.variable().ast[Variable]()
-        val labelOrRelType =
-          if (isNode) nodePattern.labelType().ast[LabelName]() else relPattern.relType().ast[RelTypeName]()
-
-        token match {
-          case CypherParser.BTREE =>
-            if (isNode) {
-              val label = labelOrRelType.asInstanceOf[LabelName]
-              CreateBtreeNodeIndex(
-                variable,
-                label,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options
-              )(pos(parent))
-            } else {
-              val relType = labelOrRelType.asInstanceOf[RelTypeName]
-              CreateBtreeRelationshipIndex(
-                variable,
-                relType,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options
-              )(pos(parent))
-            }
-          case CypherParser.RANGE =>
-            if (isNode) {
-              val label = labelOrRelType.asInstanceOf[LabelName]
-              CreateRangeNodeIndex(
-                variable,
-                label,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options,
-                fromDefault = false
-              )(pos(parent))
-            } else {
-              val relType = labelOrRelType.asInstanceOf[RelTypeName]
-              CreateRangeRelationshipIndex(
-                variable,
-                relType,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options,
-                fromDefault = false
-              )(pos(parent))
-            }
-          case CypherParser.TEXT =>
-            if (isNode) {
-              val label = labelOrRelType.asInstanceOf[LabelName]
-              CreateTextNodeIndex(
-                variable,
-                label,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options
-              )(pos(parent))
-            } else {
-              val relType = labelOrRelType.asInstanceOf[RelTypeName]
-              CreateTextRelationshipIndex(
-                variable,
-                relType,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options
-              )(pos(parent))
-            }
-          case CypherParser.POINT =>
-            if (isNode) {
-              val label = labelOrRelType.asInstanceOf[LabelName]
-              CreatePointNodeIndex(
-                variable,
-                label,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options
-              )(pos(parent))
-            } else {
-              val relType = labelOrRelType.asInstanceOf[RelTypeName]
-              CreatePointRelationshipIndex(
-                variable,
-                relType,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options
-              )(pos(parent))
-            }
-          case CypherParser.VECTOR =>
-            if (isNode) {
-              val label = labelOrRelType.asInstanceOf[LabelName]
-              CreateVectorNodeIndex(
-                variable,
-                label,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options
-              )(pos(parent))
-            } else {
-              val relType = labelOrRelType.asInstanceOf[RelTypeName]
-              CreateVectorRelationshipIndex(
-                variable,
-                relType,
-                propertyList,
-                indexName,
-                ifExistsDo(parent.REPLACE() != null, ifNotExists),
-                options
-              )(pos(parent))
-            }
-        }
-    }
+    ctx.ast = lastChild[AstRuleCtx](ctx).ast[CreateIndex]()
   }
 
   final override def exitOldCreateIndex(
     ctx: CypherParser.OldCreateIndexContext
-  ): Unit = {}
+  ): Unit = {
+    val grandparent = ctx.getParent.getParent.asInstanceOf[CreateCommandContext]
+    ctx.ast = CreateIndexOldSyntax(
+      ctx.labelType().ast[LabelName](),
+      nonEmptyPropertyKeyName(ctx.nonEmptyNameList()).toList
+    )(pos(grandparent))
+  }
 
   final override def exitCreateIndex_(
     ctx: CypherParser.CreateIndex_Context
-  ): Unit = {}
+  ): Unit = {
+
+    val grandparent = ctx.getParent.getParent.asInstanceOf[CreateCommandContext]
+    val parent = ctx.getParent.asInstanceOf[CreateIndexContext]
+    val existsDo = ifExistsDo(grandparent.REPLACE() != null, ctx.EXISTS() != null)
+    val options = astOpt[Options](ctx.commandOptions(), NoOptions)
+    val indexName = astOpt[Either[String, Parameter]](ctx.symbolicNameOrStringParameter())
+
+    val nodePattern = ctx.commandNodePattern()
+    val relPattern = ctx.commandRelPattern()
+    val isNode = nodePattern != null
+    val propertyList = ctx.propertyList().ast[ArraySeq[Property]]().toList
+    val (variable, labelOrRelType) =
+      if (isNode) nodePattern.ast[(Variable, LabelName)]()
+      else relPattern.ast[(Variable, RelTypeName)]()
+
+    val token = nodeChild(parent, 0).getSymbol.getType
+
+    ctx.ast = token match {
+      case CypherParser.BTREE =>
+        if (isNode) {
+          val label = labelOrRelType.asInstanceOf[LabelName]
+          CreateBtreeNodeIndex(
+            variable,
+            label,
+            propertyList,
+            indexName,
+            existsDo,
+            options
+          )(pos(grandparent))
+        } else {
+          val relType = labelOrRelType.asInstanceOf[RelTypeName]
+          CreateBtreeRelationshipIndex(
+            variable,
+            relType,
+            propertyList,
+            indexName,
+            existsDo,
+            options
+          )(pos(grandparent))
+        }
+      case CypherParser.RANGE | CypherParser.INDEX =>
+        if (isNode) {
+          val label = labelOrRelType.asInstanceOf[LabelName]
+          CreateRangeNodeIndex(
+            variable,
+            label,
+            propertyList,
+            indexName,
+            existsDo,
+            options,
+            fromDefault = token == CypherParser.INDEX
+          )(pos(grandparent))
+        } else {
+          val relType = labelOrRelType.asInstanceOf[RelTypeName]
+          CreateRangeRelationshipIndex(
+            variable,
+            relType,
+            propertyList,
+            indexName,
+            existsDo,
+            options,
+            fromDefault = token == CypherParser.INDEX
+          )(pos(grandparent))
+        }
+      case CypherParser.TEXT =>
+        if (isNode) {
+          val label = labelOrRelType.asInstanceOf[LabelName]
+          CreateTextNodeIndex(
+            variable,
+            label,
+            propertyList,
+            indexName,
+            existsDo,
+            options
+          )(pos(grandparent))
+        } else {
+          val relType = labelOrRelType.asInstanceOf[RelTypeName]
+          CreateTextRelationshipIndex(
+            variable,
+            relType,
+            propertyList,
+            indexName,
+            existsDo,
+            options
+          )(pos(grandparent))
+        }
+      case CypherParser.POINT =>
+        if (isNode) {
+          val label = labelOrRelType.asInstanceOf[LabelName]
+          CreatePointNodeIndex(
+            variable,
+            label,
+            propertyList,
+            indexName,
+            existsDo,
+            options
+          )(pos(grandparent))
+        } else {
+          val relType = labelOrRelType.asInstanceOf[RelTypeName]
+          CreatePointRelationshipIndex(
+            variable,
+            relType,
+            propertyList,
+            indexName,
+            existsDo,
+            options
+          )(pos(grandparent))
+        }
+      case CypherParser.VECTOR =>
+        if (isNode) {
+          val label = labelOrRelType.asInstanceOf[LabelName]
+          CreateVectorNodeIndex(
+            variable,
+            label,
+            propertyList,
+            indexName,
+            existsDo,
+            options
+          )(pos(grandparent))
+        } else {
+          val relType = labelOrRelType.asInstanceOf[RelTypeName]
+          CreateVectorRelationshipIndex(
+            variable,
+            relType,
+            propertyList,
+            indexName,
+            existsDo,
+            options
+          )(pos(grandparent))
+        }
+    }
+  }
 
   final override def exitCreateFulltextIndex(
     ctx: CypherParser.CreateFulltextIndexContext
-  ): Unit = {}
+  ): Unit = {
+    val grandparent = ctx.getParent.getParent.asInstanceOf[CreateCommandContext]
+    val existsDo = ifExistsDo(grandparent.REPLACE() != null, ctx.EXISTS() != null)
+    val options = astOpt[Options](ctx.commandOptions(), NoOptions)
+    val indexName = astOpt[Either[String, Parameter]](ctx.symbolicNameOrStringParameter())
+    val nodePattern = ctx.fulltextNodePattern()
+    val isNode = nodePattern != null
+    val propertyList = {
+      val exprs = astSeq[Expression](ctx.variable())
+      val propertyKeyNames = astSeq[PropertyKeyName](ctx.property())
+      exprs.zip(propertyKeyNames).map { case (e, p) => Property(e, p)(Util.pos(ctx.LBRACKET().getSymbol)) }
+    }.toList
+    ctx.ast = if (isNode) {
+      val (variable, labels) = nodePattern.ast[(Variable, List[LabelName])]()
+      CreateFulltextNodeIndex(
+        variable,
+        labels,
+        propertyList,
+        indexName,
+        existsDo,
+        options
+      )(pos(grandparent))
+    } else {
+      val (variable, relTypes) = ctx.fulltextRelPattern().ast[(Variable, List[RelTypeName])]()
+      CreateFulltextRelationshipIndex(
+        variable,
+        relTypes,
+        propertyList,
+        indexName,
+        existsDo,
+        options
+      )(pos(grandparent))
+    }
+  }
 
-  def exitFulltextNodePattern(ctx: CypherParser.FulltextNodePatternContext): Unit = {}
-  def exitFulltextRelPattern(ctx: CypherParser.FulltextRelPatternContext): Unit = {}
+  def exitFulltextNodePattern(ctx: CypherParser.FulltextNodePatternContext): Unit = {
+    ctx.ast = (
+      ctx.variable().ast[Variable](),
+      astSeqPositioned[LabelName, String](ctx.symbolicNameString(), LabelName.apply).toList
+    )
+  }
 
-  def exitLookupIndexNodePattern(ctx: CypherParser.LookupIndexNodePatternContext): Unit = {}
+  def exitFulltextRelPattern(ctx: CypherParser.FulltextRelPatternContext): Unit = {
+    ctx.ast = (
+      ctx.variable().ast[Variable](),
+      astSeqPositioned[RelTypeName, String](ctx.symbolicNameString(), RelTypeName.apply).toList
+    )
+  }
 
-  def exitLookupIndexRelPattern(ctx: CypherParser.LookupIndexRelPatternContext): Unit = {}
+  def exitLookupIndexNodePattern(ctx: CypherParser.LookupIndexNodePatternContext): Unit = {
+    ctx.ast = ctx.variable().ast[Variable]()
+  }
+
+  def exitLookupIndexRelPattern(ctx: CypherParser.LookupIndexRelPatternContext): Unit = {
+    ctx.ast = ctx.variable().ast[Variable]()
+  }
 
   final override def exitCreateLookupIndex(
     ctx: CypherParser.CreateLookupIndexContext
-  ): Unit = {}
+  ): Unit = {
+    val grandparent = ctx.getParent.getParent.asInstanceOf[CreateCommandContext]
+    val existsDo = ifExistsDo(grandparent.REPLACE() != null, ctx.EXISTS() != null)
+    val options = astOpt[Options](ctx.commandOptions(), NoOptions)
+    val indexName = astOpt[Either[String, Parameter]](ctx.symbolicNameOrStringParameter())
+    val nodePattern = ctx.lookupIndexNodePattern()
+    val isNode = nodePattern != null
+    val functionName = ctx.symbolicNameString
+    val functionPos = Util.pos(functionName)
+    val function = FunctionInvocation(
+      FunctionName(functionName.ast[String]())(functionPos),
+      distinct = false,
+      IndexedSeq(ctx.variable().ast[Variable]())
+    )(functionPos)
+    val variable =
+      if (isNode) nodePattern.ast[Variable]()
+      else ctx.lookupIndexRelPattern().ast[Variable]()
+    ctx.ast = CreateLookupIndex(
+      variable,
+      isNode,
+      function,
+      indexName,
+      existsDo,
+      options
+    )(pos(grandparent))
+  }
 
   final override def exitCreateRole(
     ctx: CypherParser.CreateRoleContext
