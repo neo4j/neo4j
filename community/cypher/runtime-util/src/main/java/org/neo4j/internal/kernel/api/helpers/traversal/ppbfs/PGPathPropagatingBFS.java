@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraph
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.Preconditions;
 
 /**
  * This is the root of the product graph PPBFS algorithm. It is provided with a single source node and a starting NFA
@@ -46,9 +45,9 @@ import org.neo4j.util.Preconditions;
  */
 public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> implements AutoCloseable {
     // dependencies
-    private final DataManager dataManager;
+    private final GlobalState globalState;
     private final BFSExpander bfsExpander;
-    private final NodeData sourceData;
+    private final NodeState sourceData;
     private final long intoTarget;
     private final PathTracer pathTracer;
     private final Function<PathTracer.TracedPath, Row> toRow;
@@ -57,11 +56,13 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
     private final MemoryTracker memoryTracker;
     private final PPBFSHooks hooks;
     private final AssertOpen assertOpen;
+    private final Propagator propagator;
+    private final FoundNodes foundNodes;
+    private final TargetTracker targets;
 
     // iteration state
     private int nextDepth = 0;
-    private boolean isInitialLevel = true;
-    private Iterator<NodeData> currentTargets = Collections.emptyIterator();
+    private Iterator<NodeState> currentTargets = Collections.emptyIterator();
     private boolean targetSaturated = false;
     private boolean groupYielded = false;
 
@@ -85,7 +86,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             Predicate<Row> nonInlinedPredicate,
             Boolean isGroupSelector,
             int initialCountForTargetNodes,
-            int numberOfNfaStates,
+            int nfaStateCount,
             MemoryTracker mt,
             PPBFSHooks hooks,
             AssertOpen assertOpen) {
@@ -97,17 +98,15 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         this.memoryTracker = mt.getScopedMemoryTracker();
         this.hooks = hooks;
         this.assertOpen = assertOpen;
-        this.dataManager = new DataManager(this.memoryTracker, hooks, initialCountForTargetNodes, numberOfNfaStates);
-        this.bfsExpander = new BFSExpander(
-                dataManager,
-                new ProductGraphTraversalCursor(graphCursor, this.memoryTracker),
-                intoTarget,
-                hooks,
-                this.memoryTracker);
-        this.sourceData = new NodeData(this.memoryTracker, source, startState, 0, dataManager, intoTarget);
-        this.memoryTracker.allocateHeap(this.sourceData.estimatedHeapUsage());
+        this.foundNodes = new FoundNodes(this.memoryTracker, nfaStateCount);
+        this.targets = new TargetTracker(this.memoryTracker, hooks);
+        this.propagator = new Propagator(this.memoryTracker, hooks);
+        this.globalState = new GlobalState(propagator, targets, this.memoryTracker, hooks, initialCountForTargetNodes);
+        var cursor = new ProductGraphTraversalCursor(graphCursor, this.memoryTracker);
+        this.bfsExpander = new BFSExpander(foundNodes, globalState, cursor, intoTarget, nfaStateCount);
+        this.sourceData = new NodeState(globalState, source, startState, intoTarget);
+        this.memoryTracker.allocateHeap(sourceData.estimatedHeapUsage());
 
-        dataManager.addToNextLevel(sourceData);
         pathTracer.reset();
 
         this.hooks.newRow(source);
@@ -185,7 +184,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             // if we exhausted the current target set, expand & propagate until we find the next target set
             if (!currentTargets.hasNext()) {
                 if (nextLevelWithTargets()) {
-                    currentTargets = dataManager.targets().iterator();
+                    currentTargets = targets.iterate();
                 } else {
                     targetSaturated = true;
                     return null;
@@ -195,10 +194,6 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             pathTracer.reset();
             pathTracer.initialize(sourceData, currentTargets.next(), nextDepth);
         }
-    }
-
-    public int nextDepth() {
-        return nextDepth;
     }
 
     /**
@@ -218,12 +213,12 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             if (!nextLevel()) {
                 return false;
             }
-        } while (!dataManager.hasTargets());
+        } while (!targets.hasTargets());
         return true;
     }
 
     private boolean shouldQuit() {
-        return !dataManager.hasLiveTargets() && !dataManager.hasNodesToExpand();
+        return targets.allKnownTargetsSaturated() && !foundNodes.hasMore();
     }
 
     /**
@@ -237,19 +232,16 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         nextDepth += 1;
 
         hooks.nextLevel(nextDepth);
-        dataManager.clearTargets();
+        targets.clear();
 
-        if (!dataManager.hasNodesToPropagateOrExpand()) {
+        if (foundNodes.hasMore()) {
+            bfsExpander.expand();
+        } else if (!propagator.hasScheduled()) {
             hooks.noMoreNodes();
             return false;
         }
 
-        if (dataManager.hasNodesToExpand()) {
-            bfsExpander.expandLevel(nextDepth);
-            dataManager.allocateNextLevel();
-        }
-
-        dataManager.propagateAll(nextDepth);
+        propagator.propagate(nextDepth);
 
         return true;
     }
@@ -261,21 +253,21 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
      * @return true if the zero-hop expansion was performed and targets were found
      */
     private boolean zeroHopLevel() {
-        if (!isInitialLevel) {
+        if (foundNodes.depth() > 0) {
             return false;
         }
-        isInitialLevel = false;
 
-        Preconditions.checkState(nextDepth == 0, "zeroHopLevel called for nonzero depth");
         hooks.nextLevel(0);
-        this.bfsExpander.floodInitialNodeJuxtapositions();
-        dataManager.allocateNextLevel();
 
+        bfsExpander.discover(sourceData);
         if (sourceData.isTarget()) {
-            dataManager.addTarget(sourceData);
+            targets.addTarget(sourceData);
         }
+        // there is nothing in the frontier to expand yet, but calling this will push the discovered nodes into the
+        // next frontier
+        bfsExpander.expand();
 
-        return dataManager.hasTargetsWithRemainingCount();
+        return targets.hasCurrentUnsaturatedTargets();
     }
 
     // TODO: call this to enable profiling
@@ -286,9 +278,11 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
 
     @Override
     public void close() throws Exception {
+        foundNodes.close();
         bfsExpander.close();
-        dataManager.close();
-        // the scoped memory tracker means we don't need to manually release NodeData/TwoWaySignpost memory
-        this.memoryTracker.close();
+        targets.close();
+        propagator.close();
+        // the scoped memory tracker means we don't need to manually release NodeState/TwoWaySignpost memory
+        memoryTracker.close();
     }
 }

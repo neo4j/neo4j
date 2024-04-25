@@ -29,96 +29,88 @@ import org.neo4j.memory.MemoryTracker;
 final class BFSExpander implements AutoCloseable {
     private final MemoryTracker mt;
     private final PPBFSHooks hooks;
-    private final DataManager dataManager;
+    private final GlobalState globalState;
     private final ProductGraphTraversalCursor pgCursor;
     private final long intoTarget;
 
-    // allocated once and reused per source node;
-    // max capacity should be total number of states in nfa if we had that info here,
-    // but it will grow to the required size soon enough
+    // allocated once and reused per source node
     private final HeapTrackingArrayList<State> statesList;
+    private final FoundNodes foundNodes;
 
     public BFSExpander(
-            DataManager dataManager,
+            FoundNodes foundNodes,
+            GlobalState globalState,
             ProductGraphTraversalCursor pgCursor,
             long intoTarget,
-            PPBFSHooks hooks,
-            MemoryTracker mt) {
-        this.mt = mt;
-        this.hooks = hooks;
-        this.dataManager = dataManager;
+            int nfaStateCount) {
+        this.mt = globalState.mt;
+        this.hooks = globalState.hooks;
+        this.globalState = globalState;
         this.pgCursor = pgCursor;
         this.intoTarget = intoTarget;
-        this.statesList = HeapTrackingArrayList.newArrayList(2, mt);
+        this.statesList = HeapTrackingArrayList.newArrayList(nfaStateCount, mt);
+        this.foundNodes = foundNodes;
     }
 
-    public void floodInitialNodeJuxtapositions() {
-        this.floodNodeJuxtapositions(0);
-    }
+    /** discover a node that has not been seen before */
+    public void discover(NodeState node) {
+        foundNodes.addToBuffer(node);
 
-    private void floodNodeJuxtapositions(int depthOfNextLevel) {
-        // nb: level is growing while we iterate over it but that is what we want
-        dataManager.nodeDatas().forEachNodeInNextLevel(currentNode -> {
-            var state = currentNode.state();
-            for (var nj : state.getNodeJuxtapositions()) {
-                if (nj.testNode(currentNode.id())) {
-                    NodeData nextNode = dataManager.getNodeData(
-                            currentNode.id(), nj.targetState().id());
+        var state = node.state();
+        for (var nj : state.getNodeJuxtapositions()) {
+            if (nj.testNode(node.id())) {
+                var nextNode = encounter(node.id(), nj.targetState());
 
-                    if (nextNode == null) { // Only add unseen nodes to next level
-                        nextNode = new NodeData(
-                                mt, currentNode.id(), nj.targetState(), depthOfNextLevel, dataManager, intoTarget);
-                        dataManager.addToNextLevel(nextNode);
-                    }
-
-                    nextNode.addSourceSignpost(
-                            TwoWaySignpost.fromNodeJuxtaposition(mt, currentNode, nextNode, depthOfNextLevel),
-                            depthOfNextLevel);
-                }
+                nextNode.addSourceSignpost(
+                        TwoWaySignpost.fromNodeJuxtaposition(mt, node, nextNode, foundNodes.depth()),
+                        foundNodes.depth());
             }
-        });
+        }
     }
 
-    public void expandLevel(int depthOfNextLevel) {
-        for (var pair : dataManager.nodeDatas().getCurrentLevelDGDatas().keyValuesView()) {
-            var dgNodeId = pair.getOne();
-            var pgNodeDatas = pair.getTwo();
+    /** encounter a node that may or may not have been seen before */
+    private NodeState encounter(long nodeId, State state) {
+        var nextNode = foundNodes.get(nodeId, state.id());
+
+        if (nextNode == null) {
+            nextNode = new NodeState(globalState, nodeId, state, intoTarget);
+            discover(nextNode);
+        }
+
+        return nextNode;
+    }
+
+    public void expand() {
+        for (var pair : foundNodes.frontier().keyValuesView()) {
+            var dbNodeId = pair.getOne();
+            var statesById = pair.getTwo();
 
             statesList.clear();
-            for (NodeData pgNodeInStateOrNull : pgNodeDatas) {
-                if (pgNodeInStateOrNull != null) {
-                    statesList.add(pgNodeInStateOrNull.state());
+            for (var nodeState : statesById) {
+                if (nodeState != null) {
+                    statesList.add(nodeState.state());
                 }
             }
 
-            pgCursor.setNodeAndStates(dgNodeId, statesList);
+            pgCursor.setNodeAndStates(dbNodeId, statesList);
             while (pgCursor.next()) {
                 long foundNode = pgCursor.otherNodeReference();
-                NodeData nextNode = dataManager.getNodeData(
-                        foundNode, pgCursor.targetState().id());
+                var nextNode = encounter(foundNode, pgCursor.targetState());
 
-                if (nextNode == null) {
-                    nextNode = new NodeData(
-                            mt, foundNode, pgCursor.targetState(), depthOfNextLevel, dataManager, intoTarget);
+                var currentNode = statesById.get(pgCursor.currentInputState().id());
 
-                    dataManager.addToNextLevel(nextNode); // Only add unseen nodes to next level
-                }
-
-                NodeData currentNode =
-                        pgNodeDatas.get(pgCursor.currentInputState().id());
-
-                TwoWaySignpost signpost = TwoWaySignpost.fromRelExpansion(
+                var signpost = TwoWaySignpost.fromRelExpansion(
                         mt,
                         currentNode,
                         pgCursor.relationshipReference(),
                         nextNode,
                         pgCursor.relationshipExpansion(),
-                        depthOfNextLevel);
-                nextNode.addSourceSignpost(signpost, depthOfNextLevel);
+                        foundNodes.depth());
+                nextNode.addSourceSignpost(signpost, foundNodes.depth());
             }
         }
 
-        floodNodeJuxtapositions(depthOfNextLevel);
+        foundNodes.shuffleFrontiers();
     }
 
     public void setTracer(KernelReadTracer tracer) {
@@ -127,8 +119,8 @@ final class BFSExpander implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        // dataManager is not owned by this class; it should be closed by the consumer
-        this.pgCursor.close();
-        this.statesList.close();
+        // globalState is not owned by this class; it should be closed by the consumer
+        pgCursor.close();
+        statesList.close();
     }
 }

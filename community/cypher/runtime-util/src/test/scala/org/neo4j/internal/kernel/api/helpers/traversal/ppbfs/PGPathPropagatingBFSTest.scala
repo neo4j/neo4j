@@ -509,7 +509,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         e.addRelationshipExpansion(e)
       }
       .from(a)
-      .logged
       .paths()
 
     paths shouldBe Seq(
@@ -541,7 +540,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         e.addRelationshipExpansion(e)
       }
       .from(a)
-      .logged
       .paths()
 
     paths shouldBe Seq(
@@ -574,7 +572,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         e.addNodeJuxtaposition(a)
       }
       .from(a)
-      .logged
       .paths()
 
     paths shouldBe Seq(
@@ -914,7 +911,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         s.addRelationshipExpansion(s, direction = Direction.OUTGOING)
       }
       .from(a)
-      .logged
       .paths()
 
     paths shouldBe Seq(
@@ -937,7 +933,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         s.addRelationshipExpansion(s)
       }
       .from(a)
-      .logged
       .paths()
 
     paths shouldBe Seq(
@@ -962,7 +957,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         s.addNodeJuxtaposition(e)
       }
       .from(a)
-      .logged
       .paths()
 
     paths shouldBe Seq(
@@ -988,7 +982,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         e.addNodeJuxtaposition(s)
       }
       .from(a)
-      .logged
       .paths()
 
     paths shouldBe Seq(
@@ -1015,7 +1008,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         a.addNodeJuxtaposition(e)
       }
       .from(a)
-      .logged
       .paths()
 
     paths shouldBe Seq(
@@ -1086,7 +1078,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
 
     def toList: Seq[A] = build().asScala.toList
 
-    def logged: FixtureBuilder[A] = copy(hooks = LoggingPPBFSHooks.debug)
+    def logged(level: LoggingPPBFSHooks = LoggingPPBFSHooks.debug): FixtureBuilder[A] = copy(hooks = level)
 
     /** Run the iterator with event hooks attached */
     def events(): Seq[EventRecorder.Event] = {

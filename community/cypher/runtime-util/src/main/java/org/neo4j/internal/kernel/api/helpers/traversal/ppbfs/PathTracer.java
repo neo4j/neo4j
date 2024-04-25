@@ -39,7 +39,7 @@ import org.neo4j.values.virtual.VirtualValues;
 public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath> {
     private final PPBFSHooks hooks;
     private final SignpostStack stack;
-    private NodeData sourceNode;
+    private NodeState sourceNode;
 
     /** The length of the currently traced path when projected back to the data graph */
     private int dgLength;
@@ -53,7 +53,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
      * This flag tracks whether we should continue to yield paths when tracing.
      */
     public boolean isSaturated() {
-        return stack.target().remainingTargetCount() == 0;
+        return stack.target().isSaturated();
     }
 
     private boolean shouldReturnSingleNodePath;
@@ -88,9 +88,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
      * a given length.
      * {@link #reset} must be called prior to this if the SignpostStack has been used previously.
      */
-    public void initialize(NodeData sourceNode, NodeData targetNode, int dgLength) {
-        Preconditions.checkArgument(
-                targetNode.remainingTargetCount() >= 0, "remainingTargetCount should not be decremented beyond 0");
+    public void initialize(NodeState sourceNode, NodeState targetNode, int dgLength) {
         Preconditions.checkState(!ready, "PathTracer was not reset before initializing");
         this.ready = true;
         this.sourceNode = sourceNode;
@@ -224,7 +222,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     }
 
     public record PathEntity(SlotOrName slotOrName, long id, EntityType entityType) {
-        static PathEntity fromNode(NodeData node) {
+        static PathEntity fromNode(NodeState node) {
             return new PathEntity(node.state().slotOrName(), node.id(), EntityType.NODE);
         }
 
@@ -249,12 +247,15 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
                 switch (e.entityType) {
                     case NODE -> {
                         if (last == null || last.entityType == EntityType.RELATIONSHIP) {
-                            sb.append(e.id).append("@").append(e.slotOrName);
+                            sb.append(e.id);
+                            if (e.slotOrName != SlotOrName.none()) {
+                                sb.append("@").append(e.slotOrName);
+                            }
                         } else if (last.slotOrName != e.slotOrName) {
                             sb.append(",").append(e.slotOrName);
                         }
                     }
-                    case RELATIONSHIP -> sb.append(")-[").append(e.id).append("]-(");
+                    case RELATIONSHIP -> sb.append(")-[").append(e.id).append("]->(");
                 }
                 last = e;
             }

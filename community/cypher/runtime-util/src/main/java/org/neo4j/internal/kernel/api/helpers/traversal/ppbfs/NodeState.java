@@ -27,25 +27,26 @@ import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.Measurable;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 
 /**
- * A NodeData stores all algorithm-related bookkeeping for a given product (pair) of data graph node and NFA state.
+ * A NodeState stores all algorithm-related bookkeeping for a given product (pair) of data graph node and NFA state.
  * Put differently, it is an incarnation of the nodes in a product graph, with attached PPBFS metadata.
  *
- * NodeData within an execution of the PPBFS algorithm should be unique for a given (node id, state id) pair; this
- * assumption is relied upon in several places. This is the purpose of {@link HeapTrackingNodeDatas}: to act as a repository
+ * NodeState within an execution of the PPBFS algorithm should be unique for a given (node id, state id) pair; this
+ * assumption is relied upon in several places. This is the purpose of {@link FoundNodes}: to act as a repository
  * for all product graph nodes.
  */
-public final class NodeData implements AutoCloseable, Measurable {
+public final class NodeState implements AutoCloseable, Measurable {
+    private static final int NO_SOURCE_DISTANCE = -1;
 
     private static final int SIGNPOSTS_INIT_SIZE = 2;
 
-    private final long id; // Data graph id
+    private final long nodeId;
     private final State state;
 
-    final DataManager dataManager;
+    // public so that it is accessible by TwoWaySignpost
+    final GlobalState globalState;
 
     private final HeapTrackingArrayList<TwoWaySignpost> sourceSignposts;
     private HeapTrackingArrayList<TwoWaySignpost> targetSignposts;
@@ -58,7 +59,7 @@ public final class NodeData implements AutoCloseable, Measurable {
 
     // The length of the shortest path in the data graph from the source node to this node which is accepted by the NFA.
     // This is not necessarily a trail length, the corresponding path may have repeated relationships.
-    private final int distanceFromSource;
+    private int sourceDistance = NO_SOURCE_DISTANCE;
 
     // This is initialised to K when we run both SHORTEST K and SHORTEST K GROUPS.
     // It is then decremented whenever we return a path (or group) ending with this node.
@@ -67,23 +68,21 @@ public final class NodeData implements AutoCloseable, Measurable {
 
     private boolean isTarget = false;
 
-    public NodeData(
-            MemoryTracker mt, long id, State state, int distanceFromSource, DataManager dataManager, long intoTarget) {
-        this.sourceSignposts = HeapTrackingArrayList.newArrayList(SIGNPOSTS_INIT_SIZE, mt);
-        this.id = id;
+    public NodeState(GlobalState globalState, long nodeId, State state, long intoTarget) {
+        this.sourceSignposts = HeapTrackingArrayList.newArrayList(SIGNPOSTS_INIT_SIZE, globalState.mt);
+        this.nodeId = nodeId;
         this.state = state;
-        this.distanceFromSource = distanceFromSource;
-        this.dataManager = dataManager;
+        this.globalState = globalState;
         this.lengthsFromSource = new BitSet();
         this.validatedLengthsFromSource = new BitSet();
 
-        if (state().isFinalState() && (intoTarget == NO_SUCH_ENTITY || intoTarget == id)) {
-            this.remainingTargetCount = (int) dataManager.initialCountForTargetNodes;
+        if (state().isFinalState() && (intoTarget == NO_SUCH_ENTITY || intoTarget == nodeId)) {
+            this.remainingTargetCount = (int) globalState.initialCountForTargetNodes;
             this.isTarget = true;
-            dataManager.incrementLiveTargetCount();
+            globalState.incrementUnsaturatedTargets();
         }
 
-        mt.allocateHeap(estimatedHeapUsage());
+        globalState.mt.allocateHeap(estimatedHeapUsage());
     }
 
     public State state() {
@@ -91,7 +90,7 @@ public final class NodeData implements AutoCloseable, Measurable {
     }
 
     public boolean isTarget() {
-        return this.isTarget;
+        return isTarget;
     }
 
     public int nextSignpostIndexForLength(int currentIndex, int lengthFromSource) {
@@ -114,8 +113,8 @@ public final class NodeData implements AutoCloseable, Measurable {
         //   it could be used to potentially avoid calling nextSignpostIndexForLength in some lucky cases, when the
         //   returned index is greater than the value of currentIndex being passed to nextSignpostIndexForLength.
 
-        for (int i = 0; i < sourceSignposts.size(); i++) {
-            if (sourceSignposts.get(i).hasSourceLength(lengthFromSource)) {
+        for (var sourceSignpost : sourceSignposts) {
+            if (sourceSignpost.hasSourceLength(lengthFromSource)) {
                 return;
             }
         }
@@ -137,14 +136,18 @@ public final class NodeData implements AutoCloseable, Measurable {
     }
 
     public long id() {
-        return id;
+        return nodeId;
     }
 
     public void addSourceSignpost(TwoWaySignpost sourceSignpost, int lengthFromSource) {
         Preconditions.checkArgument(
                 sourceSignpost.forwardNode == this, "Source signpost must be added to correct node");
 
-        dataManager.hooks.addSourceSignpost(sourceSignpost, lengthFromSource);
+        if (sourceDistance == NO_SOURCE_DISTANCE || sourceDistance > lengthFromSource) {
+            sourceDistance = lengthFromSource;
+        }
+
+        globalState.hooks.addSourceSignpost(sourceSignpost, lengthFromSource);
         if (!lengthsFromSource.get(lengthFromSource)) {
             // Never seen the node at this depth before
             lengthsFromSource.set(lengthFromSource);
@@ -152,14 +155,14 @@ public final class NodeData implements AutoCloseable, Measurable {
             int minDistToTarget = minDistToTarget();
             if (minDistToTarget != TwoWaySignpost.NO_TARGET_DISTANCE) {
                 Preconditions.checkState(
-                        lengthFromSource > distanceFromSource,
+                        lengthFromSource > realSourceDistance(),
                         "When we find a shortest path to a node we shouldn't have TargetSignposts");
 
-                dataManager.schedulePropagation(this, lengthFromSource, minDistToTarget);
+                globalState.schedule(this, lengthFromSource, minDistToTarget);
             }
 
             if (isTarget()) {
-                dataManager.addTarget(this);
+                globalState.addTarget(this);
             }
         } else {
             assert lengthFromSource == lengthsFromSource.stream().max().orElseThrow()
@@ -176,25 +179,25 @@ public final class NodeData implements AutoCloseable, Measurable {
 
             if (hasMinDistToTarget(lengthToTarget)) {
                 Preconditions.checkState(
-                        lengthFromSource > distanceFromSource,
+                        lengthFromSource > realSourceDistance(),
                         "When we find a shortest path to a node we shouldn't have TargetSignposts");
 
-                dataManager.schedulePropagation(this, lengthFromSource, lengthToTarget);
+                globalState.schedule(this, lengthFromSource, lengthToTarget);
             }
 
             if (isTarget()) {
-                dataManager.addTarget(this);
+                globalState.addTarget(this);
             }
         }
     }
 
     public void addTargetSignpost(TwoWaySignpost targetSignpost, int lengthToTarget) {
-        this.dataManager.hooks.addTargetSignpost(targetSignpost, lengthToTarget);
+        globalState.hooks.addTargetSignpost(targetSignpost, lengthToTarget);
         Preconditions.checkArgument(targetSignpost.prevNode == this, "Target signpost must be added to correct node");
 
         boolean firstTrace = false;
         if (targetSignposts == null) {
-            targetSignposts = HeapTrackingArrayList.newArrayList(SIGNPOSTS_INIT_SIZE, dataManager.mt);
+            targetSignposts = HeapTrackingArrayList.newArrayList(SIGNPOSTS_INIT_SIZE, globalState.mt);
             firstTrace = true;
         }
 
@@ -204,41 +207,47 @@ public final class NodeData implements AutoCloseable, Measurable {
         if (!hasMinDistToTarget(lengthToTarget)) {
             // First time we find a trail to a target of length `lengthToTarget`
 
-            int lengthFromSource = lengthsFromSource.nextSetBit(0);
-            while (lengthFromSource != -1) {
+            for (int lengthFromSource = lengthsFromSource.nextSetBit(0);
+                    lengthFromSource != -1;
+                    lengthFromSource = lengthsFromSource.nextSetBit(lengthFromSource + 1)) {
+
                 Preconditions.checkState(lengthsFromSource.get(lengthFromSource), "");
 
                 // Register for propagation for validated non-shortest lengthStates if not shortestDistToATarget,
                 // or all non-shortest lengthStates if shortestDistToATarget
                 if ((firstTrace || validatedLengthsFromSource.get(lengthFromSource))
-                        && lengthFromSource != distanceFromSource) {
-                    dataManager.schedulePropagation(this, lengthFromSource, lengthToTarget);
+                        && lengthFromSource != realSourceDistance()) {
+                    globalState.schedule(this, lengthFromSource, lengthToTarget);
                 }
-                lengthFromSource = lengthsFromSource.nextSetBit(lengthFromSource + 1);
             }
         }
 
         targetSignposts.add(targetSignpost);
     }
 
+    private int realSourceDistance() {
+        if (sourceDistance == NO_SOURCE_DISTANCE) {
+            return 0;
+        }
+        return sourceDistance;
+    }
+
     public void propagateLengthPair(int lengthFromSource, int lengthToTarget) {
-        dataManager.hooks.propagateLengthPair(this, lengthFromSource, lengthToTarget);
+        globalState.hooks.propagateLengthPair(this, lengthFromSource, lengthToTarget);
 
         if (!hasAnyMinDistToTarget()) {
             return;
         }
 
-        if (targetSignposts != null) {
-            for (TwoWaySignpost tsp : targetSignposts) {
-                if (tsp.minDistToTarget() == lengthToTarget) {
-                    tsp.propagate(lengthFromSource, lengthToTarget);
-                }
+        for (TwoWaySignpost tsp : targetSignposts) {
+            if (tsp.minDistToTarget() == lengthToTarget) {
+                tsp.propagate(lengthFromSource, lengthToTarget);
             }
         }
     }
 
     public void validateLengthState(int lengthFromSource, int tracedLengthToTarget) {
-        dataManager.hooks.validateLengthState(this, lengthFromSource, tracedLengthToTarget);
+        globalState.hooks.validateLengthState(this, lengthFromSource, tracedLengthToTarget);
 
         Preconditions.checkState(
                 !validatedLengthsFromSource.get(lengthFromSource),
@@ -252,31 +261,33 @@ public final class NodeData implements AutoCloseable, Measurable {
                 : "First time tracing should be with shortest length to target";
 
         validatedLengthsFromSource.set(lengthFromSource);
-        // We don't want to register to propagate for the same length pair again
-        if (targetSignposts != null) {
-            for (TwoWaySignpost tsp : targetSignposts) {
-                int lengthToTarget = tsp.minDistToTarget();
-                if (lengthToTarget != TwoWaySignpost.NO_TARGET_DISTANCE) {
-                    Preconditions.checkState(
-                            lengthToTarget >= tracedLengthToTarget,
-                            "First time tracing should be with shortest length to target");
-                    if (lengthToTarget > tracedLengthToTarget) {
-                        // We don't want to register to propagate for the same length pair again
-                        dataManager.schedulePropagation(this, lengthFromSource, lengthToTarget);
-                    }
+        if (!hasAnyMinDistToTarget()) {
+            return;
+        }
+
+        for (TwoWaySignpost tsp : targetSignposts) {
+            int lengthToTarget = tsp.minDistToTarget();
+            if (lengthToTarget != TwoWaySignpost.NO_TARGET_DISTANCE) {
+                Preconditions.checkState(
+                        lengthToTarget >= tracedLengthToTarget,
+                        "First time tracing should be with shortest length to target");
+
+                // We don't want to register to propagate for the same length pair again
+                if (lengthToTarget > tracedLengthToTarget) {
+                    globalState.schedule(this, lengthFromSource, lengthToTarget);
                 }
             }
         }
     }
 
     public void decrementTargetCount() {
-        dataManager.hooks.decrementTargetCount(this, remainingTargetCount);
+        globalState.hooks.decrementTargetCount(this, remainingTargetCount);
 
         remainingTargetCount--;
         Preconditions.checkState(remainingTargetCount >= 0, "Target count should never be negative");
 
         if (remainingTargetCount == 0) {
-            this.dataManager.decrementLiveTargetCount();
+            globalState.decrementUnsaturatedTargets();
         }
     }
 
@@ -319,14 +330,14 @@ public final class NodeData implements AutoCloseable, Measurable {
         if (state.slotOrName() instanceof SlotOrName.VarName name) {
             stateName = name.name();
         }
-        return "(" + id + "," + stateName + ')';
+        return "(" + nodeId + "," + stateName + ')';
     }
 
-    public int remainingTargetCount() {
-        return remainingTargetCount;
+    public boolean isSaturated() {
+        return remainingTargetCount == 0;
     }
 
-    private static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(NodeData.class);
+    private static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(NodeState.class);
     private static long BITSET_MIN_SIZE =
             HeapEstimator.shallowSizeOfInstance(BitSet.class) + HeapEstimator.sizeOfLongArray(1);
 

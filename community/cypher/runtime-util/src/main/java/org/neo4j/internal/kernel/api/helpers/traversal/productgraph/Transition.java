@@ -22,5 +22,7 @@ package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 public interface Transition {
     State targetState();
 
-    void setTargetState(State targetState);
+    default boolean testNode(long node) {
+        return targetState().test(node);
+    }
 }

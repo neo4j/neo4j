@@ -19,48 +19,4 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
-import java.util.Objects;
-import org.neo4j.util.Preconditions;
-
-public final class NodeJuxtaposition implements Transition {
-    private State targetState;
-
-    public NodeJuxtaposition(State targetState) {
-        this.targetState = targetState;
-    }
-
-    public boolean testNode(long node) {
-        return targetState.test(node);
-    }
-
-    @Override
-    public State targetState() {
-        return targetState;
-    }
-
-    @Override
-    public void setTargetState(State state) {
-        Preconditions.checkState(
-                targetState == null,
-                "Shouldn't set target state more than once. The targetState field is only mutable to support delayed initialization which is require when there are cycles in the NFA");
-        this.targetState = state;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (NodeJuxtaposition) obj;
-        return Objects.equals(this.targetState, that.targetState);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(targetState);
-    }
-
-    @Override
-    public String toString() {
-        return "NodeJuxtaposition[targetState=" + targetState + ']';
-    }
-}
+public record NodeJuxtaposition(State targetState) implements Transition {}

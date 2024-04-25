@@ -19,91 +19,20 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.RelationshipDataReader;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
-import org.neo4j.util.Preconditions;
 
-public final class RelationshipExpansion implements Transition {
-    private final Predicate<RelationshipDataReader> relPredicate;
-    private final int[] types;
-    private final Direction direction;
-    private final SlotOrName slotOrName;
-    private State targetState;
-
-    public RelationshipExpansion(
-            Predicate<RelationshipDataReader> relPredicate,
-            int[] types,
-            Direction direction,
-            SlotOrName slotOrName,
-            State targetState) {
-        this.relPredicate = relPredicate;
-        this.types = types;
-        this.direction = direction;
-        this.slotOrName = slotOrName;
-        this.targetState = targetState;
-    }
+public record RelationshipExpansion(
+        Predicate<RelationshipDataReader> relPredicate,
+        int[] types,
+        Direction direction,
+        SlotOrName slotOrName,
+        State targetState)
+        implements Transition {
 
     public boolean testRelationship(RelationshipDataReader rel) {
         return relPredicate.test(rel);
-    }
-
-    public boolean testNode(long node) {
-        return this.targetState.test(node);
-    }
-
-    public int[] types() {
-        return types;
-    }
-
-    public Direction direction() {
-        return direction;
-    }
-
-    public SlotOrName slotOrName() {
-        return slotOrName;
-    }
-
-    @Override
-    public State targetState() {
-        return targetState;
-    }
-
-    @Override
-    public void setTargetState(State state) {
-        Preconditions.checkState(
-                targetState == null,
-                "Shouldn't set target state more than once. The targetState field is only mutable to support delayed initialization which is require when there are cycles in the NFA");
-        this.targetState = state;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (RelationshipExpansion) obj;
-        return Objects.equals(this.relPredicate, that.relPredicate)
-                && Arrays.equals(this.types, that.types)
-                && Objects.equals(this.direction, that.direction)
-                && Objects.equals(this.slotOrName, that.slotOrName)
-                && Objects.equals(this.targetState, that.targetState);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(relPredicate, Arrays.hashCode(types), direction, slotOrName, targetState);
-    }
-
-    @Override
-    public String toString() {
-        return "RelationshipExpansion[" + "relPredicate="
-                + relPredicate + ", " + "types="
-                + Arrays.toString(types) + ", " + "direction="
-                + direction + ", " + "slotOrName="
-                + slotOrName + ", " + "targetState="
-                + targetState + ']';
     }
 }

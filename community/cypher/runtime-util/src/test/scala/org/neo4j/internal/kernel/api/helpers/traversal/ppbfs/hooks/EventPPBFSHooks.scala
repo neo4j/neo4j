@@ -19,12 +19,12 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeData
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
 
 private[ppbfs] class EventPPBFSHooks(recorder: EventRecorder) extends PPBFSHooks {
 
-  override def propagateLengthPair(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {
+  override def propagateLengthPair(nodeData: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {
     recorder.propagateLengthPair(nodeData.id(), lengthFromSource, lengthToTarget)
   }
 
@@ -36,11 +36,11 @@ private[ppbfs] class EventPPBFSHooks(recorder: EventRecorder) extends PPBFSHooks
     recorder.nextLevel(depth)
   }
 
-  override def schedulePropagation(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {
+  override def schedulePropagation(nodeData: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {
     recorder.schedulePropagation(nodeData.id(), lengthFromSource, lengthToTarget)
   }
 
-  override def addTarget(nodeData: NodeData): Unit = {
+  override def addTarget(nodeData: NodeState): Unit = {
     recorder.addTarget(nodeData.id())
   }
 }

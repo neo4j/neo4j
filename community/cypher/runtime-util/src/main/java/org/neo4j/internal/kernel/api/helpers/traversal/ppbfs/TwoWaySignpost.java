@@ -38,8 +38,8 @@ public abstract sealed class TwoWaySignpost implements Measurable {
 
     public static final int NO_TARGET_DISTANCE = -1;
 
-    public final NodeData prevNode;
-    public final NodeData forwardNode;
+    public final NodeState prevNode;
+    public final NodeState forwardNode;
 
     // Source signpost
     protected final BitSet lengthsFromSource;
@@ -48,7 +48,7 @@ public abstract sealed class TwoWaySignpost implements Measurable {
     // targetSignpost
     protected int minDistToTarget = NO_TARGET_DISTANCE;
 
-    public TwoWaySignpost(MemoryTracker mt, NodeData prevNode, NodeData forwardNode, int lengthFromSource) {
+    public TwoWaySignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int lengthFromSource) {
         this.prevNode = prevNode;
         this.forwardNode = forwardNode;
         this.lengthsFromSource = new BitSet();
@@ -59,16 +59,16 @@ public abstract sealed class TwoWaySignpost implements Measurable {
 
     public static RelSignpost fromRelExpansion(
             MemoryTracker mt,
-            NodeData prevNode,
+            NodeState prevNode,
             long relId,
-            NodeData forwardNode,
+            NodeState forwardNode,
             RelationshipExpansion relationshipExpansion,
             int lengthFromSource) {
         return new RelSignpost(mt, prevNode, relId, forwardNode, relationshipExpansion, lengthFromSource);
     }
 
     public static NodeSignpost fromNodeJuxtaposition(
-            MemoryTracker mt, NodeData prevNode, NodeData forwardNode, int lengthFromSource) {
+            MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int lengthFromSource) {
         return new NodeSignpost(mt, prevNode, forwardNode, lengthFromSource);
     }
 
@@ -145,13 +145,13 @@ public abstract sealed class TwoWaySignpost implements Measurable {
     }
 
     public void pruneSourceLength(int lengthFromSource) {
-        prevNode.dataManager.hooks.pruneSourceLength(this, lengthFromSource);
+        prevNode.globalState.hooks.pruneSourceLength(this, lengthFromSource);
         this.lengthsFromSource.set(lengthFromSource, false);
         this.forwardNode.synchronizeLengthAfterPrune(lengthFromSource);
     }
 
     public void setVerified(int lengthFromSource) {
-        prevNode.dataManager.hooks.setVerified(this, lengthFromSource);
+        prevNode.globalState.hooks.setVerified(this, lengthFromSource);
         this.verifiedAtLengthFromSource.set(lengthFromSource, true);
     }
 
@@ -170,9 +170,9 @@ public abstract sealed class TwoWaySignpost implements Measurable {
 
         private RelSignpost(
                 MemoryTracker mt,
-                NodeData prevNode,
+                NodeState prevNode,
                 long relId,
-                NodeData forwardNode,
+                NodeState forwardNode,
                 RelationshipExpansion relationshipExpansion,
                 int lengthFromSource) {
             super(mt, prevNode, forwardNode, lengthFromSource);
@@ -249,7 +249,7 @@ public abstract sealed class TwoWaySignpost implements Measurable {
     /** A signpost that points across a node juxtaposition */
     public static final class NodeSignpost extends TwoWaySignpost {
 
-        private NodeSignpost(MemoryTracker mt, NodeData prevNode, NodeData forwardNode, int lengthFromSource) {
+        private NodeSignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int lengthFromSource) {
             super(mt, prevNode, forwardNode, lengthFromSource);
         }
 

@@ -26,15 +26,15 @@ import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.PGStateBuild
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
+import org.neo4j.memory.MemoryTracker
 
-class NodeDataTest extends CypherFunSuite {
+class NodeStateTest extends CypherFunSuite {
   private val meter = MemoryMeter.builder.build
-  private val mt = EmptyMemoryTracker.INSTANCE
 
   test("isTarget() returns true for a final state if there is no intoTarget") {
     val stateBuilder = new PGStateBuilder
     val state = stateBuilder.newState(isFinalState = true)
-    val nodeData = new NodeData(mt, 1, state.state, 0, dataManager(), NO_SUCH_NODE)
+    val nodeData = new NodeState(globalState(), 1, state.state, NO_SUCH_NODE)
 
     nodeData.isTarget shouldBe true
   }
@@ -42,7 +42,7 @@ class NodeDataTest extends CypherFunSuite {
   test("isTarget() returns false if intoTarget does not match the node") {
     val stateBuilder = new PGStateBuilder
     val state = stateBuilder.newState(isFinalState = true)
-    val nodeData = new NodeData(mt, 1, state.state, 0, dataManager(), 2)
+    val nodeData = new NodeState(globalState(), 1, state.state, 2)
 
     nodeData.isTarget shouldBe false
   }
@@ -50,7 +50,7 @@ class NodeDataTest extends CypherFunSuite {
   test("isTarget() returns true if intoTarget matches the node") {
     val stateBuilder = new PGStateBuilder
     val state = stateBuilder.newState(isFinalState = true)
-    val nodeData = new NodeData(mt, 1, state.state, 0, dataManager(), 1)
+    val nodeData = new NodeState(globalState(), 1, state.state, 1)
 
     nodeData.isTarget shouldBe true
   }
@@ -58,13 +58,22 @@ class NodeDataTest extends CypherFunSuite {
   test("memory allocation on construction") {
     val mt = new LocalMemoryTracker()
     val state = new PGStateBuilder().newState().state
-    val dm = dataManager()
-    val nd = new NodeData(mt, 0, state, 0, dm, -1)
+    val gs = globalState(mt)
+    val nd = new NodeState(gs, 0, state, -1)
 
-    val actual = meter.measureDeep(nd) - Seq[Object](mt, dm, state).map(meter.measureDeep).sum
+    val actual = meter.measureDeep(nd) - Seq[Object](gs, state).map(meter.measureDeep).sum
 
     mt.estimatedHeapMemory() shouldBe actual
   }
 
-  private def dataManager() = new DataManager(EmptyMemoryTracker.INSTANCE, PPBFSHooks.NULL, 1, 1)
+  private def globalState(mt: MemoryTracker = EmptyMemoryTracker.INSTANCE) = {
+    val hooks = PPBFSHooks.NULL
+    new GlobalState(
+      new Propagator(EmptyMemoryTracker.INSTANCE, hooks),
+      new TargetTracker(EmptyMemoryTracker.INSTANCE, hooks),
+      mt,
+      hooks,
+      1
+    )
+  }
 }

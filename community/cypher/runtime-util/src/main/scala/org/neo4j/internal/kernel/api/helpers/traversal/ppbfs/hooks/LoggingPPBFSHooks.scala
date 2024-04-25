@@ -19,11 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
-import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap
 import org.neo4j.collection.trackable.HeapTrackingUnifiedSet
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeData
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TwoWaySignpost
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks.Debug
@@ -55,10 +54,10 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
     )
   }
 
-  override def propagateLengthPair(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {
+  override def propagateLengthPair(nodeState: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {
     log(
       Debug,
-      "nodeData" -> nodeData,
+      "nodeState" -> nodeState,
       "lengthFromSource" -> lengthFromSource,
       "lengthToTarget" -> lengthToTarget
     )
@@ -72,19 +71,19 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
     )
   }
 
-  override def validateLengthState(nodeData: NodeData, lengthFromSource: Int, tracedLengthToTarget: Int): Unit = {
+  override def validateLengthState(nodeState: NodeState, lengthFromSource: Int, tracedLengthToTarget: Int): Unit = {
     log(
       Debug,
-      "nodeData" -> nodeData,
+      "nodeState" -> nodeState,
       "lengthFromSource" -> lengthFromSource,
       "tracedLengthToTarget" -> tracedLengthToTarget
     )
   }
 
-  override def decrementTargetCount(nodeData: NodeData, remainingTargetCount: Int): Unit = {
+  override def decrementTargetCount(nodeState: NodeState, remainingTargetCount: Int): Unit = {
     log(
       Debug,
-      "node" -> nodeData,
+      "nodeState" -> nodeState,
       "prior remainingTargetCount" -> remainingTargetCount
     )
   }
@@ -117,24 +116,24 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
     log(Info, "invalidTrail" -> getTracedPath().toString)
   }
 
-  override def schedulePropagation(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {
+  override def schedulePropagation(nodeState: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {
     log(
       Debug,
-      "nodeData" -> nodeData,
+      "nodeState" -> nodeState,
       "lengthFromSource" -> lengthFromSource,
       "lengthToTarget" -> lengthToTarget
     )
   }
 
   override def propagateAll(
-    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[HeapTrackingUnifiedSet[NodeData]]],
+    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[HeapTrackingUnifiedSet[NodeState]]],
     totalLength: Int
   ): Unit = {
     val str = new StringBuilder
 
     nodesToPropagate.forEachKeyValue(
-      (totalLength: Int, v: HeapTrackingIntObjectHashMap[HeapTrackingUnifiedSet[NodeData]]) => {
-        v.forEachKeyValue((lengthFromSource: Int, s: HeapTrackingUnifiedSet[NodeData]) => {
+      (totalLength: Int, v: HeapTrackingIntObjectHashMap[HeapTrackingUnifiedSet[NodeState]]) => {
+        v.forEachKeyValue((lengthFromSource: Int, s: HeapTrackingUnifiedSet[NodeState]) => {
           str.append("\n")
             .append(" ".repeat(PADDING))
             .append("- ")
@@ -154,8 +153,8 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
     log(Debug, "nodesToPropagate" -> str)
   }
 
-  override def addTarget(nodeData: NodeData): Unit = {
-    log(Debug, "targetNode" -> nodeData)
+  override def addTarget(nodeState: NodeState): Unit = {
+    log(Debug, "targetNode" -> nodeState)
   }
 
   private var color = DebugSupport.Blue
@@ -173,10 +172,6 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
   override def newRow(nodeId: Long): Unit = {
     toggleColor()
     System.out.println("\n*** New row from node " + nodeId + " ***\n")
-  }
-
-  override def finishedPropagation(targets: HeapTrackingArrayList[NodeData]): Unit = {
-    log(Debug, "targets" -> targets.asScala.mkString("[", ", ", "]"))
   }
 
   override def activateSignpost(currentLength: Int, signpost: TwoWaySignpost): Unit = {

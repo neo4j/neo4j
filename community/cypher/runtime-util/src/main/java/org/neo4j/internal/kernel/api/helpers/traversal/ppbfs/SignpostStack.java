@@ -41,13 +41,13 @@ public class SignpostStack {
     private final HeapTrackingArrayList<TwoWaySignpost> activeSignposts;
 
     /**
-     * The index of each signpost in activeSignposts, relative to its NodeData parent
+     * The index of each signpost in activeSignposts, relative to its NodeState parent
      */
     private final HeapTrackingIntArrayList nodeSourceSignpostIndices;
 
     private final PPBFSHooks hooks;
 
-    private NodeData targetNode = null;
+    private NodeState targetNode = null;
     private int dgLength = -1;
     private int dgLengthToTarget = -1;
 
@@ -63,7 +63,7 @@ public class SignpostStack {
     }
 
     /**
-     * Remove NodeData/TwoWaySignpost references, allowing them to be garbage collected.
+     * Remove NodeState/TwoWaySignpost references, allowing them to be garbage collected.
      * {@link #initialize} must be called after this to correctly set up the SignpostStack.
      */
     public void reset() {
@@ -83,7 +83,7 @@ public class SignpostStack {
      * Set up the SignpostStack ready for tracing.
      * {@link #reset} must be called prior to this if the SignpostStack has been used previously.
      */
-    public void initialize(NodeData targetNode, int dgLength) {
+    public void initialize(NodeState targetNode, int dgLength) {
         this.targetNode = targetNode;
         this.dgLength = dgLength;
         this.nodeSourceSignpostIndices.add(-1);
@@ -100,14 +100,14 @@ public class SignpostStack {
     /**
      * The top node of the stack
      */
-    public NodeData headNode() {
+    public NodeState headNode() {
         return activeSignposts.isEmpty() ? targetNode : this.activeSignposts.last().prevNode;
     }
 
     /**
      * The bottom node of the stack (always the target node of the path)
      */
-    public NodeData target() {
+    public NodeState target() {
         return this.targetNode;
     }
 
@@ -122,7 +122,7 @@ public class SignpostStack {
         return this.activeSignposts.get(index);
     }
 
-    public NodeData node(int index) {
+    public NodeState node(int index) {
         return index == 0 ? targetNode : signpost(index - 1).prevNode;
     }
 

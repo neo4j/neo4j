@@ -19,10 +19,9 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
-import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap
 import org.neo4j.collection.trackable.HeapTrackingUnifiedSet
-import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeData
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TwoWaySignpost
 
@@ -45,11 +44,11 @@ object PPBFSHooks {
 }
 
 abstract class PPBFSHooks {
-  // NodeData
+  // NodeState
   def addSourceSignpost(signpost: TwoWaySignpost, lengthFromSource: Int): Unit = {}
   def addTargetSignpost(signpost: TwoWaySignpost, lengthToTarget: Int): Unit = {}
-  def propagateLengthPair(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {}
-  def validateLengthState(nodeData: NodeData, lengthFromSource: Int, tracedLengthToTarget: Int): Unit = {}
+  def propagateLengthPair(nodeState: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {}
+  def validateLengthState(nodeState: NodeState, lengthFromSource: Int, tracedLengthToTarget: Int): Unit = {}
 
   // PathTracer
   def returnPath(tracedPath: PathTracer.TracedPath): Unit = {}
@@ -64,15 +63,14 @@ abstract class PPBFSHooks {
 
   // DataManager
   def propagateAll(
-    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[HeapTrackingUnifiedSet[NodeData]]],
+    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[HeapTrackingUnifiedSet[NodeState]]],
     totalLength: Int
   ): Unit = {}
   def propagateAllAtLengths(lengthFromSource: Int, lengthToTarget: Int): Unit = {}
-  def schedulePropagation(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {}
+  def schedulePropagation(nodeState: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {}
   def newRow(nodeId: Long): Unit = {}
-  def finishedPropagation(targets: HeapTrackingArrayList[NodeData]): Unit = {}
-  def decrementTargetCount(nodeData: NodeData, remainingTargetCount: Int): Unit = {}
-  def addTarget(nodeData: NodeData): Unit = {}
+  def decrementTargetCount(nodeState: NodeState, remainingTargetCount: Int): Unit = {}
+  def addTarget(nodeState: NodeState): Unit = {}
 
   // Signpost
   def pruneSourceLength(sourceSignpost: TwoWaySignpost, lengthFromSource: Int): Unit = {}
