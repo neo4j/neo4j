@@ -564,13 +564,23 @@ sealed trait ConflictFinder {
 
     // a ForeachApply can conflict with its RHS children.
     // For now, we ignore those conflicts, to ensure side-effect visibility.
-    def foreachConflictWithRHS = Seq(writePlan, readPlan).permutations.exists {
-      case Seq(planA, planB) => planA match {
-          case ForeachApply(_, rhs, _, _) =>
-            (rhs eq planB) || planChildrenLookup.hasChild(rhs, planB)
-          case _ => false
-        }
-      case _ => throw new IllegalStateException()
+    def foreachConflictWithRHS: Boolean = {
+      // Duplicate and less functional code for efficiency
+      writePlan match {
+        case ForeachApply(_, rhs, _, _) =>
+          if ((rhs eq readPlan) || planChildrenLookup.hasChild(rhs, readPlan)) {
+            return true
+          }
+        case _ =>
+      }
+      readPlan match {
+        case ForeachApply(_, rhs, _, _) =>
+          if ((rhs eq writePlan) || planChildrenLookup.hasChild(rhs, writePlan)) {
+            return true
+          }
+        case _ =>
+      }
+      false
     }
 
     // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
