@@ -65,6 +65,7 @@ import org.neo4j.index.internal.gbptree.ValueHolder;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.RandomSupport;
@@ -238,6 +239,7 @@ class IdRangeMarkerTest {
         // when
         Writer writer = mock(Writer.class);
         try (IdRangeMarker marker = new IdRangeMarker(
+                TestIdType.TEST,
                 idsPerEntry,
                 layout,
                 writer,
@@ -258,13 +260,14 @@ class IdRangeMarkerTest {
     }
 
     @Test
-    void shouldIgnoreReservedIds() throws IOException {
+    void shouldIgnoreReservedIdsIfIdTypeSaysSo() throws IOException {
         // given
         long reservedId = IdValidator.INTEGER_MINUS_ONE;
 
         // when
         MutableLongSet expectedIds = LongSets.mutable.empty();
         try (IdRangeMarker marker = new IdRangeMarker(
+                TestIdType.TEST,
                 idsPerEntry,
                 layout,
                 tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
@@ -290,10 +293,42 @@ class IdRangeMarkerTest {
     }
 
     @Test
+    void shouldUseReservedIdsIfIdTypeSaysSo() throws IOException {
+        // given
+        long reservedId = IdValidator.INTEGER_MINUS_ONE;
+
+        // when
+        MutableLongSet expectedIds = LongSets.mutable.empty();
+        try (IdRangeMarker marker = new IdRangeMarker(
+                TestIdType.TEST_USING_RESERVED,
+                idsPerEntry,
+                layout,
+                tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
+                mock(Lock.class),
+                MERGER,
+                true,
+                new AtomicInteger(),
+                1,
+                new AtomicLong(reservedId - 1),
+                true,
+                false,
+                NO_MONITOR)) {
+            for (long id = reservedId - 1; id <= reservedId + 1; id++) {
+                marker.markDeleted(id);
+                expectedIds.add(id);
+            }
+        }
+
+        // then
+        assertEquals(expectedIds, gatherIds(DELETED));
+    }
+
+    @Test
     void shouldBatchWriteIdBridging() {
         // given
         Writer<IdRangeKey, IdRange> writer = mock(Writer.class);
         try (IdRangeMarker marker = new IdRangeMarker(
+                TestIdType.TEST,
                 idsPerEntry,
                 layout,
                 writer,
@@ -326,6 +361,7 @@ class IdRangeMarkerTest {
         // and therefore writes those separately. Get that out of the way for this test.
         int highestWrittenId = markOperation.name.equals("unallocated") ? 100 : -1;
         try (IdRangeMarker marker = new IdRangeMarker(
+                TestIdType.TEST,
                 idsPerEntry,
                 layout,
                 writer,
@@ -360,6 +396,7 @@ class IdRangeMarkerTest {
         // given
         var freeIdsNotifier = new AtomicInteger();
         try (var marker = new IdRangeMarker(
+                TestIdType.TEST,
                 idsPerEntry,
                 layout,
                 tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
@@ -388,6 +425,7 @@ class IdRangeMarkerTest {
         int numUnallocated = IDS_PER_ENTRY * 3;
         long highId = numIdsBefore + numUnallocated;
         try (var marker = new IdRangeMarker(
+                TestIdType.TEST,
                 idsPerEntry,
                 layout,
                 tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
@@ -430,6 +468,7 @@ class IdRangeMarkerTest {
 
     private IdRangeMarker instantiateMarker(Lock lock, ValueMerger merger) throws IOException {
         return new IdRangeMarker(
+                TestIdType.TEST,
                 idsPerEntry,
                 layout,
                 tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),

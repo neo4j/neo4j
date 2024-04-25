@@ -60,6 +60,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution.Slot;
+import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -975,6 +976,7 @@ class FreeIdScannerTest {
 
     private IdRangeMarker marker(long generation, boolean bridgeIdGaps) throws IOException {
         return new IdRangeMarker(
+                TestIdType.TEST,
                 IDS_PER_ENTRY,
                 layout,
                 tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
@@ -1057,6 +1059,7 @@ class FreeIdScannerTest {
         private IdRangeMarker instantiateRealMarker() {
             try {
                 return new IdRangeMarker(
+                        TestIdType.TEST,
                         IDS_PER_ENTRY,
                         layout,
                         tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),

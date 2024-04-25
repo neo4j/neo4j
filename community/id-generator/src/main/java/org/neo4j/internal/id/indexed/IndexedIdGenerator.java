@@ -27,7 +27,6 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.index.internal.gbptree.StructureWriteLog.structureWriteLog;
 import static org.neo4j.internal.id.IdValidator.assertIdWithinMaxCapacity;
-import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 
@@ -317,6 +316,7 @@ public class IndexedIdGenerator implements IdGenerator {
     private final int biggestSlotSize;
 
     private final Set<Long> lockedPageRanges;
+    private final boolean respectsReservedIds;
 
     public IndexedIdGenerator(
             PageCache pageCache,
@@ -416,6 +416,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 monitor,
                 allocationEnabled,
                 useDirectToCache);
+        this.respectsReservedIds = idType.respectsReservedId();
     }
 
     private GBPTree<IdRangeKey, IdRange> instantiateTree(
@@ -454,6 +455,14 @@ public class IndexedIdGenerator implements IdGenerator {
         }
     }
 
+    private boolean isReservedId(long id) {
+        return respectsReservedIds && IdValidator.isReservedId(id);
+    }
+
+    private boolean hasReservedIdInRange(long startIdInclusive, long endIdExclusive) {
+        return respectsReservedIds && IdValidator.hasReservedIdInRange(startIdInclusive, endIdExclusive);
+    }
+
     @Override
     public long nextId(CursorContext cursorContext) {
         do {
@@ -480,7 +489,7 @@ public class IndexedIdGenerator implements IdGenerator {
         do {
             id = highId.getAndIncrement();
             assertIdWithinMaxCapacity(idType, id, maxId);
-        } while (IdValidator.isReservedId(id));
+        } while (isReservedId(id));
         monitor.allocatedFromHigh(id, 1);
         return id;
     }
@@ -669,6 +678,7 @@ public class IndexedIdGenerator implements IdGenerator {
             var merger = new IdRangeMerger(
                     !started, monitor, numUnusedIds.get() == HeaderReader.UNINITIALIZED ? null : numUnusedIds);
             return new IdRangeMarker(
+                    idType,
                     idsPerEntry,
                     layout,
                     tree.writer(cursorContext),

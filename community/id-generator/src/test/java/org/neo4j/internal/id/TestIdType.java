@@ -21,7 +21,13 @@ package org.neo4j.internal.id;
 
 public enum TestIdType implements IdType {
     TEST,
-    TEST_2;
+    TEST_2,
+    TEST_USING_RESERVED {
+        @Override
+        public boolean respectsReservedId() {
+            return false;
+        }
+    };
 
     @Override
     public boolean highActivity() {

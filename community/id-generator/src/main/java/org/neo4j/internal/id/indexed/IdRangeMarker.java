@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.internal.id.indexed.IdRange.ADDITION_ALL;
 import static org.neo4j.internal.id.indexed.IdRange.ADDITION_REUSE;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_ALL;
@@ -37,6 +36,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 
 /**
@@ -127,6 +127,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
      */
     private final IndexedIdGenerator.Monitor monitor;
 
+    private final boolean respectsReservedIds;
+
     /**
      * Current type of operations. As various "mark" operations comes in they modify the {@link #key} and {@link #value}
      * states, such that if multiple operations of the same type and in the same range comes in sequence they are all written in one
@@ -135,6 +137,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     private int type = TYPE_NONE;
 
     IdRangeMarker(
+            IdType idType,
             int idsPerEntry,
             Layout<IdRangeKey, IdRange> layout,
             Writer<IdRangeKey, IdRange> writer,
@@ -147,6 +150,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
             boolean bridgeIdGaps,
             boolean deleteAlsoFrees,
             IndexedIdGenerator.Monitor monitor) {
+        this.respectsReservedIds = idType.respectsReservedId();
         this.idsPerEntry = idsPerEntry;
         this.writer = writer;
         this.key = layout.newKey();
@@ -186,6 +190,10 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     public void flush() {
         flushRange();
         writer.yield();
+    }
+
+    private boolean hasReservedIdInRange(long startIdInclusive, long endIdExclusive) {
+        return respectsReservedIds && IdValidator.hasReservedIdInRange(startIdInclusive, endIdExclusive);
     }
 
     @Override
@@ -342,7 +350,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
             if (highestWrittenId < to - 1) {
                 long bridgeId = highestWrittenId + 1;
                 long bridgeNumberOfIds = to - bridgeId;
-                if (IdValidator.hasReservedIdInRange(bridgeId, bridgeId + bridgeNumberOfIds)) {
+                if (hasReservedIdInRange(bridgeId, bridgeId + bridgeNumberOfIds)) {
                     // If we happen to bridge across the reserved ID then divide it up in two
                     // chunks: one before the reserved ID and the rest after.
                     long idsBefore = bridgeId - IdValidator.INTEGER_MINUS_ONE;

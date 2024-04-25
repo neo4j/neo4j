@@ -37,4 +37,12 @@ public interface IdType {
     default boolean isSchemaType() {
         return false;
     }
+
+    /**
+     * @return if this type respects the reserved ID contained within {@link IdValidator},
+     * i.e. if {@code true} this reserved ID won't be used.
+     */
+    default boolean respectsReservedId() {
+        return true;
+    }
 }
