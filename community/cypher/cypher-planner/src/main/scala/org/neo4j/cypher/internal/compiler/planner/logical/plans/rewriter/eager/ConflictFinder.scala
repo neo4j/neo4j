@@ -597,12 +597,12 @@ sealed trait ConflictFinder {
 
     def nonConflictingReadPlan(): Boolean = readPlan.isInstanceOf[Argument]
 
-    !simpleDeletingPlansConflict &&
+    !nonConflictingReadPlan() &&
     !conflictsWithItself &&
+    !simpleDeletingPlansConflict &&
     !mergeConflictWithChild &&
     !foreachConflictWithRHS &&
-    conflictsWithUnstablePlan &&
-    !nonConflictingReadPlan()
+    conflictsWithUnstablePlan
   }
 
   private def isInTransactionalApply(plan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
