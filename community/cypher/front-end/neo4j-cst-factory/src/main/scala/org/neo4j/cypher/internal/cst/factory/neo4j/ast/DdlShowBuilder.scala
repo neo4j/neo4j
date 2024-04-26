@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseName
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
 import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.ParsedAsYield
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PropTypeConstraints
 import org.neo4j.cypher.internal.ast.RangeIndexes
@@ -60,6 +62,7 @@ import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
+import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
@@ -86,10 +89,12 @@ import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.ast.YieldOrWhere
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.DdlShowBuilder.ShowWrapper
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.buildClauses
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
@@ -98,8 +103,11 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.parser.CypherParser.ShowConstraintMultiContext
 import org.neo4j.cypher.internal.parser.CypherParserListener
 import org.neo4j.cypher.internal.util.InputPosition
+
+import scala.collection.immutable.ArraySeq
 
 trait DdlShowBuilder extends CypherParserListener {
 
@@ -115,17 +123,17 @@ trait DdlShowBuilder extends CypherParserListener {
   // YIELD Context and helpers
 
   private def decomposeYield(
-    ctx: CypherParser.ShowCommandYieldContext
-  ): (Option[Where], List[CommandResultItem], Boolean, Option[Yield], Option[Return]) = {
-    if (ctx != null) {
-      val yieldWhere = ctx.ast[Either[(Yield, Option[Return]), Where]]()
-      yieldWhere match {
+    yieldOrWhere: YieldOrWhere
+  ): ShowWrapper = {
+    if (yieldOrWhere.isDefined) {
+      yieldOrWhere.get match {
         case Left((y, optR)) =>
           val (yieldAll, yieldedItems, optY) = getYieldAllAndYieldItems(y)
-          (None, yieldedItems, yieldAll, optY, optR)
-        case Right(where) => (Some(where), List[CommandResultItem](), false, None, None)
+          ShowWrapper(yieldedItems = yieldedItems, yieldAll = yieldAll, yieldClause = optY, returnClause = optR)
+        case Right(where) =>
+          ShowWrapper(where = Some(where))
       }
-    } else (None, List[CommandResultItem](), false, None, None)
+    } else ShowWrapper()
   }
 
   private def getYieldAllAndYieldItems(yieldClause: Yield): (Boolean, List[CommandResultItem], Option[Yield]) = {
@@ -187,12 +195,18 @@ trait DdlShowBuilder extends CypherParserListener {
     ctx: CypherParser.ShowBriefAndYieldContext
   ): Unit = {
     val yieldClause = ctx.yieldClause()
-    val brief = ctx.BRIEF() != null
-    val verbose = ctx.VERBOSE() != null
-    val where = astOpt[Where](ctx.whereClause())
     val (yieldAll, yieldedItems, y) =
-      if (yieldClause != null) getYieldAllAndYieldItems(yieldClause.ast()) else (false, List[CommandResultItem](), None)
-    ctx.ast = (brief, verbose, where, yieldedItems, yieldAll, y, astOpt[Return](ctx.returnClause()))
+      if (yieldClause != null) getYieldAllAndYieldItems(yieldClause.ast())
+      else (false, List[CommandResultItem](), None)
+    ctx.ast = ShowWrapper(
+      ctx.BRIEF() != null,
+      ctx.VERBOSE() != null,
+      where = astOpt[Where](ctx.whereClause()),
+      yieldedItems = yieldedItems,
+      yieldAll = yieldAll,
+      yieldClause = y,
+      returnClause = astOpt[Return](ctx.returnClause())
+    )
   }
 
   final override def exitShowCommandYield(
@@ -224,29 +238,8 @@ trait DdlShowBuilder extends CypherParserListener {
     val parentPos = pos(ctx.getParent)
     ctx.ast = ctx match {
       case c: CypherParser.ShowConstraintMultiContext =>
-        val entityType =
-          if (c.NODE() != null) Node else if (c.RELATIONSHIP() != null || c.REL() != null) Rel else NoEntity
-        val allowYieldType = c.constraintAllowYieldType()
-        val constraintType = if (allowYieldType.PROPERTY() != null) {
-          entityType match {
-            case Node     => NodePropTypeConstraints
-            case Rel      => RelPropTypeConstraints
-            case NoEntity => PropTypeConstraints
-          }
-        } else if (allowYieldType.UNIQUENESS() != null) {
-          entityType match {
-            case Node     => NodeUniqueConstraints
-            case Rel      => RelUniqueConstraints
-            case NoEntity => UniqueConstraints
-          }
-        } else {
-          entityType match {
-            case Node     => NodeExistsConstraints(ValidSyntax)
-            case Rel      => RelExistsConstraints(ValidSyntax)
-            case NoEntity => ExistsConstraints(ValidSyntax)
-          }
-        }
-        buildShowConstraintClauses(constraintType, c.showConstraintsAllowYield(), parentPos)
+        val constraintType = c.constraintAllowYieldType().ast[ShowConstraintType]()
+        c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
       case c: CypherParser.ShowConstraintUniqueContext =>
         val entityType = if (c.NODE() != null) Node else Rel
@@ -255,7 +248,7 @@ trait DdlShowBuilder extends CypherParserListener {
           case Rel      => RelUniqueConstraints
           case NoEntity => throw new IllegalStateException("Invalid Constraint Type")
         }
-        buildShowConstraintClauses(constraintType, c.showConstraintsAllowYield(), parentPos)
+        c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
       case c: CypherParser.ShowConstraintKeyContext =>
         val entityType = if (c.RELATIONSHIP() != null || c.REL() != null) Rel else NoEntity
@@ -264,11 +257,11 @@ trait DdlShowBuilder extends CypherParserListener {
           case NoEntity => KeyConstraints
           case Node     => throw new IllegalStateException("Invalid Constraint Type")
         }
-        buildShowConstraintClauses(constraintType, c.showConstraintsAllowYield(), parentPos)
+        c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
       case c: CypherParser.ShowConstraintRelExistContext =>
         val constraintType = RelExistsConstraints(ValidSyntax)
-        buildShowConstraintClauses(constraintType, c.showConstraintsAllowYield(), parentPos)
+        c.showConstraintsAllowYield().ast[ShowWrapper]().buildConstraintClauses(constraintType, parentPos)
 
       case c: CypherParser.ShowConstraintOldExistsContext =>
         val entityType = if (c.NODE() != null) Node else if (c.RELATIONSHIP() != null) Rel else NoEntity
@@ -277,30 +270,34 @@ trait DdlShowBuilder extends CypherParserListener {
           case Rel      => RelExistsConstraints(RemovedSyntax)
           case NoEntity => ExistsConstraints(RemovedSyntax)
         }
-        buildShowConstraintClauses(constraintType, c.showConstraintsAllowBrief(), parentPos)
+        c.showConstraintsAllowBrief().ast[ShowWrapper].buildConstraintClauses(constraintType, parentPos)
 
       case c: CypherParser.ShowConstraintBriefAndYieldContext =>
-        val constraintType = if (c.constraintBriefAndYieldType() != null) {
-          nodeChild(c.constraintBriefAndYieldType(), 0).getSymbol.getType match {
-            case CypherParser.ALL    => AllConstraints
-            case CypherParser.UNIQUE => UniqueConstraints
-            case CypherParser.EXIST  => ExistsConstraints(ValidSyntax)
-            case CypherParser.NODE =>
-              if (c.constraintBriefAndYieldType().EXIST() != null) {
-                NodeExistsConstraints(ValidSyntax)
-              } else NodeKeyConstraints
-            case CypherParser.RELATIONSHIP =>
-              RelExistsConstraints(ValidSyntax)
-          }
-        } else AllConstraints
-        buildShowConstraintClauses(constraintType, c.showConstraintsAllowBriefAndYield(), parentPos)
+        val constraintType = astOpt[ShowConstraintType](c.constraintBriefAndYieldType(), AllConstraints)
+        c.showConstraintsAllowBriefAndYield().ast[ShowWrapper]()
+          .buildConstraintClauses(constraintType, parentPos)
       case _ => throw new IllegalStateException("Invalid Constraint Type")
     }
   }
 
   override def exitConstraintAllowYieldType(
     ctx: CypherParser.ConstraintAllowYieldTypeContext
-  ): Unit = {}
+  ): Unit = {
+    val parent = ctx.getParent.asInstanceOf[ShowConstraintMultiContext]
+    val entityType =
+      if (parent.NODE() != null) Node else if (parent.RELATIONSHIP() != null || parent.REL() != null) Rel else NoEntity
+    ctx.ast = (entityType, ctx.PROPERTY() != null, ctx.UNIQUENESS() != null) match {
+      case (Node, true, _)     => NodePropTypeConstraints
+      case (Rel, true, _)      => RelPropTypeConstraints
+      case (NoEntity, true, _) => PropTypeConstraints
+      case (Node, _, true)     => NodeUniqueConstraints
+      case (Rel, _, true)      => RelUniqueConstraints
+      case (NoEntity, _, true) => UniqueConstraints
+      case (Node, _, _)        => NodeExistsConstraints(ValidSyntax)
+      case (Rel, _, _)         => RelExistsConstraints(ValidSyntax)
+      case (NoEntity, _, _)    => ExistsConstraints(ValidSyntax)
+    }
+  }
 
   override def exitConstraintExistType(
     ctx: CypherParser.ConstraintExistTypeContext
@@ -308,98 +305,54 @@ trait DdlShowBuilder extends CypherParserListener {
 
   override def exitConstraintBriefAndYieldType(
     ctx: CypherParser.ConstraintBriefAndYieldTypeContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = nodeChild(ctx, 0).getSymbol.getType match {
+      case CypherParser.ALL    => AllConstraints
+      case CypherParser.UNIQUE => UniqueConstraints
+      case CypherParser.EXIST  => ExistsConstraints(ValidSyntax)
+      case CypherParser.NODE =>
+        if (ctx.EXIST() != null) {
+          NodeExistsConstraints(ValidSyntax)
+        } else NodeKeyConstraints
+      case CypherParser.RELATIONSHIP =>
+        RelExistsConstraints(ValidSyntax)
+    }
+  }
 
   sealed private trait ConstraintEntity
   private case object Node extends ConstraintEntity
   private case object Rel extends ConstraintEntity
   private case object NoEntity extends ConstraintEntity
 
-  private def buildShowConstraintClauses(
-    constraintType: ShowConstraintType,
-    opts: CypherParser.ShowConstraintsAllowBriefAndYieldContext,
-    pos: InputPosition
-  ): Seq[Clause] = {
-    val (isBrief, isVerbose, where, yieldedItems, yieldAll, y, r) =
-      astOpt[(
-        Boolean,
-        Boolean,
-        Option[Where],
-        List[CommandResultItem],
-        Boolean,
-        Option[Yield],
-        Option[Return]
-      )](opts.showBriefAndYield(), (false, false, None, List.empty, false, None, None))
-
-    buildClauses(
-      y,
-      r,
-      opts.composableCommandClauses(),
-      ShowConstraintsClause(
-        constraintType,
-        isBrief,
-        isVerbose,
-        where,
-        yieldedItems,
-        yieldAll
-      )(pos)
-    )
-
-  }
-
-  private def buildShowConstraintClauses(
-    constraintType: ShowConstraintType,
-    opts: CypherParser.ShowConstraintsAllowBriefContext,
-    pos: InputPosition
-  ): Seq[Clause] = {
-    buildClauses(
-      None,
-      None,
-      opts.composableCommandClauses(),
-      ShowConstraintsClause(
-        constraintType,
-        opts.BRIEF() != null,
-        opts.VERBOSE() != null,
-        None,
-        List[CommandResultItem](),
-        yieldAll = false
-      )(pos)
-    )
-  }
-
-  private def buildShowConstraintClauses(
-    constraintType: ShowConstraintType,
-    opts: CypherParser.ShowConstraintsAllowYieldContext,
-    pos: InputPosition
-  ): Seq[Clause] = {
-    val cmdYield = opts.showCommandYield()
-    val (where, yieldedItems, yieldAll, y, r) = decomposeYield(cmdYield)
-    buildClauses(
-      y,
-      r,
-      opts.composableCommandClauses(),
-      ShowConstraintsClause(
-        constraintType,
-        brief = false,
-        verbose = false,
-        where,
-        yieldedItems,
-        yieldAll = yieldAll
-      )(pos)
-    )
-  }
-
   final override def exitShowConstraintsAllowBriefAndYield(
     ctx: CypherParser.ShowConstraintsAllowBriefAndYieldContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast =
+      astOpt[ShowWrapper](ctx.showBriefAndYield(), ShowWrapper())
+        .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+  }
 
   final override def exitShowConstraintsAllowBrief(
     ctx: CypherParser.ShowConstraintsAllowBriefContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = ShowWrapper(
+      ctx.BRIEF() != null,
+      ctx.VERBOSE() != null,
+      None,
+      List.empty,
+      yieldAll = false,
+      None,
+      None,
+      astOpt[Seq[Clause]](ctx.composableCommandClauses())
+    )
+  }
 
   final override def exitShowConstraintsAllowYield(
     ctx: CypherParser.ShowConstraintsAllowYieldContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
+      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+  }
 
   final override def exitShowCurrentUser(
     ctx: CypherParser.ShowCurrentUserContext
@@ -427,20 +380,13 @@ trait DdlShowBuilder extends CypherParserListener {
   final override def exitShowFunctions(
     ctx: CypherParser.ShowFunctionsContext
   ): Unit = {
-    val (where, yieldedItems, yieldAll, y, r) = decomposeYield(ctx.showCommandYield())
-    val parentPos = pos(ctx.getParent)
-    ctx.ast = buildClauses(
-      y,
-      r,
-      ctx.composableCommandClauses(),
-      ShowFunctionsClause(
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
+      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+      .buildFunctionClauses(
         astOpt[ShowFunctionType](ctx.showFunctionsType, AllFunctions),
         astOpt[ExecutableBy](ctx.executableBy),
-        where,
-        yieldedItems,
-        yieldAll
-      )(parentPos)
-    )
+        pos(ctx.getParent)
+      )
   }
 
   override def exitShowIndexCommand(
@@ -458,46 +404,26 @@ trait DdlShowBuilder extends CypherParserListener {
         case CypherParser.VECTOR   => VectorIndexes
         case _                     => throw new IllegalStateException("Unexpected index type")
       }
-      val (where, yieldedItems, yieldAll, y, r) = decomposeYield(noBrief.showCommandYield())
-
-      buildClauses(
-        y,
-        r,
-        noBrief.composableCommandClauses(),
-        ShowIndexesClause(indexType, brief = false, verbose = false, where, yieldedItems, yieldAll = yieldAll)(
-          parentPos
-        )
-      )
+      ctx.showIndexesNoBrief().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
     } else {
-      val brief = ctx.showIndexesAllowBrief()
       val indexType = if (ctx.BTREE() != null) BtreeIndexes else AllIndexes
-      val (isBrief, isVerbose, where, yieldedItems, yieldAll, y, r) =
-        astOpt[(
-          Boolean,
-          Boolean,
-          Option[Where],
-          List[CommandResultItem],
-          Boolean,
-          Option[Yield],
-          Option[Return]
-        )](brief.showBriefAndYield(), (false, false, None, List.empty, false, None, None))
-
-      buildClauses(
-        y,
-        r,
-        brief.composableCommandClauses(),
-        ShowIndexesClause(indexType, isBrief, isVerbose, where, yieldedItems, yieldAll)(parentPos)
-      )
+      ctx.showIndexesAllowBrief().ast[ShowWrapper].buildIndexClauses(indexType, parentPos)
     }
   }
 
   final override def exitShowIndexesAllowBrief(
     ctx: CypherParser.ShowIndexesAllowBriefContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = astOpt[ShowWrapper](ctx.showBriefAndYield(), ShowWrapper())
+      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+  }
 
   final override def exitShowIndexesNoBrief(
     ctx: CypherParser.ShowIndexesNoBriefContext
-  ): Unit = {}
+  ): Unit = {
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
+      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+  }
 
   final override def exitShowPrivileges(
     ctx: CypherParser.ShowPrivilegesContext
@@ -556,14 +482,9 @@ trait DdlShowBuilder extends CypherParserListener {
   final override def exitShowProcedures(
     ctx: CypherParser.ShowProceduresContext
   ): Unit = {
-    val (where, yieldedItems, yieldAll, y, r) = decomposeYield(ctx.showCommandYield())
-    val parentPos = pos(ctx.getParent)
-    ctx.ast = buildClauses(
-      y,
-      r,
-      ctx.composableCommandClauses(),
-      ShowProceduresClause(astOpt[ExecutableBy](ctx.executableBy), where, yieldedItems, yieldAll)(parentPos)
-    )
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
+      .copy(composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()))
+      .buildProcedureClauses(astOpt[ExecutableBy](ctx.executableBy), pos(ctx.getParent))
   }
 
   final override def exitShowRoles(
@@ -587,61 +508,19 @@ trait DdlShowBuilder extends CypherParserListener {
   final override def exitShowSettings(
     ctx: CypherParser.ShowSettingsContext
   ): Unit = {
-    val (strOrExpr, where, yieldedItems, yieldAll, y, r) = ctx.namesAndClauses().ast[(
-      Either[List[String], Expression],
-      Option[Where],
-      List[CommandResultItem],
-      Boolean,
-      Option[Yield],
-      Option[Return]
-    )]()
-    val parentPos = pos(ctx.getParent)
-    ctx.ast = buildClauses(
-      y,
-      r,
-      ctx.namesAndClauses().composableCommandClauses(),
-      ShowSettingsClause(strOrExpr, where, yieldedItems, yieldAll)(parentPos)
-    )
+    ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildSettingsClauses(pos(ctx.getParent))
   }
 
   final override def exitShowTransactions(
     ctx: CypherParser.ShowTransactionsContext
   ): Unit = {
-    val (strOrExpr, where, yieldedItems, yieldAll, y, r) = ctx.namesAndClauses().ast[(
-      Either[List[String], Expression],
-      Option[Where],
-      List[CommandResultItem],
-      Boolean,
-      Option[Yield],
-      Option[Return]
-    )]()
-    val parentPos = pos(ctx.getParent)
-    ctx.ast = buildClauses(
-      y,
-      r,
-      ctx.namesAndClauses().composableCommandClauses(),
-      ShowTransactionsClause(strOrExpr, where, yieldedItems, yieldAll)(parentPos)
-    )
+    ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildShowTransactions(pos(ctx.getParent))
   }
 
   final override def exitTerminateTransactions(
     ctx: CypherParser.TerminateTransactionsContext
   ): Unit = {
-    val (strOrExpr, where, yieldedItems, yieldAll, y, r) = ctx.namesAndClauses().ast[(
-      Either[List[String], Expression],
-      Option[Where],
-      List[CommandResultItem],
-      Boolean,
-      Option[Yield],
-      Option[Return]
-    )]()
-    val parentPos = pos(ctx.getParent)
-    ctx.ast = buildClauses(
-      y,
-      r,
-      ctx.namesAndClauses().composableCommandClauses(),
-      TerminateTransactionsClause(strOrExpr, yieldedItems, yieldAll, where.map(_.position))(parentPos)
-    )
+    ctx.ast = ctx.namesAndClauses().ast[ShowWrapper]().buildTerminateTransaction(pos(ctx.getParent))
   }
 
   final override def exitShowFunctionsType(
@@ -673,15 +552,11 @@ trait DdlShowBuilder extends CypherParserListener {
   override def exitNamesAndClauses(
     ctx: CypherParser.NamesAndClausesContext
   ): Unit = {
-    val (where, yieldedItems, yieldAll, y, r) = decomposeYield(ctx.showCommandYield())
-    ctx.ast = (
-      astOpt[Either[List[String], Expression]](ctx.stringsOrExpression(), Left(List.empty)),
-      where,
-      yieldedItems,
-      yieldAll,
-      y,
-      r
-    )
+    ctx.ast = decomposeYield(astOpt(ctx.showCommandYield()))
+      .copy(
+        composableClauses = astOpt[Seq[Clause]](ctx.composableCommandClauses()),
+        names = astOpt[Either[List[String], Expression]](ctx.stringsOrExpression(), Left(List.empty))
+      )
   }
 
   final override def exitStringsOrExpression(
@@ -715,4 +590,108 @@ trait DdlShowBuilder extends CypherParserListener {
     ctx.ast = ctxChild(ctx, 0).ast
   }
 
+}
+
+object DdlShowBuilder {
+
+  case class ShowWrapper(
+    isBrief: Boolean = false,
+    isVerbose: Boolean = false,
+    where: Option[Where] = None,
+    yieldedItems: List[CommandResultItem] = List.empty,
+    yieldAll: Boolean = false,
+    yieldClause: Option[Yield] = None,
+    returnClause: Option[Return] = None,
+    composableClauses: Option[Seq[Clause]] = None,
+    names: Either[List[String], Expression] = Left(List.empty)
+  ) {
+
+    def buildConstraintClauses(constraintType: ShowConstraintType, position: InputPosition): Seq[Clause] = {
+      buildClauses(
+        ShowConstraintsClause(
+          constraintType,
+          isBrief,
+          isVerbose,
+          where,
+          yieldedItems,
+          yieldAll
+        )(position)
+      )
+    }
+
+    def buildIndexClauses(indexType: ShowIndexType, position: InputPosition): Seq[Clause] = {
+      buildClauses(
+        ShowIndexesClause(
+          indexType,
+          isBrief,
+          isVerbose,
+          where,
+          yieldedItems,
+          yieldAll = yieldAll
+        )(position)
+      )
+    }
+
+    def buildFunctionClauses(
+      functionType: ShowFunctionType,
+      executableBy: Option[ExecutableBy],
+      position: InputPosition
+    ): Seq[Clause] = {
+      buildClauses(
+        ShowFunctionsClause(
+          functionType,
+          executableBy,
+          where,
+          yieldedItems,
+          yieldAll
+        )(position)
+      )
+    }
+
+    def buildProcedureClauses(executableBy: Option[ExecutableBy], position: InputPosition): Seq[Clause] = {
+      buildClauses(
+        ShowProceduresClause(executableBy, where, yieldedItems, yieldAll)(position)
+      )
+    }
+
+    def buildSettingsClauses(position: InputPosition): Seq[Clause] = {
+      buildClauses(
+        ShowSettingsClause(names, where, yieldedItems, yieldAll)(position)
+      )
+    }
+
+    def buildShowTransactions(position: InputPosition): Seq[Clause] = {
+      buildClauses(
+        ShowTransactionsClause(names, where, yieldedItems, yieldAll)(position)
+      )
+    }
+
+    def buildTerminateTransaction(position: InputPosition): Seq[Clause] = {
+      buildClauses(
+        TerminateTransactionsClause(names, yieldedItems, yieldAll, where.map(_.position))(position)
+      )
+    }
+
+    private def buildClauses(cmdClause: Clause): Seq[Clause] = {
+      val yClause = if (yieldClause.isDefined) ArraySeq(turnYieldToWith(yieldClause.get)) else ArraySeq.empty
+      val rClause = if (returnClause.isDefined) ArraySeq(returnClause.get) else ArraySeq.empty
+      val cClause = if (composableClauses.isDefined) composableClauses.get else ArraySeq.empty
+      ArraySeq(cmdClause) ++ yClause ++ rClause ++ cClause
+    }
+
+    private def turnYieldToWith(yieldClause: Yield): Clause = {
+      val returnItems = yieldClause.returnItems
+      val itemOrder = if (returnItems.items.nonEmpty) Some(returnItems.items.map(_.name).toList) else None
+      val (orderBy, where) = CommandClause.updateAliasedVariablesFromYieldInOrderByAndWhere(yieldClause)
+      With(
+        distinct = false,
+        ReturnItems(includeExisting = true, Seq(), itemOrder)(returnItems.position),
+        orderBy,
+        yieldClause.skip,
+        yieldClause.limit,
+        where,
+        withType = ParsedAsYield
+      )(yieldClause.position)
+    }
+  }
 }

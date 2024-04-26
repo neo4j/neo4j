@@ -20,18 +20,11 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
-import org.neo4j.cypher.internal.ast.ParsedAsYield
-import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.ast.With
-import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
 import org.neo4j.cypher.internal.cst.factory.neo4j.CypherToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -199,33 +192,4 @@ object Util {
       case (false, false) => IfExistsThrowError
     }
   }
-
-  def buildClauses(
-    y: Option[Yield],
-    r: Option[Return],
-    composable: CypherParser.ComposableCommandClausesContext,
-    cmdClause: Clause
-  ): Seq[Clause] = {
-    val yClause = if (y.isDefined) ArraySeq(turnYieldToWith(y.get)) else ArraySeq.empty
-    val rClause = if (r.isDefined) ArraySeq(r.get) else ArraySeq.empty
-    val cClause = if (composable != null) composable.ast[Seq[Clause]]() else ArraySeq.empty
-
-    ArraySeq(cmdClause) ++ yClause ++ rClause ++ cClause
-  }
-
-  private def turnYieldToWith(yieldClause: Yield): Clause = {
-    val returnItems = yieldClause.returnItems
-    val itemOrder = if (returnItems.items.nonEmpty) Some(returnItems.items.map(_.name).toList) else None
-    val (orderBy, where) = CommandClause.updateAliasedVariablesFromYieldInOrderByAndWhere(yieldClause)
-    With(
-      distinct = false,
-      ReturnItems(includeExisting = true, Seq(), itemOrder)(returnItems.position),
-      orderBy,
-      yieldClause.skip,
-      yieldClause.limit,
-      where,
-      withType = ParsedAsYield
-    )(yieldClause.position)
-  }
-
 }
