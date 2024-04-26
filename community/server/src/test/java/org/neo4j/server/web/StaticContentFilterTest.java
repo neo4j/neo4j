@@ -21,65 +21,37 @@ package org.neo4j.server.web;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
+import org.neo4j.server.configuration.ServerSettings;
 
 class StaticContentFilterTest {
+
     @Test
     void shouldAddStaticContentHeadersToHtmlResponses() throws Exception {
         // given
         HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getServletPath()).thenReturn("index.html");
+        when(request.getServletPath()).thenReturn("any-file.txt");
         HttpServletResponse response = mock(HttpServletResponse.class);
         FilterChain filterChain = mock(FilterChain.class);
 
         // when
-        new StaticContentFilter().doFilter(request, response, filterChain);
+        new StaticContentFilter(ServerSettings.http_static_content_security_policy.defaultValue())
+                .doFilter(request, response, filterChain);
 
         // then
-        verify(response).addHeader("Cache-Control", "private, no-cache, no-store, proxy-revalidate, no-transform");
+        verify(response).addHeader("Cache-Control", "no-store");
         verify(response).addHeader("Pragma", "no-cache");
-        verify(response).addHeader("Content-Security-Policy", "frame-ancestors 'none'");
+        verify(response)
+                .addHeader(
+                        "Content-Security-Policy", ServerSettings.http_static_content_security_policy.defaultValue());
         verify(response).addHeader("X-Frame-Options", "DENY");
         verify(response).addHeader("X-Content-Type-Options", "nosniff");
         verify(response).addHeader("X-XSS-Protection", "1; mode=block");
-        verify(filterChain).doFilter(request, response);
-    }
-
-    @Test
-    void shouldPassThroughRequestsForNonHtmlResources() throws Exception {
-        // given
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getServletPath()).thenReturn("index.js");
-        HttpServletResponse response = mock(HttpServletResponse.class);
-        FilterChain filterChain = mock(FilterChain.class);
-
-        // when
-        new StaticContentFilter().doFilter(request, response, filterChain);
-
-        // then
-        verifyNoInteractions(response);
-        verify(filterChain).doFilter(request, response);
-    }
-
-    @Test
-    void shouldPassThroughRequestsWithNullServletPath() throws Exception {
-        // given
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getServletPath()).thenReturn(null);
-        HttpServletResponse response = mock(HttpServletResponse.class);
-        FilterChain filterChain = mock(FilterChain.class);
-
-        // when
-        new StaticContentFilter().doFilter(request, response, filterChain);
-
-        // then
-        verifyNoInteractions(response);
         verify(filterChain).doFilter(request, response);
     }
 }

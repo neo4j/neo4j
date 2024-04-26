@@ -61,6 +61,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.server.bind.ComponentsBinder;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 import org.neo4j.ssl.SslPolicy;
 
@@ -91,6 +92,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
     private int jettyMaxThreads = 1;
     private SslPolicy sslPolicy;
     private final boolean ocspStaplingEnabled;
+    private final String contentSecurityPolicyHeader;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
     private final InternalLog log;
@@ -102,6 +104,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
             ByteBufferPool byteBufferPool) {
         this.log = logProvider.getLog(getClass());
         this.ocspStaplingEnabled = config.get(CommonConnectorConfig.ocsp_stapling_enabled);
+        this.contentSecurityPolicyHeader = config.get(ServerSettings.http_static_content_security_policy);
         sslSocketFactory = new SslSocketConnectorFactory(connectionTracker, config, byteBufferPool);
         connectorFactory = new HttpConnectorFactory(connectionTracker, config, byteBufferPool);
     }
@@ -366,7 +369,7 @@ public class JettyWebServer implements WebServer, WebContainerThreadInfo {
 
                 addFiltersTo(staticContext);
                 staticContext.addFilter(
-                        new FilterHolder(new StaticContentFilter()),
+                        new FilterHolder(new StaticContentFilter(contentSecurityPolicyHeader)),
                         "/*",
                         EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD));
 

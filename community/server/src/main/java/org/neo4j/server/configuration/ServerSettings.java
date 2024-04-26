@@ -130,6 +130,16 @@ public class ServerSettings implements SettingsDeclaration {
                     "dbms.security.http_strict_transport_security", STRING, null)
             .build();
 
+    @Description("Defines the Content-Security-Policy header to return to content returned on static endpoints.")
+    public static final Setting<String> http_static_content_security_policy = newBuilder(
+                    "dbms.security.http_static_content_security_policy_header",
+                    STRING,
+                    "default-src 'self'; script-src 'self' cdn.segment.com canny.io; img-src 'self';"
+                            + " style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' "
+                            + "fonts.gstatic.com; base-uri 'none'; object-src 'none'; frame-ancestors 'none';"
+                            + " connect-src 'self' api.canny.io api.segment.io wss")
+            .build();
+
     @Description("Defines an allowlist of http paths where Neo4j authentication is not required.")
     public static final Setting<List<String>> http_auth_allowlist = newBuilder(
                     "dbms.security.http_auth_allowlist", listOf(STRING), List.of("/", "/browser.*"))

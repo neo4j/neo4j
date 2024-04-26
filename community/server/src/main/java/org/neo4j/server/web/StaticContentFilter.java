@@ -26,26 +26,29 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 public class StaticContentFilter implements Filter {
+
+    private final String contentSecurityPolicyHeader;
+
+    public StaticContentFilter(String contentSecurityPolicyHeader) {
+        this.contentSecurityPolicyHeader = contentSecurityPolicyHeader;
+    }
+
     @Override
     public void init(FilterConfig filterConfig) {}
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
             throws IOException, ServletException {
-        HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        if (request.getServletPath() != null && request.getServletPath().endsWith(".html")) {
-            response.addHeader("Cache-Control", "private, no-cache, no-store, proxy-revalidate, no-transform");
-            response.addHeader("Pragma", "no-cache");
-            response.addHeader("Content-Security-Policy", "frame-ancestors 'none'");
-            response.addHeader("X-Frame-Options", "DENY");
-            response.addHeader("X-Content-Type-Options", "nosniff");
-            response.addHeader("X-XSS-Protection", "1; mode=block");
-        }
+        response.addHeader("Cache-Control", "no-store");
+        response.addHeader("Pragma", "no-cache");
+        response.addHeader("Content-Security-Policy", contentSecurityPolicyHeader);
+        response.addHeader("X-Frame-Options", "DENY");
+        response.addHeader("X-Content-Type-Options", "nosniff");
+        response.addHeader("X-XSS-Protection", "1; mode=block");
         filterChain.doFilter(servletRequest, servletResponse);
     }
 
