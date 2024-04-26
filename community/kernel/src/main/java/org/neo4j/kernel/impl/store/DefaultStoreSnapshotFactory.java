@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -57,20 +58,30 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
         // is a sort of point in time snapshot of the state.
         var checkPointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
         var checkpointMutex = tryCheckpointAndAcquireMutex(checkPointer);
-        var latestCheckpointInfo = checkPointer.latestCheckPointInfo();
-        var lastCommittedTransactionId = latestCheckpointInfo.checkpointedTransactionId();
-        long appendIndex = latestCheckpointInfo.appendIndex();
+        boolean success = false;
+        Stream<StoreResource> unrecoverableFiles = null;
+        try {
+            var latestCheckpointInfo = checkPointer.latestCheckPointInfo();
+            var lastCommittedTransactionId = latestCheckpointInfo.checkpointedTransactionId();
+            long appendIndex = latestCheckpointInfo.appendIndex();
 
-        var unrecoverableFiles = unrecoverableFiles(database);
-        var recoverableFiles = recoverableFiles(database);
-        var snapshot = new StoreSnapshot(
-                unrecoverableFiles,
-                recoverableFiles,
-                lastCommittedTransactionId,
-                appendIndex,
-                database.getStoreId(),
-                checkpointMutex);
-        return Optional.of(snapshot);
+            unrecoverableFiles = unrecoverableFiles(database);
+            var recoverableFiles = recoverableFiles(database);
+            var snapshot = new StoreSnapshot(
+                    unrecoverableFiles,
+                    recoverableFiles,
+                    lastCommittedTransactionId,
+                    appendIndex,
+                    database.getStoreId(),
+                    checkpointMutex);
+            var result = Optional.of(snapshot);
+            success = true;
+            return result;
+        } finally {
+            if (!success) {
+                IOUtils.closeAll(unrecoverableFiles, checkpointMutex);
+            }
+        }
     }
 
     /**

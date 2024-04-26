@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
@@ -54,6 +57,7 @@ class DefaultStoreSnapshotFactoryTest {
     private DefaultStoreSnapshotFactory defaultStoreSnapshotFactory;
     private DatabaseLayout databaseLayout;
     private StoreFileListing.Builder fileListingBuilder;
+    private StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     @BeforeEach
     void setUp() {
@@ -71,13 +75,13 @@ class DefaultStoreSnapshotFactoryTest {
         when(checkPointer.latestCheckPointInfo()).thenReturn(LatestCheckpointInfo.UNKNOWN_CHECKPOINT_INFO);
         when(database.getDependencyResolver()).thenReturn(dependenciesOf(checkPointer));
         when(database.getDatabaseAvailabilityGuard()).thenReturn(availabilityGuard);
-        var storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
+        storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         when(database.getStoreCopyCheckPointMutex()).thenReturn(storeCopyCheckPointMutex);
         defaultStoreSnapshotFactory = new DefaultStoreSnapshotFactory(database, testDirectory.getFileSystem());
     }
 
     @Test
-    void shouldHanldeEmptyListOfFilesForeEachType() throws Exception {
+    void shouldHandleEmptyListOfFilesForeEachType() throws Exception {
         setExpectedFiles(new StoreFileMetadata[0]);
         var prepareStoreCopyFiles =
                 defaultStoreSnapshotFactory.createStoreSnapshot().get();
@@ -124,6 +128,22 @@ class DefaultStoreSnapshotFactoryTest {
             assertEquals(expected.relativePath(), relativePath.toString());
             assertEquals(expected.recordSize(), actual.recordSize());
         }
+    }
+
+    @Test
+    void shouldReleaseMutexAndResourcesOnSnapshotFailure() throws IOException {
+        // given
+        doThrow(RuntimeException.class).when(fileListingBuilder).build();
+
+        // when
+        assertThatThrownBy(
+                        () -> defaultStoreSnapshotFactory.createStoreSnapshot().get())
+                .isInstanceOf(RuntimeException.class);
+
+        // then it should now be possible to acquire the checkpoint mutex
+        var checkpointMutex = storeCopyCheckPointMutex.tryCheckPoint();
+        assertThat(checkpointMutex).isNotNull();
+        checkpointMutex.close();
     }
 
     private String getRelativePath(StoreFileMetadata f) {
