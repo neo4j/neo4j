@@ -65,21 +65,21 @@ public record ServerDetails(
          *   not shutting down;
          *   has not panicked
          */
-        STARTING("Starting"),
+        STARTING_DATABASES("Starting databases"),
         /**
          * Present in Discovery Service
          *   shutting down;
          *   not accessible from the outside anymore;
          *   has not panicked
          */
-        STOPPING("Shutting down"),
+        SHUTTING_DOWN("Shutting down"),
         /**
          * Present in Discovery Service
          *   has panicked;
          *   accessible from the outside;
          *   not shutting down
          */
-        PANICKED("In panic"),
+        PANICKED("Panicked"),
         /**
          * Not present in discovery
          */
