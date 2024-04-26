@@ -97,14 +97,14 @@ object ReadsAndWritesFinder {
     /**
      * @return all plans reading the given concrete symbol or unknown symbols.
      */
-    def plansReadingSymbol(symbol: T): Seq[PlanWithAccessor] =
-      plansReadingConcreteSymbol.getOrElse(symbol, Seq.empty) ++ plansReadingUnknownSymbols
+    def plansReadingSymbol(symbol: T): Iterator[PlanWithAccessor] =
+      plansReadingConcreteSymbol.getOrElse(symbol, Seq.empty).iterator ++ plansReadingUnknownSymbols.iterator
 
     /**
      * @return all plans reading this kind of symbol.
      */
-    def plansReadingAnySymbol(): Seq[PlanWithAccessor] =
-      plansReadingConcreteSymbol.values.flatten.toSeq ++ plansReadingUnknownSymbols
+    def plansReadingAnySymbol(): Iterator[PlanWithAccessor] =
+      plansReadingConcreteSymbol.values.iterator.flatten ++ plansReadingUnknownSymbols.iterator
 
     def withSymbolRead(symbol: T, planWithAccessor: PlanWithAccessor): ReadingPlansProvider[T] = {
       val previousPlans = plansReadingConcreteSymbol.getOrElse(symbol, Seq.empty)
@@ -175,22 +175,22 @@ object ReadsAndWritesFinder {
       )
 
     /**
-     * @return A `Seq` of pairs that map a known nodes `PropertyKeyName` (if `Some`) or an unknown nodes `PropertyKeyName` (if `None`)
+     * @return An `Iterator` of pairs that map a known nodes `PropertyKeyName` (if `Some`) or an unknown nodes `PropertyKeyName` (if `None`)
      *         to all plans writing that property.
      */
-    def nodeEntries: Seq[(Option[PropertyKeyName], Seq[PlanWithAccessor])] =
-      plansWritingConcreteNodeProperty.toSeq.map {
+    def nodeEntries: Iterator[(Option[PropertyKeyName], Seq[PlanWithAccessor])] =
+      plansWritingConcreteNodeProperty.iterator.map {
         case (key, value) => (Some(key), value)
-      } :+ (None, plansWritingUnknownNodeProperty)
+      } ++ Iterator((None, plansWritingUnknownNodeProperty))
 
     /**
-     * @return A `Seq` of pairs that map a known relationships `PropertyKeyName` (if `Some`) or an unknown relationships `PropertyKeyName` (if `None`)
+     * @return An `Iterator` of pairs that map a known relationships `PropertyKeyName` (if `Some`) or an unknown relationships `PropertyKeyName` (if `None`)
      *         to all plans writing that property.
      */
-    def relEntries: Seq[(Option[PropertyKeyName], Seq[PlanWithAccessor])] =
-      plansWritingConcreteRelProperty.toSeq.map {
+    def relEntries: Iterator[(Option[PropertyKeyName], Seq[PlanWithAccessor])] =
+      plansWritingConcreteRelProperty.iterator.map {
         case (key, value) => (Some(key), value)
-      } :+ (None, plansWritingUnknownRelProperty)
+      } ++ Iterator((None, plansWritingUnknownRelProperty))
   }
 
   /**
@@ -351,7 +351,7 @@ object ReadsAndWritesFinder {
      *                 if `None` look for plans that read any property.
      * @return all plans that read the given node property.
      */
-    def plansReadingNodeProperty(property: Option[PropertyKeyName]): Seq[PlanWithAccessor] =
+    def plansReadingNodeProperty(property: Option[PropertyKeyName]): Iterator[PlanWithAccessor] =
       property match {
         case Some(property) => readNodeProperties.plansReadingSymbol(property)
         case None           => readNodeProperties.plansReadingAnySymbol()
@@ -362,7 +362,7 @@ object ReadsAndWritesFinder {
      *                 if `None` look for plans that read any node property.
      * @return all plans that read the given property.
      */
-    def plansReadingRelProperty(property: Option[PropertyKeyName]): Seq[PlanWithAccessor] =
+    def plansReadingRelProperty(property: Option[PropertyKeyName]): Iterator[PlanWithAccessor] =
       property match {
         case Some(property) => readRelProperties.plansReadingSymbol(property)
         case None           => readRelProperties.plansReadingAnySymbol()
@@ -371,7 +371,7 @@ object ReadsAndWritesFinder {
     /**
      * @return all plans that could read the given label.
      */
-    def plansReadingLabel(label: LabelName): Seq[PlanWithAccessor] =
+    def plansReadingLabel(label: LabelName): Iterator[PlanWithAccessor] =
       readLabels.plansReadingSymbol(label)
 
     def withNodePropertyRead(accessedProperty: AccessedProperty, plan: LogicalPlan): Reads =
