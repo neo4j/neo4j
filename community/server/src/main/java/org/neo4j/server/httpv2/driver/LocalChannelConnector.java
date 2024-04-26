@@ -27,6 +27,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.local.LocalAddress;
 import java.time.Clock;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.neo4j.driver.AuthTokenManager;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.NotificationConfig;
@@ -39,6 +41,7 @@ import org.neo4j.driver.internal.async.connection.HandshakeCompletedListener;
 import org.neo4j.driver.internal.async.connection.NettyChannelInitializer;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
+import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 
 /**
@@ -56,6 +59,7 @@ class LocalChannelConnector implements ChannelConnector {
 
     private final NotificationConfig notificationConfig;
     private final AuthTokenManager authTokenManager;
+    private final SecurityPlan securityPlan;
 
     public LocalChannelConnector(
             LocalAddress localAddress,
@@ -63,6 +67,7 @@ class LocalChannelConnector implements ChannelConnector {
             BoltAgent boltAgent,
             AuthTokenManager authTokenManager,
             NotificationConfig notificationConfig,
+            SecurityPlan securityPlan,
             Clock clock,
             Logging logging) {
         this.localAddress = localAddress;
@@ -70,26 +75,36 @@ class LocalChannelConnector implements ChannelConnector {
         this.boltAgent = boltAgent;
         this.notificationConfig = notificationConfig;
         this.authTokenManager = authTokenManager;
+        this.securityPlan = securityPlan;
         this.clock = clock;
         this.logging = logging;
     }
 
     @Override
-    public ChannelFuture connect(BoltServerAddress ignored, Bootstrap bootstrap) {
+    public ChannelFuture connect(
+            BoltServerAddress ignored,
+            Bootstrap bootstrap,
+            Function<ChannelFuture, ChannelFuture> channelFutureExtensionMapper) {
         // todo address needed for tracking channels, disable tracking?
-        bootstrap.handler(new NettyChannelInitializer(
-                IGNORED_ADDRESS, SecurityPlanImpl.insecure(), 1000, authTokenManager, clock, logging));
+        var sslContextStage = securityPlan.sslContext();
+        var channelFutureCompletableFuture = new CompletableFuture<ChannelFuture>();
+        sslContextStage.whenComplete((sslContext, throwable) -> {
+            bootstrap.handler(new NettyChannelInitializer(
+                    IGNORED_ADDRESS, SecurityPlanImpl.insecure(), 1000, authTokenManager, sslContext, clock, logging));
 
-        ChannelFuture channelConnected = bootstrap.connect(localAddress);
+            ChannelFuture channelConnected = bootstrap.connect(localAddress);
 
-        Channel channel = channelConnected.channel();
-        ChannelPromise handshakeCompleted = channel.newPromise();
-        ChannelPromise connectionInitialized = channel.newPromise();
+            Channel channel = channelConnected.channel();
+            ChannelPromise handshakeCompleted = channel.newPromise();
+            ChannelPromise connectionInitialized = channel.newPromise();
 
-        installChannelConnectedListeners(channelConnected, handshakeCompleted);
-        installHandshakeCompletedListeners(handshakeCompleted, connectionInitialized);
+            installChannelConnectedListeners(channelConnected, handshakeCompleted);
+            installHandshakeCompletedListeners(handshakeCompleted, connectionInitialized);
 
-        return connectionInitialized;
+            channelFutureCompletableFuture.complete(channelFutureExtensionMapper.apply(connectionInitialized));
+        });
+
+        return new DeferredChannelFuture(channelFutureCompletableFuture, logging);
     }
 
     private void installChannelConnectedListeners(ChannelFuture channelConnected, ChannelPromise handshakeCompleted) {

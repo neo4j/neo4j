@@ -71,6 +71,7 @@ public final class LocalChannelDriverFactory extends DriverFactory {
                 boltAgent,
                 settings.authTokenProvider(),
                 config.notificationConfig(),
+                securityPlan,
                 clock,
                 config.logging());
     }
@@ -79,6 +80,7 @@ public final class LocalChannelDriverFactory extends DriverFactory {
         return super.newInstance(
                 IGNORED_HTTP_DRIVER_URI,
                 new StaticAuthTokenManager(AuthTokens.none()),
+                null,
                 Config.builder()
                         .withLogging(new DriverToInternalLogProvider(internalLogProvider))
                         .withUserAgent("neo4j-query-api/v2")
