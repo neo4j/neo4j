@@ -19,8 +19,8 @@
  */
 package org.neo4j.dbms.archive;
 
-import com.github.luben.zstd.ZstdInputStream;
-import com.github.luben.zstd.ZstdOutputStream;
+import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
+import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import com.github.luben.zstd.util.Native;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -53,7 +53,7 @@ public enum StandardCompressionFormat implements CompressionFormat {
 
         @Override
         public OutputStream compress(OutputStream stream) throws IOException {
-            ZstdOutputStream zstdout = new ZstdOutputStream(stream);
+            var zstdout = new ZstdOutputStreamNoFinalizer(stream);
             zstdout.setChecksum(true);
             if (Runtime.getRuntime().availableProcessors() > 2) {
                 zstdout.setWorkers(Runtime.getRuntime().availableProcessors());
@@ -64,7 +64,7 @@ public enum StandardCompressionFormat implements CompressionFormat {
 
         @Override
         public InputStream decompress(InputStream stream) throws IOException {
-            ZstdInputStream zstdin = new ZstdInputStream(stream);
+            var zstdin = new ZstdInputStreamNoFinalizer(stream);
             byte[] header = new byte[HEADER.length];
             if (zstdin.read(header) != HEADER.length || !Arrays.equals(header, HEADER)) {
                 throw new IOException("Not in ZSTD format");
@@ -78,12 +78,12 @@ public enum StandardCompressionFormat implements CompressionFormat {
      * compressed stream is not wrapped in other streams, like buffered or filtering input streams.
      */
     public boolean isFormat(InputStream stream) {
-        return (this == ZSTD && stream instanceof ZstdInputStream)
+        return (this == ZSTD && stream instanceof ZstdInputStreamNoFinalizer)
                 || (this == GZIP && stream instanceof GZIPInputStream);
     }
 
     public boolean isFormat(OutputStream stream) {
-        return (this == ZSTD && stream instanceof ZstdOutputStream)
+        return (this == ZSTD && stream instanceof ZstdOutputStreamNoFinalizer)
                 || (this == GZIP && stream instanceof GZIPOutputStream);
     }
 
