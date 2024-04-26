@@ -67,7 +67,7 @@ import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.util.StoreIdDecodeUtils;
 
 public class UserDataCollector extends LifecycleAdapter {
-    private static final URI UDC_URI = URI.create("https://udc.neo4j.com/");
+    private static final URI UDC_URI = URI.create("https://udc.neo4j.com/server");
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     public static final String CLUSTER_SIZE_KEY = "clusterSize";
 
