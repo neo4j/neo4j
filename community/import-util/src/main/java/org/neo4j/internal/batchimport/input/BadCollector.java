@@ -378,8 +378,14 @@ public final class BadCollector implements Collector {
         @Override
         String message() {
             return format(
-                    "%s (%s)-[%s]->%s (%s) would have violated constraint:%s with properties:%s",
-                    startId, startIdGroup, type, endId, endIdGroup, constraintDescription, properties);
+                    "%s%s-[%s]->%s%s would have violated constraint:%s with properties:%s",
+                    startId,
+                    startIdGroup != null ? " (" + startIdGroup + ")" : "",
+                    type,
+                    endId,
+                    endIdGroup != null ? " (" + endIdGroup + ")" : "",
+                    constraintDescription,
+                    properties);
         }
 
         @Override
