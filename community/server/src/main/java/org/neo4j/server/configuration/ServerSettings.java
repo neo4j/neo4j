@@ -156,6 +156,12 @@ public class ServerSettings implements SettingsDeclaration {
                     EnumSet.allOf(ConfigurableTransports.class))
             .build();
 
+    @Description("Timeout for idle transactions in the HTTP Server. "
+            + "Note: this is different from 'db.transaction.timeout' which will timeout the underlying transaction.")
+    public static final Setting<Duration> http_transaction_timeout = newBuilder(
+                    "server.http.transaction_idle_timeout", DURATION, Duration.ofSeconds(30))
+            .build();
+
     @Internal
     @Description("Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this "
             + "particular database instance. Normally this is the same as the advertised address configured for the "

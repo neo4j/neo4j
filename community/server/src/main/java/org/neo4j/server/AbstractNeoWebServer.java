@@ -252,8 +252,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
      * remaining before he would need to renew the timeout.
      */
     private Duration getTransactionTimeout() {
-        final long timeout =
-                config.get(GraphDatabaseSettings.transaction_timeout).toMillis();
+        final long timeout = config.get(ServerSettings.http_transaction_timeout).toMillis();
         return Duration.ofMillis(Math.max(timeout, MINIMUM_TIMEOUT + ROUNDING_SECOND));
     }
 

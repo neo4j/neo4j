@@ -23,6 +23,7 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
@@ -43,10 +45,10 @@ class TransactionTimeoutIT extends ExclusiveWebContainerTestBase {
     }
 
     @Test
-    void shouldHonorReallyLowSessionTimeout() throws Exception {
+    void shouldHonorReallyLowTransactionTimeout() throws Exception {
         // Given
         testWebContainer = serverOnRandomPorts()
-                .withProperty(GraphDatabaseSettings.transaction_timeout.name(), "1")
+                .withProperty(ServerSettings.http_transaction_timeout.name(), "1")
                 .build();
 
         String tx = HTTP.POST(txURI(), map("statements", singletonList(map("statement", "CREATE (n)"))))
@@ -60,6 +62,64 @@ class TransactionTimeoutIT extends ExclusiveWebContainerTestBase {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get("errors");
         assertThat(errors.get(0).get("code"))
+                .isEqualTo(TransactionNotFound.code().serialize());
+    }
+
+    @Test
+    void shouldEventuallyTimeoutATransaction() throws Exception {
+        // Given
+        testWebContainer = serverOnRandomPorts()
+                .withProperty(ServerSettings.http_transaction_timeout.name(), "10")
+                .build();
+
+        String tx = HTTP.POST(txURI(), map("statements", singletonList(map("statement", "CREATE (n)"))))
+                .location();
+
+        Thread.sleep(1000 * 5);
+
+        // tx should still be around and refreshes the timeout to 10s
+        assertThat(HTTP.POST(tx).status()).isEqualTo(200);
+
+        // When
+        Thread.sleep(1000 * 15);
+        Map<String, Object> response = HTTP.POST(tx + "/commit").content();
+
+        // Then
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get("errors");
+        assertThat(errors.get(0).get("code"))
+                .isEqualTo(TransactionNotFound.code().serialize());
+    }
+
+    @Test
+    void shouldTimeoutAtDBMSLevel() throws Exception {
+        // Given
+        testWebContainer = serverOnRandomPorts()
+                .withProperty(ServerSettings.http_transaction_timeout.name(), "30")
+                .withProperty(GraphDatabaseSettings.transaction_timeout.name(), "5")
+                .build();
+
+        String tx = HTTP.POST(txURI(), map("statements", singletonList(map("statement", "CREATE (n)"))))
+                .location();
+
+        // When
+        Thread.sleep(1000 * 15);
+        var respA = HTTP.POST(tx + "/commit");
+        Map<String, Object> response = respA.content();
+
+        // Then
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get("errors");
+        assertThat(errors.get(0).get("code"))
+                .isEqualTo(TransactionTimedOutClientConfiguration.code().serialize());
+
+        // And then transaction is cleaned from the registry
+        Map<String, Object> respB = HTTP.POST(tx + "/commit").content();
+
+        // Then
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> errors2 = (List<Map<String, Object>>) respB.get("errors");
+        assertThat(errors2.get(0).get("code"))
                 .isEqualTo(TransactionNotFound.code().serialize());
     }
 
