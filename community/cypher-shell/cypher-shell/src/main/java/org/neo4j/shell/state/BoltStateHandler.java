@@ -61,6 +61,7 @@ import org.neo4j.shell.build.Build;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ThrowingAction;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Handles interactions with the driver
@@ -81,13 +82,23 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private Transaction tx;
     private ConnectionConfig connectionConfig;
     private LicenseDetails licenseDetails = LicenseDetailsImpl.YES;
+    private org.neo4j.shell.cli.AccessMode accessMode;
 
-    public BoltStateHandler(boolean isInteractive) {
-        this(GraphDatabase::driver, isInteractive);
+    public BoltStateHandler(boolean isInteractive, org.neo4j.shell.cli.AccessMode accessMode) {
+        this(GraphDatabase::driver, isInteractive, accessMode);
     }
 
+    @VisibleForTesting
     BoltStateHandler(TriFunction<URI, AuthToken, Config, Driver> driverProvider, boolean isInteractive) {
+        this(driverProvider, isInteractive, org.neo4j.shell.cli.AccessMode.WRITE);
+    }
+
+    private BoltStateHandler(
+            TriFunction<URI, AuthToken, Config, Driver> driverProvider,
+            boolean isInteractive,
+            org.neo4j.shell.cli.AccessMode accessMode) {
         this.driverProvider = driverProvider;
+        this.accessMode = accessMode;
         activeDatabaseNameAsSetByUser = ABSENT_DB_NAME;
         this.isInteractive = isInteractive;
     }
@@ -221,6 +232,12 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
+    public void reconnect(org.neo4j.shell.cli.AccessMode accessMode) throws CommandException {
+        this.accessMode = accessMode;
+        reconnect();
+    }
+
+    @Override
     public void reconnect() throws CommandException {
         if (!isConnected()) {
             throw new CommandException("Can't reconnect when unconnected.");
@@ -286,7 +303,12 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private void reconnect(String databaseToConnectTo, String previousDatabase) {
         log.info("Connecting to database " + databaseToConnectTo + "...");
         SessionConfig.Builder builder = SessionConfig.builder();
-        builder.withDefaultAccessMode(AccessMode.WRITE);
+
+        switch (accessMode) {
+            case READ -> builder.withDefaultAccessMode(AccessMode.READ);
+            case WRITE -> builder.withDefaultAccessMode(AccessMode.WRITE);
+        }
+
         if (!ABSENT_DB_NAME.equals(databaseToConnectTo)) {
             builder.withDatabase(databaseToConnectTo);
         }
@@ -600,5 +622,9 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
 
     public LicenseDetails licenseDetails() {
         return licenseDetails;
+    }
+
+    public org.neo4j.shell.cli.AccessMode accessMode() {
+        return accessMode;
     }
 }

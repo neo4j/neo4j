@@ -29,6 +29,7 @@ import static org.neo4j.shell.util.Versions.minorVersion;
 import org.junit.jupiter.api.Test;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.StringLinePrinter;
+import org.neo4j.shell.cli.AccessMode;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyConfig;
@@ -88,7 +89,7 @@ class CypherShellProtocolIntegrationTest {
     }
 
     private CypherShell shell() {
-        var boltHandler = new BoltStateHandler(true);
+        var boltHandler = new BoltStateHandler(true, AccessMode.WRITE);
         var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000, false));
         var parameters = mock(ParameterService.class);
         return new CypherShell(new StringLinePrinter(), boltHandler, printer, parameters);

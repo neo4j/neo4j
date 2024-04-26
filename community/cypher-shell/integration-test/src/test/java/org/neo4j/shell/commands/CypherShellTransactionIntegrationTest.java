@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.StringLinePrinter;
+import org.neo4j.shell.cli.AccessMode;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parameter.ParameterService;
@@ -47,7 +48,7 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         var printer = new PrettyPrinter(new PrettyConfig(Format.VERBOSE, true, 1000, false));
-        var boltHandler = new BoltStateHandler(true);
+        var boltHandler = new BoltStateHandler(true, AccessMode.WRITE);
         var parameters = mock(ParameterService.class);
         shell = new CypherShell(linePrinter, boltHandler, printer, parameters);
         rollbackCommand = new Rollback(shell);

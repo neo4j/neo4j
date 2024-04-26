@@ -78,7 +78,8 @@ public class CommandHelper {
                 entry(Source.class, new Source.Factory()),
                 entry(Use.class, new Use.Factory()),
                 entry(Impersonate.class, new Impersonate.Factory()),
-                entry(SysInfo.class, new SysInfo.Factory()));
+                entry(SysInfo.class, new SysInfo.Factory()),
+                entry(AccessMode.class, new AccessMode.Factory()));
 
         private static final Map<String, Command.Factory> factoryByName = buildFactoryByName();
 

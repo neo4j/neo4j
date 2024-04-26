@@ -20,6 +20,7 @@
 package org.neo4j.shell;
 
 import java.util.Optional;
+import org.neo4j.shell.cli.AccessMode;
 import org.neo4j.shell.exception.CommandException;
 
 /**
@@ -47,6 +48,9 @@ public interface Connector {
      * Reconnect to the database, requires an open connection that does not have an open transaction.
      */
     void reconnect() throws CommandException;
+
+    /** Reconnect using the specified access mode. */
+    void reconnect(AccessMode accessMode) throws CommandException;
 
     void disconnect();
 

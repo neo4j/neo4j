@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.StringLinePrinter;
+import org.neo4j.shell.cli.AccessMode;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parameter.ParameterService;
@@ -56,7 +57,7 @@ class CypherShellMultiDatabaseIntegrationTest {
     void setUp() throws Exception {
         linePrinter.clear();
         var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000, false));
-        var boltHandler = new BoltStateHandler(false);
+        var boltHandler = new BoltStateHandler(false, AccessMode.WRITE);
         var parameters = ParameterService.create(boltHandler);
         shell = new CypherShell(linePrinter, boltHandler, printer, parameters);
         useCommand = new Use(shell);
@@ -142,7 +143,7 @@ class CypherShellMultiDatabaseIntegrationTest {
 
     @Test
     void switchingToNonExistingDatabaseShouldGiveErrorResponseFromServerInteractive() throws CommandException {
-        var boltHandler = new BoltStateHandler(true);
+        var boltHandler = new BoltStateHandler(true, AccessMode.WRITE);
         var parameters = ParameterService.create(boltHandler);
         var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000, false));
         shell = new CypherShell(linePrinter, boltHandler, printer, parameters);

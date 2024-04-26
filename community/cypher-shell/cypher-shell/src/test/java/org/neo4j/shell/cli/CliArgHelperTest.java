@@ -417,4 +417,17 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         assertNotNull(arguments);
         assertEquals(false, arguments.getNotificationsEnabled());
     }
+
+    @Test
+    void accessModes() {
+        assertEquals(AccessMode.READ, parser.parse("--access-mode", "read").getAccessMode());
+        assertEquals(AccessMode.READ, parser.parse("--access-mode", "ReAd").getAccessMode());
+        assertEquals(AccessMode.WRITE, parser.parse("--access-mode", "write").getAccessMode());
+        assertEquals(AccessMode.WRITE, parser.parse("--access-mode", "wRiTe").getAccessMode());
+        assertEquals(AccessMode.WRITE, parser.parse().getAccessMode());
+
+        assertThatThrownBy(() -> parser.parseAndThrow("--access-mode", "godmode"))
+                .isInstanceOf(ArgumentParserException.class)
+                .hasMessageContaining("argument --access-mode: could not convert 'godmode' (choose from {read,write})");
+    }
 }

@@ -29,6 +29,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.shell.cli.AccessMode;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
@@ -179,6 +180,11 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     @Override
     public void reconnect() throws CommandException {
         boltStateHandler.reconnect();
+    }
+
+    @Override
+    public void reconnect(AccessMode accessMode) throws CommandException {
+        boltStateHandler.reconnect(accessMode);
     }
 
     @Override
@@ -334,5 +340,9 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
                     license.daysLeft().get(),
                     license.trialDays().get()));
         }
+    }
+
+    public AccessMode accessMode() {
+        return boltStateHandler.accessMode();
     }
 }

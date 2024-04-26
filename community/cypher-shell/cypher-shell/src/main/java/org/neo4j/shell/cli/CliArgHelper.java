@@ -70,6 +70,7 @@ public class CliArgHelper {
     public static final String URI_ENV_VAR = "NEO4J_URI";
     private static final String HISTORY_ENV_VAR = "NEO4J_CYPHER_SHELL_HISTORY";
     private static final String DEFAULT_ADDRESS = format("%s://%s:%d", DEFAULT_SCHEME, DEFAULT_HOST, DEFAULT_PORT);
+    private static final AccessMode DEFAULT_ACCESS_MODE = AccessMode.WRITE;
 
     private final Environment environment;
 
@@ -150,6 +151,8 @@ public class CliArgHelper {
         if (impersonatedUser != null) {
             cliArgs.setImpersonatedUser(impersonatedUser);
         }
+
+        cliArgs.setAccessMode(ns.get("access-mode"));
 
         cliArgs.setEncryption(Encryption.parse(ns.get("encryption")));
 
@@ -287,7 +290,12 @@ public class CliArgHelper {
         connGroup
                 .addArgument("-d", "--database")
                 .help("database to connect to. Can also be specified using environment variable " + DATABASE_ENV_VAR);
-
+        connGroup
+                .addArgument("--access-mode")
+                .dest("access-mode")
+                .type(Arguments.caseInsensitiveEnumStringType(AccessMode.class))
+                .setDefault(DEFAULT_ACCESS_MODE)
+                .help("access mode, defaults to " + DEFAULT_ACCESS_MODE.name());
         MutuallyExclusiveGroup failGroup = parser.addMutuallyExclusiveGroup();
         failGroup
                 .addArgument("--fail-fast")

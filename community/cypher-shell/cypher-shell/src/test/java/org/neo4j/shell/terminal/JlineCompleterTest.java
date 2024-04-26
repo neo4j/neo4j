@@ -57,7 +57,8 @@ class JlineCompleterTest {
             ":source",
             ":use",
             ":impersonate",
-            ":sysinfo");
+            ":sysinfo",
+            ":access-mode");
 
     @BeforeEach
     void setup() {

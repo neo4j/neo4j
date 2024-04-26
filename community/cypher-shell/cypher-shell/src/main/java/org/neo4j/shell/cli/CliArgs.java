@@ -41,6 +41,7 @@ public class CliArgs {
     private Optional<String> impersonatedUser = Optional.empty();
     private String password = "";
     private String databaseName = ABSENT_DB_NAME;
+    private AccessMode accessMode = AccessMode.WRITE;
     private FailBehavior failBehavior = FailBehavior.FAIL_FAST;
     private Format format = Format.AUTO;
     private Optional<String> cypher = Optional.empty();
@@ -129,6 +130,14 @@ public class CliArgs {
 
     public void setParameters(List<ParameterService.RawParameters> parameters) {
         this.parameters = parameters;
+    }
+
+    public void setAccessMode(AccessMode accessMode) {
+        this.accessMode = accessMode;
+    }
+
+    public AccessMode getAccessMode() {
+        return accessMode;
     }
 
     public Encryption getEncryption() {

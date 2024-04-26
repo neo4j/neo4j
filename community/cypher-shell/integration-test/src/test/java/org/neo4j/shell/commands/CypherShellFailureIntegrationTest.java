@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.StringLinePrinter;
+import org.neo4j.shell.cli.AccessMode;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyConfig;
@@ -42,7 +43,7 @@ class CypherShellFailureIntegrationTest extends CypherShellIntegrationTest {
     void setUp() {
         linePrinter.clear();
         var printer = new PrettyPrinter(new PrettyConfig(Format.VERBOSE, true, 1000, false));
-        var boltHandler = new BoltStateHandler(true);
+        var boltHandler = new BoltStateHandler(true, AccessMode.WRITE);
         var parameters = mock(ParameterService.class);
         shell = new CypherShell(linePrinter, boltHandler, printer, parameters);
     }

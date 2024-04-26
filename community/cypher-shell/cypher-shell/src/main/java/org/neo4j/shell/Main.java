@@ -64,7 +64,7 @@ public class Main implements Closeable {
         boolean isInteractive = !args.getNonInteractive() && ShellRunner.isInputInteractive();
         this.printer = new AnsiPrinter(Format.VERBOSE, System.out, System.err);
         this.args = args;
-        var boltStateHandler = new BoltStateHandler(shouldBeInteractive(args, isInteractive));
+        var boltStateHandler = new BoltStateHandler(shouldBeInteractive(args, isInteractive), args.getAccessMode());
         this.parameters = ParameterService.create(boltStateHandler);
         this.terminal = terminalBuilder()
                 .interactive(isInteractive)
@@ -84,7 +84,7 @@ public class Main implements Closeable {
         this.args = args;
         this.printer = new AnsiPrinter(Format.VERBOSE, out, err);
         final var isInteractive = shouldBeInteractive(args, terminal.isInteractive());
-        var boltStateHandler = new BoltStateHandler(isInteractive);
+        var boltStateHandler = new BoltStateHandler(isInteractive, args.getAccessMode());
         this.parameters = ParameterService.create(boltStateHandler);
         this.shell = new CypherShell(
                 printer, boltStateHandler, new PrettyPrinter(PrettyConfig.from(args, isInteractive)), parameters);

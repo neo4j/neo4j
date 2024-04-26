@@ -63,6 +63,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.shell.cli.AccessMode;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.Logger;
@@ -1524,6 +1525,68 @@ class MainIntegrationTest {
                 .assertThatOutput(notContains("info:"));
     }
 
+    @Test
+    void accessModes() throws Exception {
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .userInputLines("create ();", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(endsWithInteractiveExit);
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--access-mode", "write")
+                .userInputLines("create ();", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(endsWithInteractiveExit);
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--access-mode", "read")
+                .userInputLines("create ();", ":exit")
+                .run()
+                .assertSuccessAndConnected(false)
+                .assertThatErrorOutput(contains("Writing in read access mode not allowed"))
+                .assertThatOutput(endsWithInteractiveExit);
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--access-mode", "write")
+                .userInputLines(":access-mode read", "create ();", ":exit")
+                .run()
+                .assertSuccessAndConnected(false)
+                .assertThatErrorOutput(contains("Writing in read access mode not allowed"))
+                .assertThatOutput(endsWithInteractiveExit);
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--access-mode", "read")
+                .userInputLines(":access-mode write", "create ();", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(endsWithInteractiveExit);
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--access-mode", "write")
+                .userInputLines("match (n) return n limit 1;", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(contains("\nn\n("), endsWithInteractiveExit);
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--access-mode", "read")
+                .userInputLines("match (n) return n limit 1;", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(contains("\nn\n("), endsWithInteractiveExit);
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .userInputLines(":access-mode sudo", ":exit")
+                .run()
+                .assertSuccessAndConnected(false)
+                .assertThatErrorOutput(contains("Unknown access mode sudo, available modes are READ, WRITE"))
+                .assertThatOutput(endsWithInteractiveExit);
+    }
+
     private static CypherStatement cypher(String cypher) {
         return CypherStatement.complete(cypher);
     }
@@ -1562,7 +1625,7 @@ class MainIntegrationTest {
     private <T> T runInDbAndReturn(String database, ThrowingFunction<CypherShell, T, Exception> systemDbConsumer) {
         CypherShell shell = null;
         try {
-            var boltHandler = new BoltStateHandler(false);
+            var boltHandler = new BoltStateHandler(false, AccessMode.WRITE);
             var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, false, 100, false));
             var parameters = ParameterService.create(boltHandler);
             shell = new CypherShell(new StringLinePrinter(), boltHandler, printer, parameters);
