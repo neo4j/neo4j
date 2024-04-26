@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.util.hashing.MurmurHash3
 
 /**
  * Finds conflicts between plans that need Eager to solve them.
@@ -411,6 +412,46 @@ sealed trait ConflictFinder {
     })
   }
 
+  // This is used instead of a Set, since creating Sets is slow (if we do it a lot).
+  private class ConflictingPlans(val p1: Ref[LogicalPlan], val p2: Ref[LogicalPlan]) {
+    /*
+     * Strongly inspired by [[MurmurHash3.unorderedHash]]
+     */
+    override def hashCode(): Int = {
+      var a, b, n = 0
+      var c = 1
+
+      // p1
+      {
+        val x = p1
+        val h: Int = x.##
+        a += h
+        b ^= h
+        c *= h | 1
+        n += 1
+      }
+      // p2
+      {
+        val x = p2
+        val h: Int = x.##
+        a += h
+        b ^= h
+        c *= h | 1
+        n += 1
+      }
+
+      var h = MurmurHash3.setSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, n)
+    }
+
+    override def equals(obj: Any): Boolean = obj match {
+      case cp: ConflictingPlans => (p1 == cp.p1 && p2 == cp.p2) || (p1 == cp.p2 && p2 == cp.p1)
+    }
+  }
+
   /**
    * By inspecting the reads and writes, return a [[ConflictingPlanPair]] for each Read/write conflict.
    * In the result there is only one ConflictingPlanPair per pair of plans, and the reasons are merged
@@ -421,10 +462,10 @@ sealed trait ConflictFinder {
     wholePlan: LogicalPlan
   )(implicit planChildrenLookup: PlanChildrenLookup): Seq[ConflictingPlanPair] = {
     val leftMostLeaf = wholePlan.leftmostLeaf
-    val map = mutable.Map[Set[Ref[LogicalPlan]], mutable.Set[EagernessReason]]()
+    val map = mutable.Map[ConflictingPlans, mutable.Set[EagernessReason]]()
 
     def addConflict(conflictingPlanPair: ConflictingPlanPair): Unit = {
-      map.getOrElseUpdate(Set(conflictingPlanPair.first, conflictingPlanPair.second), mutable.Set.empty[EagernessReason])
+      map.getOrElseUpdate(new ConflictingPlans(conflictingPlanPair.first, conflictingPlanPair.second), mutable.Set.empty[EagernessReason])
         .addAll(conflictingPlanPair.reasons)
     }
 
@@ -510,7 +551,7 @@ sealed trait ConflictFinder {
     callInTxConflict(readsAndWrites, wholePlan).foreach(addConflict)
 
     map.map {
-      case (SetExtractor(plan1, plan2), reasons) => ConflictingPlanPair(plan1, plan2, reasons.toSet)
+      case (conflictingPlans, reasons) => ConflictingPlanPair(conflictingPlans.p1, conflictingPlans.p2, reasons.toSet)
       case (set, _) => throw new IllegalStateException(s"Set must have 2 elements. Got: $set")
     }.toSeq
   }
