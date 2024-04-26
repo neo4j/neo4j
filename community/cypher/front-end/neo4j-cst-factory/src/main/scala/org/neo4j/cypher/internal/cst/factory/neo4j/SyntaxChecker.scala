@@ -200,12 +200,21 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   }
 
   private def checkAlterUser(ctx: CypherParser.AlterUserContext): Unit = {
-    val nbrSetPass = ctx.PASSWORD().size + ctx.password().size()
+    val pass = ctx.password()
+    val passSize = pass.size()
+    val nbrSetPass = ctx.PASSWORD().size + pass.size()
+    // Set
     if (nbrSetPass > 1) {
-      if (ctx.PASSWORD().size > 1)
+      if (ctx.PASSWORD().size > 1) {
         errorOnDuplicateTokens(ctx.PASSWORD(), "SET PASSWORD CHANGE [NOT] REQUIRED")
-      else if (ctx.password().size > 0)
-        errorOnDuplicateCtx(ctx.password(), "SET PASSWORD")
+      } else if (passSize > 0) {
+        val hasChange = pass.stream().anyMatch(_.passwordChangeRequired() != null)
+        if (ctx.PASSWORD().size > 0 && hasChange) {
+          errorOnDuplicate(nodeChild(ctx.password(0), 0).getSymbol, "SET PASSWORD")
+        } else if (passSize > 1) {
+          errorOnDuplicate(nodeChild(ctx.password(1), 0).getSymbol, "SET PASSWORD")
+        }
+      }
     }
     errorOnDuplicateRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
     errorOnDuplicateRule(ctx.homeDatabase(), "SET HOME DATABASE")

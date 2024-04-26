@@ -591,10 +591,18 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Duplicate SET PASSWORD clause (line 1, column 40 (offset: 39))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
         """Mismatched input '': expected a string value, '$' (line 1, column 62 (offset: 61))
           |"ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD"
           |                                                              ^""".stripMargin
+      ))
+  }
+
+  test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD 'password'") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Duplicate SET PASSWORD clause (line 1, column 40 (offset: 39))"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Duplicate SET PASSWORD clause (line 1, column 44 (offset: 43))"
       ))
   }
 
