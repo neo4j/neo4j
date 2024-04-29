@@ -48,7 +48,7 @@ public class TestDirectorySupportExtension extends StatefulFieldExtension<TestDi
                 AfterAllCallback,
                 TestExecutionExceptionHandler {
     public static final String TEST_DIRECTORY = "testDirectory";
-    private static final String FAILURE_MARKER = "failureMarker";
+    public static final String FAILURE_MARKER = "failureMarker";
     public static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create(TEST_DIRECTORY);
 
     @Override
