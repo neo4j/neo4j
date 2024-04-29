@@ -30,7 +30,8 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListenable implements CompositeCursor {
+public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListenable
+        implements SkippableCompositeCursor {
 
     public static IntersectionNodeLabelIndexCursor ascendingIntersectionNodeLabelIndexCursor(
             Read read,
@@ -83,8 +84,6 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
 
     abstract int compare(long current, long other);
 
-    abstract boolean seek(NodeLabelIndexCursor cursor, long seek);
-
     @Override
     public boolean next() {
 
@@ -115,14 +114,17 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
             } else if (compare < 0) {
                 // advance all cursors up to first and retry
                 for (int j = 0; j <= i; j++) {
-                    if (!seek(cursors[j], secondReference)) {
+                    var cursor = cursors[j];
+                    cursor.skipUntil(secondReference);
+                    if (!cursor.next()) {
                         return false;
                     }
                 }
                 i = 0;
             } else {
                 // advance second, and retry
-                if (!seek(second, firstReference)) {
+                second.skipUntil(firstReference);
+                if (!second.next()) {
                     return false;
                 }
             }
@@ -158,6 +160,13 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
     }
 
     @Override
+    public void skipUntil(long id) {
+        for (NodeLabelIndexCursor cursor : cursors) {
+            cursor.skipUntil(id);
+        }
+    }
+
+    @Override
     public boolean isClosed() {
         return false;
     }
@@ -171,11 +180,6 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         int compare(long current, long other) {
             return Long.compare(current, other);
         }
-
-        @Override
-        boolean seek(NodeLabelIndexCursor cursor, long seek) {
-            return Cursors.seekAscending(cursor, seek);
-        }
     }
 
     private static final class DescendingIntersectionLabelIndexCursor extends IntersectionNodeLabelIndexCursor {
@@ -186,11 +190,6 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         @Override
         int compare(long current, long other) {
             return -Long.compare(current, other);
-        }
-
-        @Override
-        boolean seek(NodeLabelIndexCursor cursor, long seek) {
-            return Cursors.seekDescending(cursor, seek);
         }
     }
 }

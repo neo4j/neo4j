@@ -24,12 +24,15 @@ import static org.neo4j.collection.PrimitiveLongCollections.reverseIterator;
 import static org.neo4j.internal.schema.IndexOrder.DESCENDING;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
+import java.util.NoSuchElementException;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.index.schema.TokenScanValueIndexProgressor;
 
 /**
  * Base for index cursors that can handle scans with IndexOrder.
@@ -42,8 +45,12 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     protected long entityFromIndex;
 
     protected int tokenId;
-
-    private LongIterator added;
+    // Defaulting order to ASCENDING, argument being that if it is important that you do not assume a order you can
+    // specify none
+    // And if you are indifferent to index order BUT you can treat an index with order then it might be beneficial
+    // to assume ascending for functionality like skipUntil
+    protected IndexOrder order = IndexOrder.ASCENDING;
+    private PeekableLongIterator added;
     private LongSet removed;
     private boolean useMergeSort;
     private final PrimitiveSortedMergeJoin sortedMergeJoin = new PrimitiveSortedMergeJoin();
@@ -74,11 +81,15 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
 
     protected abstract boolean allowedToSeeEntity(long entityReference);
 
+    private PeekableLongIterator peekable(LongIterator actual) {
+        return actual != null ? new PeekableLongIterator(actual) : null;
+    }
+
     @Override
     public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
         initialize(progressor);
         if (read.hasTxStateWithChanges()) {
-            added = createAddedInTxState(read.txState(), token, order);
+            added = peekable(createAddedInTxState(read.txState(), token, order));
             removed = createDeletedInTxState(read.txState(), token);
             useMergeSort = order != IndexOrder.NONE;
             if (useMergeSort) {
@@ -93,13 +104,14 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         if (tracer != null) {
             traceScan(tracer, token);
         }
+        this.order = order;
     }
 
     @Override
     public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
         initialize(progressor);
         useMergeSort = false;
-        this.added = added;
+        this.added = peekable(added);
         this.removed = removed;
         this.tokenId = token;
         initSecurity(token);
@@ -214,5 +226,48 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
 
     private static LongIterator sorted(long[] items, IndexOrder order) {
         return DESCENDING == order ? reverseIterator(items) : iterator(items);
+    }
+
+    public void skipUntil(long id) {
+        TokenScanValueIndexProgressor indexProgressor = (TokenScanValueIndexProgressor) progressor;
+
+        if (order == IndexOrder.NONE) {
+            throw new IllegalStateException("IndexOrder " + order + " not supported for skipUntil");
+        }
+
+        if (added != null) {
+            if (order != DESCENDING) {
+                while (added.hasNext() && added.peek() < id) {
+                    added.next();
+                }
+            } else {
+                while (added.hasNext() && added.peek() > id) {
+                    added.next();
+                }
+            }
+        }
+
+        // Move progressor to correct spot
+        indexProgressor.skipUntil(id);
+    }
+
+    private static class PeekableLongIterator extends PrimitiveLongCollections.AbstractPrimitiveLongBaseIterator {
+        private final LongIterator iterator;
+
+        PeekableLongIterator(LongIterator iterator) {
+            this.iterator = iterator;
+        }
+
+        @Override
+        protected boolean fetchNext() {
+            return iterator.hasNext() && next(iterator.next());
+        }
+
+        public long peek() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            return next;
+        }
     }
 }

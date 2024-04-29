@@ -19,7 +19,13 @@
  */
 package org.neo4j.internal.kernel.api;
 
-/**
- * Cursor for scanning the nodes of a label index.
- */
-public interface NodeLabelIndexCursor extends NodeIndexCursor, SkippableCursor {}
+public interface SkippableCursor extends Cursor {
+    /**
+     * Moves cursor to specified id efficiently
+     * does not consume, thus a call to skipUntil should be paired with next()
+     * if id does not exist the cursor is still moved, meaning a next() call will result in the first entity with id
+     * greater (with order) than the id provided
+     * @param id to move cursor to
+     */
+    void skipUntil(long id);
+}

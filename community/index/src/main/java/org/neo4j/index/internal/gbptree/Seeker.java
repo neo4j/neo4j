@@ -54,6 +54,17 @@ public interface Seeker<KEY, VALUE> extends Closeable {
      */
     VALUE value();
 
+    /**
+     * Moves this seeker to specified range by reinitializing it
+     *
+     * @param fromInclusive lower bound of the range to seek (inclusive).
+     * @param toExclusive higher bound of the range to seek (exclusive).
+     * @throws UnsupportedOperationException on non-implemented calls
+     */
+    default void reinitializeToNewRange(KEY fromInclusive, KEY toExclusive) {
+        throw new UnsupportedOperationException();
+    }
+
     interface Factory<KEY, VALUE> {
         /**
          * Allocates a {@link Seeker} instance for seeking in the tree. Caller can reuse the returned instance for multiple calls to

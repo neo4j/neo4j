@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
  */
 public class TokenScanValueIndexProgressor implements IndexProgressor, Resource {
 
+    public static final int RANGE_SIZE = Long.SIZE;
     /**
      * {@link Seeker} to lazily read new {@link TokenScanValue} from.
      */
@@ -64,19 +65,21 @@ public class TokenScanValueIndexProgressor implements IndexProgressor, Resource 
     private final IndexOrder indexOrder;
     private final EntityRange range;
     private final TokenIndexIdLayout idLayout;
-    private int tokenId;
+    private final int tokenId;
 
     TokenScanValueIndexProgressor(
             Seeker<TokenScanKey, TokenScanValue> cursor,
             EntityTokenClient client,
             IndexOrder indexOrder,
             EntityRange range,
-            TokenIndexIdLayout idLayout) {
+            TokenIndexIdLayout idLayout,
+            int tokenId) {
         this.cursor = cursor;
         this.client = client;
         this.indexOrder = indexOrder;
         this.range = range;
         this.idLayout = idLayout;
+        this.tokenId = tokenId;
     }
 
     /**
@@ -107,31 +110,106 @@ public class TokenScanValueIndexProgressor implements IndexProgressor, Resource 
                     // We switch that bit to zero, so that we don't find it again the next time.
                     // First, create a mask where only set bit is set (easiest by bitshifting the number one),
                     // and then invert the mask and then & it with bits.
-                    long bitToZero = 1L << (Long.SIZE - delta - 1);
+                    long bitToZero = 1L << (RANGE_SIZE - delta - 1);
                     bits &= ~bitToZero;
-                    idForClient = (baseEntityId + Long.SIZE) - delta - 1;
+                    idForClient = (baseEntityId + RANGE_SIZE) - delta - 1;
                 }
 
                 if (isInRange(idForClient) && client.acceptEntity(idForClient, tokenId)) {
                     return true;
                 }
             }
-            try {
-                if (!cursor.next()) {
-                    close();
-                    return false;
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            if (!nextRange()) {
+                return false;
             }
 
-            var key = cursor.key();
-            baseEntityId = idLayout.firstIdOfRange(key.idRange);
-            tokenId = key.tokenId;
-            bits = cursor.value().bits;
-
             //noinspection AssertWithSideEffects
-            assert keysInOrder(key, indexOrder);
+            assert keysInOrder(cursor.key(), indexOrder);
+        }
+    }
+
+    private boolean nextRange() {
+        try {
+            if (!cursor.next()) {
+                close();
+                return false;
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        var key = cursor.key();
+        baseEntityId = idLayout.firstIdOfRange(key.idRange);
+        bits = cursor.value().bits;
+        assert cursor.key().tokenId == tokenId;
+
+        return true;
+    }
+
+    /**
+     * Position progressor so subsequent next() call moves progressor to entity with id if such entity exists
+     * If it does not exist TODO make good
+     *
+     * @param id id to progress to
+     */
+    public void skipUntil(long id) {
+        if (id - baseEntityId > RANGE_SIZE * 10) {
+            // if we need to take a long stride in tree
+
+            if (indexOrder != IndexOrder.DESCENDING) {
+                cursor.reinitializeToNewRange(
+                        new TokenScanKey(tokenId, idLayout.rangeOf(id)), new TokenScanKey(tokenId, Long.MAX_VALUE));
+            } else {
+                cursor.reinitializeToNewRange(
+                        new TokenScanKey(tokenId, idLayout.rangeOf(id)), new TokenScanKey(tokenId, Long.MIN_VALUE));
+            }
+
+            if (!nextRange()) {
+                return;
+            }
+        } else {
+            // move to interesting bitmap and maybe initialize baseEntityId commented out due to skipUntil on cursor
+            if (bits == 0) {
+                if (!nextRange()) {
+                    return;
+                }
+            }
+        }
+
+        // jump through bitmaps until we find the right range
+        while (!isAtOrPastBitMapRange(id)) {
+            if (!nextRange()) {
+                // halt next() while loop
+                bits = 0;
+                return;
+            }
+        }
+
+        if (!isInBitMapRange(id)) {
+            // We are past the bitmap we are looking for
+            return;
+        }
+        // We are now in the right bitmap
+
+        long offset = idLayout.idWithinRange(id);
+
+        // Move progressor to id
+        if (indexOrder != IndexOrder.DESCENDING) {
+            bits &= (-1L << offset);
+        } else {
+            bits &= (-1L >>> (RANGE_SIZE - offset - 1L));
+        }
+    }
+
+    private boolean isInBitMapRange(long id) {
+        return idLayout.rangeOf(id) == idLayout.rangeOf(baseEntityId);
+    }
+
+    private boolean isAtOrPastBitMapRange(long id) {
+        if (indexOrder != IndexOrder.DESCENDING) {
+            return idLayout.rangeOf(id) <= idLayout.rangeOf(baseEntityId);
+        } else {
+            return idLayout.rangeOf(id) >= idLayout.rangeOf(baseEntityId);
         }
     }
 
@@ -143,7 +221,7 @@ public class TokenScanValueIndexProgressor implements IndexProgressor, Resource 
      * The purpose of this method is to filter out the extra entity IDs that are present in the seek result because of the rounding.
      */
     private boolean isInRange(long entityId) {
-        return entityId >= range.fromInclusive() && entityId < range.toExclusive();
+        return range.contains(entityId);
     }
 
     private boolean keysInOrder(TokenScanKey key, IndexOrder order) {
@@ -170,6 +248,7 @@ public class TokenScanValueIndexProgressor implements IndexProgressor, Resource 
         return true;
     }
 
+    @Override
     public void close() {
         if (!closed) {
             try {

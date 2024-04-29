@@ -32,8 +32,8 @@ import org.neo4j.io.pagecache.context.CursorContext;
 
 public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListenable implements CompositeCursor {
 
-    private final CompositeCursor positiveCursor;
-    private final CompositeCursor negativeCursor;
+    private final SkippableCompositeCursor positiveCursor;
+    private final SkippableCompositeCursor negativeCursor;
     private boolean negativeCursorHasData;
     private boolean first = true;
 
@@ -76,7 +76,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
                 IntersectionNodeLabelIndexCursor.intersectionNodeLabelIndexCursor(negativeCursor));
     }
 
-    SubtractionNodeLabelIndexCursor(CompositeCursor positiveCursor, CompositeCursor negativeCursor) {
+    SubtractionNodeLabelIndexCursor(SkippableCompositeCursor positiveCursor, SkippableCompositeCursor negativeCursor) {
         this.positiveCursor = positiveCursor;
         this.negativeCursor = negativeCursor;
     }
@@ -98,8 +98,6 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
 
     abstract int compare(long a, long b);
 
-    abstract boolean seek(CompositeCursor cursor, long seek);
-
     @Override
     public boolean next() {
         if (first) {
@@ -117,11 +115,13 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
             if (compare < 0) {
                 return true;
             } else if (compare > 0) {
-                localNegativeCursorHasData = seek(negativeCursor, positiveId);
+                negativeCursor.skipUntil(positiveId);
+                localNegativeCursorHasData = negativeCursor.next();
             } else {
                 shouldContinue = positiveCursor.next();
                 if (shouldContinue) {
-                    localNegativeCursorHasData = seek(negativeCursor, positiveCursor.reference());
+                    negativeCursor.skipUntil(positiveId);
+                    localNegativeCursorHasData = negativeCursor.next();
                 }
             }
             negativeCursorHasData = localNegativeCursorHasData;
@@ -142,7 +142,8 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
     }
 
     private static final class AscendingSubtractionLabelIndexCursor extends SubtractionNodeLabelIndexCursor {
-        AscendingSubtractionLabelIndexCursor(CompositeCursor positiveCursor, CompositeCursor negativeCursor) {
+        AscendingSubtractionLabelIndexCursor(
+                SkippableCompositeCursor positiveCursor, SkippableCompositeCursor negativeCursor) {
             super(positiveCursor, negativeCursor);
         }
 
@@ -150,26 +151,17 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
         int compare(long current, long other) {
             return Long.compare(current, other);
         }
-
-        @Override
-        boolean seek(CompositeCursor cursor, long seek) {
-            return Cursors.seekAscending(cursor, seek);
-        }
     }
 
     private static final class DescendingSubtractionLabelIndexCursor extends SubtractionNodeLabelIndexCursor {
-        DescendingSubtractionLabelIndexCursor(CompositeCursor positiveCursor, CompositeCursor negativeCursor) {
+        DescendingSubtractionLabelIndexCursor(
+                SkippableCompositeCursor positiveCursor, SkippableCompositeCursor negativeCursor) {
             super(positiveCursor, negativeCursor);
         }
 
         @Override
         int compare(long current, long other) {
             return -Long.compare(current, other);
-        }
-
-        @Override
-        boolean seek(CompositeCursor cursor, long seek) {
-            return Cursors.seekDescending(cursor, seek);
         }
     }
 }

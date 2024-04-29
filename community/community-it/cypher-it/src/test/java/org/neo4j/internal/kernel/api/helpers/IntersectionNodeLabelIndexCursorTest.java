@@ -214,6 +214,35 @@ class IntersectionNodeLabelIndexCursorTest {
             }
             tx.commit();
         }
+    }
+
+    @Test
+    void shouldHandleNonEmptyResultSparseAscending() throws KernelException {
+        // given
+        int[] labelsToLookFor = new int[3];
+        int nodeCount = 10000;
+        List<Long> nodesToFind = new ArrayList<>(nodeCount);
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            Write write = tx.dataWrite();
+            TokenWrite tokenWrite = tx.tokenWrite();
+            tokenWrite.labelGetOrCreateForNames(new String[] {"A", "B", "C"}, labelsToLookFor);
+
+            for (int i = 0; i < nodeCount; i++) {
+                long node = write.nodeCreate();
+                if (i % 700 == 0) {
+                    write.nodeAddLabel(node, labelsToLookFor[0]);
+                    write.nodeAddLabel(node, labelsToLookFor[1]);
+                    write.nodeAddLabel(node, labelsToLookFor[2]);
+                    nodesToFind.add(node);
+                } else if (i % 3000 == 0) {
+                    write.nodeAddLabel(node, labelsToLookFor[i % labelsToLookFor.length]);
+                    write.nodeAddLabel(node, labelsToLookFor[(i + 1) % labelsToLookFor.length]);
+                } else if (i % 2000 == 0) {
+                    write.nodeAddLabel(node, labelsToLookFor[i % labelsToLookFor.length]);
+                } // else no labels
+            }
+            tx.commit();
+        }
 
         // when
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
@@ -221,6 +250,43 @@ class IntersectionNodeLabelIndexCursorTest {
                 var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
                 var cursor3 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2, cursor3};
+            var intersectionCursor = ascendingIntersectionLabelIndexCursor(tx, labelsToLookFor, cursors);
+
+            // then
+            assertThat(asList(intersectionCursor)).isEqualTo(nodesToFind);
+        }
+    }
+
+    @Test
+    void shouldHandleNonEmptyResultSomeSparseSomeDenseAscending() throws KernelException {
+        // given
+        int[] labelsToLookFor = new int[2];
+        int nodeCount = 10000;
+        List<Long> nodesToFind = new ArrayList<>(nodeCount);
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            Write write = tx.dataWrite();
+            TokenWrite tokenWrite = tx.tokenWrite();
+            tokenWrite.labelGetOrCreateForNames(new String[] {"A", "B"}, labelsToLookFor);
+
+            for (int i = 0; i < nodeCount; i++) {
+                long node = write.nodeCreate();
+                // Fun with primes!
+                if (i % 711 == 0) {
+                    write.nodeAddLabel(node, labelsToLookFor[0]);
+                    write.nodeAddLabel(node, labelsToLookFor[1]);
+                    nodesToFind.add(node);
+                } else if (i % 2 == 0) {
+                    write.nodeAddLabel(node, labelsToLookFor[1]);
+                } // else no labels
+            }
+            tx.commit();
+        }
+
+        // when
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var cursor1 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT);
+                var cursor2 = tx.cursors().allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
+            var cursors = new NodeLabelIndexCursor[] {cursor1, cursor2};
             var intersectionCursor = ascendingIntersectionLabelIndexCursor(tx, labelsToLookFor, cursors);
 
             // then

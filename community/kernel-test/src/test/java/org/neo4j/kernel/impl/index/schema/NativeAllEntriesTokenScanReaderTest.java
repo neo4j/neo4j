@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.index.schema;
 import static java.lang.Long.max;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.internal.helpers.collection.Iterables.reverse;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -200,67 +200,56 @@ class NativeAllEntriesTokenScanReaderTest {
             entries.add(Pair.of(new TokenScanKey().set(labelId, currentRange), value));
         }
 
-        return new Labels(labelId, entries, nodeIds);
+        return new Labels(labelId, entries, idLayout, nodeIds);
     }
 
     static class Labels {
         private final int labelId;
         private final List<Pair<TokenScanKey, TokenScanValue>> entries;
+        private final DefaultTokenIndexIdLayout idLayout;
         private final long[] nodeIds;
 
-        Labels(int labelId, List<Pair<TokenScanKey, TokenScanValue>> entries, long... nodeIds) {
+        Labels(
+                int labelId,
+                List<Pair<TokenScanKey, TokenScanValue>> entries,
+                DefaultTokenIndexIdLayout idLayout,
+                long... nodeIds) {
             this.labelId = labelId;
             this.entries = entries;
+            this.idLayout = idLayout;
             this.nodeIds = nodeIds;
         }
 
         Seeker<TokenScanKey, TokenScanValue> cursor() {
-            return new LabelsSeeker<>(entries);
+            return new LabelsSeeker(entries, true);
         }
 
         Seeker<TokenScanKey, TokenScanValue> descendingCursor() {
-            return new LabelsSeeker<>(reverse(entries));
+            return new LabelsSeeker(entries, false);
         }
 
         public long[] getNodeIds() {
             return nodeIds;
         }
-    }
 
-    static final class LabelsSeeker<TokenScanKey, TokenScanValue> implements Seeker<TokenScanKey, TokenScanValue> {
-        int cursor = -1;
-        private boolean closed;
-        private final List<Pair<TokenScanKey, TokenScanValue>> entries;
-
-        LabelsSeeker(List<Pair<TokenScanKey, TokenScanValue>> entries) {
-            this.entries = entries;
+        public int getId() {
+            return labelId;
         }
 
-        @Override
-        public TokenScanKey key() {
-            Assertions.assertFalse(closed);
-            return entries.get(cursor).first();
+        public long getMaxNodeId() {
+            return Arrays.stream(nodeIds).max().orElse(-1);
         }
 
-        @Override
-        public TokenScanValue value() {
-            Assertions.assertFalse(closed);
-            return entries.get(cursor).other();
+        public long getMinNodeId() {
+            return Arrays.stream(nodeIds).min().orElse(-1);
         }
 
-        @Override
-        public boolean next() {
-            if (cursor + 1 >= entries.size()) {
-                close();
-                return false;
-            }
-            cursor++;
-            return true;
+        public String toString() {
+            return "Label: " + labelId;
         }
 
-        @Override
-        public void close() {
-            closed = true;
+        public boolean hasNodeId(long nodeId) {
+            return Arrays.binarySearch(getNodeIds(), nodeId) >= 0;
         }
     }
 

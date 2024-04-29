@@ -109,7 +109,8 @@ class TokenIndexUpdaterTest {
                 client,
                 IndexOrder.ASCENDING,
                 EntityRange.FULL,
-                idLayout);
+                idLayout,
+                labelId);
         long expectedNodeId = 0;
         while (progressor.next()) {
             assertThat(client.reference).isEqualTo(expectedNodeId);
@@ -141,7 +142,8 @@ class TokenIndexUpdaterTest {
                     client,
                     IndexOrder.ASCENDING,
                     EntityRange.FULL,
-                    idLayout);
+                    idLayout,
+                    i);
             MutableLongList actualNodeIds = LongLists.mutable.empty();
             while (progressor.next()) {
                 actualNodeIds.add(client.reference);

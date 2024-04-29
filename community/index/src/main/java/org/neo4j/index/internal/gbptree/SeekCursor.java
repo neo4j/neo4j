@@ -23,6 +23,7 @@ import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.io.IOUtils.closeAllSilently;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.neo4j.io.pagecache.PageCursor;
@@ -139,6 +140,7 @@ import org.neo4j.util.Preconditions;
  * he find the place where he left off, K4.
  */
 class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
+
     interface Monitor {
         /**
          * @param depth where {@code depth==0} is the root.
@@ -167,6 +169,8 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
 
     static final int DEFAULT_MAX_READ_AHEAD = 20;
     static final int LEAF_LEVEL = Integer.MAX_VALUE;
+
+    private RootInitializer rootInitializer;
 
     /**
      * Cursor for reading from tree nodes and also will be moved around when following pointers.
@@ -472,6 +476,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             int searchLevel,
             Monitor monitor)
             throws IOException {
+        this.rootInitializer = rootInitializer;
         Preconditions.checkState(!closed, "Seeker already closed");
         this.rootCatchup = rootCatchup;
         this.lastFollowedPointerGeneration = rootInitializer.goToRoot(cursor, cursorContext);
@@ -1262,6 +1267,23 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         }
         if (closed) {
             throw new IllegalStateException("This cursor is closed");
+        }
+    }
+
+    public void reinitializeToNewRange(KEY fromInclusive, KEY toExclusive) {
+        if (!ended) {
+            try {
+                initialize(
+                        rootInitializer,
+                        rootCatchup,
+                        fromInclusive,
+                        this.toExclusive,
+                        mutableKeys.length,
+                        searchLevel,
+                        monitor);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 }

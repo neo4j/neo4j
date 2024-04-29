@@ -71,7 +71,8 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
             final int tokenId = query.tokenId();
             final IndexOrder order = constraints.order();
             Seeker<TokenScanKey, TokenScanValue> seeker = seekerForToken(range, tokenId, order, cursorContext);
-            IndexProgressor progressor = new TokenScanValueIndexProgressor(seeker, client, order, range, idLayout);
+            IndexProgressor progressor =
+                    new TokenScanValueIndexProgressor(seeker, client, order, range, idLayout, tokenId);
             client.initialize(progressor, tokenId, order);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -187,7 +188,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
                 throw new UncheckedIOException(e);
             }
 
-            return new TokenScanValueIndexProgressor(cursor, client, indexOrder, range, idLayout);
+            return new TokenScanValueIndexProgressor(cursor, client, indexOrder, range, idLayout, tokenId);
         }
     }
 
@@ -235,7 +236,8 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
                         client,
                         IndexOrder.NONE,
                         range,
-                        idLayout);
+                        idLayout,
+                        fromInclusive.tokenId);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

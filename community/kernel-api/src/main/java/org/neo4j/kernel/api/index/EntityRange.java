@@ -25,4 +25,8 @@ public record EntityRange(long fromInclusive, long toExclusive) {
     public static EntityRange from(long fromInclusive) {
         return new EntityRange(fromInclusive, Long.MAX_VALUE);
     }
+
+    public boolean contains(long entityId) {
+        return entityId >= fromInclusive() && entityId < toExclusive();
+    }
 }

@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.internal.kernel.api.helpers;
 
-/**
- * Cursor for scanning the nodes of a label index.
- */
-public interface NodeLabelIndexCursor extends NodeIndexCursor, SkippableCursor {}
+import org.neo4j.internal.kernel.api.SkippableCursor;
+
+public interface SkippableCompositeCursor extends SkippableCursor, CompositeCursor {}

@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.TestAccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
@@ -576,6 +577,124 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try (KernelTransaction tx = beginTransaction()) {
             tx.dataWrite().nodeDelete(node);
             assertFalse(tx.dataRead().nodeExists(node));
+        }
+    }
+
+    @Test
+    void shouldSeeTxStateSkipUntil() throws Exception {
+        // Given
+        Node node = createNode("label");
+        createNode("label");
+        createNode("label");
+
+        try (KernelTransaction tx = beginTransaction();
+                NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor(tx.cursorContext())) {
+
+            tx.dataWrite().nodeCreateWithLabels(node.labels);
+            var id = tx.dataWrite().nodeCreateWithLabels(node.labels);
+            tx.dataWrite().nodeCreateWithLabels(node.labels);
+
+            tx.dataRead()
+                    .nodeLabelScan(
+                            getTokenReadSession(tx, EntityType.NODE),
+                            cursor,
+                            IndexQueryConstraints.ordered(IndexOrder.ASCENDING),
+                            new TokenPredicate(node.labels[0]),
+                            tx.cursorContext());
+            // when
+            cursor.skipUntil(id);
+            // then
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.next()).isFalse();
+        }
+    }
+
+    @Test
+    void shouldSeeDeletesInTXSkipUntil() throws Exception {
+        // Given
+        Node node = createNode("label");
+        Node nodeToDelete = createNode("label");
+        createNode("label");
+
+        try (KernelTransaction tx = beginTransaction();
+                NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor(tx.cursorContext())) {
+
+            tx.dataWrite().nodeDelete(nodeToDelete.node);
+
+            tx.dataRead()
+                    .nodeLabelScan(
+                            getTokenReadSession(tx, EntityType.NODE),
+                            cursor,
+                            IndexQueryConstraints.ordered(IndexOrder.ASCENDING),
+                            new TokenPredicate(node.labels[0]),
+                            tx.cursorContext());
+            // when
+            cursor.skipUntil(nodeToDelete.node);
+            // then
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.next()).isFalse();
+        }
+    }
+
+    @Test
+    void shouldSkipUntilWithRemovedLabel() throws Exception {
+        // Given
+        createNode("label");
+        createNode("label");
+
+        // We will remove the label of node and then skip to it,
+        // resulting in seeing the nodes AFTER it but not it itself
+        Node node = createNode("label");
+        createNode("label");
+        createNode("label");
+
+        try (KernelTransaction tx = beginTransaction();
+                NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor(tx.cursorContext())) {
+
+            tx.dataWrite().nodeRemoveLabel(node.node, node.labels[0]);
+
+            tx.dataRead()
+                    .nodeLabelScan(
+                            getTokenReadSession(tx, EntityType.NODE),
+                            cursor,
+                            IndexQueryConstraints.ordered(IndexOrder.ASCENDING),
+                            new TokenPredicate(node.labels[0]),
+                            tx.cursorContext());
+            // when
+            cursor.skipUntil(node.node);
+            // then
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.next()).isFalse();
+        }
+    }
+
+    @Test
+    void shouldSkipUntilLabelAddedInTx() throws Exception {
+        // Given
+        Node nodeWithLabel = createNode("label");
+        Node nodeWithoutLabel = createNode();
+        createNode("label");
+
+        try (KernelTransaction tx = beginTransaction();
+                NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor(tx.cursorContext())) {
+
+            tx.dataWrite().nodeAddLabel(nodeWithoutLabel.node, nodeWithLabel.labels[0]);
+
+            tx.dataRead()
+                    .nodeLabelScan(
+                            getTokenReadSession(tx, EntityType.NODE),
+                            cursor,
+                            IndexQueryConstraints.ordered(IndexOrder.ASCENDING),
+                            new TokenPredicate(nodeWithLabel.labels[0]),
+                            tx.cursorContext());
+            // when
+            cursor.skipUntil(nodeWithoutLabel.node);
+            // then
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.next()).isTrue();
+            assertThat(cursor.next()).isFalse();
         }
     }
 
