@@ -184,7 +184,7 @@ class CsvInputIterator implements SourceTraceability, Closeable {
                         // This line really looks like a header line
                         return initialEolSkipped + firstLine.length;
                     }
-                } catch (IllegalArgumentException e) {
+                } catch (Exception e) {
                     // This line didn't look like a header, keep it as a data line
                 }
             }

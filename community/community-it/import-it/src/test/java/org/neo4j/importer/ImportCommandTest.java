@@ -2222,6 +2222,55 @@ class ImportCommandTest {
     }
 
     @Test
+    void autoSkipSubsequentHeadersShouldnotBeTrippedUpByWeirdLine() throws Exception {
+        // GIVEN
+        final var header = ":LABEL,node_id:ID,counter:int";
+        var nodeData1 = createAndWriteFile("part0.csv", Charset.defaultCharset(), writer -> {
+            writer.println(header);
+            writer.println("A,1,2");
+        });
+        var nodeData2 = createAndWriteFile("part1.csv", Charset.defaultCharset(), writer -> {
+            writer.println("a(b,3,4");
+            writer.println("A,2,3");
+        });
+
+        // WHEN
+        runImport(
+                "--auto-skip-subsequent-headers",
+                "true",
+                "--normalize-types",
+                "false",
+                "--nodes",
+                nodeData1.toAbsolutePath() + "," + nodeData2.toAbsolutePath());
+
+        // THEN
+        var actualNodes = Maps.mutable.empty();
+        try (var tx = getDatabaseApi().beginTx()) {
+            try (var nodes = tx.findNodes(label("A"))) {
+                while (nodes.hasNext()) {
+                    var node = nodes.next();
+                    var counter = node.getProperty("counter");
+                    assertThat(counter).isInstanceOf(Integer.class);
+                    actualNodes.put(node.getProperty("node_id"), counter);
+                }
+            }
+        }
+
+        final var expectedNodes = Maps.immutable.of("1", 2, "2", 3);
+        assertThat(actualNodes.toImmutable()).isEqualTo(expectedNodes);
+
+        try (var tx = getDatabaseApi().beginTx()) {
+            try (var nodes = tx.findNodes(label("a(b"))) {
+                assertThat(nodes.hasNext()).isTrue();
+                var node = nodes.next();
+                assertThat(node.getProperty("node_id")).isEqualTo("3");
+                assertThat(node.getProperty("counter")).isEqualTo(4);
+                assertThat(nodes.hasNext()).isFalse();
+            }
+        }
+    }
+
+    @Test
     void autoSkipSubsequentHeadersShouldWorkAcrossMultipleIndividuallyListedFiles() throws Exception {
         // GIVEN
         final var header = ":LABEL,node_id:ID,counter:int";
