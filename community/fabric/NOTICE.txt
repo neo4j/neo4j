@@ -93,9 +93,6 @@ Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
 
-Creative Commons 0
-  reactive-streams
-
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
@@ -109,6 +106,9 @@ Eclipse Public License v2.0
 
 MIT License
   SLF4J API Module
+
+MIT No Attribution License
+  reactive-streams
 
 Dependencies with multiple licenses
 -----------------------------------

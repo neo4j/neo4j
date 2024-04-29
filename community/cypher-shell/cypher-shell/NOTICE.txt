@@ -45,9 +45,6 @@ BSD License
   JLine Reader
   JLine Terminal
 
-Creative Commons 0
-  reactive-streams
-
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
@@ -58,6 +55,9 @@ Eclipse Public License - v 1.0
 
 MIT License
   argparse4j
+
+MIT No Attribution License
+  reactive-streams
 
 Dependencies with multiple licenses
 -----------------------------------

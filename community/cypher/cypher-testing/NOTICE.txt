@@ -78,9 +78,6 @@ BSD License
 BSD License 2-clause
   zstd-jni
 
-Creative Commons 0
-  reactive-streams
-
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
@@ -91,6 +88,9 @@ Eclipse Public License - v 1.0
 
 MIT License
   SLF4J API Module
+
+MIT No Attribution License
+  reactive-streams
 
 Dependencies with multiple licenses
 -----------------------------------

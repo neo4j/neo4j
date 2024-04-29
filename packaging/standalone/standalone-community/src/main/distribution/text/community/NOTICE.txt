@@ -175,9 +175,6 @@ Common Development and Distribution License Version 1.1
   Java Servlet API
   jaxb-api
 
-Creative Commons 0
-  reactive-streams
-
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
@@ -402,6 +399,9 @@ MIT License
   wrap-ansi
   xmlhttprequest
   yargs
+
+MIT No Attribution License
+  reactive-streams
 
 SIL OFL 1.1
   Font Awesome
