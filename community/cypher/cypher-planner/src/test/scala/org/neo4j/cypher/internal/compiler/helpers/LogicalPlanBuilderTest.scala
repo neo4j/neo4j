@@ -60,6 +60,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
             )),
             _
           ),
+          _,
           _
         ) =>
     }
@@ -88,6 +89,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
             ),
             _
           ),
+          _,
           _
         ) =>
     }
@@ -108,6 +110,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
             )),
             _
           ),
+          _,
           _
         ) =>
     }
@@ -131,6 +134,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
             )),
             _
           ),
+          _,
           _
         ) =>
     }
@@ -151,6 +155,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
             )),
             _
           ),
+          _,
           _
         ) =>
     }
@@ -173,6 +178,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
             )),
             _
           ),
+          _,
           _
         ) =>
     }
@@ -200,6 +206,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
               _
             )
           ),
+          _,
           _
         ) =>
     }
@@ -223,6 +230,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
             )),
             _
           ),
+          _,
           _
         ) =>
     }
@@ -236,7 +244,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       .build()
 
     plan should beLike {
-      case ProduceResult(Projection(_, projections), _) =>
+      case ProduceResult(Projection(_, projections), _, _) =>
         projections shouldEqual Map(
           v"n2" -> hasLabels("n", "N"),
           v"r2" -> hasTypes("r", "R"),
@@ -254,7 +262,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
 
     plan should beLike {
       // TODO
-      case ProduceResult(Projection(_, projections), _) =>
+      case ProduceResult(Projection(_, projections), _, _) =>
         projections shouldEqual Map(
           v"n" -> hasLabels("n", "N"),
           v"r" -> hasTypes("r", "R"),
@@ -278,6 +286,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
             )),
             _
           ),
+          _,
           _
         ) =>
     }

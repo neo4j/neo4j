@@ -692,7 +692,7 @@ object ReadFinder {
           semanticTable
         )
 
-      case ProduceResult(_, columns) =>
+      case ProduceResult(_, columns, _) =>
         // A ProduceResult can reference entities. These must be captured with
         // .withReferencesNodeVariable / .withReferencedRelationshipVariable
         // However, this is only used to place an Eager correctly between a read and a later Delete.

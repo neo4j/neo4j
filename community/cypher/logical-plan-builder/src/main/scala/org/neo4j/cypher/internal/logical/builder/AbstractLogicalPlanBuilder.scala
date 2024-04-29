@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
@@ -427,7 +428,21 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def produceResults(vars: String*): IMPL = {
     val resultColumnsSeq = vars.map(VariableParser.unescaped)
     resultColumns = resultColumnsSeq.toArray
-    tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumnsSeq.map(varFor))(_)))
+    tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumnsSeq.map(varFor), Map.empty)(_)))
+    looseEnds += tree
+    self
+  }
+
+  def produceResults(vars: Seq[String], cachedProperties: Map[String, Set[String]]): IMPL = {
+    val resultColumnsSeq = vars.map(VariableParser.unescaped)
+    val cpMap = cachedProperties.map {
+      case (name, cps) => varFor(VariableParser.unescaped(name)).asInstanceOf[LogicalVariable] -> cps.map(cp =>
+          parseExpression(cp).asInstanceOf[ASTCachedProperty]
+        )
+    }
+
+    resultColumns = resultColumnsSeq.toArray
+    tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumnsSeq.map(varFor), cpMap)(_)))
     looseEnds += tree
     self
   }

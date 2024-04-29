@@ -1912,7 +1912,7 @@ case class LogicalPlan2PlanDescription(
         }
         PlanDescriptionImpl(id, modeText, children, Seq(details), variables, withRawCardinalities, withDistinctness)
 
-      case ProduceResult(_, columns) =>
+      case ProduceResult(_, columns, _) =>
         PlanDescriptionImpl(
           id,
           "ProduceResults",

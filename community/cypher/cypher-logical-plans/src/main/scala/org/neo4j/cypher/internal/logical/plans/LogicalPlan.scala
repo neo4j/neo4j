@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.GraphReference
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
+import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
@@ -3321,7 +3322,11 @@ case class ProcedureCall(override val source: LogicalPlan, call: ResolvedCall)(i
  * For every source row, produce a row containing only the variables in 'columns'. The ProduceResult operator is
  * always planned as the root operator in a logical plan tree.
  */
-case class ProduceResult(override val source: LogicalPlan, columns: Seq[LogicalVariable])(implicit idGen: IdGen)
+case class ProduceResult(
+  override val source: LogicalPlan,
+  columns: Seq[LogicalVariable],
+  cachedProperties: Map[LogicalVariable, Set[ASTCachedProperty]] = Map.empty
+)(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
@@ -3329,6 +3334,9 @@ case class ProduceResult(override val source: LogicalPlan, columns: Seq[LogicalV
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
 
   override val distinctness: Distinctness = source.distinctness
+
+  def withCachedProperties(cachedProperties: Map[LogicalVariable, Set[ASTCachedProperty]]): ProduceResult =
+    copy(cachedProperties = cachedProperties)
 }
 
 /**

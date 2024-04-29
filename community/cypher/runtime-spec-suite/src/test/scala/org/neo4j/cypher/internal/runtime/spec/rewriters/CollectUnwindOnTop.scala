@@ -62,7 +62,8 @@ case class CollectUnwindOnTop(
     if (ctx.config.hints.contains(NoEager)) noop
     else topDown(
       Rewriter.lift {
-        case pr @ ProduceResult(source, columns) if !ctx.leveragedOrders(source.id) && randomShouldApply(config) =>
+        case pr @ ProduceResult(source, columns, cachedProperties)
+          if !ctx.leveragedOrders(source.id) && randomShouldApply(config) =>
           val collectedRowsName = ctx.anonymousVariableNameGenerator.nextName
           val collectedRowsVar = Variable(collectedRowsName)(pos)
           val unwoundRowName = ctx.anonymousVariableNameGenerator.nextName
@@ -75,7 +76,7 @@ case class CollectUnwindOnTop(
             c -> Property(unwoundRowVar, PropertyKeyName(c.name)(pos))(pos)
           }.toMap
           val project = Projection(unwind, projections)(ctx.idGen)
-          ProduceResult(project, columns)(SameId(pr.id))
+          ProduceResult(project, columns, cachedProperties)(SameId(pr.id))
       },
       onlyRewriteLogicalPlansStopper
     )

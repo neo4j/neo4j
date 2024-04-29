@@ -243,6 +243,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "produceResults with cached properties",
+    new TestPlanBuilder()
+      .produceResults(Seq("x"), Map("x" -> Set("cacheN[x.p1]", "cacheN[x.p2]")))
+      .cacheProperties("x.p1", "x.p2")
+      .argument("x")
+      .build()
+  )
+
+  testPlan(
     "argument",
     new TestPlanBuilder()
       .produceResults("x")

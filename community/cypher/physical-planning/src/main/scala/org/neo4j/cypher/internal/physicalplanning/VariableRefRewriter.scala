@@ -514,7 +514,7 @@ object VariableRefRewriter extends Rewriter {
           p.copy(from = varRef(from), to = varRef(to), relName = varRef(rel))(SameId(p.id))
         case p @ PathPropagatingBFS(_, _, from, _, _, _, to, rel, _, _, _) =>
           p.copy(from = varRef(from), to = varRef(to), relName = varRef(rel))(SameId(p.id))
-        case p @ ProduceResult(_, columns) =>
+        case p @ ProduceResult(_, columns, _) =>
           p.copy(columns = columns.map(varRef))(SameId(p.id))
         case p @ ProjectEndpoints(_, rels, start, _, end, _, _, _, _) =>
           p.copy(rels = varRef(rels), start = varRef(start), end = varRef(end))(SameId(p.id))

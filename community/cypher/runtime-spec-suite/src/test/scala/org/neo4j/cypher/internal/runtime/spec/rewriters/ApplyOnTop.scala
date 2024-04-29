@@ -50,10 +50,11 @@ case class ApplyOnTop(
 
   private val instance: Rewriter = topDown(
     Rewriter.lift {
-      case pr @ ProduceResult(source, columns) if isLeftmostLeafOkToMove(source) && randomShouldApply(config) =>
+      case pr @ ProduceResult(source, columns, cachedProperties)
+        if isLeftmostLeafOkToMove(source) && randomShouldApply(config) =>
         val argument = Argument()(ctx.idGen)
         val apply = Apply(argument, source)(ctx.idGen)
-        ProduceResult(apply, columns)(SameId(pr.id))
+        ProduceResult(apply, columns, cachedProperties)(SameId(pr.id))
     },
     onlyRewriteLogicalPlansStopper
   )

@@ -50,10 +50,11 @@ case class RhsOfCartesianProductOnTop(
 
   private val instance: Rewriter = topDown(
     Rewriter.lift {
-      case pr @ ProduceResult(source, columns) if isLeftmostLeafOkToMove(source) && randomShouldApply(config) =>
+      case pr @ ProduceResult(source, columns, cachedProperties)
+        if isLeftmostLeafOkToMove(source) && randomShouldApply(config) =>
         val argument = Argument()(ctx.idGen)
         val cartesianProduct = CartesianProduct(argument, source)(ctx.idGen)
-        ProduceResult(cartesianProduct, columns)(SameId(pr.id))
+        ProduceResult(cartesianProduct, columns, cachedProperties)(SameId(pr.id))
     },
     onlyRewriteLogicalPlansStopper
   )
@@ -68,11 +69,12 @@ case class RhsOfCartesianProductOnTopNoUpdatingRhs(
 
   private val instance: Rewriter = topDown(
     Rewriter.lift {
-      case pr @ ProduceResult(source, columns) if isLeftmostLeafOkToMove(source) && randomShouldApply(config) =>
+      case pr @ ProduceResult(source, columns, cachedProperties)
+        if isLeftmostLeafOkToMove(source) && randomShouldApply(config) =>
         val argument = Argument()(ctx.idGen)
         val cartesianProduct = CartesianProduct(argument, source)(ctx.idGen)
         if (cartesianProduct.hasUpdatingRhs) pr
-        else ProduceResult(cartesianProduct, columns)(SameId(pr.id))
+        else ProduceResult(cartesianProduct, columns, cachedProperties)(SameId(pr.id))
     },
     onlyRewriteLogicalPlansStopper
   )

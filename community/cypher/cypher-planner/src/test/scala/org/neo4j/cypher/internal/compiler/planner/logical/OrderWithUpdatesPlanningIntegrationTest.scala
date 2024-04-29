@@ -264,7 +264,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
       containsTestedPlan,
       sortCheck = plan =>
         withClue(s"Did not plan sort: $plan")(
-          plan should beLike { case ProduceResult(Sort(_, _), _) => }
+          plan should beLike { case ProduceResult(Sort(_, _), _, _) => }
         )
     )
   }
