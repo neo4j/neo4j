@@ -96,6 +96,7 @@ case class StatefulShortestToFindShortestRewriter(
           _,
           selector,
           _,
+          _,
           _
         )
         // 2.0 start and end nodes are bound and 6.0 selection asks for shortest 1

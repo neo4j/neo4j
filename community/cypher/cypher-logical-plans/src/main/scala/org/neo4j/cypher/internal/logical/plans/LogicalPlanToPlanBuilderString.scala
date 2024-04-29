@@ -389,7 +389,8 @@ object LogicalPlanToPlanBuilderString {
           singletonRelationshipVariables,
           selector,
           solvedExpressionString,
-          reverseGroupVariableProjections
+          reverseGroupVariableProjections,
+          lengthBounds
         ) =>
         Seq(
           wrapInQuotations(from),
@@ -403,7 +404,9 @@ object LogicalPlanToPlanBuilderString {
           objectName(StatefulShortestPath) + "." + objectName(StatefulShortestPath.Selector) + "." + selector.toString,
           nfaString(nfa),
           mode.toString,
-          reverseGroupVariableProjections.toString
+          reverseGroupVariableProjections.toString,
+          lengthBounds.min.toString,
+          lengthBounds.max.toString
         ).mkString(s"\n${indent}", s",\n${indent}", "")
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicates, relationshipPredicates) =>
         val (dirStrA, dirStrB) = arrows(dir)

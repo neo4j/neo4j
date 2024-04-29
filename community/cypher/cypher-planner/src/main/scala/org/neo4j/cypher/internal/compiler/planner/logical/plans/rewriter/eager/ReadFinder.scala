@@ -675,6 +675,7 @@ object ReadFinder {
           singletonRelationshipVariables,
           _,
           _,
+          _,
           _
         ) =>
         processStatefulShortest(

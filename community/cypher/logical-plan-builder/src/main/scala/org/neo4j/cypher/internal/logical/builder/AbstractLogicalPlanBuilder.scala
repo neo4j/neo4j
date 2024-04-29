@@ -232,6 +232,7 @@ import org.neo4j.cypher.internal.logical.plans.SimulatedSelection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
@@ -587,7 +588,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     selector: StatefulShortestPath.Selector,
     nfa: NFA,
     mode: ExpansionMode,
-    reverseGroupVariableProjections: Boolean = false
+    reverseGroupVariableProjections: Boolean = false,
+    minLength: Int = 0,
+    maxLength: Option[Int] = None
   ): IMPL = {
     val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(varFor(x), varFor(y))(pos) }
     val relationshipVariableGroupings = groupRelationships.map { case (x, y) =>
@@ -629,7 +632,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         singletonRelMappings,
         selector,
         solvedExpressionString,
-        reverseGroupVariableProjections
+        reverseGroupVariableProjections,
+        LengthBounds(minLength, maxLength)
       )(_)
     ))
     self
@@ -647,7 +651,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     selector: StatefulShortestPath.Selector,
     nfa: NFA,
     mode: ExpansionMode,
-    reverseGroupVariableProjections: Boolean = false
+    reverseGroupVariableProjections: Boolean = false,
+    minLength: Int = 0,
+    maxLength: Option[Int] = None
   ): IMPL = {
     val predicates = nonInlinedPreFilters.map(parseExpression)
     statefulShortestPathExpr(
@@ -662,7 +668,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       selector,
       nfa,
       mode,
-      reverseGroupVariableProjections
+      reverseGroupVariableProjections,
+      minLength,
+      maxLength
     )
   }
 

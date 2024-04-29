@@ -1318,7 +1318,8 @@ class SlottedPipeMapper(
           singletonRelationshipVariables,
           selector,
           _,
-          reverseGroupVariableProjections
+          reverseGroupVariableProjections,
+          _
         ) =>
         val groupMap = (nodeVariableGroupings ++ relationshipVariableGroupings)
           .map(grouping => grouping.singleton.name -> slots(grouping.group.name))

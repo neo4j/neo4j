@@ -235,6 +235,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
@@ -2495,7 +2496,8 @@ case class LogicalPlanProducer(
       singletonRelationshipVariables,
       selector,
       solvedExpressionAsString,
-      reverseGroupVariableProjections
+      reverseGroupVariableProjections,
+      LengthBounds.none // TODO: calculate length bounds if applicable
     )
     annotate(plan, solved, ProvidedOrder.Left, context)
   }

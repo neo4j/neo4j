@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNod
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SameNodeMode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan.VERBOSE_TO_STRING
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Foldable
@@ -2250,6 +2251,12 @@ object StatefulShortestPath {
    * Note that the source node variable is _not_ mapped in this way because it already exists in the input row.
    */
   case class Mapping(nfaExprVar: LogicalVariable, rowVar: LogicalVariable)
+
+  case class LengthBounds(min: Int, max: Option[Int])
+
+  object LengthBounds {
+    val none: LengthBounds = LengthBounds(0, None)
+  }
 }
 
 /**
@@ -2279,7 +2286,8 @@ case class StatefulShortestPath(
   singletonRelationshipVariables: Set[Mapping],
   selector: StatefulShortestPath.Selector,
   solvedExpressionAsString: String,
-  reverseGroupVariableProjections: Boolean
+  reverseGroupVariableProjections: Boolean,
+  bounds: LengthBounds
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with PlanWithVariableGroupings {
 

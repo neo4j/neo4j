@@ -373,6 +373,7 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StartDatabase
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Selector
 import org.neo4j.cypher.internal.logical.plans.StopDatabase
 import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
@@ -6078,7 +6079,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Set.empty,
           Selector.Shortest(5),
           solvedExpressionStr,
-          false
+          false,
+          LengthBounds.none
         ),
         2345.0
       ),
@@ -6108,7 +6110,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Set.empty,
           Selector.Shortest(5),
           solvedExpressionStr,
-          false
+          false,
+          LengthBounds.none
         ),
         2345.0
       ),
@@ -6174,7 +6177,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Set.empty,
           Selector.Shortest(5),
           solvedExpressionStr,
-          false
+          false,
+          LengthBounds.none
         ),
         2345.0
       ),

@@ -1495,7 +1495,8 @@ case class InterpretedPipeMapper(
           singletonRelationshipVariables,
           selector,
           _,
-          reverseGroupVariableProjections
+          reverseGroupVariableProjections,
+          _
         ) =>
         def convertPredicate(varPred: VariablePredicate) =
           expressionConverters.toCommandPredicate(id, varPred.predicate)
