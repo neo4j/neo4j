@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProp
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties.PropertyUsagesAndRenamings
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.CacheAll
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.ProtectedProperties
+import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CaseExpression
@@ -294,33 +295,78 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
     }
   }
 
+  private def asVariable(lv: LogicalVariable): Variable = lv match {
+    case v: Variable => v
+    case _           => Variable(lv.name)(lv.position)
+  }
+
+  private def cacheProperty(
+    property: Property,
+    prop: PropertyUsages,
+    acc: PropertyUsagesAndRenamings
+  ): ASTCachedProperty = {
+    val v = property.map.asInstanceOf[Variable]
+    val propertyKeyName = property.propertyKey
+    val originalVar = acc.variableWithOriginalName(v)
+    val PropertyUsages(_, _, _, entityType, firstWritingAccesses, needsValue) = prop
+    // Use the original variable name for the cached property
+    val knownToAccessStore = firstWritingAccesses.exists {
+      case (_, properties) => properties.contains(Ref(property))
+    }
+    val newProperty = {
+      if (needsValue) {
+        CachedProperty(originalVar, v, propertyKeyName, entityType, knownToAccessStore)(property.position)
+      } else {
+        CachedHasProperty(originalVar, v, propertyKeyName, entityType, knownToAccessStore)(property.position)
+      }
+    }
+
+    newProperty
+  }
+
   private def rewrite(
     logicalPlan: LogicalPlan,
     acc: PropertyUsagesAndRenamings,
     semanticTable: SemanticTable
   ): (LogicalPlan, SemanticTable) = {
     var currentTypes = semanticTable.types
+    val cachedProperties = mutable.Map.empty[LogicalVariable, Set[ASTCachedProperty]]
 
     val rewriter = bottomUp(Rewriter.lift {
+
+      case produceResult: ProduceResult =>
+        val entitiesToReturn: Map[LogicalVariable, Set[ASTCachedProperty]] =
+          produceResult
+            .columns
+            .flatMap(column =>
+              cachedProperties.get(acc.variableWithOriginalName(asVariable(column))).map(cached => column -> cached)
+            ).toMap
+
+        if (entitiesToReturn.isEmpty) produceResult
+        else {
+          produceResult.withCachedProperties(entitiesToReturn)
+        }
+
       // Rewrite properties to be cached if they are used more than once, or can be fetched from an index
       case prop @ Property(v: Variable, propertyKeyName) =>
         val originalVar = acc.variableWithOriginalName(v)
         val originalProp = acc.originalProperty(prop)
         acc.properties.get(originalProp) match {
-          case Some(PropertyUsages(canGetFromIndex, usages, usageCount, entityType, firstWritingAccesses, needsValue))
+          case Some(pu @ PropertyUsages(
+              canGetFromIndex,
+              usages,
+              usageCount,
+              entityType,
+              firstWritingAccesses,
+              needsValue
+            ))
             if usages.contains(Ref(prop)) &&
               (usageCount > 1 || canGetFromIndex) =>
-            // Use the original variable name for the cached property
-            val knownToAccessStore = firstWritingAccesses.exists {
-              case (_, properties) => properties.contains(Ref(prop))
-            }
-            val newProperty = {
-              if (needsValue) {
-                CachedProperty(originalVar, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
-              } else {
-                CachedHasProperty(originalVar, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
-              }
-            }
+            val newProperty = cacheProperty(prop, pu, acc)
+            cachedProperties.updateWith(originalVar)({
+              case Some(existing) => Some(existing + newProperty)
+              case None           => Some(Set(newProperty))
+            })
             // Register the new variables in the semantic table
             currentTypes.get(prop) match {
               case None => // I don't like this. We have to make sure we retain the type from semantic analysis
@@ -335,9 +381,19 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
       // Rewrite index plans to either GetValue or DoNotGetValue
       case indexPlan: NodeIndexLeafPlan =>
-        rewriteIndexPlan(acc, indexPlan, indexPlan.idName)
+        rewriteIndexPlan(
+          acc,
+          indexPlan,
+          indexPlan.idName,
+          (p, pu) => cachedProperties.put(indexPlan.idName, Set(cacheProperty(p, pu, acc)))
+        )
       case indexPlan: RelationshipIndexLeafPlan =>
-        rewriteIndexPlan(acc, indexPlan, indexPlan.idName)
+        rewriteIndexPlan(
+          acc,
+          indexPlan,
+          indexPlan.idName,
+          (p, pu) => cachedProperties.put(indexPlan.idName, Set(cacheProperty(p, pu, acc)))
+        )
     })
 
     val newPlan = logicalPlan.endoRewrite(rewriter)
@@ -351,18 +407,21 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
   private def rewriteIndexPlan(
     acc: PropertyUsagesAndRenamings,
     indexPlan: IndexedPropertyProvidingPlan,
-    idName: LogicalVariable
+    idName: LogicalVariable,
+    onCached: (Property, PropertyUsages) => Unit
   ) = {
     val shouldForceCache =
       acc.indexedEntityAliases.getOrElse(idName.name, Set.empty).intersect(acc.entitiesWithAllPropertiesRead).nonEmpty
 
     indexPlan.withMappedProperties { indexedProp =>
-      acc.properties.get(property(idName, indexedProp.propertyKeyToken.name)) match {
+      val prop = property(idName, indexedProp.propertyKeyToken.name)
+      acc.properties.get(prop) match {
         // Get the value since we use it later
-        case Some(PropertyUsages(true, _, usageCount, _, _, _))
+        case Some(pu @ PropertyUsages(true, _, usageCount, _, _, _))
           // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
           // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
           if (shouldForceCache || usageCount > 0) && indexedProp.getValueFromIndex != DoNotGetValue =>
+          onCached.apply(prop, pu)
           indexedProp.copy(getValueFromIndex = GetValue)
         // We could get the value but we don't need it later
         case _ =>
