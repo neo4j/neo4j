@@ -81,7 +81,7 @@ class DefaultStoreSnapshotFactoryTest {
     }
 
     @Test
-    void shouldHandleEmptyListOfFilesForeEachType() throws Exception {
+    void shouldHandleEmptyListOfFilesForEachType() throws Exception {
         setExpectedFiles(new StoreFileMetadata[0]);
         var prepareStoreCopyFiles =
                 defaultStoreSnapshotFactory.createStoreSnapshot().get();
