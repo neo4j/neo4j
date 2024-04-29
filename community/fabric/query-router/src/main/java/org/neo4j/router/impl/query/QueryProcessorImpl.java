@@ -133,6 +133,11 @@ public class QueryProcessorImpl implements QueryProcessor {
         return cache.clearQueryCachesForDatabase(databaseName);
     }
 
+    @Override
+    public DatabaseContextProvider<?> databaseContextProvider() {
+        return this.databaseContextProvider;
+    }
+
     private ProcessedQueryInfoCache.Value getFromCache(
             Query query, CancellationChecker cancellationChecker, boolean targetsComposite) {
         var notificationLogger = new RecordingNotificationLogger();

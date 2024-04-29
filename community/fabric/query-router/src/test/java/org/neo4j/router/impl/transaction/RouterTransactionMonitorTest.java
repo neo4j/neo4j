@@ -40,6 +40,7 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
+import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -55,6 +56,8 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.router.QueryRouter;
 import org.neo4j.router.impl.QueryRouterImpl;
+import org.neo4j.router.impl.transaction.database.LocalDatabaseTransaction;
+import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.DatabaseReferenceResolver;
 import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
@@ -82,13 +85,21 @@ class RouterTransactionMonitorTest {
         var databaseRef = new DatabaseReferenceImpl.Internal(databaseName, databaseId, true);
         var databaseReferenceResolver = mock(DatabaseReferenceResolver.class);
         when(databaseReferenceResolver.resolve(databaseName)).thenReturn(databaseRef);
+        var locationService = mock(LocationService.class);
+        var location = mock(Location.Local.class);
+        when(location.databaseReference()).thenReturn(databaseRef);
+        when(locationService.locationOf(databaseRef)).thenReturn(location);
+
+        var databaseTransactionFactory = mock(DatabaseTransactionFactory.class);
+        when(databaseTransactionFactory.beginTransaction(any(), any(), any(), any(), any()))
+                .thenReturn(mock(LocalDatabaseTransaction.class));
 
         queryRouter = new QueryRouterImpl(
                 config,
                 databaseReferenceResolver,
-                ignored -> null,
+                ignored -> locationService,
                 mock(QueryProcessor.class),
-                mock(DatabaseTransactionFactory.class),
+                databaseTransactionFactory,
                 mock(DatabaseTransactionFactory.class),
                 mock(ErrorReporter.class),
                 clock,
@@ -96,7 +107,8 @@ class RouterTransactionMonitorTest {
                 mock(QueryStatementLifecycles.class),
                 mock(QueryRoutingMonitor.class),
                 new RouterTransactionManager(transactionMonitor),
-                mock(AbstractSecurityLog.class));
+                mock(AbstractSecurityLog.class),
+                mock(InternalLog.class));
     }
 
     @Test

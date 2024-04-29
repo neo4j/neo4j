@@ -186,6 +186,8 @@ public class CommunityQueryRouterBootstrap extends CommonQueryRouterBootstrap {
         }
         var transactionLookup = new TransactionLookup(routerTxManager, compositeTxManager);
         dependencies.satisfyDependency(transactionLookup);
+        var queryRouterLog = getLogService().getInternalLog(QueryRouter.class);
+
         var queryRouter = new QueryRouterImpl(
                 config,
                 databaseReferenceResolver,
@@ -200,7 +202,8 @@ public class CommunityQueryRouterBootstrap extends CommonQueryRouterBootstrap {
                 statementLifecycles,
                 monitors.newMonitor(QueryRoutingMonitor.class),
                 routerTxManager,
-                securityLog);
+                securityLog,
+                queryRouterLog);
         dependencies.satisfyDependency(queryRouter);
         return new QueryRouterBoltSpi.DatabaseManagementService(
                 queryRouter, databaseReferenceResolver, getCompositeDatabaseStack(), useQueryRouterForCompositeQueries);

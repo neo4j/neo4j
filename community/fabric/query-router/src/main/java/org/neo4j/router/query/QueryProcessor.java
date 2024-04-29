@@ -23,6 +23,7 @@ import java.util.Optional;
 import org.neo4j.cypher.internal.QueryOptions;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.location.LocationService;
@@ -49,4 +50,6 @@ public interface QueryProcessor {
             boolean targetsComposite);
 
     long clearQueryCachesForDatabase(String databaseName);
+
+    DatabaseContextProvider<?> databaseContextProvider();
 }

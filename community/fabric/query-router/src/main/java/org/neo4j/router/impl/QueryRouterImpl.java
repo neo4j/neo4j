@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.router.QueryRouter;
 import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.impl.query.ConstituentTransactionFactoryImpl;
@@ -83,6 +84,7 @@ public class QueryRouterImpl implements QueryRouter {
     private final RouterTransactionManager transactionManager;
     private final QueryRoutingMonitor queryRoutingMonitor;
     private final AbstractSecurityLog securityLog;
+    private final InternalLog queryRouterLog;
 
     public QueryRouterImpl(
             Config config,
@@ -97,7 +99,8 @@ public class QueryRouterImpl implements QueryRouter {
             QueryStatementLifecycles statementLifecycles,
             QueryRoutingMonitor queryRoutingMonitor,
             RouterTransactionManager transactionManager,
-            AbstractSecurityLog securityLog) {
+            AbstractSecurityLog securityLog,
+            InternalLog queryRouterLog) {
         this.config = config;
         this.databaseReferenceResolver = databaseReferenceResolver;
         this.locationServiceFactory = locationServiceFactory;
@@ -111,6 +114,7 @@ public class QueryRouterImpl implements QueryRouter {
         this.queryRoutingMonitor = queryRoutingMonitor;
         this.transactionManager = transactionManager;
         this.securityLog = securityLog;
+        this.queryRouterLog = queryRouterLog;
     }
 
     @Override
@@ -131,6 +135,18 @@ public class QueryRouterImpl implements QueryRouter {
         var locationService = createLocationService(routingInfo);
         var routerTransaction = createRouterTransaction(transactionInfo, transactionBookmarkManager);
         transactionManager.registerTransaction(routerTransaction);
+
+        // Try to create a dummy kernel transaction so that this router transaction can be monitored
+        try {
+            var dummyTransactionMode = transactionInfo.accessMode().equals(AccessMode.READ)
+                    ? TransactionMode.DEFINITELY_READ
+                    : TransactionMode.MAYBE_WRITE;
+            routerTransaction.transactionFor(
+                    locationService.locationOf(sessionDatabaseReference), dummyTransactionMode, locationService);
+        } catch (Exception e) {
+            queryRouterLog.warn("Could not eagerly create kernel transaction due to: %s".formatted(e));
+        }
+
         return new RouterTransactionContextImpl(
                 transactionInfo,
                 routingInfo,
