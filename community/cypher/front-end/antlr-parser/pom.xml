@@ -87,6 +87,7 @@
                             <listener>false</listener> <!-- We have our own optimised listener -->
                             <visitor>false</visitor>
                             <outputDirectory>${basedir}/src/main/java/</outputDirectory>
+                            <treatWarningsAsErrors>true</treatWarningsAsErrors>
                         </configuration>
                     </plugin>
                     <plugin>
