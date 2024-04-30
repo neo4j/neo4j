@@ -536,8 +536,12 @@ extendedWhen
    | expression                                    # WhenEquals
    ;
 
+// Observe that this is not possible to write as:
+// (WHERE whereExp = expression)? (BAR barExp = expression)? RBRACKET
+// Due to an ambigouity with cases such as [node IN nodes WHERE node:A|B]
+// where |B will be interpreted as part of the whereExp, rather than as the expected barExp.
 listComprehension
-   : LBRACKET variable IN expression ((WHERE whereExp = expression)? BAR barExp = expression RBRACKET | (WHERE whereExp = expression)? RBRACKET)
+   : LBRACKET variable IN expression ((WHERE whereExp = expression)? BAR barExp = expression | (WHERE whereExp = expression)?) RBRACKET
    ;
 
 patternComprehension
