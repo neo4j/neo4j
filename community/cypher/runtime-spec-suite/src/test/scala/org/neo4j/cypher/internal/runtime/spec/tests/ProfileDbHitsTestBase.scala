@@ -49,6 +49,8 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.values.virtual.NodeValue.DirectNodeValue
+import org.neo4j.values.virtual.RelationshipValue.DirectRelationshipValue
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -1177,6 +1179,36 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     ) // produceresults
   }
 
+  test("should not profile dbHits of populating nodes in produceresults if properties are cached") {
+    givenGraph { nodePropertyGraph(sizeHint, { case i => Map("p" -> i, "q" -> -i) }, "somelabel") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(Seq("x"), Map("x" -> Set("cacheN[x.p]")))
+      .cacheProperties("cacheN[x.p]")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    val consumed = consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    queryProfile.operatorProfile(0).dbHits() should be(
+      sizeHint * (1 /* read node */ + /* only read x.q */ 1 * costOfProperty) + costOfPropertyToken
+    ) // produceresults
+    consumed.foreach {
+      case c => c.head match {
+          case n: DirectNodeValue =>
+            val props = n.properties()
+            props.containsKey("p") shouldBe true
+            props.containsKey("q") shouldBe true
+        }
+      case _ => fail()
+    }
+  }
+
   test("should profile dbHits of populating relationships in produceresults") {
     // given
     givenGraph {
@@ -1198,6 +1230,39 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be(
       sizeHint * (1 + 2 * costOfProperty)
     ) // produceresults
+  }
+
+  test("should not profile dbHits of populating relationships in produceresults if properties are cached") {
+    // given
+    givenGraph {
+      val nodes = nodeGraph(sizeHint)
+      connectWithProperties(nodes, nodes.indices.map(i => (i, (i + 1) % nodes.length, "Rel", Map("p" -> i, "q" -> -i))))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(Seq("r"), Map("r" -> Set("cacheR[r.p]")))
+      .cacheProperties("cacheR[r.p]")
+      .expandAll("(x)-[r]->(y)")
+      .allNodeScan("x")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    val consumed = consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be(
+      sizeHint * (1 + 1 * costOfProperty) + costOfPropertyToken
+    ) // produceresults
+    consumed.foreach {
+      case c => c.head match {
+          case r: DirectRelationshipValue =>
+            val props = r.properties()
+            props.containsKey("p") shouldBe true
+            props.containsKey("q") shouldBe true
+        }
+      case _ => fail()
+    }
   }
 
   test("should profile dbHits of populating collections in produceresults") {
