@@ -20,6 +20,7 @@
 package org.neo4j.db;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
@@ -51,8 +52,11 @@ import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.types.Path;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
@@ -87,6 +91,7 @@ class SnapshotExecutionIT {
     static void beforeAll() throws KernelException {
         driver = createDriver(connectorPortRegister);
         procedureRegistry.registerProcedure(ConcurrentQuery.class);
+        procedureRegistry.registerProcedure(ThrowingQuery.class);
     }
 
     @AfterAll
@@ -133,6 +138,12 @@ class SnapshotExecutionIT {
 
         var result = driver.session().run(query).list();
         assertEquals(List.of(), result);
+    }
+
+    @Test
+    void testRetryOnThrow() {
+        assertThatThrownBy(() -> driver.session().run("CALL se.doThrow()").list())
+                .hasMessageNotContaining("is null");
     }
 
     @Test
@@ -261,6 +272,22 @@ class SnapshotExecutionIT {
             } finally {
                 executor.shutdown();
             }
+        }
+    }
+
+    public static class ThrowingQuery {
+
+        @Context
+        public org.neo4j.graphdb.Transaction tx;
+
+        @Procedure(mode = Mode.WRITE, name = "se.doThrow")
+        public void doThrow() throws Exception {
+            ((InternalTransaction) tx)
+                    .kernelTransaction()
+                    .cursorContext()
+                    .getVersionContext()
+                    .markAsDirty();
+            throw new TransientTransactionFailureException(Status.Transaction.Outdated, "Surprise!");
         }
     }
 }

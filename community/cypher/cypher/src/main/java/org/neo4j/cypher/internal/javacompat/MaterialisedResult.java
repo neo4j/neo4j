@@ -39,7 +39,7 @@ class MaterialisedResult implements QuerySubscriber {
     private int numberOfFields;
     private AnyValue[] currentRecord;
     private Throwable error;
-    private QueryStatistics statistics;
+    private QueryStatistics statistics = QueryStatistics.EMPTY;
     private QueryExecution queryExecution;
 
     void consumeAll(QueryExecution queryExecution) throws QueryExecutionKernelException {
