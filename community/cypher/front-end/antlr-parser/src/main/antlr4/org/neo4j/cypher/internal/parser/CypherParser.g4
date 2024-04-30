@@ -358,15 +358,15 @@ labelExpression2Is
    ;
 
 labelExpression1
-   : LPAREN labelExpression4 RPAREN
-   | PERCENT
-   | symbolicNameString
+   : LPAREN labelExpression4 RPAREN #ParenthesizedLabelExpression
+   | PERCENT                      #AnyLabel
+   | symbolicNameString           #LabelName
    ;
 
 labelExpression1Is
-   : LPAREN labelExpression4Is RPAREN
-   | PERCENT
-   | symbolicLabelNameString
+   : LPAREN labelExpression4Is RPAREN #ParenthesizedLabelExpressionIs
+   | PERCENT                        #AnyLabelIs
+   | symbolicLabelNameString        #LabelNameIs
    ;
 
 insertNodeLabelExpression
@@ -630,11 +630,23 @@ propertyKeyName
    ;
 
 parameter[String paramType]
-   : DOLLAR (symbolicNameString | UNSIGNED_DECIMAL_INTEGER)
+   : DOLLAR parameterName[paramType]
+   ;
+
+parameterName[String paramType]
+   : (symbolicNameString | UNSIGNED_DECIMAL_INTEGER)
    ;
 
 functionInvocation
-   : namespace symbolicNameString LPAREN (DISTINCT | ALL)? (expression (COMMA expression)* )? RPAREN
+   : functionName LPAREN (DISTINCT | ALL)? (functionArgument (COMMA functionArgument)* )? RPAREN
+   ;
+
+functionArgument
+   : expression
+   ;
+
+functionName
+   : namespace symbolicNameString
    ;
 
 namespace

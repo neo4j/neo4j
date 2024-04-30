@@ -52,7 +52,7 @@ case object CharLengthFunctionRewriter extends StepSequencer.Step with ASTRewrit
   ): Rewriter = instance
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
-    case f @ FunctionInvocation(namespace, FunctionName(name), _, _, _, _)
+    case f @ FunctionInvocation(FunctionName(namespace, name), _, _, _, _)
       if namespace.parts.isEmpty && (name.equalsIgnoreCase("char_length")) =>
       f.copy(functionName = FunctionName("character_length")(f.position))(f.position)
   })

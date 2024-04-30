@@ -103,8 +103,7 @@ class MultipleGraphClausesParsingTest extends AstParsingTestBase with LegacyAstP
 
   private def function(calledFromUseClause: Boolean, nameParts: String*)(args: expressions.Expression*) =
     expressions.FunctionInvocation(
-      expressions.Namespace(nameParts.init.toList)(pos),
-      expressions.FunctionName(nameParts.last)(pos),
+      expressions.FunctionName(expressions.Namespace(nameParts.init.toList)(pos), nameParts.last)(pos),
       distinct = false,
       args.toIndexedSeq,
       calledFromUseClause = calledFromUseClause

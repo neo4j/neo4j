@@ -918,16 +918,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     parts <- zeroOrMore(_identifier)
   } yield Namespace(parts)(pos)
 
-  def _functionName: Gen[FunctionName] = for {
-    name <- _identifier
-  } yield FunctionName(name)(pos)
-
   def _functionInvocation: Gen[FunctionInvocation] = for {
     namespace <- _namespace
-    functionName <- _functionName
+    functionName <- _identifier
     distinct <- boolean
     args <- zeroOrMore(_expression)
-  } yield FunctionInvocation(namespace, functionName, distinct, args.toIndexedSeq)(pos)
+  } yield FunctionInvocation(FunctionName(namespace, functionName)(pos), distinct, args.toIndexedSeq)(pos)
 
   def _glob: Gen[String] = for {
     parts <- zeroOrMore(_identifier)

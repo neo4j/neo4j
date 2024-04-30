@@ -43,6 +43,12 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.parser.CypherParser.AnyLabelContext
+import org.neo4j.cypher.internal.parser.CypherParser.AnyLabelIsContext
+import org.neo4j.cypher.internal.parser.CypherParser.LabelNameContext
+import org.neo4j.cypher.internal.parser.CypherParser.LabelNameIsContext
+import org.neo4j.cypher.internal.parser.CypherParser.ParenthesizedLabelExpressionContext
+import org.neo4j.cypher.internal.parser.CypherParser.ParenthesizedLabelExpressionIsContext
 import org.neo4j.cypher.internal.parser.CypherParserListener
 
 import scala.collection.immutable.ArraySeq
@@ -231,11 +237,12 @@ trait LabelExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitLabelExpression1(ctx: CypherParser.LabelExpression1Context): Unit = {
-    val innerLblExpCtx = ctx.labelExpression4()
-    ctx.ast =
-      if (innerLblExpCtx != null) innerLblExpCtx.ast
-      else if (ctx.PERCENT() != null) Wildcard()(pos(ctx))
-      else {
+    ctx.ast = ctx match {
+      case ctx: ParenthesizedLabelExpressionContext =>
+        ctx.labelExpression4().ast
+      case ctx: AnyLabelContext =>
+        Wildcard()(pos(ctx))
+      case ctx: LabelNameContext =>
         var parent = ctx.parent
         var isLabel = 0
         while (isLabel == 0) {
@@ -258,17 +265,20 @@ trait LabelExpressionBuilder extends CypherParserListener {
               LabelOrRelTypeName(ctx.symbolicNameString().ast())(pos(ctx))
             )
         }
-      }
+      case _ =>
+        throw new IllegalStateException("Parsed an unknown LabelExpression1 type")
+    }
   }
 
   final override def exitLabelExpression1Is(
     ctx: CypherParser.LabelExpression1IsContext
   ): Unit = {
-    val innerLblExpCtx = ctx.labelExpression4Is()
-    ctx.ast =
-      if (innerLblExpCtx != null) innerLblExpCtx.ast
-      else if (ctx.PERCENT() != null) Wildcard(containsIs = true)(pos(ctx))
-      else {
+    ctx.ast = ctx match {
+      case ctx: ParenthesizedLabelExpressionIsContext =>
+        ctx.labelExpression4Is().ast
+      case ctx: AnyLabelIsContext =>
+        Wildcard(containsIs = true)(pos(ctx))
+      case ctx: LabelNameIsContext =>
         var parent = ctx.parent
         var isLabel = 0
         while (isLabel == 0) {
@@ -294,8 +304,9 @@ trait LabelExpressionBuilder extends CypherParserListener {
               containsIs = true
             )
         }
-      }
-
+      case _ =>
+        throw new IllegalStateException("Parsed an unknown LabelExpression1Is type")
+    }
   }
 
   final override def exitInsertNodePattern(

@@ -330,8 +330,7 @@ class LiteralsParserTest extends AstParsingTestBase
       Statements(Seq(singleQuery(return_(
         AliasedReturnItem(
           FunctionInvocation(
-            Namespace(List("test"))(pos),
-            FunctionName("function")(pos),
+            FunctionName(Namespace(List("test"))(pos), "function")(pos),
             distinct = false,
             ArraySeq(
               StringLiteral("hello")(InputPosition(21, 1, 22).withInputLength(7)),

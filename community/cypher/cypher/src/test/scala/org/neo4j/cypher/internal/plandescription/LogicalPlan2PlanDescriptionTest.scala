@@ -4793,7 +4793,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val collectDistinctFunction =
       FunctionInvocation(FunctionName(Collect.name)(pos), distinct = true, IndexedSeq(varFor("c")))(pos)
     val orderedCollectDistinctFunction =
-      FunctionInvocation(FunctionName(Collect.name)(pos), distinct = true, IndexedSeq(varFor("c")), ArgumentAsc)
+      FunctionInvocation(FunctionName(Collect.name)(pos), distinct = true, IndexedSeq(varFor("c")), ArgumentAsc)(pos)
 
     // Aggregation 1 grouping, 1 aggregating
     assertGood(
@@ -4991,8 +4991,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     val functionInvocation = FunctionInvocation(
-      namespace = Namespace(namespace)(pos),
-      functionName = FunctionName(name)(pos),
+      functionName = FunctionName(Namespace(namespace)(pos), name)(pos),
       distinct = false,
       args = args
     )(pos)
@@ -7928,8 +7927,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val args = IndexedSeq(number("23391882379"))
 
     val functionInvocation = FunctionInvocation(
-      namespace = Namespace(namespace)(pos),
-      functionName = FunctionName(name)(pos),
+      functionName = FunctionName(Namespace(namespace)(pos), name)(pos),
       distinct = false,
       args = args
     )(pos)

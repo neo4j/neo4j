@@ -384,8 +384,7 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
           equals(
             literalInt(1),
             FunctionInvocation.apply(
-              Namespace(List("n"))(pos),
-              FunctionName("prop1")(pos),
+              FunctionName(Namespace(List("n"))(pos), "prop1")(pos),
               Variable("foo")(pos)
             )(pos)
           )
@@ -404,8 +403,7 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
           equals(
             literalInt(1),
             FunctionInvocation.apply(
-              Namespace(List("n"))(pos),
-              FunctionName("prop1")(pos),
+              FunctionName(Namespace(List("n"))(pos), "prop1")(pos),
               Variable("foo")(pos)
             )(pos)
           )

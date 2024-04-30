@@ -922,8 +922,7 @@ case class Match(
       case Contains(Property(Variable(`variable`), PropertyKeyName(name)), _) =>
         acc => SkipChildren(acc :+ name)
       case FunctionInvocation(
-          Namespace(List(namespace)),
-          FunctionName(functionName),
+          FunctionName(Namespace(List(namespace)), functionName),
           _,
           Seq(Property(Variable(`variable`), PropertyKeyName(name)), _, _),
           _,
@@ -937,8 +936,7 @@ case class Match(
               case Property(Variable(`variable`), PropertyKeyName(name)) =>
                 acc :+ name
               case FunctionInvocation(
-                  Namespace(List(namespace)),
-                  FunctionName(functionName),
+                  FunctionName(Namespace(List(namespace)), functionName),
                   _,
                   Seq(Property(Variable(id), PropertyKeyName(name)), _),
                   _,

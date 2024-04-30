@@ -211,7 +211,9 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
       // distance has been replaced with point.distance, make sure we provide a nice error message
       case UnresolvedFunction
-        if invocation.namespace.parts.isEmpty && invocation.functionName.name.toLowerCase(Locale.ROOT) == "distance" =>
+        if invocation.functionName.namespace.parts.isEmpty && invocation.functionName.name.toLowerCase(
+          Locale.ROOT
+        ) == "distance" =>
         SemanticError(s"'distance' has been replaced by 'point.distance'", invocation.position)
 
       case Distance =>

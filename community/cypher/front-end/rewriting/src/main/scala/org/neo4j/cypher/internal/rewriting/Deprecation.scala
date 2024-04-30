@@ -161,8 +161,7 @@ object Deprecations {
 
   private def functionInvocationForSetProperties(s: SetProperty, e: Variable): FunctionInvocation = {
     FunctionInvocation(
-      namespace = Namespace(List())(e.position),
-      functionName = FunctionName("properties")(e.position),
+      functionName = FunctionName(Namespace(List())(e.position), "properties")(e.position),
       distinct = false,
       args = Vector(e)
     )(s.position)

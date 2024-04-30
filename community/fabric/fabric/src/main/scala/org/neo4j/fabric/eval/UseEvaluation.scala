@@ -78,7 +78,7 @@ object UseEvaluation {
             .map(resolveFunctions)
             .map(expr => evaluator.evaluate(expr, parameters, ctx))
           val functionName: List[String] =
-            f.functionInvocation.namespace.parts :+ f.functionInvocation.functionName.name
+            f.functionInvocation.functionName.namespace.parts :+ f.functionInvocation.functionName.name
           catalog.resolveView(CatalogName(functionName), argValues, sessionDb: DatabaseReference)
       }
     }

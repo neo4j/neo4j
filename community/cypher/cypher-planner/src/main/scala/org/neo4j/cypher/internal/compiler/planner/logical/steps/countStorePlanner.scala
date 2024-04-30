@@ -157,7 +157,7 @@ case object countStorePlanner {
     val selectionsWithoutImpliedPredicates = selections.copy(predicates = selections.predicates -- impliedPredicates)
     exp match {
       case // COUNT(<id>)
-        func @ FunctionInvocation(_, _, false, IndexedSeq(v: Variable), _, _) if func.function == functions.Count =>
+        func @ FunctionInvocation(_, false, IndexedSeq(v: Variable), _, _) if func.function == functions.Count =>
         trySolveNodeOrRelationshipAggregation(
           query,
           columnName,
@@ -185,7 +185,7 @@ case object countStorePlanner {
         )
 
       case // COUNT(n.prop)
-        func @ FunctionInvocation(_, _, false, IndexedSeq(Property(v: Variable, propKeyName)), _, _)
+        func @ FunctionInvocation(_, false, IndexedSeq(Property(v: Variable, propKeyName)), _, _)
         if func.function == functions.Count =>
         trySolveNodeOrRelationshipAggregation(
           query,

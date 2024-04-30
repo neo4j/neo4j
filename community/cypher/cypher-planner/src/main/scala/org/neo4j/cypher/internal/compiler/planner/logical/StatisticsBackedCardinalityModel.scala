@@ -160,8 +160,7 @@ class StatisticsBackedCardinalityModel(
       val multiplier = expression match {
         case ListLiteral(expressions) => Multiplier(expressions.size)
         case FunctionInvocation(
-            Namespace(Seq()),
-            FunctionName("range"),
+            FunctionName(Namespace(Seq()), "range"),
             _,
             Seq(from: IntegerLiteral, to: IntegerLiteral),
             _,
@@ -170,8 +169,7 @@ class StatisticsBackedCardinalityModel(
           val diff = to.value - from.value + 1
           Multiplier(Math.max(0, diff))
         case FunctionInvocation(
-            Namespace(Seq()),
-            FunctionName("range"),
+            FunctionName(Namespace(Seq()), "range"),
             _,
             Seq(from: IntegerLiteral, to: IntegerLiteral, step: IntegerLiteral),
             _,

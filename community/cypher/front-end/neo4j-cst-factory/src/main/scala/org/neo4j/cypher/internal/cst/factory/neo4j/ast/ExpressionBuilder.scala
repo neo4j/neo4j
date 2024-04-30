@@ -170,6 +170,8 @@ import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
 import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
 
+import java.util.stream.Collectors
+
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -776,12 +778,17 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitParameter(ctx: CypherParser.ParameterContext): Unit = {
+    val ast = ctx.parameterName().ast[ExplicitParameter]()
+    ctx.ast = ast.copy()(position = pos(ctx))
+  }
+
+  final override def exitParameterName(ctx: CypherParser.ParameterNameContext): Unit = {
     val parameterType = ctx.paramType match {
       case "STRING" => CTString
       case "MAP"    => CTMap
       case _        => CTAny
     }
-    val name: String = child[ParseTree](ctx, 1) match {
+    val name: String = child[ParseTree](ctx, 0) match {
       case strCtx: CypherParser.SymbolicNameStringContext => strCtx.ast()
       case node: TerminalNode                             => node.getText
       case _                                              => throw new IllegalStateException(s"Unexpected ctx $ctx")
@@ -792,18 +799,32 @@ trait ExpressionBuilder extends CypherParserListener {
   final override def exitFunctionInvocation(
     ctx: CypherParser.FunctionInvocationContext
   ): Unit = {
-    val nameSpace = ctx.namespace()
-    val symbolicNameString = ctx.symbolicNameString()
+    val functionName = ctx.functionName().ast[FunctionName]
     val distinct = if (ctx.DISTINCT() != null) true else false
-    val expressions = astSeq[Expression](ctx.expression())
+    val expressions =
+      astSeq[Expression](ctx.functionArgument().stream().map(arg => arg.expression()).collect(Collectors.toList()))
     ctx.ast = FunctionInvocation(
-      nameSpace.ast(),
-      FunctionName(symbolicNameString.ast())(pos(symbolicNameString)),
+      functionName,
       distinct,
       expressions,
       ArgumentUnordered,
       ctx.parent.isInstanceOf[CypherParser.GraphReferenceContext]
-    )(pos(ctx))
+    )(functionName.namespace.position)
+  }
+
+  final override def exitFunctionName(
+    ctx: CypherParser.FunctionNameContext
+  ): Unit = {
+    val namespace = ctx.namespace().ast[Namespace]
+    val functionNameCtx = ctx.symbolicNameString()
+    val functionName: String = functionNameCtx.ast()
+    ctx.ast = FunctionName(namespace, functionName)(pos(functionNameCtx))
+  }
+
+  final override def exitFunctionArgument(
+    ctx: CypherParser.FunctionArgumentContext
+  ): Unit = {
+    ctx.ast = ctx.expression().ast[Expression]()
   }
 
   final override def exitNamespace(

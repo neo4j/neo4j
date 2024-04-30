@@ -69,7 +69,7 @@ object QualifiedName {
     QualifiedName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
 
   def apply(unresolved: FunctionInvocation): QualifiedName =
-    QualifiedName(unresolved.namespace.parts, unresolved.functionName.name)
+    QualifiedName(unresolved.functionName.namespace.parts, unresolved.functionName.name)
 }
 
 case class QualifiedName(namespace: Seq[String], name: String) {

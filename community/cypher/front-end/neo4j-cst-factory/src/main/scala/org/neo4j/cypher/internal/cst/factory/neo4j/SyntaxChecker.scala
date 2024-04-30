@@ -494,13 +494,13 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   }
 
   private def checkFunctionInvocation(ctx: CypherParser.FunctionInvocationContext): Unit = {
-    val functionName = ctx.symbolicNameString().ast[String]()
+    val functionName = ctx.functionName().symbolicNameString().ast[String]()
     functionName match {
       case "normalize" =>
-        if (ctx.expression().size == 2) {
+        if (ctx.functionArgument().size == 2) {
           errors :+= exceptionFactory.syntaxException(
             "Invalid normal form, expected NFC, NFD, NFKC, NFKD",
-            ctx.expression(1).ast[Expression]().position
+            ctx.functionArgument(1).expression().ast[Expression]().position
           )
         }
       case _ =>

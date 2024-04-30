@@ -93,8 +93,7 @@ class ParserTest extends CypherFunSuite with TestName {
           Variable("rel")(pos),
           Some(NotEquals(
             FunctionInvocation(
-              Namespace(List())(pos),
-              FunctionName("id")(pos),
+              FunctionName(Namespace(List())(pos), "id")(pos),
               distinct = false,
               IndexedSeq(Variable("rel")(pos))
             )(pos),
@@ -102,8 +101,7 @@ class ParserTest extends CypherFunSuite with TestName {
           )(pos))
         )(pos),
         FunctionInvocation(
-          Namespace(List())(pos),
-          FunctionName("relationships")(pos),
+          FunctionName(Namespace(List())(pos), "relationships")(pos),
           distinct = false,
           IndexedSeq(Variable("path")(pos))
         )(pos)

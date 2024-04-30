@@ -186,8 +186,11 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_listLiteral -> exitListLiteral((CypherParser.ListLiteralContext) ctx);
             case CypherParser.RULE_propertyKeyName -> exitPropertyKeyName((CypherParser.PropertyKeyNameContext) ctx);
             case CypherParser.RULE_parameter -> exitParameter((CypherParser.ParameterContext) ctx);
+            case CypherParser.RULE_parameterName -> exitParameterName((CypherParser.ParameterNameContext) ctx);
             case CypherParser.RULE_functionInvocation -> exitFunctionInvocation(
                     (CypherParser.FunctionInvocationContext) ctx);
+            case CypherParser.RULE_functionName -> exitFunctionName((CypherParser.FunctionNameContext) ctx);
+            case CypherParser.RULE_functionArgument -> exitFunctionArgument((CypherParser.FunctionArgumentContext) ctx);
             case CypherParser.RULE_namespace -> exitNamespace((CypherParser.NamespaceContext) ctx);
             case CypherParser.RULE_variable -> exitVariable((CypherParser.VariableContext) ctx);
             case CypherParser.RULE_nonEmptyNameList -> exitNonEmptyNameList((CypherParser.NonEmptyNameListContext) ctx);

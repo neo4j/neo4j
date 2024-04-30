@@ -33,18 +33,13 @@ object FunctionInvocation {
 
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
     FunctionInvocation(
-      Namespace()(position),
       name,
       distinct = false,
       IndexedSeq(argument)
     )(position)
 
-  def apply(ns: Namespace, name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
-    FunctionInvocation(ns, name, distinct = false, IndexedSeq(argument))(position)
-
   def apply(left: Expression, name: FunctionName, right: Expression): FunctionInvocation =
     FunctionInvocation(
-      Namespace()(name.position),
       name,
       distinct = false,
       IndexedSeq(left, right)
@@ -52,48 +47,10 @@ object FunctionInvocation {
 
   def apply(expression: Expression, name: FunctionName): FunctionInvocation =
     FunctionInvocation(
-      Namespace()(name.position),
       name,
       distinct = false,
       IndexedSeq(expression)
     )(name.position)
-
-  def apply(
-    functionName: FunctionName,
-    distinct: Boolean,
-    args: IndexedSeq[Expression]
-  )(position: InputPosition): FunctionInvocation =
-    FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
-
-  def apply(
-    functionName: FunctionName,
-    distinct: Boolean,
-    args: IndexedSeq[Expression],
-    order: ArgumentOrder
-  ): FunctionInvocation =
-    FunctionInvocation(
-      Namespace()(functionName.position),
-      functionName,
-      distinct,
-      args,
-      order
-    )(functionName.position)
-
-  def apply(
-    functionName: FunctionName,
-    distinct: Boolean,
-    args: IndexedSeq[Expression],
-    order: ArgumentOrder,
-    calledFromUseClause: Boolean
-  ): FunctionInvocation =
-    FunctionInvocation(
-      Namespace()(functionName.position),
-      functionName,
-      distinct,
-      args,
-      order,
-      calledFromUseClause
-    )(functionName.position)
 }
 
 /**
@@ -110,14 +67,13 @@ object DeterministicFunctionInvocation {
 }
 
 case class FunctionInvocation(
-  namespace: Namespace,
   functionName: FunctionName,
   distinct: Boolean,
   args: IndexedSeq[Expression],
   order: ArgumentOrder = ArgumentUnordered,
   calledFromUseClause: Boolean = false
 )(val position: InputPosition) extends Expression {
-  val name: String = (namespace.parts :+ functionName.name).mkString(".")
+  val name: String = (functionName.namespace.parts :+ functionName.name).mkString(".")
 
   val function: functions.Function =
     functions.Function.lookup.getOrElse(name.toLowerCase(Locale.ROOT), UnresolvedFunction)
@@ -144,11 +100,19 @@ case class FunctionInvocation(
     isDeterministic && subExpressions.isEmpty
 }
 
-case class FunctionName(name: String)(val position: InputPosition) extends SymbolicName {
+case class FunctionName(namespace: Namespace, name: String)(val position: InputPosition) extends SymbolicName {
 
   override def equals(x: Any): Boolean = x match {
-    case FunctionName(other) => other.toLowerCase(Locale.ROOT) == name.toLowerCase(Locale.ROOT)
-    case _                   => false
+    case FunctionName(otherNamespace, otherName) =>
+      otherNamespace == namespace && otherName.toLowerCase(Locale.ROOT) == name.toLowerCase(Locale.ROOT)
+    case _ => false
   }
   override def hashCode = name.toLowerCase(Locale.ROOT).hashCode
+}
+
+object FunctionName {
+
+  def apply(name: String)(position: InputPosition): FunctionName = {
+    FunctionName(Namespace()(position), name)(position)
+  }
 }

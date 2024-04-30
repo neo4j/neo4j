@@ -156,7 +156,7 @@ case class groupPercentileFunctions(
   private def groupFunctions(aggregationExpressions: Map[LogicalVariable, Expression])
     : Map[(Expression, Boolean, ArgumentOrder), Map[LogicalVariable, FunctionInvocation]] = {
     aggregationExpressions.collect {
-      case (v, f @ FunctionInvocation(_, FunctionName(name), _, _, _, _))
+      case (v, f @ FunctionInvocation(FunctionName(_, name), _, _, _, _))
         if name.equalsIgnoreCase(PercentileDisc.name) || name.equalsIgnoreCase(PercentileCont.name) => (v, f)
     }.groupBy { case (_, f: FunctionInvocation) => (f.args(0), f.distinct, f.order) }
       .filter { case (_, fs) => fs.size > 1 }
@@ -199,7 +199,7 @@ case class groupPercentileFunctions(
         distinct,
         IndexedSeq(input, percentilesLiteral, propertyKeys, isDiscretesLiteral),
         order
-      )
+      )(pos)
 
       (percentilesFunction, variables)
     }
@@ -223,7 +223,8 @@ case class groupPercentileFunctions(
   private def toVariablePercentilePairs(percentileGroup: Map[LogicalVariable, FunctionInvocation])
     : (Seq[LogicalVariable], Seq[Expression], Seq[BooleanLiteral]) = {
     percentileGroup.foldLeft((Seq.empty[LogicalVariable], Seq.empty[Expression], Seq.empty[BooleanLiteral])) {
-      case ((accVars, accPercentiles, accIsDiscretes), (v, FunctionInvocation(_, FunctionName(name), _, args, _, _))) =>
+      case ((accVars, accPercentiles, accIsDiscretes), (v, FunctionInvocation(functionName, _, args, _, _))) =>
+        val name = functionName.name
         val isDiscrete =
           if (name.equalsIgnoreCase(PercentileDisc.name)) {
             True()(pos)

@@ -383,15 +383,14 @@ trait AstConstructionTestSupport {
     function(name, ArgumentUnordered, calledFromUseClause, args: _*)
 
   def function(name: String, order: ArgumentOrder, args: Expression*): FunctionInvocation =
-    FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq, order)
+    FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq, order)(pos)
 
   def function(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
-    FunctionInvocation(Namespace(ns.toList)(pos), FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
+    FunctionInvocation(FunctionName(Namespace(ns.toList)(pos), name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
   def useClauseFunction(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(
-      Namespace(ns.toList)(pos),
-      FunctionName(name)(pos),
+      FunctionName(Namespace(ns.toList)(pos), name)(pos),
       distinct = false,
       args.toIndexedSeq,
       calledFromUseClause = true
@@ -409,19 +408,19 @@ trait AstConstructionTestSupport {
       args.toIndexedSeq,
       order,
       calledFromUseClause = calledFromUseClause
-    )
+    )(pos)
 
   def distinctFunction(name: String, args: Expression*): FunctionInvocation =
     distinctFunction(name, ArgumentUnordered, args: _*)
 
   def distinctFunction(name: String, order: ArgumentOrder, args: Expression*): FunctionInvocation =
-    FunctionInvocation(FunctionName(name)(pos), distinct = true, args.toIndexedSeq, order)
+    FunctionInvocation(FunctionName(name)(pos), distinct = true, args.toIndexedSeq, order)(pos)
 
   def count(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Count.name)(pos))
 
   def count(expression: Expression, isDistinct: Boolean, order: ArgumentOrder): FunctionInvocation =
-    FunctionInvocation(FunctionName(Count.name)(pos), isDistinct, IndexedSeq(expression), order)
+    FunctionInvocation(FunctionName(Count.name)(pos), isDistinct, IndexedSeq(expression), order)(pos)
 
   def countStar(): CountStar =
     CountStar()(pos)
@@ -460,7 +459,7 @@ trait AstConstructionTestSupport {
       distinct,
       IndexedSeq(input, listOfFloat(percentiles: _*), listOfString(propertyKeys: _*), listOfBoolean(isDiscretes: _*)),
       order
-    )
+    )(pos)
   }
 
   def varLengthPathExpression(

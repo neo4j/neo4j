@@ -61,8 +61,7 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case fi @ FunctionInvocation(
-        Namespace(List()),
-        FunctionName(Head.name),
+        FunctionName(Namespace(List()), Head.name),
         _,
         IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _)),
         _,
@@ -90,8 +89,7 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
       ls.copy(list = npe.copy(newPlan)(npe.position))(ls.position)
 
     case fi @ FunctionInvocation(
-        Namespace(List()),
-        FunctionName(IsEmpty.name),
+        FunctionName(Namespace(List()), IsEmpty.name),
         _,
         IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _)),
         _,

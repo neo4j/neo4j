@@ -51,8 +51,8 @@ class SemanticAwareAstGenerator(simpleStrings: Boolean = true, allowedVarNames: 
     numArgs = signature.argumentTypes.length
     distinct <- boolean
     args <- listOfN(numArgs, nonAggregatingExpression)
-    (ns, name) = function.asFunctionName(pos)
-  } yield FunctionInvocation(ns, name, distinct, args.toIndexedSeq)(pos)
+    functionName = function.asFunctionName(pos)
+  } yield FunctionInvocation(functionName, distinct, args.toIndexedSeq)(pos)
 
   def aggregatingExpression: Gen[Expression] =
     frequency(

@@ -173,37 +173,39 @@ object DeterministicFunction {
 
 abstract class Function extends FunctionWithName with TypeSignatures {
 
-  def asFunctionName(implicit position: InputPosition): (Namespace, FunctionName) = {
+  def asFunctionName(implicit position: InputPosition): FunctionName = {
     val names = name.split("\\.")
     if (names.length == 1) {
-      (Namespace()(position), FunctionName(name)(position))
+      FunctionName(Namespace()(position), name)(position)
     } else {
-      (Namespace(names.dropRight(1).toList)(position), FunctionName(names.last)(position))
+      FunctionName(Namespace(names.dropRight(1).toList)(position), names.last)(position)
     }
   }
 
   def asInvocation(argument: Expression, distinct: Boolean = false)(implicit
   position: InputPosition): FunctionInvocation = {
-    val (namespace, functionName) = asFunctionName
-    FunctionInvocation(namespace, functionName, distinct = distinct, IndexedSeq(argument))(position)
+    FunctionInvocation(asFunctionName, distinct = distinct, IndexedSeq(argument))(position)
   }
 
   def asInvocation(lhs: Expression, rhs: Expression)(implicit position: InputPosition): FunctionInvocation = {
-    val (namespace, functionName) = asFunctionName(position)
-    FunctionInvocation(namespace, functionName, distinct = false, IndexedSeq(lhs, rhs))(position)
+    FunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
   }
 
   // Default apply and unapply methods which are valid for functions taking exactly one argument
   def apply(arg: Expression)(pos: InputPosition): FunctionInvocation = {
-    val (namespace, functionName) = asFunctionName(pos)
-    FunctionInvocation(namespace, functionName, arg)(pos)
+    FunctionInvocation(asFunctionName(pos), arg)(pos)
   }
 
   def unapply(arg: Expression): Option[Expression] = {
-    val (namespace, functionName) = asFunctionName(InputPosition.NONE)
+    val function = asFunctionName(InputPosition.NONE)
+    val namespace = function.namespace
+    val functionName = function.name
     arg match {
-      case FunctionInvocation(ns, `functionName`, _, args, _, _) if ns == namespace => Some(args.head)
-      case _                                                                        => None
+      case FunctionInvocation(FunctionName(ns, fn), _, args, _, _)
+        if functionName.equalsIgnoreCase(fn) && ns == namespace =>
+        Some(args.head)
+      case _ =>
+        None
     }
   }
 }

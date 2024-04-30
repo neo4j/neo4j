@@ -263,7 +263,13 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitParameter(CypherParser.ParameterContext ctx);
 
+    void exitParameterName(CypherParser.ParameterNameContext ctx);
+
     void exitFunctionInvocation(CypherParser.FunctionInvocationContext ctx);
+
+    void exitFunctionArgument(CypherParser.FunctionArgumentContext ctx);
+
+    void exitFunctionName(CypherParser.FunctionNameContext ctx);
 
     void exitNamespace(CypherParser.NamespaceContext ctx);
 

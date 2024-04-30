@@ -876,8 +876,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
             Equals(
               SignedDecimalIntegerLiteral("1")(p),
               FunctionInvocation(
-                Namespace(List("n"))(p),
-                FunctionName("prop1")(p),
+                FunctionName(Namespace(List("n"))(p), "prop1")(p),
                 distinct = false,
                 Vector(Variable("foo")(p))
               )(p)

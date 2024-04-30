@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentAsc
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentUnordered
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasALabel
@@ -204,8 +205,9 @@ private class DefaultExpressionStringifier(
       case ListLiteral(expressions) =>
         expressions.map(apply).mkString("[", ", ", "]")
 
-      case FunctionInvocation(namespace, functionName, distinct, args, order, _) =>
+      case FunctionInvocation(FunctionName(namespace, functionName), distinct, args, order, _) =>
         val ns = apply(namespace)
+        val fn = backtick(functionName)
         val np = if (namespace.parts.isEmpty) "" else "."
         val ds = if (distinct) "DISTINCT " else ""
         val as = args.map(inner(ast)).mkString(", ")
@@ -215,7 +217,7 @@ private class DefaultExpressionStringifier(
           case ArgumentDesc      => " DESC"
           case ArgumentUnordered => ""
         }
-        s"$ns$np${apply(functionName)}($ds$as)$o"
+        s"$ns$np$fn($ds$as)$o"
 
       case functionInvocation: UserDefinedFunctionInvocation =>
         apply(functionInvocation.asUnresolvedFunction)
