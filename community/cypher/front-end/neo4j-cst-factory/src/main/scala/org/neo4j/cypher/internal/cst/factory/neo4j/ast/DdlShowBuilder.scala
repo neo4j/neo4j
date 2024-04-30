@@ -311,9 +311,7 @@ trait DdlShowBuilder extends CypherParserListener {
       case CypherParser.UNIQUE => UniqueConstraints
       case CypherParser.EXIST  => ExistsConstraints(ValidSyntax)
       case CypherParser.NODE =>
-        if (ctx.EXIST() != null) {
-          NodeExistsConstraints(ValidSyntax)
-        } else NodeKeyConstraints
+        if (ctx.EXIST() != null) NodeExistsConstraints(ValidSyntax) else NodeKeyConstraints
       case CypherParser.RELATIONSHIP =>
         RelExistsConstraints(ValidSyntax)
     }
@@ -673,15 +671,14 @@ object DdlShowBuilder {
     }
 
     private def buildClauses(cmdClause: Clause): Seq[Clause] = {
-      val yClause = if (yieldClause.isDefined) ArraySeq(turnYieldToWith(yieldClause.get)) else ArraySeq.empty
-      val rClause = if (returnClause.isDefined) ArraySeq(returnClause.get) else ArraySeq.empty
-      val cClause = if (composableClauses.isDefined) composableClauses.get else ArraySeq.empty
-      ArraySeq(cmdClause) ++ yClause ++ rClause ++ cClause
+      ArraySeq.from(
+        Seq(cmdClause) ++ yieldClause.map(turnYieldToWith) ++ returnClause ++ composableClauses.getOrElse(Seq.empty)
+      )
     }
 
     private def turnYieldToWith(yieldClause: Yield): Clause = {
       val returnItems = yieldClause.returnItems
-      val itemOrder = if (returnItems.items.nonEmpty) Some(returnItems.items.map(_.name).toList) else None
+      val itemOrder = Option.when(returnItems.items.nonEmpty)(returnItems.items.map(_.name).toList)
       val (orderBy, where) = CommandClause.updateAliasedVariablesFromYieldInOrderByAndWhere(yieldClause)
       With(
         distinct = false,
