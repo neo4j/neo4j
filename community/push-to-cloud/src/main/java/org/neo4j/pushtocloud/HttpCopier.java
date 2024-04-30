@@ -446,7 +446,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         default:
             throw new CommandFailedException( String.format(
                     "We're sorry, something has failed during the loading of your database. "
-                    + "Please try again and if this problem persists, please open up a support case. Database status: %s",
+                    + "Please try again and if this problem persists, please open up a support case at https://support.neo4j.com. Database status: %s",
                     databaseStatus ) );
         }
     }
@@ -870,7 +870,8 @@ public class HttpCopier implements PushToCloudCommand.Copier
         return new CommandFailedException(
                 "We encountered a problem while communicating to the Neo4j Aura system. " +
                 "Please check that you are using the latest version of the push-to-cloud plugin and upgrade if necessary. " +
-                "If this problem persists after upgrading, please contact support and attach the logs shown below to your ticket in the support portal." );
+                "If this problem persists after upgrading, please contact support at: https://support.neo4j.com " +
+                        "and attach the logs shown below to your ticket in the support portal." );
     }
 
     private CommandFailedException validationFailureErrorResponse( boolean verbose, HttpURLConnection connection, long size )
