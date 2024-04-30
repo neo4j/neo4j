@@ -40,7 +40,7 @@ public interface RecoveryService {
     RecoveryApplier getRecoveryApplier(
             TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag) throws Exception;
 
-    LogPosition rollbackTransactions(
+    RollbackTransactionInfo rollbackTransactions(
             LogPosition writePosition,
             TransactionIdTracker transactionTracker,
             CommittedCommandBatch.BatchInformation lastCommandBatch,
@@ -55,4 +55,6 @@ public interface RecoveryService {
             LogPosition checkpointPosition,
             boolean missingLogs,
             CursorContext cursorContext);
+
+    record RollbackTransactionInfo(CommittedCommandBatch.BatchInformation batchInfo, LogPosition position) {}
 }

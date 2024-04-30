@@ -114,7 +114,7 @@ public class DefaultRecoveryService implements RecoveryService {
     }
 
     @Override
-    public LogPosition rollbackTransactions(
+    public RollbackTransactionInfo rollbackTransactions(
             LogPosition writePosition,
             TransactionIdTracker transactionTracker,
             CommittedCommandBatch.BatchInformation lastCommittedBatch,
@@ -122,7 +122,7 @@ public class DefaultRecoveryService implements RecoveryService {
             throws IOException {
         long[] notCompletedTransactions = transactionTracker.notCompletedTransactions();
         if (notCompletedTransactions.length == 0) {
-            return writePosition;
+            return null;
         }
         KernelVersion kernelVersion = versionProvider.kernelVersion();
         LogFile logFile = logFiles.getLogFile();
@@ -134,11 +134,24 @@ public class DefaultRecoveryService implements RecoveryService {
                 new PhysicalFlushableLogPositionAwareChannel(channel, logHeader, EmptyMemoryTracker.INSTANCE)) {
             var entryWriter = new LogEntryWriter<>(writerChannel, binarySupportedKernelVersions);
             long time = clock.millis();
-            for (long notCompletedTransaction : notCompletedTransactions) {
-                entryWriter.writeRollbackEntry(
-                        kernelVersion, notCompletedTransaction, appendIndexProvider.nextAppendIndex(), time);
+            CommittedCommandBatch.BatchInformation lastBatchInfo = null;
+            for (int i = 0; i < notCompletedTransactions.length; i++) {
+                long notCompletedTransaction = notCompletedTransactions[i];
+                long appendIndex = appendIndexProvider.nextAppendIndex();
+                int checksum =
+                        entryWriter.writeRollbackEntry(kernelVersion, notCompletedTransaction, appendIndex, time);
+                if (i == (notCompletedTransactions.length - 1)) {
+                    lastBatchInfo = new CommittedCommandBatch.BatchInformation(
+                            notCompletedTransaction,
+                            kernelVersion,
+                            checksum,
+                            time,
+                            UNKNOWN_CONSENSUS_INDEX,
+                            appendIndex);
+                }
             }
-            return writerChannel.getCurrentLogPosition();
+
+            return new RollbackTransactionInfo(lastBatchInfo, writerChannel.getCurrentLogPosition());
         }
     }
 

@@ -49,6 +49,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -460,12 +461,13 @@ class PhysicalLogicalTransactionStoreTest {
         }
 
         @Override
-        public LogPosition rollbackTransactions(
+        public RollbackTransactionInfo rollbackTransactions(
                 LogPosition writePosition,
                 TransactionIdTracker transactionTracker,
                 CommittedCommandBatch.BatchInformation commandBatch,
                 AppendIndexProvider appendIndexProvider) {
-            return writePosition;
+            return new RollbackTransactionInfo(
+                    new CommittedCommandBatch.BatchInformation(1, KernelVersion.V5_18, 2, 3, 4, 5), writePosition);
         }
 
         @Override

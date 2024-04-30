@@ -217,8 +217,16 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             }
             logsTruncator.truncate(recoveryToPosition);
             appendIndexProvider = new RecoveryRollbackAppendIndexProvider(lastBatchInfo);
-            recoveryService.rollbackTransactions(
+            var rollbackTransactionInfo = recoveryService.rollbackTransactions(
                     recoveryToPosition, transactionIdTracker, lastHighestTransactionBatchInfo, appendIndexProvider);
+            if (rollbackTransactionInfo != null) {
+                if (lastHighestTransactionBatchInfo == null
+                        || lastHighestTransactionBatchInfo.txId()
+                                < rollbackTransactionInfo.batchInfo().txId()) {
+                    lastHighestTransactionBatchInfo = rollbackTransactionInfo.batchInfo();
+                }
+                lastTransactionPosition = rollbackTransactionInfo.position();
+            }
 
             closeProgress();
         }
