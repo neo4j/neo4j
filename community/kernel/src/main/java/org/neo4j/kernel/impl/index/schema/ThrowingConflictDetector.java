@@ -19,21 +19,22 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
-class ThrowingConflictDetector<KEY extends NativeIndexKey<KEY>> extends ConflictDetectingValueMerger<KEY, Value[]> {
-    private final EntityType entityType;
+final class ThrowingConflictDetector<KEY extends NativeIndexKey<KEY>>
+        extends ConflictDetectingValueMerger<KEY, Value[]> {
+    private final SchemaDescriptor schemaDescriptor;
 
-    ThrowingConflictDetector(boolean compareEntityIds, EntityType entityType) {
+    ThrowingConflictDetector(boolean compareEntityIds, SchemaDescriptor schemaDescriptor) {
         super(compareEntityIds);
-        this.entityType = entityType;
+        this.schemaDescriptor = schemaDescriptor;
     }
 
     @Override
     void doReportConflict(long existingNodeId, long addedNodeId, Value[] values) throws IndexEntryConflictException {
-        throw new IndexEntryConflictException(entityType, existingNodeId, addedNodeId, ValueTuple.of(values));
+        throw new IndexEntryConflictException(schemaDescriptor, existingNodeId, addedNodeId, ValueTuple.of(values));
     }
 }

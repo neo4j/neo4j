@@ -20,8 +20,6 @@
 package org.neo4j.kernel.api.exceptions.index;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -47,9 +45,11 @@ class IndexEntryConflictExceptionTest {
     @Test
     void shouldMakeEntryConflicts() {
         LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, 2);
-        IndexEntryConflictException e = new IndexEntryConflictException(NODE, 0L, 1L, value);
+        IndexEntryConflictException e = new IndexEntryConflictException(schema, 0L, 1L, value);
 
-        assertThat(e.evidenceMessage(tokens, schema))
+        assertThat(e)
+                .hasMessage("Both Node(0) and Node(1) have the label `Label[1]` and property `PropertyKey[2]` = 'hi'");
+        assertThat(e.getUserMessage(tokens))
                 .isEqualTo("Both Node(0) and Node(1) have the label `label1` and property `p2` = 'hi'");
     }
 
@@ -57,29 +57,47 @@ class IndexEntryConflictExceptionTest {
     void shouldMakeEntryConflictsForOneNode() {
         LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, 2);
         IndexEntryConflictException e =
-                new IndexEntryConflictException(NODE, 0L, StatementConstants.NO_SUCH_NODE, value);
+                new IndexEntryConflictException(schema, 0L, StatementConstants.NO_SUCH_NODE, value);
 
-        assertThat(e.evidenceMessage(tokens, schema))
+        assertThat(e).hasMessage("Node(0) already exists with label `Label[1]` and property `PropertyKey[2]` = 'hi'");
+        assertThat(e.getUserMessage(tokens))
                 .isEqualTo("Node(0) already exists with label `label1` and property `p2` = 'hi'");
     }
 
     @Test
-    void shouldMakeAnonymousEntryConflictsForOneNode() {
+    void shouldMakeAnonymousEntryConflictsForNewNodeUnknown() {
         LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, 2);
         IndexEntryConflictException e = new IndexEntryConflictException(
-                NODE, StatementConstants.NO_SUCH_NODE, StatementConstants.NO_SUCH_NODE, value);
+                schema, StatementConstants.NO_SUCH_NODE, StatementConstants.NO_SUCH_NODE, value);
 
-        assertThat(e.evidenceMessage(tokens, schema))
+        assertThat(e).hasMessage("A Node already exists with label `Label[1]` and property `PropertyKey[2]` = 'hi'");
+        assertThat(e.getUserMessage(tokens))
                 .isEqualTo("A Node already exists with label `label1` and property `p2` = 'hi'");
+    }
+
+    @Test
+    void shouldMakeAnonymousEntryConflictsForNewNodeKnown() {
+        LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, 2);
+        IndexEntryConflictException e =
+                new IndexEntryConflictException(schema, StatementConstants.NO_SUCH_NODE, 0L, value);
+
+        assertThat(e)
+                .hasMessage(
+                        "Both another Node and Node(0) have the label `Label[1]` and property `PropertyKey[2]` = 'hi'");
+        assertThat(e.getUserMessage(tokens))
+                .isEqualTo("Both another Node and Node(0) have the label `label1` and property `p2` = 'hi'");
     }
 
     @Test
     void shouldMakeCompositeEntryConflicts() {
         LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, 2, 3, 4);
         ValueTuple values = ValueTuple.of(true, "hi", new long[] {6L, 4L});
-        IndexEntryConflictException e = new IndexEntryConflictException(NODE, 0L, 1L, values);
+        IndexEntryConflictException e = new IndexEntryConflictException(schema, 0L, 1L, values);
 
-        assertThat(e.evidenceMessage(tokens, schema))
+        assertThat(e)
+                .hasMessage(
+                        "Both Node(0) and Node(1) have the label `Label[1]` and properties `PropertyKey[2]` = true, `PropertyKey[3]` = 'hi', `PropertyKey[4]` = [6, 4]");
+        assertThat(e.getUserMessage(tokens))
                 .isEqualTo(
                         "Both Node(0) and Node(1) have the label `label1` and properties `p2` = true, `p3` = 'hi', `p4` = [6, 4]");
     }
@@ -87,9 +105,12 @@ class IndexEntryConflictExceptionTest {
     @Test
     void shouldMakeRelEntryConflicts() {
         SchemaDescriptor schema = SchemaDescriptors.forRelType(typeId, 2);
-        IndexEntryConflictException e = new IndexEntryConflictException(RELATIONSHIP, 0L, 1L, value);
+        IndexEntryConflictException e = new IndexEntryConflictException(schema, 0L, 1L, value);
 
-        assertThat(e.evidenceMessage(tokens, schema))
+        assertThat(e)
+                .hasMessage(
+                        "Both Relationship(0) and Relationship(1) have the type `RelationshipType[1]` and property `PropertyKey[2]` = 'hi'");
+        assertThat(e.getUserMessage(tokens))
                 .isEqualTo("Both Relationship(0) and Relationship(1) have the type `type1` and property `p2` = 'hi'");
     }
 
@@ -97,29 +118,52 @@ class IndexEntryConflictExceptionTest {
     void shouldMakeEntryConflictsForOneRel() {
         SchemaDescriptor schema = SchemaDescriptors.forRelType(typeId, 2);
         IndexEntryConflictException e =
-                new IndexEntryConflictException(RELATIONSHIP, 0L, StatementConstants.NO_SUCH_RELATIONSHIP, value);
+                new IndexEntryConflictException(schema, 0L, StatementConstants.NO_SUCH_RELATIONSHIP, value);
 
-        assertThat(e.evidenceMessage(tokens, schema))
+        assertThat(e)
+                .hasMessage(
+                        "Relationship(0) already exists with type `RelationshipType[1]` and property `PropertyKey[2]` = 'hi'");
+        assertThat(e.getUserMessage(tokens))
                 .isEqualTo("Relationship(0) already exists with type `type1` and property `p2` = 'hi'");
     }
 
     @Test
-    void shouldMakeAnonymousEntryConflictsForOneRel() {
+    void shouldMakeAnonymousEntryConflictsForNewRelUnknown() {
         SchemaDescriptor schema = SchemaDescriptors.forRelType(typeId, 2);
         IndexEntryConflictException e = new IndexEntryConflictException(
-                RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP, value);
+                schema, StatementConstants.NO_SUCH_RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP, value);
 
-        assertThat(e.evidenceMessage(tokens, schema))
+        assertThat(e)
+                .hasMessage(
+                        "A Relationship already exists with type `RelationshipType[1]` and property `PropertyKey[2]` = 'hi'");
+        assertThat(e.getUserMessage(tokens))
                 .isEqualTo("A Relationship already exists with type `type1` and property `p2` = 'hi'");
+    }
+
+    @Test
+    void shouldMakeAnonymousEntryConflictsForNewRelKnown() {
+        SchemaDescriptor schema = SchemaDescriptors.forRelType(typeId, 2);
+        IndexEntryConflictException e =
+                new IndexEntryConflictException(schema, StatementConstants.NO_SUCH_RELATIONSHIP, 0L, value);
+
+        assertThat(e)
+                .hasMessage(
+                        "Both another Relationship and Relationship(0) have the type `RelationshipType[1]` and property `PropertyKey[2]` = 'hi'");
+        assertThat(e.getUserMessage(tokens))
+                .isEqualTo(
+                        "Both another Relationship and Relationship(0) have the type `type1` and property `p2` = 'hi'");
     }
 
     @Test
     void shouldMakeCompositeRelEntryConflicts() {
         SchemaDescriptor schema = SchemaDescriptors.forRelType(typeId, 2, 3, 4);
         ValueTuple values = ValueTuple.of(true, "hi", new long[] {6L, 4L});
-        IndexEntryConflictException e = new IndexEntryConflictException(RELATIONSHIP, 0L, 1L, values);
+        IndexEntryConflictException e = new IndexEntryConflictException(schema, 0L, 1L, values);
 
-        assertThat(e.evidenceMessage(tokens, schema))
+        assertThat(e)
+                .hasMessage(
+                        "Both Relationship(0) and Relationship(1) have the type `RelationshipType[1]` and properties `PropertyKey[2]` = true, `PropertyKey[3]` = 'hi', `PropertyKey[4]` = [6, 4]");
+        assertThat(e.getUserMessage(tokens))
                 .isEqualTo("Both Relationship(0) and Relationship(1) have the type `type1` and properties "
                         + "`p2` = true, `p3` = 'hi', `p4` = [6, 4]");
     }

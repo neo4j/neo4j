@@ -72,7 +72,7 @@ import org.neo4j.values.storable.Value;
 /**
  * {@link IndexPopulator} for native indexes that stores scan updates in parallel append-only files. When all scan updates have been collected
  * each file is sorted and then all of them merged together into the resulting index.
- *
+ * <p>
  * Note on buffers: basically each thread adding scan updates will make use of a {@link ByteBufferFactory#acquireThreadLocalBuffer(MemoryTracker)}
  * thread-local buffer}.
  * This together with {@link ByteBufferFactory#globalAllocator() a global buffer for external updates} and carefully reused
@@ -80,7 +80,7 @@ import org.neo4j.values.storable.Value;
  * how many indexes are being built concurrently by the same job and regardless of index sizes. Formula for peak number of buffers in use is roughly
  * {@code 10 * numberOfPopulationWorkers} where numberOfPopulationWorkers is currently capped to 8. So given a buffer size of 1 MiB then maximum memory
  * usage for one population job (which can populate multiple index) is ~80 MiB.
- *
+ * <p>
  * Regarding block size: as entries gets written to a BlockStorage, they are buffered up to this size, then sorted and written out.
  * As blocks gets merged into bigger blocks, this is still the size of the read buffer for each block no matter its size.
  * Each thread has its own buffer when writing and each thread has {@link #mergeFactor} buffers when merging.
@@ -89,7 +89,7 @@ import org.neo4j.values.storable.Value;
  * <pre>
  * blockSize * numberOfPopulationWorkers * {@link #mergeFactor}
  * </pre>
- *
+ * <p>
  * where {@link GraphDatabaseInternalSettings#index_population_workers} controls the number of population workers.
  *
  * @param <KEY>
@@ -323,7 +323,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
      * We will loop over all external updates once to add them to the tree. This is done without checking any uniqueness.
      * If index is a uniqueness index we will then loop over external updates again and for each ADD or CHANGED update
      * we will verify that those entries are unique in the tree and throw as soon as we find a duplicate.
-     * @throws IOException If something goes wrong while reading from index.
+     *
+     * @throws IOException                 If something goes wrong while reading from index.
      * @throws IndexEntryConflictException If a duplicate is found.
      */
     private void writeExternalUpdatesToTree(
@@ -373,7 +374,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                     var values = key.asValues();
                     switch (conflictHandler.indexEntryConflict(firstEntityId, otherEntityId, values)) {
                         case THROW -> throw new IndexEntryConflictException(
-                                descriptor.schema().entityType(), firstEntityId, otherEntityId, values);
+                                descriptor.schema(), firstEntityId, otherEntityId, values);
                         case DELETE -> deleteConflict(seek.key(), cursorContext);
                     }
                 }

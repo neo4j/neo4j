@@ -20,13 +20,11 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 
@@ -84,14 +82,14 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
             return exc.getMessage();
         }
 
-        SchemaDescriptor schema = constraint.schema();
-        StringBuilder message = new StringBuilder();
-        for (Iterator<IndexEntryConflictException> iterator = conflicts.iterator(); iterator.hasNext(); ) {
-            IndexEntryConflictException conflict = iterator.next();
-            message.append(conflict.evidenceMessage(tokenNameLookup, schema));
-            if (iterator.hasNext()) {
+        final StringBuilder message = new StringBuilder();
+        boolean appendLine = false;
+        for (IndexEntryConflictException conflict : conflicts) {
+            if (appendLine) {
                 message.append(System.lineSeparator());
             }
+            message.append(conflict.getUserMessage(tokenNameLookup));
+            appendLine = true;
         }
         return message.toString();
     }

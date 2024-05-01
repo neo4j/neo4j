@@ -115,7 +115,9 @@ class ConstraintIndexConcurrencyTest {
             assertEquals(ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyKeyId), e.constraint());
             IndexEntryConflictException conflict =
                     Iterators.single(e.conflicts().iterator());
-            assertEquals(Values.stringValue(conflictingValue), conflict.getSinglePropertyValue());
+            assertEquals(
+                    Values.stringValue(conflictingValue),
+                    conflict.getPropertyValues().getOnlyValue());
 
             tx.commit();
         }

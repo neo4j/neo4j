@@ -32,7 +32,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -135,7 +134,7 @@ class ConstraintIndexCreatorTest {
         when(indexProxy.getDescriptor()).thenReturn(index);
         when(schemaRead.indexGetForName(constraint.getName())).thenReturn(IndexDescriptor.NO_INDEX, index);
 
-        IndexEntryConflictException cause = new IndexEntryConflictException(NODE, 2, 1, Values.of("a"));
+        IndexEntryConflictException cause = new IndexEntryConflictException(index.schema(), 2, 1, Values.of("a"));
         doThrow(new IndexPopulationFailedKernelException("some index", cause))
                 .when(indexProxy)
                 .awaitStoreScanCompleted(anyLong(), any());
@@ -152,7 +151,7 @@ class ConstraintIndexCreatorTest {
                 () -> creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {}));
         assertEquals(
                 "Existing data does not satisfy Constraint( name='constraint', type='UNIQUENESS', schema=(:Label {prop}) ): "
-                        + "Both node 2 and node 1 share the property value ( String(\"a\") )",
+                        + "Both Node(2) and Node(1) have the label `Label[123]` and property `PropertyKey[456]` = 'a'",
                 exception.getMessage());
         assertEquals(2, kernel.transactions.size());
         KernelTransactionImplementation tx1 = kernel.transactions.get(0);

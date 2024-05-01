@@ -53,7 +53,7 @@ public final class SchemaDescriptorImplementation
 
     /**
      * This constructor is only public so that it can be called directly from the SchemaStore.
-     * Use the static methods on {@link SchemaDescriptor} to create the usual kinds of schemas.
+     * Use the static methods on {@link SchemaDescriptors} to create the usual kinds of schemas.
      */
     public SchemaDescriptorImplementation(
             EntityType entityType, PropertySchemaType propertySchemaType, int[] entityTokens, int[] propertyKeyIds) {

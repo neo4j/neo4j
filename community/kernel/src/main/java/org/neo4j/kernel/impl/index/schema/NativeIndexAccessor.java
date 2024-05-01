@@ -77,7 +77,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
         singleUpdater = new NativeIndexUpdater<>(
                 layout.newKey(),
                 indexUpdateIgnoreStrategy(),
-                new ThrowingConflictDetector<>(true, descriptor.schema().entityType()));
+                new ThrowingConflictDetector<>(true, descriptor.schema()));
         headerWriter = new NativeIndexHeaderWriter(BYTE_ONLINE);
     }
 
@@ -97,8 +97,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                 return new NativeIndexUpdater<>(
                                 layout.newKey(),
                                 indexUpdateIgnoreStrategy(),
-                                new ThrowingConflictDetector<>(
-                                        true, descriptor.schema().entityType()))
+                                new ThrowingConflictDetector<>(true, descriptor.schema()))
                         .initialize(tree.writer(cursorContext));
             } else {
                 return singleUpdater.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
@@ -135,10 +134,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                                         throws IndexEntryConflictException {
                                     switch (conflictHandler.indexEntryConflict(existingNodeId, addedNodeId, toReport)) {
                                         case THROW -> throw new IndexEntryConflictException(
-                                                descriptor.schema().entityType(),
-                                                existingNodeId,
-                                                addedNodeId,
-                                                toReport);
+                                                descriptor.schema(), existingNodeId, addedNodeId, toReport);
                                         case DELETE -> {
                                             /*then just skip it*/
                                         }
@@ -245,6 +241,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
      * {@link IndexUpdateIgnoreStrategy Ignore strategy} to be used by index updater.
      * Sub-classes are expected to override this method if they want to use something
      * other than {@link IndexUpdateIgnoreStrategy#NO_IGNORE}.
+     *
      * @return {@link IndexUpdateIgnoreStrategy} to be used by index updater.
      */
     protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy() {

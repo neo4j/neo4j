@@ -718,7 +718,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                     constraint,
                     VALIDATION,
                     new IndexEntryConflictException(
-                            NODE,
+                            index.schema(),
                             allowsReadAllProperties ? existingNodeId : NO_SUCH_NODE,
                             NO_SUCH_NODE,
                             PropertyIndexQuery.asValueTuple(propertyValues)),
@@ -813,7 +813,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                     constraint,
                     VALIDATION,
                     new IndexEntryConflictException(
-                            RELATIONSHIP,
+                            index.schema(),
                             allowsReadAllProperties ? existingRelationshipId : NO_SUCH_RELATIONSHIP,
                             NO_SUCH_RELATIONSHIP,
                             PropertyIndexQuery.asValueTuple(propertyValues)),

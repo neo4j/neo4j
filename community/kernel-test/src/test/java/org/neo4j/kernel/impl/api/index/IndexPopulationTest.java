@@ -118,7 +118,8 @@ class IndexPopulationTest {
                 return new IndexUpdater() {
                     @Override
                     public void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException {
-                        throw new IndexEntryConflictException(EntityType.NODE, 0, 1, Values.numberValue(0));
+                        throw new IndexEntryConflictException(
+                                SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, 0, 1, Values.numberValue(0));
                     }
 
                     @Override

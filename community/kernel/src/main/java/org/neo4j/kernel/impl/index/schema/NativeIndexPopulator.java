@@ -84,6 +84,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
      * {@link IndexUpdateIgnoreStrategy Ignore strategy} to be used by index updater.
      * Sub-classes are expected to override this method if they want to use something
      * other than {@link IndexUpdateIgnoreStrategy#NO_IGNORE}.
+     *
      * @return {@link IndexUpdateIgnoreStrategy} to be used by index updater.
      */
     protected IndexUpdateIgnoreStrategy indexUpdateIgnoreStrategy() {
@@ -100,12 +101,10 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
-        mainConflictDetector = new ThrowingConflictDetector<>(
-                !descriptor.isUnique(), descriptor.schema().entityType());
+        mainConflictDetector = new ThrowingConflictDetector<>(!descriptor.isUnique(), descriptor.schema());
         // for updates we have to have uniqueness on (value,entityId) to allow for intermediary violating updates.
         // there are added conflict checks after updates have been applied.
-        updatesConflictDetector =
-                new ThrowingConflictDetector<>(true, descriptor.schema().entityType());
+        updatesConflictDetector = new ThrowingConflictDetector<>(true, descriptor.schema());
     }
 
     @Override
