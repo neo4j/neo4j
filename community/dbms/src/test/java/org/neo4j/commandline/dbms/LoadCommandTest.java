@@ -236,7 +236,7 @@ class LoadCommandTest {
         createDummyDump(SYSTEM_DATABASE_NAME, archive);
         execute(SYSTEM_DATABASE_NAME, archive);
 
-        assertThat(LoadCommand.SYSTEM_ERR_MESSAGE).isEqualToIgnoringNewLines(output.toString());
+        assertThat(output.toString()).isEqualTo(String.format(LoadCommand.SYSTEM_ERR_MESSAGE));
     }
 
     private void execute(String database, Path archive) {

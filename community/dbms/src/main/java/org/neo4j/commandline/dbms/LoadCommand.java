@@ -248,7 +248,7 @@ public class LoadCommand extends AbstractAdminCommand {
         for (DumpInfo dbName : dbNames) {
             try {
                 if (dbName.dbName.equals(SYSTEM_DATABASE_NAME)) {
-                    ctx.err().print(SYSTEM_ERR_MESSAGE);
+                    ctx.err().printf(SYSTEM_ERR_MESSAGE);
                 }
                 Path dumpPath = null;
                 if (!dbName.stdIn) {
