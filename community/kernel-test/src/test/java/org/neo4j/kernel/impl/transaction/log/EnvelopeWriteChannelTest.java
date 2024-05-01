@@ -35,10 +35,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.io.fs.ChecksumWriter;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -479,7 +483,7 @@ class EnvelopeWriteChannelTest {
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
                     envelope(EnvelopeType.FULL, START_INDEX, byteData, checksums[0]),
-                    padding(paddingSize, START_INDEX));
+                    padding(paddingSize));
 
             assertEnvelopeContents(
                     slice(buffer),
@@ -511,7 +515,7 @@ class EnvelopeWriteChannelTest {
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
                     envelope(EnvelopeType.FULL, START_INDEX, byteData, 0x5EC7972E),
-                    padding(paddingSize, START_INDEX),
+                    padding(paddingSize),
                     envelope(EnvelopeType.FULL, START_INDEX + 1, SMALL_BYTES, 0xCEC86301));
         }
     }
@@ -542,7 +546,7 @@ class EnvelopeWriteChannelTest {
             assertEnvelopeContents(
                     channelData(fileChannel, segmentSize),
                     envelope(EnvelopeType.FULL, START_INDEX, byteData, 0x06ADE140),
-                    padding(paddingSize, START_INDEX),
+                    padding(paddingSize),
                     envelope(EnvelopeType.FULL, START_INDEX + 1, valueBytes, 0xDA75189B));
         }
     }
@@ -877,6 +881,205 @@ class EnvelopeWriteChannelTest {
         }
     }
 
+    @Test
+    void failWhenTryingToCompleteAnEmptyEnvelope() throws IOException {
+        final int segmentSize = 256;
+        final var fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            assertThat(channel.position())
+                    .as("should start writing after header and zeroed first segment")
+                    .isEqualTo(segmentSize);
+
+            // Lets try to complete an empty envelope at the beginning of the segment:
+            assertThatThrownBy(channel::endCurrentEntry)
+                    .as("trying to manually complete an empty envelope")
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Closing empty envelope is not allowed.");
+
+            // Now let's add something, complete it and try to complete another empty one:
+            channel.putInt(42);
+            channel.endCurrentEntry();
+            assertThatThrownBy(channel::endCurrentEntry)
+                    .as("trying to manually complete an empty envelope")
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Closing empty envelope is not allowed.");
+        }
+    }
+
+    private static Stream<Arguments> provideStartOffsetParameters() {
+        return Stream.of(
+                // segmentSize, offsetFullLength (header + length)
+                Arguments.of(128, 32),
+                Arguments.of(256, 32),
+                // Minimum START_OFFSET, containing just the size of the header.
+                Arguments.of(128, HEADER_SIZE),
+                Arguments.of(256, HEADER_SIZE),
+                // Maximum START_OFFSET, spawning the whole segment but enough space for a small (header + 4 bytes)
+                // envelope after.
+                Arguments.of(128, 128 - HEADER_SIZE - Integer.BYTES),
+                Arguments.of(256, 256 - HEADER_SIZE - Integer.BYTES));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideStartOffsetParameters")
+    void writeStartOffsetIntoTheFirstSegment(int segmentSize, int offsetFullLength) throws IOException {
+        final int mainPayloadValue = random.nextInt();
+        final int mainPayloadLength = Integer.BYTES;
+
+        final int startOffsetPayloadLength = offsetFullLength - HEADER_SIZE;
+
+        final var fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            assertThat(channel.position())
+                    .as("should start writing after header and zeroed first segment")
+                    .isEqualTo(segmentSize);
+
+            channel.insertStartOffset(offsetFullLength);
+
+            assertThat(channel.position())
+                    .as("after inserting start offset position should be at the offset in the segment")
+                    .isEqualTo(segmentSize + offsetFullLength);
+
+            // And we can keep adding envelopes as expected:
+            channel.putInt(mainPayloadValue);
+            assertThat(channel.getAppendedBytes()).isEqualTo(mainPayloadLength + startOffsetPayloadLength);
+            final int mainPayloadEnvelopeChecksum = channel.putChecksum();
+            channel.prepareForFlush();
+            assertThat(channel.position())
+                    .as("buffer should be at the start of next envelope payload")
+                    .isEqualTo(segmentSize + offsetFullLength + HEADER_SIZE + mainPayloadLength);
+
+            final var data = channelData(fileChannel, segmentSize);
+            byte[] expected = new byte[mainPayloadLength];
+            ByteBuffer.wrap(expected).order(LITTLE_ENDIAN).putInt(mainPayloadValue);
+            assertEnvelopeContents(
+                    data,
+                    startOffset(startOffsetPayloadLength),
+                    envelope(EnvelopeType.FULL, START_INDEX, expected, mainPayloadEnvelopeChecksum));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void writeStartOffsetFailsIfNotAtTheBeginningOfASegment(int segmentSize) throws IOException {
+        final var fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            assertThat(channel.position())
+                    .as("should start writing after header and zeroed first segment")
+                    .isEqualTo(segmentSize);
+
+            // Add a regular envelope first:
+            channel.put((byte) random.nextInt());
+            channel.putChecksum();
+
+            assertThatThrownBy(() -> channel.insertStartOffset(HEADER_SIZE + 1))
+                    .as("trying to insert an offset envelope in the middle of a segment will be rejected")
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(EnvelopeWriteChannel.ERROR_MSG_TEMPLATE_OFFSET_MUST_BE_FIRST_IN_THE_FIRST_SEGMENT);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void writeStartOffsetFailsIfNotAtTheFirstSegment(int segmentSize) throws IOException {
+        // We're going to add a few FULL envelope that takes the whole first segments,
+        // so when we try to write the start offset it goes into a middle segment of the file.
+        final int fullPayloadLength = segmentSize - HEADER_SIZE - 10;
+        final byte[] fullPayloadValue = bytes(random, fullPayloadLength);
+
+        final var fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            assertThat(channel.position())
+                    .as("should start writing after header and zeroed first segment")
+                    .isEqualTo(segmentSize);
+
+            channel.put(fullPayloadValue, fullPayloadLength);
+            channel.put(fullPayloadValue, fullPayloadLength);
+            channel.put(fullPayloadValue, fullPayloadLength);
+            channel.put(fullPayloadValue, fullPayloadLength);
+            channel.put(fullPayloadValue, fullPayloadLength);
+            assertThatThrownBy(() -> channel.insertStartOffset(HEADER_SIZE + 1))
+                    .as("trying to insert an offset envelope in a segment that is not the first one will be rejected")
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(EnvelopeWriteChannel.ERROR_MSG_TEMPLATE_OFFSET_MUST_BE_FIRST_IN_THE_FIRST_SEGMENT);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void writeStartOffsetFailsIfTryingToInsertInTheMiddleOfAnotherEnvelope(int segmentSize) throws IOException {
+        final var fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            assertThat(channel.position())
+                    .as("should start writing after header and zeroed first segment")
+                    .isEqualTo(segmentSize);
+
+            // Start add a regular envelope first, but don't close it...
+            channel.put((byte) random.nextInt());
+
+            assertThatThrownBy(() -> channel.insertStartOffset(HEADER_SIZE + 1))
+                    .as("trying to insert an offset envelope in the middle of another envelope will be rejected")
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage(EnvelopeWriteChannel.ERROR_MSG_TEMPLATE_OFFSET_MUST_NOT_BE_INSIDE_ANOTHER_ENVELOPE);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
+    void writeStartOffsetDoesNotAllowInvalidSizes(int segmentSize) throws IOException {
+        final var fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            assertThat(channel.position())
+                    .as("should start writing after header and zeroed first segment")
+                    .isEqualTo(segmentSize);
+
+            // Lower bounds
+            assertThatThrownBy(() -> channel.insertStartOffset(-1))
+                    .as("trying to use a negative size for offset will be rejected")
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage(EnvelopeWriteChannel.ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_SMALL.formatted(HEADER_SIZE));
+            assertThatThrownBy(() -> channel.insertStartOffset(0))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .as("trying to use a zero size for offset will be rejected")
+                    .hasMessage(EnvelopeWriteChannel.ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_SMALL.formatted(HEADER_SIZE));
+            assertThatThrownBy(() -> channel.insertStartOffset(HEADER_SIZE - 1))
+                    .as("trying to use less than the size of an envelope header will be rejected")
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage(EnvelopeWriteChannel.ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_SMALL.formatted(HEADER_SIZE));
+
+            // Upper bounds
+            assertThatThrownBy(() -> channel.insertStartOffset(segmentSize * 3 / 2))
+                    .as("trying to use an offset size that is bigger than segment will be rejected")
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage(EnvelopeWriteChannel.ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_LARGE.formatted(segmentSize));
+            assertThatThrownBy(() -> channel.insertStartOffset(segmentSize))
+                    .as("trying to offset size the whole segment will be rejected")
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage(EnvelopeWriteChannel.ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_LARGE.formatted(segmentSize));
+            assertThatThrownBy(() -> channel.insertStartOffset(segmentSize - HEADER_SIZE))
+                    .as("trying to offset without leaving enough space for another envelope will be rejected")
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage(EnvelopeWriteChannel.ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_LARGE.formatted(segmentSize));
+
+            channel.prepareForFlush();
+            assertThat(channel.position())
+                    .as("nothing was written to the channel after failed start offset calls")
+                    .isEqualTo(segmentSize);
+        }
+    }
+
     private PhysicalLogVersionedStoreChannel storeChannel() throws IOException {
         return storeChannel(1L);
     }
@@ -1043,52 +1246,46 @@ class EnvelopeWriteChannelTest {
     private static void assertEnvelopeContents(ByteBuffer data, int initialChecksum, EnvelopeChunk... envelopeChunks) {
         int previousChecksum = initialChecksum;
         for (EnvelopeChunk chunk : envelopeChunks) {
-            assertLogEnvelope(
-                    data,
-                    chunk.checksum,
-                    chunk.type,
-                    chunk.entryIndex,
-                    chunk.data.length,
-                    chunk.kernelVersion,
-                    previousChecksum,
-                    chunk.data);
-            if (chunk.type != EnvelopeType.ZERO) {
+            assertLogEnvelope(data, previousChecksum, chunk);
+            if (chunk.type != EnvelopeType.ZERO && chunk.type != EnvelopeType.START_OFFSET) {
                 previousChecksum = chunk.checksum;
             }
         }
     }
 
-    private static void assertLogEnvelope(
-            ByteBuffer buffer,
-            int checksum,
-            EnvelopeType type,
-            long entryIndex,
-            int payloadLength,
-            byte kernelVersion,
-            int previousChecksum,
-            byte[] payload) {
-        if (type == EnvelopeType.ZERO) {
-            byte[] padding = new byte[payloadLength];
+    private static void assertLogEnvelope(ByteBuffer buffer, int previousChecksum, EnvelopeChunk chunk) {
+        if (chunk.type == EnvelopeType.ZERO) {
+            byte[] padding = new byte[chunk.data.length];
             buffer.get(padding);
-            assertThat(padding).as("zero padding").isEqualTo(payload);
+            assertThat(padding).as("zero padding").isEqualTo(chunk.data);
             return;
         }
 
         int payloadChecksum = buffer.getInt();
-        assertChecksum(payloadChecksum, checksum);
 
-        assertThat(buffer.get()).as("type").isEqualTo(type.typeValue);
-        assertThat(buffer.getInt()).as("payloadLength").isEqualTo(payloadLength);
-        assertThat(buffer.getLong()).as("entryIndex").isEqualTo(entryIndex);
-        assertThat(buffer.get()).as("kernelVersion").isEqualTo(kernelVersion);
+        assertThat(buffer.get()).as("type").isEqualTo(chunk.type.typeValue);
+        assertThat(buffer.getInt()).as("payloadLength").isEqualTo(chunk.data.length);
+        assertThat(buffer.getLong()).as("entryIndex").isEqualTo(chunk.entryIndex);
+        assertThat(buffer.get()).as("kernelVersion").isEqualTo(chunk.kernelVersion);
         int previousPayloadChecksum = buffer.getInt();
-        assertThat(previousPayloadChecksum).as("previousChecksum").isEqualTo(previousChecksum);
-        assertBytesArray(buffer, payload);
+        if (chunk.type != EnvelopeType.START_OFFSET) {
+            assertThat(previousPayloadChecksum).as("previousChecksum").isEqualTo(previousChecksum);
+        } else {
+            // START_OFFSET envelopes do not participate in the checksum chain
+            assertThat(previousPayloadChecksum).as("previousChecksum").isEqualTo(0);
+        }
+        assertBytesArray(buffer, chunk.data);
+
+        // We verify the checksum by last, because it is easier to track down bugs/errors when we first detect
+        // the mismatched component above. If everything matches the expected, but the checksum doesn't then it
+        // is a sign that something strange is happening with the checksum calculation.
+        assertChecksum(payloadChecksum, chunk.checksum);
     }
 
     private static void assertChecksum(int actual, int expected) {
-        // System.out.printf("%d : 0x%08X%n", actual, actual);
-        assertThat(actual).as("checksum").isEqualTo(expected);
+        // We make the assertion as hex string, so if they don't match the produced error message is more clear
+        // and easier to check against or update the current checksum values used on setting up the tests.
+        assertThat(Integer.toHexString(actual)).as("checksum").isEqualTo(Integer.toHexString(expected));
     }
 
     private static final class EnvelopeChunk {
@@ -1109,6 +1306,13 @@ class EnvelopeWriteChannelTest {
             this.kernelVersion = kernelVersion;
             this.entryIndex = entryIndex;
         }
+
+        @Override
+        public String toString() {
+            return String.format(
+                    "EnvelopeChunk[type=%s,checksum=%s,length=%s,kernelVersion=%s,entryIndex=%s]",
+                    type, checksum, data.length, kernelVersion, entryIndex);
+        }
     }
 
     private static EnvelopeChunk envelope(EnvelopeType type, long entryIndex, byte[] payload, int checksum) {
@@ -1120,8 +1324,36 @@ class EnvelopeWriteChannelTest {
         return new EnvelopeChunk(type, entryIndex, checksum, payload, kernelVersion);
     }
 
-    private static EnvelopeChunk padding(int size, long entryIndex) {
-        return new EnvelopeChunk(EnvelopeType.ZERO, entryIndex, 0, new byte[size]);
+    private static EnvelopeChunk padding(int size) {
+        return new EnvelopeChunk(EnvelopeType.ZERO, EnvelopeWriteChannel.START_INDEX, 0, new byte[size]);
+    }
+
+    private static EnvelopeChunk startOffset(int length) {
+        return new EnvelopeChunk(
+                EnvelopeType.START_OFFSET, START_INDEX, expectedStartOffsetChecksum(length), new byte[length]);
+    }
+
+    /**
+     * Checksums for start envelopes are quite easy to calculate, so we do it manually here to match what we see
+     * from the writer channel.
+     */
+    private static int expectedStartOffsetChecksum(int length) {
+        // Full header minus the 4 bytes for checksum (that we're computing now) plus 0's for length.
+        final int checksumFieldsLength = HEADER_SIZE - Integer.BYTES + length;
+        final byte[] checksumBuffer = new byte[checksumFieldsLength];
+        final ByteBuffer checksumView = ByteBuffer.wrap(checksumBuffer)
+                .order(LITTLE_ENDIAN)
+                // Write the header without the checksum, as we're calculating it right now:
+                .put(EnvelopeType.START_OFFSET.typeValue)
+                .putInt(length)
+                .putLong(0)
+                .put(KERNEL_VERSION)
+                .putInt(0); // Previous checksum is 0, as start offset does not participate in checksum chain.
+
+        final var checksum = ChecksumWriter.CHECKSUM_FACTORY.get();
+        checksum.reset();
+        checksum.update(checksumView.clear().limit(checksumFieldsLength).position(0));
+        return (int) checksum.getValue();
     }
 
     private static void assertZeroHeaderBytes(ByteBuffer buffer) {

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.IGNORE_KERNEL_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.MAX_ZERO_PADDING_SIZE;
 import static org.neo4j.util.Preconditions.checkArgument;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.EnvelopeType;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * A channel that will write data in segments.
@@ -77,6 +79,24 @@ import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
  * <strong>only</strong> flush up until the <em>last completed envelope</em>.
  */
 public class EnvelopeWriteChannel implements PhysicalLogChannel {
+
+    @VisibleForTesting
+    static final String ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_SMALL =
+            "offset size must be at least envelope header size (%d).";
+
+    @VisibleForTesting
+    static final String ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_LARGE =
+            "offset cannot be bigger than the segment size (%d) and must leave enough space for at least one "
+                    + "envelope after it.";
+
+    @VisibleForTesting
+    static final String ERROR_MSG_TEMPLATE_OFFSET_MUST_BE_FIRST_IN_THE_FIRST_SEGMENT =
+            "START_OFFSET envelopes can only be inserted at the start of the first segment";
+
+    @VisibleForTesting
+    static final String ERROR_MSG_TEMPLATE_OFFSET_MUST_NOT_BE_INSIDE_ANOTHER_ENVELOPE =
+            "START_OFFSET cannot be inserted while another envelope is still open. Close the current entry first.";
+
     public static final long START_INDEX = 0;
     private static final byte[] PADDING_ZEROES = new byte[MAX_ZERO_PADDING_SIZE];
 
@@ -131,7 +151,12 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     }
 
     public void endCurrentEntry() throws IOException {
+        checkState(currentPayloadLength() > 0, "Closing empty envelope is not allowed.");
         completeEnvelope(true);
+        prepareNextEnvelope();
+    }
+
+    public void prepareNextEnvelope() throws IOException {
         if ((buffer.position() + LogEnvelopeHeader.HEADER_SIZE) >= nextSegmentOffset) {
             padSegmentAndGoToNext();
         }
@@ -365,46 +390,54 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     }
 
     /**
-     *
      * @param end if this is the last entry
      */
     private void completeEnvelope(boolean end) {
         EnvelopeType type = completedEnvelopeType(begin, end);
-        int payloadEndOffset = buffer.position();
-        int payloadStartOffset = currentEnvelopeStart + LogEnvelopeHeader.HEADER_SIZE;
-        int payLoadLength = payloadEndOffset - payloadStartOffset;
+        final int payLoadLength = currentPayloadLength();
         if (payLoadLength == 0) {
-            checkArgument(!end, "Cannot complete an empty segment.");
-
+            checkState(
+                    (nextSegmentOffset - currentEnvelopeStart) <= MAX_ZERO_PADDING_SIZE,
+                    "Empty envelopes can only be discarded at the end of the segment.");
             // Nothing to complete. This will be the case when we try to start a new entry at the end of the segment.
             // Reset back position to last start and let the padding zero out the rest.
             buffer.position(currentEnvelopeStart);
             return;
         }
-
-        // Fill in the header
-        int checksumStartOffset = currentEnvelopeStart + Integer.BYTES;
-        buffer.position(checksumStartOffset);
-        assert currentVersion != -1;
-        buffer.put(type.typeValue)
-                .putInt(payLoadLength)
-                .putLong(currentIndex)
-                .put(currentVersion)
-                .putInt(previousChecksum);
-
-        // Calculate the checksum and insert
-        checksum.reset();
-        checksum.update(checksumView.clear().limit(payloadEndOffset).position(checksumStartOffset));
-        previousChecksum = (int) checksum.getValue();
-        buffer.putInt(currentEnvelopeStart, previousChecksum);
-
-        //
-        buffer.position(payloadEndOffset);
-        currentEnvelopeStart = payloadEndOffset;
+        writeHeader(type, payLoadLength);
         begin = end;
         if (end) {
             currentIndex++;
         }
+    }
+
+    private void writeHeader(EnvelopeType type, int payloadLength) {
+        final int payloadEndOffset = buffer.position();
+
+        // Fill in the header
+        final int checksumStartOffset = currentEnvelopeStart + Integer.BYTES;
+        buffer.position(checksumStartOffset);
+        assert currentVersion != -1;
+        buffer.put(type.typeValue)
+                .putInt(payloadLength)
+                // START_OFFSET envelopes do not have an index, as they are skipped automatically when reading
+                .putLong(type != EnvelopeType.START_OFFSET ? currentIndex : 0)
+                .put(currentVersion)
+                // START_OFFSET envelopes do not participate in the checksum chain
+                .putInt(type != EnvelopeType.START_OFFSET ? previousChecksum : 0);
+
+        // Calculate the checksum and insert
+        checksum.reset();
+        checksum.update(checksumView.clear().limit(payloadEndOffset).position(checksumStartOffset));
+        final int thisEnvelopeChecksum = (int) checksum.getValue();
+        buffer.putInt(currentEnvelopeStart, thisEnvelopeChecksum);
+        if (type != EnvelopeType.START_OFFSET) {
+            previousChecksum = thisEnvelopeChecksum;
+        }
+
+        // Now we're ready to position the buffer to start writing the next envelope.
+        buffer.position(payloadEndOffset);
+        currentEnvelopeStart = payloadEndOffset;
     }
 
     private static EnvelopeType completedEnvelopeType(boolean begin, boolean end) {
@@ -481,5 +514,39 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         int remaining = src.remaining();
         putAll(src);
         return remaining;
+    }
+
+    private int currentPayloadLength() {
+        return buffer.position() - (currentEnvelopeStart + LogEnvelopeHeader.HEADER_SIZE);
+    }
+
+    /**
+     * Writes a START_OFFSET envelope to the current segment, which will shift all
+     * following envelopes by `size` bytes. This can be used to align the following
+     * envelopes if necessary while replicating envelopes from other machines.
+     * <p>
+     * This method can only be called to insert an offset envelope at the beginning
+     * of a segment and cannot be called while writing of another envelope (so, make
+     * sure to close the current envelope with {@link #endCurrentEntry()}/{@link #putChecksum()}
+     * before calling this method.
+     *
+     * @param size must be at least the length of one envelope header (see {@link LogEnvelopeHeader#HEADER_SIZE})
+     *             and must leave enough space for another envelope to be added after it in the current segment.
+     */
+    public void insertStartOffset(int size) throws IOException {
+        checkArgument(size >= HEADER_SIZE, ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_SMALL, HEADER_SIZE);
+        checkArgument(
+                size < segmentBlockSize - HEADER_SIZE, ERROR_MSG_TEMPLATE_OFFSET_SIZE_TOO_LARGE, segmentBlockSize);
+        checkState(
+                currentEnvelopeStart == 0 && channel.position() == segmentBlockSize,
+                ERROR_MSG_TEMPLATE_OFFSET_MUST_BE_FIRST_IN_THE_FIRST_SEGMENT);
+        checkState(
+                (currentEnvelopeStart + HEADER_SIZE) == buffer.position(),
+                ERROR_MSG_TEMPLATE_OFFSET_MUST_NOT_BE_INSIDE_ANOTHER_ENVELOPE);
+
+        final int payloadLength = size - HEADER_SIZE;
+        put(new byte[payloadLength], payloadLength);
+        writeHeader(EnvelopeType.START_OFFSET, payloadLength);
+        prepareNextEnvelope();
     }
 }
