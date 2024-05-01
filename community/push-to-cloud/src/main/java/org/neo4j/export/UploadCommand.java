@@ -338,7 +338,8 @@ public class UploadCommand extends AbstractAdminCommand {
                 verbose("Polling status\n");
                 auraClient.doStatusPolling(verbose, bearerToken, source.size());
             } catch (IOException e) {
-                throw new CommandFailedException("Failed to trigger import, please contact Aura support", e);
+                throw new CommandFailedException(
+                        "Failed to trigger import, please contact Aura support at: https://support.neo4j.com", e);
             } catch (InterruptedException e) {
                 throw new CommandFailedException("Command interrupted", e);
             }

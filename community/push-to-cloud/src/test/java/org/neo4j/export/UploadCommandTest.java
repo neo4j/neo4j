@@ -394,7 +394,7 @@ public class UploadCommandTest {
         String errorMessage = "The uploaded dump file contains deprecated indexes, "
                 + "which we are unable to import in the current version of Neo4j Aura. "
                 + "Please upgrade to the recommended index provider.";
-        String errorUrl = "https://aura.support.neo4j.com/";
+        String errorUrl = "https://support.neo4j.com";
         statusBody.Error = new AuraJsonMapper.ErrorBody(errorMessage, ERROR_REASON_UNSUPPORTED_INDEXES, errorUrl);
         ObjectMapper mapper = new ObjectMapper();
 

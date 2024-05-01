@@ -503,8 +503,8 @@ public class AuraClient {
         return new CommandFailedException("We encountered a problem while communicating to the Neo4j Aura system. \n"
                 + "You can re-try using the existing dump by running this command: \n"
                 + String.format(
-                        "neo4j-admin push-to-cloud --%s=%s --%s=%s",
-                        "dump", dump.toAbsolutePath(), "bolt-uri", boltURI));
+                        "neo4j-admin database upload --%s=%s --%s=%s neo4j",
+                        "from-path", dump.getParent().toAbsolutePath(), "to-uri", boltURI));
     }
 
     private CommandFailedException errorResponse(boolean verbose, HttpURLConnection connection, String errorDescription)
@@ -515,10 +515,10 @@ public class AuraClient {
 
     private CommandFailedException updatePluginErrorResponse(HttpURLConnection connection) throws IOException {
         commandResponseHandler.debugErrorResponse(true, connection);
-        return new CommandFailedException(
-                "We encountered a problem while communicating to the Neo4j Aura system. "
-                        + "Please check that you are using the latest version of the push-to-cloud plugin and upgrade if necessary. "
-                        + "If this problem persists after upgrading, please contact support and attach the logs shown below to your ticket in the support portal.");
+        return new CommandFailedException("We encountered a problem while communicating to the Neo4j Aura system. "
+                + "Please check that you are using the latest version of neo4j-admin database upload and upgrade if necessary. "
+                + "If this problem persists after upgrading, please contact support at https://support.neo4j.com and attach "
+                + "the logs shown below to your ticket in the support portal.");
     }
 
     private CommandFailedException validationFailureErrorResponse(HttpURLConnection connection, long size)

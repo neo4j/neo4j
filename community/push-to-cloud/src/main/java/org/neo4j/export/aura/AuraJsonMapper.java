@@ -92,7 +92,7 @@ public class AuraJsonMapper {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ErrorBody {
         private static final String DEFAULT_MESSAGE =
-                "an unexpected problem occurred, please contact customer support for assistance";
+                "an unexpected problem occurred, please contact customer support at: https://support.neo4j.com for assistance";
         private static final String DEFAULT_REASON = "UnknownError";
 
         private final String message;
