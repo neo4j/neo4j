@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
+import static org.neo4j.index.internal.gbptree.LatchCrabbingCoordination.DEFAULT_RESET_FREQUENCY;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
@@ -228,7 +229,7 @@ class RootLayerSupport {
             byte layerType)
             throws IOException {
         TreeWriterCoordination traversalMonitor =
-                new LatchCrabbingCoordination(latchService, leafNode.underflowThreshold());
+                new LatchCrabbingCoordination(latchService, leafNode.underflowThreshold(), DEFAULT_RESET_FREQUENCY);
         GBPTreeWriter<K, V> writer =
                 newWriter(layout, rootChangeMonitor, leafNode, internalNode, traversalMonitor, true, layerType);
         return initializeWriter(writer, ratioToKeepInLeftOnSplit, cursorContext);

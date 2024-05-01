@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.index.internal.gbptree.LatchCrabbingCoordination.DEFAULT_RESET_FREQUENCY;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,8 @@ class LatchCrabbingCoordinationTest {
     private static final int MERGE_THRESHOLD = 100;
 
     private final TreeNodeLatchService latchService = mock(TreeNodeLatchService.class);
-    private final LatchCrabbingCoordination coordination = new LatchCrabbingCoordination(latchService, MERGE_THRESHOLD);
+    private final LatchCrabbingCoordination coordination =
+            new LatchCrabbingCoordination(latchService, MERGE_THRESHOLD, DEFAULT_RESET_FREQUENCY);
 
     @BeforeEach
     void setUp() {

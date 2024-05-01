@@ -249,14 +249,6 @@ class LongSpinLatch {
         return (long) LOCK_BITS.getVolatile(this);
     }
 
-    /**
-     * @return if this latch is currently write locked, or if there's currently an ongoing
-     * {@link #acquireWrite()} call that awaits all reads to be released.
-     */
-    boolean hasWrite() {
-        return !NO_WRITE_LOCK.test(volatileGetBits());
-    }
-
     @Override
     public String toString() {
         long bits = volatileGetBits();
