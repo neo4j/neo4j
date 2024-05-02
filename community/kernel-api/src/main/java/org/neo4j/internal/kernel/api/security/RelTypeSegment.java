@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.internal.helpers.NameUtil;
+
 public record RelTypeSegment(String relType) implements Segment {
 
     @Override
@@ -36,7 +38,11 @@ public record RelTypeSegment(String relType) implements Segment {
 
     @Override
     public String toCypherSnippet() {
-        return String.format("RELATIONSHIP %s", nullToStar(relType));
+        if (relType == null) {
+            return "RELATIONSHIP *";
+        } else {
+            return String.format("RELATIONSHIP %s", NameUtil.escapeName(relType));
+        }
     }
 
     public static final RelTypeSegment ALL = new RelTypeSegment(null);

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.internal.helpers.NameUtil;
+
 public record LabelSegment(String label) implements Segment {
 
     @Override
@@ -31,7 +33,11 @@ public record LabelSegment(String label) implements Segment {
 
     @Override
     public String toCypherSnippet() {
-        return String.format("NODE %s", nullToStar(label));
+        if (label == null) {
+            return "NODE *";
+        } else {
+            return String.format("NODE %s", NameUtil.escapeName(label));
+        }
     }
 
     @Override

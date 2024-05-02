@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.security;
 
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.neo4j.internal.helpers.NameUtil;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -28,7 +29,9 @@ import org.neo4j.values.storable.Values;
 public interface PatternSegment extends Segment {
 
     default String labelsString() {
-        return labels().isEmpty() ? "" : labels().stream().sorted().collect(Collectors.joining("|", ":", ""));
+        return labels().isEmpty()
+                ? ""
+                : labels().stream().sorted().map(NameUtil::escapeName).collect(Collectors.joining("|", ":", ""));
     }
 
     default String nodeString() {
@@ -36,7 +39,7 @@ public interface PatternSegment extends Segment {
     }
 
     default String propertyString() {
-        return String.format("n.%s", property());
+        return String.format("n.%s", NameUtil.escapeName(property()));
     }
 
     Set<String> ALL_LABELS = Set.of();
