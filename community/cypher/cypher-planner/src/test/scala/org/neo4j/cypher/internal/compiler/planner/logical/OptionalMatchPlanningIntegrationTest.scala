@@ -1120,6 +1120,31 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     )
   }
 
+  test("should not project ORDER BY column without dependencies under Optional") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("DoesNotExist", 0)
+      .enableMinimumGraphStatistics()
+      .build()
+
+    val query =
+      """
+        |OPTIONAL MATCH (n:DoesNotExist)
+        |WHERE n.x = 123 AND n.y STARTS WITH 'hello'
+        |RETURN 123, count(*)
+        |ORDER BY 123
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .sort("123 ASC")
+      .aggregation(Seq("123 AS 123"), Seq("count(*) AS `count(*)`"))
+      .optional()
+      .filter("n.x = 123", "n.y STARTS WITH 'hello'")
+      .nodeByLabelScan("n", "DoesNotExist")
+      .build()
+  }
+
   def containsOuterHashJoin(plan: LogicalPlan): Boolean = {
     plan.folder.treeExists {
       case _: RightOuterHashJoin => true

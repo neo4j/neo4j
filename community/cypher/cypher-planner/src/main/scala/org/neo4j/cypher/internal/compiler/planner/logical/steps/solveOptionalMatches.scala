@@ -78,7 +78,11 @@ case object applyOptional extends OptionalSolver {
   ): OptionalSolver.Solver = {
     val innerContext: LogicalPlanningContext =
       context.withModifiedPlannerState(_.withFusedLabelInfo(enclosingQg.selections.labelInfo))
-    val inner = context.staticComponents.queryGraphSolver.plan(optionalQg, interestingOrderConfig, innerContext)
+    val inner = context.staticComponents.queryGraphSolver.plan(
+      optionalQg,
+      removeColumnsWithoutDependencies(interestingOrderConfig),
+      innerContext
+    )
     (lhs: LogicalPlan) =>
       val lhsSymbols = lhs.availableSymbols
       inner.allResults.iterator.map { inner =>
@@ -117,6 +121,19 @@ case object applyOptional extends OptionalSolver {
         // is not a fair comparison (as they cannot be rewritten to something cheaper).
         unnestOptional(applied).asInstanceOf[LogicalPlan]
       }
+  }
+
+  /**
+   * Projecting a column without dependencies under Optional might incorrectly set it to NULL.
+   */
+  private def removeColumnsWithoutDependencies(interestingOrderConfig: InterestingOrderConfig)
+    : InterestingOrderConfig = {
+    InterestingOrderConfig(
+      orderToReportAndSolve =
+        interestingOrderConfig
+          .orderToSolve // we don't verify solved InterestingOrder for Optional anyway
+          .mapOrderCandidates(_.takeWhile(column => column.dependencies.nonEmpty))
+    )
   }
 }
 

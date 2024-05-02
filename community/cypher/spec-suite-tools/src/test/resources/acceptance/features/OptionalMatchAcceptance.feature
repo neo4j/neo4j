@@ -141,3 +141,16 @@ Feature: OptionalMatchAcceptance
       | result |
       | []     |
     And no side effects
+
+  Scenario: optional match with ORDER BY literal
+    Given an empty graph
+    When executing query:
+      """
+      OPTIONAL MATCH (n:DoesNotExist {x: 1, y: 2})
+      RETURN 123, n, count(*)
+      ORDER BY 123
+      """
+    Then the result should be, in any order:
+      | 123 | n    | count(*) |
+      | 123 | null | 1        |
+    And no side effects
