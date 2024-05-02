@@ -84,9 +84,10 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
       )),
       Some(RepeatPathStepToMultiRelationshipRewriter),
       Some(RemoveUnusedGroupVariablesRewriter),
-      if (context.config.gpmShortestToLegacyShortestEnabled)
-        Some(StatefulShortestToFindShortestRewriter(solveds, anonymousVariableNameGenerator))
-      else None,
+      Option.when(context.config.gpmShortestToLegacyShortestEnabled)(StatefulShortestToFindShortestRewriter(
+        solveds,
+        anonymousVariableNameGenerator
+      )),
       Some(TrailToVarExpandRewriter(
         labelAndRelTypeInfos,
         otherAttributes.withAlso(solveds, cardinalities, effectiveCardinalities, providedOrders)
@@ -99,8 +100,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos)
       )),
       Some(unnestCartesianProduct),
-      if (context.eagerAnalyzer == CypherEagerAnalyzerOption.lp) None
-      else Some(cleanUpEager(
+      Option.when(context.eagerAnalyzer != CypherEagerAnalyzerOption.lp)(cleanUpEager(
         cardinalities,
         otherAttributes.withAlso(solveds, effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
       )),
@@ -120,10 +120,10 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
       ))),
       Some(pruningVarExpander(anonymousVariableNameGenerator, VarExpandRewritePolicy.default)),
       // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
-      if (readOnly) Some(bfsAggregationRemover) else None,
+      Option.when(readOnly)(bfsAggregationRemover),
       // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
       // Parallel runtime does currently not support PartialSort/PartialTop, which is introduced in bfsDepthOrderer
-      if (context.executionModel.providedOrderPreserving && readOnly) Some(bfsDepthOrderer) else None,
+      Option.when(context.executionModel.providedOrderPreserving && readOnly)(bfsDepthOrderer),
       Some(useTop),
       Some(skipInPartialSort),
       Some(simplifySelections),
