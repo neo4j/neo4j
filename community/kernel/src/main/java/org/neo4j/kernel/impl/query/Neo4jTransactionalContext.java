@@ -54,6 +54,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     private final InternalTransaction transaction;
     private KernelTransaction kernelTransaction;
     private KernelStatement statement;
+    private final DatabaseMode dbMode;
     private QueryRegistry queryRegistry;
     private final ElementIdMapper elementIdMapper;
     private long transactionSequenceNumber;
@@ -86,7 +87,27 @@ public class Neo4jTransactionalContext implements TransactionalContext {
                 executingQuery,
                 transactionFactory,
                 null,
-                queryExecutionConfiguration);
+                queryExecutionConfiguration,
+                DatabaseMode.SINGLE);
+    }
+
+    public Neo4jTransactionalContext(
+            GraphDatabaseQueryService graph,
+            InternalTransaction transaction,
+            KernelStatement initialStatement,
+            ExecutingQuery executingQuery,
+            KernelTransactionFactory transactionFactory,
+            QueryExecutionConfiguration queryExecutionConfiguration,
+            TransactionalContext.DatabaseMode dbMode) {
+        this(
+                graph,
+                transaction,
+                initialStatement,
+                executingQuery,
+                transactionFactory,
+                null,
+                queryExecutionConfiguration,
+                dbMode);
     }
 
     private Neo4jTransactionalContext(
@@ -96,7 +117,8 @@ public class Neo4jTransactionalContext implements TransactionalContext {
             ExecutingQuery executingQuery,
             KernelTransactionFactory transactionFactory,
             OnCloseCallback onClose,
-            QueryExecutionConfiguration queryExecutionConfiguration) {
+            QueryExecutionConfiguration queryExecutionConfiguration,
+            TransactionalContext.DatabaseMode dbMode) {
         this.graph = graph;
         this.transactionType = transaction.transactionType();
         this.securityContext = transaction.securityContext();
@@ -107,6 +129,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         this.namedDatabaseId = initialStatement.namedDatabaseId();
         this.kernelTransaction = transaction.kernelTransaction();
         this.statement = initialStatement;
+        this.dbMode = dbMode;
         this.queryRegistry = statement.queryRegistry();
         this.elementIdMapper = transaction.elementIdMapper();
         this.transactionSequenceNumber = kernelTransaction.getTransactionSequenceNumber();
@@ -298,7 +321,8 @@ public class Neo4jTransactionalContext implements TransactionalContext {
                     executingQuery,
                     transactionFactory,
                     onClose,
-                    queryExecutionConfiguration);
+                    queryExecutionConfiguration,
+                    dbMode);
         } catch (Throwable outer) {
             try {
                 IOUtils.closeAll(onClose, newTransaction);
@@ -376,8 +400,8 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     }
 
     @Override
-    public boolean targetsComposite() {
-        return false;
+    public DatabaseMode databaseMode() {
+        return dbMode;
     }
 
     @Override

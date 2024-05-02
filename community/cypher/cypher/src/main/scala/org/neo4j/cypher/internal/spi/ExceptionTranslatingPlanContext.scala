@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -211,4 +212,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
     new ExceptionTranslatingPlanContext(
       inner.withNotificationLogger(notificationLogger)
     )
+
+  override def databaseMode: DatabaseMode = translateException(
+    tokenNameLookup,
+    inner.databaseMode
+  )
 }

@@ -106,6 +106,7 @@ import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
 import org.neo4j.logging.InternalLog
 import org.neo4j.monitoring
 import org.neo4j.notifications.MissingParametersNotification
@@ -282,7 +283,7 @@ case class CypherPlanner(
       preParsedQuery.options.offset,
       tracer,
       transactionalContextWrapper.cancellationChecker,
-      transactionalContext.targetsComposite
+      DatabaseMode.COMPOSITE.equals(transactionalContext.databaseMode())
     )
 
     // The parser populates the notificationLogger as a side-effect of its work, therefore

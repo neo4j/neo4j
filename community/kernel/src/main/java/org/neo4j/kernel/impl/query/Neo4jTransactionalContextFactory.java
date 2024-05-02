@@ -33,6 +33,23 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     private final Neo4jTransactionalContext.Creator contextCreator;
 
     public static TransactionalContextFactory create(
+            Supplier<GraphDatabaseQueryService> queryServiceSupplier,
+            KernelTransactionFactory transactionFactory,
+            TransactionalContext.DatabaseMode dbMode) {
+        Supplier<GraphDatabaseQueryService> queryService = lazySingleton(queryServiceSupplier);
+        Neo4jTransactionalContext.Creator contextCreator =
+                (tx, initialStatement, executingQuery, queryExecutionConfiguration) -> new Neo4jTransactionalContext(
+                        queryService.get(),
+                        tx,
+                        initialStatement,
+                        executingQuery,
+                        transactionFactory,
+                        queryExecutionConfiguration,
+                        dbMode);
+        return new Neo4jTransactionalContextFactory(contextCreator);
+    }
+
+    public static TransactionalContextFactory create(
             Supplier<GraphDatabaseQueryService> queryServiceSupplier, KernelTransactionFactory transactionFactory) {
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton(queryServiceSupplier);
         Neo4jTransactionalContext.Creator contextCreator =

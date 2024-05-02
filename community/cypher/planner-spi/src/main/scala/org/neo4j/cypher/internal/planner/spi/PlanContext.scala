@@ -24,6 +24,17 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
 /**
+ * This is used to determine the kind of database that is being used.
+ * SINGLE: A standard database
+ * COMPOSITE: A composite database
+ * SHARDED: A sharded database (which means properties are stored in a separate store and not in the graph store)
+ */
+object DatabaseMode extends Enumeration {
+  type DatabaseMode = Value
+  val SINGLE, COMPOSITE, SHARDED = Value
+}
+
+/**
  * PlanContext is an internal access layer to the graph that is solely used during plan building.
  *
  * As such it is similar to QueryContext. The reason for separating both interfaces is that we
@@ -191,4 +202,9 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
    * Return a copy with the given notificationLogger
    */
   def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlanContext
+
+  /**
+   * Return the database mode
+   */
+  def databaseMode: DatabaseMode.DatabaseMode
 }

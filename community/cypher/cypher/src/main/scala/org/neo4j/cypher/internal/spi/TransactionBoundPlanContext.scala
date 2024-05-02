@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.EventuallyConsistent
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
@@ -55,6 +57,7 @@ import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.InternalLog
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -515,4 +518,10 @@ class TransactionBoundPlanContext(
 
   override def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlanContext =
     new TransactionBoundPlanContext(tc, notificationLogger, graphStatistics)
+
+  override def databaseMode: DatabaseMode = tc.kernelTransactionalContext.databaseMode match {
+    case TransactionalContext.DatabaseMode.SINGLE    => DatabaseMode.SINGLE
+    case TransactionalContext.DatabaseMode.COMPOSITE => DatabaseMode.COMPOSITE
+    case TransactionalContext.DatabaseMode.SHARDED   => DatabaseMode.SHARDED
+  }
 }

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -155,4 +156,6 @@ class NotImplementedPlanContext extends PlanContext {
   override def procedureSignatureVersion: Long = ???
 
   override def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlanContext = this
+
+  override def databaseMode: DatabaseMode = ???
 }

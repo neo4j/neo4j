@@ -148,7 +148,7 @@ public class DelegatingTransactionalContext implements TransactionalContext {
     }
 
     @Override
-    public boolean targetsComposite() {
-        return inner.targetsComposite();
+    public DatabaseMode databaseMode() {
+        return inner.databaseMode();
     }
 }

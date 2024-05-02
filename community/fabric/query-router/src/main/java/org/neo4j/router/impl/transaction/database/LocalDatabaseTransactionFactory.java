@@ -32,11 +32,13 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.UnavailableException;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.router.QueryRouterException;
@@ -75,8 +77,8 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
         }
 
         var queryExecutionEngine = resolver.resolveDependency(QueryExecutionEngine.class);
-
-        TransactionalContextFactory transactionalContextFactory = getTransactionalContextFactory(location, resolver);
+        TransactionalContextFactory transactionalContextFactory =
+                getTransactionalContextFactory(location, resolver, dbMode(location));
 
         bookmarkManager
                 .getBookmarkForLocal(location)
@@ -97,10 +99,11 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
     }
 
     protected TransactionalContextFactory getTransactionalContextFactory(
-            Location.Local location, DependencyResolver resolver) {
+            Location.Local location, DependencyResolver resolver, TransactionalContext.DatabaseMode dbMode) {
         return Neo4jTransactionalContextFactory.create(
                 resolver.provideDependency(GraphDatabaseQueryService.class),
-                resolver.resolveDependency(KernelTransactionFactory.class));
+                resolver.resolveDependency(KernelTransactionFactory.class),
+                dbMode);
     }
 
     protected InternalTransaction beginInternalTransaction(
@@ -139,5 +142,13 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
 
     protected static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
         return () -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found");
+    }
+
+    private TransactionalContext.DatabaseMode dbMode(Location.Local location) {
+        if (location.databaseReference() instanceof DatabaseReferenceImpl.SPD) {
+            return TransactionalContext.DatabaseMode.SHARDED;
+        } else {
+            return TransactionalContext.DatabaseMode.SINGLE;
+        }
     }
 }

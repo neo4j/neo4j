@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
@@ -193,5 +194,7 @@ class CypherQueryObfuscatorFactory {
     override def procedureSignatureVersion: Long = -1
 
     override def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlanContext = this
+
+    override def databaseMode: DatabaseMode = fail()
   }
 }

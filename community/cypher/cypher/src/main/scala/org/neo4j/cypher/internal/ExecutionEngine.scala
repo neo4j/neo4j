@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.TransactionalContext.DatabaseMode
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
@@ -177,7 +178,7 @@ abstract class ExecutionEngine(
         notificationLogger,
         profile,
         couldContainSensitiveFields,
-        context.targetsComposite()
+        DatabaseMode.COMPOSITE.equals(context.databaseMode())
       )
       doExecute(
         preParsedQuery,

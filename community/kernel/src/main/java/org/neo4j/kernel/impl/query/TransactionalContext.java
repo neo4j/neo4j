@@ -124,5 +124,13 @@ public interface TransactionalContext {
 
     QueryExecutionConfiguration queryExecutingConfiguration();
 
-    boolean targetsComposite();
+    default DatabaseMode databaseMode() {
+        return DatabaseMode.SINGLE;
+    }
+
+    enum DatabaseMode {
+        SINGLE,
+        COMPOSITE,
+        SHARDED
+    }
 }
