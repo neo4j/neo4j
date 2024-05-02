@@ -23,6 +23,7 @@ import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.EMPTY_TEXT_ARRAY;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.kernel.impl.util.ReadAndDeleteTransactionConflictException;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.ValueRepresentation;
@@ -199,6 +201,30 @@ public final class ValuePopulation {
         return builder.buildAndClose();
     }
 
+    public static NodeValue nodeValue(
+            long id,
+            DbAccess dbAccess,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            MapValueBuilder readProperties,
+            IntSet readPropertyTokens) {
+        dbAccess.singleNode(id, nodeCursor);
+        final var elementId = dbAccess.elementIdMapper().nodeElementId(id);
+
+        if (!nodeCursor.next()) {
+            // the node has probably been deleted, we still return it but just a bare id
+            return VirtualValues.nodeValue(id, elementId, EMPTY_TEXT_ARRAY, EMPTY_MAP, true);
+        } else {
+            nodeCursor.properties(
+                    propertyCursor, PropertySelection.ALL_PROPERTIES.excluding(readPropertyTokens::contains));
+            return VirtualValues.nodeValue(
+                    id,
+                    elementId,
+                    labels(dbAccess, nodeCursor.labels()),
+                    properties(propertyCursor, dbAccess, readProperties));
+        }
+    }
+
     private static NodeValue nodeValue(
             long id, DbAccess dbAccess, NodeCursor nodeCursor, PropertyCursor propertyCursor) {
         dbAccess.singleNode(id, nodeCursor);
@@ -214,6 +240,37 @@ public final class ValuePopulation {
             nodeCursor.properties(propertyCursor);
             return VirtualValues.nodeValue(
                     id, elementId, labels(dbAccess, nodeCursor.labels()), properties(propertyCursor, dbAccess));
+        }
+    }
+
+    public static RelationshipValue relationshipValue(
+            long id,
+            DbAccess dbAccess,
+            RelationshipScanCursor relCursor,
+            PropertyCursor propertyCursor,
+            MapValueBuilder readProperties,
+            IntSet readPropertyTokens) {
+        dbAccess.singleRelationship(id, relCursor);
+        final var idMapper = dbAccess.elementIdMapper();
+        final var elementId = idMapper.relationshipElementId(id);
+
+        if (!relCursor.next()) {
+            // the relationship has probably been deleted, we still return it but just a bare id
+            return VirtualValues.relationshipValue(
+                    id, elementId, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true);
+        } else {
+            // Bolt doesn't require start and end node to be populated
+            final var start = VirtualValues.node(relCursor.sourceNodeReference(), idMapper);
+            final var end = VirtualValues.node(relCursor.targetNodeReference(), idMapper);
+            relCursor.properties(
+                    propertyCursor, PropertySelection.ALL_PROPERTIES.excluding(readPropertyTokens::contains));
+            return VirtualValues.relationshipValue(
+                    id,
+                    elementId,
+                    start,
+                    end,
+                    Values.stringValue(dbAccess.relationshipTypeName(relCursor.type())),
+                    properties(propertyCursor, dbAccess, readProperties));
         }
     }
 
@@ -245,7 +302,7 @@ public final class ValuePopulation {
         }
     }
 
-    private static TextArray labels(DbAccess dbAccess, TokenSet labelsTokens) {
+    public static TextArray labels(DbAccess dbAccess, TokenSet labelsTokens) {
         String[] labels = new String[labelsTokens.numberOfTokens()];
         for (int i = 0; i < labels.length; i++) {
             labels[i] = dbAccess.nodeLabelName(labelsTokens.token(i));
@@ -254,7 +311,10 @@ public final class ValuePopulation {
     }
 
     private static MapValue properties(PropertyCursor propertyCursor, DbAccess dbAccess) {
-        MapValueBuilder builder = new MapValueBuilder();
+        return properties(propertyCursor, dbAccess, new MapValueBuilder());
+    }
+
+    private static MapValue properties(PropertyCursor propertyCursor, DbAccess dbAccess, MapValueBuilder builder) {
         while (propertyCursor.next()) {
             builder.add(dbAccess.propertyKeyName(propertyCursor.propertyKey()), propertyCursor.propertyValue());
         }

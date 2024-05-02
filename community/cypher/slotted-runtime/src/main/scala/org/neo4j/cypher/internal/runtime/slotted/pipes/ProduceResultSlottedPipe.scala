@@ -45,15 +45,16 @@ case class ProduceResultSlottedPipe(source: Pipe, columns: Seq[(String, Expressi
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats
     if (state.prePopulateResults) {
-      val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
       val cursors =
         state.query.createExpressionCursors() // NOTE: We need to create these through the QueryContext so that they get a profiling tracer if profiling is enabled
+      val newState = state.withNewCursors(cursors)
+      val memoryTracker = newState.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
       val nodeCursor = cursors.nodeCursor
       val relCursor = cursors.relationshipScanCursor
       val propertyCursor = cursors.propertyCursor
       input.map {
         original =>
-          produceAndPopulate(original, state, nodeCursor, relCursor, propertyCursor, memoryTracker)
+          produceAndPopulate(original, newState, nodeCursor, relCursor, propertyCursor, memoryTracker)
           original
       }
     } else {

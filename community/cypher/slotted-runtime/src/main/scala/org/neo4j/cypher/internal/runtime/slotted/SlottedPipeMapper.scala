@@ -1075,8 +1075,11 @@ class SlottedPipeMapper(
     }
 
     val pipe = plan match {
-      case ProduceResult(_, columns) =>
-        val runtimeColumns = createProjectionsForResult(columns, slots)
+      case ProduceResult(_, columns, cachedProperties) =>
+        val cached = cachedProperties.map {
+          case (v, es) => v.name -> es.map(e => LazyPropertyKey(e.propertyKey)(semanticTable) -> convertExpressions(e))
+        }
+        val runtimeColumns = createProjectionsForResult(columns, slots, cached)
         ProduceResultSlottedPipe(source, runtimeColumns)(id)
 
       case Expand(_, from, dir, types, to, relName, ExpandAll) =>
@@ -1754,7 +1757,7 @@ class SlottedPipeMapper(
 
       case RollUpApply(_, rhsPlan, collectionName, identifierToCollect) =>
         val rhsSlots = slotConfigs(rhsPlan.id)
-        val identifierToCollectExpression = createProjectionForVariable(rhsSlots)(identifierToCollect)
+        val identifierToCollectExpression = createProjectionForVariable(rhsSlots, identifierToCollect)
         val collectionRefSlotOffset = slots.getReferenceOffsetFor(collectionName)
         RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset, identifierToCollectExpression, slots)(id = id)
 
@@ -2261,35 +2264,62 @@ object SlottedPipeMapper {
     }
   }
 
-  def createProjectionsForResult(columns: Seq[LogicalVariable], slots: SlotConfiguration): Seq[(String, Expression)] = {
+  def createProjectionsForResult(
+    columns: Seq[LogicalVariable],
+    slots: SlotConfiguration,
+    cachedProps: Map[String, Set[(LazyPropertyKey, Expression)]]
+  ): Seq[(String, Expression)] = {
     val runtimeColumns: Seq[(String, commands.expressions.Expression)] =
-      columns.map(createProjectionForVariable(slots))
+      columns.map(c => createProjectionForVariable(slots, c, cachedProps.get(c.name)))
     runtimeColumns
   }
 
-  private def createProjectionForVariable(slots: SlotConfiguration)(variable: LogicalVariable): (String, Expression) = {
+  private def createProjectionForVariable(
+    slots: SlotConfiguration,
+    variable: LogicalVariable,
+    cachedProperties: Option[Set[(LazyPropertyKey, Expression)]] = None
+  ): (String, Expression) = {
     val identifier = variable.name
     val slot = slots.get(identifier).getOrElse(
       throw new InternalException(s"Did not find `$identifier` in the slot configuration")
     )
-    identifier -> SlottedPipeMapper.projectSlotExpression(slot)
+    identifier -> SlottedPipeMapper.projectSlotExpression(slot, cachedProperties)
   }
 
-  private def projectSlotExpression(slot: Slot): commands.expressions.Expression = slot match {
-    case LongSlot(offset, false, CTNode) =>
-      slotted.expressions.NodeFromSlot(offset)
-    case LongSlot(offset, true, CTNode) =>
-      slotted.expressions.NullCheck(offset, slotted.expressions.NodeFromSlot(offset))
-    case LongSlot(offset, false, CTRelationship) =>
-      slotted.expressions.RelationshipFromSlot(offset)
-    case LongSlot(offset, true, CTRelationship) =>
-      slotted.expressions.NullCheck(offset, slotted.expressions.RelationshipFromSlot(offset))
+  private def projectSlotExpression(
+    slot: Slot,
+    cachedProperties: Option[Set[(LazyPropertyKey, Expression)]] = None
+  ): commands.expressions.Expression = {
+    def createNodeFromSlot(offset: Int) = {
+      cachedProperties match {
+        case Some(cp) =>
+          slotted.expressions.ValuePopulatingNodeFromSlot(offset, cp.toArray)
+        case None => slotted.expressions.NodeFromSlot(offset)
+      }
+    }
+    def createRelationshipFromSlot(offset: Int) = {
+      cachedProperties match {
+        case Some(cp) =>
+          slotted.expressions.ValuePopulatingRelationshipFromSlot(offset, cp.toArray)
+        case None => slotted.expressions.RelationshipFromSlot(offset)
+      }
+    }
 
-    case RefSlot(offset, _, _) =>
-      slotted.expressions.ReferenceFromSlot(offset)
+    slot match {
+      case LongSlot(offset, false, CTNode) => createNodeFromSlot(offset)
+      case LongSlot(offset, true, CTNode) =>
+        slotted.expressions.NullCheck(offset, createNodeFromSlot(offset))
+      case LongSlot(offset, false, CTRelationship) =>
+        createRelationshipFromSlot(offset)
+      case LongSlot(offset, true, CTRelationship) =>
+        slotted.expressions.NullCheck(offset, createRelationshipFromSlot(offset))
 
-    case _ =>
-      throw new InternalException(s"Do not know how to project $slot")
+      case RefSlot(offset, _, _) =>
+        slotted.expressions.ReferenceFromSlot(offset)
+
+      case _ =>
+        throw new InternalException(s"Do not know how to project $slot")
+    }
   }
 
   /**

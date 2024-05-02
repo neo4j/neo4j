@@ -231,6 +231,29 @@ class QueryState(
     )
   }
 
+  def withNewCursors(cursors: ExpressionCursors): QueryState = {
+    new QueryState(
+      query,
+      resources,
+      params,
+      cursors,
+      queryIndexes,
+      selectivityTrackerStorage,
+      nodeLabelTokenReadSession,
+      relTypeTokenReadSession,
+      expressionVariables,
+      subscriber,
+      queryMemoryTracker,
+      memoryTrackerForOperatorProvider,
+      decorator,
+      initialContext,
+      cachedIn,
+      lenientCreateRelationship,
+      prePopulateResults,
+      input
+    )
+  }
+
   def setExecutionContextFactory(rowFactory: CypherRowFactory): Unit = {
     _rowFactory = rowFactory
   }
