@@ -85,13 +85,13 @@ sealed trait ConflictFinder {
   private def propertyConflicts(
     readsAndWrites: ReadsAndWrites,
     leftMostLeaf: LogicalPlan,
-    writtenProperties: ReadsAndWritesFinder.Sets => Iterator[(Option[PropertyKeyName], Seq[PlanWithAccessor])],
+    writtenProperties: ReadsAndWritesFinder.Sets => Iterator[(Option[PropertyKeyName], Set[PlanWithAccessor])],
     plansReadingProperty: (ReadsAndWritesFinder.Reads, Option[PropertyKeyName]) => Iterator[PlanWithAccessor]
   )(implicit planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
     for {
       (prop, writePlans) <- writtenProperties(readsAndWrites.writes.sets)
-      read @ PlanWithAccessor(readPlan, _) <- plansReadingProperty(readsAndWrites.reads, prop)
-      write @ PlanWithAccessor(writePlan, _) <- writePlans.iterator
+      read @ PlanWithAccessor(Ref(readPlan), _) <- plansReadingProperty(readsAndWrites.reads, prop)
+      write @ PlanWithAccessor(Ref(writePlan), _) <- writePlans.iterator
 
       conflictType = planChildrenLookup.mostDownstreamPlan(readPlan, writePlan) match {
         case `readPlan` => WriteReadConflict
@@ -127,8 +127,8 @@ sealed trait ConflictFinder {
   planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
     for {
       (label, writePlans) <- readsAndWrites.writes.sets.writtenLabels.iterator
-      read @ PlanWithAccessor(readPlan, _) <- readsAndWrites.reads.plansReadingLabel(label)
-      write @ PlanWithAccessor(writePlan, _) <- writePlans.iterator
+      read @ PlanWithAccessor(Ref(readPlan), _) <- readsAndWrites.reads.plansReadingLabel(label)
+      write @ PlanWithAccessor(Ref(writePlan), _) <- writePlans.iterator
       if !distinctConflictOnSameSymbol(read, write)
       if isValidConflict(readPlan, writePlan, leftMostLeaf)
     } yield {
@@ -287,7 +287,7 @@ sealed trait ConflictFinder {
     ) => Map[LogicalVariable, PossibleDeleteConflictPlans]
   )(implicit planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
     for {
-      (Ref(writePlan), deletedEntities) <- deletedEntities(readsAndWrites.writes.deletes).iterator
+      (wpref @ Ref(writePlan), deletedEntities) <- deletedEntities(readsAndWrites.writes.deletes).iterator
 
       (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, plansThatReferenceVariable), conflictType)) <-
         deleteReadVariables(
@@ -298,7 +298,7 @@ sealed trait ConflictFinder {
         ).iterator
 
       // Filter out Delete vs Create conflicts
-      readPlans = plansThatIntroduceVar.filter(ptiv => canConflictWithCreateOrDelete(ptiv.plan))
+      readPlans = plansThatIntroduceVar.filter(ptiv => canConflictWithCreateOrDelete(ptiv.plan.value))
       if readPlans.nonEmpty
 
       deletedEntity <- deletedEntities.iterator
@@ -309,14 +309,14 @@ sealed trait ConflictFinder {
 
       // For a ReadWriteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
       // For a WriteReadConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
-      readPlan <- conflictType match {
+      rpRef @ Ref(readPlan) <- conflictType match {
         case ReadWriteConflict => plansThatReferenceVariable.iterator
         case WriteReadConflict => readPlans.iterator.map(_.plan)
       }
       // For delete, we can only disregard ReadWriteConflicts. We therefore have to keep all WriteReadConflicts.
       if conflictType == WriteReadConflict || !distinctConflictOnSameSymbol(
-        PlanWithAccessor(readPlan, Some(variable)),
-        PlanWithAccessor(writePlan, Some(deletedEntity))
+        PlanWithAccessor(rpRef, Some(variable)),
+        PlanWithAccessor(wpref, Some(deletedEntity))
       )
       if isValidConflict(readPlan, writePlan, leftMostLeaf)
     } yield {
@@ -327,7 +327,7 @@ sealed trait ConflictFinder {
   private def deleteExpressionConflicts(
     readsAndWrites: ReadsAndWrites,
     leftMostLeaf: LogicalPlan,
-    deleteExpressions: ReadsAndWritesFinder.Deletes => Iterator[LogicalPlan],
+    deleteExpressions: ReadsAndWritesFinder.Deletes => Iterator[Ref[LogicalPlan]],
     possibleDeleteConflictPlans: ReadsAndWritesFinder.Reads => Map[LogicalVariable, PossibleDeleteConflictPlans],
     possibleDeleteConflictPlanSnapshots: (
       ReadsAndWritesFinder.Deletes,
@@ -335,7 +335,7 @@ sealed trait ConflictFinder {
     ) => Map[LogicalVariable, PossibleDeleteConflictPlans]
   )(implicit planChildrenLookup: PlanChildrenLookup): Iterator[ConflictingPlanPair] = {
     for {
-      writePlan <-
+      Ref(writePlan) <-
         deleteExpressions(
           readsAndWrites.writes.deletes
         ) ++ readsAndWrites.writes.deletes.plansThatDeleteUnknownTypeExpressions.iterator
@@ -350,7 +350,7 @@ sealed trait ConflictFinder {
 
       // For a ReadWriteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
       // For a WriteReadConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
-      readPlan <- conflictType match {
+      Ref(readPlan) <- conflictType match {
         case ReadWriteConflict => plansThatReferenceVariable.iterator
         case WriteReadConflict => plansThatIntroduceVar.iterator.map(_.plan)
       }
@@ -370,7 +370,7 @@ sealed trait ConflictFinder {
           wholePlan.folder.findAllByClass[UpdatingPlan].iterator.filterNot(planChildrenLookup.isInTransactionalApply)
         txPlan <- readsAndWrites.reads.callInTxPlans.iterator
       } yield {
-        ConflictingPlanPair(Ref(txPlan), Ref(updatingPlan), set1(EagernessReason.WriteAfterCallInTransactions))
+        ConflictingPlanPair(txPlan, Ref(updatingPlan), set1(EagernessReason.WriteAfterCallInTransactions))
       }
     } else Iterator.empty
   }
@@ -400,7 +400,7 @@ sealed trait ConflictFinder {
    * @param predicatesOnDeletedEntity all predicates on the deleted node
    */
   private def deleteOverlaps(
-    plansThatIntroduceVariable: Seq[PlanThatIntroducesVariable],
+    plansThatIntroduceVariable: Set[PlanThatIntroducesVariable],
     predicatesOnDeletedEntity: Seq[Expression]
   ): Boolean = {
     val readEntityPredicateCombinations =
@@ -576,8 +576,8 @@ sealed trait ConflictFinder {
       case Some(variable) =>
         write.accessor.contains(variable) && isGloballyUniqueAndCursorInitialized(
           variable,
-          read.plan,
-          write.plan
+          read.plan.value,
+          write.plan.value
         )
       case None => false
     }
