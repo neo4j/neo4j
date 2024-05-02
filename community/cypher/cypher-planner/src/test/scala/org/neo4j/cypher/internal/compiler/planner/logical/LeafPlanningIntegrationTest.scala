@@ -1791,7 +1791,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .build()
   }
 
-  test("should prefer node by label scan when one label has much lower cardinality") {
+  test("should not prefer node by label scan when one label has much lower cardinality") {
     val aCardinality = 25_000_000
     val bCardinality = 10
     val planner = plannerForIntersectionScanTests(aCardinality, bCardinality)
@@ -1799,10 +1799,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (n:A&B) RETURN count(n) AS result"
     val plan = planner.plan(q).stripProduceResults
 
-    plan.leftmostLeaf shouldBe a[NodeByLabelScan]
+    plan.leftmostLeaf shouldBe a[IntersectionNodeByLabelsScan]
   }
 
-  test("should prefer node by label scan when one label has cardinality <20% of the other label") {
+  test("should not prefer node by label scan when one label has cardinality <20% of the other label") {
     val aCardinality = 25_000_000
     val bCardinality = aCardinality * 0.2 - 1
     val planner = plannerForIntersectionScanTests(aCardinality, bCardinality)
@@ -1810,7 +1810,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val q = "MATCH (n:A&B) RETURN count(n) AS result"
     val plan = planner.plan(q).stripProduceResults
 
-    plan.leftmostLeaf shouldBe a[NodeByLabelScan]
+    plan.leftmostLeaf shouldBe a[IntersectionNodeByLabelsScan]
   }
 
   test("should prefer intersection scan when one label has cardinality >20% of the other label") {

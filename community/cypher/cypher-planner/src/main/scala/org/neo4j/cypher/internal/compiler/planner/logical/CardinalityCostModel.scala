@@ -341,50 +341,14 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
         costForThisPlan + lhsCost + rhsCost
 
       case IntersectionNodeByLabelsScan(_, labels, _, _) =>
-        /*
-        At runtime, intersection scan works by creating cursors for each label and advancing them
-        until they all point to the same node id (match found) or one of them is exhausted and no
-        more matches can be found.
-        The worst-case scenario is when the lowest node id has all the labels and all cursors must
-        be exhausted completely:
-        +------+------+------+
-        |  A   |  B   |  C   |
-        +------+------+------+
-        | -> 1 |      |      |
-        |    2 |      | -> 2 |
-        |      | -> 3 |    3 |
-        |  ... |  ... |  ... |
-        |  123 |  123 |  123 |
-        +------+------+------+
-        All it takes for this scenario is a single CREATE (:A:B:C), as the newest node is likely to
-        get the highest id.
-
-        Assuming the worst-case, the cost of scanning through all cursors is then INDEX_SCAN_COST_PER_ROW * sum(labelCardinalities).
-        Or:
-          INDEX_SCAN_COST_PER_ROW * minLabelCardinality +
-            INDEX_SCAN_COST_PER_ROW * sum(labelCardinalitiesSansMin)
-
-        Comparing it to NodeByLabelScan+Filter:
-          INDEX_SCAN_COST_PER_ROW * minLabelCardinality +
-            Cost(Filter(HasLabel(...))) * minLabelCardinality
-
-        In both cases we have to scan minLabelCardinality rows, but then we do filtering differently.
-        Currently we assign the same INDEX_SCAN_COST_PER_ROW for both scanning and HasLabel filter,
-        however benchmarking shows that scanning is actually about 5x faster. We'll give the filtering
-        part of intersection scan a discount, to get a fairer comparison.
-
-        In the case of two labels, this means we'll prefer intersection scan when cardinality of label
-        with fewer rows is >20% of cardinality of the other label.
-         */
-
+        // We don't use the outgoing cardinality to compute the cost here since for doing the intersection
+        // scan we will need to exhaust at least the label with the smallest cardinality to find all intersecting nodes.
+        // For example, given (a:A&B) where we have 10 nodes with label A, 100 nodes with label B but only 1 node with A&B.
+        // Using a cardinality of 1 to compute the cost would underestimate the work that is needed since it will at least
+        // need to visit all 10 A nodes to find all the intersecting nodes.
+        val rowsToProcess = labels.map(l => statistics.nodesWithLabelCardinality(semanticTable.id(l))).min
         val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)
-        val labelCardinalities = labels.map(l => statistics.nodesWithLabelCardinality(semanticTable.id(l)))
-        val minLabelCardinality = labelCardinalities.min
-        val otherLabelsCardinality = labelCardinalities.sum(Cardinality.NumericCardinality) - minLabelCardinality
-        val scanToFilterCostRatio = 1.0 / 5.0
-
-        minLabelCardinality * rowCost +
-          otherLabelsCardinality * rowCost * scanToFilterCostRatio
+        rowsToProcess * rowCost
 
       case _ =>
         val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)

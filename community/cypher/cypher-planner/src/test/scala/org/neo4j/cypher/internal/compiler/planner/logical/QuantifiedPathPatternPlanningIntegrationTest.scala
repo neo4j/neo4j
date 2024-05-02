@@ -1473,8 +1473,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.expandAll("(p)-[r2:REL]->(q)")
       .|.filter("p:P")
       .|.argument("p")
-      .filter("x:X", "x:M")
-      .nodeByLabelScan("x", "P")
+      .intersectionNodeByLabelsScan("x", Seq("M", "P", "X"))
       .build()
   }
 
