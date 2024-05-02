@@ -514,6 +514,16 @@ final case class GraphDirectReference(catalogName: CatalogName)(val position: In
 
   override def dependencies: Set[LogicalVariable] = Set.empty
   override def isConstantForQuery: Boolean = true
+
+  override def equals(other: Any): Boolean = other match {
+    case GraphDirectReference(otherName) =>
+      catalogName.equals(otherName)
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    catalogName.hashCode()
+  }
 }
 
 final case class GraphFunctionReference(functionInvocation: FunctionInvocation)(

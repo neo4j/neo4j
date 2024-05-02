@@ -29,7 +29,7 @@ import org.scalatestplus.mockito.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
 
-  def create(): BaseContext = {
+  def create(outerTargetsComposite: Boolean = false, sessionDatabase: String = null): BaseContext = {
     new BaseContext {
       override def tracer: CompilationPhaseTracer = NO_TRACING
 
@@ -48,6 +48,10 @@ object ContextHelper extends MockitoSugar {
       override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
 
       override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
+
+      override def targetsComposite: Boolean = outerTargetsComposite
+
+      override def sessionDatabaseName: String = sessionDatabase
     }
   }
 }

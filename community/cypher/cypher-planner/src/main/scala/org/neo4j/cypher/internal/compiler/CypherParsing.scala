@@ -59,7 +59,8 @@ class CypherParsing(
     params: MapValue,
     cancellationChecker: CancellationChecker,
     resolver: Option[ProcedureSignatureResolver] = None,
-    targetsComposite: Boolean
+    targetsComposite: Boolean,
+    sessionDatabase: String
   ): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
@@ -70,7 +71,9 @@ class CypherParsing(
       offset,
       monitors,
       cancellationChecker,
-      internalSyntaxUsageStats
+      internalSyntaxUsageStats,
+      targetsComposite,
+      sessionDatabase
     )
     val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint)
 

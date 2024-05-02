@@ -127,6 +127,9 @@ class FabricParsingPropertyTest extends CypherFunSuite
           override val errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
           override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
           override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
+
+          override def targetsComposite: Boolean = false
+          override def sessionDatabaseName: String = "ignore"
         }
 
         try {

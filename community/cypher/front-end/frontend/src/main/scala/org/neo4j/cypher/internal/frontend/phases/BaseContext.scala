@@ -34,4 +34,8 @@ trait BaseContext {
   def cancellationChecker: CancellationChecker
 
   def internalSyntaxUsageStats: InternalSyntaxUsageStats
+
+  def targetsComposite: Boolean
+  def sessionDatabaseName: String
+
 }

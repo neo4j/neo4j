@@ -221,7 +221,8 @@ case class CypherPlanner(
     offset: InputPosition,
     tracer: CompilationPhaseTracer,
     cancellationChecker: CancellationChecker,
-    targetsComposite: Boolean
+    targetsComposite: Boolean,
+    sessionDatabase: String
   ): BaseState = {
     val key = AstCache.key(preParsedQuery, params, parsingConfig.useParameterSizeHint)
     val maybeValue = caches.astCache.get(key)
@@ -235,7 +236,8 @@ case class CypherPlanner(
         tracer,
         params,
         cancellationChecker,
-        targetsComposite
+        targetsComposite,
+        sessionDatabase
       )
       val value = AstCache.AstCacheValue(parsedQuery, notificationLogger.notifications)
       if (!plannerConfig.planSystemCommands) caches.astCache.put(key, value)
@@ -283,7 +285,8 @@ case class CypherPlanner(
       preParsedQuery.options.offset,
       tracer,
       transactionalContextWrapper.cancellationChecker,
-      DatabaseMode.COMPOSITE.equals(transactionalContext.databaseMode())
+      DatabaseMode.COMPOSITE.equals(transactionalContext.databaseMode()),
+      transactionalContext.kernelTransaction().getDatabaseName
     )
 
     // The parser populates the notificationLogger as a side-effect of its work, therefore
@@ -398,7 +401,9 @@ case class CypherPlanner(
       transactionalContextWrapper.databaseId,
       log,
       internalNotificationStats,
-      internalSyntaxUsageStats
+      internalSyntaxUsageStats,
+      targetsComposite = false,
+      null
     )
 
     // Prepare query for caching

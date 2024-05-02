@@ -60,7 +60,9 @@ class BaseContextImpl(
   override val notificationLogger: InternalNotificationLogger,
   override val monitors: Monitors,
   override val cancellationChecker: CancellationChecker,
-  override val internalSyntaxUsageStats: InternalSyntaxUsageStats
+  override val internalSyntaxUsageStats: InternalSyntaxUsageStats,
+  override val targetsComposite: Boolean,
+  override val sessionDatabaseName: String
 ) extends BaseContext {
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
@@ -78,7 +80,9 @@ object BaseContextImpl {
     offset: Option[InputPosition],
     monitors: Monitors,
     cancellationChecker: CancellationChecker,
-    internalSyntaxUsageStats: InternalSyntaxUsageStats
+    internalSyntaxUsageStats: InternalSyntaxUsageStats,
+    targetsComposite: Boolean,
+    sessionDatabase: String
   ): BaseContextImpl = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
     new BaseContextImpl(
@@ -87,7 +91,9 @@ object BaseContextImpl {
       notificationLogger,
       monitors,
       cancellationChecker,
-      internalSyntaxUsageStats
+      internalSyntaxUsageStats,
+      targetsComposite,
+      sessionDatabase
     )
   }
 }
@@ -116,14 +122,18 @@ class PlannerContext(
   val log: Log,
   val internalNotificationStats: InternalNotificationStats,
   internalSyntaxUsageStats: InternalSyntaxUsageStats,
-  val labelInferenceStrategy: LabelInferenceStrategy
+  val labelInferenceStrategy: LabelInferenceStrategy,
+  override val targetsComposite: Boolean,
+  override val sessionDatabaseName: String
 ) extends BaseContextImpl(
       cypherExceptionFactory,
       tracer,
       notificationLogger,
       monitors,
       cancellationChecker,
-      internalSyntaxUsageStats
+      internalSyntaxUsageStats,
+      targetsComposite,
+      sessionDatabaseName
     ) {
 
   /**
@@ -155,7 +165,9 @@ class PlannerContext(
       log,
       internalNotificationStats,
       internalSyntaxUsageStats,
-      labelInferenceStrategy
+      labelInferenceStrategy,
+      false,
+      null
     )
   }
 }
@@ -188,7 +200,9 @@ object PlannerContext {
     databaseId: NamedDatabaseId,
     log: Log,
     internalNotificationStats: InternalNotificationStats,
-    internalSyntaxUsageStats: InternalSyntaxUsageStats
+    internalSyntaxUsageStats: InternalSyntaxUsageStats,
+    targetsComposite: Boolean,
+    sessionDatabaseName: String
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
@@ -225,7 +239,9 @@ object PlannerContext {
       log,
       internalNotificationStats,
       internalSyntaxUsageStats,
-      labelInferenceStrategy
+      labelInferenceStrategy,
+      targetsComposite,
+      sessionDatabaseName
     )
   }
 }

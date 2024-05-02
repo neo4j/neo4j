@@ -105,7 +105,8 @@ case class CypherPlanner[Context <: PlannerContext](
     tracer: CompilationPhaseTracer,
     params: MapValue,
     cancellationChecker: CancellationChecker,
-    targetsComposite: Boolean
+    targetsComposite: Boolean,
+    sessionDatabase: String
   ): BaseState = {
     parsing.parseQuery(
       queryText,
@@ -116,7 +117,8 @@ case class CypherPlanner[Context <: PlannerContext](
       tracer,
       params,
       cancellationChecker,
-      targetsComposite = targetsComposite
+      targetsComposite = targetsComposite,
+      sessionDatabase = sessionDatabase
     )
   }
 

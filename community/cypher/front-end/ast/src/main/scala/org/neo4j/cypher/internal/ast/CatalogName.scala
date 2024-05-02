@@ -57,4 +57,15 @@ case class CatalogName(parts: List[String]) {
     parts
       .map(quote)
       .mkString(separatorString)
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case name: CatalogName =>
+        name.qualifiedNameString.toLowerCase.equals(this.qualifiedNameString.toLowerCase)
+      case _ =>
+        false
+    }
+  }
+
+  override def hashCode(): Int = qualifiedNameString.toLowerCase.hashCode
 }

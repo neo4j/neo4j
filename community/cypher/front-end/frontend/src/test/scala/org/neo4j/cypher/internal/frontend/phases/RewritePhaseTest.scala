@@ -132,6 +132,9 @@ trait RewritePhaseTest {
     }
   }
 
+  def sessionDatabase: String = null
+  def targetsComposite: Boolean = false
+
   def prepareFrom(
     from: String,
     transformer: Transformer[BaseContext, BaseState, BaseState],
@@ -142,10 +145,13 @@ trait RewritePhaseTest {
       InitialState(from, None, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(fromAst))
     val fromInState =
       if (astRewriteAndAnalyze) {
-        preProcessPhase(features: _*).transform(initialState, TestContext())
+        preProcessPhase(features: _*).transform(
+          initialState,
+          TestContext(targetsComposite = targetsComposite, sessionDatabaseName = sessionDatabase)
+        )
       } else {
         initialState
       }
-    transformer.transform(fromInState, ContextHelper.create())
+    transformer.transform(fromInState, ContextHelper.create(targetsComposite, sessionDatabase))
   }
 }

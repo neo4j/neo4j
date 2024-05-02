@@ -113,7 +113,9 @@ case class FabricFrontEnd(
       Some(query.options.offset),
       WrappedMonitors(kernelMonitors),
       cancellationChecker,
-      internalSyntaxUsageStats
+      internalSyntaxUsageStats,
+      targetsComposite = false,
+      null
     )
 
     private val semanticFeatures = Seq(

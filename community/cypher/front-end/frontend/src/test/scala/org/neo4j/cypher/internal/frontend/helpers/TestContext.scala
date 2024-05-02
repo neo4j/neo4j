@@ -30,8 +30,11 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.scalatestplus.mockito.MockitoSugar.mock
 
 //noinspection TypeAnnotation
-case class TestContext(override val notificationLogger: InternalNotificationLogger = mock[InternalNotificationLogger])
-    extends BaseContext {
+case class TestContext(
+  override val notificationLogger: InternalNotificationLogger = mock[InternalNotificationLogger],
+  override val targetsComposite: Boolean = false,
+  override val sessionDatabaseName: String = null
+) extends BaseContext {
   override def tracer = CompilationPhaseTracer.NO_TRACING
 
   override def cypherExceptionFactory: CypherExceptionFactory = OpenCypherExceptionFactory(None)

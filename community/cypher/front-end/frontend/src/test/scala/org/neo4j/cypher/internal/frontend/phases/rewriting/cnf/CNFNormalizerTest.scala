@@ -283,4 +283,8 @@ class TestContext(override val monitors: Monitors) extends BaseContext {
   override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
 
   override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
+
+  override def targetsComposite: Boolean = false
+
+  override def sessionDatabaseName: String = null
 }

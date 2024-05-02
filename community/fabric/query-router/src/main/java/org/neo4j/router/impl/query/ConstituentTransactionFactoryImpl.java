@@ -95,8 +95,9 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
                     context.transactionInfo().statementLifecycleTransactionInfo(), queryString, parameters, null);
             statementLifecycle.startProcessing();
             var query = Query.of(QueryOptionsRenderer.addOptions(queryString, queryOptions), parameters);
-            var processedQuery =
-                    queryProcessor.processQuery(query, targetService, (dbRef) -> location, cancellationChecker, false);
+            var processedQuery = queryProcessor.processQuery(
+                    // the session database can be ignored in the constituent for now
+                    query, targetService, (dbRef) -> location, cancellationChecker, false, null);
             statementLifecycle.doneRouterProcessing(
                     processedQuery.obfuscationMetadata().get(), targetReference.isComposite());
             TransactionMode mode = TransactionMode.from(

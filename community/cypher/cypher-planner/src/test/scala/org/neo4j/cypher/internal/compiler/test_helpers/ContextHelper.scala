@@ -107,7 +107,9 @@ object ContextHelper extends MockitoSugar {
       NullLog.getInstance(),
       internalNotificationStats,
       internalSyntaxUsageStats,
-      labelInferenceStrategy
+      labelInferenceStrategy,
+      false,
+      null
     )
   }
 

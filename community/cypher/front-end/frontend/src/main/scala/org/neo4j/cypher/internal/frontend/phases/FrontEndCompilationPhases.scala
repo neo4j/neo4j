@@ -61,6 +61,7 @@ trait FrontEndCompilationPhases {
         extractSensitiveLiterals
       ) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
+      RemoveDuplicateUseClauses andThen
       SemanticTypeCheck andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures) andThen
       IsolateSubqueriesInMutatingPatterns andThen

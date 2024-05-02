@@ -52,6 +52,10 @@ class ErrorCollectingContext extends BaseContext {
   override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
 
   override def internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStatsNoOp
+
+  override def sessionDatabaseName: String = null
+
+  override def targetsComposite: Boolean = false
 }
 
 object ErrorCollectingContext {
