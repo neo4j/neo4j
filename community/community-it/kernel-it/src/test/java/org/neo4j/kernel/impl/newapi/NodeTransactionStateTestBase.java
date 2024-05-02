@@ -38,6 +38,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -53,7 +54,9 @@ import org.neo4j.internal.kernel.api.security.TestAccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -582,6 +585,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
     @Test
     void shouldSeeTxStateSkipUntil() throws Exception {
+        // Setup
+        clearIdGeneratorCaches();
         // Given
         Node node = createNode("label");
         createNode("label");
@@ -612,6 +617,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
     @Test
     void shouldSeeDeletesInTXSkipUntil() throws Exception {
+        // Setup
+        clearIdGeneratorCaches();
         // Given
         Node node = createNode("label");
         Node nodeToDelete = createNode("label");
@@ -639,6 +646,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
     @Test
     void shouldSkipUntilWithRemovedLabel() throws Exception {
+        // Setup
+        clearIdGeneratorCaches();
         // Given
         createNode("label");
         createNode("label");
@@ -672,6 +681,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
 
     @Test
     void shouldSkipUntilLabelAddedInTx() throws Exception {
+        // Setup
+        clearIdGeneratorCaches();
         // Given
         Node nodeWithLabel = createNode("label");
         Node nodeWithoutLabel = createNode();
@@ -1100,5 +1111,14 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         IndexDescriptor index = indexes.next();
         assertThat(indexes.hasNext()).isFalse();
         return tx.dataRead().tokenReadSession(index);
+    }
+
+    private void clearIdGeneratorCaches() {
+        // Some tests assume node ID order to be according to creation order, clearing the Id generator cache ensures
+        // this
+        ((GraphDatabaseAPI) graphDb)
+                .getDependencyResolver()
+                .resolveDependency(IdGeneratorFactory.class)
+                .clearCache(true, CursorContext.NULL_CONTEXT);
     }
 }
