@@ -135,9 +135,17 @@ sealed trait ConflictFinder {
       val conflict = Conflict(writePlan.id, readPlan.id)
       writePlan match {
         case _: RemoveLabels =>
-          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), set1(LabelReadRemoveConflict(label).withConflict(conflict)))
+          ConflictingPlanPair(
+            Ref(writePlan),
+            Ref(readPlan),
+            set1(LabelReadRemoveConflict(label).withConflict(conflict))
+          )
         case forEach: Foreach if forEach.mutations.exists(_.isInstanceOf[RemoveLabelPattern]) =>
-          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), set1(LabelReadRemoveConflict(label).withConflict(conflict)))
+          ConflictingPlanPair(
+            Ref(writePlan),
+            Ref(readPlan),
+            set1(LabelReadRemoveConflict(label).withConflict(conflict))
+          )
         case _ =>
           ConflictingPlanPair(Ref(writePlan), Ref(readPlan), set1(LabelReadSetConflict(label).withConflict(conflict)))
       }
@@ -282,7 +290,12 @@ sealed trait ConflictFinder {
       (Ref(writePlan), deletedEntities) <- deletedEntities(readsAndWrites.writes.deletes).iterator
 
       (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, plansThatReferenceVariable), conflictType)) <-
-        deleteReadVariables(readsAndWrites, writePlan, possibleDeleteConflictPlans, possibleDeleteConflictPlanSnapshots).iterator
+        deleteReadVariables(
+          readsAndWrites,
+          writePlan,
+          possibleDeleteConflictPlans,
+          possibleDeleteConflictPlanSnapshots
+        ).iterator
 
       // Filter out Delete vs Create conflicts
       readPlans = plansThatIntroduceVar.filter(ptiv => canConflictWithCreateOrDelete(ptiv.plan))
@@ -328,7 +341,12 @@ sealed trait ConflictFinder {
         ) ++ readsAndWrites.writes.deletes.plansThatDeleteUnknownTypeExpressions.iterator
 
       (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, plansThatReferenceVariable), conflictType)) <-
-        deleteReadVariables(readsAndWrites, writePlan, possibleDeleteConflictPlans, possibleDeleteConflictPlanSnapshots).iterator
+        deleteReadVariables(
+          readsAndWrites,
+          writePlan,
+          possibleDeleteConflictPlans,
+          possibleDeleteConflictPlanSnapshots
+        ).iterator
 
       // For a ReadWriteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
       // For a WriteReadConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
@@ -400,6 +418,7 @@ sealed trait ConflictFinder {
 
   // This is used instead of a Set, since creating Sets is slow (if we do it a lot).
   private class ConflictingPlans(val p1: Ref[LogicalPlan], val p2: Ref[LogicalPlan]) {
+
     /*
      * Strongly inspired by [[MurmurHash3.unorderedHash]]
      */
@@ -451,7 +470,10 @@ sealed trait ConflictFinder {
     val map = mutable.Map[ConflictingPlans, mutable.Set[EagernessReason]]()
 
     def addConflict(conflictingPlanPair: ConflictingPlanPair): Unit = {
-      map.getOrElseUpdate(new ConflictingPlans(conflictingPlanPair.first, conflictingPlanPair.second), mutable.Set.empty[EagernessReason])
+      map.getOrElseUpdate(
+        new ConflictingPlans(conflictingPlanPair.first, conflictingPlanPair.second),
+        mutable.Set.empty[EagernessReason]
+      )
         .addAll(conflictingPlanPair.reasons)
     }
 
