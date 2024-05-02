@@ -454,6 +454,7 @@ sealed trait ConflictFinder {
 
     override def equals(obj: Any): Boolean = obj match {
       case cp: ConflictingPlans => (p1 == cp.p1 && p2 == cp.p2) || (p1 == cp.p2 && p2 == cp.p1)
+      case _                    => false
     }
   }
 
