@@ -50,14 +50,6 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
   override def denylist(): Seq[DenylistEntry] = Seq(
     // Does not parse
     """Feature "Mathematical3 - Subtraction": Scenario "Fail for invalid Unicode hyphen in subtraction"""",
-    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "26"""",
-    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "28"""",
-    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "29"""",
-    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "34"""",
-    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "35"""",
-    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "39"""",
-    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "40"""",
-    """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "44"""",
     """Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"""",
     """Feature "Literals7 - List": Scenario "Fail on a list containing only a comma"""",
     """Feature "Literals7 - List": Scenario "Fail on a nested list with missing commas"""",
@@ -73,6 +65,8 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     """Feature "Literals8 - Maps": Scenario "Fail on a map containing a map without key"""",
     """Feature "Literals8 - Maps": Scenario "Fail on a map containing key with symbol"""",
     """Feature "Literals6 - String": Scenario "Failing on incorrect unicode literal"""",
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing QPP and var-length relationship quantifiers in pattern expressions in same statement - syntax error"""",
+
     // EXPLAIN is not covered by the Parser, but by the pre-parser
     """Feature "ExplainAcceptance": Scenario "Explanation of query without return columns"""",
     """Feature "ExplainAcceptance": Scenario "Explanation of standalone procedure call"""",
@@ -80,32 +74,14 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     """Feature "ExplainAcceptance": Scenario "Explanation of in-query procedure call"""",
     """Feature "ExplainAcceptance": Scenario "Explanation of query ending in unit subquery call"""",
 
-    // Label expressions in RETURN AND WHERE clauses, and CASE expressions, is not yet implemented
-    """Feature "LabelExpressionAcceptance": Scenario "Label expression in WHERE clause"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Label expression in RETURN clause"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Label expression in CASE expression"""",
-
     // Relationship type expressions in RETURN AND WHERE clauses, and CASE expressions, is not yet implemented
-    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in WHERE clause"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in RETURN clause"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression"""",
     """Feature "QuantifiedPathPatternAcceptance": Scenario "Leaving out the nodes adjacent to a QPP"""",
     """Feature "QuantifiedPathPatternAcceptance": Scenario "Quantifier lower bound must be less than or equal to upper bound, upper bound needs to be positive": Example "1"""",
 
-    // Support for IS in CREATE, MERGE, REMOVE and SET is not yet implemented
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing : conjunction and IS in same label specification of same SET or REMOVE - syntax error"""",
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "REMOVE with IS and : introducers - OK"""",
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "SET with IS and : introducers - OK"""",
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing QPP and var-length relationship quantifiers in pattern expressions in same statement - syntax error"""",
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing IS in SET with colon conjunction in MATCH and REMOVE - OK"""",
-
     // DIFFERENT NODES is not yet implemented
     """Feature "GpmSyntaxMixingAcceptance": Scenario "DIFFERENT NODES with var-length relationship - OK"""",
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode with shortestPath - syntax error""""
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode DIFFERENT NODES with shortestPath - syntax error""""
   ).map(DenylistEntry(_))
-
-  // We don't execute tests that are expected to fail
-  override def runDenyListedQuery(scenario: Scenario, query: String): Option[Executable] = None
 
   override def runQuery(scenario: Scenario, query: String): Option[Executable] = {
     val executable: Executable = () => roundTripCheck(query)

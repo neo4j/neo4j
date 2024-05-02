@@ -493,7 +493,7 @@ Feature: GpmSyntaxMixingAcceptance
       | p = shortestPath( ((:A)-[:R]->())+ )           |
       | p = allShortestPaths( ((:A)-[:R]->())+ )       |
 
-  Scenario Outline: Explicit match mode with shortestPath - syntax error
+  Scenario Outline: Explicit match mode <matchMode> with shortestPath - syntax error
     When executing query:
       """
       MATCH <matchMode> p = <pathFunction>(()-[*]->())

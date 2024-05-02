@@ -19,6 +19,9 @@ package org.neo4j.cypher.internal.util.test_helpers
 import org.junit.jupiter.api.function.Executable
 import org.opencypher.tools.tck.api.Execute
 import org.opencypher.tools.tck.api.Scenario
+import org.scalatest.Assertions.fail
+
+import scala.util.Try
 
 /**
  * Use this trait when you only need the query text to run your test instead of the whole scenario.
@@ -26,23 +29,34 @@ import org.opencypher.tools.tck.api.Scenario
 trait FeatureQueryTest extends FeatureTest {
 
   /**
-   * Invoked for each query in denylisted scenarios.
-   *
-   * @param query the query text
-   * @return optionally an Executable that will be turned into a [[org.junit.jupiter.api.DynamicTest]]
-   */
-  def runDenyListedQuery(scenario: Scenario, query: String): Option[Executable]
-
-  /**
-   * Invoked for each query in non-denylisted scenarios.
+   * Invoked for each query, both denylisted and non-denylisted scenarios.
    *
    * @param query the query text
    * @return optionally an Executable that will be turned into a [[org.junit.jupiter.api.DynamicTest]]
    */
   def runQuery(scenario: Scenario, query: String): Option[Executable]
 
-  final override def runDenyListedScenario(scenario: Scenario): Seq[Executable] =
-    getQueries(scenario).flatMap(runDenyListedQuery(scenario, _))
+  final override def runDenyListedScenario(scenario: Scenario): Seq[Executable] = {
+    val executable: Executable = () => {
+      val hasFailingQueries = getQueries(scenario).exists {
+        query => executionFails(scenario, query)
+      }
+
+      // At least one of the queries in a deny listed scenario is expected to fail
+      if (!hasFailingQueries) {
+        fail(
+          s"Feature \"${scenario.featureName}\": Scenario \"${scenario.name}\" was expected to fail as it is in the DenyList, but it succeeded"
+        )
+      }
+    }
+    Seq(executable)
+  }
+
+  private def executionFails(scenario: Scenario, query: String): Boolean = {
+    Try {
+      runQuery(scenario, query).foreach(innerExecutable => innerExecutable.execute())
+    }.isFailure
+  }
 
   final override def runScenario(scenario: Scenario): Seq[Executable] =
     getQueries(scenario).flatMap(runQuery(scenario, _))

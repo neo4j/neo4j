@@ -46,10 +46,6 @@ class AntlrParserTckTests extends FeatureTest with FeatureQueryTest with Matcher
 
   override def denylist(): Seq[DenylistEntry] = Seq.empty
 
-  override def runDenyListedQuery(scenario: Scenario, query: String): Option[Executable] = {
-    Some(() => compareJavaCcAndAntlr(query))
-  }
-
   override def runQuery(scenario: Scenario, query: String): Option[Executable] = {
     Some(() => compareJavaCcAndAntlr(query))
   }
