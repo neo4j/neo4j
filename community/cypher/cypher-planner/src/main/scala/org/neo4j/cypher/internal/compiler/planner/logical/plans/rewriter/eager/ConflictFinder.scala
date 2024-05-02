@@ -552,7 +552,6 @@ sealed trait ConflictFinder {
 
     map.map {
       case (conflictingPlans, reasons) => ConflictingPlanPair(conflictingPlans.p1, conflictingPlans.p2, reasons.toSet)
-      case (set, _) => throw new IllegalStateException(s"Set must have 2 elements. Got: $set")
     }.toSeq
   }
 
