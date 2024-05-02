@@ -280,6 +280,13 @@ class Neo4jAdminCommandTest {
         }
 
         @Test
+        void shouldPassEndOfOptionsDelimiterAndRetainOrder() {
+            assertThat(execute("dbms", "test-command", "--pre --verbose --before -- after"))
+                    .isNotZero();
+            assertThat(err.toString()).containsSubsequence("--pre", "--verbose", "--before", "--", "after");
+        }
+
+        @Test
         void shouldFailOnMissingExpandCommands() {
             addConf(BootloaderSettings.max_heap_size, "$(echo foo)");
             assertThat(execute("dbms", "test-command")).isEqualTo(ExitCode.SOFTWARE);

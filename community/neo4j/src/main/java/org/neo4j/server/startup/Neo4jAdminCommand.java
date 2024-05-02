@@ -23,7 +23,6 @@ import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
 
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +35,9 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Spec;
 
 @Command(name = "Neo4j Admin", description = "Neo4j Admin CLI.")
 public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
@@ -45,9 +45,8 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
     private final Class<?> entrypoint;
     private final Environment environment;
 
-    // unmatched parameters.
-    @Parameters(hidden = true)
-    private List<String> unmatchedParameters = List.of();
+    @Spec
+    private CommandSpec spec;
 
     @Option(
             names = ARG_EXPAND_COMMANDS,
@@ -69,9 +68,9 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
 
     @Override
     public Integer call() throws Exception {
-        String[] args = buildArgs();
+        final var execArgs = buildExecArgs();
 
-        try (var adminBootloader = createAdminBootloader(args)) {
+        try (var adminBootloader = createAdminBootloader(execArgs.arguments)) {
 
             // Lets verify our arguments before we try to execute the command, avoiding forking the VM if the arguments
             // are
@@ -85,14 +84,15 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
                     this::createDbmsBootloader,
                     adminBootloader.getPluginClassLoader());
             CommandLine actualCommand = getActualAdminCommand(ctx);
-            if (unmatchedParameters.isEmpty()) { // No arguments (except expand commands/verbose), print usage
+            if (!execArgs.hasSubCommandArguments) { // No arguments (except expand commands/verbose), print usage
                 actualCommand.usage(adminBootloader.environment.err());
                 return CommandLine.ExitCode.USAGE;
             }
 
             ExecutionInfo executionInfo;
             try {
-                CommandLine.ParseResult result = actualCommand.parseArgs(args); // Check if we can parse it
+                CommandLine.ParseResult result =
+                        actualCommand.parseArgs(execArgs.arguments); // Check if we can parse it
                 Integer code = CommandLine.executeHelpRequest(result); // If help is requested
                 if (code != null) {
                     return code;
@@ -113,27 +113,28 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
                 }
                 return e.getCommandLine()
                         .getParameterExceptionHandler()
-                        .handleParseException(e, args); // Parse error, handle and exit
+                        .handleParseException(e, execArgs.arguments); // Parse error, handle and exit
             }
 
             // Arguments looks fine! Let's try to execute it for real
             if (executionInfo.forkingAdminCommand) {
                 return adminBootloader.admin(executionInfo.additionalConfigs);
             } else {
-                return actualCommand.execute(args);
+                return actualCommand.execute(execArgs.arguments);
             }
         }
     }
 
-    private String[] buildArgs() {
-        List<String> allParameters = new ArrayList<>(unmatchedParameters);
+    private ExecArguments buildExecArgs() {
+        final var originalArgs = spec.commandLine().getParseResult().originalArgs();
+        var unmatchedCount = originalArgs.size();
         if (expandCommands) {
-            allParameters.add(ARG_EXPAND_COMMANDS);
+            unmatchedCount--;
         }
         if (verbose) {
-            allParameters.add(ARG_VERBOSE);
+            unmatchedCount--;
         }
-        return allParameters.toArray(new String[0]);
+        return new ExecArguments(originalArgs.toArray(new String[0]), unmatchedCount > 0);
     }
 
     private ExecutionInfo getExecutionInfo(CommandLine.ParseResult parseResult) {
@@ -205,6 +206,8 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
             return commandLine.getCommandSpec().exitCodeOnExecutionException();
         }
     }
+
+    private record ExecArguments(String[] arguments, boolean hasSubCommandArguments) {}
 
     private record ExecutionInfo(boolean forkingAdminCommand, List<Path> additionalConfigs) {}
 }
