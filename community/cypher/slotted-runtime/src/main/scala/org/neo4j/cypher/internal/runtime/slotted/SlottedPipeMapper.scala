@@ -209,6 +209,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTop1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PartialTopNPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeMapper
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProduceResultsPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
@@ -285,7 +286,6 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.OrderedDistinctSlottedPip
 import org.neo4j.cypher.internal.runtime.slotted.pipes.OrderedDistinctSlottedPrimitivePipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.OrderedDistinctSlottedSinglePrimitivePipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.OrderedUnionSlottedPipe
-import org.neo4j.cypher.internal.runtime.slotted.pipes.ProduceResultSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.RollUpApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SelectOrSemiApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ShortestPathSlottedPipe
@@ -1080,7 +1080,7 @@ class SlottedPipeMapper(
           case (v, es) => v.name -> es.map(e => LazyPropertyKey(e.propertyKey)(semanticTable) -> convertExpressions(e))
         }
         val runtimeColumns = createProjectionsForResult(columns, slots, cached)
-        ProduceResultSlottedPipe(source, runtimeColumns)(id)
+        ProduceResultsPipe(source, runtimeColumns.toArray)(id)
 
       case Expand(_, from, dir, types, to, relName, ExpandAll) =>
         val fromSlot = slots(from)
@@ -2268,9 +2268,9 @@ object SlottedPipeMapper {
     columns: Seq[LogicalVariable],
     slots: SlotConfiguration,
     cachedProps: Map[String, Set[(LazyPropertyKey, Expression)]]
-  ): Seq[(String, Expression)] = {
-    val runtimeColumns: Seq[(String, commands.expressions.Expression)] =
-      columns.map(c => createProjectionForVariable(slots, c, cachedProps.get(c.name)))
+  ): Seq[Expression] = {
+    val runtimeColumns =
+      columns.map(c => createProjectionForVariable(slots, c, cachedProps.get(c.name))._2)
     runtimeColumns
   }
 

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProduceResultsPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -42,13 +43,12 @@ import scala.jdk.CollectionConverters.ListHasAsScala
 
 class ProduceResultSlottedPipeStressTest extends CypherFunSuite {
 
-  private val column = "x"
   private val slotConfig = SlotConfiguration.empty.newLong("n", nullable = false, CTNode)
 
   test(s"concurrent slotted produce result execution should not crash") {
 
     // Given
-    val produceResults = ProduceResultSlottedPipe(sourcePipe, List(column -> literal(42)))(Id.INVALID_ID)
+    val produceResults = ProduceResultsPipe(sourcePipe, Array(literal(42)))(Id.INVALID_ID)
     val expected = execute(produceResults)
 
     // When
@@ -74,7 +74,7 @@ class ProduceResultSlottedPipeStressTest extends CypherFunSuite {
     executor.shutdown()
   }
 
-  private def execute(produceResults: ProduceResultSlottedPipe): AnyValue = {
+  private def execute(produceResults: ProduceResultsPipe): AnyValue = {
     val subscriber = new RecordingQuerySubscriber
     subscriber.onResult(1)
     val iterator = produceResults.createResults(QueryStateHelper.emptyWith(subscriber = subscriber))

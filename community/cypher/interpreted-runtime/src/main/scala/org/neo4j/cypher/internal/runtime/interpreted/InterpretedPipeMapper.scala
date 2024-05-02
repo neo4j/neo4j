@@ -212,8 +212,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Create
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.DeleteOperation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ReferenceByName
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.RemoveLabelsOperation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ValuePopulatingReferenceByName
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowFunctionsCommand
@@ -1592,8 +1594,11 @@ case class InterpretedPipeMapper(
           bufferSize
         )(id = id)
 
-      case ProduceResult(_, columns) =>
-        ProduceResultsPipe(source, columns.map(_.name).toArray)(id = id)
+      case ProduceResult(_, columns, cachedProperties) =>
+        val cached = cachedProperties.map {
+          case (v, es) => v.name -> es.map(e => LazyPropertyKey(e.propertyKey)(semanticTable) -> buildExpression(e))
+        }
+        ProduceResultsPipe(source, createProjectionsForResult(columns, cached).toArray)(id = id)
 
       case Create(_, commands) =>
         CreatePipe(
@@ -1973,6 +1978,21 @@ case class InterpretedPipeMapper(
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")
     }
+  }
+
+  private def createProjectionsForResult(
+    columns: Seq[LogicalVariable],
+    cachedProps: Map[String, Set[(LazyPropertyKey, Expression)]]
+  ): Seq[Expression] = {
+    val runtimeColumns =
+      columns.map(c =>
+        cachedProps.get(c.name) match {
+          case Some(cp) => ValuePopulatingReferenceByName(c.name, cp.toArray)
+          case None     => ReferenceByName(c.name)
+        }
+      )
+
+    runtimeColumns
   }
 
   private def buildPredicate(id: Id, expr: expressions.Expression): Predicate =

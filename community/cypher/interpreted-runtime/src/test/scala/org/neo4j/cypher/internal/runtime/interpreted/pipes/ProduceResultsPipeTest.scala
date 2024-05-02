@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ReferenceByName
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriberAdapter
@@ -64,7 +65,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
       ))
     )
 
-    val pipe = ProduceResultsPipe(sourcePipe, columns)()
+    val pipe = ProduceResultsPipe(sourcePipe, columns.map(ReferenceByName))()
 
     pipe.createResults(queryState).toList
 
@@ -83,7 +84,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
     when(queryState.decorator).thenReturn(NullPipeDecorator)
     when(sourcePipe.createResults(queryState)).thenReturn(ClosingIterator.empty)
 
-    val pipe = ProduceResultsPipe(sourcePipe, Array("a", "b", "c"))()
+    val pipe = ProduceResultsPipe(sourcePipe, Array("a", "b", "c").map(ReferenceByName))()
 
     val result = pipe.createResults(queryState).toList
 
