@@ -79,6 +79,9 @@ import scala.util.hashing.MurmurHash3
  */
 sealed trait ConflictFinder {
 
+  // Use Set.empty.incl instead of the generic apply method, for performance.
+  private def set1[N](elem: N): Set[N] = Set.empty.incl(elem)
+
   private def propertyConflicts(
     readsAndWrites: ReadsAndWrites,
     leftMostLeaf: LogicalPlan,
@@ -113,7 +116,7 @@ sealed trait ConflictFinder {
       if isValidConflict(readPlan, writePlan, leftMostLeaf)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
-      val reasons = Set[EagernessReason](prop.map(PropertyReadSetConflict(_).withConflict(conflict))
+      val reasons = set1[EagernessReason](prop.map(PropertyReadSetConflict(_).withConflict(conflict))
         .getOrElse(UnknownPropertyReadSetConflict.withConflict(conflict)))
 
       ConflictingPlanPair(Ref(writePlan), Ref(readPlan), reasons)
@@ -132,11 +135,11 @@ sealed trait ConflictFinder {
       val conflict = Conflict(writePlan.id, readPlan.id)
       writePlan match {
         case _: RemoveLabels =>
-          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), Set(LabelReadRemoveConflict(label).withConflict(conflict)))
+          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), set1(LabelReadRemoveConflict(label).withConflict(conflict)))
         case forEach: Foreach if forEach.mutations.exists(_.isInstanceOf[RemoveLabelPattern]) =>
-          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), Set(LabelReadRemoveConflict(label).withConflict(conflict)))
+          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), set1(LabelReadRemoveConflict(label).withConflict(conflict)))
         case _ =>
-          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), Set(LabelReadSetConflict(label).withConflict(conflict)))
+          ConflictingPlanPair(Ref(writePlan), Ref(readPlan), set1(LabelReadSetConflict(label).withConflict(conflict)))
       }
     }
   }
@@ -181,7 +184,7 @@ sealed trait ConflictFinder {
       // We need to split the expression in order to filter single predicates.
       // We only want to keep the predicates that depend on only variable, since that is a requirement of CreateOverlaps.overlap
       expressionsDependantOnlyOnVariable =
-        Expressions.splitExpression(expression).filter(_.dependencies == Set(variable))
+        Expressions.splitExpression(expression).filter(_.dependencies == set1(variable))
 
       createdEntity <- createdEntities.iterator
 
@@ -216,10 +219,10 @@ sealed trait ConflictFinder {
             case PropertiesOverlap.Overlap(properties) =>
               properties.map(PropertyReadSetConflict(_).withConflict(conflict))
             case PropertiesOverlap.UnknownOverlap =>
-              Set(UnknownPropertyReadSetConflict.withConflict(conflict))
+              set1(UnknownPropertyReadSetConflict.withConflict(conflict))
           }
           val allReasons = entityReasons ++ propertyReasons
-          if (allReasons.isEmpty) Set(ReadCreateConflict.withConflict(conflict))
+          if (allReasons.isEmpty) set1(ReadCreateConflict.withConflict(conflict))
           else allReasons
 
         // Other cases have been filtered out above
@@ -349,7 +352,7 @@ sealed trait ConflictFinder {
           wholePlan.folder.findAllByClass[UpdatingPlan].iterator.filterNot(planChildrenLookup.isInTransactionalApply)
         txPlan <- readsAndWrites.reads.callInTxPlans.iterator
       } yield {
-        ConflictingPlanPair(Ref(txPlan), Ref(updatingPlan), Set(EagernessReason.WriteAfterCallInTransactions))
+        ConflictingPlanPair(Ref(txPlan), Ref(updatingPlan), set1(EagernessReason.WriteAfterCallInTransactions))
       }
     } else Iterator.empty
   }
@@ -368,7 +371,7 @@ sealed trait ConflictFinder {
     writePlan: LogicalPlan
   ): ConflictingPlanPair = {
     val conflict = Conflict(writePlan.id, readPlan.id)
-    val reasons: Set[EagernessReason] = Set(ReadDeleteConflict(readVariable.name).withConflict(conflict))
+    val reasons: Set[EagernessReason] = set1(ReadDeleteConflict(readVariable.name).withConflict(conflict))
     ConflictingPlanPair(Ref(writePlan), Ref(readPlan), reasons)
   }
 
