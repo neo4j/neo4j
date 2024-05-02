@@ -115,6 +115,8 @@ public class VectorIndexProcedures {
         Objects.requireNonNull(vectorDimension, "'vectorDimension' must not be null");
 
         final var version = VectorIndexVersion.latestSupportedVersion(kernelVersion);
+        Preconditions.checkState(
+                version != VectorIndexVersion.UNKNOWN, "Vector index version `%s` is not a valid version.");
         Preconditions.checkArgument(
                 1 <= vectorDimension && vectorDimension <= version.maxDimensions(),
                 "'vectorDimension' must be between %d and %d inclusively".formatted(1, version.maxDimensions()));
