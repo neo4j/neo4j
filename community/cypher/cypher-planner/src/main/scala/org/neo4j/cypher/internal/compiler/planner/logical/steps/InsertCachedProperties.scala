@@ -134,10 +134,17 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
     }
 
     val logicalPlan =
-      if (pushdownPropertyReads) {
+      // always push down property reads in a sharded properties database
+      if (pushdownPropertyReads || context.config.propertyCachingMode.isRemoteBatchProperties) {
         val effectiveCardinalities = from.planningAttributes.effectiveCardinalities
         val attributes = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
-        PushdownPropertyReads.pushdown(from.logicalPlan, effectiveCardinalities, attributes, from.semanticTable())
+        PushdownPropertyReads.pushdown(
+          from.logicalPlan,
+          effectiveCardinalities,
+          attributes,
+          from.semanticTable(),
+          context.config.propertyCachingMode
+        )
       } else {
         from.logicalPlan
       }

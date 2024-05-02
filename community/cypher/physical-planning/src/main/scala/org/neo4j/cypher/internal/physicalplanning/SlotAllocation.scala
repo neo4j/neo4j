@@ -112,6 +112,7 @@ import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
@@ -794,6 +795,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: Top1WithTies |
         _: PartialTop |
         _: CacheProperties |
+        _: RemoteBatchProperties |
         _: NonFuseable |
         _: InjectCompilationError |
         _: NonPipelined |

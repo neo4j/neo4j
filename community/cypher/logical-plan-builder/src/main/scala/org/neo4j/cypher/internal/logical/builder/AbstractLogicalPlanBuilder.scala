@@ -207,6 +207,7 @@ import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -2435,6 +2436,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def cacheProperties(properties: Set[LogicalProperty]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => CacheProperties(source, properties)(_)))
+  }
+
+  def remoteBatchProperties(properties: String*): IMPL = {
+    remoteBatchProperties(properties.map(parseExpression(_).asInstanceOf[LogicalProperty]).toSet)
+  }
+
+  def remoteBatchProperties(properties: Set[LogicalProperty]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => RemoteBatchProperties(source, properties)(_)))
   }
 
   def setProperty(entity: String, propertyKey: String, value: String): IMPL = {

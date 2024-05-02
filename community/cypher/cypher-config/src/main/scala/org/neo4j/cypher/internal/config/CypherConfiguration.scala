@@ -160,6 +160,9 @@ class CypherConfiguration private (val config: Config) {
   val lpEagerFallbackEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.cypher_lp_eager_analysis_fallback_enabled)
 
+  val propertyCachingMode: PropertyCachingMode =
+    PropertyCachingMode.fromSetting(config.get(GraphDatabaseInternalSettings.cypher_property_caching_mode))
+
   // dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
   private var _renderPlanDescription: Boolean = config.get(GraphDatabaseSettings.cypher_render_plan_descriptions)

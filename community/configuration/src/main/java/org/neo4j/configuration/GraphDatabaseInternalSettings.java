@@ -494,6 +494,33 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.cypher.lp_eager_analysis_fallback_enabled", BOOL, true)
             .build();
 
+    /**
+     * Flag differentiating between property caching in a standard database, and retrieving properties from
+     * shards in a sharded properties database.
+     * This is a temporary flag for development purposes only.
+     * It will be removed once the query router can let the Cypher stack know whether it is dealing with a standard or
+     * a sharded database.
+     */
+    public enum PropertyCachingMode {
+        /**
+         * Standard property caching logic to reduce reads from disk.
+         */
+        CACHE_PROPERTIES,
+        /**
+         * Used only in sharded properties databases to reduce the number of queries issued to shards.
+         */
+        REMOTE_BATCH_PROPERTIES
+    }
+
+    @Internal
+    @Description(
+            "Specify how properties get cached in the logical plan – temporary flag in preparation for sharded property databases")
+    public static final Setting<PropertyCachingMode> cypher_property_caching_mode = newBuilder(
+                    "internal.cypher.property_caching_mode",
+                    ofEnum(PropertyCachingMode.class),
+                    PropertyCachingMode.CACHE_PROPERTIES)
+            .build();
+
     @Internal
     @Description("Enables extra SemanticFeature:s during cypher semantic checking")
     public static final Setting<Set<String>> cypher_enable_extra_semantic_features = newBuilder(

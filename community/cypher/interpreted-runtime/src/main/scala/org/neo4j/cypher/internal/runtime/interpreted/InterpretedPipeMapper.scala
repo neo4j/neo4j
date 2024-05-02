@@ -144,6 +144,7 @@ import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
@@ -1178,6 +1179,9 @@ case class InterpretedPipeMapper(
       case CacheProperties(_, properties) =>
         val runtimeProperties = properties.toArray.map(buildExpression(_))
         CachePropertiesPipe(source, runtimeProperties)(id = id)
+
+      case RemoteBatchProperties(_, _) =>
+        source // TODO: implement
 
       case Expand(_, fromName, dir, types: Seq[internal.expressions.RelTypeName], toName, relName, ExpandAll) =>
         ExpandAllPipe(source, fromName.name, relName.name, toName.name, dir, RelationshipTypes(types.toArray))(id = id)

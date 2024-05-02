@@ -1146,6 +1146,20 @@ case class CacheProperties(override val source: LogicalPlan, properties: Set[Log
 }
 
 /**
+ * Similar to [[CacheProperties]] but in the context of a sharded properties database.
+ * Retrieves properties, in batches, for the properties shards.
+ */
+case class RemoteBatchProperties(
+  override val source: LogicalPlan,
+  properties: Set[LogicalProperty]
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
+}
+
+/**
  * Cartesian Product
  *
  * {{{

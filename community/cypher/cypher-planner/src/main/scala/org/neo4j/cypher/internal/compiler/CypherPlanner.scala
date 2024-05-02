@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CachedSimpleMetricsFac
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.config.PropertyCachingMode
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InternalSyntaxUsageStats
@@ -271,4 +272,6 @@ class CypherPlannerConfiguration(
   val gpmShortestToLegacyShortestEnabled: Boolean = config.gpmShortestToLegacyShortestEnabled
 
   val lpEagerFallbackEnabled: Boolean = config.lpEagerFallbackEnabled
+
+  val propertyCachingMode: PropertyCachingMode = config.propertyCachingMode
 }

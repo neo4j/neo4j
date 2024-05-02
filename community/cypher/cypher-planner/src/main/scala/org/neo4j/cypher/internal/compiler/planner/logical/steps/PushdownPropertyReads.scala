@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.config.PropertyCachingMode
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.LogicalProperty
@@ -47,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
@@ -120,7 +122,8 @@ case object PushdownPropertyReads {
 
   private def foldSingleChildPlan(
     effectiveCardinalities: EffectiveCardinalities,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    propertyCachingMode: PropertyCachingMode
   )(acc: Acc, plan: LogicalPlan): Acc = {
     val newPropertyExpressions: Set[PushDownProperty] =
       plan.folder.treeFold(Set.empty[PushDownProperty]) {
@@ -164,7 +167,7 @@ case object PushdownPropertyReads {
         case (v, (optimum, optimumProperties)) =>
           if (optimum.cardinality < acc.incomingCardinality) {
             Some(optimum.logicalPlanId -> optimumProperties.map(propertyWithName(optimum.variableName, _)))
-          } else if (shouldCoRead(optimumProperties, plan)) {
+          } else if (shouldCoRead(optimumProperties, plan) || propertyCachingMode.isRemoteBatchProperties) { // always batch properties in a sharded properties database
             Some(plan.lhs.get.id -> optimumProperties.map(propertyWithName(v.name, _)))
           } else {
             Seq.empty
@@ -303,7 +306,8 @@ case object PushdownPropertyReads {
 
   private def foldTwoChildPlan(
     effectiveCardinalities: EffectiveCardinalities,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    propertyCachingMode: PropertyCachingMode
   )(lhsAcc: Acc, rhsAcc: Acc, plan: LogicalPlan): Acc = {
     plan match {
 
@@ -359,7 +363,7 @@ case object PushdownPropertyReads {
           lhsAcc.availableWholeEntities,
           effectiveCardinalities(plan.id)
         )
-        foldSingleChildPlan(effectiveCardinalities, semanticTable)(mergedAcc, plan)
+        foldSingleChildPlan(effectiveCardinalities, semanticTable, propertyCachingMode)(mergedAcc, plan)
 
       case ap: ApplyPlan =>
         // Let's only keep a cardinality optimum from the RHS if the variable is actually available
@@ -372,7 +376,7 @@ case object PushdownPropertyReads {
         }
 
         val mergedAcc = rhsAcc.copy(variableOptima = correctedOptima)
-        foldSingleChildPlan(effectiveCardinalities, semanticTable)(mergedAcc, plan)
+        foldSingleChildPlan(effectiveCardinalities, semanticTable, propertyCachingMode)(mergedAcc, plan)
 
       case _ =>
         val mergedVariableOptima =
@@ -422,16 +426,22 @@ case object PushdownPropertyReads {
     logicalPlan: LogicalPlan,
     effectiveCardinalities: EffectiveCardinalities,
     attributes: Attributes[LogicalPlan],
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    propertyCachingMode: PropertyCachingMode
   ): LogicalPlan = {
-    val propertyMap = findPropertyReadOptima(logicalPlan, effectiveCardinalities, semanticTable)
+    val propertyMap = findPropertyReadOptima(logicalPlan, effectiveCardinalities, semanticTable, propertyCachingMode)
 
     val propertyReadInsertRewriter = bottomUp(Rewriter.lift {
       case lp: LogicalPlan if propertyMap.contains(lp.id) =>
         val copiedProperties = propertyMap(lp.id).map {
           p => p.property.copy()(p.property.position): LogicalProperty
         }
-        CacheProperties(lp, copiedProperties)(attributes.copy(lp.id))
+        propertyCachingMode match {
+          case PropertyCachingMode.CacheProperties =>
+            CacheProperties(lp, copiedProperties)(attributes.copy(lp.id))
+          case PropertyCachingMode.RemoteBatchProperties =>
+            RemoteBatchProperties(lp, copiedProperties)(attributes.copy(lp.id))
+        }
     })
 
     propertyReadInsertRewriter(logicalPlan).asInstanceOf[LogicalPlan]
@@ -443,13 +453,14 @@ case object PushdownPropertyReads {
   private[steps] def findPropertyReadOptima(
     logicalPlan: LogicalPlan,
     effectiveCardinalities: EffectiveCardinalities,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    propertyCachingMode: PropertyCachingMode
   ): Map[Id, Set[PushDownProperty]] = {
     val Acc(_, propertyReadOptima, _, _, _) =
       LogicalPlans.foldPlan(Acc(Map.empty, Map.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
         logicalPlan,
-        foldSingleChildPlan(effectiveCardinalities, semanticTable),
-        foldTwoChildPlan(effectiveCardinalities, semanticTable),
+        foldSingleChildPlan(effectiveCardinalities, semanticTable, propertyCachingMode),
+        foldTwoChildPlan(effectiveCardinalities, semanticTable, propertyCachingMode),
         mapArguments
       )
     propertyReadOptima

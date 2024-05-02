@@ -24,11 +24,13 @@ import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
+import org.neo4j.cypher.internal.config.PropertyCachingMode
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -2472,10 +2474,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val icp = new InsertCachedProperties(pushdownPropertyReads = pushdownPropertyReads)
 
+    val config = mock[CypherPlannerConfiguration]
+    when(config.propertyCachingMode).thenReturn(PropertyCachingMode.CacheProperties)
+
     val plannerContext = mock[PlannerContext]
     when(plannerContext.logicalPlanIdGen).thenReturn(idGen)
     when(plannerContext.tracer).thenReturn(NO_TRACING)
     when(plannerContext.cancellationChecker).thenReturn(CancellationChecker.NeverCancelled)
+    when(plannerContext.config).thenReturn(config)
 
     val resultState = icp.transform(state, plannerContext)
     (resultState.logicalPlan, resultState.semanticTable())

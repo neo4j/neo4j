@@ -223,6 +223,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipKey
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
 import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
+import org.neo4j.cypher.internal.logical.plans.RemoteBatchProperties
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -1878,6 +1879,17 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "CacheProperties",
+          children,
+          Seq(Details(properties.toSeq.map(asPrettyString(_)))),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case RemoteBatchProperties(_, properties) =>
+        PlanDescriptionImpl(
+          id,
+          "RemoteBatchProperties",
           children,
           Seq(Details(properties.toSeq.map(asPrettyString(_)))),
           variables,

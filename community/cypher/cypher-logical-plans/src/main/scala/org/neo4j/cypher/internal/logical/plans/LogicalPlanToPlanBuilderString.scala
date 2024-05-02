@@ -287,6 +287,8 @@ object LogicalPlanToPlanBuilderString {
         wrapVarsInQuotationsAndMkString(argumentIds.toSeq)
       case CacheProperties(_, properties) =>
         wrapInQuotationsAndMkString(properties.toSeq.map(expressionStringifier(_)))
+      case RemoteBatchProperties(_, properties) =>
+        wrapInQuotationsAndMkString(properties.toSeq.map(expressionStringifier(_)))
       case Create(_, commands) =>
         commands.map(createCreateCommandToString).mkString(", ")
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
