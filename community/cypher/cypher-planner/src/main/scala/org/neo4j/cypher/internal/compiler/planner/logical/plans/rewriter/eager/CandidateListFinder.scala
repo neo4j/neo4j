@@ -50,6 +50,8 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 
+import scala.collection.immutable.BitSet
+
 /**
  * Given conflicts between plans, computes candidate lists that describe where Eager can be planned to solve the conflicts.
  */
@@ -57,10 +59,10 @@ object CandidateListFinder {
 
   /**
    * @param candidates Eager may be planned on top of any of these plans.
-   *                   The candidates are in an order such that `candidates(n).children.contains(candidates(n+1))`.
+   *                   Since we know that we won't append any more candidates, we store it efficiently as a BitSet of plans IDs.
    * @param conflict   the original conflict
    */
-  private[eager] case class CandidateList(candidates: List[Ref[LogicalPlan]], conflict: ConflictingPlanPair)
+  private[eager] case class CandidateList(candidates: BitSet, conflict: ConflictingPlanPair)
 
   private object OpenSequence {
 
@@ -93,7 +95,7 @@ object CandidateListFinder {
      */
     def candidateListWithConflict: Option[CandidateList] = {
       if (!traversesEagerPlanFromLeft)
-        Some(CandidateList(candidates = candidates, conflict = conflict))
+        Some(CandidateList(candidates = candidates.view.map(_.value.id.x).to(BitSet), conflict = conflict))
       else
         None
     }

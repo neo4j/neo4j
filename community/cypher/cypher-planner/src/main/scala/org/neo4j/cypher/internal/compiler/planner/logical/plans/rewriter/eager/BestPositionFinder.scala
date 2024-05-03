@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.CandidateListFinder.CandidateList
 import org.neo4j.cypher.internal.ir.EagernessReason
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 
+import scala.collection.CypherPlannerBitSetOptimizations
+import scala.collection.immutable.BitSet
 import scala.collection.mutable
 
 /**
@@ -41,13 +41,13 @@ object BestPositionFinder {
   private val SIZE_LIMIT = 50
 
   /**
-   * @param candidates the candidate plans
-   * @param minimum    the plan with the lowest cardinality in candidates
+   * @param candidates the candidate plans, as a BitSet of their IDs
+   * @param minimum    the id of plan with the lowest cardinality in candidates
    * @param reasons    all reasons that contributed to this candidateSet
    */
   private[eager] case class CandidateSetWithMinimum(
-    candidates: Set[Ref[LogicalPlan]],
-    minimum: Ref[LogicalPlan],
+    candidates: BitSet,
+    minimum: Int,
     reasons: Set[EagernessReason]
   )
 
@@ -62,14 +62,14 @@ object BestPositionFinder {
   ): Map[Id, ListSet[EagernessReason]] = {
     val results = if (candidateLists.size > SIZE_LIMIT) {
       candidateLists.map(cl =>
-        cl.candidates.minBy(plan => cardinalities.get(plan.value.id)) -> cl.conflict.reasons
+        cl.candidates.minBy(planId => cardinalities.get(Id(planId))) -> cl.conflict.reasons
       )
     } else {
       // Find the minimum of each candidate set
       val csWithMinima = candidateLists.map(cl =>
         CandidateSetWithMinimum(
-          cl.candidates.toSet,
-          cl.candidates.minBy(plan => cardinalities.get(plan.value.id)),
+          cl.candidates,
+          cl.candidates.minBy(planId => cardinalities.get(Id(planId))),
           cl.conflict.reasons
         )
       )
@@ -78,7 +78,9 @@ object BestPositionFinder {
     }
 
     results
-      .groupBy(_._1.value.id)
+      .groupBy {
+        case (id, _) => Id(id)
+      }
       .view
       .mapValues(_.view.flatMap(_._2).to(ListSet))
       .toMap
@@ -134,10 +136,10 @@ object BestPositionFinder {
     if (intersection.isEmpty) {
       // We cannot merge non-intersecting sets
       None
-    } else if (aSet subsetOf bSet) {
+    } else if (CypherPlannerBitSetOptimizations.subsetOf(aSet, bSet)) {
       // If a is a subset of b, we can return that a, with merged reasons.
       Some(a.copy(reasons = a.reasons ++ b.reasons))
-    } else if (bSet subsetOf aSet) {
+    } else if (CypherPlannerBitSetOptimizations.subsetOf(bSet, aSet)) {
       // If b is a subset of a, we can return that b, with merged reasons.
       Some(b.copy(reasons = a.reasons ++ b.reasons))
     } else if (a.minimum == b.minimum || intersection.contains(a.minimum)) {

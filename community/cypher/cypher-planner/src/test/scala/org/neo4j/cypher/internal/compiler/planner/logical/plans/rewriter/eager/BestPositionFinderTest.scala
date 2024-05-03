@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
-import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.BestPositionFinder.CandidateSetWithMinimum
 import org.neo4j.cypher.internal.ir.EagernessReason
-import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+
+import scala.collection.immutable.BitSet
 
 //noinspection ZeroIndexToHead
 class BestPositionFinderTest extends CypherFunSuite {
@@ -37,87 +37,107 @@ class BestPositionFinderTest extends CypherFunSuite {
   // --------
 
   test("should not merge two candidate sets (no intersection)") {
-    val plans = Seq.fill(2)(Ref(FakeLeafPlan()))
+    val plans = 0 until 2
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(1)), plans(1), Set(EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(1)), plans(1), Set(EagernessReason.ReadCreateConflict))
     )
 
     BestPositionFinder.tryMerge(candidateSets(0), candidateSets(1)) should equal(None)
   }
 
   test("should merge two candidate sets (1st subset of 2nd)") {
-    val plans = Seq.fill(2)(Ref(FakeLeafPlan()))
+    val plans = 0 until 2
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.ReadCreateConflict))
     )
 
     BestPositionFinder.tryMerge(candidateSets(0), candidateSets(1)) should equal(Some(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(
+        BitSet(plans(0)),
+        plans(0),
+        Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict)
+      )
     ))
   }
 
   test("should merge two candidate sets (2nd subset of 1st)") {
-    val plans = Seq.fill(2)(Ref(FakeLeafPlan()))
+    val plans = 0 until 2
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.ReadCreateConflict))
     )
 
     BestPositionFinder.tryMerge(candidateSets(0), candidateSets(1)) should equal(Some(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(
+        BitSet(plans(0)),
+        plans(0),
+        Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict)
+      )
     ))
   }
 
   test("should merge two candidate sets (same minimum)") {
-    val plans = Seq.fill(3)(Ref(FakeLeafPlan()))
+    val plans = 0 until 3
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(1), plans(2)), plans(1), Set(EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(1), plans(2)), plans(1), Set(EagernessReason.ReadCreateConflict))
     )
 
     BestPositionFinder.tryMerge(candidateSets(0), candidateSets(1)) should equal(Some(
-      CandidateSetWithMinimum(Set(plans(1)), plans(1), Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(
+        BitSet(plans(1)),
+        plans(1),
+        Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict)
+      )
     ))
   }
 
   test("should merge two candidate sets (first minimum lies in intersection)") {
-    val plans = Seq.fill(3)(Ref(FakeLeafPlan()))
+    val plans = 0 until 3
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(1), plans(2)), plans(2), Set(EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(1), plans(2)), plans(2), Set(EagernessReason.ReadCreateConflict))
     )
 
     BestPositionFinder.tryMerge(candidateSets(0), candidateSets(1)) should equal(Some(
-      CandidateSetWithMinimum(Set(plans(1)), plans(1), Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(
+        BitSet(plans(1)),
+        plans(1),
+        Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict)
+      )
     ))
   }
 
   test("should merge two candidate sets (second minimum lies in intersection)") {
-    val plans = Seq.fill(3)(Ref(FakeLeafPlan()))
+    val plans = 0 until 3
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(1), plans(2)), plans(1), Set(EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(1), plans(2)), plans(1), Set(EagernessReason.ReadCreateConflict))
     )
 
     BestPositionFinder.tryMerge(candidateSets(0), candidateSets(1)) should equal(Some(
-      CandidateSetWithMinimum(Set(plans(1)), plans(1), Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(
+        BitSet(plans(1)),
+        plans(1),
+        Set(EagernessReason.Unknown, EagernessReason.ReadCreateConflict)
+      )
     ))
   }
 
   test("should not merge two candidate sets (no minimum lies in intersection)") {
-    val plans = Seq.fill(3)(Ref(FakeLeafPlan()))
+    val plans = 0 until 3
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(1), plans(2)), plans(2), Set(EagernessReason.ReadCreateConflict))
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(1), plans(2)), plans(2), Set(EagernessReason.ReadCreateConflict))
     )
 
     BestPositionFinder.tryMerge(candidateSets(0), candidateSets(1)) should equal(None)
@@ -128,92 +148,92 @@ class BestPositionFinderTest extends CypherFunSuite {
   // ------------------
 
   test("should merge 1st and 2nd candidate set") {
-    val plans = Seq.fill(3)(Ref(FakeLeafPlan()))
+    val plans = 0 until 3
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(2)), plans(2), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(2)), plans(2), Set(EagernessReason.Unknown))
     )
 
     BestPositionFinder.mergeCandidateSets(candidateSets).toSet should equal(Set(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(2)), plans(2), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(2)), plans(2), Set(EagernessReason.Unknown))
     ))
   }
 
   test("should merge 1st and 3rd candidate set") {
-    val plans = Seq.fill(3)(Ref(FakeLeafPlan()))
+    val plans = 0 until 3
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(2)), plans(2), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(2)), plans(2), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown))
     )
 
     BestPositionFinder.mergeCandidateSets(candidateSets).toSet should equal(Set(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(2)), plans(2), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(2)), plans(2), Set(EagernessReason.Unknown))
     ))
   }
 
   test("should merge 2nd and 3rd candidate set") {
-    val plans = Seq.fill(3)(Ref(FakeLeafPlan()))
+    val plans = 0 until 3
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(2)), plans(2), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(2)), plans(2), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown))
     )
 
     BestPositionFinder.mergeCandidateSets(candidateSets).toSet should equal(Set(
-      CandidateSetWithMinimum(Set(plans(2)), plans(2), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(2)), plans(2), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown))
     ))
   }
 
   test("should merge three candidate set") {
-    val plans = Seq.fill(3)(Ref(FakeLeafPlan()))
+    val plans = 0 until 3
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0), plans(1), plans(2)), plans(2), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1), plans(2)), plans(2), Set(EagernessReason.Unknown))
     )
 
     BestPositionFinder.mergeCandidateSets(candidateSets).toSet should equal(Set(
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown))
     ))
   }
 
   test("should merge multiple candidate sets") {
-    val plans = Seq.fill(4)(Ref(FakeLeafPlan()))
+    val plans = 0 until 4
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(2)), plans(2), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(2), plans(3)), plans(3), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(2)), plans(2), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(2), plans(3)), plans(3), Set(EagernessReason.Unknown))
     )
 
     BestPositionFinder.mergeCandidateSets(candidateSets).toSet should equal(Set(
-      CandidateSetWithMinimum(Set(plans(2)), plans(2), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(0)), plans(0), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(2)), plans(2), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(0)), plans(0), Set(EagernessReason.Unknown))
     ))
   }
 
   test("in a chain of intersecting sets, merge 1st and 2nd") {
-    val plans = Seq.fill(5)(Ref(FakeLeafPlan()))
+    val plans = 0 until 5
 
     val candidateSets = Seq(
-      CandidateSetWithMinimum(Set(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(1), plans(2), plans(3)), plans(2), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(3), plans(4)), plans(3), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(0), plans(1)), plans(1), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(1), plans(2), plans(3)), plans(2), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(3), plans(4)), plans(3), Set(EagernessReason.Unknown))
     )
 
     BestPositionFinder.mergeCandidateSets(candidateSets).toSet should equal(Set(
-      CandidateSetWithMinimum(Set(plans(1)), plans(1), Set(EagernessReason.Unknown)),
-      CandidateSetWithMinimum(Set(plans(3), plans(4)), plans(3), Set(EagernessReason.Unknown))
+      CandidateSetWithMinimum(BitSet(plans(1)), plans(1), Set(EagernessReason.Unknown)),
+      CandidateSetWithMinimum(BitSet(plans(3), plans(4)), plans(3), Set(EagernessReason.Unknown))
     ))
 
     // An alternative would have been to merge the 2nd and 3rd.

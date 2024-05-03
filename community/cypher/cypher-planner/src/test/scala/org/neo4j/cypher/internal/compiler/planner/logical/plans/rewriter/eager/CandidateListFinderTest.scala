@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.collection.immutable.BitSet
+
 //noinspection ZeroIndexToHead
 class CandidateListFinderTest extends CypherFunSuite {
 
@@ -45,7 +47,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("p2"))), conflicts(0))
+      CandidateList(BitSet(p.get("p2").id.x), conflicts(0))
     )
   }
 
@@ -81,8 +83,8 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3"))), conflicts(0)),
-      CandidateList(List(Ref(p.get("p3")), Ref(p.get("p4"))), conflicts(1))
+      CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x), conflicts(0)),
+      CandidateList(BitSet(p.get("p3").id.x, p.get("p4").id.x), conflicts(1))
     )
   }
 
@@ -122,7 +124,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3"))), conflicts(0))
+      CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x), conflicts(0))
     )
   }
 
@@ -143,7 +145,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3")), Ref(p.get("p4"))), conflicts(0))
+      CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x, p.get("p4").id.x), conflicts(0))
     )
   }
 
@@ -164,7 +166,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("p2"))), conflicts(0))
+      CandidateList(BitSet(p.get("p2").id.x), conflicts(0))
     )
   }
 
@@ -185,7 +187,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3"))), conflicts(0))
+      CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x), conflicts(0))
     )
   }
 
@@ -206,7 +208,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3")), Ref(p.get("p4"))), conflicts(0))
+      CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x, p.get("p4").id.x), conflicts(0))
     )
   }
 
@@ -227,7 +229,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("p2"))), conflicts(0))
+      CandidateList(BitSet(p.get("p2").id.x), conflicts(0))
     )
   }
 
@@ -255,13 +257,13 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("a"))), conflicts(0)),
-      CandidateList(List(Ref(p.get("a"))), conflicts(1)),
-      CandidateList(List(Ref(p.get("a"))), conflicts(2)),
-      CandidateList(List(Ref(p.get("b"))), conflicts(3)),
-      CandidateList(List(Ref(p.get("Apply"))), conflicts(4)),
-      CandidateList(List(Ref(p.get("Apply"))), conflicts(5)),
-      CandidateList(List(Ref(p.get("c"))), conflicts(6))
+      CandidateList(BitSet(p.get("a").id.x), conflicts(0)),
+      CandidateList(BitSet(p.get("a").id.x), conflicts(1)),
+      CandidateList(BitSet(p.get("a").id.x), conflicts(2)),
+      CandidateList(BitSet(p.get("b").id.x), conflicts(3)),
+      CandidateList(BitSet(p.get("Apply").id.x), conflicts(4)),
+      CandidateList(BitSet(p.get("Apply").id.x), conflicts(5)),
+      CandidateList(BitSet(p.get("c").id.x), conflicts(6))
     )
   }
 
@@ -308,12 +310,12 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("a"))), conflicts(0)),
-      CandidateList(List(Ref(p.get("a"))), conflicts(1)),
-      CandidateList(List(Ref(p.get("a"))), conflicts(2)),
-      CandidateList(List(Ref(p.get("Apply"))), conflicts(3)),
-      CandidateList(List(Ref(p.get("Apply"))), conflicts(4)),
-      CandidateList(List(Ref(p.get("c"))), conflicts(5))
+      CandidateList(BitSet(p.get("a").id.x), conflicts(0)),
+      CandidateList(BitSet(p.get("a").id.x), conflicts(1)),
+      CandidateList(BitSet(p.get("a").id.x), conflicts(2)),
+      CandidateList(BitSet(p.get("Apply").id.x), conflicts(3)),
+      CandidateList(BitSet(p.get("Apply").id.x), conflicts(4)),
+      CandidateList(BitSet(p.get("c").id.x), conflicts(5))
     )
   }
 
@@ -372,7 +374,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
     val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
     result should contain theSameElementsAs Seq(
-      CandidateList(List(Ref(p.get("p2")), Ref(p.get("p3")), Ref(p.get("p4"))), conflicts(0))
+      CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x, p.get("p4").id.x), conflicts(0))
     )
   }
 
