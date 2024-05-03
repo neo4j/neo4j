@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
-import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.BestPositionFinder.pickPlansToEagerize
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.CandidateListFinder.findCandidateLists
@@ -144,12 +143,6 @@ object EagerWhereNeededRewriter {
   private[eager] class ChildrenIds extends Attribute[LogicalPlan, BitSet] with PlanChildrenLookup {
 
     /**
-     * Maps a plan ID to the position of the plan in the whole plan.
-     * The position is 0-based and in execution order.
-     */
-    private val plansIDToPosition = new IntIntHashMap()
-
-    /**
      * All plan IDs of plans that are a child of a TransactionApply/TransactionForeach.
      */
     private val transactionalApplyNestedPlans = mutable.BitSet.empty
@@ -163,7 +156,10 @@ object EagerWhereNeededRewriter {
       get(plan.id).contains(child.id.x)
     }
 
-    override def mostDownstreamPlan(plans: LogicalPlan*): LogicalPlan = plans.maxBy(p => plansIDToPosition.get(p.id.x))
+    override def mostDownstreamPlan(plans: LogicalPlan*): LogicalPlan = {
+      // Note: This only works because CompressPlanIDs is a preCondition of EagerRewriter
+      plans.minBy(_.id.x)
+    }
 
     override def isInTransactionalApply(plan: LogicalPlan): Boolean = transactionalApplyNestedPlans.contains(plan.id.x)
 
@@ -175,8 +171,6 @@ object EagerWhereNeededRewriter {
      */
     def recordChildren(plan: LogicalPlan): Unit = {
       if (!isDefinedAt(plan.id)) {
-        plansIDToPosition.put(plan.id.x, plansIDToPosition.size())
-
         val childrenIds = plan match {
           case _: LogicalLeafPlan =>
             BitSet.empty

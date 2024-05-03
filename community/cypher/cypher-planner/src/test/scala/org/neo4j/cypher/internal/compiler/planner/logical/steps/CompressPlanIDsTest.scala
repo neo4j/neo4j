@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -56,6 +57,23 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
   test("should assign consecutive IDs starting from 0") {
     val p = compress(logicalPlanStateWithAttrributes(plan)).logicalPlan
     allPlans(p).map(_.id.x).toSet should equal((0 to 6).toSet)
+
+    println(allPlans(p).map(p => s"${p.id.x}:\n$p").mkString("\n"))
+  }
+
+  test("should assign IDs in reverse execution order") {
+    // This is important for EagerRewriter
+    val p = compress(logicalPlanStateWithAttrributes(plan)).logicalPlan
+
+    // This traverses the tree in execution order.
+    LogicalPlans.simpleFoldPlan(Int.MaxValue)(
+      p,
+      (highestId, plan) => {
+        val planId = plan.id.x
+        planId should be < highestId
+        planId
+      }
+    )
   }
 
   test("should compress planning attributes") {
