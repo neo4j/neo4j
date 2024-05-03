@@ -82,6 +82,9 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
           oldAttributes.leveragedOrders.getOption(lp.id).foreach {
             newAttributes.leveragedOrders.set(newLP.id, _)
           }
+          oldAttributes.labelAndRelTypeInfos.getOption(lp.id).foreach {
+            newAttributes.labelAndRelTypeInfos.set(newLP.id, _)
+          }
           newLP
       },
       leftToRight = false,

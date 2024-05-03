@@ -60,7 +60,10 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
 
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(LogicalPlanRewritten)
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    LogicalPlanRewritten,
+    InsertCachedProperties.completed
+  )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
