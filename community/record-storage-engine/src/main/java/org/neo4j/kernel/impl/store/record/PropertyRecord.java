@@ -357,7 +357,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
             case TYPE_NODE -> buf.append("node");
             case TYPE_REL -> buf.append("rel");
             case TYPE_SCHEMA_RULE -> buf.append("schema");
-            default -> buf.append("unkownType(").append(entityType).append(")");
+            default -> buf.append("unknownType(").append(entityType).append(")");
         }
 
         buf.append("=").append(entityId);
