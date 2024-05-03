@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.NonFatalCypherError
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.graphdb.ExecutionPlanDescription
-import org.neo4j.graphdb.Notification
 import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.notifications.NotificationImplementation
 
 /**
  * Ensures execution results are closed. This is tricky because we try to be smart about
@@ -94,7 +94,7 @@ class ClosingExecutionResult private (
 
   override def queryType: InternalQueryType = safely { inner.queryType }
 
-  override def notifications: Iterable[Notification] = safely { inner.notifications }
+  override def notifications: Iterable[NotificationImplementation] = safely { inner.notifications }
 
   override def executionMode: ExecutionMode = safely { inner.executionMode }
 

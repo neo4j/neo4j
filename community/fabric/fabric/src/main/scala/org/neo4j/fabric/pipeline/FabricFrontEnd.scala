@@ -56,9 +56,7 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.planning.FabricPlan
 import org.neo4j.fabric.util.Errors
-import org.neo4j.graphdb.Notification
 import org.neo4j.monitoring
-import org.neo4j.notifications.NotificationWrapping
 import org.neo4j.values.virtual.MapValue
 
 case class FabricFrontEnd(

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.impl.query.QueryExecution
+import org.neo4j.notifications.NotificationImplementation
 
 import java.lang
 
@@ -44,11 +45,11 @@ trait InternalExecutionResult extends QueryExecution {
 
   def queryType: InternalQueryType
 
-  def notifications: Iterable[Notification]
+  def notifications: Iterable[NotificationImplementation]
 
   def getError: Option[Throwable]
 
-  override def getNotifications: lang.Iterable[Notification] = notifications.asJava
+  override def getNotifications: lang.Iterable[Notification] = notifications.asInstanceOf[Iterable[Notification]].asJava
 
   def executionType: QueryExecutionType = {
     val qt = QueryTypeConversion.asPublic(queryType)

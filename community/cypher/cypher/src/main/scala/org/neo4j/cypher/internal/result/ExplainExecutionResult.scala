@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.result
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.QueryStatistics
-import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.notifications.NotificationImplementation
 
 class ExplainExecutionResult(
   fieldNames: Array[String],
   planDescription: InternalPlanDescription,
   queryType: InternalQueryType,
-  notifications: Set[Notification],
+  notifications: Set[NotificationImplementation],
   subscriber: QuerySubscriber
 ) extends EmptyExecutionResult(fieldNames, planDescription, queryType, notifications) {
 

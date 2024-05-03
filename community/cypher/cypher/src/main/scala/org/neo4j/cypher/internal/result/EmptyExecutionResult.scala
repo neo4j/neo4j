@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.ExplainMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
-import org.neo4j.graphdb.Notification
+import org.neo4j.notifications.NotificationImplementation
 
 abstract class EmptyExecutionResult(
   val fieldNames: Array[String],
   val planDescription: InternalPlanDescription,
   val queryType: InternalQueryType,
-  val notifications: Set[Notification]
+  val notifications: Set[NotificationImplementation]
 ) extends InternalExecutionResult {
 
   override def initiate(): Unit = {}

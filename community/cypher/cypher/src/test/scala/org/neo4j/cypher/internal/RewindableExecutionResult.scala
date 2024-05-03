@@ -29,11 +29,11 @@ import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
 import org.neo4j.graphdb.Entity
-import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.notifications.NotificationImplementation
 import org.neo4j.util.Table
 import org.neo4j.values.storable.Values
 
@@ -48,7 +48,7 @@ trait RewindableExecutionResult extends AutoCloseable {
   def executionMode: ExecutionMode
   protected def planDescription: InternalPlanDescription
   protected def statistics: QueryStatistics
-  def notifications: Iterable[Notification]
+  def notifications: Iterable[NotificationImplementation]
 
   def columnAs[T](column: String): Iterator[T] = result.iterator.map(row => row(column).asInstanceOf[T])
   def toList: List[Map[String, AnyRef]] = result.toList
@@ -87,7 +87,7 @@ class RewindableExecutionResultImplementation(
   val executionMode: ExecutionMode,
   protected val planDescription: InternalPlanDescription,
   protected val statistics: QueryStatistics,
-  val notifications: Iterable[Notification],
+  val notifications: Iterable[NotificationImplementation],
   val closeable: AutoCloseable
 ) extends RewindableExecutionResult
 
@@ -106,7 +106,7 @@ object RewindableExecutionResult {
         NormalMode,
         in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
         QueryStatistics(in.getQueryStatistics),
-        in.getNotifications.asScala.toSeq,
+        in.getNotifications.asScala.map(not => not.asInstanceOf[NotificationImplementation]).toSeq,
         closeable = () => in.close()
       )
     } finally in.close()
@@ -117,12 +117,12 @@ object RewindableExecutionResult {
     transactionalContext: TransactionalContext,
     queryContext: QueryContext,
     subscriber: RecordingQuerySubscriber,
-    internalNotification: Seq[Notification] = Seq.empty
+    internalNotification: Seq[NotificationImplementation] = Seq.empty
   ): RewindableExecutionResult = {
     try {
       val (executionMode, notifications) = result match {
         case r: InternalExecutionResult => (r.executionMode, r.notifications.toSet)
-        case _                          => (NormalMode, Set.empty[Notification])
+        case _                          => (NormalMode, Set.empty[NotificationImplementation])
       }
 
       apply(
@@ -148,8 +148,8 @@ object RewindableExecutionResult {
     columns: Array[String],
     executionMode: ExecutionMode,
     planDescription: () => InternalPlanDescription,
-    notifications: Set[Notification],
-    internalNotifications: Seq[Notification]
+    notifications: Set[NotificationImplementation],
+    internalNotifications: Seq[NotificationImplementation]
   ): RewindableExecutionResult = {
     subscription.request(Long.MaxValue)
     subscriber.assertNoErrors()

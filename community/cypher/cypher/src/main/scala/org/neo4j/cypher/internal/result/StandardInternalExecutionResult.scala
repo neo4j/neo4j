@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.runtime.WRITE
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.exceptions.ProfilerStatisticsNotReadyException
-import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.notifications.NotificationImplementation
 
 class StandardInternalExecutionResult(
   runtimeResult: RuntimeResult,
@@ -41,7 +41,7 @@ class StandardInternalExecutionResult(
   override val executionMode: ExecutionMode,
   planDescriptionBuilder: PlanDescriptionBuilder,
   subscriber: QuerySubscriber,
-  val internalNotifications: Seq[Notification]
+  val internalNotifications: Seq[NotificationImplementation]
 ) extends InternalExecutionResult {
 
   self =>
@@ -143,7 +143,7 @@ class StandardInternalExecutionResult(
 
   }
 
-  override def notifications: Iterable[Notification] = internalNotifications
+  override def notifications: Iterable[NotificationImplementation] = internalNotifications
 
   override def getError: Option[Throwable] = Option(runtimeResult.getErrorOrNull)
 }
