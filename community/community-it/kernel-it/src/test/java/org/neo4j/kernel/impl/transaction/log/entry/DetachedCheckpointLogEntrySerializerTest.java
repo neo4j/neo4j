@@ -23,6 +23,7 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
@@ -192,6 +193,41 @@ class DetachedCheckpointLogEntrySerializerTest {
         }
     }
 
+    @ParameterizedTest
+    @KernelVersionSource(atLeast = "5.7")
+    void checkpointContainsConsensusIndex(KernelVersion kernelVersion) throws IOException {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
+            Path path = directory.createFile("c");
+            StoreChannel storeChannel = fs.write(path);
+            try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
+
+                long initialPosition = writeChannel.position();
+                writeCheckpoint(writeChannel, kernelVersion, StringUtils.repeat("b", 1024));
+                long recordLength = writeChannel.position() - initialPosition;
+                assertThat(recordLength).isEqualTo(RECORD_LENGTH_BYTES);
+            }
+
+            VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
+                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
+            try (var readChannel = new ReadAheadLogChannel(
+                    new PhysicalLogVersionedStoreChannel(
+                            fs.read(path),
+                            -1 /* ignored */,
+                            LATEST_LOG_FORMAT,
+                            path,
+                            EMPTY_ACCESSOR,
+                            DatabaseTracer.NULL),
+                    NO_MORE_CHANNELS,
+                    INSTANCE)) {
+                if (kernelVersion.isAtLeast(KernelVersion.V5_20)) {
+                    verifyCheckpoint5_20(entryReader, readChannel, kernelVersion);
+                } else {
+                    verifyCheckpoint(entryReader, readChannel, kernelVersion);
+                }
+            }
+        }
+    }
+
     private static void writeCheckpoint(WritableChannel channel, KernelVersion kernelVersion, String reason)
             throws IOException {
         var transactionId = new TransactionId(70, 70, LATEST_KERNEL_VERSION, 80, 90, 10);
@@ -219,5 +255,36 @@ class DetachedCheckpointLogEntrySerializerTest {
     private LogEntryDetachedCheckpointV5_0 readCheckpoint(
             VersionAwareLogEntryReader entryReader, ReadableLogPositionAwareChannel readChannel) throws IOException {
         return (LogEntryDetachedCheckpointV5_0) entryReader.readLogEntry(readChannel);
+    }
+
+    private void verifyCheckpoint5_20(
+            VersionAwareLogEntryReader entryReader,
+            ReadableLogPositionAwareChannel readChannel,
+            KernelVersion kernelVersion)
+            throws IOException {
+        LogEntryDetachedCheckpointV5_20 checkpoint =
+                (LogEntryDetachedCheckpointV5_20) entryReader.readLogEntry(readChannel);
+
+        assertEquals(DETACHED_CHECK_POINT_V5_0, checkpoint.getType());
+        assertEquals(kernelVersion, checkpoint.kernelVersion());
+        assertEquals(new LogPosition(100, 200), checkpoint.getLogPosition());
+        assertEquals(TEST_STORE_ID, checkpoint.getStoreId());
+        assertEquals(new TransactionId(70, 70, kernelVersion, 80, 90, 10), checkpoint.getTransactionId());
+        assertTrue(checkpoint.consensusIndexInCheckpoint());
+    }
+
+    private void verifyCheckpoint(
+            VersionAwareLogEntryReader entryReader,
+            ReadableLogPositionAwareChannel readChannel,
+            KernelVersion kernelVersion)
+            throws IOException {
+        LogEntryDetachedCheckpointV5_0 checkpoint = readCheckpoint(entryReader, readChannel);
+
+        assertEquals(DETACHED_CHECK_POINT_V5_0, checkpoint.getType());
+        assertEquals(kernelVersion, checkpoint.kernelVersion());
+        assertEquals(new LogPosition(100, 200), checkpoint.getLogPosition());
+        assertEquals(TEST_STORE_ID, checkpoint.getStoreId());
+        assertEquals(new TransactionId(70, 70, kernelVersion, 80, 90, 10), checkpoint.getTransactionId());
+        assertTrue(checkpoint.consensusIndexInCheckpoint());
     }
 }

@@ -79,8 +79,7 @@ public class DetachedCheckpointLogEntrySerializerV5_20 extends LogEntrySerialize
                 new LogPosition(logVersion, byteOffset),
                 checkpointTimeMillis,
                 storeId,
-                reason,
-                false);
+                reason);
     }
 
     @Override

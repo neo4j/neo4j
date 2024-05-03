@@ -46,18 +46,6 @@ public class LogEntryDetachedCheckpointV5_20 extends AbstractVersionAwareLogEntr
             long checkpointMillis,
             StoreId storeId,
             String reason) {
-        this(kernelVersion, transactionId, lastAppendIndex, logPosition, checkpointMillis, storeId, reason, true);
-    }
-
-    public LogEntryDetachedCheckpointV5_20(
-            KernelVersion kernelVersion,
-            TransactionId transactionId,
-            long lastAppendIndex,
-            LogPosition logPosition,
-            long checkpointMillis,
-            StoreId storeId,
-            String reason,
-            boolean consensusIndexInCheckpoint) {
         super(kernelVersion, DETACHED_CHECK_POINT_V5_0);
         this.transactionId = transactionId;
         this.logPosition = logPosition;
@@ -65,7 +53,7 @@ public class LogEntryDetachedCheckpointV5_20 extends AbstractVersionAwareLogEntr
         this.storeId = storeId;
         this.lastAppendIndex = lastAppendIndex;
         this.reason = reason;
-        this.consensusIndexInCheckpoint = consensusIndexInCheckpoint;
+        this.consensusIndexInCheckpoint = true;
     }
 
     @Override
