@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.L
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties.PropertyUsages
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties.PropertyUsagesAndRenamings
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.CacheAll
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.CachedPropertiesTracker
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RestrictedCaching.ProtectedProperties
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
@@ -330,8 +331,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
     semanticTable: SemanticTable
   ): (LogicalPlan, SemanticTable) = {
     var currentTypes = semanticTable.types
-    val cachedProperties = mutable.Map.empty[LogicalVariable, Set[ASTCachedProperty]]
-
+    val cachedPropertiesTracker = new CachedPropertiesTracker
     val rewriter = bottomUp(Rewriter.lift {
 
       case produceResult: ProduceResult =>
@@ -339,7 +339,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
           produceResult
             .returnColumns
             .map(column =>
-              cachedProperties.get(acc.variableWithOriginalName(asVariable(column.variable))).map(cached =>
+              cachedPropertiesTracker.get(acc.variableWithOriginalName(asVariable(column.variable))).map(cached =>
                 column.copy(cachedProperties = cached)
               ).getOrElse(column)
             )
@@ -361,11 +361,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
             ))
             if usages.contains(Ref(prop)) &&
               (usageCount > 1 || canGetFromIndex) =>
-            val newProperty = cacheProperty(prop, pu, acc)
-            cachedProperties.updateWith(originalVar)({
-              case Some(existing) => Some(existing + newProperty)
-              case None           => Some(Set(newProperty))
-            })
+            val newProperty: ASTCachedProperty = cacheProperty(prop, pu, acc)
+            cachedPropertiesTracker.addOne(originalVar, newProperty)
             // Register the new variables in the semantic table
             currentTypes.get(prop) match {
               case None => // I don't like this. We have to make sure we retain the type from semantic analysis
@@ -380,19 +377,21 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
       // Rewrite index plans to either GetValue or DoNotGetValue
       case indexPlan: NodeIndexLeafPlan =>
-        rewriteIndexPlan(
+        val rewrittenIndexPlan: IndexedPropertyProvidingPlan = rewriteIndexPlan(
           acc,
           indexPlan,
-          indexPlan.idName,
-          (p, pu) => cachedProperties.put(indexPlan.idName, Set(cacheProperty(p, pu, acc)))
+          indexPlan.idName
         )
+        cachedPropertiesTracker.addMany(indexPlan.idName, rewrittenIndexPlan.cachedProperties)
+        rewrittenIndexPlan
       case indexPlan: RelationshipIndexLeafPlan =>
-        rewriteIndexPlan(
+        val rewrittenIndexPlan = rewriteIndexPlan(
           acc,
           indexPlan,
-          indexPlan.idName,
-          (p, pu) => cachedProperties.put(indexPlan.idName, Set(cacheProperty(p, pu, acc)))
+          indexPlan.idName
         )
+        cachedPropertiesTracker.addMany(indexPlan.idName, rewrittenIndexPlan.cachedProperties)
+        rewrittenIndexPlan
     })
 
     val newPlan = logicalPlan.endoRewrite(rewriter)
@@ -406,8 +405,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
   private def rewriteIndexPlan(
     acc: PropertyUsagesAndRenamings,
     indexPlan: IndexedPropertyProvidingPlan,
-    idName: LogicalVariable,
-    onCached: (Property, PropertyUsages) => Unit
+    idName: LogicalVariable
   ) = {
     val shouldForceCache =
       acc.indexedEntityAliases.getOrElse(idName.name, Set.empty).intersect(acc.entitiesWithAllPropertiesRead).nonEmpty
@@ -420,7 +418,6 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
           // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
           // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
           if (shouldForceCache || usageCount > 0) && indexedProp.getValueFromIndex != DoNotGetValue =>
-          onCached.apply(prop, pu)
           indexedProp.copy(getValueFromIndex = GetValue)
         // We could get the value but we don't need it later
         case _ =>
@@ -782,5 +779,36 @@ object RestrictedCaching {
     }
 
     protectedProps.map(plan -> _)
+  }
+
+  class CachedPropertiesTracker {
+    private val cachedProperties = mutable.Map.empty[LogicalVariable, Set[ASTCachedProperty]]
+
+    def addOne(variable: LogicalVariable, newProperty: ASTCachedProperty): Unit = {
+      // If we have one property with knownToAccessStore=true and one with knownToAccessStore=false we merge into a
+      // single one with knownToAccessStore=false
+      val (flippedStoreAccess, newPropertyKnownToAccessStore) = newProperty match {
+        case c: CachedProperty => (c.copy(knownToAccessStore = !c.knownToAccessStore)(c.position), c.knownToAccessStore)
+        case c: CachedHasProperty =>
+          (c.copy(knownToAccessStore = !c.knownToAccessStore)(c.position), c.knownToAccessStore)
+        case _ =>
+          throw new IllegalStateException(s"$newProperty should either be a CachedProperty or a CachedHasProperty")
+      }
+      cachedProperties.updateWith(variable)({
+        case Some(existing) if existing(flippedStoreAccess) =>
+          if (newPropertyKnownToAccessStore) Some(existing)
+          else {
+            Some((existing - flippedStoreAccess) + newProperty)
+          }
+        case Some(existing) => Some(existing + newProperty)
+        case None           => Some(Set(newProperty))
+      })
+    }
+
+    def addMany(variable: LogicalVariable, newProperties: Seq[ASTCachedProperty]): Unit = {
+      newProperties.foreach(np => addOne(variable, np))
+    }
+
+    def get(variable: LogicalVariable): Option[Set[ASTCachedProperty]] = cachedProperties.get(variable)
   }
 }

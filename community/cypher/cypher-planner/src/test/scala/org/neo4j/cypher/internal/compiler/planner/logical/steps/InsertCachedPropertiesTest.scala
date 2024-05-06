@@ -1233,7 +1233,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults(column("a", "cacheN[a.prop]", "cacheNFromStore[a.prop]"))
+      .produceResults(column("a", "cacheN[a.prop]"))
       .union()
       // arguably, this shouldn't be cached, this is the limitation of this fix
       .|.filter("cacheNFromStore[a.prop] < 321")
