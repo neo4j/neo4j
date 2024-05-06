@@ -34,6 +34,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -216,7 +218,15 @@ public class RecoveryAppendIndexIT {
                 .resolveDependency(MetadataProvider.class)
                 .getLastAppendIndex();
 
-        assertEquals(3, restartedLastAppendIndex);
+        if (RecordStorageEngineFactory.NAME.equals(restartedDb
+                .getDependencyResolver()
+                .resolveDependency(StorageEngine.class)
+                .name())) {
+            // record format has additional create missing tokens transaction
+            assertEquals(3, restartedLastAppendIndex);
+        } else {
+            assertEquals(2, restartedLastAppendIndex);
+        }
     }
 
     private void restartDbms() {
