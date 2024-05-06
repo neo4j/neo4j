@@ -28,17 +28,13 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
-import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.topDown
-
-import scala.collection.mutable
 
 /**
  * Compresses the plan IDs so that they are consecutive numbers starting from 0.
@@ -58,14 +54,14 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
     val oldAttributes = from.planningAttributes
     val newAttributes = PlanningAttributes.newAttributes
 
-    val oldToNewIds: mutable.Map[Id, Id] = mutable.Map()
+    val fixIdReferences = new FixIdReferences(context.cancellationChecker)
 
     val newIdGen = new SequentialIdGen()
     val newPlan = from.logicalPlan.endoRewrite(topDown(
       rewriter = Rewriter.lift {
         case lp: LogicalPlan =>
           val newLP = lp.copyPlanWithIdGen(newIdGen)
-          oldToNewIds.addOne(lp.id -> newLP.id)
+          fixIdReferences.registerMapping(lp.id, newLP.id)
 
           oldAttributes.solveds.getOption(lp.id).foreach {
             newAttributes.solveds.set(newLP.id, _)
@@ -91,13 +87,7 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
       cancellation = context.cancellationChecker
     ))
 
-    val newPlanWithUpdatedIDRefs = newPlan.endoRewrite(topDown(
-      Rewriter.lift {
-        case EagernessReason.Conflict(first, second) =>
-          EagernessReason.Conflict(oldToNewIds(first), oldToNewIds(second))
-      },
-      cancellation = context.cancellationChecker
-    ))
+    val newPlanWithUpdatedIDRefs = newPlan.endoRewrite(fixIdReferences(recursiveIdLookup = false))
 
     from
       .withMaybeLogicalPlan(Some(newPlanWithUpdatedIDRefs))
