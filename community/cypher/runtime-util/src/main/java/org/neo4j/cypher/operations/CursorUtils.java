@@ -31,6 +31,8 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
+
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.exceptions.CypherTypeException;
@@ -613,9 +615,11 @@ public final class CursorUtils {
             TokenRead tokenRead,
             VirtualRelationshipValue relationship,
             RelationshipScanCursor cursor,
-            PropertyCursor propertyCursor)
+            PropertyCursor propertyCursor,
+            MapValueBuilder seenProperties,
+            IntSet seenPropertyTokens)
             throws PropertyKeyIdNotFoundKernelException {
-        return new VirtualRelationshipReader(read, cursor, relationship).asMap(tokenRead, propertyCursor);
+        return new VirtualRelationshipReader(read, cursor, relationship).asMap(tokenRead, propertyCursor, seenProperties, seenPropertyTokens);
     }
 
     @CalledFromGeneratedCode
@@ -877,11 +881,10 @@ public final class CursorUtils {
             }
         }
 
-        public MapValue asMap(TokenRead tokenRead, PropertyCursor propertyCursor)
+        public MapValue asMap(TokenRead tokenRead, PropertyCursor propertyCursor, MapValueBuilder builder, IntSet seenTokens)
                 throws PropertyKeyIdNotFoundKernelException {
             if (next()) {
-                var builder = new MapValueBuilder();
-                cursor.properties(propertyCursor);
+                cursor.properties(propertyCursor, PropertySelection.ALL_PROPERTIES.excluding(seenTokens::contains));
                 while (propertyCursor.next()) {
                     builder.add(
                             tokenRead.propertyKeyName(propertyCursor.propertyKey()), propertyCursor.propertyValue());
