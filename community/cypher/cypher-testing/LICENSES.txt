@@ -365,6 +365,7 @@ BSD License
   asm-util
   ParaNamer Core
   Protocol Buffers [Core]
+  Protocol Buffers [Util]
   Zstandard
 ------------------------------------------------------------------------------
 

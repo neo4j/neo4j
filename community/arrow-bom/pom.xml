@@ -13,8 +13,8 @@
 
     <properties>
         <moduleName>org.neo4j.arrow.bom</moduleName>
-        <arrow.version>15.0.2</arrow.version>
-        <grpc.version>1.62.2</grpc.version>
+        <arrow.version>16.0.0</arrow.version>
+        <grpc.version>1.63.0</grpc.version>
     </properties>
 
     <artifactId>arrow-bom</artifactId>
@@ -64,6 +64,10 @@
                 </exclusion>
                 <exclusion>
                     <groupId>io.grpc</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.gson</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>

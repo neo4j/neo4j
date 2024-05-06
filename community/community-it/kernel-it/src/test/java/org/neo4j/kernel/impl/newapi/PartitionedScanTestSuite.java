@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -30,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
-import org.apache.commons.collections4.map.ListOrderedMap;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
@@ -484,7 +484,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
     protected static final class EntityIdsMatchingQuery<QUERY extends Query<?>>
             implements Iterable<Map.Entry<QUERY, Set<Long>>> {
-        private final Map<QUERY, Set<Long>> matches = new ListOrderedMap<>();
+        private final Map<QUERY, Set<Long>> matches = new HashMap<>();
 
         static <QUERY extends Query<?>>
                 Collector<QUERY, EntityIdsMatchingQuery<QUERY>, EntityIdsMatchingQuery<QUERY>> collector() {

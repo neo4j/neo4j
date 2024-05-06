@@ -360,6 +360,7 @@ BSD License
   ANTLR 4 Runtime
   asm
   Protocol Buffers [Core]
+  Protocol Buffers [Util]
   Zstandard
 ------------------------------------------------------------------------------
 

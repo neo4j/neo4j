@@ -141,6 +141,7 @@ BSD License
   asm-util
   ParaNamer Core
   Protocol Buffers [Core]
+  Protocol Buffers [Util]
   Zstandard
 
 BSD License 2-clause

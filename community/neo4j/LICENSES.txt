@@ -357,6 +357,7 @@ BSD License
   asm-tree
   asm-util
   Protocol Buffers [Core]
+  Protocol Buffers [Util]
   Zstandard
 ------------------------------------------------------------------------------
 
