@@ -105,7 +105,8 @@ abstract class BFS<STEPS> implements AutoCloseable {
         this.retriever = switch (direction) {
             case OUTGOING -> RelationshipSelections::outgoingCursor;
             case INCOMING -> RelationshipSelections::incomingCursor;
-            case BOTH -> RelationshipSelections::allCursor;};
+            case BOTH -> RelationshipSelections::allCursor;
+        };
     }
 
     abstract State searchForIntersectionInNextLevel();

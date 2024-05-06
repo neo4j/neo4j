@@ -652,7 +652,8 @@ public class ImportCommand {
                     case "1" -> "prepare";
                     case "2" -> "build";
                     case "3" -> "merge";
-                    default -> in.toLowerCase(Locale.ROOT);};
+                    default -> in.toLowerCase(Locale.ROOT);
+                };
                 try {
                     return CsvImporter.IncrementalStage.valueOf(in);
 

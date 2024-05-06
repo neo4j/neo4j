@@ -780,7 +780,8 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>> {
             case GEOMETRY -> getGeometrySize(value);
             case TEXT -> getStringSize(value);
             default -> throw new RuntimeException(
-                    "Did not expect this type to be tested in this test. Value was " + value);};
+                    "Did not expect this type to be tested in this test. Value was " + value);
+        };
         assertKeySize(expectedSizeOfData, actualSizeOfData, typeName);
     }
 

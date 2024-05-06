@@ -145,7 +145,7 @@
     <lucene.version>9.10.0</lucene.version>
     <bouncycastle.version>1.77</bouncycastle.version>
     <jetty.version>10.0.20</jetty.version>
-    <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
+    <scala-maven-plugin.version>4.9.0</scala-maven-plugin.version>
     <scala.version>2.13.11</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
@@ -404,7 +404,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.1</version>
           <executions>
             <!-- Augment default jar with url -->
             <execution>
@@ -724,7 +724,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.12.1</version>
+          <version>3.13.0</version>
           <configuration>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
@@ -743,7 +743,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.3.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -773,7 +773,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.1</version>
+          <version>3.5.3</version>
           <dependencies>
             <dependency>
               <groupId>org.ow2.asm</groupId>
@@ -790,7 +790,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.7.1</version>
           <configuration>
             <tarLongFileMode>gnu</tarLongFileMode>
           </configuration>
@@ -847,7 +847,7 @@
           </upToDateChecking>
           <java>
             <palantirJavaFormat>
-              <version>2.40.0</version>
+              <version>2.46.0</version>
             </palantirJavaFormat>
           </java>
           <scala>

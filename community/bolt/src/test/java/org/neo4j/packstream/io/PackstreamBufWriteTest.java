@@ -281,7 +281,8 @@ public class PackstreamBufWriteTest {
                             case INT16 -> buf.readShort();
                             case INT32 -> buf.readInt();
                             case INT64 -> buf.readLong();
-                            default -> throw new IllegalArgumentException("Invalid expectation: " + expectation);};
+                            default -> throw new IllegalArgumentException("Invalid expectation: " + expectation);
+                        };
 
                         assertThat(marker).isEqualTo(expectation.marker().getValue());
                     } else {

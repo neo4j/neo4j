@@ -113,7 +113,8 @@ public class CsvInputParser implements Closeable {
                     case LABEL -> value.getClass().isArray()
                             ? visitor.labels((String[]) value)
                             : visitor.labels(new String[] {(String) value});
-                    default -> throw new IllegalArgumentException(entry.type().toString());};
+                    default -> throw new IllegalArgumentException(entry.type().toString());
+                };
 
                 if (mark.isEndOfLine()) {
                     // We're at the end of the line, break and return an entity with what we have.
