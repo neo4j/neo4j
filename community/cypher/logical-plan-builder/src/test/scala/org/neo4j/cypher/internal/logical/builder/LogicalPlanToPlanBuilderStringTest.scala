@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
@@ -245,7 +246,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   testPlan(
     "produceResults with cached properties",
     new TestPlanBuilder()
-      .produceResults(Seq("x"), Map("x" -> Set("cacheN[x.p1]", "cacheN[x.p2]")))
+      .produceResults(column("x", "cacheN[x.p1]", "cacheN[x.p2]"))
       .cacheProperties("x.p1", "x.p2")
       .argument("x")
       .build()
@@ -2728,6 +2729,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
             |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
             |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
             |import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties

@@ -61,12 +61,10 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
         EmptyResult(
           UnitTruncate(_)
         ),
-        _,
         _
       ) => true
     case ProduceResult(
         ReturningTruncate(_),
-        _,
         _
       ) => true
     case ProduceResult(
@@ -74,7 +72,6 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
           ReturningTruncate(_),
           _
         ),
-        _,
         _
       ) => true
     case _ => false

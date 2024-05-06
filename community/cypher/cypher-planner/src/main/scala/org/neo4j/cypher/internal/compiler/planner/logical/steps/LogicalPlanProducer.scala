@@ -3215,7 +3215,7 @@ case class LogicalPlanProducer(
     lastInterestingOrders: Option[InterestingOrder],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val produceResult = ProduceResult(inner, columns)
+    val produceResult = ProduceResult.withNoCachedProperties(inner, columns)
     if (columns.nonEmpty) {
       def markTailAsFinal(query: SinglePlannerQuery): SinglePlannerQuery =
         query.updateTailOrSelf(

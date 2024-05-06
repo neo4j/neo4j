@@ -1246,7 +1246,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     // given UNWIND [1,2,3] as x RETURN x
     val leaf = Argument()
     val unwind = UnwindCollection(leaf, varFor("x"), listOfInt(1, 2, 3))
-    val produceResult = plans.ProduceResult(unwind, Seq(varFor("x")))
+    val produceResult = plans.ProduceResult.withNoCachedProperties(unwind, Seq(varFor("x")))
 
     // when
     val allocations = allocateSlots(
@@ -1271,7 +1271,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val leaf = Argument()
     val unwind = UnwindCollection(leaf, varFor("x"), listOfInt(1, 2, 3))
     val sort = plans.Sort(unwind, List(Ascending(varFor("x"))))
-    val produceResult = plans.ProduceResult(sort, Seq(varFor("x")))
+    val produceResult = plans.ProduceResult.withNoCachedProperties(sort, Seq(varFor("x")))
 
     // when
     val allocations = allocateSlots(

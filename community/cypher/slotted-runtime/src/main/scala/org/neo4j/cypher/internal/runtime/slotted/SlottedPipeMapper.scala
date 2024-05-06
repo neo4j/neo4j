@@ -1075,11 +1075,13 @@ class SlottedPipeMapper(
     }
 
     val pipe = plan match {
-      case ProduceResult(_, columns, cachedProperties) =>
-        val cached = cachedProperties.map {
-          case (v, es) => v.name -> es.map(e => LazyPropertyKey(e.propertyKey)(semanticTable) -> convertExpressions(e))
-        }
-        val runtimeColumns = createProjectionsForResult(columns, slots, cached)
+      case ProduceResult(_, columns) =>
+        val columnExpressions = columns.map(c =>
+          c.variable -> c.cachedProperties.map(e =>
+            LazyPropertyKey(e.propertyKey)(semanticTable) -> convertExpressions(e)
+          )
+        )
+        val runtimeColumns = createProjectionsForResult(columnExpressions, slots)
         ProduceResultsPipe(source, runtimeColumns.toArray)(id)
 
       case Expand(_, from, dir, types, to, relName, ExpandAll) =>
@@ -2265,19 +2267,18 @@ object SlottedPipeMapper {
   }
 
   def createProjectionsForResult(
-    columns: Seq[LogicalVariable],
-    slots: SlotConfiguration,
-    cachedProps: Map[String, Set[(LazyPropertyKey, Expression)]]
+    columns: Seq[(LogicalVariable, Set[(LazyPropertyKey, Expression)])],
+    slots: SlotConfiguration
   ): Seq[Expression] = {
-    val runtimeColumns =
-      columns.map(c => createProjectionForVariable(slots, c, cachedProps.get(c.name))._2)
-    runtimeColumns
+    columns.map {
+      case (v, cps) => createProjectionForVariable(slots, v, cps)._2
+    }
   }
 
   private def createProjectionForVariable(
     slots: SlotConfiguration,
     variable: LogicalVariable,
-    cachedProperties: Option[Set[(LazyPropertyKey, Expression)]] = None
+    cachedProperties: Set[(LazyPropertyKey, Expression)] = Set.empty
   ): (String, Expression) = {
     val identifier = variable.name
     val slot = slots.get(identifier).getOrElse(
@@ -2288,20 +2289,20 @@ object SlottedPipeMapper {
 
   private def projectSlotExpression(
     slot: Slot,
-    cachedProperties: Option[Set[(LazyPropertyKey, Expression)]] = None
+    cachedProperties: Set[(LazyPropertyKey, Expression)] = Set.empty
   ): commands.expressions.Expression = {
     def createNodeFromSlot(offset: Int) = {
-      cachedProperties match {
-        case Some(cp) =>
-          slotted.expressions.ValuePopulatingNodeFromSlot(offset, cp.toArray)
-        case None => slotted.expressions.NodeFromSlot(offset)
+      if (cachedProperties.nonEmpty) {
+        slotted.expressions.ValuePopulatingNodeFromSlot(offset, cachedProperties.toArray)
+      } else {
+        slotted.expressions.NodeFromSlot(offset)
       }
     }
     def createRelationshipFromSlot(offset: Int) = {
-      cachedProperties match {
-        case Some(cp) =>
-          slotted.expressions.ValuePopulatingRelationshipFromSlot(offset, cp.toArray)
-        case None => slotted.expressions.RelationshipFromSlot(offset)
+      if (cachedProperties.nonEmpty) {
+        slotted.expressions.ValuePopulatingRelationshipFromSlot(offset, cachedProperties.toArray)
+      } else {
+        slotted.expressions.RelationshipFromSlot(offset)
       }
     }
 

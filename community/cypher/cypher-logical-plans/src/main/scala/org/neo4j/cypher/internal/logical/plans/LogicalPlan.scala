@@ -3319,15 +3319,24 @@ case class ProcedureCall(override val source: LogicalPlan, call: ResolvedCall)(i
 }
 
 /**
+ * Column to return in ProduceResult.
+ *
+ * For queries like `MATCH (n:L {p:1}) RETURN n` need to know what properties are cached
+ * so that we can use them when doing "value-population" of `n`.
+ */
+case class Column(variable: LogicalVariable, cachedProperties: Set[ASTCachedProperty])
+
+/**
  * For every source row, produce a row containing only the variables in 'columns'. The ProduceResult operator is
  * always planned as the root operator in a logical plan tree.
  */
 case class ProduceResult(
   override val source: LogicalPlan,
-  columns: Seq[LogicalVariable],
-  cachedProperties: Map[LogicalVariable, Set[ASTCachedProperty]] = Map.empty
+  returnColumns: Seq[Column]
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
+
+  def columns: Seq[LogicalVariable] = returnColumns.map(_.variable)
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
@@ -3335,8 +3344,16 @@ case class ProduceResult(
 
   override val distinctness: Distinctness = source.distinctness
 
-  def withCachedProperties(cachedProperties: Map[LogicalVariable, Set[ASTCachedProperty]]): ProduceResult =
-    copy(cachedProperties = cachedProperties)
+  def withNewReturnColumns(newColumns: Seq[Column]): ProduceResult =
+    copy(returnColumns = newColumns)
+}
+
+object ProduceResult {
+
+  def withNoCachedProperties(source: LogicalPlan, columns: Seq[LogicalVariable])(implicit
+  idGen: IdGen): ProduceResult = {
+    new ProduceResult(source, columns.map(c => Column(c, Set.empty)))(idGen)
+  }
 }
 
 /**

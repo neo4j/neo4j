@@ -1594,11 +1594,11 @@ case class InterpretedPipeMapper(
           bufferSize
         )(id = id)
 
-      case ProduceResult(_, columns, cachedProperties) =>
-        val cached = cachedProperties.map {
-          case (v, es) => v.name -> es.map(e => LazyPropertyKey(e.propertyKey)(semanticTable) -> buildExpression(e))
-        }
-        ProduceResultsPipe(source, createProjectionsForResult(columns, cached).toArray)(id = id)
+      case ProduceResult(_, columns) =>
+        val columnExpressions = columns.map(c =>
+          c.variable -> c.cachedProperties.map(e => LazyPropertyKey(e.propertyKey)(semanticTable) -> buildExpression(e))
+        )
+        ProduceResultsPipe(source, createProjectionsForResult(columnExpressions).toArray)(id = id)
 
       case Create(_, commands) =>
         CreatePipe(
@@ -1981,17 +1981,13 @@ case class InterpretedPipeMapper(
   }
 
   private def createProjectionsForResult(
-    columns: Seq[LogicalVariable],
-    cachedProps: Map[String, Set[(LazyPropertyKey, Expression)]]
+    columns: Seq[(LogicalVariable, Set[(LazyPropertyKey, Expression)])]
   ): Seq[Expression] = {
     val runtimeColumns =
-      columns.map(c =>
-        cachedProps.get(c.name) match {
-          case Some(cp) => ValuePopulatingReferenceByName(c.name, cp.toArray)
-          case None     => ReferenceByName(c.name)
-        }
-      )
-
+      columns.map {
+        case (v, cached) if cached.isEmpty => ReferenceByName(v.name)
+        case (v, cached)                   => ValuePopulatingReferenceByName(v.name, cached.toArray)
+      }
     runtimeColumns
   }
 

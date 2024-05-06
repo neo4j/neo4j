@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
@@ -1184,7 +1185,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults(Seq("x"), Map("x" -> Set("cacheN[x.p]")))
+      .produceResults(column("x", "cacheN[x.p]"))
       .cacheProperties("cacheN[x.p]")
       .allNodeScan("x")
       .build()
@@ -1238,10 +1239,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       val nodes = nodeGraph(sizeHint)
       connectWithProperties(nodes, nodes.indices.map(i => (i, (i + 1) % nodes.length, "Rel", Map("p" -> i, "q" -> -i))))
     }
-
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults(Seq("r"), Map("r" -> Set("cacheR[r.p]")))
+      .produceResults(column("r", "cacheR[r.p]"))
       .cacheProperties("cacheR[r.p]")
       .expandAll("(x)-[r]->(y)")
       .allNodeScan("x")

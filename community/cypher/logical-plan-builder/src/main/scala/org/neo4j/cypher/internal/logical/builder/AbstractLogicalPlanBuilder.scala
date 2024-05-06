@@ -108,6 +108,7 @@ import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.BidirectionalRepeatTrail
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.Column
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
@@ -425,26 +426,26 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   // OPERATORS
 
-  def produceResults(vars: String*): IMPL = {
-    val resultColumnsSeq = vars.map(VariableParser.unescaped)
-    resultColumns = resultColumnsSeq.toArray
-    tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumnsSeq.map(varFor), Map.empty)(_)))
-    looseEnds += tree
-    self
-  }
-
-  def produceResults(vars: Seq[String], cachedProperties: Map[String, Set[String]]): IMPL = {
-    val resultColumnsSeq = vars.map(VariableParser.unescaped)
-    val cpMap = cachedProperties.map {
-      case (name, cps) => varFor(VariableParser.unescaped(name)).asInstanceOf[LogicalVariable] -> cps.map(cp =>
-          parseExpression(cp).asInstanceOf[ASTCachedProperty]
-        )
+  def produceResults(inputs: AnyRef*): IMPL = {
+    if (inputs.forall(_.isInstanceOf[String])) {
+      val vars = inputs.map(_.asInstanceOf[String])
+      val resultColumnsSeq = vars.map(VariableParser.unescaped)
+      resultColumns = resultColumnsSeq.toArray
+      tree =
+        new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumnsSeq.map(c => Column(varFor(c), Set.empty)))(_)))
+      looseEnds += tree
+      self
+    } else if (inputs.forall(_.isInstanceOf[Column])) {
+      val cols = inputs.map(_.asInstanceOf[Column])
+      resultColumns = cols.map(_.variable.name).toArray
+      tree = new Tree(UnaryOperator(lp => ProduceResult(lp, cols)(_)))
+      looseEnds += tree
+      self
+    } else {
+      throw new IllegalArgumentException(
+        s"${inputs.mkString(", ")} must either all be of type String or all of type Column."
+      )
     }
-
-    resultColumns = resultColumnsSeq.toArray
-    tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumnsSeq.map(varFor), cpMap)(_)))
-    looseEnds += tree
-    self
   }
 
   def procedureCall(call: String, withFakedFullDeclarations: Boolean = false): IMPL = {
@@ -3220,5 +3221,9 @@ object AbstractLogicalPlanBuilder {
         )
     }
     AndsReorderable(ListSet.from(predicates))(pos)
+  }
+
+  def column(name: String, cachedProperties: String*): Column = {
+    Column(varFor(name), cachedProperties.map(cp => Parser.parseExpression(cp).asInstanceOf[ASTCachedProperty]).toSet)
   }
 }

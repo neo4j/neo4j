@@ -60,7 +60,7 @@ case class ApplyUnwindLimitOnTop(
 
   private val instance: Rewriter = topDown(
     Rewriter.lift {
-      case pr @ ProduceResult(source, columns, cachedProperties)
+      case pr @ ProduceResult(source, columns)
         if isLeftmostLeafOkToMove(source) && randomShouldApply(config) =>
         val argument = Argument()(ctx.idGen)
         val one = UnsignedDecimalIntegerLiteral("1")(pos)
@@ -70,7 +70,7 @@ case class ApplyUnwindLimitOnTop(
         val unwind = UnwindCollection(argument, varFor(ctx.anonymousVariableNameGenerator.nextName), range)(ctx.idGen)
         val limit = Limit(unwind, one)(ctx.idGen)
         val apply = Apply(source, limit)(ctx.idGen)
-        ProduceResult(apply, columns, cachedProperties)(SameId(pr.id))
+        ProduceResult(apply, columns)(SameId(pr.id))
     },
     onlyRewriteLogicalPlansStopper
   )

@@ -86,7 +86,7 @@ class LogicalPlanTreeRendererTest extends CypherFunSuite {
         ),
         cp
       ),
-      columns = Seq(varFor("n"))
+      returnColumns = Seq(Column(varFor("n"), Set.empty))
     )
 
     render(plan) shouldEqual

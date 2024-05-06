@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Column
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
@@ -35,7 +36,7 @@ class SlottedParametersTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val allNodes = AllNodesScan(varFor("x"), Set.empty)
     val predicate = greaterThan(add(parameter("a", symbols.CTAny), parameter("b", symbols.CTAny)), literalInt(42))
-    val produceResult = ProduceResult(Selection(Seq(predicate), allNodes), Seq(varFor("x")))
+    val produceResult = ProduceResult(Selection(Seq(predicate), allNodes), Seq(Column(varFor("x"), Set.empty)))
 
     // when
     val (newPlan, mapping) = slottedParameters(produceResult)
@@ -46,14 +47,14 @@ class SlottedParametersTest extends CypherFunSuite with AstConstructionTestSuppo
       literalInt(42)
     )
     mapping should equal(ParameterMapping.empty.updated("a").updated("b"))
-    newPlan should equal(ProduceResult(Selection(Seq(newPredicate), allNodes), Seq(varFor("x"))))
+    newPlan should equal(ProduceResult.withNoCachedProperties(Selection(Seq(newPredicate), allNodes), Seq(varFor("x"))))
   }
 
   test("should rewrite plan with multiple occurrences of same parameter") {
     // given
     val allNodes = AllNodesScan(varFor("x"), Set.empty)
     val predicate = greaterThan(add(parameter("a", symbols.CTAny), parameter("a", symbols.CTAny)), literalInt(42))
-    val produceResult = ProduceResult(Selection(Seq(predicate), allNodes), Seq(varFor("x")))
+    val produceResult = ProduceResult.withNoCachedProperties(Selection(Seq(predicate), allNodes), Seq(varFor("x")))
 
     // when
     val (newPlan, mapping) = slottedParameters(produceResult)
@@ -64,7 +65,7 @@ class SlottedParametersTest extends CypherFunSuite with AstConstructionTestSuppo
       literalInt(42)
     )
     mapping should equal(ParameterMapping.empty.updated("a"))
-    newPlan should equal(ProduceResult(Selection(Seq(newPredicate), allNodes), Seq(varFor("x"))))
+    newPlan should equal(ProduceResult.withNoCachedProperties(Selection(Seq(newPredicate), allNodes), Seq(varFor("x"))))
   }
 
 }

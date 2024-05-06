@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Column
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -86,7 +87,7 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
     )
     val expression = ListLiteral(stringValues.toSeq)(pos)
     val unwind = UnwindCollection(Argument(Set.empty), varFor("col"), expression)
-    val logicalPlan = ProduceResult(unwind, Seq(varFor("col")))
+    val logicalPlan = ProduceResult(unwind, Seq(Column(varFor("col"), Set.empty)))
 
     val variable = Variable("col")(pos)
     val returnItem = AliasedReturnItem(variable, variable)(pos)

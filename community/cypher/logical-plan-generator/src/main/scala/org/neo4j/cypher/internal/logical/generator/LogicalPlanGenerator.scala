@@ -242,7 +242,7 @@ class LogicalPlanGenerator(
   def logicalPlan: Gen[WithState[LogicalPlan]] = for {
     initialState <- Gen.delay(State(labelsWithIds, relTypesWithIds))
     WithState(source, state) <- innerLogicalPlan(initialState)
-  } yield annotate(ProduceResult(source, source.availableSymbols.toSeq)(state.idGen), state)
+  } yield annotate(ProduceResult.withNoCachedProperties(source, source.availableSymbols.toSeq)(state.idGen), state)
 
   def innerLogicalPlan(state: State): Gen[WithState[LogicalPlan]] = Gen.oneOf(
     leafPlan(state),

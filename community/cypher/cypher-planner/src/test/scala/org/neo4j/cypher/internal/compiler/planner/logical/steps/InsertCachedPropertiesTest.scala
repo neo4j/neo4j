@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
@@ -1151,7 +1152,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults(Seq("a", "b"), Map("a" -> Set("cacheN[a.x]"), "b" -> Set("cacheN[b.y]")))
+      .produceResults(column("a", "cacheN[a.x]"), column("b", "cacheN[b.y]"))
       .valueHashJoin("cacheN[a.x] = cacheN[b.y]")
       .|.nodeIndexOperator("b:B(y < 200)", getValue = _ => GetValue, indexType = IndexType.RANGE)
       .nodeIndexOperator("a:A(x > 100)", getValue = _ => GetValue, indexType = IndexType.RANGE)
@@ -1232,7 +1233,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults(Seq("a"), Map("a" -> Set("cacheN[a.prop]", "cacheNFromStore[a.prop]")))
+      .produceResults(column("a", "cacheN[a.prop]", "cacheNFromStore[a.prop]"))
       .union()
       // arguably, this shouldn't be cached, this is the limitation of this fix
       .|.filter("cacheNFromStore[a.prop] < 321")
@@ -2202,7 +2203,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
 
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults(Seq("n"), Map("n" -> Set("cacheN[n.prop]")))
+      .produceResults(column("n", "cacheN[n.prop]"))
       .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
       .build()
   }
@@ -2216,7 +2217,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
 
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults(Seq("x"), Map("x" -> Set("cacheN[n.prop]")))
+      .produceResults(column("x", "cacheN[n.prop]"))
       .projection("n AS x")
       .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
       .build()
@@ -2304,7 +2305,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
 
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults(Seq("n"), Map("n" -> Set("cacheN[n.prop]")))
+      .produceResults(column("n", "cacheN[n.prop]"))
       .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue)
       .build()
   }
@@ -2321,7 +2322,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
 
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults(Seq("r"), Map("r" -> Set("cacheR[r.prop]")))
+      .produceResults(column("r", "cacheR[r.prop]"))
       .relationshipIndexOperator(
         "(a)-[r:REL(prop > 123)]->(b)",
         getValue = _ => GetValue,
@@ -2343,7 +2344,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
 
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults(Seq("x"), Map("x" -> Set("cacheR[r.prop]")))
+      .produceResults(column("x", "cacheR[r.prop]"))
       .projection("r AS x")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop > 123)]->(b)",
@@ -2455,7 +2456,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
 
     newPlan shouldBe new LogicalPlanBuilder()
-      .produceResults(Seq("r"), Map("r" -> Set("cacheR[r.prop]")))
+      .produceResults(column("r", "cacheR[r.prop]"))
       .relationshipIndexOperator("(a)-[r:REL(prop > 123)]->(b)", getValue = _ => GetValue)
       .build()
   }

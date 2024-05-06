@@ -541,17 +541,14 @@ object LogicalPlanToPlanBuilderString {
         s""" "${namespace.mkString(".")}.$name(${callArguments.map(expressionStringifier(_)).mkString(
             ", "
           )})$yielding" """.trim
-      case ProduceResult(_, columns, cachedProperties) if cachedProperties.nonEmpty =>
-        val cols = columns.map(c => wrapInQuotations(escapeIdentifier(c.name))).mkString("Seq(", ", ", ")")
-        val cached = cachedProperties.map {
-          case (col, cps) => s"${wrapInQuotations(escapeIdentifier(col.name))} -> ${cps.map(cp =>
-                wrapInQuotations(expressionStringifierExtension(cp))
-              ).mkString("Set(", ", ", ")")}"
-        }.mkString("Map(", ", ", ")")
-        s"$cols, $cached"
+      case ProduceResult(_, columns) if columns.exists(_.cachedProperties.nonEmpty) =>
+        columns.map(c =>
+          s"column(${wrapInQuotations(escapeIdentifier(c.variable.name))}, ${c.cachedProperties.map(cp => wrapInQuotations(expressionStringifierExtension(cp))).mkString(", ")})"
+        ).mkString(", ")
 
-      case ProduceResult(_, columns, _) =>
-        wrapInQuotationsAndMkString(columns.map(c => escapeIdentifier(c.name)))
+      case ProduceResult(_, columns) =>
+        wrapInQuotationsAndMkString(columns.map(c => escapeIdentifier(c.variable.name)))
+
       case ProjectEndpoints(_, relName, start, startInScope, end, endInScope, types, direction, length) =>
         val (dirStrA, dirStrB) = arrows(direction)
         val typeStr = relTypeStr(types)

@@ -692,21 +692,21 @@ object ReadFinder {
           semanticTable
         )
 
-      case ProduceResult(_, columns, _) =>
+      case ProduceResult(_, columns) =>
         // A ProduceResult can reference entities. These must be captured with
         // .withReferencesNodeVariable / .withReferencedRelationshipVariable
         // However, this is only used to place an Eager correctly between a read and a later Delete.
         // Since, there can be no Deletes after a ProduceResult, this information is currently not used.
         columns.foldLeft(PlanReads()) { (acc, col) =>
           var res = acc
-          if (semanticTable.typeFor(col).couldBe(CTNode)) {
+          if (semanticTable.typeFor(col.variable).couldBe(CTNode)) {
             res = res
-              .withUnknownNodePropertiesRead(Some(col))
-              .withUnknownLabelsRead(Some(col))
+              .withUnknownNodePropertiesRead(Some(col.variable))
+              .withUnknownLabelsRead(Some(col.variable))
           }
-          if (semanticTable.typeFor(col).couldBe(CTRelationship)) {
+          if (semanticTable.typeFor(col.variable).couldBe(CTRelationship)) {
             res = res
-              .withUnknownRelPropertiesRead(Some(col))
+              .withUnknownRelPropertiesRead(Some(col.variable))
           }
           res
         }

@@ -335,17 +335,16 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
     val rewriter = bottomUp(Rewriter.lift {
 
       case produceResult: ProduceResult =>
-        val entitiesToReturn: Map[LogicalVariable, Set[ASTCachedProperty]] =
+        val newColumns =
           produceResult
-            .columns
-            .flatMap(column =>
-              cachedProperties.get(acc.variableWithOriginalName(asVariable(column))).map(cached => column -> cached)
-            ).toMap
+            .returnColumns
+            .map(column =>
+              cachedProperties.get(acc.variableWithOriginalName(asVariable(column.variable))).map(cached =>
+                column.copy(cachedProperties = cached)
+              ).getOrElse(column)
+            )
 
-        if (entitiesToReturn.isEmpty) produceResult
-        else {
-          produceResult.withCachedProperties(entitiesToReturn)
-        }
+        produceResult.withNewReturnColumns(newColumns)
 
       // Rewrite properties to be cached if they are used more than once, or can be fetched from an index
       case prop @ Property(v: Variable, propertyKeyName) =>

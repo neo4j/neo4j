@@ -68,7 +68,7 @@ object TestPlanRewriterTemplates {
     rewritePlan: LogicalPlan => LogicalPlan
   ): Rewriter = topDown(
     Rewriter.lift {
-      case ProduceResult(source, _, _) if isLeftmostLeafOkToMove(source) && randomShouldApply(config) =>
+      case ProduceResult(source, _) if isLeftmostLeafOkToMove(source) && randomShouldApply(config) =>
         rewritePlan(source)
     },
     onlyRewriteLogicalPlansStopper
