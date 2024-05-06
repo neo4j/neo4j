@@ -27,6 +27,7 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.ast.semantics
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
@@ -86,7 +87,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
         ReadTokenContext.EMPTY,
         new AnonymousVariableNameGenerator(),
         new SelectivityTrackerRegistrator(),
-        CypherRuntimeConfiguration.defaultConfiguration
+        CypherRuntimeConfiguration.defaultConfiguration,
+        semantics.SemanticTable()
       )
     )
 

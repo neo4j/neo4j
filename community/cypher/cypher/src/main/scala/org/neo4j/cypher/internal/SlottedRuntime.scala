@@ -99,7 +99,8 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
           context.tokenContext,
           context.anonymousVariableNameGenerator,
           selectivityTrackerRegistrator,
-          context.config
+          context.config,
+          query.semanticTable
         )
       )
 

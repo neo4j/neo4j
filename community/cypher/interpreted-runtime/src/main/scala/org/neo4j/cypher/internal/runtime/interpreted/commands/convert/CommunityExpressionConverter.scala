@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
@@ -174,7 +175,8 @@ case class CommunityExpressionConverter(
   tokenContext: ReadTokenContext,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   selectivityTrackerRegistrator: SelectivityTrackerRegistrator,
-  runtimeConfig: CypherRuntimeConfiguration
+  runtimeConfig: CypherRuntimeConfiguration,
+  semanticTable: SemanticTable
 ) extends ExpressionConverter {
 
   override def toCommandProjection(
@@ -903,21 +905,18 @@ case class CommunityExpressionConverter(
       l =>
         predicates.HasLabelOrType(self.toCommandExpression(id, e.entityExpression), l.name): Predicate
     }
-    commands.predicates.Ands(preds.toSeq: _*)
+    commands.predicates.Ands(preds: _*)
   }
 
   private def hasLabels(id: Id, e: internal.expressions.HasLabels, self: ExpressionConverters): Predicate = {
     val preds = e.labels.map {
       l =>
-        val label = LazyLabel(l.name)
-        // attempt to resolve immediately
-        label.getId(tokenContext)
         predicates.HasLabel(
           self.toCommandExpression(id, e.expression),
-          label
+          LazyLabel(l)(semanticTable)
         ): Predicate
     }
-    commands.predicates.Ands(preds.toSeq: _*)
+    commands.predicates.Ands(preds: _*)
   }
 
   private def hasTypes(id: Id, e: internal.expressions.HasTypes, self: ExpressionConverters): Predicate = {
@@ -928,7 +927,7 @@ case class CommunityExpressionConverter(
           commands.values.KeyToken.Unresolved(l.name, commands.values.TokenType.RelType)
         ): Predicate
     }
-    commands.predicates.Ands(preds.toSeq: _*)
+    commands.predicates.Ands(preds: _*)
   }
 
   private def mapItems(

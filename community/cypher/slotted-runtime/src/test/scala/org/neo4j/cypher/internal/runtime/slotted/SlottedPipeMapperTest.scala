@@ -152,7 +152,8 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
         ReadTokenContext.EMPTY,
         anonymousVariableNameGenerator,
         new SelectivityTrackerRegistrator(),
-        CypherRuntimeConfiguration.defaultConfiguration
+        CypherRuntimeConfiguration.defaultConfiguration,
+        SemanticTable()
       )
     )
 

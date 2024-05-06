@@ -95,7 +95,8 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
         ReadTokenContext.EMPTY,
         new AnonymousVariableNameGenerator(),
         new SelectivityTrackerRegistrator(),
-        CypherRuntimeConfiguration.defaultConfiguration
+        CypherRuntimeConfiguration.defaultConfiguration,
+        SemanticTable()
       )
     )
 
