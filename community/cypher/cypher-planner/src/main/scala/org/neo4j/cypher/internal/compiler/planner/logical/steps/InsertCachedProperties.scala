@@ -414,7 +414,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       val prop = property(idName, indexedProp.propertyKeyToken.name)
       acc.properties.get(prop) match {
         // Get the value since we use it later
-        case Some(pu @ PropertyUsages(true, _, usageCount, _, _, _))
+        case Some(PropertyUsages(true, _, usageCount, _, _, _))
           // If you can't get the property from the index, `canGetFromIndex` should be false inside `PropertyUsages`.
           // However the first phase isn't entirely sound, in some cases, when there are two indexes on the same property, hence the extra check.
           if (shouldForceCache || usageCount > 0) && indexedProp.getValueFromIndex != DoNotGetValue =>

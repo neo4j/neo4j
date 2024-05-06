@@ -3345,7 +3345,7 @@ case class ProduceResult(
   override val distinctness: Distinctness = source.distinctness
 
   def withNewReturnColumns(newColumns: Seq[Column]): ProduceResult =
-    copy(returnColumns = newColumns)
+    copy(returnColumns = newColumns)(SameId(this.id))
 }
 
 object ProduceResult {
