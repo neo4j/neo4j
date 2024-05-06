@@ -41,8 +41,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
+import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.strictly_prioritize_id_freelist;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.index.internal.gbptree.IndexedIdGeneratorUnsafe.changeHeaderDataLength;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
@@ -77,6 +79,7 @@ import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.list.primitive.LongList;
@@ -291,6 +294,7 @@ class IndexedIdGeneratorTest {
         race.go();
 
         // then
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(count(idGenerator.notUsedIdsIterator()));
         if (maxSlotSize == 1) {
             verifyReallocationDoesNotIncreaseHighId(allocations, expectedInUse);
         }
@@ -322,6 +326,7 @@ class IndexedIdGeneratorTest {
         race.go();
 
         // then
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(count(idGenerator.notUsedIdsIterator()));
         if (maxSlotSize == 1) {
             verifyReallocationDoesNotIncreaseHighId(allocations, expectedInUse);
         }
@@ -780,7 +785,7 @@ class IndexedIdGeneratorTest {
     void shouldInvokeMonitorOnCorrectCalls() throws IOException {
         IndexedIdGenerator.Monitor monitor = mock(IndexedIdGenerator.Monitor.class);
         open(Config.defaults(), monitor, false, SINGLE_IDS);
-        verify(monitor).opened(-1, 0);
+        verify(monitor).opened(-1, 0, 0);
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
 
         long allocatedHighId = idGenerator.nextId(NULL_CONTEXT);
@@ -1900,6 +1905,43 @@ class IndexedIdGeneratorTest {
             assertThat(id).satisfiesAnyOf(_id -> assertThat(_id).isLessThan(yFirst), _id -> assertThat(_id)
                     .isGreaterThan(yLast));
         }
+    }
+
+    @Test
+    void shouldCatchUpOnNumUnusedIdsOnStartupIfMissingFromHeader() throws IOException {
+        // given
+        var readNumUnusedIds = new MutableLong();
+        var monitor = new IndexedIdGenerator.Monitor.Adapter() {
+            @Override
+            public void opened(long highestWrittenId, long highId, long numUnusedIds) {
+                readNumUnusedIds.setValue(numUnusedIds);
+            }
+        };
+        open(Config.defaults(), monitor, false, SINGLE_IDS);
+        assertThat(readNumUnusedIds.longValue()).isEqualTo(0);
+        idGenerator.start(freeIds(1, 10, 15), NULL_CONTEXT);
+        idGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        stop();
+        // and opening it up now should see the correct numUnusedIds in the header
+        open(Config.defaults(), monitor, false, SINGLE_IDS);
+        assertThat(readNumUnusedIds.longValue()).isEqualTo(3);
+        stop();
+
+        // when rewriting the header to have it look like it has no numUnusedIds
+        changeHeaderDataLength(pageCache, file, new IdRangeLayout(IDS_PER_ENTRY), getOpenOptions(), -Long.BYTES);
+
+        // then starting it up again should see the uninitialized numUnusedIds and then
+        // bring that count up to date
+        open(Config.defaults(), monitor, false, SINGLE_IDS);
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        assertThat(readNumUnusedIds.longValue()).isEqualTo(HeaderReader.UNINITIALIZED);
+        assertThat(idGenerator.getUnusedIdCount()).isEqualTo(3);
+        idGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        stop();
+        // and opening it up now should see the correct numUnusedIds in the header
+        open(Config.defaults(), monitor, false, SINGLE_IDS);
+        assertThat(readNumUnusedIds.longValue()).isEqualTo(3);
+        stop();
     }
 
     private void verifyReallocationDoesNotIncreaseHighId(

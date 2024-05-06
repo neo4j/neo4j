@@ -31,11 +31,14 @@ import org.neo4j.index.internal.gbptree.Header;
  * @see HeaderWriter
  */
 public class HeaderReader implements Header.Reader {
+    static final long UNINITIALIZED = -1;
+
     boolean wasRead;
     long highId;
     long highestWrittenId;
     long generation;
     int idsPerEntry;
+    long numUnusedIds;
 
     @Override
     public void read(ByteBuffer headerBytes) {
@@ -44,6 +47,7 @@ public class HeaderReader implements Header.Reader {
         this.highestWrittenId = headerBytes.getLong();
         this.generation = headerBytes.getLong();
         this.idsPerEntry = headerBytes.getInt();
+        this.numUnusedIds = headerBytes.hasRemaining() ? headerBytes.getLong() : UNINITIALIZED;
     }
 
     @Override

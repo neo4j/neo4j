@@ -66,7 +66,7 @@ class LoggingIndexedIdGeneratorMonitorTest {
                 new LoggingIndexedIdGeneratorMonitor(fs, file, clock, 10, MebiByte, 1, DAYS)) {
             // when (making all logging calls)
             clock.forward(timeStep, MILLISECONDS);
-            monitor.opened(98, 99);
+            monitor.opened(98, 99, HeaderReader.UNINITIALIZED);
             clock.forward(timeStep, MILLISECONDS);
             monitor.allocatedFromHigh(1, 1);
             clock.forward(timeStep, MILLISECONDS);

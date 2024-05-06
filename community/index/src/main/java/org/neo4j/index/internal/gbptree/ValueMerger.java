@@ -48,9 +48,26 @@ public interface ValueMerger<KEY, VALUE> {
     MergeResult merge(KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue);
 
     /**
+     * When an existing value is merged with a new value then {@link #merge(Object, Object, Object, Object)} is called.
+     * However, when writing a new key/value pair that same method won't be called.
+     *
+     * This method exists so that implementations of ValueMerger can listen to all types of changes made to the tree.
+     * @param newKey added key
+     * @param newValue value for added key
+     */
+    default void added(KEY newKey, VALUE newValue) {}
+
+    /**
+     * In a scenario with concurrent writers there may be retries, i.e. {@link #merge(Object, Object, Object, Object)}
+     * or {@link #added(Object, Object)} may be called, the result thrown away and then called at a later point again.
+     * This method is called after the most recent call to {@link #merge(Object, Object, Object, Object)} or
+     * {@link #added(Object, Object)} that was actually written to the tree.
+     */
+    default void completed() {}
+
+    /**
      * Called by writer if {@link #merge(Object, Object, Object, Object)} has been invoked, but writer
-     * had to flip internal mode and retry operation. If the {@link ValueMerger} has any state then it should
-     * be cleared in this method.
+     * had to flip internal mode and retry operation. Called before retrying the operation again.
      */
     default void reset() {}
 

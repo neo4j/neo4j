@@ -24,6 +24,7 @@ import java.util.function.LongSupplier;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 
 /**
  * Writes header of an {@link IndexedIdGenerator} into the {@link GBPTree}.
@@ -33,7 +34,8 @@ import org.neo4j.io.pagecache.context.CursorContext;
 class HeaderWriter implements Consumer<PageCursor> {
     /**
      * highId to write in the header. This is a supplier because of how this writer is constructed before entering the critical
-     * section inside {@link GBPTree#checkpoint(CursorContext)} and so the highId may have changed between constructing this writer
+     * section inside {@link org.neo4j.index.internal.gbptree.MultiRootGBPTree#checkpoint(FileFlushEvent, CursorContext)}
+     * and so the highId may have changed between constructing this writer
      * and entering the checkpoint critical section.
      */
     private final LongSupplier highId;
@@ -41,12 +43,19 @@ class HeaderWriter implements Consumer<PageCursor> {
     private final LongSupplier highestWrittenId;
     private final long generation;
     private final int idsPerEntry;
+    private final LongSupplier numUnusedIds;
 
-    HeaderWriter(LongSupplier highId, LongSupplier highestWrittenId, long generation, int idsPerEntry) {
+    HeaderWriter(
+            LongSupplier highId,
+            LongSupplier highestWrittenId,
+            long generation,
+            int idsPerEntry,
+            LongSupplier numUnusedIds) {
         this.highId = highId;
         this.highestWrittenId = highestWrittenId;
         this.generation = generation;
         this.idsPerEntry = idsPerEntry;
+        this.numUnusedIds = numUnusedIds;
     }
 
     @Override
@@ -57,5 +66,6 @@ class HeaderWriter implements Consumer<PageCursor> {
         cursor.putLong(highestWrittenId);
         cursor.putLong(generation);
         cursor.putInt(idsPerEntry);
+        cursor.putLong(numUnusedIds.getAsLong());
     }
 }

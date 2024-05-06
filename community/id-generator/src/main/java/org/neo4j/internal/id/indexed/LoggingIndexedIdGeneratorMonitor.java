@@ -108,7 +108,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     }
 
     @Override
-    public synchronized void opened(long highestWrittenId, long highId) {
+    public synchronized void opened(long highestWrittenId, long highId, long numUnusedIds) {
         putTypeAndTwoIds(Type.OPENED, highestWrittenId, highId);
     }
 

@@ -239,6 +239,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                 }
             }
 
+            valueMerger.completed();
             handleStructureChanges(cursorContext);
         } catch (IOException e) {
             exceptionMessageAppender.accept(e);

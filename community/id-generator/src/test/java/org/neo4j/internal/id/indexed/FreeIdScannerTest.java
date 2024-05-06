@@ -1029,7 +1029,7 @@ class FreeIdScannerTest {
                         layout,
                         tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                         null,
-                        new IdRangeMerger(false, NO_MONITOR),
+                        new IdRangeMerger(false, NO_MONITOR, null),
                         true,
                         freeIdsNotifier,
                         generation,

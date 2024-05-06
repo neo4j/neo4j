@@ -153,14 +153,52 @@ class IdRange {
         }
     }
 
-    void mergeFrom(IdRangeKey key, IdRange other, boolean recoveryMode) {
+    /**
+     * Merges bit sets from {@code other} into the bit sets of this range.
+     * @param key the key for this range.
+     * @param other bits to merge into this range.
+     * @param recoveryMode if {@code true} then merge is lenient, otherwise if {@code false}
+     * then deletion bits for the {@link #BITSET_COMMIT} are check to not overlap with existing bits.
+     * @return the diff this merge results in for number of unused IDs, a positive number
+     * means that some IDs got marked as deleted, whereas a positive number that some IDs got marked
+     * as in use.
+     */
+    int mergeFrom(IdRangeKey key, IdRange other, boolean recoveryMode) {
         if (!recoveryMode) {
             verifyMerge(key, other);
         }
 
+        int diffNumUnusedIds = 0;
         for (int bitSetIndex = 0; bitSetIndex < BITSET_COUNT; bitSetIndex++) {
-            mergeBitSet(bitSets[bitSetIndex], other.bitSets[bitSetIndex], isAddition(other.addition, bitSetIndex));
+            long[] bitSet = bitSets[bitSetIndex];
+            long[] otherBitSet = other.bitSets[bitSetIndex];
+            boolean addition = isAddition(other.addition, bitSetIndex);
+            if (bitSetIndex == BITSET_COMMIT) {
+                int bitCountBefore = countBits(bitSet);
+                mergeBitSet(bitSet, otherBitSet, addition);
+                diffNumUnusedIds = countBits(bitSet) - bitCountBefore;
+            } else {
+                mergeBitSet(bitSet, otherBitSet, addition);
+            }
         }
+        return diffNumUnusedIds;
+    }
+
+    int numUnusedIdsForAdded() {
+        int diffNumUnusedIds = 0;
+        if (isAddition(addition, BITSET_COMMIT)) {
+            long[] bitSet = bitSets[BITSET_COMMIT];
+            diffNumUnusedIds = countBits(bitSet);
+        }
+        return diffNumUnusedIds;
+    }
+
+    private int countBits(long[] bitSet) {
+        int numBits = 0;
+        for (long bits : bitSet) {
+            numBits += Long.bitCount(bits);
+        }
+        return numBits;
     }
 
     private static void mergeBitSet(long[] into, long[] mergeFrom, boolean addition) {

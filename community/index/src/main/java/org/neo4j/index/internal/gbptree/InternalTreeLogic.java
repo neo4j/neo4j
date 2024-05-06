@@ -672,6 +672,7 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
         if (createIfNotExists) {
             createSuccessorIfNeeded(
                     cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration);
+            valueMerger.added(key, value);
             return doInsertInLeaf(
                             cursor,
                             structurePropagation,

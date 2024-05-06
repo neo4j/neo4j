@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.collection.PrimitiveLongResourceCollections.count;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
@@ -31,11 +33,14 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.Sets;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.TestIdType;
@@ -46,11 +51,14 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.PageCacheSupport;
 import org.neo4j.test.utils.TestDirectory;
 
+@ExtendWith(RandomExtension.class)
 @EphemeralPageCacheExtension
 class IndexedIdGeneratorRecoverabilityTest {
     private static final TestIdType ID_TYPE = TestIdType.TEST;
@@ -66,9 +74,13 @@ class IndexedIdGeneratorRecoverabilityTest {
     @Inject
     private EphemeralFileSystemAbstraction fs;
 
+    @Inject
+    private RandomSupport random;
+
     @Test
-    void persistHighIdBetweenCleanRestarts() {
+    void persistHighIdBetweenCleanRestarts() throws IOException {
         try (IdGenerator freelist = instantiateFreelist()) {
+            freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             freelist.nextId(NULL_CONTEXT);
             assertEquals(1, freelist.getHighId());
             freelist.nextId(NULL_CONTEXT);
@@ -76,20 +88,55 @@ class IndexedIdGeneratorRecoverabilityTest {
             freelist.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
         try (IdGenerator freelist = instantiateFreelist()) {
+            freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             assertEquals(2, freelist.getHighId());
         }
     }
 
     @Test
-    void doNotPersistHighIdBetweenCleanRestartsWithoutCheckpoint() {
+    void doNotPersistHighIdBetweenCleanRestartsWithoutCheckpoint() throws IOException {
         try (IdGenerator freelist = instantiateFreelist()) {
+            freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             freelist.nextId(NULL_CONTEXT);
             assertEquals(1, freelist.getHighId());
             freelist.nextId(NULL_CONTEXT);
             assertEquals(2, freelist.getHighId());
         }
         try (IdGenerator freelist = instantiateFreelist()) {
+            freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             assertEquals(0, freelist.getHighId());
+        }
+    }
+
+    @Test
+    void shouldPersistNumUnusedIdsOnCheckpoint() throws IOException {
+        // given
+        var expectedNumUnusedIds = new MutableInt();
+        try (var idGenerator = instantiateFreelist()) {
+            idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+            var ids = LongLists.mutable.empty();
+            for (int i = 0; i < 10; i++) {
+                ids.add(idGenerator.nextId(NULL_CONTEXT));
+            }
+            markUsed(idGenerator, ids.toArray());
+            ids.forEach(id -> {
+                if (random.nextBoolean()) {
+                    markDeleted(idGenerator, id);
+                    expectedNumUnusedIds.increment();
+                }
+            });
+            assertThat(count(idGenerator.notUsedIdsIterator())).isEqualTo(expectedNumUnusedIds.intValue());
+            assertThat(idGenerator.getUnusedIdCount()).isEqualTo(expectedNumUnusedIds.intValue());
+            idGenerator.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+        }
+
+        // when
+        try (var idGenerator = instantiateFreelist()) {
+            idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+
+            // then
+            assertThat(count(idGenerator.notUsedIdsIterator())).isEqualTo(expectedNumUnusedIds.intValue());
+            assertThat(idGenerator.getUnusedIdCount()).isEqualTo(expectedNumUnusedIds.intValue());
         }
     }
 
@@ -99,6 +146,7 @@ class IndexedIdGeneratorRecoverabilityTest {
         final long id1;
         final long id2;
         try (IdGenerator freelist = instantiateFreelist()) {
+            freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             id1 = freelist.nextId(NULL_CONTEXT);
             id2 = freelist.nextId(NULL_CONTEXT);
             markUsed(freelist, id1, id2);
@@ -109,7 +157,7 @@ class IndexedIdGeneratorRecoverabilityTest {
         }
 
         try (PageCache newPageCache = getPageCache(snapshot);
-                IdGenerator freelist = instantiateFreelist()) {
+                IdGenerator freelist = instantiateFreelist(newPageCache)) {
             markDeleted(freelist, id1, id2);
 
             // Recovery is completed ^^^
@@ -119,7 +167,9 @@ class IndexedIdGeneratorRecoverabilityTest {
             freelist.maintenance(NULL_CONTEXT);
             final ImmutableLongSet reused =
                     LongSets.immutable.of(freelist.nextId(NULL_CONTEXT), freelist.nextId(NULL_CONTEXT));
-            assertEquals(LongSets.immutable.of(id1, id2), reused, "IDs are not reused");
+            assertThat(reused).isEqualTo(LongSets.immutable.of(id1, id2));
+            assertThat(freelist.getUnusedIdCount()).isEqualTo(count(freelist.notUsedIdsIterator()));
+            assertThat(freelist.getUnusedIdCount()).isEqualTo(2);
         } finally {
             snapshot.close();
         }
@@ -129,12 +179,14 @@ class IndexedIdGeneratorRecoverabilityTest {
     void resetUsabilityOnRestart() throws IOException {
         // Create the freelist
         try (IdGenerator freelist = instantiateFreelist()) {
+            freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             freelist.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
         }
 
         final long id1;
         final long id2;
         try (IdGenerator freelist = instantiateFreelist()) {
+            freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             id1 = freelist.nextId(NULL_CONTEXT);
             id2 = freelist.nextId(NULL_CONTEXT);
             markUsed(freelist, id1, id2);
@@ -161,6 +213,7 @@ class IndexedIdGeneratorRecoverabilityTest {
         final long id2;
         final long id3;
         try (IdGenerator freelist = instantiateFreelist()) {
+            freelist.start(NO_FREE_IDS, NULL_CONTEXT);
             id1 = freelist.nextId(NULL_CONTEXT);
             id2 = freelist.nextId(NULL_CONTEXT);
             id3 = freelist.nextId(NULL_CONTEXT);
@@ -238,10 +291,15 @@ class IndexedIdGeneratorRecoverabilityTest {
             assertTrue(expected.remove(freelist.nextId(NULL_CONTEXT)));
             assertTrue(expected.remove(freelist.nextId(NULL_CONTEXT)));
             assertTrue(expected.isEmpty());
+            assertThat(freelist.getUnusedIdCount()).isEqualTo(2);
         }
     }
 
     private IndexedIdGenerator instantiateFreelist() {
+        return instantiateFreelist(pageCache);
+    }
+
+    private IndexedIdGenerator instantiateFreelist(PageCache pageCache) {
         return new IndexedIdGenerator(
                 pageCache,
                 fs,

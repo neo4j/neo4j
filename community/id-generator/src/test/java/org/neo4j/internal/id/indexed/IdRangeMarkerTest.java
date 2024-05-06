@@ -114,6 +114,8 @@ class IdRangeMarkerTest {
         }
 
         // then
+        verify(merger).added(any(), any());
+        verify(merger).completed();
         verifyNoMoreInteractions(merger);
         try (Seeker<IdRangeKey, IdRange> seek = tree.seek(new IdRangeKey(0), new IdRangeKey(1), NULL_CONTEXT)) {
             assertTrue(seek.next());
@@ -154,6 +156,7 @@ class IdRangeMarkerTest {
         }
 
         // then
+        verify(merger).completed();
         verifyNoMoreInteractions(merger);
         try (Seeker<IdRangeKey, IdRange> seek =
                 tree.seek(new IdRangeKey(0), new IdRangeKey(Long.MAX_VALUE), NULL_CONTEXT)) {

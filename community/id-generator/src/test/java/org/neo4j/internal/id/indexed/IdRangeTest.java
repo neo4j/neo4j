@@ -350,6 +350,62 @@ class IdRangeTest {
                 .hasMessageContaining("IDs %d-%d", expectedFirstId, expectedLastId);
     }
 
+    @Test
+    void shouldCountUnusedDiffCorrectlyInMergeFromForMarkUsed() {
+        // given
+        long generation = 1;
+        int idsPerEntry = BITSET_SIZE * 2;
+        int numOfLongs = 2;
+        var into = new IdRange(numOfLongs, idsPerEntry);
+        into.clear(generation, true);
+        for (int bit = 0; bit < idsPerEntry; bit++) {
+            if (random.nextBoolean()) {
+                into.setBits(BITSET_COMMIT, bit, 1);
+            }
+        }
+
+        // when
+        var from = new IdRange(numOfLongs, idsPerEntry);
+        from.clear(generation, false);
+        int expectedDiff = 0;
+        for (int bit = 0; bit < idsPerEntry; bit++) {
+            if (into.getState(bit) == DELETED && random.nextBoolean()) {
+                from.setBits(BITSET_COMMIT, bit, 1);
+                expectedDiff--;
+            }
+        }
+        int diff = into.mergeFrom(new IdRangeKey(0), from, false);
+        assertThat(diff).isEqualTo(expectedDiff);
+    }
+
+    @Test
+    void shouldCountUnusedDiffCorrectlyInMergeFromForMarkUnused() {
+        // given
+        long generation = 1;
+        int idsPerEntry = BITSET_SIZE * 2;
+        int numOfLongs = 2;
+        var into = new IdRange(numOfLongs, idsPerEntry);
+        into.clear(generation, true);
+        for (int bit = 0; bit < idsPerEntry; bit++) {
+            if (random.nextBoolean()) {
+                into.setBits(BITSET_COMMIT, bit, 1);
+            }
+        }
+
+        // when
+        var from = new IdRange(numOfLongs, idsPerEntry);
+        from.clear(generation, true);
+        int expectedDiff = 0;
+        for (int bit = 0; bit < idsPerEntry; bit++) {
+            if (into.getState(bit) != DELETED && random.nextBoolean()) {
+                from.setBits(BITSET_COMMIT, bit, 1);
+                expectedDiff++;
+            }
+        }
+        int diff = into.mergeFrom(new IdRangeKey(0), from, false);
+        assertThat(diff).isEqualTo(expectedDiff);
+    }
+
     private static Stream<Arguments> slotSizesAndOffsets() {
         List<Arguments> permutations = new ArrayList<>();
         for (int s = 1; s < 128; s++) {

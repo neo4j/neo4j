@@ -21,6 +21,7 @@ package org.neo4j.internal.id.indexed;
 
 import static java.util.Collections.emptySet;
 import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrder;
+import static org.neo4j.collection.PrimitiveLongResourceCollections.count;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -87,7 +88,7 @@ import org.neo4j.util.Preconditions;
  */
 public class IndexedIdGenerator implements IdGenerator {
     public interface Monitor extends AutoCloseable {
-        void opened(long highestWrittenId, long highId);
+        void opened(long highestWrittenId, long highId, long numUnusedIds);
 
         @Override
         void close();
@@ -126,7 +127,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
         class Adapter implements Monitor {
             @Override
-            public void opened(long highestWrittenId, long highId) {}
+            public void opened(long highestWrittenId, long highId, long numUnusedIds) {}
 
             @Override
             public void allocatedFromHigh(long allocatedId, int numberOfIds) {}
@@ -272,6 +273,11 @@ public class IndexedIdGenerator implements IdGenerator {
     private final AtomicInteger freeIdsNotifier = new AtomicInteger();
 
     /**
+     * Kept up to date with live changes and represents the number of ids that are currently unused, i.e. that are marked as deleted.
+     */
+    private final AtomicLong numUnusedIds = new AtomicLong(HeaderReader.UNINITIALIZED);
+
+    /**
      * Current generation of this id generator. Generation is used to normalize id states so that a deleted id of a previous generation
      * can be seen as free in the current generation. Generation is bumped on restart.
      */
@@ -300,8 +306,6 @@ public class IndexedIdGenerator implements IdGenerator {
      */
     private volatile boolean started;
 
-    private final IdRangeMerger defaultMerger;
-    private final IdRangeMerger recoveryMerger;
     private final boolean readOnly;
     private final IdSlotDistribution slotDistribution;
     private final PageCacheTracer pageCacheTracer;
@@ -351,8 +355,6 @@ public class IndexedIdGenerator implements IdGenerator {
         this.maxId = maxId;
         this.monitor = monitor;
         this.lockedPageRanges = isMultiVersioned(openOptions) ? ConcurrentHashMap.newKeySet() : emptySet();
-        this.defaultMerger = new IdRangeMerger(false, monitor);
-        this.recoveryMerger = new IdRangeMerger(true, monitor);
 
         this.idsPerEntry = slotDistribution.idsPerEntry();
         this.layout = new IdRangeLayout(idsPerEntry);
@@ -389,13 +391,15 @@ public class IndexedIdGenerator implements IdGenerator {
             // Let's optimistically assume that there may be some free ids in here. This will ensure that a scan
             // is triggered on first request
             this.freeIdsNotifier.incrementAndGet();
+            this.numUnusedIds.set(header.numUnusedIds);
         } else {
             // We're creating this file, so set initial values
             this.highId.set(initialHighId.getAsLong());
             this.highestWrittenId.set(highId.get() - 1);
             this.generation = STARTING_GENERATION + 1;
+            this.numUnusedIds.set(0);
         }
-        monitor.opened(highestWrittenId.get(), highId.get());
+        monitor.opened(highestWrittenId.get(), highId.get(), numUnusedIds.get());
 
         this.strictlyPrioritizeFreelist = !isMultiVersioned(openOptions)
                 && config.get(GraphDatabaseInternalSettings.strictly_prioritize_id_freelist);
@@ -662,12 +666,14 @@ public class IndexedIdGenerator implements IdGenerator {
     private IdRangeMarker instantiateMarker(
             Lock lock, boolean bridgeIdGaps, boolean deleteAlsoFrees, CursorContext cursorContext) {
         try {
+            var merger = new IdRangeMerger(
+                    !started, monitor, numUnusedIds.get() == HeaderReader.UNINITIALIZED ? null : numUnusedIds);
             return new IdRangeMarker(
                     idsPerEntry,
                     layout,
                     tree.writer(cursorContext),
                     lock,
-                    started ? defaultMerger : recoveryMerger,
+                    merger,
                     started,
                     freeIdsNotifier,
                     generation,
@@ -726,6 +732,12 @@ public class IndexedIdGenerator implements IdGenerator {
             }
         }
 
+        if (numUnusedIds.get() == HeaderReader.UNINITIALIZED) {
+            try (var notUsedIterator = notUsedIdsIterator()) {
+                numUnusedIds.set(count(notUsedIterator));
+            }
+        }
+
         started = true;
 
         // After potentially recovery has been run and everything is prepared to get going let's call maintenance,
@@ -736,7 +748,7 @@ public class IndexedIdGenerator implements IdGenerator {
     @Override
     public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) {
         tree.checkpoint(
-                new HeaderWriter(highId::get, highestWrittenId::get, generation, idsPerEntry),
+                new HeaderWriter(highId::get, highestWrittenId::get, generation, idsPerEntry, numUnusedIds::get),
                 flushEvent,
                 cursorContext);
         monitor.checkpoint(highestWrittenId.get(), highId.get());
@@ -788,10 +800,8 @@ public class IndexedIdGenerator implements IdGenerator {
     }
 
     @Override
-    public long getUnusedIdCount() throws IOException {
-        // This is an expensive operation but at the time of writing it's only used
-        // for estimating free store space for metrics, computed every 10 minutes.
-        return PrimitiveLongResourceCollections.count(notUsedIdsIterator());
+    public long getUnusedIdCount() {
+        return numUnusedIds.get();
     }
 
     /**
