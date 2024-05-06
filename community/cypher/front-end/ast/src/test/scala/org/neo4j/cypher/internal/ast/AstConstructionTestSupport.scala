@@ -1078,6 +1078,10 @@ trait AstConstructionTestSupport {
     alternatives: (Expression, Expression)*
   ): CaseExpression = CaseExpression(expression, alternatives.toIndexedSeq, default)(pos)
 
+  def caseExpression(
+    alternatives: (Expression, Expression)*
+  ): CaseExpression = CaseExpression(None, alternatives.toIndexedSeq, None)(pos)
+
   def simpleExistsExpression(
     pattern: Pattern.ForMatch,
     maybeWhere: Option[Where],

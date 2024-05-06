@@ -65,7 +65,7 @@ object IterableHelper {
      * but only if `f` returns `Some` for every element. Returns `None` collection otherwise.
      *
      * @param f the function
-     * @tparam CC the type of the collection ebeing returned.
+     * @tparam CC the type of the collection being returned.
      * @tparam B the type of elements returned by `f`
      */
     def traverseInto[CC[_], B](f: T => Option[B])(implicit factory: Factory[B, CC[B]]): Option[CC[B]] = {

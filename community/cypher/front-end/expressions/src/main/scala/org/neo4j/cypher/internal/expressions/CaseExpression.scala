@@ -30,6 +30,9 @@ case class CaseExpression(
     expression.forall(_.isConstantForQuery) &&
       alternatives.forall(t => t._1.isConstantForQuery && t._2.isConstantForQuery) &&
       default.forall(_.isConstantForQuery)
+
+  def withDefault(default: Expression): CaseExpression =
+    copy(default = Some(default))(position)
 }
 
 object CaseExpression {
