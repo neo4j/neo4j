@@ -67,21 +67,28 @@ object CandidateListFinder {
   private object OpenSequence {
 
     def apply(firstCandidate: Ref[LogicalPlan], layer: Int, conflict: ConflictingPlanPair): OpenSequence =
-      OpenSequence(List(firstCandidate), layer, conflict, traversesEagerPlanFromLeft = false)
+      OpenSequence(
+        BitSet(firstCandidate.value.id.x),
+        Some(firstCandidate),
+        layer,
+        conflict,
+        traversesEagerPlanFromLeft = false
+      )
   }
 
   /**
    * Represents a growing (therefore open) list of candidate plans on which an eager could be planned to solve the given conflict.
    *
-   * @param candidates                 candidates for an eager operator found so far.
-   *                                   The candidates are in an order such that `candidates(n).children.contains(candidates(n+1))`.
+   * @param candidates                 candidates for an eager operator found so far. A BitSet of plan IDs.
+   * @param lastCandidate              the candidate that was last added to candidates, if candidates is non-empty.
    * @param layer                      layer of the conflicting plan that was already traversed.
    * @param conflict                   the conflict that should be solved by planning an eager on either of the candidate plans
    * @param traversesEagerPlanFromLeft `true` if, traversing `candidates` a [[EagerLogicalPlan]] is traversed from left.
    *                                   Kept as a field for performance reasons.
    */
   private case class OpenSequence(
-    candidates: List[Ref[LogicalPlan]],
+    candidates: BitSet,
+    lastCandidate: Option[Ref[LogicalPlan]],
     layer: Int,
     conflict: ConflictingPlanPair,
     traversesEagerPlanFromLeft: Boolean
@@ -95,7 +102,7 @@ object CandidateListFinder {
      */
     def candidateListWithConflict: Option[CandidateList] = {
       if (!traversesEagerPlanFromLeft)
-        Some(CandidateList(candidates = candidates.view.map(_.value.id.x).to(BitSet), conflict = conflict))
+        Some(CandidateList(candidates = candidates, conflict = conflict))
       else
         None
     }
@@ -105,16 +112,17 @@ object CandidateListFinder {
      */
     def withAddedCandidate(candidate: Ref[LogicalPlan]): OpenSequence = {
       copy(
-        candidates = candidate :: candidates,
-        traversesEagerPlanFromLeft = traversesEagerPlanFromLeft || ((candidate, candidates) match {
-          case (Ref(first: EagerLogicalPlan), Ref(second) :: _) if first.lhs.contains(second) => true
-          case _                                                                              => false
+        candidates = candidates.incl(candidate.value.id.x),
+        lastCandidate = Some(candidate),
+        traversesEagerPlanFromLeft = traversesEagerPlanFromLeft || ((candidate, lastCandidate) match {
+          case (Ref(first: EagerLogicalPlan), Some(Ref(second))) if first.lhs.contains(second) => true
+          case _                                                                               => false
         })
       )
     }
 
     def withEmptyCandidates(): OpenSequence =
-      copy(candidates = Nil, traversesEagerPlanFromLeft = false)
+      copy(candidates = BitSet.empty, lastCandidate = None, traversesEagerPlanFromLeft = false)
   }
 
   sealed trait LhsVsRhsEagerization {
@@ -329,7 +337,7 @@ object CandidateListFinder {
       // This is because a conflict between a plan on the RHS and on top of, e.g. an Apply must be solved with an Eager on top of the Apply.
       val newOpenSequences = openSequences.view.mapValues {
         _.map {
-          case os @ OpenSequence(_, layer, _, _) if layer == currentLayer =>
+          case os @ OpenSequence(_, _, layer, _, _) if layer == currentLayer =>
             val osWithNewLayer = os.copy(layer = newLayer)
             if (emptyCandidateListsForRHSvsTopConflicts)
               osWithNewLayer.withEmptyCandidates()
@@ -380,7 +388,7 @@ object CandidateListFinder {
       // All sequences that do not end in p
       (acc.openSequences - p)
         .view.mapValues(_.map {
-          case os @ OpenSequence(_, layer, _, _) if acc.currentLayer == layer =>
+          case os @ OpenSequence(_, _, layer, _, _) if acc.currentLayer == layer =>
             // Add p to all remaining open sequences on the same layer
             os.withAddedCandidate(p)
           case os => os
