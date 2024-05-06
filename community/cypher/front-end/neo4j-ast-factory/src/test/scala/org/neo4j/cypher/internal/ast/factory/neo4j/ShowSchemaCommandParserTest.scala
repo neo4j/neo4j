@@ -681,7 +681,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   // TODO Loss of information
   test("SHOW ALL BTREE INDEXES") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'BTREE': expected
           |  "CONSTRAINT"
@@ -696,7 +696,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 10 (offset: 9))
+        """Invalid input 'BTREE': expected 'CONSTRAINT', 'CONSTRAINTS', 'FUNCTIONS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'ROLE' or 'ROLES' (line 1, column 10 (offset: 9))
           |"SHOW ALL BTREE INDEXES"
           |          ^""".stripMargin
       ))
@@ -819,22 +819,22 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW UNKNOWN INDEXES") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'UNKNOWN': expected"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+        """Invalid input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
           |"SHOW UNKNOWN INDEXES"
           |      ^""".stripMargin
       ))
   }
 
   test("SHOW BUILT IN INDEXES") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'INDEXES': expected "FUNCTION" or "FUNCTIONS""""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'INDEXES': expected 'FUNCTIONS' (line 1, column 15 (offset: 14))
+        """Invalid input 'INDEXES': expected 'FUNCTIONS' (line 1, column 15 (offset: 14))
           |"SHOW BUILT IN INDEXES"
           |               ^""".stripMargin
       ))
@@ -1335,7 +1335,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW NODES EXIST CONSTRAINTS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'NODES': expected
           |  "ALIAS"
@@ -1388,7 +1388,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'NODES': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+        """Invalid input 'NODES': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
           |"SHOW NODES EXIST CONSTRAINTS"
           |      ^""".stripMargin
       ))
@@ -1403,7 +1403,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW RELATIONSHIPS EXIST CONSTRAINTS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'RELATIONSHIPS': expected
           |  "ALIAS"
@@ -1456,7 +1456,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'RELATIONSHIPS': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+        """Invalid input 'RELATIONSHIPS': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
           |"SHOW RELATIONSHIPS EXIST CONSTRAINTS"
           |      ^""".stripMargin
       ))
@@ -1464,7 +1464,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   // TODO Loss of information
   test("SHOW REL EXISTS CONSTRAINTS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'EXISTS': expected
           |  "EXIST"
@@ -1475,7 +1475,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           |  "UNIQUENESS" (line 1, column 10 (offset: 9))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 10 (offset: 9))
+        """Invalid input 'EXISTS': expected 'EXIST', 'EXISTENCE', 'KEY', 'PROPERTY', 'UNIQUE' or 'UNIQUENESS' (line 1, column 10 (offset: 9))
           |"SHOW REL EXISTS CONSTRAINTS"
           |          ^""".stripMargin
       ))
@@ -1621,20 +1621,20 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW UNKNOWN CONSTRAINTS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNKNOWN': expected"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+        """Invalid input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
           |"SHOW UNKNOWN CONSTRAINTS"
           |      ^""".stripMargin
       ))
   }
 
   test("SHOW BUILT IN CONSTRAINTS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'CONSTRAINTS': expected "FUNCTION" or "FUNCTIONS""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'CONSTRAINTS': expected 'FUNCTIONS' (line 1, column 15 (offset: 14))
+        """Invalid input 'CONSTRAINTS': expected 'FUNCTIONS' (line 1, column 15 (offset: 14))
           |"SHOW BUILT IN CONSTRAINTS"
           |               ^""".stripMargin
       ))
@@ -1648,93 +1648,84 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   } {
     test(s"$prefix SHOW $entity YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+          """Invalid input 'WITH': expected 'ORDER BY'""".stripMargin
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix UNWIND range(1,10) as b SHOW $entity YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'SHOW': expected ';', <EOF>"""
+          """Invalid input 'SHOW': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW $entity WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>"""
+          """Invalid input 'WITH': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix WITH 'n' as n SHOW $entity YIELD name RETURN name as numIndexes") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'SHOW': expected ';', <EOF>"""
+          """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW $entity RETURN name as numIndexes") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'RETURN': expected ';', <EOF>"""
+          """Invalid input 'RETURN': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW $entity WITH 1 as c RETURN name as numIndexes") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>"""
+          """Invalid input 'WITH': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW $entity WITH 1 as c") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>"""
+          """Invalid input 'WITH': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW $entity YIELD a WITH a RETURN a") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>"""
+          """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW $entity YIELD as UNWIND as as a RETURN a") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'UNWIND': expected ';', <EOF>"""
+          """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW $entity RETURN name2 YIELD name2") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'RETURN': expected ';', <EOF>"""
+          """Invalid input 'RETURN': expected 'BRIEF', 'SHOW', 'TERMINATE', 'VERBOSE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
   }

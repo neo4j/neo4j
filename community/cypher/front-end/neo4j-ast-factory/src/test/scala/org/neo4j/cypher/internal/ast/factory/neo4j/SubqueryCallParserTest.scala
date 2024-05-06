@@ -42,7 +42,7 @@ class SubqueryCallParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '}'"))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '}': expected 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH' (line 1, column 8 (offset: 7))
+        """Invalid input '}': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNWIND', 'USE' or 'WITH' (line 1, column 8 (offset: 7))
           |"CALL { }"
           |        ^""".stripMargin
       ))

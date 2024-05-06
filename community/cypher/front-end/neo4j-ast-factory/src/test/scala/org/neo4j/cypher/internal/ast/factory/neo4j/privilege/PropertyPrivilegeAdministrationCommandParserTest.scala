@@ -244,7 +244,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString SET PROPERTYS { prop } ON GRAPH * $preposition role") {
             val offset = verb.length + immutableString.length + 5
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessage(
                 s"""Invalid input 'PROPERTYS': expected
                    |  "DATABASE"
@@ -255,13 +255,13 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
                    |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
               ))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Mismatched input 'PROPERTYS': expected 'PASSWORD', 'PASSWORDS', 'USER', 'DATABASE', 'LABEL', 'PROPERTY'"""
+                """Invalid input 'PROPERTYS': expected 'DATABASE ACCESS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
               ))
           }
 
           test(s"$verb$immutableString SET PROPERTIES { prop } ON GRAPH * $preposition role") {
             val offset = verb.length + immutableString.length + 5
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessage(
                 s"""Invalid input 'PROPERTIES': expected
                    |  "DATABASE"
@@ -272,7 +272,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
                    |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
               ))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Mismatched input 'PROPERTIES': expected 'PASSWORD', 'PASSWORDS', 'USER', 'DATABASE', 'LABEL', 'PROPERTY'"""
+                """Invalid input 'PROPERTIES': expected 'DATABASE ACCESS', 'LABEL', 'PASSWORD', 'PASSWORDS', 'PROPERTY' or 'USER'"""
               ))
           }
 
@@ -280,23 +280,23 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 26
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessage(
                 s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
               ))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Mismatched input 'DATABASES': expected 'DEFAULT', 'HOME', 'GRAPH', 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
+                s"""Invalid input 'DATABASES': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
               ))
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 26
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessage(
                 s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
               ))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Mismatched input 'DATABASE': expected 'DEFAULT', 'HOME', 'GRAPH', 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
+                s"""Invalid input 'DATABASE': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
               ))
           }
 

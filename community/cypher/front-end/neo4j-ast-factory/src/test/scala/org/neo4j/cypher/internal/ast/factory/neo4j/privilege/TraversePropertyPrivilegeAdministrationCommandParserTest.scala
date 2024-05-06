@@ -114,7 +114,7 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
       graphKeyword <- graphKeywords
       LiteralExpression(expression, propertyRuleAst) <- literalExpressions
       Scope(graphName, graphScope) <- scopes
-    } yield {
+    } {
       val immutableString = immutableOrEmpty(immutable)
       val expressionString = expressionStringifier(expression)
 

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) "Neo4j"
+    Neo4j Sweden AB [https://neo4j.com]
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<licensing-requirements>
+    <missing-artifacts>
+        <!-- License of org.neo4j.cypher.internal.ast.factory.neo4j.completion.CodeCompletionCore -->
+        <artifact id="antlr4-c3" name="antlr4-c3 Java port">
+            <license>MIT</license>
+        </artifact>
+    </missing-artifacts>
+</licensing-requirements>

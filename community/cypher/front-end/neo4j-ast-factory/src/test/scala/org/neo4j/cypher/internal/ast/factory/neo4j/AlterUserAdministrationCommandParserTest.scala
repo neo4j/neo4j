@@ -482,7 +482,7 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
         "Invalid input '': expected \"IF\", \"REMOVE\" or \"SET\" (line 1, column 15 (offset: 14))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'IF', 'SET', 'REMOVE' (line 1, column 15 (offset: 14))
+        """Invalid input '': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 15 (offset: 14))
           |"ALTER USER foo"
           |               ^""".stripMargin
       ))
@@ -498,8 +498,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
            |  "PLAINTEXT"
            |  "STATUS" (line 1, column 20 (offset: 19))""".stripMargin
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Mismatched input 'NAME': expected 'ENCRYPTED', 'PLAINTEXT', 'PASSWORD', 'STATUS', 'HOME' (line 1, column 20 (offset: 19))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'NAME': expected 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
+          |"ALTER USER foo SET NAME bar"
+          |                    ^""".stripMargin
       ))
   }
 
@@ -513,8 +515,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
            |  "PLAINTEXT"
            |  "STATUS" (line 1, column 42 (offset: 41))""".stripMargin
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Mismatched input 'NAME': expected 'ENCRYPTED', 'PLAINTEXT', 'PASSWORD', 'STATUS', 'HOME' (line 1, column 42 (offset: 41))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'NAME': expected 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 42 (offset: 41))
+          |"ALTER USER foo SET PASSWORD 'secret' SET NAME bar"
+          |                                          ^""".stripMargin
       ))
   }
 
@@ -523,8 +527,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessage(
         "Invalid input 'RENAME': expected \"IF\", \"REMOVE\" or \"SET\" (line 1, column 16 (offset: 15))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Mismatched input 'RENAME': expected 'IF', 'SET', 'REMOVE' (line 1, column 16 (offset: 15))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'RENAME': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 16 (offset: 15))
+          |"ALTER USER foo RENAME TO bar"
+          |                ^""".stripMargin
       ))
   }
 
@@ -533,8 +539,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessage(
         "Invalid input 'null': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 29 (offset: 28))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "No viable alternative (line 1, column 29 (offset: 28))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'null': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
+          |"ALTER USER foo SET PASSWORD null"
+          |                             ^""".stripMargin
       ))
   }
 
@@ -543,8 +551,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessage(
         "Invalid input '123': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 29 (offset: 28))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "No viable alternative (line 1, column 29 (offset: 28))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '123': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
+          |"ALTER USER foo SET PASSWORD 123"
+          |                             ^""".stripMargin
       ))
   }
 
@@ -553,8 +563,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessage(
         "Invalid input '': expected \"CHANGE\", \"\\\"\", \"\\'\" or a parameter (line 1, column 28 (offset: 27))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "No viable alternative (line 1, column 28 (offset: 27))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter, a string or 'CHANGE' (line 1, column 28 (offset: 27))
+          |"ALTER USER foo SET PASSWORD"
+          |                            ^""".stripMargin
       ))
   }
 
@@ -563,8 +575,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessage(
         "Invalid input '123': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 39 (offset: 38))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Mismatched input '123': expected a string value, '$' (line 1, column 39 (offset: 38))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '123': expected a parameter or a string (line 1, column 39 (offset: 38))
+          |"ALTER USER foo SET ENCRYPTED PASSWORD 123"
+          |                                       ^""".stripMargin
       ))
   }
 
@@ -573,8 +587,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 38 (offset: 37))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '': expected a string value, '$' (line 1, column 38 (offset: 37))"""
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter or a string (line 1, column 38 (offset: 37))
+          |"ALTER USER foo SET PLAINTEXT PASSWORD"
+          |                                      ^""".stripMargin
       ))
   }
 
@@ -583,16 +599,18 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 38 (offset: 37))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '': expected a string value, '$' (line 1, column 38 (offset: 37))"""
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter or a string (line 1, column 38 (offset: 37))
+          |"ALTER USER foo SET ENCRYPTED PASSWORD"
+          |                                      ^""".stripMargin
       ))
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Duplicate SET PASSWORD clause (line 1, column 40 (offset: 39))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '': expected a string value, '$' (line 1, column 62 (offset: 61))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter or a string (line 1, column 62 (offset: 61))
           |"ALTER USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD"
           |                                                              ^""".stripMargin
       ))
@@ -609,7 +627,11 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   test("ALTER USER foo SET PASSWORD 'password' ENCRYPTED") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ENCRYPTED'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Extraneous input 'ENCRYPTED'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ENCRYPTED': expected 'CHANGE', 'SET' or <EOF> (line 1, column 40 (offset: 39))
+          |"ALTER USER foo SET PASSWORD 'password' ENCRYPTED"
+          |                                        ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE CHANGE NOT REQUIRED") {
@@ -617,8 +639,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'CHANGE'"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Mismatched input 'CHANGE': expected ';', <EOF> (line 1, column 58 (offset: 57))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'CHANGE': expected 'SET' or <EOF> (line 1, column 58 (offset: 57))
+          |"ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE CHANGE NOT REQUIRED"
+          |                                                          ^""".stripMargin
       ))
   }
 
@@ -626,7 +650,7 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"ACTIVE\" or \"SUSPENDED\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Missing 'ACTIVE', 'SUSPENDED' at '' (line 1, column 26 (offset: 25))
+        """Invalid input '': expected 'ACTIVE' or 'SUSPENDED' (line 1, column 26 (offset: 25))
           |"ALTER USER foo SET STATUS"
           |                          ^""".stripMargin
       ))
@@ -635,61 +659,81 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   test("ALTER USER foo PASSWORD CHANGE NOT REQUIRED") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'PASSWORD'"))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Mismatched input 'PASSWORD': expected 'IF', 'SET', 'REMOVE'")
-      )
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'PASSWORD': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 16 (offset: 15))
+          |"ALTER USER foo PASSWORD CHANGE NOT REQUIRED"
+          |                ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo CHANGE NOT REQUIRED") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'CHANGE'"))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Mismatched input 'CHANGE': expected 'IF', 'SET', 'REMOVE'")
-      )
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Invalid input 'CHANGE': expected 'REMOVE HOME DATABASE', 'IF EXISTS' or 'SET' (line 1, column 16 (offset: 15))
+          |"ALTER USER foo CHANGE NOT REQUIRED"
+          |                ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET PASSWORD SET STATUS ACTIVE") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SET'"))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("No viable alternative (line 1, column 53 (offset: 52))")
-      )
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Invalid input 'SET': expected a parameter, a string or 'CHANGE' (line 1, column 53 (offset: 52))
+          |"ALTER USER foo SET PASSWORD 'password' SET PASSWORD SET STATUS ACTIVE"
+          |                                                     ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo SET PASSWORD STATUS ACTIVE") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'STATUS'"))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("No viable alternative (line 1, column 29 (offset: 28))")
-      )
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Invalid input 'STATUS': expected a parameter, a string or 'CHANGE' (line 1, column 29 (offset: 28))
+          |"ALTER USER foo SET PASSWORD STATUS ACTIVE"
+          |                             ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo SET HOME DATABASE 123456") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '123456'"))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Mismatched input '123456': expected an identifier, '$'")
-      )
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Invalid input '123456': expected a database name or a parameter (line 1, column 34 (offset: 33))
+          |"ALTER USER foo SET HOME DATABASE 123456"
+          |                                  ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo SET HOME DATABASE #dfkfop!") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '#'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Extraneous input '#': expected an identifier, '$'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '#': expected a database name or a parameter (line 1, column 34 (offset: 33))
+          |"ALTER USER foo SET HOME DATABASE #dfkfop!"
+          |                                  ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo SET PASSWORD 'password' SET STATUS IMAGINARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'IMAGINARY'"))
-      .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessageStart("Mismatched input 'IMAGINARY': expected 'ACTIVE', 'SUSPENDED'")
-      )
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        """Invalid input 'IMAGINARY': expected 'ACTIVE' or 'SUSPENDED' (line 1, column 51 (offset: 50))
+          |"ALTER USER foo SET PASSWORD 'password' SET STATUS IMAGINARY"
+          |                                                   ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo IF NOT EXISTS SET PASSWORD 'password'") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Extraneous input 'NOT': expected 'EXISTS'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'NOT': expected 'EXISTS' (line 1, column 19 (offset: 18))
+          |"ALTER USER foo IF NOT EXISTS SET PASSWORD 'password'"
+          |                   ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo SET STATUS SUSPENDED REMOVE HOME DATABASE") {
@@ -697,8 +741,10 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'REMOVE': expected "SET" or <EOF> (line 1, column 37 (offset: 36))"""
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Mismatched input 'REMOVE': expected ';', <EOF>"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'REMOVE': expected 'SET' or <EOF> (line 1, column 37 (offset: 36))
+          |"ALTER USER foo SET STATUS SUSPENDED REMOVE HOME DATABASE"
+          |                                     ^""".stripMargin
       ))
   }
 
@@ -707,28 +753,38 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'REMOVE': expected ".", "SET" or <EOF> (line 1, column 38 (offset: 37))"""
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Mismatched input 'REMOVE': expected ';', <EOF>"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'REMOVE': expected a database name, 'SET' or <EOF> (line 1, column 38 (offset: 37))
+          |"ALTER USER foo SET HOME DATABASE db1 REMOVE HOME DATABASE"
+          |                                      ^""".stripMargin
       ))
   }
 
   test("ALTER USER foo REMOVE HOME DATABASE SET PASSWORD CHANGE REQUIRED") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SET': expected <EOF> (line 1, column 37 (offset: 36))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input 'SET'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'SET': expected <EOF> (line 1, column 37 (offset: 36))
+          |"ALTER USER foo REMOVE HOME DATABASE SET PASSWORD CHANGE REQUIRED"
+          |                                     ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo SET DEFAULT DATABASE db1") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DEFAULT': expected"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input 'DEFAULT'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'DEFAULT': expected 'HOME DATABASE', 'ENCRYPTED', 'PASSWORD', 'PLAINTEXT' or 'STATUS' (line 1, column 20 (offset: 19))
+          |"ALTER USER foo SET DEFAULT DATABASE db1"
+          |                    ^""".stripMargin
+      ))
   }
 
   test("ALTER USER foo REMOVE DEFAULT DATABASE") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DEFAULT'"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'DEFAULT': expected 'HOME' (line 1, column 23 (offset: 22))
+        """Invalid input 'DEFAULT': expected 'HOME DATABASE' (line 1, column 23 (offset: 22))
           |"ALTER USER foo REMOVE DEFAULT DATABASE"
           |                       ^""".stripMargin
       ))
@@ -844,7 +900,7 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'null': expected \"\\\"\", \"\\'\" or a parameter"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'null': expected a string value, '$' (line 1, column 51 (offset: 50))
+        """Invalid input 'null': expected a parameter or a string (line 1, column 51 (offset: 50))
           |"ALTER CURRENT USER SET PASSWORD FROM 'current' TO null"
           |                                                   ^""".stripMargin
       ))
@@ -853,7 +909,7 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   test("ALTER CURRENT USER SET PASSWORD FROM $current TO 123") {
     failsParsing[Statements]
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '123': expected a string value, '$' (line 1, column 50 (offset: 49))
+        """Invalid input '123': expected a parameter or a string (line 1, column 50 (offset: 49))
           |"ALTER CURRENT USER SET PASSWORD FROM $current TO 123"
           |                                                  ^""".stripMargin
       ))
@@ -862,7 +918,7 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   test("ALTER PASSWORD FROM 'current' TO 'new'") {
     failsParsing[Statements]
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'PASSWORD': expected 'ALIAS', 'CURRENT', 'DATABASE', 'USER', 'SERVER' (line 1, column 7 (offset: 6))
+        """Invalid input 'PASSWORD': expected 'ALIAS', 'DATABASE', 'CURRENT USER SET PASSWORD FROM', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
           |"ALTER PASSWORD FROM 'current' TO 'new'"
           |       ^""".stripMargin
       ))
@@ -871,7 +927,7 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   test("ALTER CURRENT PASSWORD FROM 'current' TO 'new'") {
     failsParsing[Statements]
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'PASSWORD': expected 'USER' (line 1, column 15 (offset: 14))
+        """Invalid input 'PASSWORD': expected 'USER SET PASSWORD FROM' (line 1, column 15 (offset: 14))
           |"ALTER CURRENT PASSWORD FROM 'current' TO 'new'"
           |               ^""".stripMargin
       ))
@@ -880,16 +936,18 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   test("ALTER CURRENT USER PASSWORD FROM 'current' TO 'new'") {
     failsParsing[Statements]
       .parseIn(Antlr)(
-        _.throws[SyntaxException].withMessage("""Missing 'SET' at 'PASSWORD' (line 1, column 20 (offset: 19))
-                                                |"ALTER CURRENT USER PASSWORD FROM 'current' TO 'new'"
-                                                |                    ^""".stripMargin)
+        _.throws[SyntaxException].withMessage(
+          """Invalid input 'PASSWORD': expected 'SET PASSWORD FROM' (line 1, column 20 (offset: 19))
+            |"ALTER CURRENT USER PASSWORD FROM 'current' TO 'new'"
+            |                    ^""".stripMargin
+        )
       )
   }
 
   test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO") {
     failsParsing[Statements]
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected a string value, '$' (line 1, column 50 (offset: 49))
+        """Invalid input '': expected a parameter or a string (line 1, column 50 (offset: 49))
           |"ALTER CURRENT USER SET PASSWORD FROM 'current' TO"
           |                                                  ^""".stripMargin
       ))
@@ -898,7 +956,7 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   test("ALTER CURRENT USER SET PASSWORD FROM TO 'new'") {
     failsParsing[Statements]
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'TO': expected a string value, '$' (line 1, column 38 (offset: 37))
+        """Invalid input 'TO': expected a parameter or a string (line 1, column 38 (offset: 37))
           |"ALTER CURRENT USER SET PASSWORD FROM TO 'new'"
           |                                      ^""".stripMargin
       ))
@@ -907,7 +965,7 @@ class AlterUserAdministrationCommandParserTest extends UserAdministrationCommand
   test("ALTER CURRENT USER SET PASSWORD TO 'new'") {
     failsParsing[Statements]
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'TO': expected 'FROM' (line 1, column 33 (offset: 32))
+        """Invalid input 'TO': expected 'FROM' (line 1, column 33 (offset: 32))
           |"ALTER CURRENT USER SET PASSWORD TO 'new'"
           |                                 ^""".stripMargin
       ))

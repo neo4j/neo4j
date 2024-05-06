@@ -1930,93 +1930,59 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
     "SHOW USERS"
   ).foreach(otherClause => {
     test(s"SHOW TRANSACTIONS $otherClause") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(
-          _.throws[SyntaxException].messageShould(
-            startWith("Mismatched input")
-              .or(startWith("No viable alternative")
-                .or(startWith("Extraneous input")))
-          )
-        )
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW TRANSACTIONS") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"TERMINATE TRANSACTIONS $otherClause") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException])
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause TERMINATE TRANSACTIONS") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW SETTINGS $otherClause") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException])
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW SETTINGS") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW FUNCTIONS $otherClause") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW FUNCTIONS") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW PROCEDURES $otherClause") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW PROCEDURES") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW CONSTRAINTS $otherClause") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW CONSTRAINTS") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"SHOW INDEXES $otherClause") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
     test(s"$otherClause SHOW INDEXES") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      failsParsing[Statements].withMessageStart("Invalid input")
     }
 
   })
@@ -2030,7 +1996,11 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
   test("MATCH (n) TERMINATE TRANSACTION") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'TERMINATE': expected a graph pattern, 'FOREACH', ',', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'USING', 'WHERE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
+          |"MATCH (n) TERMINATE TRANSACTION"
+          |           ^""".stripMargin
+      ))
   }
 
 }

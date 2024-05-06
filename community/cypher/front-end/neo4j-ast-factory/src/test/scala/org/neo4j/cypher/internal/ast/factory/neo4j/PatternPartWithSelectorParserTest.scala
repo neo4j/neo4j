@@ -270,9 +270,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"FOREACH (x in [ ${selector._1} (a)-->(b) | a ] | SET x.prop = 12 )") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative: expected an expression"))
+        failsParsing[Statements].withMessageStart("Invalid input")
       }
     }
   }
@@ -280,9 +278,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"RETURN reduce(sum=0, x IN [${selector._1} (a)-[:r]->(b) | b.prop] | sum + x)") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative: expected an expression"))
+        failsParsing[Statements].withMessageStart("Invalid input")
       }
     }
   }
@@ -310,9 +306,7 @@ class PatternPartWithSelectorParserTest extends AstParsingTestBase {
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"RETURN [ ${selector._1} (a)-->(b) | a ]") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative: expected an expression"))
+        failsParsing[Statements].withMessageStart("Invalid input")
       }
     }
   }

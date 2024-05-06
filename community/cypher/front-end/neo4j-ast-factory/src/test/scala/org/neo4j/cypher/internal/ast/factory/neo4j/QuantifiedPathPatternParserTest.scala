@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.exceptions.SyntaxException
 
 class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -392,9 +393,9 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   // pattern expressions are not implemented, yet
   test("MATCH (n) WITH [ p = (n)--(m) ((a)-->(b))+ | p ] as paths RETURN *") {
     failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
-      .parseIn(Antlr)(_.withMessageStart(
-        """No viable alternative: expected an expression (line 1, column 31 (offset: 30))
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '(': expected\n  \"!=\"\n  \"%\"\n  \"*\""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected an expression (line 1, column 31 (offset: 30))
           |"MATCH (n) WITH [ p = (n)--(m) ((a)-->(b))+ | p ] as paths RETURN *"
           |                               ^""".stripMargin
       ))
@@ -404,8 +405,8 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   test("MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m) RETURN *") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '(': expected ';', <EOF> (line 1, column 26 (offset: 25))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected an expression, 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 26 (offset: 25))
           |"MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m) RETURN *"
           |                          ^""".stripMargin
       ))
@@ -415,8 +416,8 @@ class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with Leg
   test("MATCH (n)--((a)-->(b))+") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '(': expected \":\" or an identifier"))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Extraneous input '(': expected a variable name, ':', 'IS', '{', '$', 'WHERE', ')' (line 1, column 13 (offset: 12))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected a parameter, a variable name, ')', ':', 'IS', 'WHERE' or '{' (line 1, column 13 (offset: 12))
           |"MATCH (n)--((a)-->(b))+"
           |             ^""".stripMargin
       ))

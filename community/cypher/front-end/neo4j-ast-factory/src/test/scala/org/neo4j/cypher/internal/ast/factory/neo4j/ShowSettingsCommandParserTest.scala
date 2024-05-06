@@ -539,7 +539,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   // TODO Potential Loss of information
   test("SHOW ALL SETTINGS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'SETTINGS': expected
           |  "CONSTRAINT"
@@ -554,7 +554,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
           |  "ROLES"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 10 (offset: 9))
+        """Invalid input 'SETTINGS': expected 'CONSTRAINT', 'CONSTRAINTS', 'FUNCTIONS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'ROLE' or 'ROLES' (line 1, column 10 (offset: 9))
           |"SHOW ALL SETTINGS"
           |          ^""".stripMargin
       ))
@@ -562,14 +562,14 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   // TODO Check message, potential loss of information
   test("SHOW SETTING $foo, $bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input ',': expected
           |  "!="
           |  "%"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ',': expected ';', <EOF> (line 1, column 18 (offset: 17))
+        """Invalid input ',': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 18 (offset: 17))
           |"SHOW SETTING $foo, $bar"
           |                  ^""".stripMargin
       ))
@@ -577,14 +577,14 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   // TODO Check message, potential loss of information
   test("SHOW SETTING $foo $bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input '$': expected
           |  "!="
           |  "%"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '$': expected ';', <EOF> (line 1, column 19 (offset: 18))
+        """Invalid input '$': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 19 (offset: 18))
           |"SHOW SETTING $foo $bar"
           |                   ^""".stripMargin
       ))
@@ -592,12 +592,12 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   // TODO Unhelpful message, matching on statements could we escape it?
   test("SHOW SETTING 'bar', $foo") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input '$': expected "\"" or "\'" """
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '$': expected a string value (line 1, column 21 (offset: 20))
+        """Invalid input '$': expected a string (line 1, column 21 (offset: 20))
           |"SHOW SETTING 'bar', $foo"
           |                     ^""".stripMargin
       ))
@@ -605,14 +605,14 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   // TODO Check message, potential loss of information
   test("SHOW SETTING $foo, 'bar'") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input ',': expected
           |  "!="
           |  "%"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ',': expected ';', <EOF> (line 1, column 18 (offset: 17))
+        """Invalid input ',': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 18 (offset: 17))
           |"SHOW SETTING $foo, 'bar'"
           |                  ^""".stripMargin
       ))
@@ -620,14 +620,14 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   // TODO Check message, potential loss of information
   test("SHOW SETTING 'foo' 'bar'") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'bar': expected
           |  "!="
           |  "%"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input ''bar'': expected ';', <EOF> (line 1, column 20 (offset: 19))
+        """Invalid input ''bar'': expected an expression, ',', 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF> (line 1, column 20 (offset: 19))
           |"SHOW SETTING 'foo' 'bar'"
           |                    ^""".stripMargin
       ))

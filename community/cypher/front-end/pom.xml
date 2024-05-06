@@ -50,6 +50,7 @@
         <module>antlr-parser-listener-maven-plugin</module>
         <module>neo4j-ast-factory</module>
         <module>neo4j-cst-factory</module>
+        <module>neo4j-cst-factory-license</module>
         <module>ast-generator</module>
     </modules>
 

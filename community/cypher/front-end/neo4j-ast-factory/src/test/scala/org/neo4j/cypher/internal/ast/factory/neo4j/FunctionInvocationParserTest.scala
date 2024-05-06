@@ -57,8 +57,8 @@ class FunctionInvocationParserTest extends AstParsingTestBase {
   test("function parameters without comma separation should not parse") {
     "return foo('test' 42)" should notParse[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '42': expected"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input '42': expected ',', ')' (line 1, column 19 (offset: 18))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '42': expected an expression, ')' or ',' (line 1, column 19 (offset: 18))
           |"return foo('test' 42)"
           |                   ^""".stripMargin
       ))
@@ -68,7 +68,7 @@ class FunctionInvocationParserTest extends AstParsingTestBase {
     "return foo(, 'test', 42)" should notParse[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ',': expected"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '(': expected ';', <EOF> (line 1, column 11 (offset: 10))
+        """Invalid input '(': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
           |"return foo(, 'test', 42)"
           |           ^""".stripMargin
       ))

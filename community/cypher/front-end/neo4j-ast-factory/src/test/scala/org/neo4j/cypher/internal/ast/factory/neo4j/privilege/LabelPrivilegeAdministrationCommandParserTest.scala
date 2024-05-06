@@ -182,28 +182,24 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationAndSch
               // LABELS instead of LABEL
 
               test(s"$verb$immutableString $setOrRemove LABELS label ON GRAPH * $preposition role") {
-                testName should notParse[Statements]
-                  .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'LABELS': expected"""))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    """Extraneous input 'LABELS': expected"""
-                  ))
+                failsParsing[Statements].withMessageStart("""Invalid input 'LABELS': expected""")
               }
 
               // Database instead of graph keyword
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASES * $preposition role") {
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASES': expected"""))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    """Mismatched input 'DATABASES': expected"""
+                    """Invalid input 'DATABASES': expected"""
                   ))
               }
 
               test(s"$verb$immutableString $setOrRemove LABEL label ON DATABASE foo $preposition role") {
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASE': expected"""))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    """Mismatched input 'DATABASE': expected"""
+                    """Invalid input 'DATABASE': expected"""
                   ))
               }
 

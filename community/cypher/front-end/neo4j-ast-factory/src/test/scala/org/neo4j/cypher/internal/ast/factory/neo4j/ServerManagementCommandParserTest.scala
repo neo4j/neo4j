@@ -97,12 +97,12 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
 
   // TODO Check message, potential loss of information
   test("SHOW SERVERS RETURN *") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'RETURN': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 14 (offset: 13))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'RETURN': expected ';', <EOF> (line 1, column 14 (offset: 13))
+        """Invalid input 'RETURN': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 14 (offset: 13))
           |"SHOW SERVERS RETURN *"
           |              ^""".stripMargin
       ))
@@ -110,12 +110,12 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
 
   // TODO Check message, potential loss of information
   test("SHOW SERVERS 'name'") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'name': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 14 (offset: 13))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input ''name'': expected ';', <EOF> (line 1, column 14 (offset: 13))
+        """Invalid input ''name'': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 14 (offset: 13))
           |"SHOW SERVERS 'name'"
           |              ^""".stripMargin
       ))
@@ -123,12 +123,12 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
 
   // TODO Check message, potential loss of information
   test("SHOW SERVER 'name'") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'name': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 13 (offset: 12))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input ''name'': expected ';', <EOF> (line 1, column 13 (offset: 12))
+        """Invalid input ''name'': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 13 (offset: 12))
           |"SHOW SERVER 'name'"
           |             ^""".stripMargin
       ))
@@ -157,20 +157,20 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("ENABLE SERVER name") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'name': expected "\"", "\'" or a parameter"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'name': expected a string value, '$' (line 1, column 15 (offset: 14))
+        """Invalid input 'name': expected a parameter or a string (line 1, column 15 (offset: 14))
           |"ENABLE SERVER name"
           |               ^""".stripMargin
       ))
   }
 
   test("ENABLE SERVER") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input '': expected "\"", "\'" or a parameter"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected a string value, '$' (line 1, column 14 (offset: 13))
+        """Invalid input '': expected a parameter or a string (line 1, column 14 (offset: 13))
           |"ENABLE SERVER"
           |              ^""".stripMargin
       ))
@@ -193,20 +193,20 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("ALTER SERVER 'name'") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input '': expected "SET"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'SET' (line 1, column 20 (offset: 19))
+        """Invalid input '': expected 'SET' (line 1, column 20 (offset: 19))
           |"ALTER SERVER 'name'"
           |                    ^""".stripMargin
       ))
   }
 
   test("ALTER SERVER 'name' SET OPTIONS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input '': expected "{" or a parameter"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected '{', '$' (line 1, column 32 (offset: 31))
+        """Invalid input '': expected a parameter or '{' (line 1, column 32 (offset: 31))
           |"ALTER SERVER 'name' SET OPTIONS"
           |                                ^""".stripMargin
       ))
@@ -223,20 +223,20 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("RENAME SERVER `bad,ger` TO $to") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'bad,ger': expected "\"", "\'" or a parameter"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '`bad,ger`': expected a string value, '$' (line 1, column 15 (offset: 14))
+        """Invalid input '`bad,ger`': expected a parameter or a string (line 1, column 15 (offset: 14))
           |"RENAME SERVER `bad,ger` TO $to"
           |               ^""".stripMargin
       ))
   }
 
   test("RENAME SERVER 'badger' $to") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '$': expected \"TO\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input '$': expected 'TO' (line 1, column 24 (offset: 23))
+        """Invalid input '$': expected 'TO' (line 1, column 24 (offset: 23))
           |"RENAME SERVER 'badger' $to"
           |                        ^""".stripMargin
       ))
@@ -253,24 +253,24 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("DROP SERVER name") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'name': expected "\"", "\'" or a parameter (line 1, column 13 (offset: 12))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'name': expected a string value, '$' (line 1, column 13 (offset: 12))
+        """Invalid input 'name': expected a parameter or a string (line 1, column 13 (offset: 12))
           |"DROP SERVER name"
           |             ^""".stripMargin
       ))
   }
 
   test("DROP SERVER") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input '': expected "\"", "\'" or a parameter (line 1, column 12 (offset: 11))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected a string value, '$' (line 1, column 12 (offset: 11))
+        """Invalid input '': expected a parameter or a string (line 1, column 12 (offset: 11))
           |"DROP SERVER"
           |            ^""".stripMargin
       ))
@@ -297,10 +297,10 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("DEALLOCATE SERVERS $name, 'foo'") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SERVERS': expected \"DATABASE\" or \"DATABASES\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'SERVERS': expected 'DATABASE', 'DATABASES' (line 1, column 12 (offset: 11))
+        """Invalid input 'SERVERS': expected 'DATABASE' or 'DATABASES' (line 1, column 12 (offset: 11))
           |"DEALLOCATE SERVERS $name, 'foo'"
           |            ^""".stripMargin
       ))
@@ -319,12 +319,12 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("REALLOCATE SERVERS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'SERVERS': expected \"DATABASE\" or \"DATABASES\" (line 1, column 12 (offset: 11))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'SERVERS': expected 'DATABASE', 'DATABASES' (line 1, column 12 (offset: 11))
+        """Invalid input 'SERVERS': expected 'DATABASE' or 'DATABASES' (line 1, column 12 (offset: 11))
           |"REALLOCATE SERVERS"
           |            ^""".stripMargin
       ))

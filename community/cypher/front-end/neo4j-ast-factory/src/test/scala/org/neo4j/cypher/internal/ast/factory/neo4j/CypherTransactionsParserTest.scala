@@ -369,7 +369,7 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
         "Invalid input 'CONTINUE'"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'CONTINUE': expected ';', <EOF> (line 1, column 52 (offset: 51))
+        """Invalid input 'CONTINUE': expected 'FOREACH', 'REPORT STATUS AS', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'ON ERROR', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OF', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 52 (offset: 51))
           |"CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK CONTINUE"
           |                                                    ^""".stripMargin
       ))

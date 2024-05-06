@@ -165,12 +165,12 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               test(s"$verb$immutableString $createOrDelete ON DATABASE blah $preposition role") {
                 val offset = verb.length + immutableString.length + createOrDelete.length + 5
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessageStart(
                     s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Mismatched input 'DATABASE': expected 'DEFAULT', 'HOME', 'GRAPH', 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
+                    s"""Invalid input 'DATABASE': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
               }
           }

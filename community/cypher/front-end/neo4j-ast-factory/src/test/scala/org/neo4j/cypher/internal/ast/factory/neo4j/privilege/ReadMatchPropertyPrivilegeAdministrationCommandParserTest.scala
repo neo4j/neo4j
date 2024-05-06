@@ -137,7 +137,7 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
       LiteralExpression(expression, propertyRuleAst) <- literalExpressions
       Resource(properties, resource) <- resources
       Scope(graphName, graphScope) <- scopes
-    } yield {
+    } {
       val immutableString = immutableOrEmpty(immutable)
       val expressionString = expressionStringifier(expression)
 

@@ -94,7 +94,7 @@ class LiteralsParserTest extends AstParsingTestBase
     "--1.0" should notParse[NumberLiteral]
       .parseIn(JavaCc)(_.withMessageStart("Encountered \" \"-\" \"-\"\" at line 1, column 2."))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input '-': expected a float value, an integer value, a hexadecimal integer value, an octal integer value (line 1, column 2 (offset: 1))
+        """Invalid input '-': expected a number (line 1, column 2 (offset: 1))
           |"--1.0"
           |  ^""".stripMargin
       ))
@@ -111,7 +111,7 @@ class LiteralsParserTest extends AstParsingTestBase
     "RETURN 0_.0" should notParse[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '.0'"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input '.0': expected ';', <EOF> (line 1, column 10 (offset: 9))
+        """Invalid input '.0': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 10 (offset: 9))
           |"RETURN 0_.0"
           |          ^""".stripMargin
       ))
@@ -123,17 +123,11 @@ class LiteralsParserTest extends AstParsingTestBase
         "Invalid input '.': expected \"*\", \"DISTINCT\" or an expression (line 1, column 8 (offset: 7))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input '.': expected 'DISTINCT', '*', an expression (line 1, column 8 (offset: 7))
+        """Invalid input '.': expected an expression, '*' or 'DISTINCT' (line 1, column 8 (offset: 7))
           |"RETURN ._2"
           |        ^""".stripMargin
       ))
-    "RETURN 1_.0001" should notParse[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input '.0001'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input '.0001': expected ';', <EOF> (line 1, column 10 (offset: 9))
-          |"RETURN 1_.0001"
-          |          ^""".stripMargin
-      ))
+    "RETURN 1_.0001" should notParse[Statements].withMessageStart("Invalid input '.0001'")
     "RETURN 1._0001" should parseTo[Statements](
       Statements(Seq(singleQuery(return_(returnItem(prop(SignedDecimalIntegerLiteral("1")(pos), "_0001"), "1._0001")))))
     )
@@ -153,16 +147,16 @@ class LiteralsParserTest extends AstParsingTestBase
     "$0_2" should notParse[Parameter]
       .parseIn(JavaCc)(_.withMessageStart("Encountered"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '0_2': expected a parameter name, an integer value (line 1, column 2 (offset: 1))
+        """Invalid input '0_2': expected an identifier or an integer value (line 1, column 2 (offset: 1))
           |"$0_2"
           |  ^""".stripMargin
       ))
-    "$1.0f" should notParse[Parameter]
-      .parseIn(JavaCc)(_.withMessageStart("Encountered"))
+    "return $1.0f" should notParse[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("Invalid input '$': expected \"+\" or \"-\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '1.0f': expected a parameter name, an integer value (line 1, column 2 (offset: 1))
-          |"$1.0f"
-          |  ^""".stripMargin
+        """Invalid input '1.0f': expected an identifier or an integer value (line 1, column 9 (offset: 8))
+          |"return $1.0f"
+          |         ^""".stripMargin
       ))
   }
 

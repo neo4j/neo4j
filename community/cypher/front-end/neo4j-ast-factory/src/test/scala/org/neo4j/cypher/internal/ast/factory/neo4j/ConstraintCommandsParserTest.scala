@@ -1921,7 +1921,9 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           ) {
             failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{': expected ';', <EOF>"))
+              .parseIn(Antlr)(
+                _.throws[SyntaxException].withMessageStart("Invalid input '{': expected 'OPTIONS' or <EOF>")
+              )
           }
 
           test(
@@ -1929,29 +1931,34 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           ) {
             failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"{\" or a parameter"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '': expected '{', '$'"))
+              .parseIn(Antlr)(
+                _.throws[SyntaxException].withMessageStart("Invalid input '': expected a parameter or '{'")
+              )
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop.part IS UNIQUE") {
             failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart("Invalid input '.': expected \"::\" or \"IS\""))
               // TODO Good enough suggestion?
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '.': expected '::' or 'IS'"))
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop.part) IS UNIQUE") {
             failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart("Invalid input '.': expected \")\" or \",\""))
-              // TODO Good enough suggestion?
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '.': expected ')' or ','"))
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE {indexProvider : 'range-1.0'}"
           ) {
             failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input '{': expected \"OPTIONS\" or <EOF>"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{': expected ';', <EOF>"))
+              .parseIn(JavaCc)(_.withMessageStart(
+                "Invalid input '{': expected \"OPTIONS\" or <EOF>"
+              ))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                "Invalid input '{': expected 'OPTIONS' or <EOF>"
+              ))
           }
 
           test(
@@ -1959,7 +1966,9 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           ) {
             failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"{\" or a parameter"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '': expected '{', '$'"))
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                "Invalid input '': expected a parameter or '{'"
+              ))
           }
 
           test(
@@ -2023,41 +2032,31 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUENESS"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
+            failsParsing[Statements].withMessageStart("Invalid input 'UNIQUENESS'")
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NODE UNIQUENESS"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
+            failsParsing[Statements].withMessageStart("Invalid input 'UNIQUENESS'")
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS UNIQUENESS"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
+            failsParsing[Statements].withMessageStart("Invalid input 'UNIQUENESS'")
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS RELATIONSHIP UNIQUENESS"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
+            failsParsing[Statements].withMessageStart("Invalid input 'UNIQUENESS'")
           }
 
           test(
             s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS REL UNIQUENESS"
           ) {
-            failsParsing[Statements]
-              .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNIQUENESS'"))
-              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("No viable alternative"))
+            failsParsing[Statements].withMessageStart("Invalid input 'UNIQUENESS'")
           }
 
           // constraint name parameter
@@ -2793,7 +2792,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         "Invalid input 'NOT': expected \"ARRAY\", \"LIST\", \"OPTIONS\" or <EOF> (line 1, column 83 (offset: 82))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'NOT': expected ';', <EOF> (line 1, column 83 (offset: 82))
+        """Invalid input 'NOT': expected 'ARRAY', 'LIST', 'OPTIONS', '|' or <EOF> (line 1, column 83 (offset: 82))
           |"CREATE CONSTRAINT my_constraint FOR (n:L) REQUIRE n.p IS :: BOOLEAN LIST NOT NULL NOT NULL"
           |                                                                                   ^""".stripMargin
       ))
@@ -3232,7 +3231,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         """Invalid input ':': expected ")" or an identifier"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 24 (offset: 23))
+        """Invalid input ':': expected a variable name or ')' (line 1, column 24 (offset: 23))
           |"CREATE CONSTRAINT FOR (:A)-[n1:R]-() REQUIRE (n2.name) IS RELATIONSHIP KEY"
           |                        ^""".stripMargin
       ))
@@ -3243,7 +3242,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ':': expected ')' (line 1, column 34 (offset: 33))
+        """Invalid input ':': expected ')' (line 1, column 34 (offset: 33))
           |"CREATE CONSTRAINT FOR ()-[n1:R]-(:A) REQUIRE (n2.name) IS UNIQUE"
           |                                  ^""".stripMargin
       ))
@@ -3256,7 +3255,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         """Invalid input ')': expected ":""""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ')': expected ':' (line 1, column 26 (offset: 25))
+        """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
           |"CREATE CONSTRAINT FOR (n2)-[n1:R]-() REQUIRE (n2.name) IS NOT NULL"
           |                          ^""".stripMargin
       ))
@@ -3269,7 +3268,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         """Invalid input 'n2': expected ")""""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'n2': expected ')' (line 1, column 34 (offset: 33))
+        """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
           |"CREATE CONSTRAINT FOR ()-[n1:R]-(n2) REQUIRE (n2.name) IS :: STRING"
           |                                  ^""".stripMargin
       ))
@@ -3282,7 +3281,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         """Invalid input '-': expected "ASSERT" or "REQUIRE""""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '-': expected 'ASSERT', 'REQUIRE' (line 1, column 29 (offset: 28))
+        """Invalid input '-': expected 'ASSERT' or 'REQUIRE' (line 1, column 29 (offset: 28))
           |"CREATE CONSTRAINT FOR (n2:A)-[n1:R]-() REQUIRE (n2.name) IS KEY"
           |                             ^""".stripMargin
       ))
@@ -3295,7 +3294,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         """Invalid input 'n2': expected ")""""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'n2': expected ')' (line 1, column 34 (offset: 33))
+        """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
           |"CREATE CONSTRAINT FOR ()-[n1:R]-(n2:A) REQUIRE (n2.name) IS RELATIONSHIP UNIQUE"
           |                                  ^""".stripMargin
       ))
@@ -3307,7 +3306,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         """Invalid input 'IS': expected "OPTIONS" or <EOF> (line 1, column 75 (offset: 74))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'IS': expected ';', <EOF> (line 1, column 75 (offset: 74))
+        """Invalid input 'IS': expected 'OPTIONS' or <EOF> (line 1, column 75 (offset: 74))
           |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT EXISTS (node.prop) IS NOT NULL"
           |                                                                           ^""".stripMargin
       ))
@@ -3320,7 +3319,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       ))
       // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'IS': expected ';', <EOF> (line 1, column 71 (offset: 70))
+        """Invalid input 'IS': expected 'OPTIONS' or <EOF> (line 1, column 71 (offset: 70))
           |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL"
           |                                                                       ^""".stripMargin
       ))
@@ -3333,7 +3332,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       ))
       // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 49 (offset: 48))
+        """Invalid input '': expected '::' or 'IS' (line 1, column 49 (offset: 48))
           |"CREATE CONSTRAINT FOR (n:Label) REQUIRE (n.prop)"
           |                                                 ^""".stripMargin
       ))
@@ -3346,7 +3345,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       ))
       // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 51 (offset: 50))
+        """Invalid input '(': expected '.' (line 1, column 51 (offset: 50))
           |"CREATE CONSTRAINT FOR (node:Label) REQUIRE EXISTS (node.prop)"
           |                                                   ^""".stripMargin
       ))
@@ -3359,7 +3358,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       ))
       // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 50 (offset: 49))
+        """Invalid input '(': expected '.' (line 1, column 50 (offset: 49))
           |"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE EXISTS (r.prop)"
           |                                                  ^""".stripMargin
       ))
@@ -3379,7 +3378,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     )
       // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 65 (offset: 64))
+        """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 65 (offset: 64))
           |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL"
           |                                                                 ^""".stripMargin
       ))
@@ -3399,7 +3398,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     ))
       // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 67 (offset: 66))
+        """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 67 (offset: 66))
           |"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL"
           |                                                                   ^""".stripMargin
       ))
@@ -3420,7 +3419,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       ))
       // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 69 (offset: 68))
+        """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 69 (offset: 68))
           |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL"
           |                                                                     ^""".stripMargin
       ))
@@ -3439,7 +3438,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                                             |  "UNIQUE" (line 1, column 71 (offset: 70))""".stripMargin))
       // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 71 (offset: 70))
+        """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 71 (offset: 70))
           |"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NULL"
           |                                                                       ^""".stripMargin
       ))
@@ -3478,7 +3477,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           |  "null"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 49 (offset: 48))
+        """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VERTEX' or 'ZONED' (line 1, column 49 (offset: 48))
           |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS TYPED"
           |                                                 ^""".stripMargin
       ))
@@ -3518,7 +3517,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           |  "null"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 46 (offset: 45))
+        """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VERTEX' or 'ZONED' (line 1, column 46 (offset: 45))
           |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS ::"
           |                                              ^""".stripMargin
       ))
@@ -3557,7 +3556,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           |  "null"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 43 (offset: 42))
+        """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VERTEX' or 'ZONED' (line 1, column 43 (offset: 42))
           |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p ::"
           |                                           ^""".stripMargin
       ))
@@ -3596,7 +3595,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           |  "null" (line 1, column 44 (offset: 43))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'TYPED': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 44 (offset: 43))
+        """Invalid input 'TYPED': expected 'ARRAY', 'LIST', 'ANY', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VERTEX' or 'ZONED' (line 1, column 44 (offset: 43))
           |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: TYPED"
           |                                            ^""".stripMargin
       ))
@@ -3635,7 +3634,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           |  "null" (line 1, column 44 (offset: 43))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'UNIQUE': expected 'NOTHING', 'NULL', 'BOOLEAN', 'STRING', 'INT', 'SIGNED', 'INTEGER', 'FLOAT', 'DATE', 'LOCAL', 'ZONED', 'TIME', 'TIMESTAMP', 'DURATION', 'POINT', 'NODE', 'VERTEX', 'RELATIONSHIP', 'EDGE', 'MAP', 'ARRAY', 'LIST', 'PATH', 'PROPERTY', 'ANY' (line 1, column 44 (offset: 43))
+        """Invalid input 'UNIQUE': expected 'ARRAY', 'LIST', 'ANY', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VERTEX' or 'ZONED' (line 1, column 44 (offset: 43))
           |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: UNIQUE"
           |                                            ^""".stripMargin
       ))
@@ -3653,7 +3652,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           |  <EOF>""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'UNIQUE': expected ';', <EOF> (line 1, column 52 (offset: 51))
+        """Invalid input 'UNIQUE': expected '!', 'ARRAY', 'LIST', 'NOT NULL', 'OPTIONS', '|' or <EOF> (line 1, column 52 (offset: 51))
           |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: BOOLEAN UNIQUE"
           |                                                    ^""".stripMargin
       ))
@@ -3671,7 +3670,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           |  <EOF>""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'EAN': expected ';', <EOF> (line 1, column 52 (offset: 51))
+        """Invalid input 'EAN': expected '!', 'ARRAY', 'LIST', 'NOT NULL', 'OPTIONS', '|' or <EOF> (line 1, column 52 (offset: 51))
           |"CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS :: BOOL EAN"
           |                                                    ^""".stripMargin
       ))
@@ -3881,7 +3880,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         _.withMessageStart("Invalid input 'ON': expected \"IF\" or <EOF> (line 1, column 31 (offset: 30))")
       )
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'ON': expected ';', <EOF> (line 1, column 31 (offset: 30))
+        """Invalid input 'ON': expected 'IF EXISTS' or <EOF> (line 1, column 31 (offset: 30))
           |"DROP CONSTRAINT my_constraint ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY"
           |                               ^""".stripMargin
       ))

@@ -223,8 +223,8 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   test("should not parse pattern comprehensions with single nodes") {
     "[p = (x) | p]" should notParse[PatternComprehension]
       .parseIn(JavaCc)(_.withMessageStart("Encountered \" \"|\" \"|\"\" at line 1, column 10."))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '|': expected '<', '-' (line 1, column 10 (offset: 9))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '|': expected '-' (line 1, column 10 (offset: 9))
           |"[p = (x) | p]"
           |          ^""".stripMargin
       ))
@@ -460,7 +460,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     failsParsing[Statements](Explicit(Antlr))
       .throws[SyntaxException]
       .withMessage(
-        """Mismatched input '>': expected '[', '-' (line 1, column 11 (offset: 10))
+        """Invalid input '>': expected '-' (line 1, column 11 (offset: 10))
           |"MATCH (a)->(b) RETURN *"
           |           ^""".stripMargin
       )
@@ -474,7 +474,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     failsParsing[Statements](Explicit(Antlr))
       .throws[SyntaxException]
       .withMessage(
-        """Mismatched input '-': expected '{', '+', '*', '(' (line 1, column 12 (offset: 11))
+        """Invalid input '-': expected '(' (line 1, column 12 (offset: 11))
           |"MATCH (a)--->(b) RETURN *"
           |            ^""".stripMargin
       )
@@ -488,7 +488,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     failsParsing[Statements](Explicit(Antlr))
       .throws[SyntaxException]
       .withMessage(
-        """Extraneous input '1': expected ';', <EOF> (line 1, column 15 (offset: 14))
+        """Invalid input '1': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 15 (offset: 14))
           |"RETURN RETURN 1"
           |               ^""".stripMargin
       )
@@ -518,7 +518,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
     query should notParse[Statements](Explicit(Antlr))
       .throws[SyntaxException]
       .withMessage(
-        s"""Mismatched input '>': expected '[', '-' (line 1, column 42 (offset: 41))
+        s"""Invalid input '>': expected '-' (line 1, column 42 (offset: 41))
            |"$query"
            |                                          ^""".stripMargin
       )

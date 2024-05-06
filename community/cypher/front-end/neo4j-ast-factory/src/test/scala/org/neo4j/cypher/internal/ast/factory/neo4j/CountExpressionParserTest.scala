@@ -543,7 +543,11 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
   ) {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or '}' (line 2, column 34 (offset: 43))
+          |"WHERE COUNT { MATCH (b) RETURN b WHERE true } >= 1"
+          |                                  ^""".stripMargin
+      ))
   }
 
   test(
@@ -553,6 +557,10 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
   ) {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Missing '}' at 'RETURN'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'RETURN': expected an expression or '}' (line 2, column 45 (offset: 54))
+          |"WHERE COUNT { (a)-[r]->(b) WHERE a.prop = 1 RETURN r } > 1"
+          |                                             ^""".stripMargin
+      ))
   }
 }

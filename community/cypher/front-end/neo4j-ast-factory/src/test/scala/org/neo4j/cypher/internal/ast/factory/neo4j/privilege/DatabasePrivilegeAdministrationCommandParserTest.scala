@@ -231,56 +231,56 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
               test(s"$verb$immutableString $privilege ON HOME DATABASES $preposition role") {
                 // 'databases' instead of 'database'
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE""""))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    """Mismatched input 'DATABASES': expected 'DATABASE'"""
+                    """Invalid input 'DATABASES': expected 'DATABASE'"""
                   ))
 
               }
 
               test(s"$verb$immutableString $privilege ON HOME DATABASE foo $preposition role") {
                 // both home and database name
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessageStart(s"""Invalid input 'foo': expected "$preposition""""))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Extraneous input 'foo': expected '$preposition'"""
+                    s"""Invalid input 'foo': expected '$preposition'"""
                   ))
               }
 
               test(s"$verb$immutableString $privilege ON HOME DATABASE * $preposition role") {
                 // both home and *
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessageStart(s"""Invalid input '*': expected "$preposition""""))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Extraneous input '*': expected '$preposition'"""
+                    s"""Invalid input '*': expected '$preposition'"""
                   ))
               }
 
               test(s"$verb$immutableString $privilege ON DEFAULT DATABASES $preposition role") {
                 // 'databases' instead of 'database'
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DATABASES': expected "DATABASE""""))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    """Mismatched input 'DATABASES': expected 'DATABASE'""".stripMargin
+                    """Invalid input 'DATABASES': expected 'DATABASE'""".stripMargin
                   ))
               }
 
               test(s"$verb$immutableString $privilege ON DEFAULT DATABASE foo $preposition role") {
                 // both default and database name
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessageStart(s"""Invalid input 'foo': expected "$preposition""""))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Extraneous input 'foo': expected '$preposition'""".stripMargin
+                    s"""Invalid input 'foo': expected '$preposition'""".stripMargin
                   ))
               }
 
               test(s"$verb$immutableString $privilege ON DEFAULT DATABASE * $preposition role") {
                 // both default and *
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessageStart(s"""Invalid input '*': expected "$preposition""""))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Extraneous input '*': expected '$preposition'""".stripMargin
+                    s"""Invalid input '*': expected '$preposition'""".stripMargin
                   ))
               }
           }
@@ -681,10 +681,10 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
             val expected =
               """Invalid input 'TRANSACTIONS': expected
                 |  "ACCESS"""".stripMargin
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(expected))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Mismatched input 'TRANSACTIONS': expected"""
+                """Invalid input 'TRANSACTIONS': expected"""
               ))
           }
 
@@ -693,10 +693,10 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
             val expected =
               """Invalid input 'TRANSACTIONS': expected
                 |  "ACCESS"""".stripMargin
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(expected))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Mismatched input 'TRANSACTIONS': expected"""
+                """Invalid input 'TRANSACTIONS': expected"""
               ))
           }
 
@@ -705,10 +705,10 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
             val expected =
               """Invalid input 'TRANSACTIONS': expected
                 |  "ACCESS"""".stripMargin
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(expected))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Mismatched input 'TRANSACTIONS': expected"""
+                """Invalid input 'TRANSACTIONS': expected"""
               ))
           }
 
@@ -717,10 +717,10 @@ class DatabasePrivilegeAdministrationCommandParserTest extends AdministrationAnd
             val expected =
               """Invalid input 'TRANSACTIONS': expected
                 |  "ACCESS"""".stripMargin
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(expected))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Mismatched input 'TRANSACTIONS': expected"""
+                """Invalid input 'TRANSACTIONS': expected"""
               ))
           }
       }

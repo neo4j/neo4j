@@ -111,7 +111,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '|': expected ';', <EOF> (line 1, column 11 (offset: 10))
+        """Invalid input '|': expected 'FOREACH', ',', ':', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
           |"REMOVE n:A|B"
           |           ^""".stripMargin
       ))
@@ -121,7 +121,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
       .parseIn(Antlr)(_.withMessage(
-        """Extraneous input '!': expected an identifier (line 1, column 10 (offset: 9))
+        """Invalid input '!': expected an identifier (line 1, column 10 (offset: 9))
           |"REMOVE n:!A"
           |          ^""".stripMargin
       ))
@@ -131,7 +131,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '%'"))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '%': expected an identifier (line 1, column 10 (offset: 9))
+        """Invalid input '%': expected an identifier (line 1, column 10 (offset: 9))
           |"REMOVE n:%"
           |          ^""".stripMargin
       ))
@@ -141,7 +141,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '&'"))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '&': expected ';', <EOF> (line 1, column 11 (offset: 10))
+        """Invalid input '&': expected 'FOREACH', ',', ':', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
           |"REMOVE n:A&B"
           |           ^""".stripMargin
       ))
@@ -151,7 +151,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '&'"))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '&': expected ';', <EOF> (line 1, column 14 (offset: 13))
+        """Invalid input '&': expected 'FOREACH', ',', ':', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 14 (offset: 13))
           |"REMOVE n IS A&B"
           |              ^""".stripMargin
       ))
@@ -161,7 +161,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ':'"))
       .parseIn(Antlr)(_.withMessage(
-        """Extraneous input ':': expected an expression, a variable name (line 1, column 8 (offset: 7))
+        """Invalid input ':': expected an expression (line 1, column 8 (offset: 7))
           |"REMOVE :A"
           |        ^""".stripMargin
       ))
@@ -171,7 +171,7 @@ class RemoveParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'A': expected \"IS\""))
       .parseIn(Antlr)(_.withMessage(
-        """No viable alternative (line 1, column 11 (offset: 10))
+        """Invalid input 'A': expected an expression, '.', ':' or 'IS' (line 1, column 11 (offset: 10))
           |"REMOVE IS A"
           |           ^""".stripMargin
       ))

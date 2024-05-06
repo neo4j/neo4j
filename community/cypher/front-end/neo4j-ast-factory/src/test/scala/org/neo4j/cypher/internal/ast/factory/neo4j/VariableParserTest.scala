@@ -74,7 +74,7 @@ class VariableParserTest extends AstParsingTestBase
     "RETURN `a`b`" should notParse[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'b'"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'b': expected ';', <EOF> (line 1, column 11 (offset: 10))
+        """Invalid input 'b': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 11 (offset: 10))
           |"RETURN `a`b`"
           |           ^""".stripMargin
       ))
@@ -84,7 +84,7 @@ class VariableParserTest extends AstParsingTestBase
     "1bcd" should notParse[Variable]
       .parseIn(JavaCc)(_.withMessageContaining("Was expecting one of:"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '1bcd': expected a variable name (line 1, column 1 (offset: 0))
+        """Invalid input '1bcd': expected an identifier (line 1, column 1 (offset: 0))
           |"1bcd"
           | ^""".stripMargin
       ))
@@ -95,7 +95,7 @@ class VariableParserTest extends AstParsingTestBase
       s"${curr}var" should notParse[Variable]
         .parseIn(JavaCc)(_.withMessageContaining("Was expecting one of:"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-          s"""Extraneous input '$curr': expected a variable name (line 1, column 1 (offset: 0))
+          s"""Invalid input '$curr': expected an identifier (line 1, column 1 (offset: 0))
              |"${curr}var"
              | ^""".stripMargin
         ))

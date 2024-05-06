@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.exceptions.SyntaxException
 
 class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -489,85 +490,141 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   test("INSERT (:A n)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'n'"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input 'n'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'n': expected a parameter, '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
+          |"INSERT (:A n)"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ({prop:42} :A)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ':'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input ':'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ':': expected ')' (line 1, column 19 (offset: 18))
+          |"INSERT ({prop:42} :A)"
+          |                   ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '('"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected '[' (line 1, column 11 (offset: 10))
+          |"INSERT ()-()"
+          |           ^""".stripMargin
+      ))
   }
 
   test("INSERT ()->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '>'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '>': expected '[' (line 1, column 11 (offset: 10))
+          |"INSERT ()->()"
+          |           ^""".stripMargin
+      ))
   }
 
   test("INSERT ()[]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '['"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '['"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '[': expected 'FOREACH', ',', '-', '<', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 10 (offset: 9))
+          |"INSERT ()[]->()"
+          |          ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[]>()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ']'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input ']'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected a variable name, ':' or 'IS' (line 1, column 12 (offset: 11))
+          |"INSERT ()-[]>()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input ']'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected '[' (line 1, column 11 (offset: 10))
+          |"INSERT ()-]->()"
+          |           ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected a variable name, ':' or 'IS' (line 1, column 12 (offset: 11))
+          |"INSERT ()-[->()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[{prop:42} :R]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input '{'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '{': expected a variable name, ':' or 'IS' (line 1, column 12 (offset: 11))
+          |"INSERT ()-[{prop:42} :R]->()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[:R r]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input 'r'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'r': expected a parameter, ']' or '{' (line 1, column 15 (offset: 14))
+          |"INSERT ()-[:R r]->()"
+          |               ^""".stripMargin
+      ))
   }
 
   test("INSERT ALL PATHS (n)-[:R]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ALL'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'PATHS'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'PATHS': expected '=' (line 1, column 12 (offset: 11))
+          |"INSERT ALL PATHS (n)-[:R]->()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ANY SHORTEST PATHS p = (n)-[:R]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ANY'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'SHORTEST'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'SHORTEST': expected '=' (line 1, column 12 (offset: 11))
+          |"INSERT ANY SHORTEST PATHS p = (n)-[:R]->()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT SHORTEST 2 PATH (n)-[:R]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHORTEST'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '2'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '2': expected '=' (line 1, column 17 (offset: 16))
+          |"INSERT SHORTEST 2 PATH (n)-[:R]->()"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("INSERT SHORTEST 2 GROUPS (n)-[:R]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHORTEST'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '2'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '2': expected '=' (line 1, column 17 (offset: 16))
+          |"INSERT SHORTEST 2 GROUPS (n)-[:R]->()"
+          |                 ^""".stripMargin
+      ))
   }
 
   // The following cases will parse but fail in semantic checking for both CREATE and INSERT.
@@ -600,19 +657,31 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   test("INSERT (n:A|B)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '|'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '|': expected a parameter, '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
+          |"INSERT (n:A|B)"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT (n:A|:B)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '|'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '|': expected a parameter, '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
+          |"INSERT (n:A|:B)"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT (n IS A|B)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '|'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '|': expected a parameter, '&', ')', ':' or '{' (line 1, column 15 (offset: 14))
+          |"INSERT (n IS A|B)"
+          |               ^""".stripMargin
+      ))
   }
 
   test("INSERT (n IS A:B)") {
@@ -622,152 +691,248 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   test("INSERT (n IS !(A&B))") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'IS'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '!'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '!': expected an identifier (line 1, column 14 (offset: 13))
+          |"INSERT (n IS !(A&B))"
+          |              ^""".stripMargin
+      ))
   }
 
   test("INSERT (IS %)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '%'"))
-      .parseIn(Antlr)(_.withMessageStart("No viable alternative"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '%': expected a parameter, an identifier, ')', ':', 'IS' or '{' (line 1, column 12 (offset: 11))
+          |"INSERT (IS %)"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT (WHERE true)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'true'"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input 'true'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'true': expected a parameter, ')', ':', 'IS' or '{' (line 1, column 15 (offset: 14))
+          |"INSERT (WHERE true)"
+          |               ^""".stripMargin
+      ))
   }
 
   test("INSERT (n WHERE n.prop = 1)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected a parameter, ')', ':', 'IS' or '{' (line 1, column 11 (offset: 10))
+          |"INSERT (n WHERE n.prop = 1)"
+          |           ^""".stripMargin
+      ))
   }
 
   test("INSERT ({prop:2} WHERE true)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected ')' (line 1, column 18 (offset: 17))
+          |"INSERT ({prop:2} WHERE true)"
+          |                  ^""".stripMargin
+      ))
   }
 
   test("INSERT (n {prop:2} WHERE n.prop = 1)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected ')' (line 1, column 20 (offset: 19))
+          |"INSERT (n {prop:2} WHERE n.prop = 1)"
+          |                    ^""".stripMargin
+      ))
   }
 
   test("INSERT (:A WHERE true)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected a parameter, '&', ')', ':' or '{' (line 1, column 12 (offset: 11))
+          |"INSERT (:A WHERE true)"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT (n:A WHERE true)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected a parameter, '&', ')', ':' or '{' (line 1, column 13 (offset: 12))
+          |"INSERT (n:A WHERE true)"
+          |             ^""".stripMargin
+      ))
   }
 
   test("INSERT (:A {prop: 2} WHERE true)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected ')' (line 1, column 22 (offset: 21))
+          |"INSERT (:A {prop: 2} WHERE true)"
+          |                      ^""".stripMargin
+      ))
   }
 
   test("INSERT (n:A {prop: 2} WHERE n.prop > 42)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected ')' (line 1, column 23 (offset: 22))
+          |"INSERT (n:A {prop: 2} WHERE n.prop > 42)"
+          |                       ^""".stripMargin
+      ))
   }
 
   test("INSERT ()--()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '[' (line 1, column 11 (offset: 10))
+          |"INSERT ()--()"
+          |           ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '[' (line 1, column 11 (offset: 10))
+          |"INSERT ()-->()"
+          |           ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<--()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '[' (line 1, column 12 (offset: 11))
+          |"INSERT ()<--()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '-'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '-'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '[' (line 1, column 12 (offset: 11))
+          |"INSERT ()<-->()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[:Rel1|Rel2]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '|'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '|'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '|': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          |"INSERT ()-[:Rel1|Rel2]->()"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[:Rel1&Rel2]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '&'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '&'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '&': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          |"INSERT ()-[:Rel1&Rel2]->()"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[:!Rel]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '!'"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input '!'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '!': expected an identifier (line 1, column 13 (offset: 12))
+          |"INSERT ()-[:!Rel]->()"
+          |             ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ']'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input ']'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected a variable name, ':' or 'IS' (line 1, column 12 (offset: 11))
+          |"INSERT ()-[]->()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input ']'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected ':' or 'IS' (line 1, column 13 (offset: 12))
+          |"INSERT ()-[r]->()"
+          |             ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[{prop: 2}]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input '{'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '{': expected a variable name, ':' or 'IS' (line 1, column 12 (offset: 11))
+          |"INSERT ()-[{prop: 2}]->()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[*1..3]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a variable name, ':' or 'IS' (line 1, column 12 (offset: 11))
+          |"INSERT ()-[*1..3]->()"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Missing ':'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'true': expected ':' or 'IS' (line 1, column 18 (offset: 17))
+          |"INSERT ()-[WHERE true]->()"
+          |                  ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-[r {prop: 2}]-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '{'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '{': expected ':' or 'IS' (line 1, column 15 (offset: 14))
+          |"INSERT ()<-[r {prop: 2}]-()"
+          |               ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-[r *1..3]-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected ':' or 'IS' (line 1, column 15 (offset: 14))
+          |"INSERT ()<-[r *1..3]-()"
+          |               ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Missing ':', 'IS' at 'WHERE' (line 1, column 14 (offset: 13))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected ':' or 'IS' (line 1, column 14 (offset: 13))
           |"INSERT ()-[r WHERE true]->()"
           |              ^""".stripMargin
       ))
@@ -776,141 +941,233 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   test("INSERT ()<-[*1..3 {prop:2} ]-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a variable name, ':' or 'IS' (line 1, column 13 (offset: 12))
+          |"INSERT ()<-[*1..3 {prop:2} ]-()"
+          |             ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-[{prop:2} WHERE true]-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input '{'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '{': expected a variable name, ':' or 'IS' (line 1, column 13 (offset: 12))
+          |"INSERT ()<-[{prop:2} WHERE true]-()"
+          |             ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-[*1..3 WHERE true]-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a variable name, ':' or 'IS' (line 1, column 13 (offset: 12))
+          |"INSERT ()<-[*1..3 WHERE true]-()"
+          |             ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r *1..3 {prop:2}]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected ':' or 'IS' (line 1, column 14 (offset: 13))
+          |"INSERT ()-[r *1..3 {prop:2}]->()"
+          |              ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r {prop:2} WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '{'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '{': expected ':' or 'IS' (line 1, column 14 (offset: 13))
+          |"INSERT ()-[r {prop:2} WHERE true]->()"
+          |              ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r *1..3 WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected ':' or 'IS' (line 1, column 14 (offset: 13))
+          |"INSERT ()-[r *1..3 WHERE true]->()"
+          |              ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r *1..3 {prop:2} WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'r'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected ':' or 'IS' (line 1, column 14 (offset: 13))
+          |"INSERT ()-[r *1..3 {prop:2} WHERE true]->()"
+          |              ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[:R *1..3]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 15 (offset: 14))
+          |"INSERT ()-[:R *1..3]->()"
+          |               ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[:R WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected a parameter, ']' or '{' (line 1, column 15 (offset: 14))
+          |"INSERT ()-[:R WHERE true]->()"
+          |               ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-[r :R *1..3]-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 18 (offset: 17))
+          |"INSERT ()<-[r :R *1..3]-()"
+          |                  ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r :R WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          |"INSERT ()-[r :R WHERE true]->()"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-[:R *1..3 {prop:2} ]-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 16 (offset: 15))
+          |"INSERT ()<-[:R *1..3 {prop:2} ]-()"
+          |                ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-[:R {prop:2} WHERE true]-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected ']' (line 1, column 25 (offset: 24))
+          |"INSERT ()<-[:R {prop:2} WHERE true]-()"
+          |                         ^""".stripMargin
+      ))
   }
 
   test("INSERT ()<-[:R *1..3 WHERE true]-()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 16 (offset: 15))
+          |"INSERT ()<-[:R *1..3 WHERE true]-()"
+          |                ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r :R *1..3 {prop:2}]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          |"INSERT ()-[r :R *1..3 {prop:2}]->()"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r :R {prop:2} WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'WHERE'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected ']' (line 1, column 26 (offset: 25))
+          |"INSERT ()-[r :R {prop:2} WHERE true]->()"
+          |                          ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r :R *1..3 WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          |"INSERT ()-[r :R *1..3 WHERE true]->()"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("INSERT ()-[r :R *1..3 {prop:2} WHERE true]->()") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '*'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected a parameter, ']' or '{' (line 1, column 17 (offset: 16))
+          |"INSERT ()-[r :R *1..3 {prop:2} WHERE true]->()"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("INSERT shortestPath((a)-[r]->(b))") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'shortestPath'"))
       // Not very helpful :(
-      .parseIn(Antlr)(_.withMessageStart("Missing '=' at '('"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected '=' (line 1, column 20 (offset: 19))
+          |"INSERT shortestPath((a)-[r]->(b))"
+          |                    ^""".stripMargin
+      ))
   }
 
   test("INSERT allShortestPaths((a)-[r]->(b))") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'allShortestPaths'"))
       // Not very helpful :(
-      .parseIn(Antlr)(_.withMessageStart("Missing '=' at '('"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected '=' (line 1, column 24 (offset: 23))
+          |"INSERT allShortestPaths((a)-[r]->(b))"
+          |                        ^""".stripMargin
+      ))
   }
 
   test("INSERT (a)-[:R]->(b)(a)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input '('"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected 'FOREACH', ',', '-', '<', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 21 (offset: 20))
+          |"INSERT (a)-[:R]->(b)(a)"
+          |                     ^""".stripMargin
+      ))
   }
 
   test("INSERT ((n)-[r]->(m))*") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input '('"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected a parameter, a variable name, ')', ':', 'IS' or '{' (line 1, column 9 (offset: 8))
+          |"INSERT ((n)-[r]->(m))*"
+          |         ^""".stripMargin
+      ))
   }
 
   test("INSERT ((a)-->(b) WHERE a.prop > b.prop)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input '('"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected a parameter, a variable name, ')', ':', 'IS' or '{' (line 1, column 9 (offset: 8))
+          |"INSERT ((a)-->(b) WHERE a.prop > b.prop)"
+          |         ^""".stripMargin
+      ))
   }
 
   // The following cases will parse and be semantically correct for CREATE.
@@ -919,13 +1176,21 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   test("INSERT (:(A&B))") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ':'"))
-      .parseIn(Antlr)(_.withMessageStart("Extraneous input '('"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected an identifier (line 1, column 10 (offset: 9))
+          |"INSERT (:(A&B))"
+          |          ^""".stripMargin
+      ))
   }
 
   test("INSERT (IS (A&B)&C)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
-      .parseIn(Antlr)(_.withMessageStart("No viable alternative"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected a parameter, an identifier, ')', ':', 'IS' or '{' (line 1, column 12 (offset: 11))
+          |"INSERT (IS (A&B)&C)"
+          |            ^""".stripMargin
+      ))
   }
 
   test("INSERT (:A:B)") {
@@ -963,27 +1228,39 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
   test("INSERT USER foo SET PASSWORD 'password'") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'USER'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'foo'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'foo': expected '=' (line 1, column 13 (offset: 12))
+          |"INSERT USER foo SET PASSWORD 'password'"
+          |             ^""".stripMargin
+      ))
   }
 
   test("INSERT ROLE role") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ROLE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'role'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'role': expected '=' (line 1, column 13 (offset: 12))
+          |"INSERT ROLE role"
+          |             ^""".stripMargin
+      ))
   }
 
   test("INSERT DATABASE foo") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DATABASE'"))
-      .parseIn(Antlr)(_.withMessageStart("Mismatched input 'foo'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'foo': expected '=' (line 1, column 17 (offset: 16))
+          |"INSERT DATABASE foo"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("INSERT COMPOSITE DATABASE name") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'COMPOSITE'"))
       // Not very helpful
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'DATABASE': expected '=' (line 1, column 18 (offset: 17))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'DATABASE': expected '=' (line 1, column 18 (offset: 17))
           |"INSERT COMPOSITE DATABASE name"
           |                  ^""".stripMargin
       ))
@@ -993,8 +1270,8 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'ALIAS'"))
       // Not very helpful
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'alias': expected '=' (line 1, column 14 (offset: 13))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'alias': expected '=' (line 1, column 14 (offset: 13))
           |"INSERT ALIAS alias FOR DATABASE foo"
           |              ^""".stripMargin
       ))
@@ -1004,8 +1281,8 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'INDEX'"))
       // Not very helpful
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'FOR': expected '=' (line 1, column 14 (offset: 13))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'FOR': expected '=' (line 1, column 14 (offset: 13))
           |"INSERT INDEX FOR (n:Label) ON n.prop"
           |              ^""".stripMargin
       ))
@@ -1016,7 +1293,7 @@ class InsertParserTest extends AstParsingTestBase with LegacyAstParsingTestSuppo
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'CONSTRAINT'"))
       // Not very helpful :(
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input 'FOR': expected '=' (line 1, column 19 (offset: 18))
+        """Invalid input 'FOR': expected '=' (line 1, column 19 (offset: 18))
           |"INSERT CONSTRAINT FOR (n:Label) REQUIRE n.prop IS NOT NULL"
           |                   ^""".stripMargin
       ))

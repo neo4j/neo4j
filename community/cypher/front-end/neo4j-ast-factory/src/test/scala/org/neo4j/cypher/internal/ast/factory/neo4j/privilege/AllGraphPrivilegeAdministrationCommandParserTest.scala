@@ -199,8 +199,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
               """Invalid input 'GRAPH': expected
                 |  "ACCESS"""".stripMargin
 
-            val antlrExpected = "Mismatched input 'GRAPH': expected"
-            testName should notParse[Statements]
+            val antlrExpected = "Invalid input 'GRAPH': expected"
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(expected))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(antlrExpected))
           }
@@ -210,8 +210,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
               """Invalid input 'GRAPH': expected
                 |  "ACCESS"""".stripMargin
 
-            val antlrExpected = "Mismatched input 'GRAPH': expected"
-            testName should notParse[Statements]
+            val antlrExpected = "Invalid input 'GRAPH': expected"
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(expected))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(antlrExpected))
           }
@@ -221,8 +221,8 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
               """Invalid input 'PRIVILEGES': expected
                 |  "ACCESS"""".stripMargin
 
-            val antlrExpected = "Mismatched input 'PRIVILEGES': expected"
-            testName should notParse[Statements]
+            val antlrExpected = "Invalid input 'PRIVILEGES': expected"
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(expected))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(antlrExpected))
           }
@@ -231,7 +231,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(
                 s"""Invalid input 'DATABASES': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
               ))
@@ -242,7 +242,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(
                 s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
               ))
@@ -254,7 +254,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON HOME DATABASE $preposition role") {
             val offset = verb.length + immutableString.length + 25
             val antlrOffset = verb.length + immutableString.length + 30
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(
                 s"""Invalid input 'HOME': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
               ))
@@ -266,7 +266,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DEFAULT DATABASE $preposition role") {
             val offset = verb.length + immutableString.length + 25
             val antlrOffset = verb.length + immutableString.length + 33
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(
                 s"""Invalid input 'DEFAULT': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
               ))
@@ -277,7 +277,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DBMS $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(
                 s"""Invalid input 'DBMS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
               ))

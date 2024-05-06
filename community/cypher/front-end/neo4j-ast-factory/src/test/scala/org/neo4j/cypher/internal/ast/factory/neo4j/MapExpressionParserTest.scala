@@ -44,7 +44,7 @@ class MapExpressionParserTest extends AstParsingTestBase {
     "{42: 'value'}" should notParse[MapExpression]
       .parseIn(JavaCc)(_.withMessageStart("Encountered \" <UNSIGNED_DECIMAL_INTEGER> \"42\"\" at line 1, column 2."))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '42': expected an identifier, '}' (line 1, column 2 (offset: 1))
+        """Invalid input '42': expected an identifier or '}' (line 1, column 2 (offset: 1))
           |"{42: 'value'}"
           |  ^""".stripMargin
       ))
@@ -54,7 +54,7 @@ class MapExpressionParserTest extends AstParsingTestBase {
     "{key1: 'value' key2: 42}" should notParse[MapExpression]
       .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"key2\"\" at line 1, column 16."))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input 'key2': expected ',', '}' (line 1, column 16 (offset: 15))
+        """Invalid input 'key2': expected an expression, ',' or '}' (line 1, column 16 (offset: 15))
           |"{key1: 'value' key2: 42}"
           |                ^""".stripMargin
       ))
@@ -64,7 +64,7 @@ class MapExpressionParserTest extends AstParsingTestBase {
     "{, key: 'value'}" should notParse[MapExpression]
       .parseIn(JavaCc)(_.withMessageStart("Encountered \" \",\" \",\"\" at line 1, column 2."))
       .parseIn(Antlr)(_.withMessage(
-        """Extraneous input ',': expected an identifier, '}' (line 1, column 2 (offset: 1))
+        """Invalid input ',': expected an identifier or '}' (line 1, column 2 (offset: 1))
           |"{, key: 'value'}"
           |  ^""".stripMargin
       ))

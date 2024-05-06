@@ -570,10 +570,11 @@ class CollectExpressionParserTest extends AstParsingTestBase with LegacyAstParsi
       |WHERE COLLECT { MATCH (b) RETURN b WHERE true } = [1, 2, 3]
       |RETURN m""".stripMargin
   ) {
-    failsParsing[Statements].parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-      """Mismatched input 'WHERE': expected '.', ':', 'IS', '[', an expression, '=~', 'STARTS', 'ENDS', 'CONTAINS', 'IN', '::', 'AS', ',', 'ORDER', 'SKIPROWS', 'LIMITROWS', 'USE', 'FINISH', 'RETURN', 'CREATE', 'INSERT', 'DETACH', 'NODETACH', 'DELETE', 'SET', 'REMOVE', 'OPTIONAL', 'MATCH', 'MERGE', 'WITH', 'UNWIND', 'CALL', 'LOAD', 'FOREACH', 'UNION', '}' (line 2, column 36 (offset: 45))
-        |"WHERE COLLECT { MATCH (b) RETURN b WHERE true } = [1, 2, 3]"
-        |                                    ^""".stripMargin
-    ))
+    failsParsing[Statements]
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'WHERE': expected an expression, 'FOREACH', ',', 'AS', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or '}' (line 2, column 36 (offset: 45))
+          |"WHERE COLLECT { MATCH (b) RETURN b WHERE true } = [1, 2, 3]"
+          |                                    ^""".stripMargin
+      ))
   }
 }

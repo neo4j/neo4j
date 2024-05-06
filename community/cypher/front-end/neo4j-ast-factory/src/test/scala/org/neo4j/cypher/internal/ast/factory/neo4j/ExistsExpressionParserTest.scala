@@ -310,9 +310,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase {
       |WHERE EXISTS { MATCH (b) RETURN b WHERE true }
       |RETURN m""".stripMargin
   ) {
-    failsParsing[Statements]
-      .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WHERE'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("""Mismatched input 'WHERE'""".stripMargin))
+    failsParsing[Statements].withMessageStart("Invalid input 'WHERE'")
   }
 
   test(
@@ -325,7 +323,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase {
         "Invalid input 'RETURN'"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Missing '}' at 'RETURN' (line 2, column 46 (offset: 55))
+        """Invalid input 'RETURN': expected an expression or '}' (line 2, column 46 (offset: 55))
           |"WHERE EXISTS { (a)-[r]->(b) WHERE a.prop = 1 RETURN r }"
           |                                              ^""".stripMargin
       ))

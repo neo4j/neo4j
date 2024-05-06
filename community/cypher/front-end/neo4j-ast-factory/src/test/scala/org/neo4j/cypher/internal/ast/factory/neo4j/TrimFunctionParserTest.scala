@@ -90,7 +90,7 @@ class TrimFunctionParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'hello'"))
       .parseIn(Antlr)(_.withMessage(
-        """No viable alternative: expected an expression (line 1, column 17 (offset: 16))
+        """Invalid input '"hello"': expected an expression (line 1, column 17 (offset: 16))
           |"RETURN trim(' ' "hello")"
           |                 ^""".stripMargin
       ))
@@ -98,11 +98,7 @@ class TrimFunctionParserTest extends AstParsingTestBase {
 
   Seq("BOTH", "LEADING", "TRAILING").foreach { trimSpec =>
     test(s"RETURN trim($trimSpec \"hello\")") {
-      failsParsing[Statements]
-        .parseIn(JavaCc)(_.withMessageStart("Invalid input ')'"))
-        .parseIn(Antlr)(_.withMessageStart(
-          "Mismatched input ')': expected '.', ':', 'IS', '[', an expression, '=~', 'STARTS', 'ENDS', 'CONTAINS', 'IN', '::', 'FROM'"
-        ))
+      failsParsing[Statements].withMessageStart("Invalid input ')'")
     }
   }
 
@@ -110,7 +106,7 @@ class TrimFunctionParserTest extends AstParsingTestBase {
     test(s"RETURN trim($trimSpec ' ' \"hello\")") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'hello'"))
-        .parseIn(Antlr)(_.withMessageStart("Missing 'FROM' at '\"hello\"'"))
+        .parseIn(Antlr)(_.withMessageStart("Invalid input '\"hello\"'"))
     }
   }
 }

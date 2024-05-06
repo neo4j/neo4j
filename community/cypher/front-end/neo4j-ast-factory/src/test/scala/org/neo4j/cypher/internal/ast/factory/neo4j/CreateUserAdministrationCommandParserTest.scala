@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
+import org.neo4j.exceptions.SyntaxException
 
 import java.util
 
@@ -555,8 +556,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"IF\" or \"SET\" (line 1, column 16 (offset: 15))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '': expected 'IF', 'SET' (line 1, column 16 (offset: 15))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected 'IF NOT EXISTS' or 'SET' (line 1, column 16 (offset: 15))
           |"CREATE USER foo"
           |                ^""".stripMargin
       ))
@@ -567,8 +568,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'foo': expected a parameter or an identifier (line 1, column 13 (offset: 12))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """No viable alternative (line 1, column 13 (offset: 12))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '"foo"': expected a graph pattern, a parameter or an identifier (line 1, column 13 (offset: 12))
           |"CREATE USER "foo" SET PASSwORD 'password'"
           |             ^""".stripMargin
       ))
@@ -579,8 +580,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '!': expected a parameter or an identifier (line 1, column 13 (offset: 12))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """No viable alternative (line 1, column 13 (offset: 12))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '!': expected a graph pattern, a parameter or an identifier (line 1, column 13 (offset: 12))
           |"CREATE USER !#"~ SeT PASSWORD 'password'"
           |             ^""".stripMargin
       ))
@@ -591,8 +592,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input ',': expected \"IF\" or \"SET\" (line 1, column 15 (offset: 14))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input ',': expected 'IF', 'SET' (line 1, column 15 (offset: 14))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ',': expected 'IF NOT EXISTS' or 'SET' (line 1, column 15 (offset: 14))
           |"CREATE USER fo,o SET PASSWORD 'password'"
           |               ^""".stripMargin
       ))
@@ -603,8 +604,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input ':': expected \"IF\" or \"SET\" (line 1, column 14 (offset: 13))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input ':': expected 'IF', 'SET' (line 1, column 14 (offset: 13))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ':': expected 'IF NOT EXISTS' or 'SET' (line 1, column 14 (offset: 13))
           |"CREATE USER f:oo SET PASSWORD 'password'"
           |              ^""".stripMargin
       ))
@@ -615,8 +616,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 29 (offset: 28))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '': expected a string value, '$' (line 1, column 29 (offset: 28))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter or a string (line 1, column 29 (offset: 28))
           |"CREATE USER foo SET PASSWORD"
           |                             ^""".stripMargin
       ))
@@ -627,8 +628,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '123': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 40 (offset: 39))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '123': expected a string value, '$' (line 1, column 40 (offset: 39))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '123': expected a parameter or a string (line 1, column 40 (offset: 39))
           |"CREATE USER foo SET ENCRYPTED PASSWORD 123"
           |                                        ^""".stripMargin
       ))
@@ -639,8 +640,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 39 (offset: 38))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '': expected a string value, '$' (line 1, column 39 (offset: 38))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter or a string (line 1, column 39 (offset: 38))
           |"CREATE USER foo SET ENCRYPTED PASSWORD"
           |                                       ^""".stripMargin
       ))
@@ -651,8 +652,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 39 (offset: 38))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '': expected a string value, '$' (line 1, column 39 (offset: 38))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter or a string (line 1, column 39 (offset: 38))
           |"CREATE USER foo SET PLAINTEXT PASSWORD"
           |                                       ^""".stripMargin
       ))
@@ -663,8 +664,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ENCRYPTED': expected \"HOME\", \"PASSWORD\" or \"STATUS\" (line 1, column 45 (offset: 44))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Extraneous input 'ENCRYPTED': expected 'PASSWORD', 'STATUS', 'HOME' (line 1, column 45 (offset: 44))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ENCRYPTED': expected 'HOME DATABASE', 'PASSWORD' or 'STATUS' (line 1, column 45 (offset: 44))
           |"CREATE USER foo SET PASSWORD 'password' SET ENCRYPTED PASSWORD"
           |                                             ^""".stripMargin
       ))
@@ -675,8 +676,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ENCRYPTED': expected \"CHANGE\", \"SET\" or <EOF> (line 1, column 41 (offset: 40))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Extraneous input 'ENCRYPTED': expected ';', <EOF> (line 1, column 41 (offset: 40))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ENCRYPTED': expected 'CHANGE', 'SET' or <EOF> (line 1, column 41 (offset: 40))
           |"CREATE USER foo SET PASSWORD 'password' ENCRYPTED"
           |                                         ^""".stripMargin
       ))
@@ -687,8 +688,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '+': expected \"CHANGE\", \"SET\" or <EOF> (line 1, column 46 (offset: 45))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '+': expected ';', <EOF> (line 1, column 46 (offset: 45))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '+': expected 'CHANGE', 'SET' or <EOF> (line 1, column 46 (offset: 45))
           |"CREATE USER foo SET PASSwORD 'passwordString'+$passwordexpressions.Parameter"
           |                                              ^""".stripMargin
       ))
@@ -699,8 +700,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'null': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 30 (offset: 29))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'null': expected a string value, '$' (line 1, column 30 (offset: 29))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'null': expected a parameter or a string (line 1, column 30 (offset: 29))
           |"CREATE USER foo SET PASSWORD null CHANGE REQUIRED"
           |                              ^""".stripMargin
       ))
@@ -711,8 +712,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'PASSWORD': expected \"IF\" or \"SET\" (line 1, column 17 (offset: 16))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'PASSWORD': expected 'IF', 'SET' (line 1, column 17 (offset: 16))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'PASSWORD': expected 'IF NOT EXISTS' or 'SET' (line 1, column 17 (offset: 16))
           |"CREATE USER foo PASSWORD 'password'"
           |                 ^""".stripMargin
       ))
@@ -723,8 +724,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'CHANGE': expected \"SET\" or <EOF> (line 1, column 59 (offset: 58))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'CHANGE': expected ';', <EOF> (line 1, column 59 (offset: 58))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'CHANGE': expected 'SET' or <EOF> (line 1, column 59 (offset: 58))
           |"CREATE USER foo SET PASSWORD 'password' SET STATUS ACTIVE CHANGE NOT REQUIRED"
           |                                                           ^""".stripMargin
       ))
@@ -735,8 +736,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input 'CHANGE': expected \".\", \"SET\" or <EOF> (line 1, column 63 (offset: 62))")
       )
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'CHANGE': expected ';', <EOF> (line 1, column 63 (offset: 62))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'CHANGE': expected a database name, 'SET' or <EOF> (line 1, column 63 (offset: 62))
           |"CREATE USER foo SET PASSWORD 'password' SET HOME DATABASE db1 CHANGE NOT REQUIRED"
           |                                                               ^""".stripMargin
       ))
@@ -747,8 +748,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'DEFAULT': expected \"HOME\", \"PASSWORD\" or \"STATUS\" (line 1, column 45 (offset: 44))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'DEFAULT': expected 'PASSWORD', 'STATUS', 'HOME' (line 1, column 45 (offset: 44))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'DEFAULT': expected 'HOME DATABASE', 'PASSWORD' or 'STATUS' (line 1, column 45 (offset: 44))
           |"CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1"
           |                                             ^""".stripMargin
       ))
@@ -759,8 +760,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'STAUS': expected \"HOME\", \"PASSWORD\" or \"STATUS\" (line 1, column 45 (offset: 44))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'STAUS': expected 'PASSWORD', 'STATUS', 'HOME' (line 1, column 45 (offset: 44))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'STAUS': expected 'HOME DATABASE', 'PASSWORD' or 'STATUS' (line 1, column 45 (offset: 44))
           |"CREATE USER foo SET PASSWORD 'password' SET STAUS ACTIVE"
           |                                             ^""".stripMargin
       ))
@@ -771,8 +772,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'IMAGINARY': expected \"ACTIVE\" or \"SUSPENDED\" (line 1, column 52 (offset: 51))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'IMAGINARY': expected 'ACTIVE', 'SUSPENDED' (line 1, column 52 (offset: 51))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'IMAGINARY': expected 'ACTIVE' or 'SUSPENDED' (line 1, column 52 (offset: 51))
           |"CREATE USER foo SET PASSWORD 'password' SET STATUS IMAGINARY"
           |                                                    ^""".stripMargin
       ))
@@ -783,8 +784,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '': expected \"ACTIVE\" or \"SUSPENDED\" (line 1, column 51 (offset: 50))")
       )
-      .parseIn(Antlr)(_.withMessageStart(
-        """Missing 'ACTIVE', 'SUSPENDED' at '' (line 1, column 51 (offset: 50))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected 'ACTIVE' or 'SUSPENDED' (line 1, column 51 (offset: 50))
           |"CREATE USER foo SET PASSWORD 'password' SET STATUS"
           |                                                   ^""".stripMargin
       ))
@@ -795,8 +796,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 30 (offset: 29))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'CHANGE': expected a string value, '$' (line 1, column 30 (offset: 29))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 30 (offset: 29))
           |"CREATE USER foo SET PASSWORD CHANGE REQUIRED"
           |                              ^""".stripMargin
       ))
@@ -807,8 +808,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'STATUS': expected \"ENCRYPTED\", \"PASSWORD\" or \"PLAINTEXT\" (line 1, column 21 (offset: 20))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'STATUS': expected 'ENCRYPTED', 'PLAINTEXT', 'PASSWORD' (line 1, column 21 (offset: 20))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'STATUS': expected 'ENCRYPTED', 'PASSWORD' or 'PLAINTEXT' (line 1, column 21 (offset: 20))
           |"CREATE USER foo SET STATUS SUSPENDED"
           |                     ^""".stripMargin
       ))
@@ -819,8 +820,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 30 (offset: 29))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'CHANGE': expected a string value, '$' (line 1, column 30 (offset: 29))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 30 (offset: 29))
           |"CREATE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE"
           |                              ^""".stripMargin
       ))
@@ -829,8 +830,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo IF EXISTS SET PASSWORD 'bar'") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'EXISTS': expected \"NOT\" (line 1, column 20 (offset: 19))"))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Missing 'NOT' at 'EXISTS' (line 1, column 20 (offset: 19))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'EXISTS': expected 'NOT EXISTS' (line 1, column 20 (offset: 19))
           |"CREATE USER foo IF EXISTS SET PASSWORD 'bar'"
           |                    ^""".stripMargin
       ))
@@ -839,8 +840,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo IF NOT EXISTS") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"SET\" (line 1, column 30 (offset: 29))"))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '': expected 'SET' (line 1, column 30 (offset: 29))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected 'SET' (line 1, column 30 (offset: 29))
           |"CREATE USER foo IF NOT EXISTS"
           |                              ^""".stripMargin
       ))
@@ -851,8 +852,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 43 (offset: 42))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '': expected a string value, '$' (line 1, column 43 (offset: 42))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter or a string (line 1, column 43 (offset: 42))
           |"CREATE USER foo IF NOT EXISTS SET PASSWORD"
           |                                           ^""".stripMargin
       ))
@@ -863,8 +864,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 44 (offset: 43))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'CHANGE': expected a string value, '$' (line 1, column 44 (offset: 43))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 44 (offset: 43))
           |"CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE REQUIRED"
           |                                            ^""".stripMargin
       ))
@@ -875,8 +876,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'STATUS': expected \"ENCRYPTED\", \"PASSWORD\" or \"PLAINTEXT\" (line 1, column 35 (offset: 34))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'STATUS': expected 'ENCRYPTED', 'PLAINTEXT', 'PASSWORD' (line 1, column 35 (offset: 34))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'STATUS': expected 'ENCRYPTED', 'PASSWORD' or 'PLAINTEXT' (line 1, column 35 (offset: 34))
           |"CREATE USER foo IF NOT EXISTS SET STATUS ACTIVE"
           |                                   ^""".stripMargin
       ))
@@ -887,8 +888,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 44 (offset: 43))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'CHANGE': expected a string value, '$' (line 1, column 44 (offset: 43))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 44 (offset: 43))
           |"CREATE USER foo IF NOT EXISTS SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED"
           |                                            ^""".stripMargin
       ))
@@ -899,8 +900,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '': expected \"IF\" or \"SET\" (line 1, column 27 (offset: 26))")
       )
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '': expected 'IF', 'SET' (line 1, column 27 (offset: 26))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected 'IF NOT EXISTS' or 'SET' (line 1, column 27 (offset: 26))
           |"CREATE OR REPLACE USER foo"
           |                           ^""".stripMargin
       ))
@@ -911,8 +912,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 40 (offset: 39))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '': expected a string value, '$' (line 1, column 40 (offset: 39))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter or a string (line 1, column 40 (offset: 39))
           |"CREATE OR REPLACE USER foo SET PASSWORD"
           |                                        ^""".stripMargin
       ))
@@ -923,8 +924,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 41 (offset: 40))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'CHANGE': expected a string value, '$' (line 1, column 41 (offset: 40))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 41 (offset: 40))
           |"CREATE OR REPLACE USER foo SET PASSWORD CHANGE NOT REQUIRED"
           |                                         ^""".stripMargin
       ))
@@ -935,8 +936,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'STATUS': expected \"ENCRYPTED\", \"PASSWORD\" or \"PLAINTEXT\" (line 1, column 32 (offset: 31))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'STATUS': expected 'ENCRYPTED', 'PLAINTEXT', 'PASSWORD' (line 1, column 32 (offset: 31))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'STATUS': expected 'ENCRYPTED', 'PASSWORD' or 'PLAINTEXT' (line 1, column 32 (offset: 31))
           |"CREATE OR REPLACE USER foo SET STATUS SUSPENDED"
           |                                ^""".stripMargin
       ))
@@ -947,8 +948,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'CHANGE': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 41 (offset: 40))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'CHANGE': expected a string value, '$' (line 1, column 41 (offset: 40))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'CHANGE': expected a parameter or a string (line 1, column 41 (offset: 40))
           |"CREATE OR REPLACE USER foo SET PASSWORD CHANGE REQUIRED SET STATUS ACTIVE"
           |                                         ^""".stripMargin
       ))
@@ -959,8 +960,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '123456': expected a parameter or an identifier (line 1, column 54 (offset: 53))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input '123456': expected an identifier, '$' (line 1, column 54 (offset: 53))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '123456': expected a database name or a parameter (line 1, column 54 (offset: 53))
           |"CREATE USER foo SET PASSWORD 'bar' SET HOME DATABASE 123456"
           |                                                      ^""".stripMargin
       ))
@@ -969,8 +970,8 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo SET PASSWORD 'bar' SET HOME DATABASE #dfkfop!") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '#': expected a parameter or an identifier"))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Extraneous input '#': expected an identifier, '$' (line 1, column 54 (offset: 53))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '#': expected a database name or a parameter (line 1, column 54 (offset: 53))
           |"CREATE USER foo SET PASSWORD 'bar' SET HOME DATABASE #dfkfop!"
           |                                                      ^""".stripMargin
       ))

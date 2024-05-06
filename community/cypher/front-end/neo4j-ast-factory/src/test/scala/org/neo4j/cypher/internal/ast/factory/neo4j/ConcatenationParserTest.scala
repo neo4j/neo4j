@@ -68,7 +68,7 @@ class ConcatenationParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"+\" or \"-\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected an expression (line 1, column 12 (offset: 11))
+        """Invalid input '': expected an expression (line 1, column 12 (offset: 11))
           |"RETURN a ||"
           |            ^""".stripMargin
       ))
@@ -78,7 +78,7 @@ class ConcatenationParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '||': expected \"*\", \"DISTINCT\" or an expression"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input '||': expected 'DISTINCT', '*', an expression (line 1, column 8 (offset: 7))
+        """Invalid input '||': expected an expression, '*' or 'DISTINCT' (line 1, column 8 (offset: 7))
           |"RETURN || b"
           |        ^""".stripMargin
       ))
@@ -88,7 +88,7 @@ class ConcatenationParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '|': expected \"+\" or \"-\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input '|': expected an expression (line 1, column 12 (offset: 11))
+        """Invalid input '|': expected an expression (line 1, column 12 (offset: 11))
           |"RETURN a ||| b"
           |            ^""".stripMargin
       ))
@@ -98,7 +98,7 @@ class ConcatenationParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '||': expected \"+\" or \"-\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input '||': expected an expression (line 1, column 13 (offset: 12))
+        """Invalid input '||': expected an expression (line 1, column 13 (offset: 12))
           |"RETURN a || || b"
           |             ^""".stripMargin
       ))

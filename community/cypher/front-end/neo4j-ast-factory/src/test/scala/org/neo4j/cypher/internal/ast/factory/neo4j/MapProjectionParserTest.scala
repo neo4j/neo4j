@@ -81,7 +81,7 @@ class MapProjectionParserTest extends AstParsingTestBase with LegacyAstParsingTe
     "abc {42: 'value'}" should notParse[MapProjection]
       .parseIn(JavaCc)(_.withMessageStart("Encountered \" <UNSIGNED_DECIMAL_INTEGER> \"42\"\" at line 1, column 6."))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '42': expected an identifier, '.', a variable name, '}' (line 1, column 6 (offset: 5))
+        """Invalid input '42': expected an identifier, '.' or '}' (line 1, column 6 (offset: 5))
           |"abc {42: 'value'}"
           |      ^""".stripMargin
       ))
@@ -91,7 +91,7 @@ class MapProjectionParserTest extends AstParsingTestBase with LegacyAstParsingTe
     "abc {key1: 'value' key2: 42}" should notParse[MapProjection]
       .parseIn(JavaCc)(_.withMessageStart("Encountered \" <IDENTIFIER> \"key2\"\" at line 1, column 20."))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input 'key2': expected ',', '}' (line 1, column 20 (offset: 19))
+        """Invalid input 'key2': expected an expression, ',' or '}' (line 1, column 20 (offset: 19))
           |"abc {key1: 'value' key2: 42}"
           |                    ^""".stripMargin
       ))
@@ -101,7 +101,7 @@ class MapProjectionParserTest extends AstParsingTestBase with LegacyAstParsingTe
     "abc {, key: 'value'}" should notParse[MapProjection]
       .parseIn(JavaCc)(_.withMessageStart("Encountered \" \",\" \",\"\" at line 1, column 6."))
       .parseIn(Antlr)(_.withMessage(
-        """Extraneous input ',': expected an identifier, '.', a variable name, '}' (line 1, column 6 (offset: 5))
+        """Invalid input ',': expected an identifier, '.' or '}' (line 1, column 6 (offset: 5))
           |"abc {, key: 'value'}"
           |      ^""".stripMargin
       ))

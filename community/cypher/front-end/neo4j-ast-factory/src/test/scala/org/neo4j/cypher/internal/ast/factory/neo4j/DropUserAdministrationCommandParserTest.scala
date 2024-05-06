@@ -60,7 +60,7 @@ class DropUserAdministrationCommandParserTest extends UserAdministrationCommandP
         "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected an identifier, '$' (line 1, column 10 (offset: 9))
+        """Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))
           |"DROP USER"
           |          ^""".stripMargin
       ))
@@ -72,7 +72,7 @@ class DropUserAdministrationCommandParserTest extends UserAdministrationCommandP
         "Invalid input 'EXISTS': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'EXISTS': expected ';', <EOF> (line 1, column 15 (offset: 14))
+        """Invalid input 'EXISTS': expected 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
           |"DROP USER  IF EXISTS"
           |               ^""".stripMargin
       ))
@@ -82,7 +82,7 @@ class DropUserAdministrationCommandParserTest extends UserAdministrationCommandP
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT': expected \"EXISTS\" (line 1, column 18 (offset: 17))"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'NOT': expected 'EXISTS' (line 1, column 18 (offset: 17))
+        """Invalid input 'NOT': expected 'EXISTS' (line 1, column 18 (offset: 17))
           |"DROP USER foo IF NOT EXISTS"
           |                  ^""".stripMargin
       ))

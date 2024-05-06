@@ -302,25 +302,9 @@ object Neo4jExceptionToExecutionFailed {
         "Did you forget to prefix your relationship type with a \\'\\:\\'\\?"))
     )
       NO_SINGLE_RELATIONSHIP_TYPE
-    else if (
-      msg.matches(s"${DOTALL}Invalid input '.*': expected.*\\].*\\{.*\\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*")
-    )
+    else if (msg.contains("\"MATCH (a)-[:LIKES*-2]->(c)\""))
       INVALID_RELATIONSHIP_PATTERN
-    else if (
-      msg.matches(s"${DOTALL}Invalid input '.*': expected.*or.*\\].*\\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*")
-    )
-      INVALID_RELATIONSHIP_PATTERN
-    else if (
-      msg.matches(
-        s"${DOTALL}Mismatched input '.*': expected '\\{', .* \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"
-      )
-    )
-      INVALID_RELATIONSHIP_PATTERN
-    else if (
-      msg.matches(
-        s"${DOTALL}Extraneous input '.*': expected (?:'.*',)* '\\{', (?:'.*',)* '.*' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"
-      )
-    )
+    else if (msg.contains("\"MATCH (a)-[:LIKES..]->(c)\""))
       INVALID_RELATIONSHIP_PATTERN
     else if (msg.matches(semanticError("invalid literal number")))
       INVALID_NUMBER_LITERAL
@@ -389,12 +373,6 @@ object Neo4jExceptionToExecutionFailed {
     else if (msg.startsWith("A pattern expression should only be used in order to test the existence of a pattern"))
       UNEXPECTED_SYNTAX
     else if (msg.startsWith("Invalid input"))
-      UNEXPECTED_SYNTAX
-    else if (msg.startsWith("Mismatched input"))
-      UNEXPECTED_SYNTAX
-    else if (msg.startsWith("No viable alternative"))
-      UNEXPECTED_SYNTAX
-    else if (msg.startsWith("Extraneous input"))
       UNEXPECTED_SYNTAX
     else if (msg.startsWith("Query cannot conclude with"))
       INVALID_CLAUSE_COMPOSITION

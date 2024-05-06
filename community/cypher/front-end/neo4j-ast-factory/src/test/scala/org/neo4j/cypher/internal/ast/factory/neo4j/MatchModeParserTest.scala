@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.exceptions.SyntaxException
 
 import scala.collection.immutable.ArraySeq
 
@@ -74,8 +75,8 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
         "Invalid input 'BINDINGS': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 31 (offset: 30))"
       ))
       // Error message is unhelpful :(
-      .parseIn(Antlr)(_.withMessageStart(
-        """Missing '=' at '(' (line 1, column 40 (offset: 39))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected a graph pattern (line 1, column 40 (offset: 39))
           |"MATCH DIFFERENT RELATIONSHIPS BINDINGS (n)-->(m) RETURN *"
           |                                        ^""".stripMargin
       ))
@@ -115,7 +116,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
       ))
       // Error message is unhelpful :(
       .parseIn(Antlr)(_.withMessage(
-        """Missing '=' at '(' (line 1, column 36 (offset: 35))
+        """Invalid input '(': expected a graph pattern (line 1, column 36 (offset: 35))
           |"MATCH REPEATABLE ELEMENTS BINDINGS (n)-->(m) RETURN *"
           |                                    ^""".stripMargin
       ))
@@ -128,7 +129,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
       ))
       // Error message is unhelpful :(
       .parseIn(Antlr)(_.withMessage(
-        """Missing '=' at '(' (line 1, column 35 (offset: 34))
+        """Invalid input '(': expected a graph pattern (line 1, column 35 (offset: 34))
           |"MATCH REPEATABLE ELEMENT ELEMENTS (n)-->(m) RETURN *"
           |                                   ^""".stripMargin
       ))
@@ -282,7 +283,7 @@ class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSu
         "Invalid input 'ELEMENTS': expected \",\" or \"}\" (line 1, column 36 (offset: 35))"
       ))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input 'ELEMENTS': expected ',', '}' (line 1, column 36 (offset: 35))
+        """Invalid input 'ELEMENTS': expected ',', ':' or '}' (line 1, column 36 (offset: 35))
           |"MATCH () WHERE COLLECT {REPEATABLE ELEMENTS (n)-->(m) RETURN *} RETURN *"
           |                                    ^""".stripMargin
       ))

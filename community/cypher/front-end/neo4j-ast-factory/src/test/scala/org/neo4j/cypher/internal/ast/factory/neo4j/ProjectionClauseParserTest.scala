@@ -47,7 +47,7 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression"))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '': expected 'DISTINCT', '*', an expression (line 1, column 5 (offset: 4))
+        """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 5 (offset: 4))
           |"WITH"
           |     ^""".stripMargin
       ))
@@ -75,7 +75,7 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"*\", \"DISTINCT\" or an expression"))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '': expected 'DISTINCT', '*', an expression (line 1, column 7 (offset: 6))
+        """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 7 (offset: 6))
           |"RETURN"
           |       ^""".stripMargin
       ))
@@ -85,7 +85,7 @@ class ProjectionClauseParserTest extends AstParsingTestBase {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"+\" or \"-\""))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '': expected an expression (line 1, column 15 (offset: 14))
+        """Invalid input '': expected an expression (line 1, column 15 (offset: 14))
           |"RETURN GRAPH *"
           |               ^""".stripMargin
       ))

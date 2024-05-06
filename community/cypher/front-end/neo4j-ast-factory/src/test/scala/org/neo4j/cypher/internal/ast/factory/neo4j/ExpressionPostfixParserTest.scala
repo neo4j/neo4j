@@ -76,8 +76,8 @@ class ExpressionPostfixParserTest extends AstParsingTestBase {
   test("RETURN a.[]") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '[': expected \"NFKD\" or an identifier"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '[': expected an identifier (line 1, column 10 (offset: 9))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '[': expected an identifier (line 1, column 10 (offset: 9))
           |"RETURN a.[]"
           |          ^""".stripMargin
       ))

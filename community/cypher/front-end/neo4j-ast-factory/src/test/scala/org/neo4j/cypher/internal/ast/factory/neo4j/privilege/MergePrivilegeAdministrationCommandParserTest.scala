@@ -239,18 +239,18 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
                 s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
               ))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Mismatched input 'DATABASES': expected 'DEFAULT', 'HOME', 'GRAPH', 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
+                s"""Invalid input 'DATABASES': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"""
               ))
           }
 
           test(s"$verb$immutableString MERGE { prop } ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 19
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessage(
                 s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
               ))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"Mismatched input 'DATABASE': expected 'DEFAULT', 'HOME', 'GRAPH', 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"
+                s"Invalid input 'DATABASE': expected 'GRAPH', 'DEFAULT GRAPH', 'HOME GRAPH' or 'GRAPHS' (line 1, column ${offset + 1} (offset: $offset))"
               ))
           }
 

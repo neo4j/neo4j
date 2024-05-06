@@ -838,12 +838,12 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW USER user TRANSACTION") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'TRANSACTION': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'TRANSACTION': expected ',', 'PRIVILEGE', 'PRIVILEGES' (line 1, column 16 (offset: 15))
+        """Invalid input 'TRANSACTION': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 16 (offset: 15))
           |"SHOW USER user TRANSACTION"
           |                ^""".stripMargin
       ))
@@ -863,20 +863,20 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW TRANSACTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'RETURN': expected ';', <EOF>"""
+          """Invalid input 'RETURN': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
     // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix UNWIND range(1,10) as b SHOW TRANSACTIONS YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'SHOW': expected ';', <EOF>"""
+          """Invalid input 'SHOW': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>"""
         ))
     }
 
@@ -884,77 +884,77 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     test(s"$prefix SHOW TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
       // parses varFor("WITH")
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'name': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'name': expected ';', <EOF>"""
+          """Invalid input 'name': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
     // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix WITH 'n' as n SHOW TRANSACTIONS YIELD name RETURN name as numIndexes") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'SHOW': expected ';', <EOF>"""
+          """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>"""
         ))
     }
 
     // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS RETURN name as numIndexes") {
       // parses varFor("RETURN")
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'name': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'name': expected ';', <EOF>"""
+          """Invalid input 'name': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
     // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
       // parses varFor("WITH")
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input '1': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input '1': expected ';', <EOF>"""
+          """Invalid input '1': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
     // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c") {
       // parses varFor("WITH")
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input '1': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input '1': expected ';', <EOF>"""
+          """Invalid input '1': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
     // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS YIELD a WITH a RETURN a") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>"""
+          """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
         ))
     }
 
     // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS YIELD as UNWIND as as a RETURN a") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'UNWIND': expected ';', <EOF>"""
+          """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>"""
         ))
     }
 
     // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS RETURN id2 YIELD id2") {
       // parses varFor("RETURN")
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'id2': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'id2': expected ';', <EOF>"""
+          """Invalid input 'id2': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
   }

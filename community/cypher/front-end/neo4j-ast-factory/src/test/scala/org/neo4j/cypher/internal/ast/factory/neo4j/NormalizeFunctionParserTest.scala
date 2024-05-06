@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.exceptions.SyntaxException
 
 class NormalizeFunctionParserTest extends AstParsingTestBase {
 
@@ -54,7 +55,7 @@ class NormalizeFunctionParserTest extends AstParsingTestBase {
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'null': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
           |"RETURN normalize("hello", null)"
           |                           ^""".stripMargin
@@ -66,7 +67,7 @@ class NormalizeFunctionParserTest extends AstParsingTestBase {
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'NFF': expected \"NFC\", \"NFD\", \"NFKC\" or \"NFKD\" (line 1, column 27 (offset: 26))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid normal form, expected NFC, NFD, NFKC, NFKD (line 1, column 27 (offset: 26))
           |"RETURN normalize("hello", NFF)"
           |                           ^""".stripMargin

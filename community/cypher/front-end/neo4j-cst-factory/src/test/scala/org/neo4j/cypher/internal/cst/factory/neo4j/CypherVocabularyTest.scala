@@ -16,14 +16,15 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.factory.neo4j.completion.CodeCompletionCore.CandidatesCollection
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherErrorVocabulary
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CypherVocabularyTest extends CypherFunSuite {
+  val vocab = new CypherErrorVocabulary
 
   test("user facing token names are human readable") {
-    val vocab = new CypherErrorVocabulary
     Range.inclusive(1, vocab.getMaxTokenType).foreach { token =>
       val displayName = vocab.getDisplayName(token)
       val symbolicName = vocab.getSymbolicName(token)
@@ -43,7 +44,22 @@ class CypherVocabularyTest extends CypherFunSuite {
     }
   }
 
-  private def expectedDisplayNames: Map[Int, String] = Map(
+  test("rules of interest have a display name") {
+    vocab.rulesOfInterest.forEach { r =>
+      withClue(CypherParser.ruleNames(r))(ruleDisplayName(r) should not be empty)
+    }
+    Range(0, CypherParser.ruleNames.length).foreach { r =>
+      withClue(CypherParser.ruleNames(r))(ruleDisplayName(r) shouldBe expectedRuleDisplayNames.get(r).toSeq)
+    }
+  }
+
+  private def ruleDisplayName(r: Int): Seq[String] = {
+    val candidates = new CandidatesCollection()
+    candidates.rules.put(java.lang.Integer.valueOf(r), java.util.List.of[java.lang.Integer]())
+    vocab.expected(candidates)
+  }
+
+  private val expectedDisplayNames: Map[Int, String] = Map(
     CypherParser.SPACE -> "' '",
     CypherParser.SINGLE_LINE_COMMENT -> "'//'",
     CypherParser.DECIMAL_DOUBLE -> "a float value",
@@ -181,7 +197,7 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.LCURLY -> "'{'",
     CypherParser.LE -> "'<='",
     CypherParser.LEADING -> "'LEADING'",
-    CypherParser.LIMITROWS -> "'LIMITROWS'",
+    CypherParser.LIMITROWS -> "'LIMIT'",
     CypherParser.LIST -> "'LIST'",
     CypherParser.LOAD -> "'LOAD'",
     CypherParser.LOCAL -> "'LOCAL'",
@@ -279,7 +295,7 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.SHOW -> "'SHOW'",
     CypherParser.SIGNED -> "'SIGNED'",
     CypherParser.SINGLE -> "'SINGLE'",
-    CypherParser.SKIPROWS -> "'SKIPROWS'",
+    CypherParser.SKIPROWS -> "'SKIP'",
     CypherParser.START -> "'START'",
     CypherParser.STARTS -> "'STARTS'",
     CypherParser.STATUS -> "'STATUS'",
@@ -336,5 +352,31 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.STRING_LITERAL2 -> "a string value",
     CypherParser.MULTI_LINE_COMMENT -> "'/*'",
     CypherParser.ESCAPED_SYMBOLIC_NAME -> "an identifier"
+  )
+
+  private val expectedRuleDisplayNames: Map[Int, String] = Map(
+    CypherParser.RULE_expression -> "an expression",
+    CypherParser.RULE_expression1 -> "an expression",
+    CypherParser.RULE_expression2 -> "an expression",
+    CypherParser.RULE_expression3 -> "an expression",
+    CypherParser.RULE_expression4 -> "an expression",
+    CypherParser.RULE_expression5 -> "an expression",
+    CypherParser.RULE_expression6 -> "an expression",
+    CypherParser.RULE_expression7 -> "an expression",
+    CypherParser.RULE_expression8 -> "an expression",
+    CypherParser.RULE_expression9 -> "an expression",
+    CypherParser.RULE_expression10 -> "an expression",
+    CypherParser.RULE_expression11 -> "an expression",
+    CypherParser.RULE_pattern -> "a graph pattern",
+    CypherParser.RULE_numberLiteral -> "a number",
+    CypherParser.RULE_parameter -> "a parameter",
+    CypherParser.RULE_variable -> "a variable name",
+    CypherParser.RULE_symbolicAliasName -> "a database name",
+    CypherParser.RULE_stringLiteral -> "a string",
+    CypherParser.RULE_symbolicNameString -> "an identifier",
+    CypherParser.RULE_symbolicLabelNameString -> "an identifier",
+    CypherParser.RULE_escapedSymbolicNameString -> "an identifier",
+    CypherParser.RULE_unescapedSymbolicNameString -> "an identifier",
+    CypherParser.RULE_unescapedLabelSymbolicNameString -> "an identifier"
   )
 }

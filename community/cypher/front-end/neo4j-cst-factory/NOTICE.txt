@@ -39,6 +39,9 @@ Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
 
+MIT License
+  antlr4-c3 Java port
+
 Dependencies with multiple licenses
 -----------------------------------
 

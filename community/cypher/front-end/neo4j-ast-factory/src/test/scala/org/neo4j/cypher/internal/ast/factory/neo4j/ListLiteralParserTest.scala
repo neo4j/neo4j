@@ -46,7 +46,7 @@ class ListLiteralParserTest extends AstParsingTestBase {
     "RETURN ['value' 42]" should notParse[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input '42': expected ',', ']' (line 1, column 17 (offset: 16))
+        """Invalid input '42': expected an expression, ',' or ']' (line 1, column 17 (offset: 16))
           |"RETURN ['value' 42]"
           |                 ^""".stripMargin
       ))
@@ -56,7 +56,7 @@ class ListLiteralParserTest extends AstParsingTestBase {
     "RETURN [, 'value']" should notParse[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '[': expected \"+\" or \"-\" (line 1, column 8 (offset: 7))"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative: expected an expression (line 1, column 9 (offset: 8))
+        """Invalid input ',': expected an expression (line 1, column 9 (offset: 8))
           |"RETURN [, 'value']"
           |         ^""".stripMargin
       ))

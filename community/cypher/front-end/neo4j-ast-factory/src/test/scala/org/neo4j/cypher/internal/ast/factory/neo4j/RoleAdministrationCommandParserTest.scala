@@ -220,12 +220,12 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   // TODO Missing comma in message
   test("SHOW ROLE role") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 15 (offset: 14))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Missing 'PRIVILEGE', 'PRIVILEGES' at '' (line 1, column 15 (offset: 14))
+        """Invalid input '': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 15 (offset: 14))
           |"SHOW ROLE role"
           |               ^""".stripMargin
       ))
@@ -240,12 +240,12 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("SHOW ALL ROLES YIELD role RETURN") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"*\", \"DISTINCT\" or an expression (line 1, column 33 (offset: 32))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'DISTINCT', '*', an expression (line 1, column 33 (offset: 32))
+        """Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 33 (offset: 32))
           |"SHOW ALL ROLES YIELD role RETURN"
           |                                 ^""".stripMargin
       ))
@@ -253,12 +253,12 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   // TODO Check Message, potential loss of information
   test("SHOW ROLES WITH USER user") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'user': expected "WHERE", "YIELD" or <EOF> (line 1, column 22 (offset: 21))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'user': expected ';', <EOF> (line 1, column 22 (offset: 21))
+        """Invalid input 'user': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 22 (offset: 21))
           |"SHOW ROLES WITH USER user"
           |                      ^""".stripMargin
       ))
@@ -274,10 +274,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
          |  "SKIP"
          |  "WHERE"
          |  <EOF> (line 1, column 29 (offset: 28))""".stripMargin
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(exceptionMessage))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ',': expected ';', <EOF> (line 1, column 29 (offset: 28))
+        """Invalid input ',': expected 'ORDER BY', 'LIMIT', 'RETURN', 'SKIP', 'WHERE' or <EOF> (line 1, column 29 (offset: 28))
           |"SHOW POPULATED ROLES YIELD *,blah RETURN role"
           |                             ^""".stripMargin
       ))
@@ -358,48 +358,48 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("CREATE OR REPLACE ROLE ") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected a parameter or an identifier (line 1, column 23 (offset: 22))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected an identifier, '$' (line 1, column 23 (offset: 22))
+        """Invalid input '': expected a parameter or an identifier (line 1, column 23 (offset: 22))
           |"CREATE OR REPLACE ROLE"
           |                       ^""".stripMargin
       ))
   }
 
   test("CREATE ROLE foo AS COPY OF") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected an identifier, '$' (line 1, column 27 (offset: 26))
+        """Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))
           |"CREATE ROLE foo AS COPY OF"
           |                           ^""".stripMargin
       ))
   }
 
   test("CREATE ROLE foo IF NOT EXISTS AS COPY OF") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected a parameter or an identifier (line 1, column 41 (offset: 40))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected an identifier, '$' (line 1, column 41 (offset: 40))
+        """Invalid input '': expected a parameter or an identifier (line 1, column 41 (offset: 40))
           |"CREATE ROLE foo IF NOT EXISTS AS COPY OF"
           |                                         ^""".stripMargin
       ))
   }
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected a parameter or an identifier (line 1, column 38 (offset: 37))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected an identifier, '$' (line 1, column 38 (offset: 37))
+        """Invalid input '': expected a parameter or an identifier (line 1, column 38 (offset: 37))
           |"CREATE OR REPLACE ROLE foo AS COPY OF"
           |                                      ^""".stripMargin
       ))
@@ -407,12 +407,12 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   // TODO Check Message, potential loss of information
   test("CREATE ROLE foo UNION CREATE ROLE foo2") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'UNION': expected \"AS\", \"IF\" or <EOF> (line 1, column 17 (offset: 16))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'UNION': expected ';', <EOF> (line 1, column 17 (offset: 16))
+        """Invalid input 'UNION': expected 'IF NOT EXISTS', 'AS COPY OF' or <EOF> (line 1, column 17 (offset: 16))
           |"CREATE ROLE foo UNION CREATE ROLE foo2"
           |                 ^""".stripMargin
       ))
@@ -461,67 +461,67 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("RENAME ROLE foo TO") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected an identifier, '$' (line 1, column 19 (offset: 18))
+        """Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))
           |"RENAME ROLE foo TO"
           |                   ^""".stripMargin
       ))
   }
 
   test("RENAME ROLE TO bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'bar': expected 'IF', 'TO' (line 1, column 16 (offset: 15))
+        """Invalid input 'bar': expected 'IF EXISTS' or 'TO' (line 1, column 16 (offset: 15))
           |"RENAME ROLE TO bar"
           |                ^""".stripMargin
       ))
   }
 
   test("RENAME ROLE TO") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'IF', 'TO' (line 1, column 15 (offset: 14))
+        """Invalid input '': expected 'IF EXISTS' or 'TO' (line 1, column 15 (offset: 14))
           |"RENAME ROLE TO"
           |               ^""".stripMargin
       ))
   }
 
   test("RENAME ROLE foo SET NAME TO bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'SET': expected 'IF', 'TO' (line 1, column 17 (offset: 16))
+        """Invalid input 'SET': expected 'IF EXISTS' or 'TO' (line 1, column 17 (offset: 16))
           |"RENAME ROLE foo SET NAME TO bar"
           |                 ^""".stripMargin
       ))
   }
 
   test("RENAME ROLE foo SET NAME bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'SET': expected 'IF', 'TO' (line 1, column 17 (offset: 16))
+        """Invalid input 'SET': expected 'IF EXISTS' or 'TO' (line 1, column 17 (offset: 16))
           |"RENAME ROLE foo SET NAME bar"
           |                 ^""".stripMargin
       ))
   }
 
   test("ALTER ROLE foo SET NAME bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'ROLE': expected
           |  "ALIAS"
@@ -531,65 +531,65 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           |  "USER" (line 1, column 7 (offset: 6))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'ROLE': expected 'ALIAS', 'CURRENT', 'DATABASE', 'USER', 'SERVER' (line 1, column 7 (offset: 6))
+        """Invalid input 'ROLE': expected 'ALIAS', 'DATABASE', 'CURRENT USER SET PASSWORD FROM', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
           |"ALTER ROLE foo SET NAME bar"
           |       ^""".stripMargin
       ))
   }
 
   test("RENAME ROLE foo IF EXIST TO bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'EXIST': expected 'EXISTS' (line 1, column 20 (offset: 19))
+        """Invalid input 'EXIST': expected 'EXISTS' (line 1, column 20 (offset: 19))
           |"RENAME ROLE foo IF EXIST TO bar"
           |                    ^""".stripMargin
       ))
   }
 
   test("RENAME ROLE foo IF NOT EXISTS TO bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'NOT': expected 'EXISTS' (line 1, column 20 (offset: 19))
+        """Invalid input 'NOT': expected 'EXISTS' (line 1, column 20 (offset: 19))
           |"RENAME ROLE foo IF NOT EXISTS TO bar"
           |                    ^""".stripMargin
       ))
   }
 
   test("RENAME ROLE foo TO bar IF EXISTS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))"))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'IF': expected ';', <EOF> (line 1, column 24 (offset: 23))
+        """Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))
           |"RENAME ROLE foo TO bar IF EXISTS"
           |                        ^""".stripMargin
       ))
   }
 
   test("RENAME IF EXISTS ROLE foo TO bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'IF': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'IF': expected 'ROLE', 'SERVER', 'USER' (line 1, column 8 (offset: 7))
+        """Invalid input 'IF': expected 'ROLE', 'SERVER' or 'USER' (line 1, column 8 (offset: 7))
           |"RENAME IF EXISTS ROLE foo TO bar"
           |        ^""".stripMargin
       ))
   }
 
   test("RENAME OR REPLACE ROLE foo TO bar") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'OR': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'OR': expected 'ROLE', 'SERVER', 'USER' (line 1, column 8 (offset: 7))
+        """Invalid input 'OR': expected 'ROLE', 'SERVER' or 'USER' (line 1, column 8 (offset: 7))
           |"RENAME OR REPLACE ROLE foo TO bar"
           |        ^""".stripMargin
       ))
@@ -618,12 +618,12 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("DROP ROLE ") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected an identifier, '$' (line 1, column 10 (offset: 9))
+        """Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))
           |"DROP ROLE"
           |          ^""".stripMargin
       ))
@@ -699,29 +699,29 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
             // TODO Loss of information on ROLE case
             val antlrExpected = roleKeyword match {
               case "ROLE" =>
-                """No viable alternative"""
+                """Invalid input '': expected a parameter, an identifier or 'MANAGEMENT'"""
               case _ =>
-                """Mismatched input '': expected an identifier, '$'""".stripMargin
+                """Invalid input '': expected a parameter or an identifier""".stripMargin
             }
 
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(javaCcExpected))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(antlrExpected))
           }
 
           test(s"$verb $roleKeyword foo") {
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart(s"""Invalid input '': expected "," or "$preposition""""))
-              .parseIn(Antlr)(
-                _.throws[SyntaxException].withMessageStart(s"""Mismatched input '': expected ',', '$preposition'""")
-              )
+              .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                s"""Invalid input '': expected ',' or '$preposition'"""
+              ))
           }
 
           test(s"$verb $roleKeyword foo $preposition") {
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected a parameter or an identifier"))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                """Mismatched input '': expected an identifier, '$'""".stripMargin
+                """Invalid input '': expected a parameter or an identifier""".stripMargin
               ))
           }
 
@@ -776,17 +776,17 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   // ROLE[S] TO USER only have GRANT and REVOKE and not DENY
 
   test(s"DENY ROLE foo TO abc") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'foo': expected "MANAGEMENT""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'foo': expected 'MANAGEMENT' (line 1, column 11 (offset: 10))
+        """Invalid input 'foo': expected 'MANAGEMENT' (line 1, column 11 (offset: 10))
           |"DENY ROLE foo TO abc"
           |           ^""".stripMargin
       ))
   }
 
   test("DENY ROLES foo TO abc") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'ROLES': expected
           |  "ACCESS"
@@ -800,7 +800,7 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
           |  "CREATE"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'ROLES': expected 'IMMUTABLE', 'ALL', 'CREATE', 'ACCESS', 'START', 'STOP', 'INDEX', 'INDEXES', 'CONSTRAINT', 'CONSTRAINTS', 'NAME', 'TRANSACTION', 'TERMINATE', 'ALTER', 'ASSIGN', 'ALIAS', 'COMPOSITE', 'DATABASE', 'PRIVILEGE', 'ROLE', 'SERVER', 'USER', 'EXECUTE', 'RENAME', 'IMPERSONATE', 'DROP', 'LOAD', 'DELETE', 'MERGE', 'TRAVERSE', 'MATCH', 'READ', 'REMOVE', 'SET', 'SHOW', 'WRITE' (line 1, column 6 (offset: 5))
+        """Invalid input 'ROLES': expected 'ACCESS', 'ALIAS', 'ALL', 'ALTER', 'ASSIGN', 'COMPOSITE', 'CONSTRAINT', 'CONSTRAINTS', 'CREATE', 'DATABASE', 'DELETE', 'DROP', 'EXECUTE', 'IMPERSONATE', 'INDEX', 'INDEXES', 'MATCH', 'MERGE', 'NAME', 'LOAD ON', 'WRITE ON', 'PRIVILEGE', 'READ', 'REMOVE', 'RENAME', 'ROLE', 'SERVER', 'SET', 'SHOW', 'START', 'STOP', 'TERMINATE', 'TRANSACTION', 'TRAVERSE' or 'USER' (line 1, column 6 (offset: 5))
           |"DENY ROLES foo TO abc"
           |      ^""".stripMargin
       ))

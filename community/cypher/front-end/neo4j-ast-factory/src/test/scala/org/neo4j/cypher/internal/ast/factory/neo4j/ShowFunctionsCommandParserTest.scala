@@ -473,7 +473,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   }
 
   test("SHOW EXECUTABLE FUNCTION") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessage(
         """Invalid input 'EXECUTABLE': expected
           |  "ALIAS"
@@ -526,7 +526,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
           |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'EXECUTABLE': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+        """Invalid input 'EXECUTABLE': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
           |"SHOW EXECUTABLE FUNCTION"
           |      ^""".stripMargin
       ))
@@ -610,12 +610,12 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   // TODO check message missing comma
   test("SHOW USER FUNCTIONS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessage(
         """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Missing 'PRIVILEGE', 'PRIVILEGES' at '' (line 1, column 20 (offset: 19))
+        """Invalid input '': expected 'PRIVILEGE' or 'PRIVILEGES' (line 1, column 20 (offset: 19))
           |"SHOW USER FUNCTIONS"
           |                    ^""".stripMargin
       ))
@@ -654,20 +654,20 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   }
 
   test("SHOW UNKNOWN FUNCTIONS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'UNKNOWN': expected"""))
       .parseIn(Antlr)(_.withMessage(
-        """Extraneous input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'NODE', 'REL', 'RELATIONSHIP', 'UNIQUENESS', 'EXISTENCE', 'PROPERTY', 'KEY', 'EXISTS', 'ALL', 'UNIQUE', 'EXIST', 'CONSTRAINT', 'CONSTRAINTS', 'CURRENT', 'DEFAULT', 'HOME', 'DATABASE', 'DATABASES', 'BUILT', 'USER', 'FUNCTIONS', 'FULLTEXT', 'LOOKUP', 'POINT', 'RANGE', 'TEXT', 'VECTOR', 'BTREE', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'ROLE', 'ROLES', 'POPULATED', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TRANSACTION', 'TRANSACTIONS', 'USERS' (line 1, column 6 (offset: 5))
+        """Invalid input 'UNKNOWN': expected 'ALIAS', 'ALIASES', 'ALL', 'BTREE', 'CONSTRAINT', 'CONSTRAINTS', 'DATABASE', 'DEFAULT DATABASE', 'HOME DATABASE', 'DATABASES', 'EXIST', 'EXISTENCE', 'EXISTS', 'FULLTEXT', 'FUNCTIONS', 'BUILT IN', 'INDEX', 'INDEXES', 'KEY', 'LOOKUP', 'NODE', 'POINT', 'POPULATED', 'PRIVILEGE', 'PRIVILEGES', 'PROCEDURE', 'PROCEDURES', 'PROPERTY', 'RANGE', 'REL', 'RELATIONSHIP', 'ROLE', 'ROLES', 'SERVER', 'SERVERS', 'SETTING', 'SUPPORTED', 'TEXT', 'TRANSACTION', 'TRANSACTIONS', 'UNIQUE', 'UNIQUENESS', 'USER', 'CURRENT USER', 'USERS' or 'VECTOR' (line 1, column 6 (offset: 5))
           |"SHOW UNKNOWN FUNCTIONS"
           |      ^""".stripMargin
       ))
   }
 
   test("SHOW LOOKUP FUNCTIONS") {
-    testName should notParse[Statements]
+    failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'FUNCTIONS': expected "INDEX" or "INDEXES""""))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input 'FUNCTIONS': expected 'INDEX', 'INDEXES' (line 1, column 13 (offset: 12))
+        """Invalid input 'FUNCTIONS': expected 'INDEX' or 'INDEXES' (line 1, column 13 (offset: 12))
           |"SHOW LOOKUP FUNCTIONS"
           |             ^""".stripMargin
       ))
@@ -679,92 +679,92 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW FUNCTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+          """Invalid input 'WITH': expected 'ORDER BY'""".stripMargin
         ))
     }
 
     // TODO Unhelpful message
     test(s"$prefix UNWIND range(1,10) as b SHOW FUNCTIONS YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'SHOW': expected ';', <EOF>""".stripMargin
+          """Invalid input 'SHOW': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF>""".stripMargin
         ))
     }
 
     // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+          """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
         ))
     }
 
     // TODO Unhelpful message
     test(s"$prefix WITH 'n' as n SHOW FUNCTIONS YIELD name RETURN name as numIndexes") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'SHOW': expected ';', <EOF>""".stripMargin
+          """Invalid input 'SHOW': expected 'FOREACH', ',', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WHERE', 'WITH' or <EOF>""".stripMargin
         ))
     }
 
     // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS RETURN name as numIndexes") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'RETURN': expected ';', <EOF>""".stripMargin
+          """Invalid input 'RETURN': expected 'EXECUTABLE'""".stripMargin
         ))
     }
 
     // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c RETURN name as numIndexes") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+          """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
         ))
     }
 
     // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+          """Invalid input 'WITH': expected 'EXECUTABLE'""".stripMargin
         ))
     }
 
     // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS YIELD a WITH a RETURN a") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'WITH': expected ';', <EOF>""".stripMargin
+          """Invalid input 'WITH': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
         ))
     }
 
     // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS YIELD as UNWIND as as a RETURN a") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'UNWIND': expected ';', <EOF>""".stripMargin
+          """Invalid input 'UNWIND': expected ',', 'AS', 'ORDER BY', 'LIMIT', 'RETURN', 'SHOW', 'SKIP', 'TERMINATE', 'WHERE' or <EOF>""".stripMargin
         ))
     }
 
     test(s"$prefix SHOW FUNCTIONS RETURN name2 YIELD name2") {
-      testName should notParse[Statements]
+      failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-          """Mismatched input 'RETURN': expected ';', <EOF>""".stripMargin
+          """Invalid input 'RETURN': expected 'EXECUTABLE'""".stripMargin
         ))
     }
   }

@@ -213,7 +213,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         """Invalid input '': expected ".", "FOR" or "IF" (line 1, column 16 (offset: 15))"""
       ))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '': expected 'IF', 'FOR' (line 1, column 16 (offset: 15))
+        """Invalid input '': expected a database name, 'FOR DATABASE' or 'IF NOT EXISTS' (line 1, column 16 (offset: 15))
           |"CREATE ALIAS IF"
           |                ^""".stripMargin
       ))
@@ -225,7 +225,11 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input '': expected a parameter or an identifier (line 1, column 13 (offset: 12))"""
       ))
-      .parseIn(Antlr)(_.withMessageStart("No viable alternative (line 1, column 13 (offset: 12))"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a database name, a graph pattern or a parameter (line 1, column 13 (offset: 12))
+          |"CREATE ALIAS"
+          |             ^""".stripMargin
+      ))
   }
 
   test("CREATE ALIAS #Malmö FOR DATABASE db1") {
@@ -234,7 +238,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         s"""Invalid input '#': expected a parameter or an identifier (line 1, column 14 (offset: 13))""".stripMargin
       ))
       .parseIn(Antlr)(_.withMessage(
-        """No viable alternative (line 1, column 14 (offset: 13))
+        """Invalid input '#': expected a database name, a graph pattern or a parameter (line 1, column 14 (offset: 13))
           |"CREATE ALIAS #Malmö FOR DATABASE db1"
           |              ^""".stripMargin
       ))
@@ -246,7 +250,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         s"""Invalid input '#': expected ".", "FOR" or "IF" (line 1, column 17 (offset: 16))"""
       ))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '#': expected 'IF', 'FOR' (line 1, column 17 (offset: 16))
+        """Invalid input '#': expected a database name, 'FOR DATABASE' or 'IF NOT EXISTS' (line 1, column 17 (offset: 16))
           |"CREATE ALIAS Mal#mö FOR DATABASE db1"
           |                 ^""".stripMargin
       ))
@@ -270,7 +274,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         s"""Invalid input '': expected a parameter or an identifier (line 1, column 31 (offset: 30))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected an identifier, '$' (line 1, column 31 (offset: 30))
+        """Invalid input '': expected a database name or a parameter (line 1, column 31 (offset: 30))
           |"CREATE ALIAS name FOR DATABASE"
           |                               ^""".stripMargin
       ))
@@ -282,7 +286,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         """Invalid input 'PROPERTY': expected ".", "AT", "PROPERTIES" or <EOF> (line 1, column 39 (offset: 38))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'PROPERTY': expected ';', <EOF> (line 1, column 39 (offset: 38))
+        """Invalid input 'PROPERTY': expected a database name, 'AT', 'PROPERTIES' or <EOF> (line 1, column 39 (offset: 38))
           |"CREATE ALIAS name FOR DATABASE target PROPERTY { key: 'val' }"
           |                                       ^""".stripMargin
       ))
@@ -294,7 +298,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input '': expected \"{\" or a parameter (line 1, column 49 (offset: 48))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected '{', '$' (line 1, column 49 (offset: 48))
+        """Invalid input '': expected a parameter or '{' (line 1, column 49 (offset: 48))
           |"CREATE ALIAS name FOR DATABASE target PROPERTIES"
           |                                                 ^""".stripMargin
       ))
@@ -373,8 +377,8 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'neo4j': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 42 (offset: 41))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        """Mismatched input 'neo4j': expected a string value, '$' (line 1, column 42 (offset: 41))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'neo4j': expected a parameter or a string (line 1, column 42 (offset: 41))
           |"CREATE ALIAS name FOR DATABASE target AT neo4j://serverA:7687" USER user PASSWORD 'password'"
           |                                          ^""".stripMargin
       ))
@@ -427,7 +431,11 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   ) {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'PROPERTIES': expected "USER""""))
-      .parseIn(Antlr)(_.withMessageStart("""Missing 'USER' at 'PROPERTIES'"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'PROPERTIES': expected 'USER' (line 2, column 1 (offset: 74))
+          |"PROPERTIES { key:'value', anotherkey:'anotherValue' }"
+          | ^""".stripMargin
+      ))
   }
 
   test(
@@ -617,7 +625,11 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   ) {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'DRIVER': expected <EOF>"""))
-      .parseIn(Antlr)(_.withMessageStart("""Mismatched input 'DRIVER': expected ';', <EOF>"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'DRIVER': expected <EOF> (line 1, column 103 (offset: 102))
+          |"CREATE ALIAS name FOR DATABASE target AT "bar" USER user PASSWORD "password" PROPERTIES { bar: true } DRIVER { foo: 1.0 }"
+          |                                                                                                       ^""".stripMargin
+      ))
   }
 
   test("Should fail to parse CREATE ALIAS with driver settings but no remote url") {
@@ -625,8 +637,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'DRIVER': expected \".\", \"AT\", \"PROPERTIES\" or <EOF> (line 1, column 39 (offset: 38))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        "Mismatched input 'DRIVER': expected ';', <EOF>"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'DRIVER': expected a database name, 'AT', 'PROPERTIES' or <EOF> (line 1, column 39 (offset: 38))
+          |"CREATE ALIAS name FOR DATABASE target DRIVER { ssl_enforced: true }"
+          |                                       ^""".stripMargin
       ))
   }
 
@@ -635,7 +649,11 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'OPTIONS': expected \"USER\" (line 1, column 48 (offset: 47))"
       ))
-      .parseIn(Antlr)(_.withMessageStart("Missing 'USER' at 'OPTIONS'"))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'OPTIONS': expected 'USER' (line 1, column 48 (offset: 47))
+          |"CREATE ALIAS name FOR DATABASE target AT "bar" OPTIONS { foo: 1.0 }"
+          |                                                ^""".stripMargin
+      ))
   }
 
   test("""CREATE ALIAS name FOR DATABASE target AT "bar" USER user PASSWORD "password" DRIVER {}""") {
@@ -681,7 +699,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       ))
       // TODO Message good enough?
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected '{', '$' (line 1, column 84 (offset: 83))
+        """Invalid input '': expected a parameter or '{' (line 1, column 84 (offset: 83))
           |"CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" DRIVER"
           |                                                                                    ^""".stripMargin
       ))
@@ -694,7 +712,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       ))
       // TODO Message good enough?
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'PROPERTY': expected ';', <EOF> (line 1, column 78 (offset: 77))
+        """Invalid input 'PROPERTY': expected 'DRIVER', 'PROPERTIES' or <EOF> (line 1, column 78 (offset: 77))
           |"CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" PROPERTY { key: 'val' }"
           |                                                                              ^""".stripMargin
       ))
@@ -706,7 +724,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input '': expected \"{\" or a parameter (line 1, column 88 (offset: 87))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected '{', '$' (line 1, column 88 (offset: 87))
+        """Invalid input '': expected a parameter or '{' (line 1, column 88 (offset: 87))
           |"CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" PROPERTIES"
           |                                                                                        ^""".stripMargin
       ))
@@ -755,7 +773,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input '': expected \".\", \"FOR\" or \"IF\" (line 1, column 16 (offset: 15))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'IF', 'FOR' (line 1, column 16 (offset: 15))
+        """Invalid input '': expected a database name, 'FOR DATABASE' or 'IF EXISTS' (line 1, column 16 (offset: 15))
           |"DROP ALIAS name"
           |                ^""".stripMargin
       ))
@@ -767,7 +785,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input '': expected \"FOR\" (line 1, column 26 (offset: 25))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'FOR' (line 1, column 26 (offset: 25))
+        """Invalid input '': expected 'FOR DATABASE' (line 1, column 26 (offset: 25))
           |"DROP ALIAS name IF EXISTS"
           |                          ^""".stripMargin
       ))
@@ -822,7 +840,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         """Invalid input 'db': expected "DATABASE" (line 1, column 32 (offset: 31))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'db': expected 'DATABASE' (line 1, column 32 (offset: 31))
+        """Invalid input 'db': expected 'DATABASE' (line 1, column 32 (offset: 31))
           |"ALTER ALIAS name if exists SET db TARGET"
           |                                ^""".stripMargin
       ))
@@ -834,7 +852,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         """Invalid input 'TARGET': expected "DATABASE" (line 1, column 22 (offset: 21))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Missing 'DATABASE' at 'TARGET' (line 1, column 22 (offset: 21))
+        """Invalid input 'TARGET': expected 'DATABASE' (line 1, column 22 (offset: 21))
           |"ALTER ALIAS name SET TARGET db"
           |                      ^""".stripMargin
       ))
@@ -846,7 +864,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         """Invalid input 'name': expected ".", "IF", "REMOVE" or "SET" (line 1, column 22 (offset: 21))"""
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'name': expected 'IF', 'SET', 'REMOVE' (line 1, column 22 (offset: 21))
+        """Invalid input 'name': expected a database name, 'IF EXISTS', 'REMOVE OPTION' or 'SET' (line 1, column 22 (offset: 21))
           |"ALTER DATABASE ALIAS name SET TARGET db"
           |                      ^""".stripMargin
       ))
@@ -863,7 +881,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
           |  "USER" (line 1, column 30 (offset: 29))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected 'TARGET', 'USER', 'PASSWORD', 'DRIVER', 'PROPERTIES' (line 1, column 30 (offset: 29))
+        """Invalid input '': expected 'DRIVER', 'PASSWORD', 'PROPERTIES', 'TARGET' or 'USER' (line 1, column 30 (offset: 29))
           |"ALTER ALIAS name SET DATABASE"
           |                              ^""".stripMargin
       ))
@@ -880,7 +898,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
           |  "USER" (line 1, column 7 (offset: 6))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'RANDOM': expected 'ALIAS', 'CURRENT', 'DATABASE', 'USER', 'SERVER' (line 1, column 7 (offset: 6))
+        """Invalid input 'RANDOM': expected 'ALIAS', 'DATABASE', 'CURRENT USER SET PASSWORD FROM', 'SERVER' or 'USER' (line 1, column 7 (offset: 6))
           |"ALTER RANDOM name"
           |       ^""".stripMargin
       ))
@@ -910,7 +928,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         .parseIn(JavaCc)(_.withMessageStart(
           s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause"
         ))
-        .parseIn(Antlr)(_.withMessageStart(
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
           s"Duplicate ${clause.substring(0, clause.indexOf(" "))} clause"
         ))
     }
@@ -1004,7 +1022,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         .parseIn(JavaCc)(_.withMessageStart(
           s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause"
         ))
-        .parseIn(Antlr)(_.withMessageStart(
+        .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
           s"Duplicate ${clause.substring(0, clause.indexOf(" "))} clause"
         ))
     }
@@ -1028,8 +1046,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Duplicate SET DATABASE TARGET clause (line 1, column 95 (offset: 94))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Duplicate TARGET clause (line 1, column 95 (offset: 94))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Duplicate TARGET clause (line 1, column 95 (offset: 94))
+          |"ALTER ALIAS $name IF EXISTS SET DATABASE TARGET $target AT $url USER $user PASSWORD $password TARGET $target DRIVER $driver"
+          |                                                                                               ^""".stripMargin
       ))
   }
 
@@ -1040,7 +1060,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       ))
       // TODO Error ok?
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input ''url'': expected ';', <EOF> (line 1, column 41 (offset: 40))
+        """Invalid input ''url'': expected a database name, 'AT', 'DRIVER', 'PASSWORD', 'PROPERTIES', 'TARGET', 'USER' or <EOF> (line 1, column 41 (offset: 40))
           |"ALTER ALIAS name SET DATABASE TARGET AT 'url'"
           |                                         ^""".stripMargin
       ))
@@ -1057,7 +1077,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
           |  "USER" (line 1, column 31 (offset: 30))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'AT': expected 'TARGET', 'USER', 'PASSWORD', 'DRIVER', 'PROPERTIES' (line 1, column 31 (offset: 30))
+        """Invalid input 'AT': expected 'DRIVER', 'PASSWORD', 'PROPERTIES', 'TARGET' or 'USER' (line 1, column 31 (offset: 30))
           |"ALTER ALIAS name SET DATABASE AT 'url'"
           |                               ^""".stripMargin
       ))
@@ -1168,8 +1188,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Duplicate SET DATABASE TARGET clause (line 1, column 71 (offset: 70))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "Duplicate TARGET clause (line 1, column 71 (offset: 70))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Duplicate TARGET clause (line 1, column 71 (offset: 70))
+          |"ALTER ALIAS name SET DATABASE TARGET target AT 'neo4j://serverA:7687' TARGET target AT 'neo4j://serverA:7687'"
+          |                                                                       ^""".stripMargin
       ))
   }
 
@@ -1189,8 +1211,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   test("ALTER ALIAS name SET DATABASE USER $user USER $user") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Duplicate SET DATABASE USER clause (line 1, column 42 (offset: 41))"))
-      .parseIn(Antlr)(_.withMessageStart(
-        "Duplicate USER clause (line 1, column 42 (offset: 41))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Duplicate USER clause (line 1, column 42 (offset: 41))
+          |"ALTER ALIAS name SET DATABASE USER $user USER $user"
+          |                                          ^""".stripMargin
       ))
   }
 
@@ -1221,7 +1245,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input 'password': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 50 (offset: 49))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'password': expected a string value, '$' (line 1, column 50 (offset: 49))
+        """Invalid input 'password': expected a parameter or a string (line 1, column 50 (offset: 49))
           |"ALTER ALIAS name IF EXISTS SET DATABASE PASSWORD password"
           |                                                  ^""".stripMargin
       ))
@@ -1232,8 +1256,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Duplicate SET DATABASE PASSWORD clause (line 1, column 50 (offset: 49))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        "Duplicate PASSWORD clause (line 1, column 50 (offset: 49))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Duplicate PASSWORD clause (line 1, column 50 (offset: 49))
+          |"ALTER ALIAS name SET DATABASE PASSWORD $password PASSWORD $password"
+          |                                                  ^""".stripMargin
       ))
   }
 
@@ -1287,8 +1313,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Duplicate SET DATABASE DRIVER clause (line 1, column 46 (offset: 45))"
       ))
-      .parseIn(Antlr)(_.withMessageStart(
-        "Duplicate DRIVER clause (line 1, column 46 (offset: 45))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Duplicate DRIVER clause (line 1, column 46 (offset: 45))
+          |"ALTER ALIAS name SET DATABASE DRIVER $driver DRIVER $driver"
+          |                                              ^""".stripMargin
       ))
   }
 
@@ -1303,7 +1331,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
           |  "USER" (line 1, column 31 (offset: 30))""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'PROPERTY': expected 'TARGET', 'USER', 'PASSWORD', 'DRIVER', 'PROPERTIES' (line 1, column 31 (offset: 30))
+        """Invalid input 'PROPERTY': expected 'DRIVER', 'PASSWORD', 'PROPERTIES', 'TARGET' or 'USER' (line 1, column 31 (offset: 30))
           |"ALTER ALIAS name SET DATABASE PROPERTY { key: 'val' }"
           |                               ^""".stripMargin
       ))
@@ -1315,7 +1343,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input '': expected \"{\" or a parameter (line 1, column 41 (offset: 40))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected '{', '$' (line 1, column 41 (offset: 40))
+        """Invalid input '': expected a parameter or '{' (line 1, column 41 (offset: 40))
           |"ALTER ALIAS name SET DATABASE PROPERTIES"
           |                                         ^""".stripMargin
       ))
@@ -1409,7 +1437,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input 'RETURN': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 27 (offset: 26))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'RETURN': expected ';', <EOF> (line 1, column 27 (offset: 26))
+        """Invalid input 'RETURN': expected 'WHERE', 'YIELD' or <EOF> (line 1, column 27 (offset: 26))
           |"SHOW ALIASES FOR DATABASE RETURN *"
           |                           ^""".stripMargin
       ))
@@ -1421,7 +1449,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input '': expected \"*\" or an identifier (line 1, column 32 (offset: 31))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '': expected '*', a variable name (line 1, column 32 (offset: 31))
+        """Invalid input '': expected a variable name or '*' (line 1, column 32 (offset: 31))
           |"SHOW ALIASES FOR DATABASE YIELD"
           |                                ^""".stripMargin
       ))
@@ -1433,7 +1461,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input '(': expected \"*\" or an identifier (line 1, column 33 (offset: 32))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '(': expected '*', a variable name (line 1, column 33 (offset: 32))
+        """Invalid input '(': expected a variable name or '*' (line 1, column 33 (offset: 32))
           |"SHOW ALIASES FOR DATABASE YIELD (123 + xyz)"
           |                                 ^""".stripMargin
       ))
@@ -1445,7 +1473,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
         "Invalid input '(': expected \"*\" or an identifier (line 1, column 33 (offset: 32))"
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '(': expected '*', a variable name (line 1, column 33 (offset: 32))
+        """Invalid input '(': expected a variable name or '*' (line 1, column 33 (offset: 32))
           |"SHOW ALIASES FOR DATABASE YIELD (123 + xyz) AS foo"
           |                                 ^""".stripMargin
       ))
@@ -1455,7 +1483,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '': expected \"FOR\" (line 1, column 11 (offset: 10))"))
       .parseIn(Antlr)(_.withMessage(
-        """Mismatched input '': expected an identifier, '$', 'FOR' (line 1, column 11 (offset: 10))
+        """Invalid input '': expected a database name, a parameter or 'FOR' (line 1, column 11 (offset: 10))
           |"SHOW ALIAS"
           |           ^""".stripMargin
       ))
@@ -1465,7 +1493,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'foo': expected \"FOR\""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ',': expected '.', 'FOR' (line 1, column 15 (offset: 14))
+        """Invalid input ',': expected a database name or 'FOR' (line 1, column 15 (offset: 14))
           |"SHOW ALIAS foo, bar FOR DATABASES"
           |               ^""".stripMargin
       ))

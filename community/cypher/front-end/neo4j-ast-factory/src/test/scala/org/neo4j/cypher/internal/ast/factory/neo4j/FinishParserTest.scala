@@ -46,8 +46,8 @@ class FinishParserTest extends AstParsingTestBase {
   test("FINISH *") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '*'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input '*': expected ';', <EOF> (line 1, column 8 (offset: 7))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '*': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
           |"FINISH *"
           |        ^""".stripMargin
       ))
@@ -56,8 +56,8 @@ class FinishParserTest extends AstParsingTestBase {
   test("FINISH a, b") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'a'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'a': expected ';', <EOF> (line 1, column 8 (offset: 7))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'a': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
           |"FINISH a, b"
           |        ^""".stripMargin
       ))
@@ -67,8 +67,8 @@ class FinishParserTest extends AstParsingTestBase {
   test("FINISH DISTINCT *") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DISTINCT'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'DISTINCT': expected ';', <EOF> (line 1, column 8 (offset: 7))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
           |"FINISH DISTINCT *"
           |        ^""".stripMargin
       ))
@@ -77,8 +77,8 @@ class FinishParserTest extends AstParsingTestBase {
   test("FINISH DISTINCT a, b") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'DISTINCT'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'DISTINCT': expected ';', <EOF> (line 1, column 8 (offset: 7))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'DISTINCT': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
           |"FINISH DISTINCT a, b"
           |        ^""".stripMargin
       ))
@@ -87,8 +87,8 @@ class FinishParserTest extends AstParsingTestBase {
   test("FINISH n:A") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'n'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'n': expected ';', <EOF> (line 1, column 8 (offset: 7))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
           |"FINISH n:A"
           |        ^""".stripMargin
       ))
@@ -97,8 +97,8 @@ class FinishParserTest extends AstParsingTestBase {
   test("FINISH n:A&B") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'n'"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'n': expected ';', <EOF> (line 1, column 8 (offset: 7))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'n': expected 'FOREACH', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'MATCH', 'MERGE', 'NODETACH', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'UNION', 'UNWIND', 'USE', 'WITH' or <EOF> (line 1, column 8 (offset: 7))
           |"FINISH n:A&B"
           |        ^""".stripMargin
       ))

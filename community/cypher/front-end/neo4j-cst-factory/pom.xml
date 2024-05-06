@@ -102,6 +102,32 @@
 
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.neo4j.build.plugins</groupId>
+                <artifactId>licensing-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>list-all-licenses</id>
+                        <configuration>
+                            <licensingRequirementFiles combine.children="append">
+                                <licensingRequirementFile>licensing/licensing-requirements-antlr-code-completion.xml</licensingRequirementFile>
+                            </licensingRequirementFiles>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.neo4j</groupId>
+                        <artifactId>neo4j-cypher-cst-factory-license</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
     <profiles>
         <profile>
             <id>scala-fatal-warnings</id>

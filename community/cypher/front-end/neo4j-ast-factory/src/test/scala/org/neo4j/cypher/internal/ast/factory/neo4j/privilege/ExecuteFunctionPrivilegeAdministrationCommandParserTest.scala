@@ -220,7 +220,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               // TODO Potential loss of information
               test(s"$verb$immutableString $execute * $preposition role") {
                 val offset = testName.length
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input '': expected
                        |  "*"
@@ -229,15 +229,16 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  "ON"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
+                  // TODO 'NFD', 'NFKC', 'NFKD' etc should not be here
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Mismatched input '': expected '.', '?', '*', an identifier, ',', 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                    s"""Invalid input '': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
               }
 
               // TODO Potential loss of information
               test(s"$verb$immutableString $execute * ON DATABASE * $preposition role") {
                 val offset = testName.length
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input '': expected
                        |  "*"
@@ -246,8 +247,9 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  "ON"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
+                  // TODO Why are 'NFC' etc here?
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Mismatched input '': expected '.', '?', '*', an identifier, ',', 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                    s"""Invalid input '': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
               }
 
@@ -256,7 +258,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               // TODO Difference in message
               test(s"$verb$immutableString $execute `ab?`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input 'ab?': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
@@ -268,7 +270,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute a`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute a".length
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input 'ab?': expected
                        |  "*"
@@ -277,15 +279,16 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  "ON"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
+                  // TODO Why NFC etc?
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Extraneous input '`ab?`': expected 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                    s"""Invalid input '`ab?`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
               }
 
               // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute ab?`%ab`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ab?".length
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input '%ab': expected
                        |  "*"
@@ -296,7 +299,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"Mismatched input '`%ab`': expected '.', '?', '*', an identifier, ',', 'ON' (line 1, column ${offset + 1} (offset: $offset))"
+                    s"Invalid input '`%ab`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"
                   ))
               }
 
@@ -305,7 +308,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                 val offset = s"$verb$immutableString $execute apoc.".length
                 val antlrExpected =
                   """Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all."""
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input '*': expected
                        |  "*"
@@ -320,7 +323,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute apoc.*`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute apoc.*".length
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input 'ab?': expected
                        |  "*"
@@ -330,14 +333,14 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"Extraneous input '`ab?`': expected 'ON' (line 1, column ${offset + 1} (offset: $offset))"
+                    s"Invalid input '`ab?`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"
                   ))
               }
 
               // TODO Difference in message
               test(s"$verb$immutableString $execute `ap`oc.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input 'ap': expected "*", ".", "?" or an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
@@ -349,7 +352,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
               // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute ap`oc`.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ap".length
-                testName should notParse[Statements]
+                failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input 'oc': expected
                        |  "*"
@@ -359,13 +362,13 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                    s"""Mismatched input '`oc`': expected '.', '?', '*', an identifier, ',', 'ON' (line 1, column ${offset + 1} (offset: $offset))"""
+                    s"""Invalid input '`oc`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
               }
           }
           test(s"$verb$immutableString EXECUTE DEFINED FUNCTION * ON DATABASE * $preposition role") {
             val offset = s"$verb$immutableString EXECUTE ".length
-            testName should notParse[Statements]
+            failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessage(
                 s"""Invalid input 'DEFINED': expected
                    |  "ADMIN"
@@ -378,7 +381,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                    |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
               ))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Extraneous input 'DEFINED': expected 'ADMIN', 'ADMINISTRATOR', 'BOOSTED', 'PROCEDURE', 'PROCEDURES', 'USER', 'FUNCTIONS' (line 1, column ${offset + 1} (offset: $offset))"""
+                s"""Invalid input 'DEFINED': expected 'ADMIN', 'ADMINISTRATOR', 'BOOSTED', 'FUNCTIONS', 'PROCEDURE', 'PROCEDURES' or 'USER' (line 1, column ${offset + 1} (offset: $offset))"""
               ))
           }
       }

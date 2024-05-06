@@ -49,8 +49,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ON': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'ON': expected 'IF', 'FOR' (line 1, column 23 (offset: 22))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
           |"CREATE INDEX my_index ON :Person(name)"
           |                       ^""".stripMargin
       ))
@@ -61,8 +61,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ON': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'ON': expected 'IF', 'FOR' (line 1, column 23 (offset: 22))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ON': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
           |"CREATE INDEX my_index ON :Person(name,age)"
           |                       ^""".stripMargin
       ))
@@ -73,8 +73,10 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "'REPLACE' is not allowed for this index syntax (line 1, column 1 (offset: 0))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        "'REPLACE' is not allowed for this index syntax (line 1, column 11 (offset: 10))"
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """'REPLACE' is not allowed for this index syntax (line 1, column 11 (offset: 10))
+          |"CREATE OR REPLACE INDEX ON :Person(name)"
+          |           ^""".stripMargin
       ))
   }
 
@@ -384,15 +386,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) {indexProvider : 'range-1.0'}") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{'"))
+        failsParsing[Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ''"))
+        failsParsing[Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -669,15 +667,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) {indexProvider : 'range-1.0'}") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{'"))
+        failsParsing[Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ''"))
+        failsParsing[Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -939,15 +933,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n.name) {indexProvider : 'native-btree-1.0'}") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{'"))
+        failsParsing[Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ''"))
+        failsParsing[Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -1046,15 +1036,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function {indexProvider : 'range-1.0'}") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{'"))
+        failsParsing[Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ''"))
+        failsParsing[Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -1324,52 +1310,39 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] {indexProvider : 'fulltext-1.0'}") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{'"))
+        failsParsing[Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] OPTIONS") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ''"))
+        failsParsing[Statements].withMessageStart("Invalid input ''")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH (n2.name)") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '('"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '('"))
+        failsParsing[Statements].withMessageStart("Invalid input '('")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH n2.name") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input 'n2'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Missing '['"))
+        failsParsing[Statements].withMessageStart("Invalid input 'n2'")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH []") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ']'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ']'"))
+        failsParsing[Statements].withMessageStart("Invalid input ']'")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ''"))
+        failsParsing[Statements].withMessageStart("Invalid input ''")
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON [n2.name]") {
         failsParsing[Statements]
           .parseIn(JavaCc)(_.withMessageStart("Invalid input '['"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Missing 'EACH'"))
+          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '[': expected 'EACH'"))
       }
 
       test(s"CREATE INDEX FOR $pattern ON EACH [n2.name]") {
         failsParsing[Statements]
           // different failures depending on pattern
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input"))
+          .withMessageStart("Invalid input")
       }
 
       // Missing escaping around `fulltext.analyzer`
@@ -1378,7 +1351,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       ) {
         failsParsing[Statements]
           .parseIn(JavaCc)(_.withMessageStart("Invalid input '{': expected \"+\" or \"-\""))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '.': expected ':'"))
+          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '.': expected ':'"))
       }
   }
 
@@ -1640,21 +1613,15 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON n.name, n.age") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ','"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ','"))
+        failsParsing[Statements].withMessageStart("Invalid input ','")
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n.name) {indexProvider : 'text-1.0'}") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input '{'"))
+        failsParsing[Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ''"))
+        failsParsing[Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -1915,21 +1882,15 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
         )(defaultPos))
       }
       test(s"CREATE POINT INDEX FOR $pattern ON n2.name, n3.age") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("""Invalid input ','"""))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ','"))
+        failsParsing[Statements].withMessageStart("Invalid input ','")
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n.name) {indexProvider : 'point-1.0'}") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("""Mismatched input '{'"""))
+        failsParsing[Statements].withMessageStart("Invalid input '{'")
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Mismatched input ''"))
+        failsParsing[Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -2196,20 +2157,18 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             "Invalid input ',': expected \"OPTIONS\" or <EOF>"
           ))
           .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-            "Mismatched input ',': expected ';', <EOF>"
+            "Invalid input ',': expected 'OPTIONS' or <EOF>"
           ))
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) {indexProvider : 'vector-1.0'}") {
         failsParsing[Statements]
           .parseIn(JavaCc)(_.withMessageStart("Invalid input '{'"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("""Mismatched input '{': expected ';', <EOF>"""))
+          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '{': expected 'OPTIONS' or <EOF>"))
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) OPTIONS") {
-        failsParsing[Statements]
-          .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
-          .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("""Mismatched input ''"""))
+        failsParsing[Statements].withMessageStart("Invalid input ''")
       }
   }
 
@@ -2219,8 +2178,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '(': expected \"FOR\" or \"IF\" (line 1, column 20 (offset: 19))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '(': expected 'IF', 'FOR' (line 1, column 20 (offset: 19))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected 'IF NOT EXISTS' or 'FOR' (line 1, column 20 (offset: 19))
           |"CREATE INDEX $ FOR (n1:Label) ON (n2.name)"
           |                    ^""".stripMargin
       ))
@@ -2351,7 +2310,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // Thinks it is missing the function name since `EACH` is parsed as keyword
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '(': expected an identifier (line 1, column 42 (offset: 41))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Missing function name for the LOOKUP INDEX (line 1, column 42 (offset: 41))
           |"CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH(x)"
           |                                          ^""".stripMargin
@@ -2363,8 +2322,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 18 (offset: 17))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
           |"CREATE INDEX FOR n1:Person ON (n2.name)"
           |                  ^""".stripMargin
       ))
@@ -2374,8 +2333,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing label
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 21 (offset: 20))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ')': expected ':' (line 1, column 21 (offset: 20))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
           |"CREATE INDEX FOR (n1) ON (n2.name)"
           |                     ^""".stripMargin
       ))
@@ -2385,8 +2344,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing relationship type
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 24 (offset: 23))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ']': expected ':' (line 1, column 24 (offset: 23))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected ':' (line 1, column 24 (offset: 23))
           |"CREATE INDEX FOR ()-[n1]-() ON (n2.name)"
           |                        ^""".stripMargin
       ))
@@ -2397,8 +2356,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 18 (offset: 17))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
           |"CREATE INDEX FOR -[r1:R]-() ON (r2.name)"
           |                  ^""".stripMargin
       ))
@@ -2409,8 +2368,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 29 (offset: 28))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input 'ON': expected '>', '(' (line 1, column 29 (offset: 28))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ON': expected '(' or '>' (line 1, column 29 (offset: 28))
           |"CREATE INDEX FOR ()-[r1:R]- ON (r2.name)"
           |                             ^""".stripMargin
       ))
@@ -2421,8 +2380,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 18 (offset: 17))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
           |"CREATE INDEX FOR -[r1:R]- ON (r2.name)"
           |                  ^""".stripMargin
       ))
@@ -2433,8 +2392,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 18 (offset: 17))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 18 (offset: 17))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 18 (offset: 17))
           |"CREATE INDEX FOR [r1:R] ON (r2.name)"
           |                  ^""".stripMargin
       ))
@@ -2445,7 +2404,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 19 (offset: 18))
+        """Invalid input ':': expected a variable name or ')' (line 1, column 19 (offset: 18))
           |"CREATE INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
           |                   ^""".stripMargin
       ))
@@ -2456,7 +2415,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ':': expected ')' (line 1, column 29 (offset: 28))
+        """Invalid input ':': expected ')' (line 1, column 29 (offset: 28))
           |"CREATE INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
           |                             ^""".stripMargin
       ))
@@ -2467,7 +2426,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ')': expected ':' (line 1, column 21 (offset: 20))
+        """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
           |"CREATE INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
           |                     ^""".stripMargin
       ))
@@ -2478,7 +2437,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'n2': expected ')' (line 1, column 29 (offset: 28))
+        """Invalid input 'n2': expected ')' (line 1, column 29 (offset: 28))
           |"CREATE INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
           |                             ^""".stripMargin
       ))
@@ -2489,7 +2448,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '-': expected 'ON' (line 1, column 24 (offset: 23))
+        """Invalid input '-': expected 'ON' (line 1, column 24 (offset: 23))
           |"CREATE INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
           |                        ^""".stripMargin
       ))
@@ -2500,7 +2459,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'n2': expected ')' (line 1, column 29 (offset: 28))
+        """Invalid input 'n2': expected ')' (line 1, column 29 (offset: 28))
           |"CREATE INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
           |                             ^""".stripMargin
       ))
@@ -2511,8 +2470,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 23 (offset: 22))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
           |"CREATE TEXT INDEX FOR n1:Person ON (n2.name)"
           |                       ^""".stripMargin
       ))
@@ -2522,8 +2481,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing label
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 26 (offset: 25))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ')': expected ':' (line 1, column 26 (offset: 25))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
           |"CREATE TEXT INDEX FOR (n1) ON (n2.name)"
           |                          ^""".stripMargin
       ))
@@ -2533,8 +2492,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing relationship type
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 29 (offset: 28))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ']': expected ':' (line 1, column 29 (offset: 28))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected ':' (line 1, column 29 (offset: 28))
           |"CREATE TEXT INDEX FOR ()-[n1]-() ON (n2.name)"
           |                             ^""".stripMargin
       ))
@@ -2545,8 +2504,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 23 (offset: 22))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
           |"CREATE TEXT INDEX FOR -[r1:R]-() ON (r2.name)"
           |                       ^""".stripMargin
       ))
@@ -2557,8 +2516,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 34 (offset: 33))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input 'ON': expected '>', '(' (line 1, column 34 (offset: 33))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ON': expected '(' or '>' (line 1, column 34 (offset: 33))
           |"CREATE TEXT INDEX FOR ()-[r1:R]- ON (r2.name)"
           |                                  ^""".stripMargin
       ))
@@ -2569,8 +2528,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 23 (offset: 22))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
           |"CREATE TEXT INDEX FOR -[r1:R]- ON (r2.name)"
           |                       ^""".stripMargin
       ))
@@ -2581,8 +2540,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 23 (offset: 22))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 23 (offset: 22))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 23 (offset: 22))
           |"CREATE TEXT INDEX FOR [r1:R] ON (r2.name)"
           |                       ^""".stripMargin
       ))
@@ -2593,7 +2552,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 24 (offset: 23))
+        """Invalid input ':': expected a variable name or ')' (line 1, column 24 (offset: 23))
           |"CREATE TEXT INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
           |                        ^""".stripMargin
       ))
@@ -2604,7 +2563,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ':': expected ')' (line 1, column 34 (offset: 33))
+        """Invalid input ':': expected ')' (line 1, column 34 (offset: 33))
           |"CREATE TEXT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
           |                                  ^""".stripMargin
       ))
@@ -2615,7 +2574,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ')': expected ':' (line 1, column 26 (offset: 25))
+        """Invalid input ')': expected ':' (line 1, column 26 (offset: 25))
           |"CREATE TEXT INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
           |                          ^""".stripMargin
       ))
@@ -2626,7 +2585,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'n2': expected ')' (line 1, column 34 (offset: 33))
+        """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
           |"CREATE TEXT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
           |                                  ^""".stripMargin
       ))
@@ -2637,7 +2596,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '-': expected 'ON' (line 1, column 29 (offset: 28))
+        """Invalid input '-': expected 'ON' (line 1, column 29 (offset: 28))
           |"CREATE TEXT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
           |                             ^""".stripMargin
       ))
@@ -2648,7 +2607,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'n2': expected ')' (line 1, column 34 (offset: 33))
+        """Invalid input 'n2': expected ')' (line 1, column 34 (offset: 33))
           |"CREATE TEXT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
           |                                  ^""".stripMargin
       ))
@@ -2659,8 +2618,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 24 (offset: 23))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
           |"CREATE POINT INDEX FOR n1:Person ON (n2.name)"
           |                        ^""".stripMargin
       ))
@@ -2670,8 +2629,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing label
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 27 (offset: 26))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ')': expected ':' (line 1, column 27 (offset: 26))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ')': expected ':' (line 1, column 27 (offset: 26))
           |"CREATE POINT INDEX FOR (n1) ON (n2.name)"
           |                           ^""".stripMargin
       ))
@@ -2681,8 +2640,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing relationship type
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 30 (offset: 29))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ']': expected ':' (line 1, column 30 (offset: 29))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected ':' (line 1, column 30 (offset: 29))
           |"CREATE POINT INDEX FOR ()-[n1]-() ON (n2.name)"
           |                              ^""".stripMargin
       ))
@@ -2693,8 +2652,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 24 (offset: 23))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
           |"CREATE POINT INDEX FOR -[r1:R]-() ON (r2.name)"
           |                        ^""".stripMargin
       ))
@@ -2705,8 +2664,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 35 (offset: 34))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input 'ON': expected '>', '(' (line 1, column 35 (offset: 34))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ON': expected '(' or '>' (line 1, column 35 (offset: 34))
           |"CREATE POINT INDEX FOR ()-[r1:R]- ON (r2.name)"
           |                                   ^""".stripMargin
       ))
@@ -2717,8 +2676,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 24 (offset: 23))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
           |"CREATE POINT INDEX FOR -[r1:R]- ON (r2.name)"
           |                        ^""".stripMargin
       ))
@@ -2729,8 +2688,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 24 (offset: 23))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 24 (offset: 23))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 24 (offset: 23))
           |"CREATE POINT INDEX FOR [r1:R] ON (r2.name)"
           |                        ^""".stripMargin
       ))
@@ -2741,7 +2700,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 25 (offset: 24))
+        """Invalid input ':': expected a variable name or ')' (line 1, column 25 (offset: 24))
           |"CREATE POINT INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
           |                         ^""".stripMargin
       ))
@@ -2752,7 +2711,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ':': expected ')' (line 1, column 35 (offset: 34))
+        """Invalid input ':': expected ')' (line 1, column 35 (offset: 34))
           |"CREATE POINT INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
           |                                   ^""".stripMargin
       ))
@@ -2763,7 +2722,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ')': expected ':' (line 1, column 27 (offset: 26))
+        """Invalid input ')': expected ':' (line 1, column 27 (offset: 26))
           |"CREATE POINT INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
           |                           ^""".stripMargin
       ))
@@ -2774,7 +2733,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'n2': expected ')' (line 1, column 35 (offset: 34))
+        """Invalid input 'n2': expected ')' (line 1, column 35 (offset: 34))
           |"CREATE POINT INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
           |                                   ^""".stripMargin
       ))
@@ -2785,7 +2744,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '-': expected 'ON' (line 1, column 30 (offset: 29))
+        """Invalid input '-': expected 'ON' (line 1, column 30 (offset: 29))
           |"CREATE POINT INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
           |                              ^""".stripMargin
       ))
@@ -2796,7 +2755,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'n2': expected ')' (line 1, column 35 (offset: 34))
+        """Invalid input 'n2': expected ')' (line 1, column 35 (offset: 34))
           |"CREATE POINT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
           |                                   ^""".stripMargin
       ))
@@ -2807,8 +2766,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 25 (offset: 24))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
           |"CREATE VECTOR INDEX FOR n1:Person ON (n2.name)"
           |                         ^""".stripMargin
       ))
@@ -2818,8 +2777,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing label
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 28 (offset: 27))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ')': expected ':' (line 1, column 28 (offset: 27))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ')': expected ':' (line 1, column 28 (offset: 27))
           |"CREATE VECTOR INDEX FOR (n1) ON (n2.name)"
           |                            ^""".stripMargin
       ))
@@ -2829,8 +2788,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing relationship type
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 31 (offset: 30))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ']': expected ':' (line 1, column 31 (offset: 30))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected ':' (line 1, column 31 (offset: 30))
           |"CREATE VECTOR INDEX FOR ()-[n1]-() ON (n2.name)"
           |                               ^""".stripMargin
       ))
@@ -2841,8 +2800,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 25 (offset: 24))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
           |"CREATE VECTOR INDEX FOR -[r1:R]-() ON (r2.name)"
           |                         ^""".stripMargin
       ))
@@ -2853,8 +2812,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 36 (offset: 35))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input 'ON': expected '>', '(' (line 1, column 36 (offset: 35))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ON': expected '(' or '>' (line 1, column 36 (offset: 35))
           |"CREATE VECTOR INDEX FOR ()-[r1:R]- ON (r2.name)"
           |                                    ^""".stripMargin
       ))
@@ -2865,8 +2824,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 25 (offset: 24))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
           |"CREATE VECTOR INDEX FOR -[r1:R]- ON (r2.name)"
           |                         ^""".stripMargin
       ))
@@ -2877,8 +2836,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 25 (offset: 24))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
           |"CREATE VECTOR INDEX FOR [r1:R] ON (r2.name)"
           |                         ^""".stripMargin
       ))
@@ -2889,7 +2848,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 26 (offset: 25))
+        """Invalid input ':': expected a variable name or ')' (line 1, column 26 (offset: 25))
           |"CREATE VECTOR INDEX FOR (:A)-[n1:R]-() ON (n2.name)"
           |                          ^""".stripMargin
       ))
@@ -2900,7 +2859,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ':': expected ')' (line 1, column 36 (offset: 35))
+        """Invalid input ':': expected ')' (line 1, column 36 (offset: 35))
           |"CREATE VECTOR INDEX FOR ()-[n1:R]-(:A) ON (n2.name)"
           |                                    ^""".stripMargin
       ))
@@ -2911,7 +2870,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ')': expected ':' (line 1, column 28 (offset: 27))
+        """Invalid input ')': expected ':' (line 1, column 28 (offset: 27))
           |"CREATE VECTOR INDEX FOR (n2)-[n1:R]-() ON (n2.name)"
           |                            ^""".stripMargin
       ))
@@ -2922,7 +2881,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'n2': expected ')' (line 1, column 36 (offset: 35))
+        """Invalid input 'n2': expected ')' (line 1, column 36 (offset: 35))
           |"CREATE VECTOR INDEX FOR ()-[n1:R]-(n2) ON (n2.name)"
           |                                    ^""".stripMargin
       ))
@@ -2933,7 +2892,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '-': expected 'ON' (line 1, column 31 (offset: 30))
+        """Invalid input '-': expected 'ON' (line 1, column 31 (offset: 30))
           |"CREATE VECTOR INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)"
           |                               ^""".stripMargin
       ))
@@ -2944,7 +2903,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'n2': expected ')' (line 1, column 36 (offset: 35))
+        """Invalid input 'n2': expected ')' (line 1, column 36 (offset: 35))
           |"CREATE VECTOR INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)"
           |                                    ^""".stripMargin
       ))
@@ -2955,8 +2914,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input 'n1': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 25 (offset: 24))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'n1': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
           |"CREATE LOOKUP INDEX FOR n1 ON EACH labels(n2)"
           |                         ^""".stripMargin
       ))
@@ -2967,8 +2926,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 25 (offset: 24))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
           |"CREATE LOOKUP INDEX FOR -[r1]-() ON EACH type(r2)"
           |                         ^""".stripMargin
       ))
@@ -2979,8 +2938,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 34 (offset: 33))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'ON': expected '>', '(' (line 1, column 34 (offset: 33))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ON': expected '>' or '(' (line 1, column 34 (offset: 33))
           |"CREATE LOOKUP INDEX FOR ()-[r1]- ON EACH type(r2)"
           |                                  ^""".stripMargin
       ))
@@ -2991,8 +2950,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 25 (offset: 24))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
           |"CREATE LOOKUP INDEX FOR -[r1]- ON EACH type(r2)"
           |                         ^""".stripMargin
       ))
@@ -3003,8 +2962,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '[': expected \"FOR\" or \"IF\" (line 1, column 25 (offset: 24))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """No viable alternative (line 1, column 25 (offset: 24))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '[': expected '(', 'IF NOT EXISTS' or 'FOR' (line 1, column 25 (offset: 24))
           |"CREATE LOOKUP INDEX FOR [r1] ON EACH type(r2)"
           |                         ^""".stripMargin
       ))
@@ -3013,8 +2972,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("CREATE LOOKUP INDEX FOR (n1) EACH labels(n1)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'EACH': expected \"ON\" (line 1, column 30 (offset: 29))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Missing 'ON' at 'EACH' (line 1, column 30 (offset: 29))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'EACH': expected 'ON EACH' (line 1, column 30 (offset: 29))
           |"CREATE LOOKUP INDEX FOR (n1) EACH labels(n1)"
           |                              ^""".stripMargin
       ))
@@ -3023,8 +2982,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("CREATE LOOKUP INDEX FOR ()-[r1]-() EACH type(r2)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'EACH': expected \"ON\" (line 1, column 36 (offset: 35))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Missing 'ON' at 'EACH' (line 1, column 36 (offset: 35))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'EACH': expected 'ON' (line 1, column 36 (offset: 35))
           |"CREATE LOOKUP INDEX FOR ()-[r1]-() EACH type(r2)"
           |                                    ^""".stripMargin
       ))
@@ -3033,8 +2992,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("CREATE LOOKUP INDEX FOR (n1) ON labels(n2)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'labels': expected \"EACH\" (line 1, column 33 (offset: 32))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Missing 'EACH' at 'labels' (line 1, column 33 (offset: 32))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'labels': expected 'EACH' (line 1, column 33 (offset: 32))
           |"CREATE LOOKUP INDEX FOR (n1) ON labels(n2)"
           |                                 ^""".stripMargin
       ))
@@ -3043,8 +3002,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("CREATE INDEX FOR (n1) ON EACH labels(n2)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 21 (offset: 20))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ')': expected ':' (line 1, column 21 (offset: 20))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ')': expected ':' (line 1, column 21 (offset: 20))
           |"CREATE INDEX FOR (n1) ON EACH labels(n2)"
           |                     ^""".stripMargin
       ))
@@ -3053,8 +3012,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("CREATE INDEX FOR ()-[r1]-() ON EACH type(r2)") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 24 (offset: 23))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ']': expected ':' (line 1, column 24 (offset: 23))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected ':' (line 1, column 24 (offset: 23))
           |"CREATE INDEX FOR ()-[r1]-() ON EACH type(r2)"
           |                        ^""".stripMargin
       ))
@@ -3064,8 +3023,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing label
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ')': expected \":\" (line 1, column 30 (offset: 29))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ')': expected ':' (line 1, column 30 (offset: 29))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ')': expected ':' (line 1, column 30 (offset: 29))
           |"CREATE FULLTEXT INDEX FOR (n1) ON EACH [n2.x]"
           |                              ^""".stripMargin
       ))
@@ -3075,8 +3034,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     // missing relationship type
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ']': expected \":\" (line 1, column 33 (offset: 32))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ']': expected ':' (line 1, column 33 (offset: 32))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ']': expected ':' (line 1, column 33 (offset: 32))
           |"CREATE FULLTEXT INDEX FOR ()-[n1]-() ON EACH [n2.x]"
           |                                 ^""".stripMargin
       ))
@@ -3085,8 +3044,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("CREATE FULLTEXT INDEX FOR (n1|:A) ON EACH [n2.x]") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '|': expected \":\" (line 1, column 30 (offset: 29))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input '|': expected ':' (line 1, column 30 (offset: 29))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '|': expected ':' (line 1, column 30 (offset: 29))
           |"CREATE FULLTEXT INDEX FOR (n1|:A) ON EACH [n2.x]"
           |                              ^""".stripMargin
       ))
@@ -3095,8 +3054,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("CREATE FULLTEXT INDEX FOR ()-[n1|:R]-() ON EACH [n2.x]") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input '|': expected \":\" (line 1, column 33 (offset: 32))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input '|': expected ':' (line 1, column 33 (offset: 32))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '|': expected ':' (line 1, column 33 (offset: 32))
           |"CREATE FULLTEXT INDEX FOR ()-[n1|:R]-() ON EACH [n2.x]"
           |                                 ^""".stripMargin
       ))
@@ -3105,8 +3064,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("CREATE FULLTEXT INDEX FOR (n1:A|:B) ON EACH [n2.x]") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ':': expected an identifier (line 1, column 33 (offset: 32))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input ':': expected an identifier (line 1, column 33 (offset: 32))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ':': expected an identifier (line 1, column 33 (offset: 32))
           |"CREATE FULLTEXT INDEX FOR (n1:A|:B) ON EACH [n2.x]"
           |                                 ^""".stripMargin
       ))
@@ -3115,8 +3074,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   test("CREATE FULLTEXT INDEX FOR ()-[n1:R|:S]-() ON EACH [n2.x]") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ':': expected an identifier (line 1, column 36 (offset: 35))"))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input ':': expected an identifier (line 1, column 36 (offset: 35))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ':': expected an identifier (line 1, column 36 (offset: 35))
           |"CREATE FULLTEXT INDEX FOR ()-[n1:R|:S]-() ON EACH [n2.x]"
           |                                    ^""".stripMargin
       ))
@@ -3127,8 +3086,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '||': expected \")\" or \"|\" (line 1, column 32 (offset: 31))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '||': expected '|', ')' (line 1, column 32 (offset: 31))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '||': expected ')' or '|' (line 1, column 32 (offset: 31))
           |"CREATE FULLTEXT INDEX FOR (n1:A||B) ON EACH [n2.x]"
           |                                ^""".stripMargin
       ))
@@ -3139,8 +3098,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '||': expected \"]\" or \"|\" (line 1, column 35 (offset: 34))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '||': expected '|', ']' (line 1, column 35 (offset: 34))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '||': expected ']' or '|' (line 1, column 35 (offset: 34))
           |"CREATE FULLTEXT INDEX FOR ()-[n1:R||S]-() ON EACH [n2.x]"
           |                                   ^""".stripMargin
       ))
@@ -3151,8 +3110,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input ':': expected \")\" or \"|\" (line 1, column 32 (offset: 31))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ':': expected '|', ')' (line 1, column 32 (offset: 31))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ':': expected ')' or '|' (line 1, column 32 (offset: 31))
           |"CREATE FULLTEXT INDEX FOR (n1:A:B) ON EACH [n2.x]"
           |                                ^""".stripMargin
       ))
@@ -3163,8 +3122,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input ':': expected \"]\" or \"|\" (line 1, column 35 (offset: 34))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input ':': expected '|', ']' (line 1, column 35 (offset: 34))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input ':': expected ']' or '|' (line 1, column 35 (offset: 34))
           |"CREATE FULLTEXT INDEX FOR ()-[n1:R:S]-() ON EACH [n2.x]"
           |                                   ^""".stripMargin
       ))
@@ -3175,8 +3134,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '&': expected \")\" or \"|\" (line 1, column 32 (offset: 31))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '&': expected '|', ')' (line 1, column 32 (offset: 31))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '&': expected ')' or '|' (line 1, column 32 (offset: 31))
           |"CREATE FULLTEXT INDEX FOR (n1:A&B) ON EACH [n2.x]"
           |                                ^""".stripMargin
       ))
@@ -3187,8 +3146,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '&': expected \"]\" or \"|\" (line 1, column 35 (offset: 34))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '&': expected '|', ']' (line 1, column 35 (offset: 34))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '&': expected ']' or '|' (line 1, column 35 (offset: 34))
           |"CREATE FULLTEXT INDEX FOR ()-[n1:R&S]-() ON EACH [n2.x]"
           |                                   ^""".stripMargin
       ))
@@ -3199,8 +3158,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input 'B': expected \")\" or \"|\" (line 1, column 33 (offset: 32))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input 'B': expected '|', ')' (line 1, column 33 (offset: 32))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'B': expected ')' or '|' (line 1, column 33 (offset: 32))
           |"CREATE FULLTEXT INDEX FOR (n1:A B) ON EACH [n2.x]"
           |                                 ^""".stripMargin
       ))
@@ -3211,8 +3170,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input 'S': expected \"]\" or \"|\" (line 1, column 36 (offset: 35))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Extraneous input 'S': expected '|', ']' (line 1, column 36 (offset: 35))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'S': expected ']' or '|' (line 1, column 36 (offset: 35))
           |"CREATE FULLTEXT INDEX FOR ()-[n1:R S]-() ON EACH [n2.x]"
           |                                    ^""".stripMargin
       ))
@@ -3223,7 +3182,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")" or an identifier"""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """No viable alternative (line 1, column 28 (offset: 27))
+        """Invalid input ':': expected a variable name or ')' (line 1, column 28 (offset: 27))
           |"CREATE FULLTEXT INDEX FOR (:A)-[n1:R]-() ON EACH [n2.name]"
           |                            ^""".stripMargin
       ))
@@ -3234,7 +3193,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ':': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ':': expected ')' (line 1, column 38 (offset: 37))
+        """Invalid input ':': expected ')' (line 1, column 38 (offset: 37))
           |"CREATE FULLTEXT INDEX FOR ()-[n1:R]-(:A) ON EACH [n2.name]"
           |                                      ^""".stripMargin
       ))
@@ -3245,7 +3204,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input ')': expected ":""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input ')': expected ':' (line 1, column 30 (offset: 29))
+        """Invalid input ')': expected ':' (line 1, column 30 (offset: 29))
           |"CREATE FULLTEXT INDEX FOR (n2)-[n1:R]-() ON EACH [n2.name]"
           |                              ^""".stripMargin
       ))
@@ -3256,7 +3215,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Extraneous input 'n2': expected ')' (line 1, column 38 (offset: 37))
+        """Invalid input 'n2': expected ')' (line 1, column 38 (offset: 37))
           |"CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2) ON EACH [n2.name]"
           |                                      ^""".stripMargin
       ))
@@ -3267,7 +3226,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input '-': expected "ON""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input '-': expected 'ON' (line 1, column 33 (offset: 32))
+        """Invalid input '-': expected 'ON' (line 1, column 33 (offset: 32))
           |"CREATE FULLTEXT INDEX FOR (n2:A)-[n1:R]-() ON EACH [n2.name]"
           |                                 ^""".stripMargin
       ))
@@ -3278,7 +3237,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'n2': expected ")""""))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Mismatched input 'n2': expected ')' (line 1, column 38 (offset: 37))
+        """Invalid input 'n2': expected ')' (line 1, column 38 (offset: 37))
           |"CREATE FULLTEXT INDEX FOR ()-[n1:R]-(n2:A) ON EACH [n2.name]"
           |                                      ^""".stripMargin
       ))
@@ -3289,8 +3248,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'UNKNOWN': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 8 (offset: 7))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'INDEX': expected '=' (line 1, column 16 (offset: 15))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'INDEX': expected a graph pattern (line 1, column 16 (offset: 15))
           |"CREATE UNKNOWN INDEX FOR (n1:Person) ON (n2.name)"
           |                ^""".stripMargin
       ))
@@ -3301,8 +3260,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'BUILT': expected \"(\", \"ALL\", \"ANY\" or \"SHORTEST\" (line 1, column 8 (offset: 7))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'IN': expected '=' (line 1, column 14 (offset: 13))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'IN': expected a graph pattern (line 1, column 14 (offset: 13))
           |"CREATE BUILT IN INDEX FOR (n1:Person) ON (n2.name)"
           |              ^""".stripMargin
       ))
@@ -3339,8 +3298,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'ON': expected \"IF\" or <EOF> (line 1, column 21 (offset: 20))"
       ))
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input 'ON': expected ';', <EOF> (line 1, column 21 (offset: 20))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'ON': expected 'IF EXISTS' or <EOF> (line 1, column 21 (offset: 20))
           |"DROP INDEX my_index ON :Person(name)"
           |                     ^""".stripMargin
       ))
@@ -3351,8 +3310,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '(': expected ';', <EOF> (line 1, column 15 (offset: 14))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
           |"DROP INDEX ON (:Person(name))"
           |               ^""".stripMargin
       ))
@@ -3363,8 +3322,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '(': expected ';', <EOF> (line 1, column 15 (offset: 14))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
           |"DROP INDEX ON (:Person {name})"
           |               ^""".stripMargin
       ))
@@ -3375,8 +3334,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '[': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '[': expected ';', <EOF> (line 1, column 15 (offset: 14))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '[': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
           |"DROP INDEX ON [:Person(name)]"
           |               ^""".stripMargin
       ))
@@ -3387,8 +3346,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '-': expected ';', <EOF> (line 1, column 15 (offset: 14))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
           |"DROP INDEX ON -[:Person(name)]-"
           |               ^""".stripMargin
       ))
@@ -3399,8 +3358,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '(': expected ';', <EOF> (line 1, column 15 (offset: 14))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
           |"DROP INDEX ON ()-[:Person(name)]-()"
           |               ^""".stripMargin
       ))
@@ -3411,8 +3370,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '[': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '[': expected ';', <EOF> (line 1, column 15 (offset: 14))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '[': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
           |"DROP INDEX ON [:Person {name}]"
           |               ^""".stripMargin
       ))
@@ -3423,8 +3382,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '-': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '-': expected ';', <EOF> (line 1, column 15 (offset: 14))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '-': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
           |"DROP INDEX ON -[:Person {name}]-"
           |               ^""".stripMargin
       ))
@@ -3435,8 +3394,8 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       .parseIn(JavaCc)(
         _.withMessageStart("Invalid input '(': expected \"IF\" or <EOF> (line 1, column 15 (offset: 14))")
       )
-      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-        """Mismatched input '(': expected ';', <EOF> (line 1, column 15 (offset: 14))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '(': expected ':', 'IF EXISTS' or <EOF> (line 1, column 15 (offset: 14))
           |"DROP INDEX ON ()-[:Person {name}]-()"
           |               ^""".stripMargin
       ))

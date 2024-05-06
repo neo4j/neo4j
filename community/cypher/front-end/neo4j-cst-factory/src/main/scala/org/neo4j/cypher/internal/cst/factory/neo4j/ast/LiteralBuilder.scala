@@ -112,7 +112,7 @@ object LiteralBuilder {
       var builder: java.lang.StringBuilder = null
       while (pos != -1) {
         if (pos == length - 1)
-          throw exceptionFactory.syntaxException(CypherErrorStrategy.qouteMismatchErrorMessage, p)
+          throw exceptionFactory.syntaxException(CypherErrorStrategy.quoteMismatchErrorMessage, p)
         val replacement: Char = input.charAt(pos + 1) match {
           case 't'  => '\t'
           case 'b'  => '\b'
