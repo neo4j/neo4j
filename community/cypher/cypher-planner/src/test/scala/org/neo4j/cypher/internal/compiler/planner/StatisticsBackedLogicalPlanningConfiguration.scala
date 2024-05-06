@@ -87,6 +87,8 @@ import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
 import org.neo4j.cypher.internal.util.symbols.CTLocalTime
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.graphdb
 import org.neo4j.graphdb.config.Setting
@@ -102,6 +104,7 @@ import org.neo4j.internal.schema.IndexType.TEXT
 import org.neo4j.internal.schema.IndexType.VECTOR
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.database.DatabaseReferenceRepository
+import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
 
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -556,6 +559,339 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
   }
 
   /**
+   * Register all temporal functions. Assign consecutive IDs starting with the given initialId.
+   */
+  def registerTemporalFunctions(initialId: Int = 2): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    var id = initialId - 1
+    def nextId(): Int = {
+      id += 1
+      id
+    }
+
+    this
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "datetime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDateTime,
+        None,
+        Some("Create a DateTime instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("datetime"), "transaction"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDateTime,
+        None,
+        Some("Create a DateTime instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("datetime"), "statement"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDateTime,
+        None,
+        Some("Create a DateTime instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("datetime"), "realtime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDateTime,
+        None,
+        Some("Create a DateTime instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("datetime"), "truncate"),
+        IndexedSeq(
+          FieldSignature("unit", CTString),
+          FieldSignature("temporalInstantValue", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT"))),
+          FieldSignature("mapOfComponents", CTMap, Some(NO_VALUE))
+        ),
+        CTDateTime,
+        None,
+        Some("Create a DateTime instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "date"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDate,
+        None,
+        Some("Creates a `DATE` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("date"), "transaction"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDate,
+        None,
+        Some("Creates a `DATE` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("date"), "statement"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDate,
+        None,
+        Some("Creates a `DATE` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("date"), "realtime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTDate,
+        None,
+        Some("Creates a `DATE` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("date"), "truncate"),
+        IndexedSeq(
+          FieldSignature("unit", CTString),
+          FieldSignature("temporalInstantValue", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT"))),
+          FieldSignature("mapOfComponents", CTMap, Some(NO_VALUE))
+        ),
+        CTDateTime,
+        None,
+        Some("Create a Date instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "time"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTTime,
+        None,
+        Some("Creates a `ZONED TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("time"), "transaction"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTTime,
+        None,
+        Some("Creates a `ZONED TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("time"), "statement"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTTime,
+        None,
+        Some("Creates a `ZONED TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("time"), "realtime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTTime,
+        None,
+        Some("Creates a `ZONED TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("time"), "truncate"),
+        IndexedSeq(
+          FieldSignature("unit", CTString),
+          FieldSignature("temporalInstantValue", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT"))),
+          FieldSignature("mapOfComponents", CTMap, Some(NO_VALUE))
+        ),
+        CTDateTime,
+        None,
+        Some("Create a `ZONED TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "localdatetime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalDateTime,
+        None,
+        Some("Creates a `LOCAL DATETIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("localdatetime"), "transaction"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalDateTime,
+        None,
+        Some("Creates a `LOCAL DATETIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("localdatetime"), "statement"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalDateTime,
+        None,
+        Some("Creates a `LOCAL DATETIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("localdatetime"), "realtime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalDateTime,
+        None,
+        Some("Creates a `LOCAL DATETIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("localdatetime"), "truncate"),
+        IndexedSeq(
+          FieldSignature("unit", CTString),
+          FieldSignature("temporalInstantValue", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT"))),
+          FieldSignature("mapOfComponents", CTMap, Some(NO_VALUE))
+        ),
+        CTDateTime,
+        None,
+        Some("Create a `LOCAL DATETIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "localtime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalTime,
+        None,
+        Some("Creates a `LOCAL TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("localtime"), "transaction"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalTime,
+        None,
+        Some("Creates a `LOCAL TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("localtime"), "statement"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalTime,
+        None,
+        Some("Creates a `LOCAL TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("localtime"), "realtime"),
+        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
+        CTLocalTime,
+        None,
+        Some("Creates a `LOCAL TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("localtime"), "truncate"),
+        IndexedSeq(
+          FieldSignature("unit", CTString),
+          FieldSignature("temporalInstantValue", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT"))),
+          FieldSignature("mapOfComponents", CTMap, Some(NO_VALUE))
+        ),
+        CTDateTime,
+        None,
+        Some("Create a `LOCAL TIME` instant"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq.empty, "duration"),
+        IndexedSeq(FieldSignature("Input", CTAny)),
+        CTDuration,
+        None,
+        Some("Creates a `DURATION` value"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("duration"), "between"),
+        IndexedSeq(FieldSignature("from", CTAny), FieldSignature("to", CTAny)),
+        CTDuration,
+        None,
+        Some("Creates a `DURATION` value"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("duration"), "inMonths"),
+        IndexedSeq(FieldSignature("from", CTAny), FieldSignature("to", CTAny)),
+        CTDuration,
+        None,
+        Some("Creates a `DURATION` value"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("duration"), "inDays"),
+        IndexedSeq(FieldSignature("from", CTAny), FieldSignature("to", CTAny)),
+        CTDuration,
+        None,
+        Some("Creates a `DURATION` value"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+      .addFunction(UserFunctionSignature(
+        QualifiedName(Seq("duration"), "inSeconds"),
+        IndexedSeq(FieldSignature("from", CTAny), FieldSignature("to", CTAny)),
+        CTDuration,
+        None,
+        Some("Creates a `DURATION` value"),
+        isAggregate = false,
+        id = nextId(),
+        builtIn = true
+      ))
+  }
+
+  /**
    * Process graph count data and return a builder with updated constraints, indexes and counts.
    */
   def processGraphCounts(graphCountData: GraphCountData): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -569,66 +905,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
       // Graph counts may lack relationship counts if they are 0
       .defaultRelationshipCardinalityTo0()
       // Temporal functions are registered as UDFs. Adding them here to make it easier to reproduce support cases.
-      .addFunction(UserFunctionSignature(
-        QualifiedName(Seq.empty, "datetime"),
-        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
-        CTDateTime,
-        None,
-        Some("Create a DateTime instant"),
-        isAggregate = false,
-        id = 2,
-        builtIn = true
-      ))
-      .addFunction(UserFunctionSignature(
-        QualifiedName(Seq.empty, "date"),
-        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
-        CTDate,
-        None,
-        Some("Creates a `DATE` instant"),
-        isAggregate = false,
-        id = 3,
-        builtIn = true
-      ))
-      .addFunction(UserFunctionSignature(
-        QualifiedName(Seq.empty, "time"),
-        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
-        CTTime,
-        None,
-        Some("Creates a `ZONED TIME` instant"),
-        isAggregate = false,
-        id = 4,
-        builtIn = true
-      ))
-      .addFunction(UserFunctionSignature(
-        QualifiedName(Seq.empty, "localdatetime"),
-        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
-        CTLocalDateTime,
-        None,
-        Some("Creates a `LOCAL DATETIME` instant"),
-        isAggregate = false,
-        id = 5,
-        builtIn = true
-      ))
-      .addFunction(UserFunctionSignature(
-        QualifiedName(Seq.empty, "localtime"),
-        IndexedSeq(FieldSignature("Input", CTAny, Some(stringValue("DEFAULT_TEMPORAL_ARGUMENT")))),
-        CTLocalTime,
-        None,
-        Some("Creates a `LOCAL TIME` instant"),
-        isAggregate = false,
-        id = 6,
-        builtIn = true
-      ))
-      .addFunction(UserFunctionSignature(
-        QualifiedName(Seq.empty, "duration"),
-        IndexedSeq(FieldSignature("Input", CTAny)),
-        CTDuration,
-        None,
-        Some("Creates a `DURATION` value"),
-        isAggregate = false,
-        id = 7,
-        builtIn = true
-      ))
+      .registerTemporalFunctions()
 
     val withNodes = (builder: StatisticsBackedLogicalPlanningConfigurationBuilder) =>
       graphCountData.nodes.foldLeft(builder) {
