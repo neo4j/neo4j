@@ -19,14 +19,18 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.AddTarget
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.Event
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.Expand
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.ExpandNode
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.NextLevel
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.PropagateLengthPair
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.ReturnPath
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.SchedulePropagation
 
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 private[ppbfs] class EventRecorder {
 
@@ -53,6 +57,12 @@ private[ppbfs] class EventRecorder {
 
   def addTarget(id: Long): EventRecorder =
     record(AddTarget(id))
+
+  def expand(direction: TraversalDirection, forwardDepth: Int, backwardDepth: Int): EventRecorder =
+    record(Expand(direction, forwardDepth, backwardDepth))
+
+  def expandNode(node: Long, direction: TraversalDirection): EventRecorder =
+    record(ExpandNode(node, direction))
 }
 
 private[ppbfs] object EventRecorder {
@@ -62,4 +72,14 @@ private[ppbfs] object EventRecorder {
   case class SchedulePropagation(nodeId: Long, lengthFromSource: Int, lengthToTarget: Int) extends Event
   case class ReturnPath(entities: Seq[Long]) extends Event
   case class AddTarget(nodeId: Long) extends Event
+  case class Expand(direction: TraversalDirection, forwardDepth: Int, backwardDepth: Int) extends Event
+  case class ExpandNode(node: Long, direction: TraversalDirection) extends Event
+
+  implicit class RichEventSeq(events: Seq[Event]) {
+
+    def ofType[E: ClassTag]: Seq[E] =
+      events.collect {
+        case e: E => e
+      }
+  }
 }

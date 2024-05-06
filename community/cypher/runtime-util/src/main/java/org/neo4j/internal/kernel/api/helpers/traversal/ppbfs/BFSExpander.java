@@ -33,7 +33,7 @@ final class BFSExpander implements AutoCloseable {
     private final ProductGraphTraversalCursor pgCursor;
     private final long intoTarget;
 
-    // allocated once and reused per source node
+    // allocated once and reused per source nodeState
     private final HeapTrackingArrayList<State> statesList;
     private final FoundNodes foundNodes;
 
@@ -52,36 +52,65 @@ final class BFSExpander implements AutoCloseable {
         this.foundNodes = foundNodes;
     }
 
-    /** discover a node that has not been seen before */
-    public void discover(NodeState node) {
+    /** discover a nodeState that has not been seen before */
+    public void discover(NodeState node, TraversalDirection direction) {
+        hooks.discover(node, direction);
         foundNodes.addToBuffer(node);
+        node.discover(direction);
 
         var state = node.state();
-        for (var nj : state.getNodeJuxtapositions()) {
-            if (nj.testNode(node.id())) {
-                var nextNode = encounter(node.id(), nj.targetState());
 
-                nextNode.addSourceSignpost(
-                        TwoWaySignpost.fromNodeJuxtaposition(mt, node, nextNode, foundNodes.depth()),
-                        foundNodes.depth());
+        for (var nj : state.getNodeJuxtapositions(direction)) {
+            if (nj.state(direction).test(node.id())) {
+                switch (direction) {
+                    case Forward -> {
+                        var nextNode = encounter(node.id(), nj.targetState(), direction);
+                        var signpost =
+                                TwoWaySignpost.fromNodeJuxtaposition(mt, node, nextNode, foundNodes.forwardDepth());
+                        if (globalState.searchMode == SearchMode.Unidirectional
+                                || !nextNode.hasSourceSignpost(signpost)) {
+                            nextNode.addSourceSignpost(signpost, foundNodes.forwardDepth());
+                        }
+                    }
+
+                    case Backward -> {
+                        var nextNode = encounter(node.id(), nj.sourceState(), direction);
+                        var signpost = TwoWaySignpost.fromNodeJuxtaposition(mt, nextNode, node);
+
+                        if (!nextNode.hasTargetSignpost(signpost)) {
+                            var addedSignpost = node.upsertSourceSignpost(signpost);
+                            addedSignpost.setMinTargetDistance(
+                                    foundNodes.backwardDepth(), PGPathPropagatingBFS.Phase.Expansion);
+                        }
+                    }
+                }
             }
         }
     }
 
-    /** encounter a node that may or may not have been seen before */
-    private NodeState encounter(long nodeId, State state) {
-        var nextNode = foundNodes.get(nodeId, state.id());
+    /** encounter a nodeState that may or may not have been seen before */
+    public NodeState encounter(long nodeId, State state, TraversalDirection direction) {
+        var nodeState = foundNodes.get(nodeId, state.id());
 
-        if (nextNode == null) {
-            nextNode = new NodeState(globalState, nodeId, state, intoTarget);
-            discover(nextNode);
+        if (nodeState == null) {
+            nodeState = new NodeState(globalState, nodeId, state, intoTarget);
+            discover(nodeState, direction);
+        } else if (globalState.searchMode == SearchMode.Bidirectional && !nodeState.hasBeenSeen(direction)) {
+            // this branch means we continue expanding in both directions past the opposite frontier, if the node has
+            // not been previously seen by *this* direction
+            discover(nodeState, direction);
         }
 
-        return nextNode;
+        return nodeState;
     }
 
     public void expand() {
-        for (var pair : foundNodes.frontier().keyValuesView()) {
+        foundNodes.openBuffer();
+
+        var direction = foundNodes.getNextExpansionDirection();
+        hooks.expand(direction, foundNodes);
+
+        for (var pair : foundNodes.frontier(direction).keyValuesView()) {
             var dbNodeId = pair.getOne();
             var statesById = pair.getTwo();
 
@@ -92,25 +121,46 @@ final class BFSExpander implements AutoCloseable {
                 }
             }
 
-            pgCursor.setNodeAndStates(dbNodeId, statesList);
+            hooks.expandNode(dbNodeId, statesList, direction);
+
+            pgCursor.setNodeAndStates(dbNodeId, statesList, direction);
             while (pgCursor.next()) {
                 long foundNode = pgCursor.otherNodeReference();
-                var nextNode = encounter(foundNode, pgCursor.targetState());
+                var re = pgCursor.relationshipExpansion();
 
-                var currentNode = statesById.get(pgCursor.currentInputState().id());
+                switch (direction) {
+                    case Forward -> {
+                        var nextNode = encounter(foundNode, re.targetState(), direction);
+                        var node = statesById.get(re.sourceState().id());
 
-                var signpost = TwoWaySignpost.fromRelExpansion(
-                        mt,
-                        currentNode,
-                        pgCursor.relationshipReference(),
-                        nextNode,
-                        pgCursor.relationshipExpansion(),
-                        foundNodes.depth());
-                nextNode.addSourceSignpost(signpost, foundNodes.depth());
+                        var signpost = TwoWaySignpost.fromRelExpansion(
+                                mt, node, pgCursor.relationshipReference(), nextNode, re, foundNodes.forwardDepth());
+
+                        if (globalState.searchMode == SearchMode.Unidirectional
+                                || !nextNode.hasSourceSignpost(signpost)) {
+                            nextNode.addSourceSignpost(signpost, foundNodes.forwardDepth());
+                        }
+                    }
+
+                    case Backward -> {
+                        var nextNode = encounter(foundNode, re.sourceState(), direction);
+                        var node = statesById.get(re.targetState().id());
+
+                        var signpost = TwoWaySignpost.fromRelExpansion(
+                                mt, nextNode, pgCursor.relationshipReference(), node, re);
+
+                        if (!nextNode.hasTargetSignpost(signpost)) {
+                            var addedSignpost = node.upsertSourceSignpost(signpost);
+                            addedSignpost.setMinTargetDistance(
+                                    foundNodes.backwardDepth(), PGPathPropagatingBFS.Phase.Expansion);
+                        }
+                    }
+                }
+                ;
             }
         }
 
-        foundNodes.shuffleFrontiers();
+        foundNodes.commitBuffer(direction);
     }
 
     public void setTracer(KernelReadTracer tracer) {

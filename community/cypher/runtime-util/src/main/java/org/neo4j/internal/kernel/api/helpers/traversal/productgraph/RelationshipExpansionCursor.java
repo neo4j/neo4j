@@ -19,9 +19,17 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection;
+
 final class RelationshipExpansionCursor implements SourceCursor<State, RelationshipExpansion> {
     private int index = -1;
     private State state;
+
+    private TraversalDirection direction = TraversalDirection.Forward;
+
+    public void setDirection(TraversalDirection direction) {
+        this.direction = direction;
+    }
 
     @Override
     public void setSource(State state) {
@@ -31,12 +39,12 @@ final class RelationshipExpansionCursor implements SourceCursor<State, Relations
 
     @Override
     public boolean next() {
-        return ++this.index < this.state.getRelationshipExpansions().length;
+        return ++this.index < this.state.getRelationshipExpansions(direction).length;
     }
 
     @Override
     public RelationshipExpansion current() {
-        return this.state.getRelationshipExpansions()[this.index];
+        return this.state.getRelationshipExpansions(direction)[this.index];
     }
 
     @Override

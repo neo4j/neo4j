@@ -23,6 +23,7 @@ package org.neo4j.cypher.internal.kernel.api.helpers
 import org.eclipse.collections.impl.stack.mutable.ArrayStack
 import org.neo4j.cypher.internal.kernel.api.helpers.ProductGraph.PGNode
 import org.neo4j.cypher.internal.kernel.api.helpers.ProductGraph.PGRelationship
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP
@@ -134,7 +135,7 @@ object ProductGraph {
 
       // Expand node juxtapositions
       for (nodeJuxtaposition <- toExpand.state.getNodeJuxtapositions) {
-        if (nodeJuxtaposition.testNode(toExpand.node.id)) {
+        if (nodeJuxtaposition.state(TraversalDirection.Forward).test(toExpand.node.id)) {
           val newNode = PGNode(toExpand.node.id, nodeJuxtaposition.targetState.id)
           if (seen.add(newNode)) {
             queue.push(ToExpand(newNode, nodeJuxtaposition.targetState))
@@ -144,7 +145,7 @@ object ProductGraph {
       }
 
       // Expand relationship expansions
-      pgCursor.setNodeAndStates(toExpand.node.id, Collections.singletonList(toExpand.state))
+      pgCursor.setNodeAndStates(toExpand.node.id, Collections.singletonList(toExpand.state), TraversalDirection.Forward)
       while (pgCursor.next) {
         val newNode = PGNode(pgCursor.otherNodeReference, pgCursor.targetState.id)
         if (seen.add(newNode)) {

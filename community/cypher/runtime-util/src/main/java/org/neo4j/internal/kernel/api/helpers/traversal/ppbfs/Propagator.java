@@ -20,15 +20,13 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 import org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap;
-import org.neo4j.collection.trackable.HeapTrackingUnifiedSet;
+import org.neo4j.collection.trackable.HeapTrackingSkipList;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
 import org.neo4j.memory.MemoryTracker;
 
 /** Encapsulates propagation-related global data & functions. */
 public final class Propagator implements AutoCloseable {
-    // Possible optimisation: Try to turn nodesToPropagateAtLengthPair into a queue and check for set deduplication
-    //                        rather than Map<Set<>>
-    private final HeapTrackingIntObjectHashMap<HeapTrackingIntObjectHashMap<HeapTrackingUnifiedSet<NodeState>>>
+    private final HeapTrackingIntObjectHashMap<HeapTrackingIntObjectHashMap<NodeStateSkipList>>
             nodesToPropagate; // Indexed with (lengthFromSource + lengthToTarget, lengthFromSource)
     private final PPBFSHooks hooks;
     private final MemoryTracker mt;
@@ -39,15 +37,16 @@ public final class Propagator implements AutoCloseable {
         this.nodesToPropagate = HeapTrackingIntObjectHashMap.createIntObjectHashMap(memoryTracker);
     }
 
-    public void schedule(NodeState nodeState, int lengthFromSource, int lengthToTarget) {
-        hooks.schedulePropagation(nodeState, lengthFromSource, lengthToTarget);
+    public void schedule(
+            NodeState nodeState, int lengthFromSource, int lengthToTarget, GlobalState.ScheduleSource source) {
+        hooks.schedule(nodeState, lengthFromSource, lengthToTarget, source);
 
         nodesToPropagate
                 .getIfAbsentPut(
                         lengthFromSource + lengthToTarget,
                         () -> HeapTrackingIntObjectHashMap.createIntObjectHashMap(mt))
-                .getIfAbsentPut(lengthFromSource, () -> HeapTrackingUnifiedSet.createUnifiedSet(mt))
-                .add(nodeState);
+                .getIfAbsentPut(lengthFromSource, () -> new NodeStateSkipList(mt))
+                .insert(nodeState);
     }
 
     /**
@@ -58,11 +57,10 @@ public final class Propagator implements AutoCloseable {
      * @param totalLength
      */
     public void propagate(int totalLength) {
-        assert nodesToPropagate.keysView().allSatisfy(k -> k >= totalLength)
-                : "The current implementation is structured such that we never should schedule nodes to propagate for a"
-                        + " depth which has already passed. If we do (as the algo is implemented here), we will loop for ever.";
+        hooks.propagate(nodesToPropagate, totalLength);
 
-        hooks.propagateAll(nodesToPropagate, totalLength);
+        assert nodesToPropagate.keysView().allSatisfy(k -> k >= totalLength)
+                : "Propagation scheduled for previous depth; this will never be executed";
 
         var nodesToPropagateForLength = nodesToPropagate.get(totalLength);
         if (nodesToPropagateForLength == null) {
@@ -79,13 +77,14 @@ public final class Propagator implements AutoCloseable {
 
             hooks.propagateAllAtLengths(lengthFromSource, lengthToTarget);
 
-            HeapTrackingUnifiedSet<NodeState> nodesToPropagateAtLengthPair =
-                    nodesToPropagateForLength.get(lengthFromSource);
+            NodeStateSkipList nodesToPropagateAtLengthPair = nodesToPropagateForLength.get(lengthFromSource);
 
             if (nodesToPropagateAtLengthPair != null) {
-                while (nodesToPropagateAtLengthPair.notEmpty()) {
-                    NodeState node = nodesToPropagateAtLengthPair.getLast();
-                    nodesToPropagateAtLengthPair.remove(node);
+                // propagations can cause scheduled propagations at the same depth, so we can't simply iterate the
+                // collection; hence `while` and then removal from the parent collection
+                for (var node = nodesToPropagateAtLengthPair.pop();
+                        node != null;
+                        node = nodesToPropagateAtLengthPair.pop()) {
                     node.propagateLengthPair(lengthFromSource, lengthToTarget);
                 }
 
@@ -105,9 +104,22 @@ public final class Propagator implements AutoCloseable {
     @Override
     public void close() throws Exception {
         nodesToPropagate.forEach(map -> {
-            map.forEach(HeapTrackingUnifiedSet::close);
+            map.forEach(NodeStateSkipList::close);
             map.close();
         });
         nodesToPropagate.close();
+    }
+
+    public static class NodeStateSkipList extends HeapTrackingSkipList<NodeState> {
+
+        public NodeStateSkipList(MemoryTracker memoryTracker) {
+            super(memoryTracker);
+        }
+
+        @Override
+        protected int compare(NodeState a, NodeState b) {
+            int cmp = Long.compare(a.id(), b.id());
+            return cmp != 0 ? cmp : Integer.compare(a.state().id(), b.state().id());
+        }
     }
 }

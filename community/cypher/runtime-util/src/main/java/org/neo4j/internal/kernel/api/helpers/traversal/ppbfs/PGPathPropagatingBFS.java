@@ -35,20 +35,20 @@ import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraph
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Preconditions;
 
 /**
- * This is the root of the product graph PPBFS algorithm. It is provided with a single source node and a starting NFA
- * state.
- * <p>
- * To learn more about how the algorithm works, read the PPBFS guide:
+ * This is the root of the product graph PPBFS algorithm. To learn more about how the algorithm works, read the PPBFS guide:
  * https://neo4j.atlassian.net/wiki/spaces/CYPHER/pages/180977665/Shortest+K+Implementation
  */
 public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> implements AutoCloseable {
     // dependencies
     private final GlobalState globalState;
     private final BFSExpander bfsExpander;
-    private final NodeState sourceData;
+    private final NodeState sourceNodeState;
     private final long intoTarget;
+    private final State finalState;
+    private final SearchMode searchMode;
     private final PathTracer pathTracer;
     private final Function<PathTracer.TracedPath, Row> toRow;
     private final Predicate<Row> nonInlinedPredicate;
@@ -61,7 +61,6 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
     private final TargetTracker targets;
 
     // iteration state
-    private int nextDepth = 0;
     private Iterator<NodeState> currentTargets = Collections.emptyIterator();
     private boolean targetSaturated = false;
     private boolean groupYielded = false;
@@ -78,8 +77,10 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
      */
     public PGPathPropagatingBFS(
             long source,
-            long intoTarget,
             State startState,
+            long intoTarget,
+            State finalState,
+            SearchMode searchMode,
             ProductGraphTraversalCursor.DataGraphRelationshipCursor graphCursor,
             PathTracer pathTracer,
             Function<PathTracer.TracedPath, Row> toRow,
@@ -90,7 +91,12 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             MemoryTracker mt,
             PPBFSHooks hooks,
             AssertOpen assertOpen) {
+        Preconditions.checkArgument(
+                intoTarget != NO_SUCH_ENTITY || searchMode == SearchMode.Unidirectional,
+                "Bidirectional search can only be performed with a target node");
         this.intoTarget = intoTarget;
+        this.finalState = finalState;
+        this.searchMode = searchMode;
         this.pathTracer = pathTracer;
         this.toRow = toRow;
         this.nonInlinedPredicate = nonInlinedPredicate;
@@ -98,14 +104,15 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         this.memoryTracker = mt.getScopedMemoryTracker();
         this.hooks = hooks;
         this.assertOpen = assertOpen;
-        this.foundNodes = new FoundNodes(this.memoryTracker, nfaStateCount);
+        this.foundNodes = new FoundNodes(this.memoryTracker, searchMode, nfaStateCount);
         this.targets = new TargetTracker(this.memoryTracker, hooks);
         this.propagator = new Propagator(this.memoryTracker, hooks);
-        this.globalState = new GlobalState(propagator, targets, this.memoryTracker, hooks, initialCountForTargetNodes);
+        this.globalState =
+                new GlobalState(propagator, targets, searchMode, this.memoryTracker, hooks, initialCountForTargetNodes);
         var cursor = new ProductGraphTraversalCursor(graphCursor, this.memoryTracker);
         this.bfsExpander = new BFSExpander(foundNodes, globalState, cursor, intoTarget, nfaStateCount);
-        this.sourceData = new NodeState(globalState, source, startState, intoTarget);
-        this.memoryTracker.allocateHeap(sourceData.estimatedHeapUsage());
+
+        this.sourceNodeState = new NodeState(globalState, source, startState, intoTarget);
 
         pathTracer.reset();
 
@@ -114,8 +121,9 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
 
     public static <Row> PGPathPropagatingBFS<Row> create(
             long source,
-            long intoTarget,
             State startState,
+            long intoTarget,
+            State finalState,
             Read read,
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
@@ -130,8 +138,10 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             AssertOpen assertOpen) {
         return new PGPathPropagatingBFS<>(
                 source,
-                intoTarget,
                 startState,
+                intoTarget,
+                finalState,
+                intoTarget == NO_SUCH_ENTITY ? SearchMode.Unidirectional : SearchMode.Bidirectional,
                 new ProductGraphTraversalCursor.DataGraphRelationshipCursorImpl(read, nodeCursor, relCursor),
                 pathTracer,
                 toRow,
@@ -184,6 +194,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             // if we exhausted the current target set, expand & propagate until we find the next target set
             if (!currentTargets.hasNext()) {
                 if (nextLevelWithTargets()) {
+                    hooks.trace(globalState.depth());
                     currentTargets = targets.iterate();
                 } else {
                     targetSaturated = true;
@@ -192,7 +203,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             }
 
             pathTracer.reset();
-            pathTracer.initialize(sourceData, currentTargets.next(), nextDepth);
+            pathTracer.initialize(sourceNodeState, currentTargets.next(), globalState.depth());
         }
     }
 
@@ -203,7 +214,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
      * the source node.
      */
     private boolean nextLevelWithTargets() {
-        if (zeroHopLevel()) {
+        if (initialLevel()) {
             return true;
         }
         do {
@@ -229,9 +240,9 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
     private boolean nextLevel() {
         assertOpen.assertOpen();
 
-        nextDepth += 1;
+        globalState.nextDepth();
 
-        hooks.nextLevel(nextDepth);
+        hooks.nextLevel(globalState.depth());
         targets.clear();
 
         if (foundNodes.hasMore()) {
@@ -241,7 +252,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             return false;
         }
 
-        propagator.propagate(nextDepth);
+        propagator.propagate(globalState.depth());
 
         return true;
     }
@@ -252,20 +263,31 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
      *
      * @return true if the zero-hop expansion was performed and targets were found
      */
-    private boolean zeroHopLevel() {
-        if (foundNodes.depth() > 0) {
+    private boolean initialLevel() {
+        if (foundNodes.totalDepth() > 0) {
             return false;
         }
 
         hooks.nextLevel(0);
 
-        bfsExpander.discover(sourceData);
-        if (sourceData.isTarget()) {
-            targets.addTarget(sourceData);
+        foundNodes.openBuffer();
+        bfsExpander.discover(sourceNodeState, TraversalDirection.Forward);
+        if (sourceNodeState.isTarget()) {
+            targets.addTarget(sourceNodeState);
         }
-        // there is nothing in the frontier to expand yet, but calling this will push the discovered nodes into the
-        // next frontier
-        bfsExpander.expand();
+        foundNodes.commitBuffer(TraversalDirection.Forward);
+
+        if (searchMode == SearchMode.Bidirectional) {
+            foundNodes.openBuffer();
+
+            // we use encounter rather than discover in case the target NodeState was already discovered when flooding
+            // node juxtapositions from the source
+            bfsExpander.encounter(intoTarget, finalState, TraversalDirection.Backward);
+
+            // we don't add the targetNodeState to our set of targets for the 0th level; if it is accessible from the
+            // source node then it will have been discovered when flooding node juxtapositions from the source
+            foundNodes.commitBuffer(TraversalDirection.Backward);
+        }
 
         return targets.hasCurrentUnsaturatedTargets();
     }
@@ -284,5 +306,11 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         propagator.close();
         // the scoped memory tracker means we don't need to manually release NodeState/TwoWaySignpost memory
         memoryTracker.close();
+    }
+
+    public enum Phase {
+        Expansion,
+        Propagation,
+        Tracing
     }
 }

@@ -19,11 +19,14 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipExpansion;
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.AnyValue;
@@ -44,8 +47,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     /** The length of the currently traced path when projected back to the data graph */
     private int dgLength;
 
-    private final BitSet pgTrailToTarget;
-    private final BitSet betweenDuplicateRels;
+    private final BitSet protectFromPruning;
 
     /**
      * Because path tracing performs much of the bookkeeping of PPBFS, we may need to continue to trace paths to a
@@ -65,8 +67,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     private boolean ready = false;
 
     public PathTracer(MemoryTracker memoryTracker, PPBFSHooks hooks) {
-        this.pgTrailToTarget = new BitSet();
-        this.betweenDuplicateRels = new BitSet();
+        this.protectFromPruning = new BitSet();
         this.hooks = hooks;
         this.stack = new SignpostStack(memoryTracker, hooks);
     }
@@ -95,11 +96,6 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
 
         this.stack.initialize(targetNode, dgLength);
 
-        this.pgTrailToTarget.clear();
-        this.pgTrailToTarget.set(0);
-
-        this.betweenDuplicateRels.clear();
-
         this.dgLength = dgLength;
         this.shouldReturnSingleNodePath = targetNode == sourceNode && dgLength == 0;
     }
@@ -112,14 +108,14 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         return this.ready;
     }
 
-    private void popCurrent() {
+    private void popAndPrune() {
         var popped = stack.pop();
         if (popped == null) {
             return;
         }
 
         int sourceLength = stack.lengthFromSource();
-        if (!popped.isVerifiedAtLength(sourceLength) && !this.betweenDuplicateRels.get(stack.size())) {
+        if (!popped.isVerifiedAtLength(sourceLength) && !this.protectFromPruning.get(stack.size())) {
             popped.pruneSourceLength(sourceLength);
         }
     }
@@ -139,19 +135,16 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
 
         while (stack.hasNext()) {
             if (!stack.pushNext()) {
-                popCurrent();
+                popAndPrune();
             } else {
                 var sourceSignpost = stack.headSignpost();
-                this.betweenDuplicateRels.set(stack.size() - 1, false);
+                this.protectFromPruning.set(stack.size() - 1, false);
 
-                boolean isTargetPGTrail = pgTrailToTarget.get(stack.size() - 1) && !sourceSignpost.isDoublyActive();
-                pgTrailToTarget.set(stack.size(), isTargetPGTrail);
-
-                if (isTargetPGTrail && !sourceSignpost.hasBeenTraced()) {
-                    sourceSignpost.setMinDistToTarget(stack.lengthToTarget());
+                if (stack.isTargetTrail() && !sourceSignpost.hasBeenTraced()) {
+                    sourceSignpost.setMinTargetDistance(stack.lengthToTarget(), PGPathPropagatingBFS.Phase.Tracing);
                 }
 
-                if (sourceSignpost.isDoublyActive() && allNodesAreValidatedBetweenDuplicates()) {
+                if (allNodesAreValidatedBetweenDuplicates()) {
                     hooks.skippingDuplicateRelationship(stack::currentPath);
                     stack.pop();
                     // the order of these predicates is important since validateTrail has side effects:
@@ -168,49 +161,52 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         return null;
     }
 
+    /** this function allows us to abandon a trace branch early. if we have detected a duplicate relationship then
+     * the set of paths we're currently tracing are all invalid and so we should be able to abort tracing them, except
+     * tracing also performs verification/validation.
+     *
+     * if the current node is validated then further tracing has no benefit, so we can pop back to the previous
+     * node.
+     * */
     private boolean allNodesAreValidatedBetweenDuplicates() {
-        var lastSignpost = stack.headSignpost();
-        int dgLengthFromSource = stack.lengthFromSource();
+        int dup = stack.distanceToDuplicate();
 
-        if (!lastSignpost.prevNode.validatedAtLength(dgLengthFromSource)) {
+        if (dup == 0) {
             return false;
         }
 
-        dgLengthFromSource += lastSignpost.dataGraphLength();
-        for (int i = stack.size() - 2; i >= 0; i--) {
-            var candidate = stack.signpost(i);
+        int sourceLength = stack.lengthFromSource();
+        for (int i = 0; i <= dup; i++) {
+            var candidate = stack.signpost(stack.size() - 1 - i);
 
-            if (!candidate.prevNode.validatedAtLength(dgLengthFromSource)) {
+            if (!candidate.prevNode.validatedAtLength(sourceLength)) {
                 return false;
             }
 
-            if (candidate.dataGraphRelationshipEquals(lastSignpost)) {
-                // i + 1 because the upper duplicate isn't between duplicates and shouldn't be protected from pruning
-                this.betweenDuplicateRels.set(i + 1, stack.size() - 1, true);
-                return true;
-            }
-
-            dgLengthFromSource += candidate.dataGraphLength();
+            sourceLength += candidate.dataGraphLength();
         }
 
-        throw new IllegalStateException("Expected duplicate relationship in SHORTEST trail validation");
+        this.protectFromPruning.set(stack.size() - 1 - dup, stack.size() - 1, true);
+        return true;
     }
 
     private boolean validateTrail() {
-        int dgLengthFromSource = 0;
+        int sourceLength = 0;
         for (int i = stack.size() - 1; i >= 0; i--) {
             TwoWaySignpost signpost = stack.signpost(i);
-            dgLengthFromSource += signpost.dataGraphLength();
-            for (int j = stack.size() - 1; j > i; j--) {
-                if (signpost.dataGraphRelationshipEquals(stack.signpost(j))) {
+            sourceLength += signpost.dataGraphLength();
+            if (signpost instanceof TwoWaySignpost.RelSignpost rel) {
+                var bitset = stack.rels.get(rel.relId);
+                assert bitset.get(i);
+                if (bitset.length() > i + 1) {
                     hooks.invalidTrail(stack::currentPath);
                     return false;
                 }
             }
-            if (!signpost.isVerifiedAtLength(dgLengthFromSource)) {
-                signpost.setVerified(dgLengthFromSource);
-                if (!signpost.forwardNode.validatedAtLength(dgLengthFromSource)) {
-                    signpost.forwardNode.validateLengthState(dgLengthFromSource, dgLength - dgLengthFromSource);
+            if (!signpost.isVerifiedAtLength(sourceLength)) {
+                signpost.setVerified(sourceLength);
+                if (!signpost.forwardNode.validatedAtLength(sourceLength)) {
+                    signpost.forwardNode.validateSourceLength(sourceLength, dgLength - sourceLength);
                 }
             }
         }
@@ -223,11 +219,19 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
 
     public record PathEntity(SlotOrName slotOrName, long id, EntityType entityType) {
         static PathEntity fromNode(NodeState node) {
-            return new PathEntity(node.state().slotOrName(), node.id(), EntityType.NODE);
+            return fromNode(node.state(), node.id());
+        }
+
+        static PathEntity fromNode(State state, long id) {
+            return new PathEntity(state.slotOrName(), id, EntityType.NODE);
         }
 
         static PathEntity fromRel(TwoWaySignpost.RelSignpost signpost) {
-            return new PathEntity(signpost.slotOrName(), signpost.relId, EntityType.RELATIONSHIP);
+            return fromRel(signpost.relationshipExpansion, signpost.relId);
+        }
+
+        static PathEntity fromRel(RelationshipExpansion expansion, long id) {
+            return new PathEntity(expansion.slotOrName(), id, EntityType.RELATIONSHIP);
         }
 
         public AnyValue idValue() {
@@ -262,6 +266,19 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
             sb.append(")");
 
             return sb.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TracedPath that = (TracedPath) o;
+            return Arrays.equals(entities, that.entities);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(entities);
         }
     }
 }

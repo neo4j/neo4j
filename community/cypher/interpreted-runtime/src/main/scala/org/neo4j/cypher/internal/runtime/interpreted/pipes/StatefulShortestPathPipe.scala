@@ -75,10 +75,12 @@ case class StatefulShortestPathPipe(
       inputRow.getByName(sourceNodeName) match {
 
         case sourceNode: VirtualNodeValue =>
+          val (startState, finalState) = commandNFA.compile(inputRow, state)
           PGPathPropagatingBFS.create(
             sourceNode.id(),
+            startState,
             intoTargetNodeId,
-            commandNFA.compile(inputRow, state),
+            finalState,
             state.query.transactionalContext.dataRead,
             nodeCursor,
             traversalCursor,

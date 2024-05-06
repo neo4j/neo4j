@@ -19,11 +19,16 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
+import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap
-import org.neo4j.collection.trackable.HeapTrackingUnifiedSet
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.FoundNodes
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.GlobalState.ScheduleSource
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.Propagator.NodeStateSkipList
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TwoWaySignpost
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
 
 /**
  * Provides a way to inspect the progress of the algorithm for the purposes of logging and testing.
@@ -40,15 +45,19 @@ object PPBFSHooks {
     current
   }
 
-  def setInstance(hooks: PPBFSHooks): Unit = { current = hooks }
+  def setInstance(hooks: PPBFSHooks): Unit = {
+    current = hooks
+  }
 }
 
 abstract class PPBFSHooks {
+  def newRow(nodeId: Long): Unit = {}
+
   // NodeState
   def addSourceSignpost(signpost: TwoWaySignpost, lengthFromSource: Int): Unit = {}
   def addTargetSignpost(signpost: TwoWaySignpost, lengthToTarget: Int): Unit = {}
   def propagateLengthPair(nodeState: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {}
-  def validateLengthState(nodeState: NodeState, lengthFromSource: Int, tracedLengthToTarget: Int): Unit = {}
+  def validateSourceLength(nodeState: NodeState, lengthFromSource: Int, tracedLengthToTarget: Int): Unit = {}
 
   // PathTracer
   def returnPath(tracedPath: PathTracer.TracedPath): Unit = {}
@@ -59,20 +68,28 @@ abstract class PPBFSHooks {
 
   // PGPathPropagatingBFS
   def nextLevel(currentDepth: Int): Unit = {}
+  def trace(currentDepth: Int): Unit = {}
   def noMoreNodes(): Unit = {}
 
-  // DataManager
-  def propagateAll(
-    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[HeapTrackingUnifiedSet[NodeState]]],
+  // Propagator
+  def propagate(
+    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[NodeStateSkipList]],
     totalLength: Int
   ): Unit = {}
   def propagateAllAtLengths(lengthFromSource: Int, lengthToTarget: Int): Unit = {}
-  def schedulePropagation(nodeState: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {}
-  def newRow(nodeId: Long): Unit = {}
+  def schedule(nodeState: NodeState, lengthFromSource: Int, lengthToTarget: Int, source: ScheduleSource): Unit = {}
+
+  // TargetTracker
   def decrementTargetCount(nodeState: NodeState, remainingTargetCount: Int): Unit = {}
   def addTarget(nodeState: NodeState): Unit = {}
 
   // Signpost
   def pruneSourceLength(sourceSignpost: TwoWaySignpost, lengthFromSource: Int): Unit = {}
   def setVerified(sourceSignpost: TwoWaySignpost, lengthFromSource: Int): Unit = {}
+  def addSourceLength(signpost: TwoWaySignpost, sourceLength: Int): Unit = {}
+
+  // BFSExpander
+  def expand(direction: TraversalDirection, foundNodes: FoundNodes): Unit = {}
+  def expandNode(nodeId: Long, states: HeapTrackingArrayList[State], direction: TraversalDirection): Unit = {}
+  def discover(node: NodeState, direction: TraversalDirection): Unit = {}
 }

@@ -21,16 +21,53 @@ package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs
 
 import org.github.jamm.MemoryMeter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.function.Predicates
+import org.neo4j.graphdb.Direction
+import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipExpansion
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
+import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
+
+import scala.collection.compat.immutable.ArraySeq
 
 class TwoWaySignpostTest extends CypherFunSuite {
   private val meter = MemoryMeter.builder.build
+  private def deduplicatedSize(o: AnyRef*) = meter.measureDeep(o) - meter.measureDeep(ArraySeq.fill(o.size)(null))
 
-  test("memory allocation on construction") {
+  test("memory allocation on construction of node signpost") {
     val mt = new LocalMemoryTracker()
-    val signpost = TwoWaySignpost.fromNodeJuxtaposition(mt, null, null, 0)
+    val gs = new GlobalState(null, null, SearchMode.Unidirectional, EmptyMemoryTracker.INSTANCE, PPBFSHooks.NULL, 1)
 
-    val actual = meter.measureDeep(signpost)
+    val s1 = new State(1, SlotOrName.none, Predicates.ALWAYS_TRUE_LONG, false, false)
+    val s2 = new State(2, SlotOrName.none, Predicates.ALWAYS_TRUE_LONG, false, false)
+
+    val prevNode = new NodeState(gs, 1, s1, 3)
+    val forwardNode = new NodeState(gs, 1, s2, 3)
+
+    val signpost = TwoWaySignpost.fromNodeJuxtaposition(mt, prevNode, forwardNode, 0)
+
+    val actual = meter.measureDeep(signpost) - deduplicatedSize(prevNode, forwardNode)
+
+    mt.estimatedHeapMemory() shouldBe actual
+  }
+
+  test("memory allocation on construction of rel signpost") {
+    val mt = new LocalMemoryTracker()
+    val gs = new GlobalState(null, null, SearchMode.Unidirectional, EmptyMemoryTracker.INSTANCE, PPBFSHooks.NULL, 1)
+
+    val s1 = new State(1, SlotOrName.none, Predicates.ALWAYS_TRUE_LONG, false, false)
+    val s2 = new State(2, SlotOrName.none, Predicates.ALWAYS_TRUE_LONG, false, false)
+
+    val prevNode = new NodeState(gs, 1, s1, 3)
+    val forwardNode = new NodeState(gs, 2, s2, 3)
+
+    val re = new RelationshipExpansion(s1, Predicates.alwaysTrue(), null, Direction.BOTH, SlotOrName.none, s2)
+
+    val signpost = TwoWaySignpost.fromRelExpansion(mt, prevNode, 1, forwardNode, re, 0)
+
+    val actual = meter.measureDeep(signpost) - deduplicatedSize(prevNode, forwardNode, re)
 
     mt.estimatedHeapMemory() shouldBe actual
   }

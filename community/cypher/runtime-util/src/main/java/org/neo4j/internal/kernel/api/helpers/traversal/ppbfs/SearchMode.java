@@ -17,23 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
+package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
-import java.util.function.Predicate;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.internal.kernel.api.RelationshipDataReader;
-import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
-
-public record RelationshipExpansion(
-        State sourceState,
-        Predicate<RelationshipDataReader> relPredicate,
-        int[] types,
-        Direction direction,
-        SlotOrName slotOrName,
-        State targetState)
-        implements Transition {
-
-    public boolean testRelationship(RelationshipDataReader rel) {
-        return relPredicate.test(rel);
-    }
+public enum SearchMode {
+    Unidirectional,
+    Bidirectional
 }

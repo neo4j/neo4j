@@ -19,10 +19,17 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection;
+
 public interface Transition {
+    State sourceState();
+
     State targetState();
 
-    default boolean testNode(long node) {
-        return targetState().test(node);
+    default State state(TraversalDirection direction) {
+        return switch (direction) {
+            case Forward -> targetState();
+            case Backward -> sourceState();
+        };
     }
 }

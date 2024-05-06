@@ -28,8 +28,11 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
 
+import scala.collection.compat.immutable.ArraySeq
+
 class NodeStateTest extends CypherFunSuite {
   private val meter = MemoryMeter.builder.build
+  private def deduplicatedSize(o: AnyRef*) = meter.measureDeep(o) - meter.measureDeep(ArraySeq.fill(o.size)(null))
 
   test("isTarget() returns true for a final state if there is no intoTarget") {
     val stateBuilder = new PGStateBuilder
@@ -59,9 +62,9 @@ class NodeStateTest extends CypherFunSuite {
     val mt = new LocalMemoryTracker()
     val state = new PGStateBuilder().newState().state
     val gs = globalState(mt)
-    val nd = new NodeState(gs, 0, state, -1)
+    val ns = new NodeState(gs, 0, state, -1)
 
-    val actual = meter.measureDeep(nd) - Seq[Object](gs, state).map(meter.measureDeep).sum
+    val actual = meter.measureDeep(ns) - deduplicatedSize(gs, state)
 
     mt.estimatedHeapMemory() shouldBe actual
   }
@@ -71,6 +74,7 @@ class NodeStateTest extends CypherFunSuite {
     new GlobalState(
       new Propagator(EmptyMemoryTracker.INSTANCE, hooks),
       new TargetTracker(EmptyMemoryTracker.INSTANCE, hooks),
+      SearchMode.Unidirectional,
       mt,
       hooks,
       1

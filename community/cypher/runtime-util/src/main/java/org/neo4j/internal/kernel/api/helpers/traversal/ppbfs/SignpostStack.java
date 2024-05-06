@@ -20,8 +20,10 @@
 
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
+import java.util.BitSet;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingIntArrayList;
+import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
@@ -45,15 +47,22 @@ public class SignpostStack {
      */
     private final HeapTrackingIntArrayList nodeSourceSignpostIndices;
 
+    private final BitSet targetTrails;
+
     private final PPBFSHooks hooks;
 
     private NodeState targetNode = null;
     private int dgLength = -1;
     private int dgLengthToTarget = -1;
 
+    public final HeapTrackingLongObjectHashMap<BitSet> rels;
+
     SignpostStack(MemoryTracker memoryTracker, PPBFSHooks hooks) {
         this.activeSignposts = HeapTrackingArrayList.newArrayList(memoryTracker);
         this.nodeSourceSignpostIndices = HeapTrackingIntArrayList.newIntArrayList(memoryTracker);
+        this.rels = HeapTrackingLongObjectHashMap.createLongObjectHashMap(memoryTracker);
+        this.targetTrails = new BitSet();
+        this.targetTrails.set(0);
         this.hooks = hooks;
         this.nodeSourceSignpostIndices.add(-1);
     }
@@ -69,9 +78,7 @@ public class SignpostStack {
     public void reset() {
         this.targetNode = null;
 
-        for (var sp : this.activeSignposts) {
-            sp.deactivate();
-        }
+        this.rels.clear();
         this.activeSignposts.clear();
 
         this.nodeSourceSignpostIndices.clear();
@@ -180,15 +187,44 @@ public class SignpostStack {
         var signpost = current.getSourceSignpost(nextIndex);
         activeSignposts.add(signpost);
 
+        targetTrails.set(size(), targetTrails.get(size() - 1) && distanceToDuplicate() == 0);
+
         dgLengthToTarget += signpost.dataGraphLength();
         nodeSourceSignpostIndices.set(nodeSourceSignpostIndices.size() - 1, nextIndex);
         nodeSourceSignpostIndices.add(-1);
 
-        signpost.activate();
+        if (signpost instanceof TwoWaySignpost.RelSignpost rel) {
+            var depths = this.rels.get(rel.relId);
+            if (depths == null) {
+                depths = new BitSet();
+                this.rels.put(rel.relId, depths);
+            }
+            depths.set(size() - 1);
+        }
 
         hooks.activateSignpost(lengthFromSource(), signpost);
 
         return true;
+    }
+
+    public int distanceToDuplicate() {
+        if (headSignpost() instanceof TwoWaySignpost.RelSignpost rel) {
+            var stack = rels.get(rel.relId);
+            if (stack == null) {
+                return 0;
+            }
+            int last = stack.length();
+            if (last == 0) {
+                return 0;
+            }
+
+            int next = stack.previousSetBit(last - 2);
+            if (next == -1) {
+                return 0;
+            }
+            return last - 1 - next;
+        }
+        return 0;
     }
 
     /**
@@ -203,9 +239,19 @@ public class SignpostStack {
 
         var signpost = activeSignposts.removeLast();
         dgLengthToTarget -= signpost.dataGraphLength();
-        signpost.deactivate();
+        if (signpost instanceof TwoWaySignpost.RelSignpost rel) {
+            var depths = rels.get(rel.relId);
+            depths.clear(size());
+            if (depths.isEmpty()) {
+                rels.remove(rel.relId);
+            }
+        }
 
         hooks.deactivateSignpost(lengthFromSource(), signpost);
         return signpost;
+    }
+
+    public boolean isTargetTrail() {
+        return this.targetTrails.get(this.size());
     }
 }

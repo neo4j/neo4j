@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Preconditions;
 
 /**
  * This class holds all of the (node,state) pairs that are found during PGPathPropagatingBFS evaluation.
@@ -47,7 +48,8 @@ import org.neo4j.memory.MemoryTracker;
  *  1) history. This is an array list of (nodeId, stateId) -> nodeState maps which store all the levels we've
  *     previously seen. So previousLevels.get(3) stores the nodes which were discovered in the previous level
  *  2) frontier. This is a map with (nodeId, stateId) -> nodeState for the current level
- *  3) frontierBuffer. This is a map with (nodeId, stateId) -> nodeState for the next level
+ *  3) frontierBuffer. This is a map with (nodeId, stateId) -> nodeState for the next level, so that we can iterate
+ *     over the current frontier while collecting new nodes for the next frontier
  *
  *  So for example, if we're currently expanding level 3, to find nodes at distance 4 from the source,
  *  our data would look like
@@ -63,29 +65,46 @@ import org.neo4j.memory.MemoryTracker;
  * collection when we need to grow it, we only ever rehash/reallocate the buffer as it grows.
  *
  * A downside of this design is that looking up a node is linear w.r.t the depth of the bfs.
+ *
+ * We also support a bidirectional mode, which allocates two frontiers: one for forwards traversal and one
+ * for backwards traversal. They share the same buffer since we only expand in one direction at a time.
  * </pre>
  */
 public final class FoundNodes implements AutoCloseable {
     private final HeapTrackingArrayList<HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>>>
             history; // levelDepth x nodeId x stateId -> NodeState
 
-    private HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>> frontier; // nodeId x stateId -> NodeState
+    private HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>>
+            forwardFrontier; // nodeId x stateId -> NodeState
+    private HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>>
+            backwardFrontier; // nodeId x stateId -> NodeState
 
+    private BufferState bufferState = BufferState.Closed;
     private HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>>
             frontierBuffer; // nodeId x stateId -> NodeState
 
     private final MemoryTracker memoryTracker;
+    private final SearchMode mode;
     private final int nfaStateCount;
 
-    public FoundNodes(MemoryTracker memoryTracker, int nfaStateCount) {
+    private int forwardDepth = 0;
+
+    private int backwardDepth = 0;
+
+    public FoundNodes(MemoryTracker memoryTracker, SearchMode mode, int nfaStateCount) {
         this.memoryTracker = memoryTracker.getScopedMemoryTracker();
+        this.mode = mode;
         this.history = HeapTrackingArrayList.newArrayList(this.memoryTracker);
-        this.frontier = HeapTrackingLongObjectHashMap.createLongObjectHashMap(this.memoryTracker);
+        this.forwardFrontier = HeapTrackingLongObjectHashMap.createLongObjectHashMap(this.memoryTracker);
+        if (mode == SearchMode.Bidirectional) {
+            this.backwardFrontier = HeapTrackingLongObjectHashMap.createLongObjectHashMap(this.memoryTracker);
+        }
         this.frontierBuffer = HeapTrackingLongObjectHashMap.createLongObjectHashMap(this.memoryTracker);
         this.nfaStateCount = nfaStateCount;
     }
 
     public void addToBuffer(NodeState nodeState) {
+        Preconditions.checkState(bufferState == BufferState.Open, "NodeState added to closed buffer");
         var nodeStates = frontierBuffer.get(nodeState.id());
         if (nodeStates == null) {
             nodeStates = HeapTrackingArrayList.newEmptyArrayList(nfaStateCount, memoryTracker);
@@ -96,44 +115,98 @@ public final class FoundNodes implements AutoCloseable {
 
     /** Look up a NodeState. O(N) wrt history length */
     public NodeState get(long nodeId, int stateId) {
-        var nodeStates = frontierBuffer.get(nodeId);
-        if (nodeStates != null) {
-            var nodeState = nodeStates.get(stateId);
+        var nodeState = getFromLevel(frontierBuffer, nodeId, stateId);
+        if (nodeState != null) {
+            return nodeState;
+        }
+
+        nodeState = getFromLevel(forwardFrontier, nodeId, stateId);
+        if (nodeState != null) {
+            return nodeState;
+        }
+
+        if (mode == SearchMode.Bidirectional) {
+            nodeState = getFromLevel(backwardFrontier, nodeId, stateId);
             if (nodeState != null) {
                 return nodeState;
             }
         }
-        nodeStates = frontier.get(nodeId);
-        if (nodeStates != null) {
-            var nodeState = nodeStates.get(stateId);
-            if (nodeState != null) {
-                return nodeState;
-            }
-        }
+
         for (int i = history.size() - 1; i >= 0; i--) {
-            nodeStates = history.get(i).get(nodeId);
-            if (nodeStates != null) {
-                var nodeState = nodeStates.get(stateId);
-                if (nodeState != null) {
-                    return nodeState;
-                }
+            nodeState = getFromLevel(history.get(i), nodeId, stateId);
+            if (nodeState != null) {
+                return nodeState;
             }
         }
         return null;
     }
 
-    public void shuffleFrontiers() {
-        history.add(frontier);
-        frontier = frontierBuffer;
-        frontierBuffer = HeapTrackingLongObjectHashMap.createLongObjectHashMap(this.memoryTracker, frontier.size());
+    private NodeState getFromLevel(
+            HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>> level, long nodeId, int stateId) {
+        if (level.isEmpty()) {
+            return null;
+        }
+        var nodeStates = level.get(nodeId);
+        if (nodeStates == null) {
+            return null;
+        }
+        return nodeStates.get(stateId);
     }
 
-    public HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>> frontier() {
-        return frontier;
+    /** Allocates a new buffer based on the size of the previous one */
+    public void openBuffer() {
+        Preconditions.checkState(bufferState == BufferState.Closed, "Buffer opened when it was not closed");
+        frontierBuffer = HeapTrackingLongObjectHashMap.createLongObjectHashMap(
+                this.memoryTracker, Math.max(1, frontierBuffer.size()));
+        bufferState = BufferState.Open;
+    }
+
+    /** Shifts the previous frontier into history, and the frontier buffer into the current frontier */
+    public void commitBuffer(TraversalDirection direction) {
+        Preconditions.checkState(bufferState == BufferState.Open, "Buffer closed when it was not open");
+
+        switch (direction) {
+            case Forward -> {
+                if (forwardFrontier.notEmpty()) {
+                    history.add(forwardFrontier);
+                }
+                forwardDepth += 1;
+                forwardFrontier = frontierBuffer;
+            }
+            case Backward -> {
+                if (backwardFrontier.notEmpty()) {
+                    history.add(backwardFrontier);
+                }
+                backwardDepth += 1;
+                backwardFrontier = frontierBuffer;
+            }
+        }
+        bufferState = BufferState.Closed;
+    }
+
+    public HeapTrackingLongObjectHashMap<HeapTrackingArrayList<NodeState>> frontier(TraversalDirection direction) {
+        return switch (direction) {
+            case Forward -> forwardFrontier;
+            case Backward -> backwardFrontier;
+        };
+    }
+
+    public TraversalDirection getNextExpansionDirection() {
+        if (mode == SearchMode.Unidirectional) return TraversalDirection.Forward;
+        if (forwardFrontier.isEmpty()) return TraversalDirection.Backward;
+        if (backwardFrontier.isEmpty()) return TraversalDirection.Forward;
+        if (backwardFrontier.size() < forwardFrontier.size()) return TraversalDirection.Backward;
+        return TraversalDirection.Forward;
     }
 
     public boolean hasMore() {
-        return frontier.notEmpty() || frontierBuffer.notEmpty();
+        Preconditions.checkState(bufferState == BufferState.Closed, "Should not check frontier state when buffer open");
+
+        if (mode == SearchMode.Unidirectional) {
+            return forwardFrontier.notEmpty();
+        }
+
+        return forwardFrontier.notEmpty() && backwardFrontier.notEmpty();
     }
 
     @Override
@@ -142,7 +215,20 @@ public final class FoundNodes implements AutoCloseable {
         this.memoryTracker.close();
     }
 
-    public int depth() {
-        return this.history.size();
+    public int forwardDepth() {
+        return forwardDepth;
+    }
+
+    public int backwardDepth() {
+        return backwardDepth;
+    }
+
+    public int totalDepth() {
+        return forwardDepth + backwardDepth;
+    }
+
+    private enum BufferState {
+        Open,
+        Closed
     }
 }

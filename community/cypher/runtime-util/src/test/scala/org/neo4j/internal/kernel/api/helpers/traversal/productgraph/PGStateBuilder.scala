@@ -30,6 +30,7 @@ import java.util.function.LongPredicate
 import java.util.function.Predicate
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /** A light wrapper over productgraph.State that autogenerates the state ID and facilitates addition of new transitions */
 object PGStateBuilder {
@@ -37,11 +38,9 @@ object PGStateBuilder {
   class BuilderState(val state: State) {
 
     def addNodeJuxtaposition(target: PGStateBuilder.BuilderState): Unit = {
-      val existing = this.state.getNodeJuxtapositions
-      val longer = new Array[NodeJuxtaposition](existing.length + 1)
-      System.arraycopy(existing, 0, longer, 0, existing.length)
-      longer(existing.length) = new NodeJuxtaposition(target.state)
-      this.state.setNodeJuxtapositions(longer)
+      val nj = new NodeJuxtaposition(state, target.state)
+      this.state.setNodeJuxtapositions(extend(this.state.getNodeJuxtapositions, nj))
+      target.state.setReverseNodeJuxtapositions(extend(target.state.getReverseNodeJuxtapositions, nj))
     }
 
     def addRelationshipExpansion(
@@ -50,19 +49,23 @@ object PGStateBuilder {
       types: Array[Int] = null,
       direction: Direction = Direction.BOTH
     ): Unit = {
-      val existing = this.state.getRelationshipExpansions
-      val longer = new Array[RelationshipExpansion](existing.length + 1)
-      System.arraycopy(existing, 0, longer, 0, existing.length)
-      longer(existing.length) =
-        new RelationshipExpansion(relPredicate, types, direction, SlotOrName.none, target.state)
-      this.state.setRelationshipExpansions(longer)
+      val re = new RelationshipExpansion(this.state, relPredicate, types, direction, SlotOrName.none, target.state)
+      this.state.setRelationshipExpansions(extend(this.state.getRelationshipExpansions, re))
+      target.state.setReverseRelationshipExpansions(extend(target.state.getReverseRelationshipExpansions, re))
+    }
+
+    private def extend[T: ClassTag](existing: Array[T], item: T): Array[T] = {
+      val arr = new Array[T](existing.length + 1)
+      System.arraycopy(existing, 0, arr, 0, existing.length)
+      arr(existing.length) = item
+      arr
     }
   }
 }
 
 class PGStateBuilder {
   private val states = mutable.Map.empty[Int, BuilderState]
-  private var startState: PGStateBuilder.BuilderState = null
+  private var startState: PGStateBuilder.BuilderState = _
 
   def newState(
     name: String = null,
@@ -74,8 +77,6 @@ class PGStateBuilder {
       states.size,
       if (name == null) SlotOrName.none else SlotOrName.VarName(name, isGroup = false),
       predicate,
-      new Array[NodeJuxtaposition](0),
-      new Array[RelationshipExpansion](0),
       isStartState,
       isFinalState
     ))
@@ -92,6 +93,7 @@ class PGStateBuilder {
 
   def getState(id: Int): BuilderState = states(id)
 
-  def getStart: PGStateBuilder.BuilderState = this.startState
+  def getStart: PGStateBuilder.BuilderState = this.states.values.find(_.state.isStartState).get
+  def getFinal: PGStateBuilder.BuilderState = this.states.values.find(_.state.isFinalState).get
   def stateCount: Int = this.states.size
 }

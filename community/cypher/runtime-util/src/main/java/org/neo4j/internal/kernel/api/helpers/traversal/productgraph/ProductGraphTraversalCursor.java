@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipDataReader;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.DirectedTypes;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -35,9 +36,11 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 public class ProductGraphTraversalCursor implements AutoCloseable {
 
     private final DataGraphRelationshipCursor graphCursor;
+    private final RelationshipExpansionCursor relationshipExpansionCursor;
     private boolean initialized = false;
     private final DirectedTypes directedTypes;
     private final ComposedSourceCursor<List<State>, State, RelationshipExpansion> nfaCursor;
+    private TraversalDirection direction = TraversalDirection.Forward;
 
     public ProductGraphTraversalCursor(
             Read read, NodeCursor nodeCursor, RelationshipTraversalCursor relCursor, MemoryTracker mt) {
@@ -46,7 +49,8 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
 
     public ProductGraphTraversalCursor(DataGraphRelationshipCursor graph, MemoryTracker mt) {
         this.graphCursor = graph;
-        this.nfaCursor = new ComposedSourceCursor<>(new ListCursor<>(), new RelationshipExpansionCursor());
+        this.relationshipExpansionCursor = new RelationshipExpansionCursor();
+        this.nfaCursor = new ComposedSourceCursor<>(new ListCursor<>(), relationshipExpansionCursor);
         this.directedTypes = new DirectedTypes(mt);
     }
 
@@ -98,23 +102,36 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
 
     private boolean evaluateCurrent() {
         var expansion = nfaCursor.current();
-        return graphCursor.direction().matches(expansion.direction())
+        var expansionDir =
+                switch (direction) {
+                    case Forward -> expansion.direction();
+                    case Backward -> expansion.direction().reverse();
+                };
+        return graphCursor.direction().matches(expansionDir)
                 && (expansion.types() == null || ArrayUtils.contains(expansion.types(), graphCursor.type()))
                 && expansion.testRelationship(graphCursor)
-                && expansion.testNode(graphCursor.otherNode());
+                && expansion.state(direction).test(graphCursor.otherNode());
     }
 
-    public void setNodeAndStates(long nodeId, List<State> states) {
+    public void setNodeAndStates(long nodeId, List<State> states, TraversalDirection direction) {
+        this.direction = direction;
         initialized = false;
         this.nfaCursor.setSource(states);
+        this.relationshipExpansionCursor.setDirection(direction);
 
         // preprocess nfa type directions for the current node for use in the graph cursor
         directedTypes.clear();
         while (this.nfaCursor.next()) {
             var expansion = this.nfaCursor.current();
-            directedTypes.addTypes(expansion.types(), expansion.direction());
+            var expansionDir =
+                    switch (direction) {
+                        case Forward -> expansion.direction();
+                        case Backward -> expansion.direction().reverse();
+                    };
+            directedTypes.addTypes(expansion.types(), expansionDir);
         }
         this.nfaCursor.reset();
+
         this.graphCursor.setNode(nodeId, RelationshipSelection.selection(directedTypes));
     }
 

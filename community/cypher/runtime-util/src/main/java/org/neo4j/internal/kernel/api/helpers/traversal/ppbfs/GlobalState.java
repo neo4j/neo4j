@@ -31,9 +31,12 @@ public class GlobalState {
     private final Propagator propagator;
     private final TargetTracker targetTracker;
 
+    public final SearchMode searchMode;
     public final MemoryTracker mt;
     public final PPBFSHooks hooks;
     public final long initialCountForTargetNodes;
+
+    private int depth = 0;
 
     /**
      * @param initialCountForTargetNodes Initial countdown value for each target node.
@@ -44,18 +47,20 @@ public class GlobalState {
     public GlobalState(
             Propagator propagator,
             TargetTracker targetTracker,
+            SearchMode searchMode,
             MemoryTracker memoryTracker,
             PPBFSHooks hooks,
             int initialCountForTargetNodes) {
         this.propagator = propagator;
         this.targetTracker = targetTracker;
+        this.searchMode = searchMode;
         this.mt = memoryTracker;
         this.hooks = hooks;
         this.initialCountForTargetNodes = initialCountForTargetNodes;
     }
 
-    public void schedule(NodeState nodeState, int lengthFromSource, int lengthToTarget) {
-        propagator.schedule(nodeState, lengthFromSource, lengthToTarget);
+    public void schedule(NodeState nodeState, int lengthFromSource, int lengthToTarget, ScheduleSource source) {
+        propagator.schedule(nodeState, lengthFromSource, lengthToTarget, source);
     }
 
     public void incrementUnsaturatedTargets() {
@@ -68,5 +73,20 @@ public class GlobalState {
 
     public void addTarget(NodeState nodeState) {
         targetTracker.addTarget(nodeState);
+    }
+
+    public int depth() {
+        return depth;
+    }
+
+    public void nextDepth() {
+        depth += 1;
+    }
+
+    public enum ScheduleSource {
+        SourceSignpost,
+        Propagated,
+        TargetSignpost,
+        Validation
     }
 }

@@ -19,4 +19,4 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
-public record NodeJuxtaposition(State targetState) implements Transition {}
+public record NodeJuxtaposition(State sourceState, State targetState) implements Transition {}

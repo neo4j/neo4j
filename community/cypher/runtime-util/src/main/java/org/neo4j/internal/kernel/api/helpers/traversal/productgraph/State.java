@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
 import java.util.function.LongPredicate;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection;
 
 public final class State {
     private final boolean isStartState;
@@ -30,22 +31,19 @@ public final class State {
     private final LongPredicate predicate;
     private NodeJuxtaposition[] nodeJuxtapositions;
     private RelationshipExpansion[] relationshipExpansions;
+    private NodeJuxtaposition[] reverseNodeJuxtapositions;
+    private RelationshipExpansion[] reverseRelationshipExpansions;
 
-    public State(
-            int id,
-            SlotOrName slotOrName,
-            LongPredicate predicate,
-            NodeJuxtaposition[] nodeJuxtapositions,
-            RelationshipExpansion[] relationshipExpansions,
-            boolean isStartState,
-            boolean isFinalState) {
+    public State(int id, SlotOrName slotOrName, LongPredicate predicate, boolean isStartState, boolean isFinalState) {
         this.id = id;
         this.slotOrName = slotOrName;
         this.predicate = predicate;
-        this.nodeJuxtapositions = nodeJuxtapositions;
-        this.relationshipExpansions = relationshipExpansions;
         this.isStartState = isStartState;
         this.isFinalState = isFinalState;
+        this.nodeJuxtapositions = new NodeJuxtaposition[0];
+        this.relationshipExpansions = new RelationshipExpansion[0];
+        this.reverseNodeJuxtapositions = new NodeJuxtaposition[0];
+        this.reverseRelationshipExpansions = new RelationshipExpansion[0];
     }
 
     public boolean test(long nodeId) {
@@ -60,12 +58,42 @@ public final class State {
         this.relationshipExpansions = relationshipExpansions;
     }
 
+    public void setReverseNodeJuxtapositions(NodeJuxtaposition[] reverseNodeJuxtapositions) {
+        this.reverseNodeJuxtapositions = reverseNodeJuxtapositions;
+    }
+
+    public void setReverseRelationshipExpansions(RelationshipExpansion[] reverseRelationshipExpansions) {
+        this.reverseRelationshipExpansions = reverseRelationshipExpansions;
+    }
+
     public NodeJuxtaposition[] getNodeJuxtapositions() {
         return nodeJuxtapositions;
     }
 
     public RelationshipExpansion[] getRelationshipExpansions() {
         return relationshipExpansions;
+    }
+
+    public NodeJuxtaposition[] getReverseNodeJuxtapositions() {
+        return reverseNodeJuxtapositions;
+    }
+
+    public RelationshipExpansion[] getReverseRelationshipExpansions() {
+        return reverseRelationshipExpansions;
+    }
+
+    public NodeJuxtaposition[] getNodeJuxtapositions(TraversalDirection direction) {
+        return switch (direction) {
+            case Forward -> nodeJuxtapositions;
+            case Backward -> reverseNodeJuxtapositions;
+        };
+    }
+
+    public RelationshipExpansion[] getRelationshipExpansions(TraversalDirection direction) {
+        return switch (direction) {
+            case Forward -> relationshipExpansions;
+            case Backward -> reverseRelationshipExpansions;
+        };
     }
 
     public boolean isStartState() {

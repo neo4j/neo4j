@@ -21,7 +21,6 @@ package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
 
-import java.util.BitSet;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
@@ -51,11 +50,7 @@ public final class NodeState implements AutoCloseable, Measurable {
     private final HeapTrackingArrayList<TwoWaySignpost> sourceSignposts;
     private HeapTrackingArrayList<TwoWaySignpost> targetSignposts;
 
-    // The depths (originating from the source node) at which this node has been found.
-    private final BitSet lengthsFromSource;
-
-    // A subset of lengthsFromSource. This is the set of lengths for which this node has verified SourceSignposts
-    private final BitSet validatedLengthsFromSource;
+    private final Lengths lengths;
 
     // The length of the shortest path in the data graph from the source node to this node which is accepted by the NFA.
     // This is not necessarily a trail length, the corresponding path may have repeated relationships.
@@ -68,13 +63,15 @@ public final class NodeState implements AutoCloseable, Measurable {
 
     private boolean isTarget = false;
 
+    private boolean discoveredForward = false;
+    private boolean discoveredBackward = false;
+
     public NodeState(GlobalState globalState, long nodeId, State state, long intoTarget) {
         this.sourceSignposts = HeapTrackingArrayList.newArrayList(SIGNPOSTS_INIT_SIZE, globalState.mt);
         this.nodeId = nodeId;
         this.state = state;
         this.globalState = globalState;
-        this.lengthsFromSource = new BitSet();
-        this.validatedLengthsFromSource = new BitSet();
+        this.lengths = new Lengths();
 
         if (state().isFinalState() && (intoTarget == NO_SUCH_ENTITY || intoTarget == nodeId)) {
             this.remainingTargetCount = (int) globalState.initialCountForTargetNodes;
@@ -83,6 +80,13 @@ public final class NodeState implements AutoCloseable, Measurable {
         }
 
         globalState.mt.allocateHeap(estimatedHeapUsage());
+    }
+
+    public void discover(TraversalDirection direction) {
+        switch (direction) {
+            case Forward -> this.discoveredForward = true;
+            case Backward -> this.discoveredBackward = true;
+        }
     }
 
     public State state() {
@@ -119,12 +123,13 @@ public final class NodeState implements AutoCloseable, Measurable {
             }
         }
 
-        assert !validatedLengthsFromSource.get(lengthFromSource) : "We should never remove validated length states";
-        lengthsFromSource.set(lengthFromSource, false);
+        assert !lengths.get(lengthFromSource, Lengths.Type.ConfirmedSource)
+                : "We should never remove validated length states";
+        lengths.clear(lengthFromSource, Lengths.Type.Source);
     }
 
     public boolean validatedAtLength(int lengthFromSource) {
-        return validatedLengthsFromSource.get(lengthFromSource);
+        return lengths.get(lengthFromSource, Lengths.Type.ConfirmedSource);
     }
 
     @Override
@@ -139,50 +144,48 @@ public final class NodeState implements AutoCloseable, Measurable {
         return nodeId;
     }
 
-    public void addSourceSignpost(TwoWaySignpost sourceSignpost, int lengthFromSource) {
+    public void addSourceSignpost(TwoWaySignpost sourceSignpost, int sourceLength) {
         Preconditions.checkArgument(
                 sourceSignpost.forwardNode == this, "Source signpost must be added to correct node");
 
-        if (sourceDistance == NO_SOURCE_DISTANCE || sourceDistance > lengthFromSource) {
-            sourceDistance = lengthFromSource;
+        assert sourceSignposts.stream().noneMatch(sourceSignpost::equals) : "Duplicate source signpost added";
+
+        if (sourceDistance == NO_SOURCE_DISTANCE || sourceDistance > sourceLength) {
+            sourceDistance = sourceLength;
         }
 
-        globalState.hooks.addSourceSignpost(sourceSignpost, lengthFromSource);
-        if (!lengthsFromSource.get(lengthFromSource)) {
-            // Never seen the node at this depth before
-            lengthsFromSource.set(lengthFromSource);
+        globalState.hooks.addSourceSignpost(sourceSignpost, sourceLength);
+        if (sourceLength != -1) {
+            if (!lengths.get(sourceLength, Lengths.Type.Source)) {
+                // Never seen the node at this depth before
+                lengths.set(sourceLength, Lengths.Type.Source);
 
-            int minDistToTarget = minDistToTarget();
-            if (minDistToTarget != TwoWaySignpost.NO_TARGET_DISTANCE) {
-                Preconditions.checkState(
-                        lengthFromSource > realSourceDistance(),
-                        "When we find a shortest path to a node we shouldn't have TargetSignposts");
+                int minTargetDistance = minTargetDistance();
+                if (minTargetDistance != TwoWaySignpost.NO_TARGET_DISTANCE
+                        && sourceLength + minTargetDistance >= globalState.depth()) {
+                    globalState.schedule(
+                            this, sourceLength, minTargetDistance, GlobalState.ScheduleSource.SourceSignpost);
+                }
 
-                globalState.schedule(this, lengthFromSource, minDistToTarget);
+                if (isTarget()) {
+                    globalState.addTarget(this);
+                }
+            } else {
+                assert sourceLength == lengths.max(Lengths.Type.Source)
+                        : "A node should only be seen by the BFS at increasingly deeper levels.";
             }
-
-            if (isTarget()) {
-                globalState.addTarget(this);
-            }
-        } else {
-            assert lengthFromSource == lengthsFromSource.stream().max().orElseThrow()
-                    : "A node should only be seen by the BFS at increasingly deeper levels.";
         }
 
         sourceSignposts.add(sourceSignpost);
     }
 
-    public void newPropagatedLengthFromSource(int lengthFromSource, int lengthToTarget) {
-        if (!lengthsFromSource.get(lengthFromSource)) {
+    public void newPropagatedSourceLength(int sourceLength, int targetLength) {
+        if (!lengths.get(sourceLength, Lengths.Type.Source)) {
             // Never seen the node at this depth before
-            lengthsFromSource.set(lengthFromSource);
+            lengths.set(sourceLength, Lengths.Type.Source);
 
-            if (hasMinDistToTarget(lengthToTarget)) {
-                Preconditions.checkState(
-                        lengthFromSource > realSourceDistance(),
-                        "When we find a shortest path to a node we shouldn't have TargetSignposts");
-
-                globalState.schedule(this, lengthFromSource, lengthToTarget);
+            if (hasMinDistToTarget(targetLength)) {
+                globalState.schedule(this, sourceLength, targetLength, GlobalState.ScheduleSource.Propagated);
             }
 
             if (isTarget()) {
@@ -191,9 +194,12 @@ public final class NodeState implements AutoCloseable, Measurable {
         }
     }
 
-    public void addTargetSignpost(TwoWaySignpost targetSignpost, int lengthToTarget) {
-        globalState.hooks.addTargetSignpost(targetSignpost, lengthToTarget);
+    public void addTargetSignpost(TwoWaySignpost targetSignpost, int targetLength, PGPathPropagatingBFS.Phase phase) {
+        globalState.hooks.addTargetSignpost(targetSignpost, targetLength);
         Preconditions.checkArgument(targetSignpost.prevNode == this, "Target signpost must be added to correct node");
+
+        assert targetSignposts == null || targetSignposts.stream().noneMatch(targetSignpost::equals)
+                : "Duplicate target signpost added";
 
         boolean firstTrace = false;
         if (targetSignposts == null) {
@@ -201,23 +207,27 @@ public final class NodeState implements AutoCloseable, Measurable {
             firstTrace = true;
         }
 
-        assert !firstTrace || lengthToTarget >= minDistToTarget()
+        assert !firstTrace || targetLength >= minTargetDistance()
                 : "The first time a node is traced should be with the shortest trail to a target";
 
-        if (!hasMinDistToTarget(lengthToTarget)) {
-            // First time we find a trail to a target of length `lengthToTarget`
+        if (!hasMinDistToTarget(targetLength)) {
+            // First time we find a trail to a target of length `targetLength`
 
-            for (int lengthFromSource = lengthsFromSource.nextSetBit(0);
-                    lengthFromSource != -1;
-                    lengthFromSource = lengthsFromSource.nextSetBit(lengthFromSource + 1)) {
-
-                Preconditions.checkState(lengthsFromSource.get(lengthFromSource), "");
+            for (int l = lengths.next(0, Lengths.Type.Source); l != -1; l = lengths.next(l + 1, Lengths.Type.Source)) {
 
                 // Register for propagation for validated non-shortest lengthStates if not shortestDistToATarget,
                 // or all non-shortest lengthStates if shortestDistToATarget
-                if ((firstTrace || validatedLengthsFromSource.get(lengthFromSource))
-                        && lengthFromSource != realSourceDistance()) {
-                    globalState.schedule(this, lengthFromSource, lengthToTarget);
+
+                if ((firstTrace || lengths.get(l, Lengths.Type.ConfirmedSource))
+                        && (l > sourceDistance || phase == PGPathPropagatingBFS.Phase.Expansion)) {
+
+                    var depth = globalState.depth();
+                    if (phase == PGPathPropagatingBFS.Phase.Tracing) {
+                        depth += 1;
+                    }
+                    if (l + targetLength >= depth) {
+                        globalState.schedule(this, l, targetLength, GlobalState.ScheduleSource.TargetSignpost);
+                    }
                 }
             }
         }
@@ -240,33 +250,26 @@ public final class NodeState implements AutoCloseable, Measurable {
         }
 
         for (TwoWaySignpost tsp : targetSignposts) {
-            if (tsp.minDistToTarget() == lengthToTarget) {
+            if (tsp.minTargetDistance() == lengthToTarget) {
                 tsp.propagate(lengthFromSource, lengthToTarget);
             }
         }
     }
 
-    public void validateLengthState(int lengthFromSource, int tracedLengthToTarget) {
-        globalState.hooks.validateLengthState(this, lengthFromSource, tracedLengthToTarget);
+    public void validateSourceLength(int lengthFromSource, int tracedLengthToTarget) {
+        globalState.hooks.validateSourceLength(this, lengthFromSource, tracedLengthToTarget);
 
         Preconditions.checkState(
-                !validatedLengthsFromSource.get(lengthFromSource),
+                !lengths.get(lengthFromSource, Lengths.Type.ConfirmedSource),
                 "Shouldn't validate the same length from source more than once");
 
-        assert hasAnyMinDistToTarget() || (tracedLengthToTarget == 0 && isTarget())
-                : "We only validate length states during tracing, and any traced node which isn't the target node of a "
-                        + "path should've had a TargetSignpost registered in targetSignpostsByMinDist before being validated";
-
-        assert (isTarget() && tracedLengthToTarget == 0) || tracedLengthToTarget == minDistToTarget()
-                : "First time tracing should be with shortest length to target";
-
-        validatedLengthsFromSource.set(lengthFromSource);
+        lengths.set(lengthFromSource, Lengths.Type.ConfirmedSource);
         if (!hasAnyMinDistToTarget()) {
             return;
         }
 
         for (TwoWaySignpost tsp : targetSignposts) {
-            int lengthToTarget = tsp.minDistToTarget();
+            int lengthToTarget = tsp.minTargetDistance();
             if (lengthToTarget != TwoWaySignpost.NO_TARGET_DISTANCE) {
                 Preconditions.checkState(
                         lengthToTarget >= tracedLengthToTarget,
@@ -274,7 +277,7 @@ public final class NodeState implements AutoCloseable, Measurable {
 
                 // We don't want to register to propagate for the same length pair again
                 if (lengthToTarget > tracedLengthToTarget) {
-                    globalState.schedule(this, lengthFromSource, lengthToTarget);
+                    globalState.schedule(this, lengthFromSource, lengthToTarget, GlobalState.ScheduleSource.Validation);
                 }
             }
         }
@@ -291,32 +294,61 @@ public final class NodeState implements AutoCloseable, Measurable {
         }
     }
 
+    public boolean hasBeenSeen(TraversalDirection direction) {
+        return direction == TraversalDirection.Forward && discoveredForward
+                || direction == TraversalDirection.Backward && discoveredBackward;
+    }
+
+    public boolean hasSourceSignpost(TwoWaySignpost signpost) {
+        for (TwoWaySignpost tsp : sourceSignposts) {
+            if (tsp.equals(signpost)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean hasTargetSignpost(TwoWaySignpost signpost) {
+        if (targetSignposts == null) {
+            return false;
+        }
+
+        for (TwoWaySignpost tsp : targetSignposts) {
+            if (tsp.equals(signpost)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public boolean hasMinDistToTarget(int minDistToTarget) {
         if (targetSignposts == null) {
             return false;
         }
         for (TwoWaySignpost tsp : targetSignposts) {
-            if (tsp.minDistToTarget() == minDistToTarget) {
+            if (tsp.minTargetDistance() == minDistToTarget) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean hasAnyMinDistToTarget() {
+    private boolean hasAnyMinDistToTarget() {
         var res = targetSignposts != null;
         Preconditions.checkState(
                 !res || targetSignposts.notEmpty(), "If targetSignposts isn't null it's never supposed to be empty");
         return res;
     }
 
-    private int minDistToTarget() {
+    private int minTargetDistance() {
         if (targetSignposts == null) {
             return TwoWaySignpost.NO_TARGET_DISTANCE;
         }
         int min = Integer.MAX_VALUE;
         for (TwoWaySignpost tsp : targetSignposts) {
-            int curr = tsp.minDistToTarget();
+            int curr = tsp.minTargetDistance();
             if (curr != TwoWaySignpost.NO_TARGET_DISTANCE && curr < min) {
                 min = curr;
             }
@@ -338,11 +370,19 @@ public final class NodeState implements AutoCloseable, Measurable {
     }
 
     private static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(NodeState.class);
-    private static long BITSET_MIN_SIZE =
-            HeapEstimator.shallowSizeOfInstance(BitSet.class) + HeapEstimator.sizeOfLongArray(1);
 
     @Override
     public long estimatedHeapUsage() {
-        return SHALLOW_SIZE + BITSET_MIN_SIZE + BITSET_MIN_SIZE;
+        return SHALLOW_SIZE + Lengths.SHALLOW_SIZE;
+    }
+
+    public <T extends TwoWaySignpost> T upsertSourceSignpost(T signpost) {
+        for (var existing : sourceSignposts) {
+            if (signpost.equals(existing)) {
+                return (T) existing;
+            }
+        }
+        addSourceSignpost(signpost, -1);
+        return signpost;
     }
 }

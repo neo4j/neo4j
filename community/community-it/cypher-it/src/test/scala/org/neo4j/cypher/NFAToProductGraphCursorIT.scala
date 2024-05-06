@@ -301,7 +301,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
             implicit val semanticTable: SemanticTable = SemanticTable()
 
-            val startState = CommandNFA
+            val (startState, _) = CommandNFA
               .fromLogicalNFA(nfa.builder.build(), x => converters.toCommandPredicate(Id.INVALID_ID, x.predicate))
               .compile(context, queryState)
 

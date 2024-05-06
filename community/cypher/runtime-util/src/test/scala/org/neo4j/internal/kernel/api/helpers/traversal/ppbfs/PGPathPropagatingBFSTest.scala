@@ -25,17 +25,37 @@ import org.neo4j.function.Predicates
 import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.RelationshipDataReader
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.OrderedResults
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(a)-->(b)-->(c)`
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(a)-->(b)<--(c)`
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(a)-->(b)`
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(a)<--(b)-->(a)`
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(a)<--(b)-->(c)`
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(s) ((a)--(b))+ (t)`
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(s) ((a)--(b)--(c))* (t)`
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(s) ((a)-->(b))* (t)`
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.`(s) ((a)-->(b))+ (t)`
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.anyDirectedPath
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.pathLength
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.singleRelPath
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PGPathPropagatingBFSTest.testGraphs
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer.PathEntity
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer.TracedPath
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TestGraph.Rel
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventPPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.AddTarget
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.Expand
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.ExpandNode
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.NextLevel
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.EventRecorder.ReturnPath
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.PGStateBuilder
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor.DataGraphRelationshipCursor
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipPredicate
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
 import org.neo4j.kernel.api.AssertOpen
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
@@ -118,39 +138,33 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
   test(
     "two nodes and their relationship are yielded when there is an unconditional relationship expansion between start and final state"
   ) {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val r = graph.rel(n0, n1)
+    val graph = `(a)-->(b)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.a)
       .withNfa { sb =>
         sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
       }
       .paths()
 
-    paths shouldBe Seq(Seq(n0, r, n1))
+    paths shouldBe Seq(Seq(graph.a, graph.ab, graph.b))
   }
 
   test(
     "relationship expansions can traverse a relationship in the inverse direction"
   ) {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val r = graph.rel(n1, n0)
+    val graph = `(a)-->(b)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.b)
       .withNfa { sb =>
         sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
       }
       .paths()
 
-    paths shouldBe Seq(Seq(n0, r, n1))
+    paths shouldBe Seq(Seq(graph.b, graph.ab, graph.a))
   }
 
   test("relationship expansions can traverse a loop") {
@@ -195,43 +209,33 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
   }
 
   test("relationship expansions may be filtered on the destination node") {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val n2 = graph.node()
-    graph.rel(n0, n1)
-    val r = graph.rel(n0, n2)
+    val graph = `(a)<--(b)-->(c)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.b)
       .withNfa { sb =>
         sb.newState(isStartState = true)
-          .addRelationshipExpansion(sb.newState(isFinalState = true, predicate = (n: Long) => n == n2))
+          .addRelationshipExpansion(sb.newState(isFinalState = true, predicate = (n: Long) => n == graph.a))
       }
       .paths()
 
-    paths shouldBe Seq(Seq(n0, r, n2))
+    paths shouldBe Seq(Seq(graph.b, graph.ba, graph.a))
   }
 
   test("relationship expansions may be filtered on the relationship id") {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val n2 = graph.node()
-    graph.rel(n0, n1)
-    val r = graph.rel(n0, n2)
+    val graph = `(a)<--(b)-->(c)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.b)
       .withNfa { sb =>
         val e = sb.newState(isFinalState = true)
-        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onId(_ == r))
+        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onId(_ == graph.bc))
       }
       .paths()
 
-    paths shouldBe Seq(Seq(n0, r, n2))
+    paths shouldBe Seq(Seq(graph.b, graph.bc, graph.c))
   }
 
   test("relationship expansions may be filtered on the relationship type") {
@@ -275,96 +279,71 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
   }
 
   test("relationship expansions may be filtered on INCOMING direction") {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val n2 = graph.node()
-    graph.rel(n0, n1)
-    val r = graph.rel(n2, n0)
+    val graph = `(a)-->(b)-->(c)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.b)
       .withNfa { sb =>
         val e = sb.newState(isFinalState = true)
         sb.newState(isStartState = true).addRelationshipExpansion(e, direction = Direction.INCOMING)
       }
       .paths()
 
-    paths shouldBe Seq(Seq(n0, r, n2))
+    paths shouldBe Seq(Seq(graph.b, graph.ab, graph.a))
   }
 
   test("relationship expansions may be filtered on OUTGOING direction") {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val n2 = graph.node()
-    graph.rel(n1, n0)
-    val r = graph.rel(n0, n2)
+    val graph = `(a)-->(b)-->(c)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.b)
       .withNfa { sb =>
         val e = sb.newState(isFinalState = true)
         sb.newState(isStartState = true).addRelationshipExpansion(e, direction = Direction.OUTGOING)
       }
       .paths()
 
-    paths shouldBe Seq(Seq(n0, r, n2))
+    paths shouldBe Seq(Seq(graph.b, graph.bc, graph.c))
   }
 
   test("relationship expansions may be filtered on the source node of the relationship") {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val n2 = graph.node()
-    graph.rel(n0, n1)
-    val r = graph.rel(n2, n0)
+    val graph = `(a)-->(b)<--(c)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.b)
       .withNfa { sb =>
         val e = sb.newState(isFinalState = true)
-        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onSource(_ == n2))
+        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onSource(_ == graph.a))
       }
       .paths()
 
-    paths shouldBe Seq(Seq(n0, r, n2))
+    paths shouldBe Seq(Seq(graph.b, graph.ab, graph.a))
   }
 
   test("relationship expansions may be filtered on the target node of the relationship") {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val n2 = graph.node()
-    graph.rel(n1, n0)
-    val r = graph.rel(n0, n2)
+    val graph = `(a)<--(b)-->(c)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.b)
       .withNfa { sb =>
         val e = sb.newState(isFinalState = true)
-        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onTarget(_ == n2))
+        sb.newState(isStartState = true).addRelationshipExpansion(e, RelationshipPredicate.onTarget(_ == graph.c))
       }
       .paths()
 
-    paths shouldBe Seq(Seq(n0, r, n2))
+    paths shouldBe Seq(Seq(graph.b, graph.bc, graph.c))
   }
 
   test("two-hop path") {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val n2 = graph.node()
-    val r0 = graph.rel(n1, n0)
-    val r1 = graph.rel(n1, n2)
+    val graph = `(a)-->(b)-->(c)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.a)
       .withNfa { sb =>
         val s = sb.newState()
         sb.newState(isStartState = true).addRelationshipExpansion(s)
@@ -372,7 +351,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       }
       .paths()
 
-    paths shouldBe Seq(Seq(n0, r0, n1, r1, n2))
+    paths shouldBe Seq(Seq(graph.a, graph.ab, graph.b, graph.bc, graph.c))
   }
 
   /********************************
@@ -413,47 +392,27 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     val paths = fixture()
       .withGraph(graph.build())
       .from(a)
-      .withNfa { sb =>
-        val s = sb.newState(isStartState = true)
-        val a = sb.newState()
-        val e = sb.newState(isFinalState = true)
-
-        s.addNodeJuxtaposition(a)
-        a.addRelationshipExpansion(e, direction = Direction.OUTGOING)
-        e.addNodeJuxtaposition(a)
-      }
+      .withNfa(`(s) ((a)-->(b))+ (t)`)
       .from(a)
       .paths()
 
     paths shouldBe Seq(
-      Seq(a, a, ab, b),
-      Seq(a, a, ab, b, b, ba, a)
+      Seq(a, a, ab, b, b),
+      Seq(a, a, ab, b, b, ba, a, a)
     )
   }
 
-  test("relationships are not traversed twice in the opposite direction") {
-    val graph = TestGraph.builder
-    val a = graph.node()
-    val b = graph.node()
-    val ab = graph.rel(a, b)
+  test("relationships are not traversed again in the opposite direction") {
+    val graph = `(a)-->(b)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(a)
-      .withNfa { sb =>
-        val s = sb.newState(isStartState = true)
-        val a = sb.newState()
-        val e = sb.newState(isFinalState = true)
-
-        s.addNodeJuxtaposition(a)
-        a.addRelationshipExpansion(e)
-        e.addNodeJuxtaposition(a)
-      }
-      .from(a)
+      .withGraph(graph.graph)
+      .from(graph.a)
+      .withNfa(`(s) ((a)--(b))+ (t)`)
       .paths()
 
     paths shouldBe Seq(
-      Seq(a, a, ab, b)
+      Seq(graph.a, graph.a, graph.ab, graph.b, graph.b)
     )
   }
 
@@ -467,18 +426,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     val paths = fixture()
       .withGraph(graph.build())
       .from(a)
-      .withNfa { sb =>
-        val s = sb.newState("s", isStartState = true)
-        val a = sb.newState("a")
-        val b = sb.newState("b")
-        val e = sb.newState("e", isFinalState = true)
-
-        s.addNodeJuxtaposition(a)
-        a.addRelationshipExpansion(b)
-        b.addNodeJuxtaposition(a)
-        b.addNodeJuxtaposition(e)
-      }
-      .from(a)
+      .withNfa(`(s) ((a)-->(b))+ (t)`)
       .paths()
 
     paths should contain theSameElementsAs Seq(
@@ -586,20 +534,17 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
    ***************************************************/
 
   test("results are limited to K") {
-    val graph = TestGraph.builder
-    val n0 = graph.node()
-    val n1 = graph.node()
-    val r0 = graph.rel(n0, n1)
-    val r1 = graph.rel(n0, n1)
+    val graph = `(a)<--(b)-->(a)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(n0)
+      .withGraph(graph.graph)
+      .from(graph.b)
       .withNfa(singleRelPath)
       .withK(1)
       .paths()
 
-    paths should (be(Seq(Seq(n0, r0, n1))) or be(Seq(Seq(n0, r1, n1))))
+    paths should (be(Seq(Seq(graph.b, graph.ba1, graph.a)))
+      or be(Seq(Seq(graph.b, graph.ba2, graph.a))))
   }
 
   test("results are limited to K per source-target pair") {
@@ -694,7 +639,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .withNfa(anyDirectedPath)
       .project(pathLength)
       .filter(onlyFirstOfGroup)
-      .into(d)
+      .into(d, SearchMode.Unidirectional)
       .grouped
       .withK(2)
       .toList
@@ -704,53 +649,38 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
   }
 
   test("intoTarget does not yield paths to other targets that could be valid") {
-    val graph = TestGraph.builder
-    val a = graph.node()
-    val b = graph.node()
-    val c = graph.node()
-    val ab = graph.rel(a, b)
-    graph.rel(a, c)
+    val graph = `(a)<--(b)-->(c)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(a)
+      .withGraph(graph.graph)
+      .from(graph.b)
       .withNfa(singleRelPath)
-      .into(b)
+      .into(graph.c)
       .paths()
 
-    paths shouldBe Seq(Seq(a, ab, b))
+    paths shouldBe Seq(Seq(graph.b, graph.bc, graph.c))
   }
 
   test("non-inlined prefilter applies before K limit") {
-    val graph = TestGraph.builder
-    val a = graph.node()
-    val b = graph.node()
-    val c = graph.node()
-    val ab = graph.rel(a, b)
-    val bc = graph.rel(b, c)
+    val graph = `(a)-->(b)-->(c)`
 
     val paths = fixture()
-      .withGraph(graph.build())
-      .from(a)
+      .withGraph(graph.graph)
+      .from(graph.a)
       .withNfa(anyDirectedPath)
       .filter(p => pathLength(p) > 1)
       .withK(1)
       .paths()
 
-    paths shouldBe Seq(Seq(a, ab, b, bc, c))
+    paths shouldBe Seq(Seq(graph.a, graph.ab, graph.b, graph.bc, graph.c))
   }
 
   test("non-inlined prefilter applies after projection") {
-    val graph = TestGraph.builder
-    val a = graph.node()
-    val b = graph.node()
-    val c = graph.node()
-    graph.rel(a, b)
-    graph.rel(b, c)
+    val graph = `(a)-->(b)-->(c)`
 
     val lengths = fixture()
-      .withGraph(graph.build())
-      .from(a)
+      .withGraph(graph.graph)
+      .from(graph.a)
       .withNfa(anyDirectedPath)
       .project(pathLength)
       .filter(_ > 0)
@@ -759,22 +689,128 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     lengths shouldBe Seq(1, 2)
   }
 
+  test("bidirectional search does not yield a repeated relationship if encountered from the RHS") {
+    /*
+      (n1)--(n2)--(n3)--(n4)--(n5)--()
+      /  \
+     ()   ()
+     */
+    val graph = TestGraph.builder
+    val n1 = graph.node()
+    val n2 = graph.node()
+    val n3 = graph.node()
+    val n4 = graph.node()
+    val n5 = graph.node()
+
+    val r6 = graph.rel(n1, n2)
+    val r7 = graph.rel(n2, n3)
+    val r8 = graph.rel(n3, n4)
+    val r9 = graph.rel(n4, n5)
+
+    graph.rel(n5, graph.node())
+
+    graph.rel(n1, graph.node())
+    graph.rel(n1, graph.node())
+
+    val paths = fixture()
+      .withGraph(graph.build())
+      .from(n1)
+      .into(n5)
+      .withNfa { sb =>
+        val s = sb.newState("s", isStartState = true)
+        val a = sb.newState("a")
+        val b = sb.newState("b")
+        val c = sb.newState("c")
+        val t = sb.newState("t", isFinalState = true)
+
+        s.addNodeJuxtaposition(a)
+        a.addRelationshipExpansion(b, direction = Direction.BOTH)
+        b.addRelationshipExpansion(c, direction = Direction.BOTH)
+        c.addNodeJuxtaposition(a)
+        c.addNodeJuxtaposition(t)
+      }
+      .logged()
+      .paths()
+
+    paths shouldBe Seq(Seq(n1, n1, r6, n2, r7, n3, n3, r8, n4, r9, n5, n5))
+  }
+
   /*******************************************
    * Algorithm introspection via event hooks *
    *******************************************/
 
-  test("intoTarget stops searching the graph after the target is saturated") {
+  test("intoTarget initiates a bidirectional search") {
+    val graph = TestGraph.builder
+    val s1 = graph.node()
+    val n2 = graph.node()
+    val n3 = graph.node()
+    val t4 = graph.node()
+
+    graph.rel(s1, n2)
+    graph.rel(s1, n3)
+    graph.rel(n2, t4)
+
+    val events = fixture()
+      .withGraph(graph.build())
+      .from(s1)
+      .into(t4)
+      .withK(1)
+      .withNfa(anyDirectedPath)
+      .events()
+
+    events should (contain(Expand(TraversalDirection.Backward, 2, 1)))
+  }
+
+  test("bidirectional search stops searching if the component around the target is exhausted") {
     val graph = TestGraph.builder
     val a = graph.node()
     val b = graph.node()
     val c = graph.node()
     graph.rel(a, b)
-    graph.rel(b, c)
+    graph.rel(a, c)
+
+    val d = graph.node()
+
+    val events = fixture()
+      .withGraph(graph.build())
+      .from(a)
+      .into(d)
+      .withK(1)
+      .withNfa(`(s) ((a)-->(b))* (t)`)
+      .events()
+
+    events.ofType[ExpandNode] shouldBe Seq(
+      ExpandNode(a, TraversalDirection.Forward),
+      ExpandNode(d, TraversalDirection.Backward)
+    )
+    events.ofType[ReturnPath] shouldBe Seq.empty
+  }
+
+  test("bidirectional search stops searching if the component around the source is exhausted") {
+    val graph = TestGraph.builder
+    val a = graph.node()
+
+    val b = graph.node()
 
     val events = fixture()
       .withGraph(graph.build())
       .from(a)
       .into(b)
+      .withK(1)
+      .withNfa(`(s) ((a)-->(b))* (t)`)
+      .events()
+
+    events.ofType[ExpandNode] shouldBe Seq(ExpandNode(a, TraversalDirection.Forward))
+    events.ofType[ReturnPath] shouldBe Seq.empty
+  }
+
+  test("intoTarget stops searching the graph after the target is saturated") {
+    val graph = `(a)-->(b)-->(c)`
+
+    val events = fixture()
+      .withGraph(graph.graph)
+      .from(graph.a)
+      .into(graph.b)
       .withK(1)
       .withNfa(anyDirectedPath)
       .events()
@@ -796,7 +832,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     val events = fixture()
       .withGraph(graph.build())
       .from(a)
-      .into(c)
+      .into(c, SearchMode.Unidirectional)
       .withNfa(anyDirectedPath)
       .events()
 
@@ -814,21 +850,16 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
   }
 
   test("node should not be considered a target if it does not match the intoTarget specifier") {
-    val graph = TestGraph.builder
-    val a = graph.node()
-    val b = graph.node()
-    val c = graph.node()
-    graph.rel(a, b)
-    graph.rel(a, c)
+    val graph = `(a)<--(b)-->(c)`
 
     val events = fixture()
-      .withGraph(graph.build())
-      .from(a)
-      .into(c)
+      .withGraph(graph.graph)
+      .from(graph.b)
+      .into(graph.c)
       .withNfa(anyDirectedPath)
       .events()
 
-    events should (contain(AddTarget(c)) and not contain AddTarget(b))
+    events should (contain(AddTarget(graph.c)) and not contain AddTarget(graph.a))
   }
 
   /*******************
@@ -836,10 +867,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
    *******************/
 
   test("memory tracking") {
-    val graph = TestGraph.builder
-    val a = graph.node()
-    val b = graph.node()
-    graph.rel(a, b)
+    val graph = `(a)-->(b)`
 
     val mt = new LocalMemoryTracker()
 
@@ -848,8 +876,8 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       new PathTracer(EmptyMemoryTracker.INSTANCE, hooks)
 
     val iter = fixture()
-      .withGraph(graph.build())
-      .from(a)
+      .withGraph(graph.graph)
+      .from(graph.a)
       .withNfa(anyDirectedPath)
       .withMemoryTracker(mt)
       .build(createPathTracer)
@@ -877,14 +905,11 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
    ****************/
 
   test("can be interrupted by AssertOpen check") {
-    val graph = TestGraph.builder
-    val a = graph.node()
-    val b = graph.node()
-    graph.rel(a, b)
+    val graph = `(a)-->(b)`
 
     val iter = fixture()
-      .withGraph(graph.build())
-      .from(a)
+      .withGraph(graph.graph)
+      .from(graph.a)
       .withNfa(anyDirectedPath)
       .onAssertOpen {
         throw new Exception("boom")
@@ -892,6 +917,46 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .build()
 
     the[Exception] thrownBy iter.asScala.toList should have message "boom"
+  }
+
+  /***********************************************************************
+  * Generated graphs/fixtures, testing for equivalence with naive search *
+  ***********************************************************************/
+
+  for {
+    nfa <- Seq(
+      `(s) ((a)-->(b))* (t)`,
+      `(s) ((a)-->(b))+ (t)`,
+      `(s) ((a)--(b))+ (t)`,
+      `(s) ((a)--(b)--(c))* (t)`
+    )
+    graph <- testGraphs
+    into <- Seq(true, false)
+    grouped <- Seq(true, false)
+    k <- Seq(Int.MaxValue, 1, 2)
+  } {
+    test(
+      s"running the algorithm gives the same results as naive search. into=$into grouped=$grouped k=$k nfa=$nfa graph=${graph.render}"
+    ) {
+      var f = fixture()
+        .withGraph(graph.graph)
+        .from(graph.source)
+        .withNfa(nfa)
+
+      if (into) {
+        f = f.into(graph.target)
+      }
+
+      if (grouped) {
+        f = f.grouped
+      }
+
+      if (k != Int.MaxValue) {
+        f = f.withK(k)
+      }
+
+      f.assertExpected()
+    }
   }
 
   /*********************************************************
@@ -1015,22 +1080,35 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     )
   }
 
-  private def anyDirectedPath(sb: PGStateBuilder): Unit = {
-    val s = sb.newState(isStartState = true, isFinalState = true)
-    s.addRelationshipExpansion(s, direction = Direction.OUTGOING)
-  }
+  /** Recursively compares groups of paths until we reach an expected group that is smaller than the remaining k */
+  private def compareGroups(
+    resultGroups: List[Set[TracedPath]],
+    expectedGroups: List[Set[TracedPath]],
+    k: Int
+  ): Unit = {
+    (resultGroups, expectedGroups) match {
+      case (res :: resTail, exp :: expTail) if exp.size <= k =>
+        res shouldBe exp
+        compareGroups(resTail, expTail, k - exp.size)
 
-  private def singleRelPath(sb: PGStateBuilder): Unit = {
-    sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
-  }
+      case (res :: _, exp :: _) =>
+        res.size shouldBe k
+        exp should contain allElementsOf res
 
-  private def pathLength(path: TracedPath) = path.entities().count(_.entityType() == EntityType.RELATIONSHIP)
+      case (res, Nil) =>
+        res shouldBe empty
+
+      case (Nil, _) =>
+        k shouldBe 0
+    }
+  }
 
   case class FixtureBuilder[A](
     graph: TestGraph,
     nfa: PGStateBuilder,
     source: Long,
     intoTarget: Long,
+    searchMode: SearchMode,
     isGroup: Boolean,
     k: Int,
     projection: TracedPath => A,
@@ -1048,7 +1126,14 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       builder
     })
     def from(source: Long): FixtureBuilder[A] = copy(source = source)
-    def into(intoTarget: Long): FixtureBuilder[A] = copy(intoTarget = intoTarget)
+
+    def into(intoTarget: Long, searchMode: SearchMode): FixtureBuilder[A] =
+      copy(intoTarget = intoTarget, searchMode = searchMode)
+
+    def into(intoTarget: Long): FixtureBuilder[A] =
+      into(intoTarget, if (intoTarget == -1L) SearchMode.Unidirectional else SearchMode.Bidirectional)
+
+    def withMode(searchMode: SearchMode): FixtureBuilder[A] = copy(searchMode = searchMode)
     def grouped: FixtureBuilder[A] = copy(isGroup = true)
     def withK(k: Int): FixtureBuilder[A] = copy(k = k)
     def withMemoryTracker(mt: MemoryTracker): FixtureBuilder[A] = copy(mt = mt)
@@ -1056,14 +1141,29 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
 
     /** NB: wipes any configured filter, since the iterated item type will change */
     def project[B](projection: TracedPath => B): FixtureBuilder[B] =
-      FixtureBuilder[B](graph, nfa, source, intoTarget, isGroup, k, projection, _ => true, mt, hooks, assertOpen)
+      FixtureBuilder[B](
+        graph,
+        nfa,
+        source,
+        intoTarget,
+        searchMode,
+        isGroup,
+        k,
+        projection,
+        _ => true,
+        mt,
+        hooks,
+        assertOpen
+      )
     def filter(predicate: A => Boolean): FixtureBuilder[A] = copy(predicate = predicate)
 
     def build(createPathTracer: (MemoryTracker, PPBFSHooks) => PathTracer = new PathTracer(_, _)) =
       new PGPathPropagatingBFS[A](
         source,
-        intoTarget,
         nfa.getStart.state,
+        intoTarget,
+        nfa.getFinal.state,
+        searchMode,
         new MockGraphCursor(graph),
         createPathTracer(mt, hooks),
         projection(_),
@@ -1092,6 +1192,74 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
      * Graph IDs are unique across nodes and relationships so there is no risk of inadvertent overlap when comparing. */
     def paths()(implicit ev: A =:= TracedPath): Seq[Seq[Long]] =
       build().asScala.map(_.entities().map(_.id()).toSeq).toSeq
+
+    /** Runs a naive/slow DFS equivalent of the algorithm and compares results with the real implementation */
+    def assertExpected()(implicit ev: A =:= TracedPath): Unit = {
+      val result = this.toList.map(ev)
+      val expected = allPaths()
+
+      if (k == Int.MaxValue) {
+        // with no K value set, we can just compare all the paths without worrying about selectivity
+        result should contain theSameElementsAs expected
+      } else {
+        // if we have a limit then we need to ensure that the paths beneath that limit have been returned
+        val orderedResults = OrderedResults.fromSeq(result)
+        val orderedExpected = OrderedResults.fromSeq(expected)
+        if (isGroup) {
+          // this is the simpler case: we can apply the K limit to each target list since they are already grouped
+          orderedResults shouldBe orderedExpected.takeGroups(k)
+        } else {
+          // this is the most complex case since for each target we have to account for nondeterminism in chosen paths
+          orderedResults.targets shouldBe orderedExpected.targets
+
+          for ((target, resultPaths) <- orderedResults.byTargetThenLength) {
+            val expectedPaths = orderedExpected.paths(target)
+
+            compareGroups(resultPaths, expectedPaths, k)
+          }
+        }
+      }
+    }
+
+    /** Runs a recursive exhaustive depth first search to provide a comparison.
+     * Note that this does not truncate the result set by K, since that would be nondeterministic for non-grouped cases */
+    def allPaths()(implicit ev: A =:= TracedPath): Seq[TracedPath] = {
+      def recurse(stack: List[PathEntity], node: Long, state: State): Seq[TracedPath] = {
+        val nodeJuxtapositions = state.getNodeJuxtapositions
+          .filter(nj => nj.targetState().test(node))
+          .flatMap(nj => recurse(PathEntity.fromNode(nj.targetState(), node) :: stack, node, nj.targetState()))
+
+        val relExpansions = for {
+          re <- state.getRelationshipExpansions
+          (rel, dir) <- graph.rels(node)
+          nextNode = dir match {
+            case RelationshipDirection.OUTGOING => rel.target
+            case RelationshipDirection.INCOMING => rel.source
+            case RelationshipDirection.LOOP     => node
+            case _                              => fail("inexhaustive match")
+          }
+          if dir.matches(re.direction) &&
+            re.testRelationship(rel) &&
+            re.targetState().test(nextNode) &&
+            !stack.exists(e => e.id() == rel.id)
+
+          newStack = PathEntity.fromNode(re.targetState(), nextNode) ::
+            PathEntity.fromRel(re, rel.id) ::
+            stack
+
+          paths <- recurse(newStack, nextNode, re.targetState())
+        } yield paths
+
+        val wholePath = Option.when(state.isFinalState && (intoTarget == -1L || intoTarget == node))(new TracedPath(
+          stack.reverse.toArray
+        ))
+
+        nodeJuxtapositions ++ relExpansions ++ wholePath
+      }
+
+      recurse(List(PathEntity.fromNode(nfa.getStart.state, source)), source, nfa.getStart.state)
+        .filter(path => this.predicate(ev.flip(path)))
+    }
   }
 
   private def fixture() = FixtureBuilder[TracedPath](
@@ -1099,6 +1267,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     new PGStateBuilder,
     -1L,
     -1L,
+    SearchMode.Unidirectional,
     isGroup = false,
     Int.MaxValue,
     identity,
@@ -1109,29 +1278,221 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
   )
 }
 
-case class TestGraph(nodes: Set[Long], rels: Set[TestGraph.Rel]) {
-  def withNode(id: Long): TestGraph = copy(nodes = nodes + id)
+object PGPathPropagatingBFSTest {
 
-  def withRel(id: Long, source: Long, target: Long, relType: Int): TestGraph = {
+  private def anyDirectedPath(sb: PGStateBuilder): Unit = {
+    val s = sb.newState(isStartState = true, isFinalState = true)
+    s.addRelationshipExpansion(s, direction = Direction.OUTGOING)
+  }
+
+  private def singleRelPath(sb: PGStateBuilder): Unit = {
+    sb.newState(isStartState = true).addRelationshipExpansion(sb.newState(isFinalState = true))
+  }
+
+  private def pathLength(path: TracedPath) = path.entities().count(_.entityType() == EntityType.RELATIONSHIP)
+  private def target(path: TracedPath) = path.entities().last.id()
+
+  /** Divides up paths by their target, then chunks them into groups of ascending path length */
+  case class OrderedResults(byTargetThenLength: Map[Long, List[Set[TracedPath]]]) {
+    def targets: Set[Long] = byTargetThenLength.keySet
+    def paths(target: Long): List[Set[TracedPath]] = byTargetThenLength(target)
+
+    /** Applies the K limit to each target group list */
+    def takeGroups(k: Int): OrderedResults = copy(byTargetThenLength =
+      byTargetThenLength
+        .view
+        .mapValues(_.take(k))
+        .toMap
+    )
+  }
+
+  object OrderedResults {
+
+    def fromSeq(seq: Seq[TracedPath]): OrderedResults = OrderedResults(
+      seq
+        .groupBy(target)
+        .view
+        .mapValues(_.groupBy(pathLength).toList.sortBy(_._1).map(_._2.toSet))
+        .toMap
+    )
+
+  }
+
+  // noinspection TypeAnnotation
+  private object `(a)-->(b)` {
+    private val g = TestGraph.builder
+    val a = g.node()
+    val b = g.node()
+    val ab = g.rel(a, b)
+    val graph = g.build()
+  }
+
+  // noinspection TypeAnnotation
+  private object `(a)<--(b)-->(c)` {
+    private val g = TestGraph.builder
+    val a = g.node()
+    val b = g.node()
+    val c = g.node()
+    val ba = g.rel(b, a)
+    val bc = g.rel(b, c)
+    val graph = g.build()
+  }
+
+  // noinspection TypeAnnotation
+  private object `(a)-->(b)-->(c)` {
+    private val g = TestGraph.builder
+    val a = g.node()
+    val b = g.node()
+    val c = g.node()
+    val ab = g.rel(a, b)
+    val bc = g.rel(b, c)
+    val graph = g.build()
+  }
+
+  // noinspection TypeAnnotation
+  private object `(a)-->(b)<--(c)` {
+    private val g = TestGraph.builder
+    val a = g.node()
+    val b = g.node()
+    val c = g.node()
+    val ab = g.rel(a, b)
+    val cb = g.rel(c, b)
+    val graph = g.build()
+  }
+
+  // noinspection TypeAnnotation
+  private object `(a)<--(b)-->(a)` {
+    private val g = TestGraph.builder
+    val a = g.node()
+    val b = g.node()
+    val ba1 = g.rel(b, a)
+    val ba2 = g.rel(b, a)
+    val graph = g.build()
+  }
+
+  private class Nfa(name: String, construct: PGStateBuilder => Unit) extends Function[PGStateBuilder, Unit] {
+    override def toString: String = name
+    def apply(v1: PGStateBuilder): Unit = construct(v1)
+  }
+
+  private def nfa(name: String)(construct: PGStateBuilder => Unit): Nfa = new Nfa(name, construct)
+
+  private val `(s) ((a)-->(b))* (t)` : Nfa = nfa("(s) ((a)-->(b))* (t)") { sb =>
+    val s = sb.newState("s", isStartState = true)
+    val a = sb.newState("a")
+    val b = sb.newState("b")
+    val t = sb.newState("t", isFinalState = true)
+
+    s.addNodeJuxtaposition(a)
+    a.addRelationshipExpansion(b, direction = Direction.OUTGOING)
+    b.addNodeJuxtaposition(a)
+    b.addNodeJuxtaposition(t)
+    s.addNodeJuxtaposition(t)
+  }
+
+  private val `(s) ((a)-->(b))+ (t)` : Nfa = nfa("(s) ((a)-->(b))+ (t)") { sb =>
+    val s = sb.newState("s", isStartState = true)
+    val a = sb.newState("a")
+    val b = sb.newState("b")
+    val t = sb.newState("t", isFinalState = true)
+
+    s.addNodeJuxtaposition(a)
+    a.addRelationshipExpansion(b, direction = Direction.OUTGOING)
+    b.addNodeJuxtaposition(a)
+    b.addNodeJuxtaposition(t)
+  }
+
+  private val `(s) ((a)--(b))+ (t)` : Nfa = nfa("(s) ((a)--(b))+ (t)") { sb =>
+    val s = sb.newState("s", isStartState = true)
+    val a = sb.newState("a")
+    val b = sb.newState("b")
+    val t = sb.newState("t", isFinalState = true)
+
+    s.addNodeJuxtaposition(a)
+    a.addRelationshipExpansion(b, direction = Direction.BOTH)
+    b.addNodeJuxtaposition(a)
+    b.addNodeJuxtaposition(t)
+  }
+
+  private val `(s) ((a)--(b)--(c))* (t)` : Nfa = nfa("(s) ((a)--(b)--(c))* (t)") { sb =>
+    val s = sb.newState("s", isStartState = true)
+    val a = sb.newState("a")
+    val b = sb.newState("b")
+    val c = sb.newState("c")
+    val t = sb.newState("t", isFinalState = true)
+
+    s.addNodeJuxtaposition(a)
+    a.addRelationshipExpansion(b, direction = Direction.BOTH)
+    b.addRelationshipExpansion(c, direction = Direction.BOTH)
+    c.addNodeJuxtaposition(a)
+    c.addNodeJuxtaposition(t)
+    s.addNodeJuxtaposition(t)
+  }
+
+  private case class NamedGraph(render: String, graph: TestGraph, source: Long, target: Long)
+
+  /** a generated series of graphs consisting of a variable length chain of relationships from (start) to (end),
+   * with another variable length chain connecting two nodes from the original */
+  private val testGraphs: Seq[NamedGraph] = {
+    for {
+      mainLength <- 1 to 4
+      g2 = TestGraph.empty.line(mainLength)
+      start = g2.nodes.min
+      end = g2.nodes.max
+
+      n1 <- g2.nodes
+      n2 <- g2.nodes
+      secondaryLength <- 1 to 3
+      g3 = g2.chainRel(n1, n2, secondaryLength)
+    } yield NamedGraph(
+      s"(n$start)-$mainLength->(n$end), (n$n1)-$secondaryLength->(n$n2)",
+      g3,
+      start,
+      end
+    )
+  }
+
+}
+
+case class TestGraph(nodes: Set[Long], rels: Set[TestGraph.Rel]) {
+  def lastId: Long = nodes.size + rels.size
+  def nextId: Long = lastId + 1
+
+  def withNode(): TestGraph = copy(nodes = nodes + nextId)
+
+  def withRel(source: Long, target: Long, relType: Int): TestGraph = {
     assert(nodes.contains(source) && nodes.contains(target))
-    copy(rels = rels + Rel(id, source, target, relType))
+    copy(rels = rels + Rel(nextId, source, target, relType))
   }
 
   def rels(node: Long): Iterator[(Rel, RelationshipDirection)] =
-    rels.iterator.flatMap { rel =>
-      if (node == rel.source && node == rel.target) {
-        Some(rel -> RelationshipDirection.LOOP)
-      } else if (node == rel.source) {
-        Some(rel -> RelationshipDirection.OUTGOING)
-      } else if (node == rel.target) {
-        Some(rel -> RelationshipDirection.INCOMING)
-      } else None
+    rels.iterator.collect {
+      case rel if node == rel.source && node == rel.target =>
+        rel -> RelationshipDirection.LOOP
+      case rel if node == rel.source =>
+        rel -> RelationshipDirection.OUTGOING
+      case rel if node == rel.target =>
+        rel -> RelationshipDirection.INCOMING
     }
+
+  def builder = new TestGraph.Builder(this)
+
+  def line(length: Int): TestGraph =
+    withBuilder(_.line(length))
+
+  def chainRel(source: Long, target: Long, length: Int): TestGraph =
+    withBuilder(_.chainRel(source, target, length))
+
+  private def withBuilder(f: TestGraph.Builder => Unit): TestGraph = {
+    val b = builder
+    f(b)
+    b.build()
+  }
 }
 
 object TestGraph {
 
-  case class Rel(id: Long, source: Long, target: Long, relType: Int) {
+  case class Rel(id: Long, source: Long, target: Long, relType: Int) extends RelationshipDataReader {
 
     def opposite(x: Long): Long =
       x match {
@@ -1139,26 +1500,50 @@ object TestGraph {
         case `source` => target
         case _        => throw new IllegalArgumentException()
       }
-  }
-  val empty: TestGraph = TestGraph(Set.empty, Set.empty)
-  def builder = new Builder()
 
-  class Builder {
-    var nextId = 0L
-    private var graph = TestGraph.empty
+    override def toString: String = s"($source)-[$id:$relType]->($target)"
+
+    def relationshipReference(): Long = id
+    def `type`(): Int = relType
+    def sourceNodeReference(): Long = source
+    def targetNodeReference(): Long = target
+    def source(cursor: NodeCursor): Unit = ???
+    def target(cursor: NodeCursor): Unit = ???
+  }
+
+  val empty: TestGraph = TestGraph(Set.empty, Set.empty)
+  def builder = empty.builder
+
+  class Builder(private var graph: TestGraph) {
 
     def node(): Long = {
-      nextId += 1
-      graph = graph.withNode(nextId)
+      val nextId = graph.nextId
+      graph = graph.withNode()
       nextId
     }
 
     def rel(source: Long, target: Long): Long = rel(source, target, 1)
 
     def rel(source: Long, target: Long, relType: Int): Long = {
-      nextId += 1
-      graph = graph.withRel(nextId, source, target, relType)
+      val nextId = graph.nextId
+      graph = graph.withRel(source, target, relType)
       nextId
+    }
+
+    def line(length: Int): Seq[Long] = {
+      val nodes = (0 to length).map(_ => node())
+      nodes.zip(nodes.drop(1)).foreach { case (a, b) => rel(a, b) }
+      nodes
+    }
+
+    def chainRel(source: Long, target: Long, length: Int): Unit = {
+      var current = source
+      for (_ <- 1 until length) {
+        val next = node()
+        rel(current, next)
+        current = next
+      }
+      rel(current, target)
     }
 
     def build(): TestGraph = graph

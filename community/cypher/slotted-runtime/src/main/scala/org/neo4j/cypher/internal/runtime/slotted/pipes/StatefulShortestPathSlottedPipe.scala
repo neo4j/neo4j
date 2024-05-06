@@ -83,11 +83,13 @@ case class StatefulShortestPathSlottedPipe(
     input.flatMap { inputRow =>
       val sourceNode = getSourceNodeFunction.applyAsLong(inputRow)
       val intoTargetNode = getTargetNodeFunction.applyAsLong(inputRow)
+      val (startState, finalState) = commandNFA.compile(inputRow, state)
 
       PGPathPropagatingBFS.create(
         sourceNode,
+        startState,
         intoTargetNode,
-        commandNFA.compile(inputRow, state),
+        finalState,
         state.query.transactionalContext.dataRead,
         nodeCursor,
         traversalCursor,

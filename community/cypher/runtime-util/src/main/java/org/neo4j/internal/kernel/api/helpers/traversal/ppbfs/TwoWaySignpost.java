@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
-import java.util.BitSet;
-import java.util.stream.Collectors;
+import java.util.Objects;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipExpansion;
 import org.neo4j.memory.HeapEstimator;
@@ -32,7 +31,7 @@ import org.neo4j.util.Preconditions;
  * Represents a relationship in the Product Graph with:
  * <ul>
  * <li> a set of path lengths from the source (Source Signpost)
- * <li> the minimum length to the target (Target Signpost)
+ * <li> the minimum sourceLength to the target (Target Signpost)
  */
 public abstract sealed class TwoWaySignpost implements Measurable {
 
@@ -42,19 +41,21 @@ public abstract sealed class TwoWaySignpost implements Measurable {
     public final NodeState forwardNode;
 
     // Source signpost
-    protected final BitSet lengthsFromSource;
-    protected final BitSet verifiedAtLengthFromSource;
+    protected final Lengths lengths;
 
     // targetSignpost
-    protected int minDistToTarget = NO_TARGET_DISTANCE;
+    protected int minTargetDistance = NO_TARGET_DISTANCE;
 
-    public TwoWaySignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int lengthFromSource) {
+    protected TwoWaySignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode) {
         this.prevNode = prevNode;
         this.forwardNode = forwardNode;
-        this.lengthsFromSource = new BitSet();
-        this.verifiedAtLengthFromSource = new BitSet();
-        this.lengthsFromSource.set(lengthFromSource);
+        this.lengths = new Lengths();
         mt.allocateHeap(estimatedHeapUsage());
+    }
+
+    protected TwoWaySignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int sourceLength) {
+        this(mt, prevNode, forwardNode);
+        this.lengths.set(sourceLength, Lengths.Type.Source);
     }
 
     public static RelSignpost fromRelExpansion(
@@ -63,13 +64,26 @@ public abstract sealed class TwoWaySignpost implements Measurable {
             long relId,
             NodeState forwardNode,
             RelationshipExpansion relationshipExpansion,
-            int lengthFromSource) {
-        return new RelSignpost(mt, prevNode, relId, forwardNode, relationshipExpansion, lengthFromSource);
+            int sourceLength) {
+        return new RelSignpost(mt, prevNode, relId, forwardNode, relationshipExpansion, sourceLength);
+    }
+
+    public static RelSignpost fromRelExpansion(
+            MemoryTracker mt,
+            NodeState prevNode,
+            long relId,
+            NodeState forwardNode,
+            RelationshipExpansion relationshipExpansion) {
+        return new RelSignpost(mt, prevNode, relId, forwardNode, relationshipExpansion);
     }
 
     public static NodeSignpost fromNodeJuxtaposition(
-            MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int lengthFromSource) {
-        return new NodeSignpost(mt, prevNode, forwardNode, lengthFromSource);
+            MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int sourceLength) {
+        return new NodeSignpost(mt, prevNode, forwardNode, sourceLength);
+    }
+
+    public static NodeSignpost fromNodeJuxtaposition(MemoryTracker mt, NodeState prevNode, NodeState forwardNode) {
+        return new NodeSignpost(mt, prevNode, forwardNode);
     }
 
     public abstract int dataGraphLength();
@@ -81,92 +95,59 @@ public abstract sealed class TwoWaySignpost implements Measurable {
      * the first time the SourceSignpost is traced, and the hasBeenTraced mechanism is used to determine this.
      */
     public boolean hasBeenTraced() {
-        return this.minDistToTarget != NO_TARGET_DISTANCE;
+        return this.minTargetDistance != NO_TARGET_DISTANCE;
     }
 
-    /**
-     * See java doc comment for SourceSignpost.hasBeenTraced()
-     */
-    public void setMinDistToTarget(int dgDist) {
+    public void setMinTargetDistance(int distance, PGPathPropagatingBFS.Phase phase) {
         Preconditions.checkState(
-                !hasBeenTraced(), "A signpost should only have setMinDistToTarget() called upon it on the first trace");
-        this.minDistToTarget = dgDist;
-        this.prevNode.addTargetSignpost(this, dgDist);
+                this.minTargetDistance == NO_TARGET_DISTANCE,
+                "A signpost should only have setMinDistToTarget() called upon it on the first trace");
+        this.minTargetDistance = distance;
+        this.prevNode.addTargetSignpost(this, distance, phase);
     }
 
-    public int minDistToTarget() {
-        return this.minDistToTarget;
+    public int minTargetDistance() {
+        return this.minTargetDistance;
     }
 
-    /**
-     * Indicates that this signpost has been activated at least twice, and is therefore a product graph duplicate in the
-     * currently-traced path.
-     * <p>
-     * The "active" mechanism is used during path tracing to simplify duplicate relationship checking. While we're
-     * laying out a path during path tracing, we always start from the target and trace our way back to the source
-     * incrementally. During this process, we're interested in knowing if the currently laid out subpath towards
-     * the target is a trail in the product graph.
-     * <p>
-     * The "active" mechanism allows us to avoid a bunch of looping over the currently laid out subpath, or *active*
-     * subpath, to determine if there are duplicated relationships. Instead, since it is the case that every
-     * product graph relationships uniquely corresponds to a SourceSignpost instance, we can keep counters
-     * in these signposts to determine if a given signpost is active, and if so, we know
-     * that the product graph relationships is duplicated in the active subpath.
-     * <p>
-     * It's important to call deActivate() on the signposts when we remove them from the laid out subpath we're tracing.
-     */
-    public abstract boolean isDoublyActive();
-
-    /**
-     * See java doc comment for SourceSignpost.isDoublyActive()
-     */
-    public abstract void activate();
-
-    /**
-     * See java doc comment for SourceSignpost.isDoublyActive()
-     */
-    public abstract void deactivate();
-
-    public void addSourceLength(int lengthFromSource) {
-        this.lengthsFromSource.set(lengthFromSource);
+    public void addSourceLength(int sourceLength) {
+        this.lengths.set(sourceLength, Lengths.Type.Source);
+        prevNode.globalState.hooks.addSourceLength(this, sourceLength);
     }
 
-    public boolean hasSourceLength(int length) {
-        return lengthsFromSource.get(length);
+    public boolean hasSourceLength(int sourceLength) {
+        return lengths.get(sourceLength, Lengths.Type.Source);
     }
 
     /**
-     * Propagate the length pair up to the forward node and register the new source length with the forward node
+     * Propagate the sourceLength pair up to the forward node and register the new source sourceLength with the forward node
      */
-    public void propagate(int lengthFromSource, int lengthToTarget) {
-        int newLength = lengthFromSource + dataGraphLength();
-        forwardNode.newPropagatedLengthFromSource(newLength, lengthToTarget - dataGraphLength());
+    public void propagate(int sourceLength, int targetLength) {
+        int newLength = sourceLength + dataGraphLength();
+        forwardNode.newPropagatedSourceLength(newLength, targetLength - dataGraphLength());
         this.addSourceLength(newLength);
     }
 
-    public void pruneSourceLength(int lengthFromSource) {
-        prevNode.globalState.hooks.pruneSourceLength(this, lengthFromSource);
-        this.lengthsFromSource.set(lengthFromSource, false);
-        this.forwardNode.synchronizeLengthAfterPrune(lengthFromSource);
+    public void pruneSourceLength(int sourceLength) {
+        prevNode.globalState.hooks.pruneSourceLength(this, sourceLength);
+        this.lengths.clear(sourceLength, Lengths.Type.Source);
+        this.forwardNode.synchronizeLengthAfterPrune(sourceLength);
     }
 
-    public void setVerified(int lengthFromSource) {
-        prevNode.globalState.hooks.setVerified(this, lengthFromSource);
-        this.verifiedAtLengthFromSource.set(lengthFromSource, true);
+    public void setVerified(int sourceLength) {
+        prevNode.globalState.hooks.setVerified(this, sourceLength);
+        this.lengths.set(sourceLength, Lengths.Type.ConfirmedSource);
     }
 
-    public boolean isVerifiedAtLength(int length) {
-        return verifiedAtLengthFromSource.get(length);
+    public boolean isVerifiedAtLength(int sourceLength) {
+        return lengths.get(sourceLength, Lengths.Type.ConfirmedSource);
     }
-
-    public abstract boolean dataGraphRelationshipEquals(TwoWaySignpost other);
 
     /** A signpost that points across a relationship traversal */
     public static final class RelSignpost extends TwoWaySignpost {
 
         public final long relId;
-        private final RelationshipExpansion relationshipExpansion;
-        private int activations;
+        public final RelationshipExpansion relationshipExpansion;
 
         private RelSignpost(
                 MemoryTracker mt,
@@ -178,23 +159,17 @@ public abstract sealed class TwoWaySignpost implements Measurable {
             super(mt, prevNode, forwardNode, lengthFromSource);
             this.relId = relId;
             this.relationshipExpansion = relationshipExpansion;
-            this.activations = 0;
         }
 
-        @Override
-        public boolean isDoublyActive() {
-            return activations > 1;
-        }
-
-        @Override
-        public void activate() {
-            activations += 1;
-        }
-
-        @Override
-        public void deactivate() {
-            Preconditions.checkArgument(activations > 0, "Signpost activations should never be negative");
-            activations -= 1;
+        private RelSignpost(
+                MemoryTracker mt,
+                NodeState prevNode,
+                long relId,
+                NodeState forwardNode,
+                RelationshipExpansion relationshipExpansion) {
+            super(mt, prevNode, forwardNode);
+            this.relId = relId;
+            this.relationshipExpansion = relationshipExpansion;
         }
 
         @Override
@@ -202,15 +177,7 @@ public abstract sealed class TwoWaySignpost implements Measurable {
             return 1;
         }
 
-        @Override
-        public boolean dataGraphRelationshipEquals(TwoWaySignpost other) {
-            if (!(other instanceof RelSignpost otherRS)) {
-                return false;
-            }
-            return relId == otherRS.relId;
-        }
-
-        public SlotOrName slotOrName() {
+        private SlotOrName slotOrName() {
             return relationshipExpansion.slotOrName();
         }
 
@@ -224,15 +191,13 @@ public abstract sealed class TwoWaySignpost implements Measurable {
 
             sb.append(relId).append("]->").append(forwardNode);
 
-            if (minDistToTarget != NO_TARGET_DISTANCE) {
-                sb.append(", minDistToTarget: ").append(minDistToTarget);
+            if (minTargetDistance != NO_TARGET_DISTANCE) {
+                sb.append(", minTargetDistance: ").append(minTargetDistance);
             }
 
-            if (!lengthsFromSource.isEmpty()) {
-                var lengths = lengthsFromSource.stream()
-                        .mapToObj(i -> i + (verifiedAtLengthFromSource.get(i) ? "✓" : "?"))
-                        .collect(Collectors.joining(",", "{", "}"));
-                sb.append(", lengthsFromSource: ").append(lengths);
+            var sourceLengths = lengths.renderSourceLengths();
+            if (!sourceLengths.isEmpty()) {
+                sb.append(", sourceLengths: ").append(sourceLengths);
             }
 
             return sb.toString();
@@ -242,7 +207,20 @@ public abstract sealed class TwoWaySignpost implements Measurable {
 
         @Override
         public long estimatedHeapUsage() {
-            return SHALLOW_SIZE;
+            return SHALLOW_SIZE + Lengths.SHALLOW_SIZE;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RelSignpost that = (RelSignpost) o;
+            return prevNode == that.prevNode && forwardNode == that.forwardNode && relId == that.relId;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(prevNode, forwardNode, relId);
         }
     }
 
@@ -251,21 +229,12 @@ public abstract sealed class TwoWaySignpost implements Measurable {
 
         private NodeSignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode, int lengthFromSource) {
             super(mt, prevNode, forwardNode, lengthFromSource);
+            assert prevNode != forwardNode : "A state cannot have a node juxtaposition to itself";
         }
 
-        @Override
-        public boolean isDoublyActive() {
-            return false;
-        }
-
-        @Override
-        public void activate() {
-            // Node juxtapositions may be duplicated, and we implement this by saying that they're never active
-        }
-
-        @Override
-        public void deactivate() {
-            // Node juxtapositions may be duplicated, and we implement this by saying that they're never active
+        private NodeSignpost(MemoryTracker mt, NodeState prevNode, NodeState forwardNode) {
+            super(mt, prevNode, forwardNode);
+            assert prevNode != forwardNode : "A state cannot have a node juxtaposition to itself";
         }
 
         @Override
@@ -274,37 +243,39 @@ public abstract sealed class TwoWaySignpost implements Measurable {
         }
 
         @Override
-        public boolean dataGraphRelationshipEquals(TwoWaySignpost other) {
-            // Node juxtapositions disappear after projection to the data graph, so they can never be the cause
-            // of duplicated data graph relationships.
-            return false;
-        }
-
-        @Override
         public String toString() {
             var sb = new StringBuilder("NJ ").append(prevNode).append(" ").append(forwardNode);
 
-            if (minDistToTarget != NO_TARGET_DISTANCE) {
-                sb.append(", minDistToTarget: ").append(minDistToTarget);
+            if (minTargetDistance != NO_TARGET_DISTANCE) {
+                sb.append(", minTargetDistance: ").append(minTargetDistance);
             }
 
-            if (!lengthsFromSource.isEmpty()) {
-                var lengths = lengthsFromSource.stream()
-                        .mapToObj(i -> i + (verifiedAtLengthFromSource.get(i) ? "✓" : "?"))
-                        .collect(Collectors.joining(",", "{", "}"));
-                sb.append(", lengthsFromSource: ").append(lengths);
+            var sourceLengths = lengths.renderSourceLengths();
+            if (!sourceLengths.isEmpty()) {
+                sb.append(", sourceLengths: ").append(sourceLengths);
             }
 
             return sb.toString();
         }
 
         private static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(NodeSignpost.class);
-        private static long BITSET_MIN_SIZE =
-                HeapEstimator.shallowSizeOfInstance(BitSet.class) + HeapEstimator.sizeOfLongArray(1);
 
         @Override
         public long estimatedHeapUsage() {
-            return SHALLOW_SIZE + BITSET_MIN_SIZE + BITSET_MIN_SIZE;
+            return SHALLOW_SIZE + Lengths.SHALLOW_SIZE;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            NodeSignpost that = (NodeSignpost) o;
+            return prevNode == that.prevNode && forwardNode == that.forwardNode;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(prevNode, forwardNode);
         }
     }
 }

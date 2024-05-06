@@ -19,8 +19,13 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
+import org.neo4j.collection.trackable.HeapTrackingArrayList
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.FoundNodes
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.GlobalState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
 
 private[ppbfs] class EventPPBFSHooks(recorder: EventRecorder) extends PPBFSHooks {
 
@@ -36,11 +41,24 @@ private[ppbfs] class EventPPBFSHooks(recorder: EventRecorder) extends PPBFSHooks
     recorder.nextLevel(depth)
   }
 
-  override def schedulePropagation(nodeData: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {
+  override def schedule(
+    nodeData: NodeState,
+    lengthFromSource: Int,
+    lengthToTarget: Int,
+    source: GlobalState.ScheduleSource
+  ): Unit = {
     recorder.schedulePropagation(nodeData.id(), lengthFromSource, lengthToTarget)
   }
 
   override def addTarget(nodeData: NodeState): Unit = {
     recorder.addTarget(nodeData.id())
+  }
+
+  override def expand(direction: TraversalDirection, foundNodes: FoundNodes): Unit = {
+    recorder.expand(direction, foundNodes.forwardDepth(), foundNodes.backwardDepth())
+  }
+
+  override def expandNode(nodeId: Long, states: HeapTrackingArrayList[State], direction: TraversalDirection): Unit = {
+    recorder.expandNode(nodeId, direction)
   }
 }

@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.Write
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.PGStateBuilder
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor
 import org.neo4j.io.pagecache.context.CursorContext
@@ -348,7 +349,7 @@ class ProductGraphTraversalCursorTest extends CypherFunSuite with GraphDatabaseT
             .flatMap(state => graph.adjacencyLists(PGNode(nodeId, state.id)))
             .filter(_.id != StatementConstants.NO_SUCH_RELATIONSHIP)
 
-        pgCursor.setNodeAndStates(nodeId, statesSubset.toList.asJava)
+        pgCursor.setNodeAndStates(nodeId, statesSubset.toList.asJava, TraversalDirection.Forward)
         val foundRelationships = new Iterator[PGRelationship] {
           def hasNext: Boolean = pgCursor.next()
 

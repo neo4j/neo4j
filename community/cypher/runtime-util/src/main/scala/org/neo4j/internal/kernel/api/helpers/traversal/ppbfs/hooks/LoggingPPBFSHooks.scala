@@ -19,17 +19,23 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
+import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingIntObjectHashMap
-import org.neo4j.collection.trackable.HeapTrackingUnifiedSet
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
+import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.FoundNodes
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.GlobalState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.NodeState
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.PathTracer
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.Propagator.NodeStateSkipList
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TraversalDirection
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.TwoWaySignpost
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks.Debug
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks.Info
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks.Level
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
 
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.language.implicitConversions
 
 /**
@@ -38,45 +44,45 @@ import scala.language.implicitConversions
 class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
   private val PADDING = 34
 
-  override def addSourceSignpost(signpost: TwoWaySignpost, lengthFromSource: Int): Unit = {
+  override def addSourceSignpost(signpost: TwoWaySignpost, sourceLength: Int): Unit = {
     log(
       Debug,
       "signpost" -> signpost,
-      "lengthFromSource" -> lengthFromSource
+      "sourceLength" -> sourceLength
     )
   }
 
-  override def addTargetSignpost(signpost: TwoWaySignpost, lengthToTarget: Int): Unit = {
+  override def addTargetSignpost(signpost: TwoWaySignpost, targetLength: Int): Unit = {
     log(
       Debug,
       "signpost" -> signpost,
-      "lengthToTarget" -> lengthToTarget
+      "targetLength" -> targetLength
     )
   }
 
-  override def propagateLengthPair(nodeState: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {
+  override def propagateLengthPair(nodeState: NodeState, sourceLength: Int, targetLength: Int): Unit = {
     log(
       Debug,
       "nodeState" -> nodeState,
-      "lengthFromSource" -> lengthFromSource,
-      "lengthToTarget" -> lengthToTarget
+      "sourceLength" -> sourceLength,
+      "targetLength" -> targetLength
     )
   }
 
-  override def propagateAllAtLengths(lengthFromSource: Int, lengthToTarget: Int): Unit = {
+  override def propagateAllAtLengths(sourceLength: Int, targetLength: Int): Unit = {
     log(
       Debug,
-      "lengthFromSource" -> lengthFromSource,
-      "lengthToTarget" -> lengthToTarget
+      "sourceLength" -> sourceLength,
+      "targetLength" -> targetLength
     )
   }
 
-  override def validateLengthState(nodeState: NodeState, lengthFromSource: Int, tracedLengthToTarget: Int): Unit = {
+  override def validateSourceLength(nodeState: NodeState, sourceLength: Int, tracedTargetLength: Int): Unit = {
     log(
       Debug,
       "nodeState" -> nodeState,
-      "lengthFromSource" -> lengthFromSource,
-      "tracedLengthToTarget" -> tracedLengthToTarget
+      "sourceLength" -> sourceLength,
+      "tracedTargetLength" -> tracedTargetLength
     )
   }
 
@@ -88,19 +94,27 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
     )
   }
 
-  override def pruneSourceLength(sourceSignpost: TwoWaySignpost, lengthFromSource: Int): Unit = {
+  override def pruneSourceLength(sourceSignpost: TwoWaySignpost, sourceLength: Int): Unit = {
     log(
       Debug,
-      "lengthFromSource" -> lengthFromSource,
+      "sourceLength" -> sourceLength,
       "sourceSignpost" -> sourceSignpost
     )
   }
 
-  override def setVerified(sourceSignpost: TwoWaySignpost, lengthFromSource: Int): Unit = {
+  override def setVerified(sourceSignpost: TwoWaySignpost, sourceLength: Int): Unit = {
     log(
       Debug,
-      "lengthFromSource" -> lengthFromSource,
+      "sourceLength" -> sourceLength,
       "sourceSignpost" -> sourceSignpost
+    )
+  }
+
+  override def addSourceLength(signpost: TwoWaySignpost, sourceLength: Int): Unit = {
+    log(
+      Debug,
+      "signpost" -> signpost,
+      "sourceLength" -> sourceLength
     )
   }
 
@@ -116,41 +130,45 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
     log(Info, "invalidTrail" -> getTracedPath().toString)
   }
 
-  override def schedulePropagation(nodeState: NodeState, lengthFromSource: Int, lengthToTarget: Int): Unit = {
+  override def schedule(
+    nodeState: NodeState,
+    sourceLength: Int,
+    targetLength: Int,
+    source: GlobalState.ScheduleSource
+  ): Unit = {
     log(
       Debug,
       "nodeState" -> nodeState,
-      "lengthFromSource" -> lengthFromSource,
-      "lengthToTarget" -> lengthToTarget
+      "sourceLength" -> sourceLength,
+      "targetLength" -> targetLength,
+      "scheduleSource" -> source
     )
   }
 
-  override def propagateAll(
-    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[HeapTrackingUnifiedSet[NodeState]]],
+  override def propagate(
+    nodesToPropagate: HeapTrackingIntObjectHashMap[HeapTrackingIntObjectHashMap[NodeStateSkipList]],
     totalLength: Int
   ): Unit = {
-    val str = new StringBuilder
+    color = DebugSupport.Magenta
 
-    nodesToPropagate.forEachKeyValue(
-      (totalLength: Int, v: HeapTrackingIntObjectHashMap[HeapTrackingUnifiedSet[NodeState]]) => {
-        v.forEachKeyValue((lengthFromSource: Int, s: HeapTrackingUnifiedSet[NodeState]) => {
+    if (nodesToPropagate.notEmpty()) {
+      val str = new StringBuilder
+
+      nodesToPropagate.forEachKeyValue((totalLength: Int, v: HeapTrackingIntObjectHashMap[NodeStateSkipList]) => {
+        v.forEachKeyValue((sourceLength: Int, s: NodeStateSkipList) => {
           str.append("\n")
             .append(" ".repeat(PADDING))
             .append("- ")
             .append(list(
               "totalLength" -> totalLength,
-              "lengthFromSource" -> lengthFromSource,
-              "nodes" -> s.asScala.mkString("[", ", ", "]")
+              "sourceLength" -> sourceLength,
+              "nodes" -> s.toString
             ))
         })
-      }
-    )
+      })
 
-    if (nodesToPropagate.isEmpty) {
-      str.append("(none)")
+      log(Debug, "nodesToPropagate" -> str)
     }
-
-    log(Debug, "nodesToPropagate" -> str)
   }
 
   override def addTarget(nodeState: NodeState): Unit = {
@@ -159,19 +177,19 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
 
   private var color = DebugSupport.Blue
 
-  private def toggleColor(): Unit = {
-    if (color eq DebugSupport.Blue) color = DebugSupport.Yellow
-    else color = DebugSupport.Blue
+  override def trace(currentDepth: Int): Unit = {
+    color = DebugSupport.Green
   }
 
   override def nextLevel(currentDepth: Int): Unit = {
-    toggleColor()
+    color = DebugSupport.White
+    System.out.println()
     log(Info, "level" -> currentDepth)
+    color = DebugSupport.Yellow
   }
 
   override def newRow(nodeId: Long): Unit = {
-    toggleColor()
-    System.out.println("\n*** New row from node " + nodeId + " ***\n")
+    System.out.println("\n*** New row from node " + nodeId + " ***")
   }
 
   override def activateSignpost(currentLength: Int, signpost: TwoWaySignpost): Unit = {
@@ -187,6 +205,51 @@ class LoggingPPBFSHooks(minLevel: Level) extends PPBFSHooks {
       Debug,
       "currentLength" -> currentLength,
       "signpost" -> signpost
+    )
+  }
+
+  override def expand(direction: TraversalDirection, foundNodes: FoundNodes): Unit = {
+    color = DebugSupport.Yellow
+    val frontier = foundNodes.frontier(direction)
+      .iterator()
+      .asScala
+      .flatMap(_.iterator().asScala)
+      .filter(_ != null)
+      .mkString("{", ",", "}")
+
+    log(
+      Debug,
+      "direction" -> direction,
+      "forwardDepth" -> foundNodes.forwardDepth(),
+      "backwardDepth" -> foundNodes.backwardDepth(),
+      "frontier" -> frontier
+    )
+  }
+
+  override def expandNode(nodeId: Long, states: HeapTrackingArrayList[State], direction: TraversalDirection): Unit = {
+    val stateNames = states.iterator().asScala
+      .filter(_ != null)
+      .map { s =>
+        s.slotOrName() match {
+          case SlotOrName.VarName(name, _) => name
+          case _                           => s.id()
+        }
+      }
+      .mkString("{", ",", "}")
+
+    log(
+      Debug,
+      "node" -> nodeId,
+      "states" -> stateNames,
+      "direction" -> direction
+    )
+  }
+
+  override def discover(nodeState: NodeState, direction: TraversalDirection): Unit = {
+    log(
+      Debug,
+      "nodeState" -> nodeState,
+      "direction" -> direction
     )
   }
 
