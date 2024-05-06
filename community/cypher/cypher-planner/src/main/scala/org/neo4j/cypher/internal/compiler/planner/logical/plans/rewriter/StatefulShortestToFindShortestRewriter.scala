@@ -97,7 +97,8 @@ case class StatefulShortestToFindShortestRewriter(
         selector,
         _,
         _,
-      _)
+        _
+      )
       // 2.0 start and end nodes are bound and 6.0 selection asks for shortest 1
       if source.availableSymbols.contains(targetNode) &&
         selector.k == 1 && statefulShortest.nodeVariableGroupings.isEmpty =>
