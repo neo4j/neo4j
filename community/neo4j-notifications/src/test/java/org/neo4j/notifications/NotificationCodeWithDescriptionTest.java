@@ -76,12 +76,14 @@ import static org.neo4j.notifications.NotificationDetail.unsatisfiableRelTypeExp
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
+import org.neo4j.gqlstatus.DiagnosticRecord;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
@@ -103,7 +105,8 @@ class NotificationCodeWithDescriptionTest {
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR (`person`:`Person`) ON (`person`.`name`))",
                 NotificationCategory.HINT,
                 "01N31",
-                "Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
+                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
+                "warn: hinted index not found. Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
     }
 
     @Test
@@ -121,7 +124,8 @@ class NotificationCodeWithDescriptionTest {
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`))",
                 NotificationCategory.HINT,
                 "01N31",
-                "Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
+                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
+                "warn: hinted index not found. Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
     }
 
     @Test
@@ -140,7 +144,8 @@ class NotificationCodeWithDescriptionTest {
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
                 NotificationCategory.HINT,
                 "01N31",
-                "Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
+                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
+                "warn: hinted index not found. Unable to create a plan with `INDEX :Person(name)` because the index does not exist.");
     }
 
     @Test
@@ -159,7 +164,8 @@ class NotificationCodeWithDescriptionTest {
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
                 NotificationCategory.HINT,
                 "01N31",
-                "Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
+                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
+                "warn: hinted index not found. Unable to create a plan with `TEXT INDEX :Person(name)` because the index does not exist.");
     }
 
     @Test
@@ -178,7 +184,8 @@ class NotificationCodeWithDescriptionTest {
                 "The hinted index does not exist, please check the schema (index is: TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`, `person`.`age`))",
                 NotificationCategory.HINT,
                 "01N31",
-                "Unable to create a plan with `TEXT INDEX :Person(name, age)` because the index does not exist.");
+                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
+                "warn: hinted index not found. Unable to create a plan with `TEXT INDEX :Person(name, age)` because the index does not exist.");
     }
 
     @Test
@@ -202,8 +209,8 @@ class NotificationCodeWithDescriptionTest {
                         + "(identifiers are: (n, node2))",
                 NotificationCategory.PERFORMANCE,
                 "03N90",
-                "The disconnected patterns `(node1), (node)--(node2)` build a cartesian product. "
-                        + "A cartesian product may produce a large amount of data and slow down query processing.");
+                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
+                "info: cartesian product. The disconnected patterns `(node1), (node)--(node2)` build a cartesian product. A cartesian product may produce a large amount of data and slow down query processing.");
     }
 
     @Test
@@ -223,8 +230,8 @@ class NotificationCodeWithDescriptionTest {
                         + "(hinted join key identifiers are: n, node2)",
                 NotificationCategory.HINT,
                 "01N30",
-                "Unable to create a plan with `JOIN ON n, node2`. Try to change the join key(s) or restructure "
-                        + "your query.");
+                new DiagnosticRecord(warning, hint, -1, -1, -1, Map.of()).asMap(),
+                "warn: join hint unfulfillable. Unable to create a plan with `JOIN ON n, node2`. Try to change the join key(s) or restructure your query.");
     }
 
     @Test
@@ -241,7 +248,8 @@ class NotificationCodeWithDescriptionTest {
                 "The query used a deprecated procedure. ('oldName' has been replaced by 'newName')",
                 NotificationCategory.DEPRECATION,
                 "01N01",
-                "`oldName` is deprecated. It is replaced by `newName`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated with replacement. `oldName` is deprecated. It is replaced by `newName`.");
     }
 
     @Test
@@ -258,7 +266,8 @@ class NotificationCodeWithDescriptionTest {
                 "The query used a deprecated procedure: `oldName`.",
                 NotificationCategory.DEPRECATION,
                 "01N02",
-                "`oldName` is deprecated and will be removed without a replacement.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated without replacement. `oldName` is deprecated and will be removed without a replacement.");
     }
 
     @Test
@@ -274,7 +283,8 @@ class NotificationCodeWithDescriptionTest {
                 "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (PARALLEL)",
                 NotificationCategory.UNSUPPORTED,
                 "01N40",
-                "The query cannot be executed with `runtime=parallel`, `runtime=pipelined` is used. Cause: `PARALLEL`.");
+                new DiagnosticRecord(warning, unsupported, -1, -1, -1, Map.of()).asMap(),
+                "warn: runtime unsupported. The query cannot be executed with `runtime=parallel`, `runtime=pipelined` is used. Cause: `PARALLEL`.");
     }
 
     @Test
@@ -292,8 +302,8 @@ class NotificationCodeWithDescriptionTest {
                 "Using a dynamic property makes it impossible to use an index lookup for this query (indexed label is: (:A))",
                 NotificationCategory.PERFORMANCE,
                 "03N95",
-                "An index exists on label/type(s) `A`. It is not possible to use indexes for dynamic "
-                        + "properties. Consider using static properties.");
+                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
+                "info: dynamic property. An index exists on label/type(s) `A`. It is not possible to use indexes for dynamic properties. Consider using static properties.");
     }
 
     @Test
@@ -310,7 +320,8 @@ class NotificationCodeWithDescriptionTest {
                 "The query used a deprecated function. ('oldName' has been replaced by 'newName')",
                 NotificationCategory.DEPRECATION,
                 "01N01",
-                "`oldName` is deprecated. It is replaced by `newName`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated with replacement. `oldName` is deprecated. It is replaced by `newName`.");
     }
 
     @Test
@@ -327,7 +338,8 @@ class NotificationCodeWithDescriptionTest {
                 "The query used a deprecated function: `oldName`.",
                 NotificationCategory.DEPRECATION,
                 "01N02",
-                "`oldName` is deprecated and will be removed without a replacement.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated without replacement. `oldName` is deprecated and will be removed without a replacement.");
     }
 
     @Test
@@ -343,7 +355,8 @@ class NotificationCodeWithDescriptionTest {
                 "The query used a deprecated runtime option. (option=deprecatedOption)",
                 NotificationCategory.DEPRECATION,
                 "01N01",
-                "`option=oldOption` is deprecated. It is replaced by `option=newOption`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated with replacement. `option=oldOption` is deprecated. It is replaced by `option=newOption`.");
     }
 
     @Test
@@ -359,7 +372,8 @@ class NotificationCodeWithDescriptionTest {
                 "The query used a procedure that generated a warning. (warning from procedure my.proc)",
                 NotificationCategory.GENERIC,
                 "01N62",
-                "The procedure `my.proc` generates the warning `warning from procedure`.");
+                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
+                "warn: procedure. The procedure `my.proc` generates the warning `warning from procedure`.");
     }
 
     @Test
@@ -375,7 +389,8 @@ class NotificationCodeWithDescriptionTest {
                 "The query used a deprecated field from a procedure. ('field' returned by 'proc' is deprecated.)",
                 NotificationCategory.DEPRECATION,
                 "01N03",
-                "`field` returned by procedure `proc` is deprecated.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: procedure return column deprecated. `field` returned by procedure `proc` is deprecated.");
     }
 
     @Test
@@ -391,7 +406,8 @@ class NotificationCodeWithDescriptionTest {
                 "The semantics of using colon in the separation of alternative relationship types will change in a future version. (Please use ':A|B' instead)",
                 NotificationCategory.DEPRECATION,
                 "01N01",
-                "`:A:|B` is deprecated. It is replaced by `:A|B`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated with replacement. `:A:|B` is deprecated. It is replaced by `:A|B`.");
     }
 
     @Test
@@ -408,7 +424,8 @@ class NotificationCodeWithDescriptionTest {
                         + "Please use properties() instead.",
                 NotificationCategory.DEPRECATION,
                 "01N01",
-                "`SET a = b` is deprecated. It is replaced by `SET a = properties(b)`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated with replacement. `SET a = b` is deprecated. It is replaced by `SET a = properties(b)`.");
     }
 
     @Test
@@ -425,7 +442,8 @@ class NotificationCodeWithDescriptionTest {
                         + "Please use a path with a length of 1 [r*1..1] instead or a Match with a limit.",
                 NotificationCategory.DEPRECATION,
                 "01N01",
-                "`shortestPath((n)-[r]->(m))` is deprecated. It is replaced by `shortestPath((n)-[r*1..1]->(m))`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated with replacement. `shortestPath((n)-[r]->(m))` is deprecated. It is replaced by `shortestPath((n)-[r*1..1]->(m))`.");
     }
 
     @Test
@@ -440,7 +458,8 @@ class NotificationCodeWithDescriptionTest {
                 "The `text-1.0` provider for text indexes is deprecated and will be removed in a future version. Please use `text-2.0` instead.",
                 NotificationCategory.DEPRECATION,
                 "01N01",
-                "`text-1.0` is deprecated. It is replaced by `text-2.0`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated with replacement. `text-1.0` is deprecated. It is replaced by `text-2.0`.");
     }
 
     @Test
@@ -459,8 +478,8 @@ class NotificationCodeWithDescriptionTest {
                         + "how problems could be avoided.",
                 NotificationCategory.PERFORMANCE,
                 "03N94",
-                "The query execution plan contains the `Eager` operator. `LOAD CSV` in combination with "
-                        + "`Eager` can consume a lot of memory.");
+                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
+                "info: eager operator. The query execution plan contains the `Eager` operator. `LOAD CSV` in combination with `Eager` can consume a lot of memory.");
     }
 
     @Test
@@ -476,7 +495,8 @@ class NotificationCodeWithDescriptionTest {
                 "The requested format has been deprecated. (u627)",
                 NotificationCategory.DEPRECATION,
                 "01N01",
-                "`deprecatedFormat` is deprecated. It is replaced by `newFormat`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated with replacement. `deprecatedFormat` is deprecated. It is replaced by `newFormat`.");
     }
 
     @Test
@@ -492,7 +512,8 @@ class NotificationCodeWithDescriptionTest {
                 "The Unicode character `\\u0061` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.",
                 NotificationCategory.DEPRECATION,
                 "01N00",
-                "The Unicode character `\\u0061` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated. The Unicode character `\\u0061` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.");
     }
 
     @Test
@@ -507,7 +528,8 @@ class NotificationCodeWithDescriptionTest {
                 "The character with the Unicode representation `\\u0061` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.",
                 NotificationCategory.DEPRECATION,
                 "01N00",
-                "The character with the Unicode representation `\\u0061` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated. The character with the Unicode representation `\\u0061` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.");
     }
 
     @Test
@@ -523,8 +545,8 @@ class NotificationCodeWithDescriptionTest {
                         + "not perform well on large data sets. Please consider using a schema index.",
                 NotificationCategory.PERFORMANCE,
                 "03N93",
-                "`LOAD CSV` in combination with `MATCH` or `MERGE` on a label that does not have an index may "
-                        + "result in long execution times. Consider adding an index for label `Label`.");
+                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
+                "info: no applicable index. `LOAD CSV` in combination with `MATCH` or `MERGE` on a label that does not have an index may result in long execution times. Consider adding an index for label `Label`.");
     }
 
     @Test
@@ -541,7 +563,8 @@ class NotificationCodeWithDescriptionTest {
                         + "misspell it or that the label is available when you run this statement in your application (the missing label name is: Label)",
                 NotificationCategory.UNRECOGNIZED,
                 "01N50",
-                "The label `Label` does not exist. Verify that the spelling is correct.");
+                new DiagnosticRecord(warning, unrecognized, -1, -1, -1, Map.of()).asMap(),
+                "warn: unknown label. The label `Label` does not exist. Verify that the spelling is correct.");
     }
 
     @Test
@@ -558,7 +581,8 @@ class NotificationCodeWithDescriptionTest {
                         + "misspell it or that the label is available when you run this statement in your application (the missing relationship type is: Rel)",
                 NotificationCategory.UNRECOGNIZED,
                 "01N51",
-                "The relationship type `Rel` does not exist. Verify that the spelling is correct.");
+                new DiagnosticRecord(warning, unrecognized, -1, -1, -1, Map.of()).asMap(),
+                "warn: unknown relationship type. The relationship type `Rel` does not exist. Verify that the spelling is correct.");
     }
 
     @Test
@@ -576,7 +600,8 @@ class NotificationCodeWithDescriptionTest {
                         + "(the missing property name is: prop)",
                 NotificationCategory.UNRECOGNIZED,
                 "01N52",
-                "The property `prop` does not exist. Verify that the spelling is correct.");
+                new DiagnosticRecord(warning, unrecognized, -1, -1, -1, Map.of()).asMap(),
+                "warn: unknown property key. The property `prop` does not exist. Verify that the spelling is correct.");
     }
 
     @Test
@@ -594,8 +619,8 @@ class NotificationCodeWithDescriptionTest {
                         + "It is recommended to use an upper limit to the number of node hops in your pattern.",
                 NotificationCategory.PERFORMANCE,
                 "03N91",
-                "The provided pattern `(a)-[2..*]-(b)` is unbounded. Shortest path with an unbounded pattern may result"
-                        + " in long execution times. Use an upper limit (e.g. `[*..5]`) on the number of node hops in your pattern.");
+                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
+                "info: unbounded variable length pattern. The provided pattern `(a)-[2..*]-(b)` is unbounded. Shortest path with an unbounded pattern may result in long execution times. Use an upper limit (e.g. `[*..5]`) on the number of node hops in your pattern.");
     }
 
     @Test
@@ -615,8 +640,8 @@ class NotificationCodeWithDescriptionTest {
                         + "MATCH containing the shortest path from the existential predicates on that path.",
                 NotificationCategory.PERFORMANCE,
                 "03N92",
-                "The query runs with exhaustive shortest path due to the existential predicate(s) `length(p) > 1`. "
-                        + "It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s).");
+                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
+                "info: exhaustive shortest path. The query runs with exhaustive shortest path due to the existential predicate(s) `length(p) > 1`. It may be possible to use `WITH` to separate the `MATCH` from the existential predicate(s).");
     }
 
     @Test
@@ -635,8 +660,8 @@ class NotificationCodeWithDescriptionTest {
                         + "The produced query plan will not be cached and is not executable without EXPLAIN. (Missing parameters: param1)",
                 NotificationCategory.GENERIC,
                 "01N60",
-                "The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined "
-                        + "parameter(s) `$param1`. Provide the parameter(s).");
+                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
+                "warn: parameter not provided. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1`. Provide the parameter(s).");
     }
 
     @Test
@@ -655,8 +680,8 @@ class NotificationCodeWithDescriptionTest {
                         + "The produced query plan will not be cached and is not executable without EXPLAIN. (Missing parameters: param1, param2)",
                 NotificationCategory.GENERIC,
                 "01N60",
-                "The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined "
-                        + "parameter(s) `$param1, $param2`. Provide the parameter(s).");
+                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
+                "warn: parameter not provided. The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `$param1, $param2`. Provide the parameter(s).");
     }
 
     @Test
@@ -675,8 +700,8 @@ class NotificationCodeWithDescriptionTest {
                 "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (method too big)",
                 NotificationCategory.PERFORMANCE,
                 "01N40",
-                "The query cannot be executed with `runtime=pipelined operatorEngine=compiled expressionEngine=compiled`, "
-                        + "`runtime=pipelined operatorEngine=interpreted expressionEngine=compiled` is used. Cause: `method too big`.");
+                new DiagnosticRecord(info, performance, -1, -1, -1, Map.of()).asMap(),
+                "warn: runtime unsupported. The query cannot be executed with `runtime=pipelined operatorEngine=compiled expressionEngine=compiled`, `runtime=pipelined operatorEngine=interpreted expressionEngine=compiled` is used. Cause: `method too big`.");
     }
 
     @Test
@@ -694,8 +719,8 @@ class NotificationCodeWithDescriptionTest {
                         + "importing WITH clause. (the shadowing variable is: v)",
                 NotificationCategory.GENERIC,
                 "03N60",
-                "The variable `v` in the subquery uses the same name as a variable from the outer query. Use "
-                        + "`WITH v` in the subquery to import the one from the outer scope unless you want it to be a new variable.");
+                new DiagnosticRecord(info, generic, -1, -1, -1, Map.of()).asMap(),
+                "info: subquery variable shadowing. The variable `v` in the subquery uses the same name as a variable from the outer query. Use `WITH v` in the subquery to import the one from the outer scope unless you want it to be a new variable.");
     }
 
     @Test
@@ -711,7 +736,8 @@ class NotificationCodeWithDescriptionTest {
                         + "This command will not take effect until this database is created. (db)",
                 NotificationCategory.UNRECOGNIZED,
                 "00N50",
-                "The database `db` does not exist. Verify that the spelling is correct or create the database for the command to take effect.");
+                new DiagnosticRecord(info, unrecognized, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - home database not found. The database `db` does not exist. Verify that the spelling is correct or create the database for the command to take effect.");
     }
 
     @Test
@@ -727,8 +753,8 @@ class NotificationCodeWithDescriptionTest {
                         + "Names containing `.` should be escaped. (Name: db.one)",
                 NotificationCategory.DEPRECATION,
                 "01N00",
-                "Databases and aliases with unescaped `.` are deprecated unless they belong to a composite database. "
-                        + "Names containing `.` should be escaped. (Name: db.one)");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated. Databases and aliases with unescaped `.` are deprecated unless they belong to a composite database. Names containing `.` should be escaped. (Name: db.one)");
     }
 
     @Test
@@ -744,7 +770,8 @@ class NotificationCodeWithDescriptionTest {
                 "Relationship type expression cannot possibly be satisfied. (`!%` can never be satisfied by any relationship. Relationships must have exactly one relationship type.)",
                 NotificationCategory.GENERIC,
                 "01N61",
-                "The expression `!%` cannot be satisfied because relationships must have exactly one type.");
+                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
+                "warn: unsatisfiable relationship type expression. The expression `!%` cannot be satisfied because relationships must have exactly one type.");
     }
 
     @Test
@@ -760,7 +787,8 @@ class NotificationCodeWithDescriptionTest {
                 "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
                 NotificationCategory.GENERIC,
                 "01N63",
-                "`r` is repeated in `()-[r]->()<-[r]-()`, which leads to no results.");
+                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
+                "warn: repeated relationship reference. `r` is repeated in `()-[r]->()<-[r]-()`, which leads to no results.");
     }
 
     @Test
@@ -776,7 +804,8 @@ class NotificationCodeWithDescriptionTest {
                 "A variable-length relationship variable is bound more than once, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
                 NotificationCategory.GENERIC,
                 "01N63",
-                "`r` is repeated in `()-[r*]->()-[r*]->()`, which leads to no results.");
+                new DiagnosticRecord(warning, generic, -1, -1, -1, Map.of()).asMap(),
+                "warn: repeated relationship reference. `r` is repeated in `()-[r*]->()-[r*]->()`, which leads to no results.");
     }
 
     @Test
@@ -791,7 +820,8 @@ class NotificationCodeWithDescriptionTest {
                 "All subqueries in a UNION [ALL] should have the same ordering for the return columns. Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.",
                 NotificationCategory.DEPRECATION,
                 "01N00",
-                "All subqueries in a UNION [ALL] should have the same ordering for the return columns. Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated. All subqueries in a UNION [ALL] should have the same ordering for the return columns. Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.");
     }
 
     @Test
@@ -809,7 +839,8 @@ class NotificationCodeWithDescriptionTest {
                         + "For more information, see Cypher Manual -> Cypher planner.",
                 NotificationCategory.DEPRECATION,
                 "01N02",
-                "`connectComponentsPlanner` is deprecated and will be removed without a replacement.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated without replacement. `connectComponentsPlanner` is deprecated and will be removed without a replacement.");
     }
 
     @Test
@@ -825,7 +856,8 @@ class NotificationCodeWithDescriptionTest {
                 "The role already has the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
                 "00N70",
-                "`GRANT WRITE ON GRAPH * TO editor` has no effect. The role or privilege is already assigned.");
+                new DiagnosticRecord(info, security, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - role or privilege already assigned. `GRANT WRITE ON GRAPH * TO editor` has no effect. The role or privilege is already assigned.");
     }
 
     @Test
@@ -841,7 +873,8 @@ class NotificationCodeWithDescriptionTest {
                 "The role does not have the privilege. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
                 "00N71",
-                "`REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader` has no effect. The role or privilege is not assigned.");
+                new DiagnosticRecord(info, security, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - role or privilege not assigned. `REVOKE ALL GRAPH PRIVILEGES ON GRAPH * FROM reader` has no effect. The role or privilege is not assigned.");
     }
 
     @Test
@@ -857,7 +890,8 @@ class NotificationCodeWithDescriptionTest {
                 "The user already has the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
                 "00N70",
-                "`GRANT ROLE aliceRole TO alice` has no effect. The role or privilege is already assigned.");
+                new DiagnosticRecord(info, security, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - role or privilege already assigned. `GRANT ROLE aliceRole TO alice` has no effect. The role or privilege is already assigned.");
     }
 
     @Test
@@ -873,7 +907,8 @@ class NotificationCodeWithDescriptionTest {
                 "The user does not have the role. See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
                 "00N71",
-                "`REVOKE ROLE other FROM alice` has no effect. The role or privilege is not assigned.");
+                new DiagnosticRecord(info, security, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - role or privilege not assigned. `REVOKE ROLE other FROM alice` has no effect. The role or privilege is not assigned.");
     }
 
     @Test
@@ -890,7 +925,8 @@ class NotificationCodeWithDescriptionTest {
                         + "See Status Codes documentation for more information.",
                 NotificationCategory.SECURITY,
                 "01N70",
-                "`REVOKE admina FROM ALICE` has no effect. Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version.");
+                new DiagnosticRecord(warning, security, -1, -1, -1, Map.of()).asMap(),
+                "warn: impossible revoke command. `REVOKE admina FROM ALICE` has no effect. Role does not exist. Make sure nothing is misspelled. This notification will become an error in a future major version.");
     }
 
     @Test
@@ -905,7 +941,8 @@ class NotificationCodeWithDescriptionTest {
                 "Creating an entity (n.prop) and referencing that entity in a property definition in the same CREATE is deprecated.",
                 NotificationCategory.DEPRECATION,
                 "01N00",
-                "Creating an entity (n.prop) and referencing that entity in a property definition in the same CREATE is deprecated.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated. Creating an entity (n.prop) and referencing that entity in a property definition in the same CREATE is deprecated.");
     }
 
     @Test
@@ -935,7 +972,8 @@ class NotificationCodeWithDescriptionTest {
                 "Server `server` is already enabled. Verify that this is the intended server.",
                 NotificationCategory.TOPOLOGY,
                 "00N80",
-                "`ENABLE SERVER` has no effect. Server `server` is already enabled. Verify that this is the intended server.");
+                new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - server already enabled. `ENABLE SERVER` has no effect. Server `server` is already enabled. Verify that this is the intended server.");
     }
 
     @Test
@@ -950,7 +988,8 @@ class NotificationCodeWithDescriptionTest {
                 "Server `server` is already cordoned. Verify that this is the intended server.",
                 NotificationCategory.TOPOLOGY,
                 "00N81",
-                "`CORDON SERVER` has no effect. Server `server` is already cordoned. Verify that this is the intended server.");
+                new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - server already cordoned. `CORDON SERVER` has no effect. Server `server` is already cordoned. Verify that this is the intended server.");
     }
 
     @Test
@@ -965,7 +1004,8 @@ class NotificationCodeWithDescriptionTest {
                 "No databases were reallocated. No better allocation is currently possible.",
                 NotificationCategory.TOPOLOGY,
                 "00N82",
-                "`REALLOCATE DATABASES` has no effect. No databases were reallocated. No better allocation is currently possible.");
+                new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - no databases reallocated. `REALLOCATE DATABASES` has no effect. No databases were reallocated. No better allocation is currently possible.");
     }
 
     @Test
@@ -981,7 +1021,8 @@ class NotificationCodeWithDescriptionTest {
                 "Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.",
                 NotificationCategory.TOPOLOGY,
                 "00N83",
-                "Cordoned servers existed when making an allocation decision. Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.");
+                new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - cordoned servers existed during allocation. Cordoned servers existed when making an allocation decision. Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.");
     }
 
     @Test
@@ -996,7 +1037,8 @@ class NotificationCodeWithDescriptionTest {
                 "The requested topology matched the current topology. No allocations were changed.",
                 NotificationCategory.TOPOLOGY,
                 "00N84",
-                "`ALTER DATABASE` has no effect. The requested topology matched the current topology. No allocations were changed.");
+                new DiagnosticRecord(info, topology, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - requested topology matched current topology. `ALTER DATABASE` has no effect. The requested topology matched the current topology. No allocations were changed.");
     }
 
     @Test
@@ -1014,7 +1056,8 @@ class NotificationCodeWithDescriptionTest {
                 "`INDEX foo FOR (n:L) ON (n.p2)` already exists.",
                 NotificationCategory.SCHEMA,
                 "00NA0",
-                "`CREATE INDEX foo IF NOT EXISTS FOR (n:L) ON (n.p1)` has no effect. `INDEX foo FOR (n:L) ON (n.p2)` already exists.");
+                new DiagnosticRecord(info, schema, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - index or constraint already exists. `CREATE INDEX foo IF NOT EXISTS FOR (n:L) ON (n.p1)` has no effect. `INDEX foo FOR (n:L) ON (n.p2)` already exists.");
 
         notification = indexOrConstraintAlreadyExists(
                 InputPosition.empty,
@@ -1029,7 +1072,8 @@ class NotificationCodeWithDescriptionTest {
                 "`CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY` already exists.",
                 NotificationCategory.SCHEMA,
                 "00NA0",
-                "`CREATE CONSTRAINT bar IF NOT EXISTS FOR (n:L) REQUIRE (n.p1) IS NODE KEY` has no effect. `CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY` already exists.");
+                new DiagnosticRecord(info, schema, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - index or constraint already exists. `CREATE CONSTRAINT bar IF NOT EXISTS FOR (n:L) REQUIRE (n.p1) IS NODE KEY` has no effect. `CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY` already exists.");
     }
 
     @Test
@@ -1045,7 +1089,8 @@ class NotificationCodeWithDescriptionTest {
                 "`foo` does not exist.",
                 NotificationCategory.SCHEMA,
                 "00NA1",
-                "`DROP INDEX foo IF EXISTS` has no effect. `foo` does not exist.");
+                new DiagnosticRecord(info, schema, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - index or constraint does not exist. `DROP INDEX foo IF EXISTS` has no effect. `foo` does not exist.");
 
         notification = indexOrConstraintDoesNotExist(InputPosition.empty, "DROP CONSTRAINT bar IF EXISTS", "foo");
 
@@ -1057,7 +1102,8 @@ class NotificationCodeWithDescriptionTest {
                 "`foo` does not exist.",
                 NotificationCategory.SCHEMA,
                 "00NA1",
-                "`DROP CONSTRAINT bar IF EXISTS` has no effect. `foo` does not exist.");
+                new DiagnosticRecord(info, schema, -1, -1, -1, Map.of()).asMap(),
+                "note: successful completion - index or constraint does not exist. `DROP CONSTRAINT bar IF EXISTS` has no effect. `foo` does not exist.");
     }
 
     private void verifyNotification(
@@ -1068,15 +1114,29 @@ class NotificationCodeWithDescriptionTest {
             String description,
             NotificationCategory category,
             String gqlStatusString,
-            String message) {
+            Map<String, Object> diagnosticRecord,
+            String statusDescription) {
         assertThat(notification.getTitle()).isEqualTo(title);
         assertThat(notification.getSeverity()).isEqualTo(severity);
         assertThat(notification.getCode()).isEqualTo(code);
         assertThat(notification.getDescription()).isEqualTo(description);
         assertThat(notification.getCategory()).isEqualTo(category);
         assertThat(notification.getGqlStatus()).isEqualTo(gqlStatusString);
-        assertThat(notification.getMessage()).isEqualTo(message);
+        assertThat(notification.getDiagnosticRecord()).isEqualTo(diagnosticRecord);
+        assertThat(notification.getStatusDescription()).isEqualTo(statusDescription);
     }
+
+    private final String warning = SeverityLevel.WARNING.name();
+    private final String info = SeverityLevel.INFORMATION.name();
+    private final String deprecation = NotificationCategory.DEPRECATION.name();
+    private final String generic = NotificationCategory.GENERIC.name();
+    private final String hint = NotificationCategory.HINT.name();
+    private final String performance = NotificationCategory.PERFORMANCE.name();
+    private final String schema = NotificationCategory.SCHEMA.name();
+    private final String security = NotificationCategory.SECURITY.name();
+    private final String topology = NotificationCategory.TOPOLOGY.name();
+    private final String unrecognized = NotificationCategory.UNRECOGNIZED.name();
+    private final String unsupported = NotificationCategory.UNSUPPORTED.name();
 
     @Test
     void allNotificationsShouldBeAClientNotification() {

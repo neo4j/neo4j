@@ -19,6 +19,7 @@
  */
 package org.neo4j.notifications;
 
+import org.neo4j.gqlstatus.Condition;
 import org.neo4j.gqlstatus.GqlStatus;
 import org.neo4j.gqlstatus.GqlStatusInfoNotifications;
 import org.neo4j.graphdb.InputPosition;
@@ -318,6 +319,14 @@ public enum NotificationCodeWithDescription {
 
     public String getMessage() {
         return gqlStatusInfo.getMessage();
+    }
+
+    public String getSubCondition() {
+        return gqlStatusInfo.getSubCondition();
+    }
+
+    public Condition getCondition() {
+        return gqlStatusInfo.getCondition();
     }
 
     public static NotificationImplementation cartesianProduct(

@@ -19,7 +19,10 @@
  */
 package org.neo4j.notifications;
 
+import java.util.Map;
 import java.util.Objects;
+import org.neo4j.gqlstatus.Condition;
+import org.neo4j.gqlstatus.DiagnosticRecord;
 import org.neo4j.gqlstatus.GqlStatus;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
@@ -30,12 +33,14 @@ import org.neo4j.kernel.api.exceptions.Status;
 public final class NotificationImplementation implements Notification {
     private final Status.Code statusCode;
     private final GqlStatus gqlStatus;
+    private final DiagnosticRecord diagnosticRecord;
     private final String title;
     private final String description;
-    private final SeverityLevel severity;
-    private final NotificationCategory category;
     private final InputPosition position;
     private final String message;
+    private final String severity;
+    private final String subCondition;
+    private final Condition condition;
 
     NotificationImplementation(
             NotificationCodeWithDescription notificationCodeWithDescription,
@@ -43,17 +48,30 @@ public final class NotificationImplementation implements Notification {
             InputPosition position,
             String title,
             String description,
-            String message) {
+            String message,
+            String subCondition,
+            Condition condition) {
 
         this.statusCode = notificationCodeWithDescription.getStatus().code();
 
+        String classification;
+        this.subCondition = subCondition;
+        this.condition = condition;
+
         if (statusCode instanceof Status.NotificationCode) {
-            this.severity = mapSeverity(((Status.NotificationCode) statusCode).getSeverity());
-            this.category = mapCategory(((Status.NotificationCode) statusCode).getNotificationCategory());
+            this.severity = ((Status.NotificationCode) statusCode).getSeverity();
+            classification = ((Status.NotificationCode) statusCode).getNotificationCategory();
         } else {
             throw new IllegalStateException("'" + statusCode + "' is not a notification code.");
         }
 
+        this.diagnosticRecord = new DiagnosticRecord(
+                this.severity,
+                classification,
+                position.getOffset(),
+                position.getLine(),
+                position.getColumn(),
+                Map.of());
         this.gqlStatus = gqlStatus;
         this.position = position;
         this.title = title;
@@ -68,6 +86,8 @@ public final class NotificationImplementation implements Notification {
         private final String description;
         private InputPosition position;
         private final String message;
+        private final String subCondition;
+        private final Condition condition;
         private String[] messageParameters;
         private String[] notificationDetails;
 
@@ -78,6 +98,8 @@ public final class NotificationImplementation implements Notification {
             this.title = notificationCodeWithDescription.getStatus().code().description();
             this.position = InputPosition.empty;
             this.message = notificationCodeWithDescription.getMessage();
+            this.subCondition = notificationCodeWithDescription.getSubCondition();
+            this.condition = notificationCodeWithDescription.getCondition();
         }
 
         public NotificationBuilder setPosition(InputPosition position) {
@@ -113,7 +135,14 @@ public final class NotificationImplementation implements Notification {
             }
 
             return new NotificationImplementation(
-                    notificationCodeWithDescription, gqlStatus, position, title, detailedDescription, detailedMessage);
+                    notificationCodeWithDescription,
+                    gqlStatus,
+                    position,
+                    title,
+                    detailedDescription,
+                    detailedMessage,
+                    subCondition,
+                    condition);
         }
     }
 
@@ -139,12 +168,12 @@ public final class NotificationImplementation implements Notification {
 
     @Override
     public NotificationCategory getCategory() {
-        return category;
+        return mapCategory(diagnosticRecord.asMap().get("_classification").toString());
     }
 
     @Override
     public SeverityLevel getSeverity() {
-        return severity;
+        return mapSeverity(diagnosticRecord.asMap().get("_severity").toString());
     }
 
     @Override
@@ -165,12 +194,13 @@ public final class NotificationImplementation implements Notification {
                 && Objects.equals(description, that.description)
                 && Objects.equals(title, that.title)
                 && Objects.equals(message, that.message)
-                && Objects.equals(gqlStatus, that.gqlStatus);
+                && Objects.equals(gqlStatus, that.gqlStatus)
+                && Objects.equals(diagnosticRecord, that.diagnosticRecord);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(position, description, title, message, gqlStatus);
+        return Objects.hash(position, description, title, message, gqlStatus, diagnosticRecord);
     }
 
     private SeverityLevel mapSeverity(String severityLevel) {
@@ -188,5 +218,22 @@ public final class NotificationImplementation implements Notification {
 
     public String getGqlStatus() {
         return gqlStatus.gqlStatusString();
+    }
+
+    public Map<String, Object> getDiagnosticRecord() {
+        return diagnosticRecord.asMap();
+    }
+
+    public String getStatusDescription() {
+
+        return (conditionToDescription(this.condition) + this.subCondition + ". " + this.message);
+    }
+
+    private String conditionToDescription(Condition condition) {
+        return switch (condition) {
+            case WARNING -> "warn: ";
+            case INFORMATION -> "info: ";
+            case SUCCESSFUL_COMPLETION -> "note: successful completion - ";
+        };
     }
 }

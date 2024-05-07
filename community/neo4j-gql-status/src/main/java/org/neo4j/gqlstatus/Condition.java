@@ -19,10 +19,8 @@
  */
 package org.neo4j.gqlstatus;
 
-public sealed interface GqlStatusInfo permits GqlStatusInfoNotifications {
-    String getMessage();
-
-    String getSubCondition();
-
-    GqlStatus getGqlStatus();
+public enum Condition {
+    WARNING,
+    INFORMATION,
+    SUCCESSFUL_COMPLETION
 }
