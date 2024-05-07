@@ -46,7 +46,6 @@ object ContainMultiLineStringMatcher extends ContainMultiLineStringMatcher
  * It also allows lines in-between the matching lines.
  */
 trait ContainMultiLineStringMatcher {
-  private val NEWLINE = System.lineSeparator()
 
   private class ContainMultiLineString(expectedString: String) extends Matcher[String] {
 
@@ -60,9 +59,10 @@ trait ContainMultiLineStringMatcher {
             case -1 => "" // The match failed.
             case i =>
               val remainingAfterMatch = remainingActual.substring(i + expectedLine.length)
-              remainingAfterMatch.indexOf(NEWLINE) match {
+              // Only looking for '\n' is enough, since even on Windows a line break always _ends with_ '\n'.
+              remainingAfterMatch.indexOf('\n') match {
                 case -1 => "" // there was no newline after this matching line
-                case i  => remainingAfterMatch.substring(i + NEWLINE.length)
+                case i  => remainingAfterMatch.substring(i + 1)
               }
           }
           (matcher, nextRemainingActual)
