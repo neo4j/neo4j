@@ -957,7 +957,8 @@ class NotificationCodeWithDescriptionTest {
                 "Merging an entity (n) and referencing that entity in a property definition in the same MERGE is deprecated.",
                 NotificationCategory.DEPRECATION,
                 "01N00",
-                "Merging an entity (n) and referencing that entity in a property definition in the same MERGE is deprecated.");
+                new DiagnosticRecord(warning, deprecation, -1, -1, -1, Map.of()).asMap(),
+                "warn: feature deprecated. Merging an entity (n) and referencing that entity in a property definition in the same MERGE is deprecated.");
     }
 
     @Test
