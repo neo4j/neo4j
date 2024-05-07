@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
+import static org.neo4j.values.storable.Values.longValue;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -40,6 +41,9 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -451,6 +455,27 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
 
             int expected = supportsBigProperties() ? 18 : 15;
             assertEquals(expected, values.size(), "number of values");
+        }
+    }
+
+    @Test
+    void supportExcludingWithChangesInTxState() throws Exception {
+        try (KernelTransaction tx = beginTransaction()) {
+            var newToken = tx.tokenWrite().propertyKeyGetOrCreateForName("FAIRLY_RANDOM" + System.nanoTime());
+            tx.dataWrite().nodeSetProperty(allPropsNodeId, newToken, longValue(42));
+            var read = tx.dataRead();
+            try (var nodes = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                    var props = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+                read.singleNode(allPropsNodeId, nodes);
+                while (nodes.next()) {
+                    nodes.properties(props, PropertySelection.ALL_PROPERTIES.excluding(i -> i != newToken));
+                    assertTrue(props.next());
+                    assertEquals(props.propertyKey(), newToken);
+                    assertEquals(props.propertyValue(), longValue(42));
+                    assertFalse(props.next());
+                }
+            }
+            tx.rollback();
         }
     }
 

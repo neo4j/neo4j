@@ -327,7 +327,7 @@ public abstract class PropertySelection {
 
         @Override
         public PropertySelection excluding(IntPredicate filter) {
-            throw new UnsupportedOperationException();
+            return new AllExcept(isKeysOnly(), excluded.or(filter));
         }
     }
 
