@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
@@ -2471,7 +2472,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("props")
-      .projection("properties(n) AS props")
+      .projection(Map("props" -> PropertiesUsingCachedProperties(varFor("n"), Set(cachedNProp1))))
       .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
       .build()
   }
@@ -2487,7 +2488,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("props")
-      .projection("properties(x) AS props")
+      .projection(Map("props" -> PropertiesUsingCachedProperties(varFor("x"), Set(cachedNProp1))))
       .projection("n AS x")
       .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
       .build()
@@ -2583,7 +2584,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("props")
-      .projection("properties(n) AS props")
+      .projection(Map("props" -> PropertiesUsingCachedProperties(varFor("n"), Set(cachedNProp1))))
       .nodeIndexOperator("n:L(prop > 123)", getValue = _ => GetValue, indexOrder = IndexOrderNone)
       .build()
   }
@@ -2602,7 +2603,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("props")
-      .projection("properties(r) AS props")
+      .projection(Map("props" -> PropertiesUsingCachedProperties(varFor("r"), Set(cachedRRelProp1))))
       .relationshipIndexOperator(
         "(a)-[r:REL(prop > 123)]->(b)",
         getValue = _ => GetValue,
@@ -2626,7 +2627,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("props")
-      .projection("properties(x) AS props")
+      .projection(Map("props" -> PropertiesUsingCachedProperties(varFor("x"), Set(cachedRRelProp1))))
       .projection("r AS x")
       .relationshipIndexOperator(
         "(a)-[r:REL(prop > 123)]->(b)",
@@ -2750,7 +2751,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("props")
-      .projection("properties(r) AS props")
+      .projection(Map("props" -> PropertiesUsingCachedProperties(varFor("r"), Set(cachedRRelProp1))))
       .relationshipIndexOperator(
         "(a)-[r:REL(prop > 123)]->(b)",
         getValue = _ => GetValue,

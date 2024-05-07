@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
+import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -160,7 +162,7 @@ class IndexPlanningIntegrationTest
           val plan = cfg.plan(query)
 
           plan shouldEqual cfg.planBuilder()
-            .produceResults("a")
+            .produceResults(column("a", "cacheN[a.prop1]", "cacheN[a.prop2]"))
             .nodeIndexOperator(
               s"a:Label(prop1 $op1 1, prop2 $op2 2)",
               _ => GetValue,
@@ -181,7 +183,7 @@ class IndexPlanningIntegrationTest
           val plan = cfg.plan(query)
 
           plan shouldEqual cfg.planBuilder()
-            .produceResults("a")
+            .produceResults(column("a", "cacheN[a.prop2]", "cacheN[a.prop1]"))
             .filter(s"cacheN[a.prop2] $op2 2")
             .nodeIndexOperator(
               s"a:Label(prop1 $op1 1, prop2)",
@@ -210,7 +212,7 @@ class IndexPlanningIntegrationTest
           val plan = cfg.plan(query)
 
           plan shouldEqual cfg.planBuilder()
-            .produceResults("r")
+            .produceResults(column("r", "cacheR[r.prop1]", "cacheR[r.prop2]"))
             .relationshipIndexOperator(
               s"(a)-[r:Type(prop1 $op1 1, prop2 $op2 2)]->(b)",
               _ => GetValue,
@@ -231,7 +233,7 @@ class IndexPlanningIntegrationTest
           val plan = cfg.plan(query)
 
           plan shouldEqual cfg.planBuilder()
-            .produceResults("r")
+            .produceResults(column("r", "cacheR[r.prop2]", "cacheR[r.prop1]"))
             .filter(s"cacheR[r.prop2] $op2 2")
             .relationshipIndexOperator(
               s"(a)-[r:Type(prop1 $op1 1, prop2)]->(b)",
@@ -494,7 +496,7 @@ class IndexPlanningIntegrationTest
     // t:T(p) is enforced by hint
     // t:T(foo) would normally be preferred
     plan shouldEqual cfg.planBuilder()
-      .produceResults("s", "r", "t")
+      .produceResults(column("s", "cacheN[s.p]"), column("r"), column("t", "cacheN[t.p]"))
       .nodeHashJoin("t")
       .|.expandAll("(s)<-[r]-(t)")
       .|.nodeIndexOperator("s:S(p = 10)", _ => GetValue, indexType = IndexType.RANGE)
@@ -516,7 +518,7 @@ class IndexPlanningIntegrationTest
 
     // t:T(foo) would normally be preferred
     plan shouldEqual cfg.planBuilder()
-      .produceResults("s", "r", "t")
+      .produceResults(column("s", "cacheN[s.p]"), column("r"), column("t"))
       .nodeHashJoin("t")
       .|.expandAll("(s)<-[r]-(t)")
       .|.nodeIndexOperator("s:S(p = 10)", _ => GetValue, indexType = IndexType.RANGE)
@@ -1774,7 +1776,7 @@ class IndexPlanningIntegrationTest
     for (query <- queries) withClue(query) {
       val plan = cfg.plan(query)
       plan shouldEqual cfg.planBuilder()
-        .produceResults("a", "`a.prop`")
+        .produceResults(column("a", "cacheN[a.prop]"), column("a.prop"))
         .projection("cacheN[a.prop] AS `a.prop`")
         .nodeIndexOperator("a:A(prop > 10)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
@@ -1804,7 +1806,7 @@ class IndexPlanningIntegrationTest
     for (query <- queries) withClue(query) {
       val plan = cfg.plan(query)
       plan shouldEqual cfg.planBuilder()
-        .produceResults("r", "`r.prop`")
+        .produceResults(column("r", "cacheR[r.prop]"), column("r.prop"))
         .projection("cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator("(anon_0)-[r:R(prop > 10)]->(anon_1)", _ => GetValue, indexType = IndexType.RANGE)
         .build()
@@ -2125,7 +2127,7 @@ class IndexPlanningIntegrationTest
 
     val planState = cfg.planState(query)
     val expected = cfg.planBuilder()
-      .produceResults("a")
+      .produceResults(column("a", "cacheN[a.prop]"))
       .filter(
         "cacheN[a.prop] CONTAINS 'hello'",
         "cacheN[a.prop] CONTAINS 'world'"
@@ -2151,7 +2153,7 @@ class IndexPlanningIntegrationTest
 
     val planState = cfg.planState(query)
     val expected = cfg.planBuilder()
-      .produceResults("r")
+      .produceResults(column("r", "cacheR[r.prop]"))
       .filter(
         "cacheR[r.prop] CONTAINS 'hello'",
         "cacheR[r.prop] CONTAINS 'world'"
@@ -2192,7 +2194,7 @@ class IndexPlanningIntegrationTest
     val query = "MATCH (u:User {id: 123}) RETURN u"
 
     val expected = planner.planBuilder()
-      .produceResults("u").withCardinality(1)
+      .produceResults(column("u", "cacheN[u.id]")).withCardinality(1)
       .nodeIndexOperator("u:User(id = 123)", _ => GetValue, unique = true).withCardinality(1)
 
     val actual = planner.planState(query)
@@ -2448,7 +2450,7 @@ class IndexPlanningIntegrationTest
     val q = "MATCH (a:A) WHERE a.prop < point({x:1, y:2}) RETURN a"
     val planState = planner.planState(q)
     val expected = planner.planBuilder()
-      .produceResults("a")
+      .produceResults(column("a", "cacheN[a.prop]"))
       .filter("cacheN[a.prop] < point({x:1, y:2})")
       .nodeIndexOperator(
         "a:A(prop)",
@@ -2475,7 +2477,7 @@ class IndexPlanningIntegrationTest
         |  WHERE datetime('2021-01-01') < a.prop
         |RETURN a""".stripMargin
     ).asLogicalPlanBuilderString() should equal(
-      """.produceResults("a")
+      """.produceResults(column("a", "cacheN[a.prop]"))
         |.nodeIndexOperator("a:Label(prop > RuntimeConstant(datetime('2021-01-01')))", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = Map("prop" -> GetValue), unique = false, indexType = IndexType.RANGE, supportPartitionedScan = true)
         |.build()""".stripMargin
     )
@@ -2502,7 +2504,7 @@ class IndexPlanningIntegrationTest
     val expectedCardinality = aNodes * existsSelectivity * uniqueSelectivity
 
     val expectedPlanBuilder = planner.planBuilder()
-      .produceResults("n").withCardinality(expectedCardinality)
+      .produceResults(column("n", "cacheN[n.a]", "cacheN[n.b]", "cacheN[n.c]")).withCardinality(expectedCardinality)
       .nodeIndexOperator("n:A(a = 1, b = 2, c = 3)", _ => GetValue, supportPartitionedScan = false).withCardinality(
         expectedCardinality
       )
@@ -2533,7 +2535,7 @@ class IndexPlanningIntegrationTest
     val abCardinality = cdCardinality * abExistsSelectivity * abUniqueSelectivity
 
     val expectedPlanBuilder = planner.planBuilder()
-      .produceResults("n").withCardinality(abCardinality)
+      .produceResults(column("n", "cacheN[n.c]", "cacheN[n.d]")).withCardinality(abCardinality)
       .filterExpression(andsReorderable("n.a = 1", "n.b = 2")).withCardinality(abCardinality)
       .nodeIndexOperator("n:A(c = 3, d = 4)", _ => GetValue, supportPartitionedScan = false).withCardinality(
         cdCardinality
@@ -2574,7 +2576,7 @@ class IndexPlanningIntegrationTest
         (PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY * PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY).factor // `d = 4` predicate is not covered by :A(a,b,c) index
 
     val expectedPlanBuilder = planner.planBuilder()
-      .produceResults("n").withCardinality(abcCardinality)
+      .produceResults(column("n", "cacheN[n.c]", "cacheN[n.d]")).withCardinality(abcCardinality)
       .filterExpression(andsReorderable("n.a = 1", "n.b = 2")).withCardinality(abcCardinality)
       .nodeIndexOperator("n:A(c = 3, d = 4)", _ => GetValue, supportPartitionedScan = false).withCardinality(
         cdCardinality
@@ -2603,7 +2605,7 @@ class IndexPlanningIntegrationTest
     val expectedCardinality = aNodes * abcExistsSelectivity * abcUniqueSelectivity
 
     val expectedPlanBuilder = planner.planBuilder()
-      .produceResults("n").withCardinality(expectedCardinality)
+      .produceResults(column("n", "cacheN[n.a]", "cacheN[n.b]", "cacheN[n.c]")).withCardinality(expectedCardinality)
       .apply().withCardinality(expectedCardinality)
       .|.nodeIndexOperator(
         "n:A(a = ???, b = 2, c = 3)",
@@ -2651,7 +2653,7 @@ class IndexPlanningIntegrationTest
     val expectedCardinality = relCount * abcExistsSelectivity * abcUniqueSelectivity
 
     val expectedPlanBuilder = planner.planBuilder()
-      .produceResults("q").withCardinality(expectedCardinality)
+      .produceResults(column("q", "cacheR[q.a]", "cacheR[q.b]", "cacheR[q.c]")).withCardinality(expectedCardinality)
       .apply().withCardinality(expectedCardinality)
       .|.relationshipIndexOperator(
         "(x)-[q:REL(a = ???, b = 2, c = 3)]->(y)",
@@ -2735,7 +2737,7 @@ class IndexPlanningIntegrationTest
 
     val plan = planner.plan(q).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
-      .projection("properties(n) AS `properties(n)`")
+      .projection(Map("properties(n)" -> PropertiesUsingCachedProperties(varFor("n"), Set(cachedNodeProp("n", "x")))))
       .nodeIndexOperator("n:L(x)", indexOrder = IndexOrderAscending, getValue = Map("x" -> GetValue))
       .build()
   }

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringIn
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -80,7 +81,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]", "cacheN[n.p2]"))
         .distinct("n AS n")
         .union()
         .|.nodeIndexOperator("n:L(p2 = 2)", _ => GetValue, indexType = IndexType.RANGE)
@@ -103,7 +104,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]", "cacheN[n.p2]"))
         .distinct("n AS n")
         .union()
         .|.nodeIndexOperator("n:L(p2 < 7)", _ => GetValue, indexType = IndexType.RANGE)
@@ -126,7 +127,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]", "cacheN[n.p2]"))
         .distinct("n AS n")
         .union()
         .|.nodeIndexOperator("n:L(3 < p2 < 7)", _ => GetValue, indexType = IndexType.RANGE)
@@ -149,7 +150,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]", "cacheN[n.p2]"))
         .distinct("n AS n")
         .union()
         .|.filterExpression(hasLabels("n", "P"))
@@ -175,7 +176,7 @@ class OrLeafPlanningIntegrationTest
 
     plan() should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]", "cacheN[n.p2]"))
         .distinct("n AS n")
         .union()
         .|.filterExpression(hasLabels("n", "P"))
@@ -203,7 +204,7 @@ class OrLeafPlanningIntegrationTest
 
     plan() should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]", "cacheN[n.p2]"))
         .distinct("n AS n")
         .union()
         .|.filterExpression(hasLabels("n", "P"))
@@ -267,7 +268,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       cfg.planBuilder()
-        .produceResults("r")
+        .produceResults(column("r", "cacheR[r.p2]", "cacheR[r.p1]"))
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
         .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
@@ -291,7 +292,7 @@ class OrLeafPlanningIntegrationTest
 
     plan() should equal(
       cfg.planBuilder()
-        .produceResults("r")
+        .produceResults(column("r", "cacheR[r.p2]", "cacheR[r.p1]"))
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
         .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
@@ -317,7 +318,7 @@ class OrLeafPlanningIntegrationTest
 
     plan() should equal(
       cfg.planBuilder()
-        .produceResults("r")
+        .produceResults(column("r", "cacheR[r.p2]", "cacheR[r.p1]"))
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
         .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
@@ -342,7 +343,7 @@ class OrLeafPlanningIntegrationTest
     // Possible improvement: We could have planned this as OrderedDistinct
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]"))
         .distinct("n AS n")
         .union()
         .|.nodeIndexOperator("n:P(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
@@ -368,7 +369,7 @@ class OrLeafPlanningIntegrationTest
     // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]"))
         .distinct("n AS n")
         .union()
         .|.nodeIndexOperator("n:P(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
@@ -395,7 +396,7 @@ class OrLeafPlanningIntegrationTest
     // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]"))
         .distinct("n AS n")
         .union()
         .|.nodeIndexOperator("n:P(p1 = 1)", _ => GetValue, indexType = IndexType.RANGE)
@@ -417,7 +418,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p1]"))
         .distinct("n AS n")
         .union()
         .|.filter("cacheNFromStore[n.p1] < 1")
@@ -442,7 +443,7 @@ class OrLeafPlanningIntegrationTest
     // Possible improvement: We could have planned this as OrderedDistinct
     plan should equal(
       cfg.planBuilder()
-        .produceResults("r")
+        .produceResults(column("r", "cacheR[r.p1]"))
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
         .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
@@ -467,7 +468,7 @@ class OrLeafPlanningIntegrationTest
     // Possible improvement: We could have planned this as OrderedDistinct
     plan() should equal(
       cfg.planBuilder()
-        .produceResults("r")
+        .produceResults(column("r", "cacheR[r.p1]"))
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
         .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
@@ -494,7 +495,7 @@ class OrLeafPlanningIntegrationTest
     // Possible improvement: We could have planned this as OrderedDistinct
     plan() should equal(
       cfg.planBuilder()
-        .produceResults("r")
+        .produceResults(column("r", "cacheR[r.p1]"))
         .distinct("r AS r", "a AS a", "b AS b")
         .union()
         .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)", _ => GetValue, indexType = IndexType.RANGE)
@@ -687,7 +688,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       planner.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheNFromStore[n.a]"))
         .filter(
           "not cacheNFromStore[n.a]",
           "CoerceToPredicate(cacheNFromStore[n.a])",
@@ -1076,7 +1077,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.prop]"))
         .distinct("n AS n")
         .union()
         .|.filter("n:L")
@@ -1105,7 +1106,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.prop]"))
         .distinct("n AS n")
         .union()
         .|.filter("n:L")
@@ -1151,7 +1152,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       planner.planBuilder()
-        .produceResults("a")
+        .produceResults(column("a", "cacheNHasProperty[a.prop1]", "cacheN[a.prop2]"))
         .filter(
           "cacheN[a.prop2] IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL",
           "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL"
@@ -1284,7 +1285,7 @@ class OrLeafPlanningIntegrationTest
 
     plan should equal(
       cfg.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.p2]", "cacheN[n.p1]", "cacheN[n.p3]"))
         .distinct("n AS n")
         .union()
         .|.nodeIndexOperator("n:L(p3 > 20)", _ => GetValue)

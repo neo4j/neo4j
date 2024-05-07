@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
 
 case class PropertiesFunction(a: Expression) extends Expression {
@@ -56,8 +57,11 @@ case class PropertiesUsingCachedExpressionsFunction(
     val cachedTokens = IntSets.mutable.empty()
     cachedProperties.foreach {
       case (p, e) =>
-        cachedTokens.add(p.id(state.query))
-        builder.add(p.name, e(ctx, state))
+        val propertyValue = e(ctx, state)
+        if (!(propertyValue eq Values.NO_VALUE)) {
+          cachedTokens.add(p.id(state.query))
+          builder.add(p.name, propertyValue)
+        }
     }
 
     CypherFunctions.properties(

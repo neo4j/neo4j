@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -654,7 +655,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
 
     val joinOnFirst = cfg.planBuilder()
-      .produceResults("n")
+      .produceResults(column("n", "cacheN[n.prop2]"))
       .filter("cache[n.prop2] = cache[m.prop2]")
       .valueHashJoin("m.prop1 = n.prop1")
       .|.cacheProperties("cacheFromStore[n.prop2]")
@@ -664,7 +665,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
 
     val joinOnSecond = cfg.planBuilder()
-      .produceResults("n")
+      .produceResults(column("n", "cacheN[n.prop2]"))
       .filter("cache[n.prop1] = cache[m.prop1]")
       .valueHashJoin("m.prop2 = n.prop2")
       .|.cacheProperties("cacheFromStore[n.prop1]")
@@ -1196,7 +1197,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     plan shouldEqual (
       cfg.planBuilder()
-        .produceResults("n", "m")
+        .produceResults(column("n", "cacheN[n.loc]"), column("m"))
         .shortestPath("(n)-[r:R*1..]-(m)", pathName = Some("p"))
         .apply()
         .|.nodeIndexOperator(

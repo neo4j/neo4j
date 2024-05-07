@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.HasHeaders
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -428,7 +429,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.planBuilder()
-        .produceResults("n1", "n2", "prop")
+        .produceResults(column("n1", "cacheN[n1.prop]"), column("n2"), column("prop"))
         .projection("cacheN[n1.prop] AS prop")
         .cartesianProduct()
         .|.allNodeScan("n2")
@@ -960,7 +961,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.planBuilder()
-        .produceResults("n", "m")
+        .produceResults(column("n", "cacheN[n.prop]"), column("m", "cacheN[m.prop]"))
         .projection("1 AS foo")
         .filter("cacheN[n.prop] + cacheN[m.prop] = bar")
         .apply()

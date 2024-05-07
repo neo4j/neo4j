@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -1238,7 +1239,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         s"MATCH (a:A), (b:B)-[r]->(c) WHERE a.prop > b.prop - c.prop RETURN a ORDER BY a $cypherToken"
       ) should equal(
         planner.planBuilder()
-          .produceResults("a")
+          .produceResults(column("a", "cacheN[a.prop]"))
           .filter("cacheN[a.prop] > b.prop - c.prop")
           .cartesianProduct()
           .|.expandAll("(b)-[r]->(c)")
@@ -1893,7 +1894,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
            |""".stripMargin
       ) should equal(
         planner.planBuilder()
-          .produceResults("a")
+          .produceResults(column("a", "cacheN[a.prop]"))
           .sortColumns(Seq(sortOrder("a.prop")))
           .projection("cacheN[a.prop] AS `a.prop`")
           .setNodeProperty("a", "foo", "cacheN[a.prop] / 2")
@@ -1924,7 +1925,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
            |""".stripMargin
       ) should equal(
         planner.planBuilder()
-          .produceResults("a")
+          .produceResults(column("a", "cacheN[a.prop]"))
           .sortColumns(Seq(sortOrder("a.prop")))
           .projection("cacheN[a.prop] AS `a.prop`")
           .procedureCall("my.write()")
@@ -1957,7 +1958,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
            |""".stripMargin
       ) should equal(
         planner.planBuilder()
-          .produceResults("a")
+          .produceResults(column("a", "cacheN[a.prop]"))
           .sortColumns(Seq(sortOrder("a.prop")))
           .projection("cacheN[a.prop] AS `a.prop`")
           .subqueryForeach()

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -89,7 +90,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .limit(10)
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
@@ -116,7 +117,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c"))
         .limit(1)
         .nodeHashJoin("b")
         .|.filterExpression(hasLabels("c", "C"))
@@ -142,7 +143,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c"))
         .limit(1)
         .nodeHashJoin("b")
         .|.filterExpression(hasLabels("c", "C"))
@@ -168,7 +169,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .limit(10)
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
@@ -191,7 +192,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .limit(10)
         .nodeHashJoin("b")
         .|.expandAll("(c)-[cb:REL_CB]->(b)")
@@ -219,7 +220,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .limit(10)
         .distinct("a AS a", "c AS c")
         .nodeHashJoin("b")
@@ -255,7 +256,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .limit(10)
         .projection("a AS aaa")
         .projection("1 AS foo")
@@ -310,7 +311,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .skip(7)
         .limit(add(literalInt(10), literalInt(7)))
         .nodeHashJoin("b")
@@ -339,7 +340,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .skip(100000)
         .top(Seq(Ascending(v"c.id")), add(literalInt(10), literalInt(100000)))
         .projection("cache[c.id] AS `c.id`")
@@ -363,7 +364,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c"))
         .skip(100000)
         .top(Seq(Ascending(v"cb.id")), add(literalInt(1), literalInt(100000)))
         .projection("cacheR[cb.id] AS `cb.id`")
@@ -391,7 +392,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .top(10, "`c.id` ASC")
         .projection("cache[c.id] AS `c.id`")
         .setNodeProperty("b", "prop", "5")
@@ -416,7 +417,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .skip(7)
         .limit(add(literalInt(10), literalInt(7)))
         .distinct("a AS a", "c AS c")
@@ -447,7 +448,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .skip(100000)
         .top(Seq(Ascending(v"c.id")), add(literalInt(10), literalInt(100000)))
         .projection("cache[c.id] AS `c.id`")
@@ -476,7 +477,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .limit(10)
         .skip(7)
         .distinct("a AS a", "c AS c")
@@ -510,7 +511,7 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder =>
       planBuilder
-        .produceResults("a", "c")
+        .produceResults(column("a", "cacheN[a.id]"), column("c", "cacheN[c.id]"))
         .top(10, "`c.id` ASC")
         .projection("cache[c.id] AS `c.id`")
         .skip(100000)

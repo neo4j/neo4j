@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.andsReorderable
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -654,7 +655,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = planner.plan("MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n")
 
     plan shouldBe planner.planBuilder()
-      .produceResults("n")
+      .produceResults(column("n", "cacheN[n.prop]"))
       .nodeIndexOperator("n:Awesome(prop = 42)", _ => GetValue)
       .build()
   }
@@ -716,7 +717,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val query = "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
     awesomePlanner.plan(query) should equal(
       awesomePlanner.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.prop2]", "cacheN[n.prop1]"))
         .distinct("n AS n")
         .union()
         .|.nodeIndexOperator("n:Awesome(prop2 = 3)", _ => GetValue)
@@ -1185,7 +1186,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n"
     awesomePlanner.plan(query) should equal(
       awesomePlanner.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.prop2]", "cacheN[n.prop1]"))
         .distinct("n as n")
         .union()
         .|.nodeIndexOperator("n:Awesome(prop1 = 42)", _ => GetValue)
@@ -1198,7 +1199,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val query = "MATCH (n:Awesome) WHERE n.prop1 >= 42 OR n.prop2 STARTS WITH 'apa' RETURN n"
     awesomePlanner.plan(query) should equal(
       awesomePlanner.planBuilder()
-        .produceResults("n")
+        .produceResults(column("n", "cacheN[n.prop1]", "cacheN[n.prop2]"))
         .distinct("n as n")
         .union()
         .|.nodeIndexOperator("n:Awesome(prop1 >= 42)", _ => GetValue)

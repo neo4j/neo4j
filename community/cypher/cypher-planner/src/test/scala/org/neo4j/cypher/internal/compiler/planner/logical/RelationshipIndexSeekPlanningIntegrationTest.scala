@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringIn
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
@@ -71,7 +72,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
       planner.plan(s"MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
-          .produceResults("r")
+          .produceResults(column("r", "cacheR[r.prop]"))
           .relationshipIndexOperator(
             s"(a)-[r:REL($indexStr)]-(b)",
             _ => GetValue,
@@ -88,7 +89,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
       planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
-          .produceResults("r")
+          .produceResults(column("r", "cacheR[r.prop]"))
           .relationshipIndexOperator(
             s"(a)-[r:REL($indexStr)]->(b)",
             _ => GetValue,
@@ -105,7 +106,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
       planner.plan(s"MATCH (a)<-[r:REL]-(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
-          .produceResults("r")
+          .produceResults(column("r", "cacheR[r.prop]"))
           .relationshipIndexOperator(
             s"(a)<-[r:REL($indexStr)]-(b)",
             _ => GetValue,
@@ -135,7 +136,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
            |""".stripMargin
       ) should equal(
         planner.planBuilder()
-          .produceResults("n", "r")
+          .produceResults(column("n"), column("r", "cacheR[r.prop]"))
           .filter("b.prop = n.prop")
           .apply()
           .|.relationshipIndexOperator(
@@ -161,7 +162,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
       planner.plan(s"MATCH (a:A)-[r:REL]-(b) USING INDEX r:REL(prop) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
-          .produceResults("r")
+          .produceResults(column("r", "cacheR[r.prop]"))
           .filterExpression(hasLabels("a", "A"))
           .relationshipIndexOperator(
             s"(a)-[r:REL($indexStr)]-(b)",
@@ -183,7 +184,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
            |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin
       ) should equal(
         planner.planBuilder()
-          .produceResults("r")
+          .produceResults(column("r", "cacheR[r.prop]"))
           // the filter got pushed up through the apply
           .filter("a = anon_0")
           .apply()
@@ -210,7 +211,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
            |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin
       ) should equal(
         planner.planBuilder()
-          .produceResults("r")
+          .produceResults(column("r", "cacheR[r.prop]"))
           // the filter got pushed up through the apply
           .filter("b = anon_0")
           .apply()
@@ -235,7 +236,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
            |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin
       ) should equal(
         planner.planBuilder()
-          .produceResults("r")
+          .produceResults(column("r", "cacheR[r.prop]"))
           // the filter got pushed up through the apply
           .filter("a = anon_0", "b = anon_1")
           .apply()
@@ -431,7 +432,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
     planner.plan(s"MATCH (a)-[r:REL {prop: 1}]-(a) RETURN r") should equal(
       planner.planBuilder()
-        .produceResults("r")
+        .produceResults(column("r", "cacheR[r.prop]"))
         .filter("a = anon_0")
         .relationshipIndexOperator("(a)-[r:REL(prop = 1)]-(anon_0)", _ => GetValue, indexType = IndexType.RANGE)
         .build()

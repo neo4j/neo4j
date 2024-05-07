@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy.ComparingProvidedAttributesOnly
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.column
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
@@ -71,7 +72,7 @@ class LogicalPlanningAttributesTestSupportTest
     val expected =
       config
         .planBuilder()
-        .produceResults("a").withCardinality(2)
+        .produceResults(column("a", "cacheN[a.prop]")).withCardinality(2)
         .top(2, "`a.prop` ASC").withCardinality(2)
         .projection("cacheN[a.prop] AS `a.prop`").withCardinality(15)
         .filter("cacheNFromStore[a.prop] > 42").withCardinality(15)
@@ -110,7 +111,7 @@ class LogicalPlanningAttributesTestSupportTest
     val expected =
       config
         .planBuilder()
-        .produceResults("a").withCardinality(2)
+        .produceResults(column("a", "cacheN[a.prop]")).withCardinality(2)
         .top(2, "`a.prop` ASC")
         .projection("cacheN[a.prop] AS `a.prop`").withCardinality(15)
         .filter("cacheNFromStore[a.prop] > 42")
@@ -138,7 +139,7 @@ class LogicalPlanningAttributesTestSupportTest
     val expected =
       config
         .planBuilder()
-        .produceResults("a").withEffectiveCardinality(2)
+        .produceResults(column("a", "cacheN[a.prop]")).withEffectiveCardinality(2)
         .top(2, "`a.prop` ASC").withEffectiveCardinality(2)
         .projection("cacheN[a.prop] AS `a.prop`").withEffectiveCardinality(15)
         .filter("cacheNFromStore[a.prop] > 42").withEffectiveCardinality(15)
@@ -172,7 +173,7 @@ class LogicalPlanningAttributesTestSupportTest
     val expected =
       config
         .planBuilder()
-        .produceResults("a").withProvidedOrder(providedOrder)
+        .produceResults(column("a", "cacheN[a.prop]")).withProvidedOrder(providedOrder)
         .top(2, "`a.prop` ASC").withProvidedOrder(providedOrder)
         .projection("cacheN[a.prop] AS `a.prop`").withProvidedOrder(ProvidedOrder.empty)
         .filter("cacheNFromStore[a.prop] > 42")
@@ -202,7 +203,7 @@ class LogicalPlanningAttributesTestSupportTest
     val expected =
       config
         .planBuilder()
-        .produceResults("a")
+        .produceResults(column("a", "cacheN[a.prop]"))
         .top(2, "`a.prop` ASC").withProvidedOrder(providedOrder)
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter("cacheNFromStore[a.prop] > 42")

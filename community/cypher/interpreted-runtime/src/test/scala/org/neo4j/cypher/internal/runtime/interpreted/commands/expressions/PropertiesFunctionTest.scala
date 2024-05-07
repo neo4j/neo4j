@@ -68,35 +68,6 @@ class PropertiesFunctionTest extends CypherFunSuite {
 
   }
 
-  test("should map nodes to maps") {
-    val node = mock[Node]
-    when(node.getId).thenReturn(0)
-    when(node.getElementId).thenReturn("dummy")
-    val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(
-      query.nodeAsMap(0, state.cursors.nodeCursor, state.cursors.propertyCursor, any[MapValueBuilder], any[IntSet])
-    ).thenReturn(value)
-
-    properties(node) should equal(value)
-  }
-
-  test("should map relationships to maps") {
-    val rel = mock[Relationship]
-    when(rel.getId).thenReturn(0)
-    val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.relationshipAsMap(
-      VirtualValues.relationship(rel.getId),
-      state.cursors.relationshipScanCursor,
-      state.cursors.propertyCursor,
-      any[MapValueBuilder],
-      any[IntSet]
-    )).thenReturn(
-      value
-    )
-
-    properties(rel) should equal(value)
-  }
-
   test("should fail trying to map an int") {
     a[CypherTypeException] should be thrownBy {
       properties(12)

@@ -542,9 +542,13 @@ object LogicalPlanToPlanBuilderString {
             ", "
           )})$yielding" """.trim
       case ProduceResult(_, columns) if columns.exists(_.cachedProperties.nonEmpty) =>
-        columns.map(c =>
-          s"column(${wrapInQuotations(escapeIdentifier(c.variable.name))}, ${c.cachedProperties.map(cp => wrapInQuotations(expressionStringifierExtension(cp))).mkString(", ")})"
-        ).mkString(", ")
+        columns.map(c => {
+          val cachedString = if (c.cachedProperties.isEmpty) ""
+          else
+            s"${c.cachedProperties.map(cp => wrapInQuotations(expressionStringifierExtension(cp))).mkString(", ", ", ", "")}"
+
+          s"column(${wrapInQuotations(c.variable.name)}$cachedString)"
+        }).mkString(", ")
 
       case ProduceResult(_, columns) =>
         wrapInQuotationsAndMkString(columns.map(c => escapeIdentifier(c.variable.name)))
