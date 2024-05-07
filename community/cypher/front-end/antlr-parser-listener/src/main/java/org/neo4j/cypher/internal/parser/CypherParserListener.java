@@ -387,6 +387,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitPropertyList(CypherParser.PropertyListContext ctx);
 
+    void exitEnclosedPropertyList(CypherParser.EnclosedPropertyListContext ctx);
+
     void exitEnableServerCommand(CypherParser.EnableServerCommandContext ctx);
 
     void exitAlterServer(CypherParser.AlterServerContext ctx);

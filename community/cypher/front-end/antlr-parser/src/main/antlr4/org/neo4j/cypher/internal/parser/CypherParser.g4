@@ -984,7 +984,7 @@ createIndex_
    ;
 
 createFulltextIndex
-   : symbolicNameOrStringParameter? (IF NOT EXISTS)? FOR (fulltextNodePattern | fulltextRelPattern) ON EACH LBRACKET variable property (COMMA variable property)* RBRACKET commandOptions?
+   : symbolicNameOrStringParameter? (IF NOT EXISTS)? FOR (fulltextNodePattern | fulltextRelPattern) ON EACH LBRACKET enclosedPropertyList RBRACKET commandOptions?
    ;
 
 fulltextNodePattern
@@ -1012,7 +1012,11 @@ dropIndex
    ;
 
 propertyList
-   : variable property | LPAREN variable property (COMMA variable property)* RPAREN
+   : variable property | LPAREN enclosedPropertyList RPAREN
+   ;
+
+enclosedPropertyList
+   : variable property (COMMA variable property)*
    ;
 
 enableServerCommand

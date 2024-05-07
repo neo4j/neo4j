@@ -62,6 +62,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       case CypherParser.RULE_subqueryInTransactionsParameters => checkSubqueryInTransactionsParameters(cast(ctx))
       case CypherParser.RULE_createCommand                    => checkCreateCommand(cast(ctx))
       case CypherParser.RULE_createConstraint                 => checkCreateConstraint(cast(ctx))
+      case CypherParser.RULE_enclosedPropertyList             => checkEnclosedPropertyList(cast(ctx))
       case CypherParser.RULE_dropConstraint                   => checkDropConstraint(cast(ctx))
       case CypherParser.RULE_createLookupIndex                => checkCreateLookupIndex(cast(ctx))
       case CypherParser.RULE_createUser                       => checkCreateUser(cast(ctx))
@@ -315,37 +316,37 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
             inputPosition(ctx.commandRelPattern().getStart)
           )
         }
-      case c: ConstraintExistsContext =>
-        if (c.propertyList() != null && c.propertyList().property().size() > 1) {
-          val secondProperty = c.propertyList().property(1).start
-          errors :+= exceptionFactory.syntaxException(
-            "Constraint type 'EXISTS' does not allow multiple properties",
-            inputPosition(secondProperty)
-          )
-        }
-      case c: ConstraintTypedContext =>
-        if (c.propertyList() != null && c.propertyList().property().size() > 1) {
-          val secondProperty = c.propertyList().property(1).start
-          errors :+= exceptionFactory.syntaxException(
-            "Constraint type 'IS TYPED' does not allow multiple properties",
-            inputPosition(secondProperty)
-          )
-        }
-      case c: ConstraintIsNotNullContext =>
-        if (c.propertyList() != null && c.propertyList().property().size() > 1) {
-          val secondProperty = c.propertyList().property(1).start
-          errors :+= exceptionFactory.syntaxException(
-            "Constraint type 'IS NOT NULL' does not allow multiple properties",
-            inputPosition(secondProperty)
-          )
-        }
+      case _: ConstraintExistsContext | _: ConstraintTypedContext | _: ConstraintIsNotNullContext =>
       case _ =>
         errors :+= exceptionFactory.syntaxException(
           "Constraint type is not recognized",
           inputPosition(ctx.constraintType().getStart)
         )
     }
+  }
 
+  private def checkEnclosedPropertyList(ctx: CypherParser.EnclosedPropertyListContext): Unit = {
+    if (ctx.property().size() > 1) {
+      val secondProperty = ctx.property(1).start
+      ctx.getParent.getParent match {
+        case _: ConstraintExistsContext =>
+          errors :+= exceptionFactory.syntaxException(
+            "Constraint type 'EXISTS' does not allow multiple properties",
+            inputPosition(secondProperty)
+          )
+        case _: ConstraintTypedContext =>
+          errors :+= exceptionFactory.syntaxException(
+            "Constraint type 'IS TYPED' does not allow multiple properties",
+            inputPosition(secondProperty)
+          )
+        case _: ConstraintIsNotNullContext =>
+          errors :+= exceptionFactory.syntaxException(
+            "Constraint type 'IS NOT NULL' does not allow multiple properties",
+            inputPosition(secondProperty)
+          )
+        case _ =>
+      }
+    }
   }
 
   private def checkDropConstraint(ctx: CypherParser.DropConstraintContext): Unit = {

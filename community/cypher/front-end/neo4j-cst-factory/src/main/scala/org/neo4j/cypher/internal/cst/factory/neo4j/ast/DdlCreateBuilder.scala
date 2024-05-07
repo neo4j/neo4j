@@ -59,7 +59,6 @@ import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOptFromList
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeq
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astSeqPositioned
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ifExistsDo
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.lastChild
@@ -72,7 +71,6 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -480,11 +478,7 @@ trait DdlCreateBuilder extends CypherParserListener {
     val indexName = astOpt[Either[String, Parameter]](ctx.symbolicNameOrStringParameter())
     val nodePattern = ctx.fulltextNodePattern()
     val isNode = nodePattern != null
-    val propertyList = {
-      val exprs = astSeq[Expression](ctx.variable())
-      val propertyKeyNames = astSeq[PropertyKeyName](ctx.property())
-      exprs.zip(propertyKeyNames).map { case (e, p) => Property(e, p)(Util.pos(ctx.LBRACKET().getSymbol)) }
-    }.toList
+    val propertyList = ctx.enclosedPropertyList().ast[Seq[Property]]().toList
     ctx.ast = if (isNode) {
       val (variable, labels) = nodePattern.ast[(Variable, List[LabelName])]()
       CreateFulltextNodeIndex(

@@ -189,8 +189,8 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_parameterName -> exitParameterName((CypherParser.ParameterNameContext) ctx);
             case CypherParser.RULE_functionInvocation -> exitFunctionInvocation(
                     (CypherParser.FunctionInvocationContext) ctx);
-            case CypherParser.RULE_functionName -> exitFunctionName((CypherParser.FunctionNameContext) ctx);
             case CypherParser.RULE_functionArgument -> exitFunctionArgument((CypherParser.FunctionArgumentContext) ctx);
+            case CypherParser.RULE_functionName -> exitFunctionName((CypherParser.FunctionNameContext) ctx);
             case CypherParser.RULE_namespace -> exitNamespace((CypherParser.NamespaceContext) ctx);
             case CypherParser.RULE_variable -> exitVariable((CypherParser.VariableContext) ctx);
             case CypherParser.RULE_nonEmptyNameList -> exitNonEmptyNameList((CypherParser.NonEmptyNameListContext) ctx);
@@ -272,6 +272,8 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
                     (CypherParser.LookupIndexRelPatternContext) ctx);
             case CypherParser.RULE_dropIndex -> exitDropIndex((CypherParser.DropIndexContext) ctx);
             case CypherParser.RULE_propertyList -> exitPropertyList((CypherParser.PropertyListContext) ctx);
+            case CypherParser.RULE_enclosedPropertyList -> exitEnclosedPropertyList(
+                    (CypherParser.EnclosedPropertyListContext) ctx);
             case CypherParser.RULE_enableServerCommand -> exitEnableServerCommand(
                     (CypherParser.EnableServerCommandContext) ctx);
             case CypherParser.RULE_alterServer -> exitAlterServer((CypherParser.AlterServerContext) ctx);

@@ -454,9 +454,17 @@ trait DdlBuilder extends CypherParserListener {
   final override def exitPropertyList(
     ctx: CypherParser.PropertyListContext
   ): Unit = {
-    ctx.ast = astPairs[Expression, PropertyKeyName](ctx.variable(), ctx.property()).map {
-      case (e, p) => Property(e, p)(pos(ctx))
-    }
+    val enclosed = ctx.enclosedPropertyList()
+    ctx.ast =
+      if (enclosed != null) enclosed.ast[Seq[Property]]()
+      else ArraySeq(Property(ctx.variable().ast[Expression], ctx.property().ast[PropertyKeyName])(pos(ctx)))
+  }
+
+  final override def exitEnclosedPropertyList(
+    ctx: CypherParser.EnclosedPropertyListContext
+  ): Unit = {
+    ctx.ast = astPairs[Expression, PropertyKeyName](ctx.variable(), ctx.property())
+      .map { case (e, p) => Property(e, p)(e.position) }
   }
 
   final override def exitAlterServer(
