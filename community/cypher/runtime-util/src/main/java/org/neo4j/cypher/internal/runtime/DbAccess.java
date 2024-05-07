@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime;
 
 import java.util.Optional;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -31,6 +32,7 @@ import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 /**
@@ -157,14 +159,26 @@ public interface DbAccess extends EntityById {
 
     String getPropertyKeyName(int token);
 
-    MapValue nodeAsMap(long id, NodeCursor nodeCursor, PropertyCursor propertyCursor);
+    MapValue nodeAsMap(
+            long id,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            MapValueBuilder seenProperties,
+            IntSet seenPropertyTokens);
 
-    MapValue relationshipAsMap(long id, RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor);
+    MapValue relationshipAsMap(
+            long id,
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor,
+            MapValueBuilder seenProperties,
+            IntSet seenPropertyTokens);
 
     MapValue relationshipAsMap(
             VirtualRelationshipValue relationship,
             RelationshipScanCursor relationshipCursor,
-            PropertyCursor propertyCursor);
+            PropertyCursor propertyCursor,
+            MapValueBuilder seenProperties,
+            IntSet seenPropertyTokens);
 
     Value getTxStateNodePropertyOrNull(long nodeId, int propertyKey);
 

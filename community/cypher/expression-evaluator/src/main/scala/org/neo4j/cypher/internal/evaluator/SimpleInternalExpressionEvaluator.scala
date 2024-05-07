@@ -148,7 +148,7 @@ object SimpleInternalExpressionEvaluator {
         ReadTokenContext.EMPTY,
         new AnonymousVariableNameGenerator(),
         noopSelectivityTrackerRegistrator,
-        CypherRuntimeConfiguration.defaultConfiguration,
+        CypherRuntimeConfiguration.defaultConfiguration
       )
     )
 

@@ -43,6 +43,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
 import java.util.Map;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.exceptions.CypherTypeException;
@@ -68,6 +69,7 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -260,11 +262,13 @@ public final class CypherCoercions {
         } else if (value instanceof NodeValue.DirectNodeValue node) {
             return node.properties();
         } else if (value instanceof VirtualNodeValue node) {
-            return access.nodeAsMap(node.id(), nodeCursor, propertyCursor);
+            return access.nodeAsMap(
+                    node.id(), nodeCursor, propertyCursor, new MapValueBuilder(), IntSets.immutable.empty());
         } else if (value instanceof RelationshipValue.DirectRelationshipValue rel) {
             return rel.properties();
         } else if (value instanceof VirtualRelationshipValue rel) {
-            return access.relationshipAsMap(rel.id(), relationshipCursor, propertyCursor);
+            return access.relationshipAsMap(
+                    rel.id(), relationshipCursor, propertyCursor, new MapValueBuilder(), IntSets.immutable.empty());
         } else {
             throw cantCoerce(value, "Map");
         }

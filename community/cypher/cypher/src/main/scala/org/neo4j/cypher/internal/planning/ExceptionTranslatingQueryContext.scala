@@ -78,6 +78,7 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
@@ -208,22 +209,38 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   ): ClosingLongIterator =
     translateException(tokenNameLookup, inner.getNodesByLabel(tokenReadSession, id, indexOrder))
 
-  override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue =
-    translateException(tokenNameLookup, inner.nodeAsMap(id, nodeCursor, propertyCursor))
+  override def nodeAsMap(
+    id: Long,
+    nodeCursor: NodeCursor,
+    propertyCursor: PropertyCursor,
+    builder: MapValueBuilder,
+    seenTokens: IntSet
+  ): MapValue =
+    translateException(tokenNameLookup, inner.nodeAsMap(id, nodeCursor, propertyCursor, builder, seenTokens))
 
   override def relationshipAsMap(
     id: Long,
     relationshipCursor: RelationshipScanCursor,
-    propertyCursor: PropertyCursor
+    propertyCursor: PropertyCursor,
+    builder: MapValueBuilder,
+    seenTokens: IntSet
   ): MapValue =
-    translateException(tokenNameLookup, inner.relationshipAsMap(id, relationshipCursor, propertyCursor))
+    translateException(
+      tokenNameLookup,
+      inner.relationshipAsMap(id, relationshipCursor, propertyCursor, builder, seenTokens)
+    )
 
   override def relationshipAsMap(
     rel: VirtualRelationshipValue,
     relationshipCursor: RelationshipScanCursor,
-    propertyCursor: PropertyCursor
+    propertyCursor: PropertyCursor,
+    builder: MapValueBuilder,
+    seenTokens: IntSet
   ): MapValue =
-    translateException(tokenNameLookup, inner.relationshipAsMap(rel, relationshipCursor, propertyCursor))
+    translateException(
+      tokenNameLookup,
+      inner.relationshipAsMap(rel, relationshipCursor, propertyCursor, builder, seenTokens)
+    )
 
   override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int =
     translateException(tokenNameLookup, inner.nodeGetOutgoingDegreeWithMax(maxDegree, node, nodeCursor))

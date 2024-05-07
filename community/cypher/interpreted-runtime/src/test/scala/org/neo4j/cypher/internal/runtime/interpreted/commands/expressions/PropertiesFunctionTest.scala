@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.eclipse.collections.api.set.primitive.IntSet
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
@@ -32,6 +34,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.map
 
@@ -70,7 +73,9 @@ class PropertiesFunctionTest extends CypherFunSuite {
     when(node.getId).thenReturn(0)
     when(node.getElementId).thenReturn("dummy")
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.nodeAsMap(0, state.cursors.nodeCursor, state.cursors.propertyCursor)).thenReturn(value)
+    when(
+      query.nodeAsMap(0, state.cursors.nodeCursor, state.cursors.propertyCursor, any[MapValueBuilder], any[IntSet])
+    ).thenReturn(value)
 
     properties(node) should equal(value)
   }
@@ -82,7 +87,9 @@ class PropertiesFunctionTest extends CypherFunSuite {
     when(query.relationshipAsMap(
       VirtualValues.relationship(rel.getId),
       state.cursors.relationshipScanCursor,
-      state.cursors.propertyCursor
+      state.cursors.propertyCursor,
+      any[MapValueBuilder],
+      any[IntSet]
     )).thenReturn(
       value
     )

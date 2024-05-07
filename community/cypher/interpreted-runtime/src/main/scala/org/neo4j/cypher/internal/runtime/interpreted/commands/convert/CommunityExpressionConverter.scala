@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
@@ -155,6 +154,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Inequa
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NameExpressionGraphReference
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointBoundingBoxSeekRangeExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PropertiesUsingCachedExpressionsFunction
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.VariableCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -162,6 +162,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.P
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -436,6 +437,10 @@ case class CommunityExpressionConverter(
             e.includeAllProps,
             mapProjectionItems(id, e.items, self)
           )
+      case e: PropertiesUsingCachedProperties =>
+        val cached: Set[(LazyPropertyKey, expressions.Expression)] =
+          e.cachedProperties.map(e => LazyPropertyKey(e.propertyKey, tokenContext) -> self.toCommandExpression(id, e))
+        PropertiesUsingCachedExpressionsFunction(self.toCommandExpression(id, e.variable), cached.toArray)
       case e: ResolvedFunctionInvocation =>
         val callArgumentCommands = e.callArguments.map(Some(_))
           .zipAll(e.fcnSignature.get.inputSignature.map(_.default), None, None).map {

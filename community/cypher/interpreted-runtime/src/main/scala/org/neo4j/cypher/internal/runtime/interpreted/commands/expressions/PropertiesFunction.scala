@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.eclipse.collections.impl.factory.primitive.IntSets
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValueBuilder
 
 case class PropertiesFunction(a: Expression) extends Expression {
 
@@ -41,4 +44,37 @@ case class PropertiesFunction(a: Expression) extends Expression {
   override def children: Seq[AstNode[_]] = Seq(a)
 
   override def rewrite(f: Expression => Expression): Expression = f(PropertiesFunction(a.rewrite(f)))
+}
+
+case class PropertiesUsingCachedExpressionsFunction(
+  a: Expression,
+  cachedProperties: Array[(LazyPropertyKey, Expression)]
+) extends Expression {
+
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue = {
+    val builder = new MapValueBuilder()
+    val cachedTokens = IntSets.mutable.empty()
+    cachedProperties.foreach {
+      case (p, e) =>
+        cachedTokens.add(p.id(state.query))
+        builder.add(p.name, e(ctx, state))
+    }
+
+    CypherFunctions.properties(
+      a(ctx, state),
+      state.query,
+      state.cursors.nodeCursor,
+      state.cursors.relationshipScanCursor,
+      state.cursors.propertyCursor,
+      builder,
+      cachedTokens
+    )
+  }
+
+  override def arguments: Seq[Expression] = Seq(a)
+
+  override def children: Seq[AstNode[_]] = Seq(a)
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(PropertiesUsingCachedExpressionsFunction(a.rewrite(f), cachedProperties.map { case (k, v) => k -> v.rewrite(f) }))
 }

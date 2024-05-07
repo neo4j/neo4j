@@ -100,6 +100,7 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import java.net.URI
@@ -388,19 +389,27 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   ): ClosingLongIterator =
     manyDbHits(inner.getNodesByLabel(tokenReadSession, id, indexOrder))
 
-  override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
-    val map = inner.nodeAsMap(id, nodeCursor, propertyCursor)
-    // one hit finding the node, then finding the properies
-    manyDbHits(1 + map.size())
+  override def nodeAsMap(
+    id: Long,
+    nodeCursor: NodeCursor,
+    propertyCursor: PropertyCursor,
+    builder: MapValueBuilder,
+    seenTokens: IntSet
+  ): MapValue = {
+    val map = inner.nodeAsMap(id, nodeCursor, propertyCursor, builder, seenTokens)
+    // one hit finding the node, then finding the properties
+    manyDbHits(1 + map.size() - seenTokens.size())
     map
   }
 
   override def relationshipAsMap(
     id: Long,
     relationshipCursor: RelationshipScanCursor,
-    propertyCursor: PropertyCursor
+    propertyCursor: PropertyCursor,
+    builder: MapValueBuilder,
+    seenTokens: IntSet
   ): MapValue = {
-    val map = inner.relationshipAsMap(id, relationshipCursor, propertyCursor)
+    val map = inner.relationshipAsMap(id, relationshipCursor, propertyCursor, builder, seenTokens)
     manyDbHits(1 + map.size())
     map
   }
@@ -408,9 +417,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def relationshipAsMap(
     relationship: VirtualRelationshipValue,
     relationshipCursor: RelationshipScanCursor,
-    propertyCursor: PropertyCursor
+    propertyCursor: PropertyCursor,
+    builder: MapValueBuilder,
+    seenTokens: IntSet
   ): MapValue = {
-    val map = inner.relationshipAsMap(relationship, relationshipCursor, propertyCursor)
+    val map = inner.relationshipAsMap(relationship, relationshipCursor, propertyCursor, builder, seenTokens)
     manyDbHits(1 + map.size())
     map
   }

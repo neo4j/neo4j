@@ -47,6 +47,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.neo4j.cypher.internal.expressions.NormalForm;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
@@ -1333,9 +1335,36 @@ public final class CypherFunctions {
         if (in == NO_VALUE) {
             return NO_VALUE;
         } else if (in instanceof VirtualNodeValue node) {
-            return access.nodeAsMap(node.id(), nodeCursor, propertyCursor);
+            return access.nodeAsMap(
+                    node.id(), nodeCursor, propertyCursor, new MapValueBuilder(), IntSets.immutable.empty());
         } else if (in instanceof VirtualRelationshipValue rel) {
-            return access.relationshipAsMap(rel, relationshipCursor, propertyCursor);
+            return access.relationshipAsMap(
+                    rel, relationshipCursor, propertyCursor, new MapValueBuilder(), IntSets.immutable.empty());
+        } else if (in instanceof MapValue) {
+            return in;
+        } else {
+            throw new CypherTypeException(format(
+                    "Invalid input for function 'properties()': Expected a node, a relationship or a literal map but got %s",
+                    in));
+        }
+    }
+
+    public static AnyValue properties(
+            AnyValue in,
+            DbAccess access,
+            NodeCursor nodeCursor,
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor,
+            MapValueBuilder alreadyReadProperties,
+            IntSet alreadyReadPropertyTokens) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof VirtualNodeValue node) {
+            return access.nodeAsMap(
+                    node.id(), nodeCursor, propertyCursor, alreadyReadProperties, alreadyReadPropertyTokens);
+        } else if (in instanceof VirtualRelationshipValue rel) {
+            return access.relationshipAsMap(
+                    rel.id(), relationshipCursor, propertyCursor, alreadyReadProperties, alreadyReadPropertyTokens);
         } else if (in instanceof MapValue) {
             return in;
         } else {

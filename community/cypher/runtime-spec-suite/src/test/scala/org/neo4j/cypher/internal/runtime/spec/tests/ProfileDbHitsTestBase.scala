@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
@@ -38,6 +40,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setN
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
@@ -1309,6 +1312,31 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be(3)
+  }
+
+  test("should use cached properties in projection function") {
+    givenGraph { nodePropertyGraph(sizeHint, { case i => Map("p" -> i, "q" -> -i) }, "somelabel") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(column("x", "cacheN[x.p]"))
+      .projection(Map("res" -> PropertiesUsingCachedProperties(
+        varFor("x"),
+        Set(CachedProperty(varFor("x"), varFor("x"), propName("p"), NODE_TYPE)(pos))
+      )))
+      .cacheProperties("cacheN[x.p]")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    val consumed = consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    queryProfile.operatorProfile(1).dbHits() should be(
+      sizeHint * (1 /* read node */ + /* only read x.q */ 1 * costOfProperty)
+    ) // produceresults
   }
 
   def hasFastRelationshipTo: Boolean = {

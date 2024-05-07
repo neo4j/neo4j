@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -345,6 +346,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
             )
 
         produceResult.withNewReturnColumns(newColumns)
+
+      case properties @ Properties(variable: LogicalVariable) =>
+        cachedPropertiesTracker.get(acc.variableWithOriginalName(asVariable(variable))) match {
+          case Some(cached) => PropertiesUsingCachedProperties(variable, cached)
+          case None         => properties
+        }
 
       // Rewrite properties to be cached if they are used more than once, or can be fetched from an index
       case prop @ Property(v: Variable, propertyKeyName) =>

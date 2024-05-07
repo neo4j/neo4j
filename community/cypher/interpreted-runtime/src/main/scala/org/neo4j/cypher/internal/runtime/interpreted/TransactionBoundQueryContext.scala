@@ -123,6 +123,7 @@ import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.internal.LogService
+import org.neo4j.storageengine.api.PropertySelection
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ValueMapper
@@ -1049,13 +1050,18 @@ private[internal] class TransactionBoundReadQueryContext(
     }
   }
 
-  override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
+  override def nodeAsMap(
+    id: Long,
+    nodeCursor: NodeCursor,
+    propertyCursor: PropertyCursor,
+    builder: MapValueBuilder,
+    seenTokens: IntSet
+  ): MapValue = {
     reads().singleNode(id, nodeCursor)
     if (!nodeCursor.next()) VirtualValues.EMPTY_MAP
     else {
       val tokens = tokenRead
-      nodeCursor.properties(propertyCursor)
-      val builder = new MapValueBuilder()
+      nodeCursor.properties(propertyCursor, PropertySelection.ALL_PROPERTIES.excluding(p => seenTokens.contains(p)))
       while (propertyCursor.next()) {
         builder.add(tokens.propertyKeyName(propertyCursor.propertyKey()), propertyCursor.propertyValue())
       }
@@ -1066,7 +1072,9 @@ private[internal] class TransactionBoundReadQueryContext(
   override def relationshipAsMap(
     id: Long,
     relationshipCursor: RelationshipScanCursor,
-    propertyCursor: PropertyCursor
+    propertyCursor: PropertyCursor,
+    builder: MapValueBuilder,
+    seenTokens: IntSet
   ): MapValue = {
     reads().singleRelationship(id, relationshipCursor)
     if (!relationshipCursor.next()) VirtualValues.EMPTY_MAP
@@ -1084,9 +1092,19 @@ private[internal] class TransactionBoundReadQueryContext(
   override def relationshipAsMap(
     relationship: VirtualRelationshipValue,
     relationshipCursor: RelationshipScanCursor,
-    propertyCursor: PropertyCursor
+    propertyCursor: PropertyCursor,
+    builder: MapValueBuilder,
+    seenTokens: IntSet
   ): MapValue = {
-    CursorUtils.relationshipAsMap(reads(), tokenRead, relationship, relationshipCursor, propertyCursor)
+    CursorUtils.relationshipAsMap(
+      reads(),
+      tokenRead,
+      relationship,
+      relationshipCursor,
+      propertyCursor,
+      builder: MapValueBuilder,
+      seenTokens: IntSet
+    )
   }
 
   override def getNodesByLabel(

@@ -77,6 +77,7 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
@@ -191,7 +192,9 @@ object StaticEvaluation {
     override def relationshipAsMap(
       relationship: VirtualRelationshipValue,
       relationshipCursor: RelationshipScanCursor,
-      propertyCursor: PropertyCursor
+      propertyCursor: PropertyCursor,
+      builder: MapValueBuilder,
+      seenTokens: IntSet
     ): MapValue = notAvailable()
 
     override def getOrCreateLabelId(labelName: String): Int = notAvailable()
@@ -609,12 +612,20 @@ object StaticEvaluation {
       relationshipCursor: RelationshipScanCursor
     ): Boolean = notAvailable()
 
-    override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = notAvailable()
+    override def nodeAsMap(
+      id: Long,
+      nodeCursor: NodeCursor,
+      propertyCursor: PropertyCursor,
+      builder: MapValueBuilder,
+      seenTokens: IntSet
+    ): MapValue = notAvailable()
 
     override def relationshipAsMap(
       id: Long,
       relationshipCursor: RelationshipScanCursor,
-      propertyCursor: PropertyCursor
+      propertyCursor: PropertyCursor,
+      builder: MapValueBuilder,
+      seenTokens: IntSet
     ): MapValue = notAvailable()
 
     override def callFunction(id: Int, args: Array[AnyValue], ctx: ProcedureCallContext): AnyValue = notAvailable()
