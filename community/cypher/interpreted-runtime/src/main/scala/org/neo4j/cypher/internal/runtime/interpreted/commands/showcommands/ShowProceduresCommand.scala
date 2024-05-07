@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause.adminColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause.argumentDescriptionColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.deprecatedByColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause.descriptionColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause.isDeprecatedColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause.modeColumn
@@ -158,6 +159,7 @@ case class ShowProceduresCommand(
       case `rolesBoostedExecutionColumn` => rolesBoostedExecutionColumn -> boostedRolesList
       // Tells if the procedure is deprecated
       case `isDeprecatedColumn` => isDeprecatedColumn -> Values.booleanValue(proc.isDeprecated)
+      case `deprecatedByColumn` => deprecatedByColumn -> Values.stringOrNoValue(proc.deprecated().orElse(null))
       // Additional output, for example if the procedure is deprecated
       case `optionColumn` => optionColumn -> getOptionValue(proc)
       case unknown        =>

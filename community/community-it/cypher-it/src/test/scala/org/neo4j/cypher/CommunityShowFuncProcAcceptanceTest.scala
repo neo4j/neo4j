@@ -98,7 +98,8 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       "aggregating" -> false,
       "rolesExecution" -> null,
       "rolesBoostedExecution" -> null,
-      "isDeprecated" -> false
+      "isDeprecated" -> false,
+      "deprecatedBy" -> null
     ),
     Map[String, Any](
       "name" -> "test.functionWithInput",
@@ -116,7 +117,8 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       "aggregating" -> false,
       "rolesExecution" -> null,
       "rolesBoostedExecution" -> null,
-      "isDeprecated" -> false
+      "isDeprecated" -> false,
+      "deprecatedBy" -> null
     ),
     Map[String, Any](
       "name" -> "test.return.latest",
@@ -134,7 +136,8 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       "aggregating" -> true,
       "rolesExecution" -> null,
       "rolesBoostedExecution" -> null,
-      "isDeprecated" -> false
+      "isDeprecated" -> false,
+      "deprecatedBy" -> null
     )
   )
 

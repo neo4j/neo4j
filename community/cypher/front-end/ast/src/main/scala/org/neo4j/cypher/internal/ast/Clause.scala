@@ -2094,6 +2094,7 @@ object ShowProceduresClause {
   val rolesExecutionColumn = "rolesExecution"
   val rolesBoostedExecutionColumn = "rolesBoostedExecution"
   val isDeprecatedColumn = "isDeprecated"
+  val deprecatedByColumn = "deprecatedBy"
   val optionColumn = "option"
 
   def apply(
@@ -2116,6 +2117,7 @@ object ShowProceduresClause {
       ShowAndTerminateColumn(rolesExecutionColumn, CTList(CTString)),
       ShowAndTerminateColumn(rolesBoostedExecutionColumn, CTList(CTString)),
       ShowAndTerminateColumn(isDeprecatedColumn, CTBoolean),
+      ShowAndTerminateColumn(deprecatedByColumn),
       ShowAndTerminateColumn(optionColumn, CTMap)
     )
 
@@ -2167,6 +2169,7 @@ object ShowFunctionsClause {
   val rolesExecutionColumn = "rolesExecution"
   val rolesBoostedExecutionColumn = "rolesBoostedExecution"
   val isDeprecatedColumn = "isDeprecated"
+  val deprecatedByColumn = "deprecatedBy"
 
   def apply(
     functionType: ShowFunctionType,
@@ -2188,7 +2191,8 @@ object ShowFunctionsClause {
       ShowAndTerminateColumn(aggregatingColumn, CTBoolean),
       ShowAndTerminateColumn(rolesExecutionColumn, CTList(CTString)),
       ShowAndTerminateColumn(rolesBoostedExecutionColumn, CTList(CTString)),
-      ShowAndTerminateColumn(isDeprecatedColumn, CTBoolean)
+      ShowAndTerminateColumn(isDeprecatedColumn, CTBoolean),
+      ShowAndTerminateColumn(deprecatedByColumn)
     )
 
     ShowFunctionsClause(

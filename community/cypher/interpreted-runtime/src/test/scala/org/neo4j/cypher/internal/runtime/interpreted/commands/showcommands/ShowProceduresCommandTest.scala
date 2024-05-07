@@ -141,6 +141,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     roles: Option[List[String]] = None,
     rolesBoosted: Option[List[String]] = None,
     isDeprecated: Option[Boolean] = None,
+    deprecatedBy: Option[String] = None,
     option: Option[Map[String, AnyValue]] = None
   ): Unit = {
     name.foreach(expected => resultMap(ShowProceduresClause.nameColumn) should be(Values.stringValue(expected)))
@@ -175,6 +176,9 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     )
     isDeprecated.foreach(expected =>
       resultMap(ShowProceduresClause.isDeprecatedColumn) should be(Values.booleanValue(expected))
+    )
+    deprecatedBy.foreach(expected =>
+      resultMap(ShowProceduresClause.deprecatedByColumn) should be(Values.stringOrNoValue(expected.orNull))
     )
     option.foreach(expected =>
       resultMap(ShowProceduresClause.optionColumn) should be(
@@ -226,6 +230,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
         ShowProceduresClause.rolesExecutionColumn,
         ShowProceduresClause.rolesBoostedExecutionColumn,
         ShowProceduresClause.isDeprecatedColumn,
+        ShowProceduresClause.deprecatedByColumn,
         ShowProceduresClause.optionColumn
       )
     })
@@ -272,6 +277,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
         ShowProceduresClause.rolesExecutionColumn,
         ShowProceduresClause.rolesBoostedExecutionColumn,
         ShowProceduresClause.isDeprecatedColumn,
+        ShowProceduresClause.deprecatedByColumn,
         ShowProceduresClause.optionColumn
       )
     })
@@ -300,6 +306,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       roles = Some(null),
       rolesBoosted = Some(null),
       isDeprecated = false,
+      deprecatedBy = Some(null),
       option = Map("deprecated" -> Values.FALSE)
     )
     checkResult(
@@ -318,6 +325,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       roles = Some(null),
       rolesBoosted = Some(null),
       isDeprecated = false,
+      deprecatedBy = Some(null),
       option = Map("deprecated" -> Values.FALSE)
     )
     checkResult(
@@ -333,6 +341,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       roles = Some(null),
       rolesBoosted = Some(null),
       isDeprecated = false,
+      deprecatedBy = Some(null),
       option = Map("deprecated" -> Values.FALSE)
     )
   }
@@ -360,6 +369,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       roles = List(publicRole, adminRole),
       rolesBoosted = List(adminRole),
       isDeprecated = false,
+      deprecatedBy = Some(null),
       option = Map("deprecated" -> Values.FALSE)
     )
     checkResult(
@@ -378,6 +388,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       roles = List(adminRole),
       rolesBoosted = List(adminRole),
       isDeprecated = false,
+      deprecatedBy = Some(null),
       option = Map("deprecated" -> Values.FALSE)
     )
     checkResult(
@@ -393,6 +404,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       roles = List(publicRole, adminRole),
       rolesBoosted = List(adminRole),
       isDeprecated = false,
+      deprecatedBy = Some(null),
       option = Map("deprecated" -> Values.FALSE)
     )
   }
@@ -490,12 +502,14 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       result.head,
       name = "proc.deprecated",
       isDeprecated = true,
+      deprecatedBy = Some("I'm deprecated"),
       option = Map("deprecated" -> Values.TRUE)
     )
     checkResult(
       result(1),
       name = "proc.deprecatedNoReplacement",
       isDeprecated = true,
+      deprecatedBy = Some(null),
       option = Map("deprecated" -> Values.TRUE)
     )
   }

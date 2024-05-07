@@ -242,7 +242,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     aggregating: Option[Boolean] = None,
     roles: Option[List[String]] = None,
     rolesBoosted: Option[List[String]] = None,
-    isDeprecated: Option[Boolean] = None
+    isDeprecated: Option[Boolean] = None,
+    deprecatedBy: Option[String] = None
   ): Unit = {
     name.foreach(expected => resultMap(ShowFunctionsClause.nameColumn) should be(Values.stringValue(expected)))
     category.foreach(expected => resultMap(ShowFunctionsClause.categoryColumn) should be(Values.stringValue(expected)))
@@ -278,6 +279,9 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     )
     isDeprecated.foreach(expected =>
       resultMap(ShowFunctionsClause.isDeprecatedColumn) should be(Values.booleanValue(expected))
+    )
+    deprecatedBy.foreach(expected =>
+      resultMap(ShowFunctionsClause.deprecatedByColumn) should be(Values.stringOrNoValue(expected.orNull))
     )
   }
 
@@ -340,7 +344,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
         ShowFunctionsClause.aggregatingColumn,
         ShowFunctionsClause.rolesExecutionColumn,
         ShowFunctionsClause.rolesBoostedExecutionColumn,
-        ShowFunctionsClause.isDeprecatedColumn
+        ShowFunctionsClause.isDeprecatedColumn,
+        ShowFunctionsClause.deprecatedByColumn
       )
     })
   }
@@ -402,7 +407,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
         ShowFunctionsClause.aggregatingColumn,
         ShowFunctionsClause.rolesExecutionColumn,
         ShowFunctionsClause.rolesBoostedExecutionColumn,
-        ShowFunctionsClause.isDeprecatedColumn
+        ShowFunctionsClause.isDeprecatedColumn,
+        ShowFunctionsClause.deprecatedByColumn
       )
     })
   }
@@ -430,7 +436,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = false,
       roles = Some(null),
       rolesBoosted = Some(null),
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(1),
@@ -444,7 +451,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = true,
       roles = Some(null),
       rolesBoosted = Some(null),
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(2),
@@ -472,7 +480,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = false,
       roles = Some(null),
       rolesBoosted = Some(null),
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(4),
@@ -489,7 +498,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = false,
       roles = Some(null),
       rolesBoosted = Some(null),
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(5),
@@ -503,7 +513,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = true,
       roles = Some(null),
       rolesBoosted = Some(null),
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
   }
 
@@ -530,7 +541,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = false,
       roles = List(publicRole, readerRole, editorRole, publisherRole, architectRole, adminRole).sorted,
       rolesBoosted = List.empty[String],
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(1),
@@ -544,7 +556,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = true,
       roles = List(publicRole, readerRole, editorRole, publisherRole, architectRole, adminRole).sorted,
       rolesBoosted = List.empty[String],
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(2),
@@ -558,7 +571,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = true,
       roles = List(publicRole, readerRole, editorRole, publisherRole, architectRole, adminRole).sorted,
       rolesBoosted = List.empty[String],
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(3),
@@ -572,7 +586,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = false,
       roles = List(publicRole, readerRole, editorRole, publisherRole, architectRole, adminRole).sorted,
       rolesBoosted = List.empty[String],
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(4),
@@ -589,7 +604,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = false,
       roles = List(publicRole, adminRole),
       rolesBoosted = List(adminRole),
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(5),
@@ -603,7 +619,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = true,
       roles = List(publicRole, adminRole),
       rolesBoosted = List(adminRole),
-      isDeprecated = false
+      isDeprecated = false,
+      deprecatedBy = Some(null)
     )
   }
 
@@ -733,7 +750,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       aggregating = false,
       output = NTInteger.toString,
       arguments = List.empty,
-      deprecated = true
+      deprecated = true,
+      deprecatedByString = null
     )
     when(procedures.functionGetAll()).thenReturn(List(deprecatedFunc, deprecatedFuncWithoutReplacement).asJava.stream())
     when(procedures.aggregationFunctionGetAll()).thenReturn(List(
@@ -753,31 +771,36 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       result.head,
       name = "deprecated.aggregating.func",
       signature = "deprecated.aggregating.func() :: STRING",
-      isDeprecated = true
+      isDeprecated = true,
+      deprecatedBy = Some("I'm deprecated")
     )
     checkResult(
       result(1),
       name = "deprecated.func",
       signature = "deprecated.func() :: STRING",
-      isDeprecated = true
+      isDeprecated = true,
+      deprecatedBy = Some("I'm deprecated")
     )
     checkResult(
       result(2),
       name = "deprecated.language",
       signature = "deprecated.language() :: INTEGER",
-      isDeprecated = true
+      isDeprecated = true,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(3),
       name = "deprecatedWithoutReplacement.aggregating.func",
       signature = "deprecatedWithoutReplacement.aggregating.func() :: STRING",
-      isDeprecated = true
+      isDeprecated = true,
+      deprecatedBy = Some(null)
     )
     checkResult(
       result(4),
       name = "deprecatedWithoutReplacement.func",
       signature = "deprecatedWithoutReplacement.func() :: STRING",
-      isDeprecated = true
+      isDeprecated = true,
+      deprecatedBy = Some(null)
     )
   }
 

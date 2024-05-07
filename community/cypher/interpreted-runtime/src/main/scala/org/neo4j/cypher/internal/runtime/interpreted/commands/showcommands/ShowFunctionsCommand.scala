@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause.aggregatingColumn
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause.argumentDescriptionColumn
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause.categoryColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.deprecatedByColumn
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause.descriptionColumn
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause.isBuiltInColumn
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause.isDeprecatedColumn
@@ -200,6 +201,7 @@ case class ShowFunctionsCommand(
       case `rolesBoostedExecutionColumn` => rolesBoostedExecutionColumn -> boostedRolesList
       // Tells if the function is deprecated
       case `isDeprecatedColumn` => isDeprecatedColumn -> Values.booleanValue(func.deprecated)
+      case `deprecatedByColumn` => deprecatedByColumn -> Values.stringOrNoValue(func.deprecatedBy)
       case unknown              =>
         // This match should cover all existing columns but we get scala warnings
         // on non-exhaustive match due to it being string values
@@ -224,7 +226,7 @@ case class ShowFunctionsCommand(
     retDescr: String,
     aggregating: Boolean,
     deprecated: Boolean,
-    deprecatedBy: Option[String]
+    deprecatedBy: String
   )
 
   private object FunctionInfo {
@@ -238,7 +240,7 @@ case class ShowFunctionsCommand(
       val argumentDescr = ShowProcFuncCommandHelper.getSignatureValues(info.inputSignature())
       val returnDescr = info.outputType.toString
       val deprecated = info.isDeprecated
-      val deprecatedBy = if (info.deprecated().isEmpty) None else Some(info.deprecated().get)
+      val deprecatedBy = if (info.deprecated() == null || info.deprecated.isEmpty) null else info.deprecated.get
       FunctionInfo(
         name,
         category,
@@ -262,7 +264,7 @@ case class ShowFunctionsCommand(
       val argumentDescr = info.inputSignature.asScala.toList
       val returnDescr = info.returnType
       val deprecated = info.isDeprecated
-      val deprecatedBy = if (info.deprecatedBy.isEmpty) None else Some(info.deprecatedBy.get)
+      val deprecatedBy = if (info.deprecatedBy() == null || info.deprecatedBy.isEmpty) null else info.deprecatedBy.get
       FunctionInfo(
         name,
         category,

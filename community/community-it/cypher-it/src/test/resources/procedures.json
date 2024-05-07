@@ -23,6 +23,7 @@
       "admin"
     ],
     "isDeprecated": true,
+    "deprecatedBy": "db.cdc.current",
     "option": {
       "deprecated": true
     },
@@ -52,6 +53,7 @@
       "admin"
     ],
     "isDeprecated": true,
+    "deprecatedBy": "db.cdc.earliest",
     "option": {
       "deprecated": true
     },
@@ -119,6 +121,7 @@
       "admin"
     ],
     "isDeprecated": true,
+    "deprecatedBy": "db.cdc.query",
     "option": {
       "deprecated": true
     },
@@ -155,6 +158,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -185,6 +189,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -214,6 +219,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -243,6 +249,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -310,6 +317,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -345,6 +353,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -373,6 +382,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -414,6 +424,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -455,6 +466,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -503,6 +515,7 @@
       "admin"
     ],
     "isDeprecated": true,
+    "deprecatedBy": "db.create.setNodeVectorProperty",
     "option": {
       "deprecated": true
     },
@@ -532,6 +545,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -561,6 +575,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -590,6 +605,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -612,6 +628,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -653,6 +670,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -708,6 +726,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -763,6 +782,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -816,6 +836,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -870,6 +891,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -924,6 +946,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -965,6 +988,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -994,6 +1018,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1040,6 +1065,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1069,6 +1095,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1098,6 +1125,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1127,6 +1155,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1156,6 +1185,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1185,6 +1215,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1207,6 +1238,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1260,6 +1292,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1307,6 +1340,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1342,6 +1376,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1389,6 +1424,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1443,6 +1479,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1491,6 +1528,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1539,6 +1577,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1579,6 +1618,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1626,6 +1666,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1673,6 +1714,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1682,6 +1724,7 @@
     "admin": true,
     "name": "dbms.cluster.checkConnectivity",
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1749,6 +1792,7 @@
     "admin": true,
     "name": "dbms.cluster.cordonServer",
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1821,6 +1865,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1830,6 +1875,7 @@
     "admin": true,
     "name": "dbms.cluster.readReplicaToggle",
     "isDeprecated": true,
+    "deprecatedBy": "dbms.cluster.secondaryReplicationDisable",
     "option": {
       "deprecated": true
     },
@@ -1911,6 +1957,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1920,6 +1967,7 @@
     "admin": true,
     "name": "dbms.cluster.secondaryReplicationDisable",
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1961,6 +2009,7 @@
     "admin": true,
     "name": "dbms.cluster.setAutomaticallyEnableFreeServers",
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -1989,6 +2038,7 @@
     "admin": true,
     "name": "dbms.cluster.uncordonServer",
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2049,6 +2099,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2090,6 +2141,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2138,6 +2190,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2186,6 +2239,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2234,6 +2288,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2275,6 +2330,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2353,6 +2409,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2418,6 +2475,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2501,6 +2559,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2561,6 +2620,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2609,6 +2669,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2658,6 +2719,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2740,6 +2802,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2774,6 +2837,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2862,6 +2926,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2883,6 +2948,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2917,6 +2983,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2926,6 +2993,7 @@
     "admin": true,
     "name": "dbms.setDatabaseAllocator",
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2954,6 +3022,7 @@
     "admin": true,
     "name": "dbms.setDefaultAllocationNumbers",
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -2988,6 +3057,7 @@
     "admin": true,
     "name": "dbms.setDefaultDatabase",
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -3055,6 +3125,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -3064,6 +3135,7 @@
     "admin": true,
     "name": "dbms.showTopologyGraphConfig",
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -3141,6 +3213,7 @@
       "admin"
     ],
     "isDeprecated": true,
+    "deprecatedBy": null,
     "option": {
       "deprecated": true
     },
@@ -3181,6 +3254,7 @@
       "admin"
     ],
     "isDeprecated": true,
+    "deprecatedBy": null,
     "option": {
       "deprecated": true
     },
@@ -3210,6 +3284,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
@@ -3239,6 +3314,7 @@
       "admin"
     ],
     "isDeprecated": false,
+    "deprecatedBy": null,
     "option": {
       "deprecated": false
     },
