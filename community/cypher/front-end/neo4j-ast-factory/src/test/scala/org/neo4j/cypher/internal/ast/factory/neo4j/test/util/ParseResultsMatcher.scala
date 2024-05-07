@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j.test.util
 
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseFailure
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResult
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResults
@@ -280,11 +279,5 @@ object ParserSupport {
 
   case class Explicit(parsers: ParserInTest*) extends ParserSupport {
     override def ignore(parser: ParserInTest): Boolean = !parsers.contains(parser)
-  }
-
-  // Indicates limited support in antlr during development.
-  // NOTE!! This has very special meanings in some places, see usages for details.
-  case object NotAntlr extends ParserSupport {
-    override def ignore(parser: ParserInTest): Boolean = parser == Antlr
   }
 }

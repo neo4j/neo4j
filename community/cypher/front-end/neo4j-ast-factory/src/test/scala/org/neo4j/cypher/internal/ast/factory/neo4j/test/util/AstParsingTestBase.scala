@@ -17,10 +17,8 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.test.util
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResults
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.All
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -105,8 +103,7 @@ trait AstParsingMatchers extends TestName {
    * Parse successfully to any ast in all '''supported''' parsers.
    * The returned [[ParseStringMatcher]] can be used to add assertions.
    */
-  def parse[T <: ASTNode : ClassTag](support: ParserSupport): ParseStringMatcher[T] =
-    handleAntlrParse(parseAs[T](support).withoutErrors)
+  def parse[T <: ASTNode : ClassTag](support: ParserSupport): ParseStringMatcher[T] = parseAs[T](support).withoutErrors
 
   /** See [[parse(ParserSupport)]]. */
   def parse[T <: ASTNode : ClassTag]: ParseStringMatcher[T] = parse[T](All)
@@ -121,14 +118,14 @@ trait AstParsingMatchers extends TestName {
    * See [[parseTo(ParserSupport)]].
    */
   def parseTo[T <: ASTNode : ClassTag](support: ParserSupport)(expected: T): ParseStringMatcher[T] =
-    handleAntlrParse(parse[T](support).toAst(expected))
+    parse[T](support).toAst(expected)
 
   /**
    * Fail to parse in all '''supported''' parsers.
    * The returned [[ParseStringMatcher]] can be used to add assertions.
    */
   def notParse[T <: ASTNode : ClassTag](support: ParserSupport): ParseStringMatcher[T] =
-    handleAntlrNotParse(parseAs[T](support).withAnyFailure)
+    parseAs[T](support).withAnyFailure
 
   /**
    * See [[notParse(ParserSupport)]]
@@ -147,22 +144,6 @@ trait AstParsingMatchers extends TestName {
    * See [[parseAs(ParserSupport)]]
    */
   def parseAs[T <: ASTNode : ClassTag]: ParseStringMatcher[T] = parseAs[T](All)
-
-  // Handle general limited support in antlr during development
-  protected def handleAntlrParse[T <: FluentMatchers[T, _]](f: T): T = {
-    f.support match {
-      case NotAntlr => f.parseIn(Antlr)(_.withoutErrors.toAst(null))
-      case _        => f
-    }
-  }
-
-  // Handle general limited support in antlr during development
-  protected def handleAntlrNotParse[T <: FluentMatchers[T, _]](f: T): T = {
-    f.support match {
-      case NotAntlr => f.parseIn(Antlr)(_.withAnyFailure)
-      case _        => f
-    }
-  }
 }
 
 object AstParsingMatchers extends AstParsingMatchers
@@ -184,7 +165,7 @@ trait TestNameAstAssertions extends AstParsingMatchers with AstParsing with Test
    * The returned [[Parses]] can be used to add assertions.
    */
   def parses[T <: ASTNode : ClassTag](support: ParserSupport): Parses[T] =
-    handleAntlrParse(Parses(parseAst[T](testName), support).withoutErrors)
+    Parses(parseAst[T](testName), support).withoutErrors
 
   /**
    * Parse successfully to the specified ast in all parsers.
@@ -209,7 +190,7 @@ trait TestNameAstAssertions extends AstParsingMatchers with AstParsing with Test
    * The returned [[Parses]] can be used to add assertions.
    */
   def failsParsing[T <: ASTNode : ClassTag](support: ParserSupport): Parses[T] =
-    handleAntlrNotParse(Parses(parseAst[T](testName), support).withAnyFailure)
+    Parses(parseAst[T](testName), support).withAnyFailure
 
   /**
    * Avoid if possible. Makes no prior assertions.
