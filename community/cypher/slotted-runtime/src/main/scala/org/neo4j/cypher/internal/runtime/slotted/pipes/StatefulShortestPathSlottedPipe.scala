@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.NO_ENTITY_FUNCTION
@@ -50,6 +51,7 @@ case class StatefulShortestPathSlottedPipe(
   sourceSlot: Slot,
   intoTargetSlot: Option[Slot],
   commandNFA: CommandNFA,
+  bounds: LengthBounds,
   preFilters: Option[Predicate],
   selector: StatefulShortestPath.Selector,
   groupSlots: List[Int],
@@ -97,6 +99,7 @@ case class StatefulShortestPathSlottedPipe(
         withPathVariables(inputRow, _),
         pathPredicate,
         selector.isGroup,
+        bounds.max.getOrElse(-1),
         selector.k.toInt,
         commandNFA.states.size,
         memoryTracker,

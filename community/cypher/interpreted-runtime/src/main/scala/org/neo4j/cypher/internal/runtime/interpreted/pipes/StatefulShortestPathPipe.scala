@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaAutoCloseableIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -43,6 +44,7 @@ case class StatefulShortestPathPipe(
   sourceNodeName: String,
   intoTargetNodeName: Option[String],
   commandNFA: CommandNFA,
+  bounds: LengthBounds,
   preFilters: Option[Predicate],
   selector: StatefulShortestPath.Selector,
   grouped: Set[String],
@@ -88,6 +90,7 @@ case class StatefulShortestPathPipe(
             withPathVariables(inputRow, _),
             pathPredicate,
             selector.isGroup,
+            bounds.max.getOrElse(-1),
             selector.k.toInt,
             commandNFA.states.size,
             memoryTracker,

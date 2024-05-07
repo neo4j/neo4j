@@ -53,6 +53,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
     private final Function<PathTracer.TracedPath, Row> toRow;
     private final Predicate<Row> nonInlinedPredicate;
     private final Boolean isGroupSelector;
+    private final int maxDepth;
     private final MemoryTracker memoryTracker;
     private final PPBFSHooks hooks;
     private final AssertOpen assertOpen;
@@ -86,6 +87,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             Function<PathTracer.TracedPath, Row> toRow,
             Predicate<Row> nonInlinedPredicate,
             Boolean isGroupSelector,
+            int maxDepth,
             int initialCountForTargetNodes,
             int nfaStateCount,
             MemoryTracker mt,
@@ -101,6 +103,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
         this.toRow = toRow;
         this.nonInlinedPredicate = nonInlinedPredicate;
         this.isGroupSelector = isGroupSelector;
+        this.maxDepth = maxDepth;
         this.memoryTracker = mt.getScopedMemoryTracker();
         this.hooks = hooks;
         this.assertOpen = assertOpen;
@@ -131,6 +134,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
             Function<PathTracer.TracedPath, Row> toRow,
             Predicate<Row> nonInlinedPredicate,
             Boolean isGroupSelector,
+            int maxDepth,
             int initialCountForTargetNodes,
             int numberOfNfaStates,
             MemoryTracker mt,
@@ -147,6 +151,7 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
                 toRow,
                 nonInlinedPredicate,
                 isGroupSelector,
+                maxDepth,
                 initialCountForTargetNodes,
                 numberOfNfaStates,
                 mt,
@@ -239,6 +244,10 @@ public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> im
      */
     private boolean nextLevel() {
         assertOpen.assertOpen();
+
+        if (maxDepth != -1 && globalState.depth() == maxDepth) {
+            return false;
+        }
 
         globalState.nextDepth();
 

@@ -529,9 +529,9 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     )
   }
 
-  /***************************************************
-   * grouping, K limit, into (early exit), filtering *
-   ***************************************************/
+  /**************************************************************
+   * grouping, K limit, into (early exit), filtering, max depth *
+   **************************************************************/
 
   test("results are limited to K") {
     val graph = `(a)<--(b)-->(a)`
@@ -735,6 +735,26 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     paths shouldBe Seq(Seq(n1, n1, r6, n2, r7, n3, n3, r8, n4, r9, n5, n5))
   }
 
+  test("max depth") {
+    val graph = TestGraph.builder
+    val a = graph.node()
+    val b = graph.node()
+    val c = graph.node()
+    graph.rel(a, b)
+    graph.rel(b, c)
+    val ac = graph.rel(a, c)
+
+    val paths = fixture()
+      .withGraph(graph.build())
+      .from(a)
+      .into(c)
+      .withMaxDepth(1)
+      .withNfa(anyDirectedPath)
+      .paths()
+
+    paths shouldBe Seq(Seq(a, ac, c))
+  }
+
   /*******************************************
    * Algorithm introspection via event hooks *
    *******************************************/
@@ -860,6 +880,26 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .events()
 
     events should (contain(AddTarget(graph.c)) and not contain AddTarget(graph.a))
+  }
+
+  test("algorithm should exit once we hit max depth") {
+    val graph = TestGraph.builder
+    val a = graph.node()
+    val b = graph.node()
+    val c = graph.node()
+    graph.rel(a, b)
+    graph.rel(b, c)
+    graph.rel(a, c)
+
+    val events = fixture()
+      .withGraph(graph.build())
+      .from(a)
+      .into(c)
+      .withMaxDepth(1)
+      .withNfa(anyDirectedPath)
+      .events()
+
+    events should not contain NextLevel(2)
   }
 
   /*******************
@@ -1110,6 +1150,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
     intoTarget: Long,
     searchMode: SearchMode,
     isGroup: Boolean,
+    maxDepth: Int,
     k: Int,
     projection: TracedPath => A,
     predicate: A => Boolean,
@@ -1135,6 +1176,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
 
     def withMode(searchMode: SearchMode): FixtureBuilder[A] = copy(searchMode = searchMode)
     def grouped: FixtureBuilder[A] = copy(isGroup = true)
+    def withMaxDepth(maxDepth: Int): FixtureBuilder[A] = copy(maxDepth = maxDepth)
     def withK(k: Int): FixtureBuilder[A] = copy(k = k)
     def withMemoryTracker(mt: MemoryTracker): FixtureBuilder[A] = copy(mt = mt)
     def onAssertOpen(assertOpen: => Unit): FixtureBuilder[A] = copy(assertOpen = () => assertOpen)
@@ -1148,6 +1190,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         intoTarget,
         searchMode,
         isGroup,
+        maxDepth,
         k,
         projection,
         _ => true,
@@ -1169,6 +1212,7 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
         projection(_),
         predicate(_),
         isGroup,
+        maxDepth,
         k,
         nfa.stateCount,
         mt,
@@ -1263,18 +1307,19 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
   }
 
   private def fixture() = FixtureBuilder[TracedPath](
-    TestGraph.empty,
-    new PGStateBuilder,
-    -1L,
-    -1L,
+    graph = TestGraph.empty,
+    nfa = new PGStateBuilder,
+    source = -1L,
+    intoTarget = -1L,
     SearchMode.Unidirectional,
     isGroup = false,
-    Int.MaxValue,
-    identity,
-    _ => true,
-    EmptyMemoryTracker.INSTANCE,
-    PPBFSHooks.NULL,
-    () => ()
+    maxDepth = -1,
+    k = Int.MaxValue,
+    projection = identity,
+    predicate = _ => true,
+    mt = EmptyMemoryTracker.INSTANCE,
+    hooks = PPBFSHooks.NULL,
+    assertOpen = () => ()
   )
 }
 

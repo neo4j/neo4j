@@ -1305,7 +1305,7 @@ class SlottedPipeMapper(
           slots = slots
         )(id)
 
-      case p @ StatefulShortestPath(
+      case StatefulShortestPath(
           _,
           sourceNode,
           targetNode,
@@ -1319,7 +1319,7 @@ class SlottedPipeMapper(
           selector,
           _,
           reverseGroupVariableProjections,
-          _
+          bounds
         ) =>
         val groupMap = (nodeVariableGroupings ++ relationshipVariableGroupings)
           .map(grouping => grouping.singleton.name -> slots(grouping.group.name))
@@ -1360,6 +1360,7 @@ class SlottedPipeMapper(
           slots(sourceNode),
           intoTargetName,
           commandNFA,
+          bounds,
           commandPreFilters,
           selector,
           groupMap.values.map(_.offset).toList,

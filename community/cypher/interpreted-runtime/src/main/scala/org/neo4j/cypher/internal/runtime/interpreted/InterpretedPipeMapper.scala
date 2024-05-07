@@ -1486,7 +1486,7 @@ case class InterpretedPipeMapper(
           single && !withFallBack
         )(id)
 
-      case p @ StatefulShortestPath(
+      case StatefulShortestPath(
           _,
           sourceNode,
           targetNode,
@@ -1500,7 +1500,7 @@ case class InterpretedPipeMapper(
           selector,
           _,
           reverseGroupVariableProjections,
-          _
+          bounds
         ) =>
         def convertPredicate(varPred: VariablePredicate) =
           expressionConverters.toCommandPredicate(id, varPred.predicate)
@@ -1537,6 +1537,7 @@ case class InterpretedPipeMapper(
           sourceNode.name,
           intoTargetName,
           commandNFA,
+          bounds,
           commandPreFilters,
           selector,
           groupMap.values.toSet,
