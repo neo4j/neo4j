@@ -26,6 +26,9 @@ import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
 import scala.reflect.ClassTag
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * Test helpers for cypher ast parsing.
@@ -91,7 +94,14 @@ import scala.reflect.ClassTag
 trait AstParsingTestBase extends CypherFunSuite
     with AstParsingMatchers
     with TestNameAstAssertions
-    with AstConstructionTestSupport
+    with AstConstructionTestSupport {
+
+  /** Debug the specified cypher. */
+  def debug[T <: ASTNode : ClassTag](cypher: String): Unit = Try(parseAst[T](cypher)) match {
+    case Success(results) => throw new RuntimeException(MatchResults.describe(results))
+    case Failure(e)       => throw new RuntimeException(s"Test framework failed unexpectedly\nCypher: $cypher", e)
+  }
+}
 
 /**
  * Provides scalatest matchers for cypher parsing.

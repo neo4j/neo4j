@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.VerifyAstPositionTe
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.VerifyStatementUseGraph.findUseGraphMismatch
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.internal.helpers.Exceptions
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.must.Matchers.be
@@ -36,6 +35,7 @@ import org.scalatest.matchers.must.Matchers.include
 import org.scalatest.matchers.must.Matchers.startWith
 
 import scala.reflect.ClassTag
+import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
@@ -56,7 +56,13 @@ case class ParseStringMatcher[T <: ASTNode : ClassTag](
   override val matchers: Seq[Matcher[ParseResults[_]]] = Seq.empty
 ) extends Matcher[String] with FluentMatchers[ParseStringMatcher[T], T] {
   type Self = ParseStringMatcher[T]
-  override def apply(cypher: String): MatchResult = ParseResultsMatcher(support, matchers).apply(parseAst[T](cypher))
+
+  override def apply(cypher: String): MatchResult = {
+    Try(parseAst[T](cypher)) match {
+      case Success(results)   => ParseResultsMatcher(support, matchers).apply(results)
+      case Failure(exception) => throw new RuntimeException(s"Test framework failed\nCypher: $cypher", exception)
+    }
+  }
   override protected def createForParser(s: ParserSupport): Self = ParseStringMatcher(s)
   override protected def copyWith(matchers: Seq[Matcher[ParseResults[_]]]): Self = copy(matchers = matchers)
 }
@@ -239,7 +245,7 @@ object MatchResults {
     val message =
       """{0}
         |
-        |Assertion failed:
+        |=== Failed assertion ===
         |{1}
         |""".stripMargin
 
@@ -255,16 +261,21 @@ object MatchResults {
   }
 
   private def describe(parser: ParserInTest, parse: ParseResults[_]): String = {
-    val result = parse(parser) match {
-      case ParseSuccess(ast) => if (ast == null) null else ast.toString
-      case f: ParseFailure =>
-        s"""Failed parsing (${f.getClass.getSimpleName}):
-           |${Exceptions.stringify(f.throwable)}
-           |""".stripMargin
+    s"""=== Parsing results ===
+       |Failing parser: $parser
+       |${describe(parse)}""".stripMargin
+  }
+
+  def describe(results: ParseResults[_]): String = {
+    val parserLength = results.result.keys.map(_.toString.length).max
+    val parserResults = results.result.toSeq.map {
+      case (parser, ParseSuccess(ast))       => s"${parser.toString.padTo(parserLength, ' ')}: $ast"
+      case (parser, ParseFailure(throwable)) => s"${parser.toString.padTo(parserLength, ' ')}: $throwable"
     }
-    s"""Parser: $parser
-       |Cypher: ${parse.cypher}
-       |Result: $result""".stripMargin
+    s"""Cypher:
+       |${results.cypher}
+       |Results:
+       |${parserResults.mkString("  ", "\n  ", "")}""".stripMargin
   }
 }
 
