@@ -68,4 +68,10 @@ object LazyLabel {
     label.id = table.id(name)
     label
   }
+
+  def apply(name: LabelName, context: ReadTokenContext): LazyLabel = {
+    val label = new LazyLabel(name.name)
+    label.getId(context)
+    label
+  }
 }

@@ -295,8 +295,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
                   ReadTokenContext.EMPTY,
                   new AnonymousVariableNameGenerator(),
                   new SelectivityTrackerRegistrator,
-                  CypherRuntimeConfiguration.defaultConfiguration,
-                  SemanticTable()
+                  CypherRuntimeConfiguration.defaultConfiguration
                 )
               )
 

@@ -68,8 +68,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
         context.tokenContext,
         context.anonymousVariableNameGenerator,
         selectivityTrackerRegistrator,
-        context.config,
-        query.semanticTable
+        context.config
       )
     )
     val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)

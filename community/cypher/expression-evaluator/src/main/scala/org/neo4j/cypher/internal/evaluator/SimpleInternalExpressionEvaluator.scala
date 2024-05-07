@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.evaluator
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.CONVERTERS
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.NULL_CURSOR_FACTORY
 import org.neo4j.cypher.internal.expressions.Expression
@@ -150,7 +149,6 @@ object SimpleInternalExpressionEvaluator {
         new AnonymousVariableNameGenerator(),
         noopSelectivityTrackerRegistrator,
         CypherRuntimeConfiguration.defaultConfiguration,
-        SemanticTable()
       )
     )
 

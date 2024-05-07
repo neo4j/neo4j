@@ -142,11 +142,13 @@ import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.MakeTraversable
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
+import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters.ShortestPathsConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ConstantGraphReference
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.IdExpressionGraphReference
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
@@ -175,8 +177,7 @@ case class CommunityExpressionConverter(
   tokenContext: ReadTokenContext,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   selectivityTrackerRegistrator: SelectivityTrackerRegistrator,
-  runtimeConfig: CypherRuntimeConfiguration,
-  semanticTable: SemanticTable
+  runtimeConfig: CypherRuntimeConfiguration
 ) extends ExpressionConverter {
 
   override def toCommandProjection(
@@ -913,7 +914,7 @@ case class CommunityExpressionConverter(
       l =>
         predicates.HasLabel(
           self.toCommandExpression(id, e.expression),
-          LazyLabel(l)(semanticTable)
+          LazyLabel(l, tokenContext)
         ): Predicate
     }
     commands.predicates.Ands(preds: _*)

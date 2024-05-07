@@ -43,4 +43,10 @@ object LazyPropertyKey {
     property.id = table.id(name)
     property
   }
+
+  def apply(name: PropertyKeyName, context: ReadTokenContext): LazyPropertyKey = {
+    val property = new LazyPropertyKey(name.name)
+    property.id(context)
+    property
+  }
 }
