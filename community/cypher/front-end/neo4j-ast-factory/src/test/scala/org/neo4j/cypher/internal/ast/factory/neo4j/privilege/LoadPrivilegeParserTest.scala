@@ -198,7 +198,6 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
       ))
   }
 
-  // TODO Loss of helpfulness, in this case the Missing 'TO' error is less helpful, there is a TO later on and adding a TO before URL will not make a valid query
   test("""GRANT LOAD ON CIDR "1.2.3.4/22" URL "https://example.com" TO role""") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'URL': expected"""))
@@ -209,7 +208,6 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
       ))
   }
 
-  // TODO Loss of helpfulness, in this case the Missing 'TO' error is less helpful, there is a TO later on and adding a TO before URL will not make a valid query
   test("""DENY LOAD ON CIDR "1.2.3.4/22" ON URL "https://example.com" TO role""") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'ON': expected"""))

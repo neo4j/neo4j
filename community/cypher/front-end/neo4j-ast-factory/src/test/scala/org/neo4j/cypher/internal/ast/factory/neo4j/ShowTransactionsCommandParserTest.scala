@@ -859,18 +859,17 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
 
   // Invalid clause order
 
-  // TODO Fails in different places
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW TRANSACTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        // Antlr parses YIELD * WITH * MATCH (n) as an expression
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
           """Invalid input 'RETURN': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix UNWIND range(1,10) as b SHOW TRANSACTIONS YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
       failsParsing[Statements]
@@ -880,7 +879,6 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
       // parses varFor("WITH")
@@ -891,7 +889,6 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix WITH 'n' as n SHOW TRANSACTIONS YIELD name RETURN name as numIndexes") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
@@ -900,7 +897,6 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS RETURN name as numIndexes") {
       // parses varFor("RETURN")
       failsParsing[Statements]
@@ -910,7 +906,6 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
       // parses varFor("WITH")
       failsParsing[Statements]
@@ -920,7 +915,6 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c") {
       // parses varFor("WITH")
       failsParsing[Statements]
@@ -930,7 +924,6 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS YIELD a WITH a RETURN a") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
@@ -939,7 +932,6 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS YIELD as UNWIND as as a RETURN a") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
@@ -948,7 +940,6 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix SHOW TRANSACTIONS RETURN id2 YIELD id2") {
       // parses varFor("RETURN")
       failsParsing[Statements]

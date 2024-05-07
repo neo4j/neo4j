@@ -1939,7 +1939,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop.part IS UNIQUE") {
             failsParsing[Statements]
               .parseIn(JavaCc)(_.withMessageStart("Invalid input '.': expected \"::\" or \"IS\""))
-              // TODO Good enough suggestion?
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '.': expected '::' or 'IS'"))
           }
 
@@ -3317,7 +3316,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'IS': expected \"OPTIONS\" or <EOF> (line 1, column 71 (offset: 70))"
       ))
-      // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input 'IS': expected 'OPTIONS' or <EOF> (line 1, column 71 (offset: 70))
           |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop) IS NOT NULL"
@@ -3330,7 +3328,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"::\" or \"IS\" (line 1, column 49 (offset: 48))"
       ))
-      // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input '': expected '::' or 'IS' (line 1, column 49 (offset: 48))
           |"CREATE CONSTRAINT FOR (n:Label) REQUIRE (n.prop)"
@@ -3343,7 +3340,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '(': expected \".\" (line 1, column 51 (offset: 50))"
       ))
-      // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input '(': expected '.' (line 1, column 51 (offset: 50))
           |"CREATE CONSTRAINT FOR (node:Label) REQUIRE EXISTS (node.prop)"
@@ -3356,7 +3352,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '(': expected \".\" (line 1, column 50 (offset: 49))"
       ))
-      // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input '(': expected '.' (line 1, column 50 (offset: 49))
           |"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE EXISTS (r.prop)"
@@ -3376,7 +3371,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                            |  "TYPED"
                            |  "UNIQUE" (line 1, column 65 (offset: 64))""".stripMargin)
     )
-      // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 65 (offset: 64))
           |"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL"
@@ -3396,7 +3390,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
         |  "TYPED"
         |  "UNIQUE" (line 1, column 67 (offset: 66))""".stripMargin
     ))
-      // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 67 (offset: 66))
           |"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL"
@@ -3417,7 +3410,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           |  "TYPED"
           |  "UNIQUE" (line 1, column 69 (offset: 68))""".stripMargin
       ))
-      // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 69 (offset: 68))
           |"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL"
@@ -3436,7 +3428,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                                             |  "RELATIONSHIP"
                                             |  "TYPED"
                                             |  "UNIQUE" (line 1, column 71 (offset: 70))""".stripMargin))
-      // TODO I believe this message can be improved
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input 'NULL': expected '::', 'KEY', 'NODE', 'NOT NULL', 'REL', 'RELATIONSHIP', 'TYPED' or 'UNIQUE' (line 1, column 71 (offset: 70))
           |"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NULL"

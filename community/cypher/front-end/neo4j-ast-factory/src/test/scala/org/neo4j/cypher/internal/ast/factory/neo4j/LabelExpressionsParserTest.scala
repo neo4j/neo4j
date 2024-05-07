@@ -726,8 +726,8 @@ class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with Legac
     }
   }
 
+  // JavaCc lookahead fails to parse this properly
   test("RETURN [x IN [1,2,3] WHERE n:A | (b | x)]") {
-    // TODO Is this ok??
     whenParsing[Statements]
       .parseIn(JavaCc)(_.withAnyFailure.withMessageStart(
         "Invalid input '(': expected \"+\" or \"-\" (line 1, column 34 (offset: 33))"
@@ -765,8 +765,8 @@ class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with Legac
       ))
   }
 
+  // JavaCc lookahead fails to parse this properly
   test("RETURN [x IN [1,2,3] WHERE n:A|B AND n:C|D | x]") {
-    // TODO Is this ok??
     whenParsing[Statements]
       .parseIn(JavaCc)(_.withAnyFailure.withMessageStart("Invalid input '|'"))
       .parseIn(Antlr)(_.toAst(

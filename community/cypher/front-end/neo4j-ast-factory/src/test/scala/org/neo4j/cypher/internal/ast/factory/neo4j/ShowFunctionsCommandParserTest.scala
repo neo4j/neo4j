@@ -608,7 +608,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
     failsParsing[Statements]
   }
 
-  // TODO check message missing comma
   test("SHOW USER FUNCTIONS") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessage(
@@ -675,7 +674,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   // Invalid clause order
 
-  // TODO Unhelpful message
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW FUNCTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
@@ -686,7 +684,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix UNWIND range(1,10) as b SHOW FUNCTIONS YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
       failsParsing[Statements]
@@ -696,7 +693,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
       failsParsing[Statements]
@@ -706,7 +702,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix WITH 'n' as n SHOW FUNCTIONS YIELD name RETURN name as numIndexes") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'SHOW': expected"))
@@ -715,7 +710,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS RETURN name as numIndexes") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'RETURN': expected"))
@@ -724,7 +718,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c RETURN name as numIndexes") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
@@ -733,7 +726,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
@@ -742,7 +734,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS YIELD a WITH a RETURN a") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
@@ -751,7 +742,6 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         ))
     }
 
-    // TODO Unhelpful message
     test(s"$prefix SHOW FUNCTIONS YIELD as UNWIND as as a RETURN a") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))

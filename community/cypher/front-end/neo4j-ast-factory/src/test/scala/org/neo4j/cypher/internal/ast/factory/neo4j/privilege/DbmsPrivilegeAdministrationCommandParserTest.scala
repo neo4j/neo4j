@@ -153,7 +153,6 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
 
               val antlrExpected = (command, immutable, privilege) match {
                 // this case looks like granting/revoking a role named MANAGEMENT to/from a user
-                // TODO Loss of information
                 case ("GRANT", false, "ROLE MANAGEMENT") | ("REVOKE", false, "ROLE MANAGEMENT") =>
                   s"Invalid input 'DBMS': expected ',', 'ON DBMS' or '$preposition'"
                 case _ => s"Invalid input 'DBMS': expected 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"
@@ -174,7 +173,6 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
                 ))
             }
 
-            // TODO missing comma
             test(s"$command$immutableString $privilege ON DBMS $preposition r:ole") {
               val offset = command.length + immutableString.length + 12 + privilege.length + preposition.length
               failsParsing[Statements]
@@ -292,7 +290,6 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
             ))
         }
 
-        // TODO Missing comma in messsage
         test(s"$command$immutableString ALL DBMS PRIVILEGES ON DBMS $preposition r:ole") {
           val finalOffset = offset + 30 + preposition.length
           failsParsing[Statements]

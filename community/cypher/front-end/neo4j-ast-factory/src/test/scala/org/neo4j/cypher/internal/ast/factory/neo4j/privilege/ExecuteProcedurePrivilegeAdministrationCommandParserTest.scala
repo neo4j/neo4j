@@ -232,7 +232,6 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                        |  "ON"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
-                  // TODO Antlr NFC etc
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
                     s"""Invalid input '': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
@@ -256,7 +255,6 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
 
               // Tests for invalid escaping
 
-              // TODO Difference in message
               test(s"$verb$immutableString $execute `ab?`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
                 failsParsing[Statements]
@@ -268,7 +266,6 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute a`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute a".length
                 failsParsing[Statements]
@@ -285,7 +282,6 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute ab?`%ab`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ab?".length
                 failsParsing[Statements]
@@ -298,13 +294,11 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                        |  "ON"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
-                  // TODO fix
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
                     s"""Invalid input '`%ab`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
               }
 
-              // TODO Difference in message
               test(s"$verb$immutableString $execute apoc.`*`ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute apoc.".length
                 failsParsing[Statements]
@@ -321,7 +315,6 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute apoc.*`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute apoc.*".length
                 failsParsing[Statements]
@@ -333,13 +326,11 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                        |  "ON"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
-                  // TODO Antlr remove nfc etc
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
                     s"""Invalid input '`ab?`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
               }
 
-              // TODO Difference in message
               test(s"$verb$immutableString $execute `ap`oc.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
                 failsParsing[Statements]
@@ -351,7 +342,6 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute ap`oc`.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ap".length
                 failsParsing[Statements]

@@ -79,7 +79,6 @@ class SyntaxErrorParserTest extends AstParsingTestBase {
   }
   test("match (`a`b`) return *") { invalid("b", "a graph pattern, a parameter, ')', ':', 'IS', 'WHERE' or '{'", 10) }
   test("atch (n) return *") { invalid("atch", clauseExpected, 0) }
-  // TODO not a rel type
   test("match (n:*) return *") { invalid("*", "a node label/relationship type name, '%' or '('", 9) }
   test("match (n:Label|) return *") { invalid("|", "a parameter, '&', ')', ':', 'WHERE', '{' or '|'", 14) }
   test("match (n:Label:) return *") { invalid(":", "a parameter, '&', ')', ':', 'WHERE', '{' or '|'", 14) }

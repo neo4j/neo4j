@@ -95,7 +95,6 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW SERVERS RETURN *") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -108,7 +107,6 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
       ))
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW SERVERS 'name'") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -121,7 +119,6 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
       ))
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW SERVER 'name'") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(

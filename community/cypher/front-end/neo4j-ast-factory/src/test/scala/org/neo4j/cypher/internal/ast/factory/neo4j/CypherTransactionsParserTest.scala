@@ -380,7 +380,6 @@ class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstPars
       .withMessageStart("Duplicated ON ERROR parameter")
   }
 
-  // TODO ERROR HANDLING
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status REPORT STATUS AS other") {
     failsParsing[Statements]
       .withMessageStart("Duplicated REPORT STATUS parameter")

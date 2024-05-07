@@ -218,7 +218,6 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     failsParsing[Statements]
   }
 
-  // TODO Missing comma in message
   test("SHOW ROLE role") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -251,7 +250,6 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       ))
   }
 
-  // TODO Check Message, potential loss of information
   test("SHOW ROLES WITH USER user") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -264,7 +262,6 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       ))
   }
 
-  // TODO Check Message, potential loss of information
   test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {
     val exceptionMessage =
       s"""Invalid input ',': expected
@@ -405,7 +402,6 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
       ))
   }
 
-  // TODO Check Message, potential loss of information
   test("CREATE ROLE foo UNION CREATE ROLE foo2") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -696,7 +692,6 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
               case _      => """Invalid input '': expected a parameter or an identifier"""
             }
 
-            // TODO Loss of information on ROLE case
             val antlrExpected = roleKeyword match {
               case "ROLE" =>
                 """Invalid input '': expected a parameter, an identifier or 'MANAGEMENT'"""

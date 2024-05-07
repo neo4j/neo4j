@@ -450,7 +450,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("CREATE DATABASE") {
     // missing db name but parses as 'normal' cypher CREATE...
-    // TODO DOUBLE CHECK THIS ERROR MESSAGE, would be great if it proposed database name
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         s"""Invalid input '': expected a parameter or an identifier (line 1, column 16 (offset: 15))"""
@@ -483,7 +482,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   test("CREATE DATABASE  IF NOT EXISTS") {
-    // TODO DOUBLE CHECK THIS ERROR MESSAGE, LOSS OF HELPFULNESS
     val exceptionMessage =
       s"""Invalid input 'NOT': expected
          |  "."
@@ -511,7 +509,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     failsParsing[Statements]
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo WAIT 3.14") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -594,7 +591,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo SET OPTION key value") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -614,7 +610,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo OPTION {key: value}") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -634,7 +629,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo SET OPTIONS key value") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -726,7 +720,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY TOPOLOGY 1 SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -796,7 +789,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY -1 SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -814,12 +806,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE -1 is an integer...
   test("CREATE DATABASE foo TOPOLOGY -1 SECONDARY 1 PRIMARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input '-': expected <UNSIGNED_DECIMAL_INTEGER> (line 1, column 30 (offset: 29))""".stripMargin
       ))
+      // Modify update error message. -1 is an integer...
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input '-': expected an integer value (line 1, column 30 (offset: 29))
           |"CREATE DATABASE foo TOPOLOGY -1 SECONDARY 1 PRIMARY"
@@ -827,7 +819,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO Wrong position
   test("CREATE DATABASE foo TOPOLOGY 1 SECONDARY 1 SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -862,7 +853,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY $param SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1106,7 +1096,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     failsParsing[Statements]
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("DROP DATABASE KEEP DATA") {
     val exceptionMessage =
       s"""Invalid input 'DATA': expected
@@ -1209,7 +1198,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO technically missing the . alternative
   test("ALTER DATABASE foo") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1234,7 +1222,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO technically missing the . alternative
   test("ALTER DATABASE foo ACCESS READ WRITE") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1296,7 +1283,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   // Set ACCESS multiple times in the same command
-  // TODO Wrong position
   test("ALTER DATABASE foo SET ACCESS READ ONLY SET ACCESS READ WRITE") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Duplicate SET ACCESS clause (line 1, column 41 (offset: 40))"))
@@ -1306,7 +1292,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   // Wrong order between IF EXISTS and SET
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET ACCESS READ ONLY IF EXISTS") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1333,7 +1318,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   }
 
   // ALTER with OPTIONS
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET ACCESS READ WRITE OPTIONS {existingData: 'use'}") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1447,7 +1431,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
-  // TODO Wrong position
   test("ALTER DATABASE foo REMOVE OPTION key REMOVE OPTION key") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1458,7 +1441,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET ACCESS READ ONLY REMOVE OPTION key") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1507,7 +1489,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET OPTION key value key2 value") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1548,7 +1529,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET OPTION key value, key2 value") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1589,7 +1569,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo REMOVE OPTION key key2") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1602,7 +1581,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo REMOVE OPTION key, key2") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1615,7 +1593,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO Odd message
   test("ALTER DATABASE foo REMOVE OPTIONS key") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1628,7 +1605,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO Wrong position
   test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' SET OPTION txLogEnrichment 'FULL'") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1639,7 +1615,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' REMOVE OPTION txLogEnrichment") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1680,7 +1655,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo REMOVE OPTION txLogEnrichment SET OPTION txLogEnrichment 'FULL'") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1737,7 +1711,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY $param SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1783,7 +1756,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
-  // TODO Different position
   test("ALTER DATABASE foo SET TOPOLOGY 2 PRIMARIES 1 PRIMARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1794,7 +1766,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO Different position
   test("ALTER DATABASE foo SET TOPOLOGY 2 SECONDARIES 1 SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1805,7 +1776,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO Different position
   test("ALTER DATABASE foo SET TOPOLOGY 5 PRIMARIES 10 PRIMARIES 1 PRIMARY 2 SECONDARIES") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1816,7 +1786,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO Different position
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 2 SECONDARIES 1 SECONDARIES") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1939,7 +1908,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
-  // TODO Missing SET and wrong position
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY SET TOPOLOGY 1 SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Duplicate SET TOPOLOGY clause (line 1, column 43 (offset: 42))"))
@@ -1948,7 +1916,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO wrong position
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 PRIMARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1959,7 +1926,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO wrong position
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY 2 SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1982,7 +1948,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO CHECK ERROR MESSAGE - POSSIBLE LOSS OF INFORMATION
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY -1 SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -2012,7 +1977,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ))
   }
 
-  // TODO Wrong position
   test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY 1 SECONDARY") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(

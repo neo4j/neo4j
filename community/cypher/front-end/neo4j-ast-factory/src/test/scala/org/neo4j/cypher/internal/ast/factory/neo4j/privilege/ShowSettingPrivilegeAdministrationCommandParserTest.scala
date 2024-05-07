@@ -191,7 +191,6 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                 )(pos))
               }
 
-              // TODO Potential loss of information
               test(s"$verb$immutableString $command * $preposition role") {
                 val offset = testName.length
                 failsParsing[Statements]
@@ -208,7 +207,6 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                   ))
               }
 
-              // TODO Potential loss of information
               test(s"$verb$immutableString $command * ON DATABASE * $preposition role") {
                 val offset = testName.length
                 failsParsing[Statements]
@@ -227,7 +225,6 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
 
               // Tests for invalid escaping
 
-              // TODO Different message
               test(s"$verb$immutableString $command `ab?`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $command ".length
                 failsParsing[Statements]
@@ -239,7 +236,6 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $command a`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $command a".length
                 failsParsing[Statements]
@@ -256,7 +252,6 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $command ab?`%ab`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $command ab?".length
                 failsParsing[Statements]
@@ -274,7 +269,6 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                   ))
               }
 
-              // TODO Different message
               test(s"$verb$immutableString $command dbms.`*`ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $command dbms.".length
                 failsParsing[Statements]
@@ -291,7 +285,6 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $command dbms.*`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $command dbms.*".length
                 failsParsing[Statements]
@@ -308,7 +301,6 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                   ))
               }
 
-              // TODO Different message
               test(s"$verb$immutableString $command `db`ms.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $command ".length
                 failsParsing[Statements]
@@ -320,7 +312,6 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $command db`ms`.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $command db".length
                 failsParsing[Statements]

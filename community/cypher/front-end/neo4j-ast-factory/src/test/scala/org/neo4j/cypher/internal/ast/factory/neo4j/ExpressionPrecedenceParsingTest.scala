@@ -93,7 +93,7 @@ class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstP
   }
 
   test("precedence 9 vs 8 - negative") {
-    "RETURN 1 = NOT 2" should notParse[Statements] // TODO Assert message
+    "RETURN 1 = NOT 2" should notParse[Statements]
   }
 
   test("precedence 8 vs 7") {

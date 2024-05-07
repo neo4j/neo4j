@@ -217,7 +217,6 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                 )(pos))
               }
 
-              // TODO Potential loss of information
               test(s"$verb$immutableString $execute * $preposition role") {
                 val offset = testName.length
                 failsParsing[Statements]
@@ -229,13 +228,11 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  "ON"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
-                  // TODO 'NFD', 'NFKC', 'NFKD' etc should not be here
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
                     s"""Invalid input '': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
               }
 
-              // TODO Potential loss of information
               test(s"$verb$immutableString $execute * ON DATABASE * $preposition role") {
                 val offset = testName.length
                 failsParsing[Statements]
@@ -247,7 +244,6 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  "ON"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
-                  // TODO Why are 'NFC' etc here?
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
                     s"""Invalid input '': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
@@ -255,7 +251,6 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
 
               // Tests for invalid escaping
 
-              // TODO Difference in message
               test(s"$verb$immutableString $execute `ab?`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
                 failsParsing[Statements]
@@ -267,7 +262,6 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute a`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute a".length
                 failsParsing[Statements]
@@ -279,13 +273,11 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  "ON"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
-                  // TODO Why NFC etc?
                   .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
                     s"""Invalid input '`ab?`': expected an identifier, '*', ',', '.', '?' or 'ON DBMS' (line 1, column ${offset + 1} (offset: $offset))"""
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute ab?`%ab`* ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ab?".length
                 failsParsing[Statements]
@@ -303,11 +295,8 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                   ))
               }
 
-              // TODO Difference in message
               test(s"$verb$immutableString $execute apoc.`*`ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute apoc.".length
-                val antlrExpected =
-                  """Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all."""
                 failsParsing[Statements]
                   .parseIn(JavaCc)(_.withMessage(
                     s"""Invalid input '*': expected
@@ -317,10 +306,11 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                        |  "NFKD"
                        |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                   ))
-                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(antlrExpected))
+                  .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+                    """Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all."""
+                  ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute apoc.*`ab?` ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute apoc.*".length
                 failsParsing[Statements]
@@ -337,7 +327,6 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                   ))
               }
 
-              // TODO Difference in message
               test(s"$verb$immutableString $execute `ap`oc.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ".length
                 failsParsing[Statements]
@@ -349,7 +338,6 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                   ))
               }
 
-              // TODO Difference in message possibly should fail on glob
               test(s"$verb$immutableString $execute ap`oc`.ab? ON DBMS $preposition role") {
                 val offset = s"$verb$immutableString $execute ap".length
                 failsParsing[Statements]

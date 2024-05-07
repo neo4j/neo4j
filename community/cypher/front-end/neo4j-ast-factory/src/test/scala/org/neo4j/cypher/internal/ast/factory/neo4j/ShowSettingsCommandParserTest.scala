@@ -537,7 +537,6 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
 
   // Negative tests
 
-  // TODO Potential Loss of information
   test("SHOW ALL SETTINGS") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -560,7 +559,6 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
       ))
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW SETTING $foo, $bar") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -575,7 +573,6 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
       ))
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW SETTING $foo $bar") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -590,7 +587,6 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
       ))
   }
 
-  // TODO Unhelpful message, matching on statements could we escape it?
   test("SHOW SETTING 'bar', $foo") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -603,7 +599,6 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
       ))
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW SETTING $foo, 'bar'") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -618,7 +613,6 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
       ))
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW SETTING 'foo' 'bar'") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(

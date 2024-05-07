@@ -679,7 +679,6 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     failsParsing[Statements]
   }
 
-  // TODO Loss of information
   test("SHOW ALL BTREE INDEXES") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -1462,7 +1461,6 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
       ))
   }
 
-  // TODO Loss of information
   test("SHOW REL EXISTS CONSTRAINTS") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(

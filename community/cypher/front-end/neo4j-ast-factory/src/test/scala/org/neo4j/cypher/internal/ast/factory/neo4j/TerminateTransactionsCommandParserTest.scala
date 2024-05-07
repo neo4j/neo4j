@@ -783,17 +783,16 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Fails on different places
     test(s"$prefix TERMINATE TRANSACTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after TERMINATE
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
+        // Antlr parses YIELD * WITH * MATCH (n) as an expression
         .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
           """Invalid input 'RETURN': expected an expression, 'SHOW', 'TERMINATE', 'WHERE', 'YIELD' or <EOF>"""
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix UNWIND range(1,10) as b TERMINATE TRANSACTIONS YIELD * RETURN *") {
       // Can't parse TERMINATE  after UNWIND
       failsParsing[Statements]
@@ -803,7 +802,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after TERMINATE
       // parses varFor("WITH")
@@ -814,7 +812,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix WITH 'n' as n TERMINATE TRANSACTIONS YIELD name RETURN name as numIndexes") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'TERMINATE': expected"))
@@ -823,7 +820,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS RETURN name as numIndexes") {
       // parses varFor("RETURN")
       failsParsing[Statements]
@@ -833,7 +829,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
       // parses varFor("WITH")
       failsParsing[Statements]
@@ -843,7 +838,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c") {
       // parses varFor("WITH")
       failsParsing[Statements]
@@ -853,7 +847,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS YIELD a WITH a RETURN a") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'WITH': expected"))
@@ -862,7 +855,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS UNWIND as as a RETURN a") {
       // parses varFor("UNWIND")
       failsParsing[Statements]
@@ -872,7 +864,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS YIELD as UNWIND as as a RETURN a") {
       failsParsing[Statements]
         .parseIn(JavaCc)(_.withMessageStart("Invalid input 'UNWIND': expected"))
@@ -881,7 +872,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
         ))
     }
 
-    // TODO Unhelpful message, matching on statements could we escape it?
     test(s"$prefix TERMINATE TRANSACTIONS RETURN id2 YIELD id2") {
       // parses varFor("RETURN")
       failsParsing[Statements]

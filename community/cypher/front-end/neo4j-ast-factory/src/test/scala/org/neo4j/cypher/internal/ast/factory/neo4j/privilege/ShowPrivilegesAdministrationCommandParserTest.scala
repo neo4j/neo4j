@@ -685,7 +685,6 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
     failsParsing[Statements]
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW ALL USER user PRIVILEGES") {
     val exceptionMessage =
       s"""Invalid input 'USER': expected
@@ -733,7 +732,6 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
       ))
   }
 
-  // TODO Check message potential loss of information
   test("SHOW ALL ROLE role PRIVILEGES") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessage(
@@ -750,7 +748,6 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
     failsParsing[Statements]
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW USER user PRIVILEGES YIELD *, blah RETURN user") {
     val exceptionMessage =
       s"""Invalid input ',': expected

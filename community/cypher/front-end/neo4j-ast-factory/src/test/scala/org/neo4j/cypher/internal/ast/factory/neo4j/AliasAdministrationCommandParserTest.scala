@@ -220,7 +220,6 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("CREATE ALIAS") {
-    // TODO Accept worse error?
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input '': expected a parameter or an identifier (line 1, column 13 (offset: 12))"""
@@ -697,7 +696,6 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input '': expected \"{\" or a parameter (line 1, column 84 (offset: 83))"
       ))
-      // TODO Message good enough?
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input '': expected a parameter or '{' (line 1, column 84 (offset: 83))
           |"CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" DRIVER"
@@ -710,7 +708,6 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         """Invalid input 'PROPERTY': expected "DRIVER", "PROPERTIES" or <EOF> (line 1, column 78 (offset: 77))"""
       ))
-      // TODO Message good enough?
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input 'PROPERTY': expected 'DRIVER', 'PROPERTIES' or <EOF> (line 1, column 78 (offset: 77))
           |"CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" PROPERTY { key: 'val' }"
@@ -1058,7 +1055,6 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       .parseIn(JavaCc)(_.withMessageStart(
         "Invalid input 'url': expected"
       ))
-      // TODO Error ok?
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
         """Invalid input ''url'': expected a database name, 'AT', 'DRIVER', 'PASSWORD', 'PROPERTIES', 'TARGET', 'USER' or <EOF> (line 1, column 41 (offset: 40))
           |"ALTER ALIAS name SET DATABASE TARGET AT 'url'"

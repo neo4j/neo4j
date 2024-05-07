@@ -484,7 +484,6 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     failsParsing[Statements]
   }
 
-  // TODO Potential loss of information
   test("SHOW PROCEDURE EXEC") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -539,7 +538,6 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     failsParsing[Statements]
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW user PROCEDURE") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -552,7 +550,6 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
       ))
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW USER user PROCEDURE") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
@@ -720,7 +717,6 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     failsParsing[Statements]
   }
 
-  // TODO Check message, potential loss of information
   test("SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *") {
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart(
