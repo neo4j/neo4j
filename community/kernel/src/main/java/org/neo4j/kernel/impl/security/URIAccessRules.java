@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 public class URIAccessRules {
 
-    private static final Set<String> WEB_SCHEMES = Set.of("http", "https", "ftp");
+    public static final Set<String> WEB_SCHEMES = Set.of("http", "https", "ftp");
 
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
     private final WebURLAccessRule webAccess;

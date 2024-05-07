@@ -25,13 +25,13 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 
-public class WebUrlAccessChecker implements URLAccessChecker {
+public class ProcedureUrlAccessChecker implements URLAccessChecker {
 
     private final WebURLAccessRule webURLAccessRule;
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
     private final SecurityContext securityContext;
 
-    public WebUrlAccessChecker(
+    public ProcedureUrlAccessChecker(
             WebURLAccessRule webURLAccessRule,
             SecurityAuthorizationHandler securityAuthorizationHandler,
             SecurityContext securityContext) {
@@ -43,7 +43,12 @@ public class WebUrlAccessChecker implements URLAccessChecker {
     @Override
     public URL checkURL(URL url) throws URLAccessValidationError {
         try {
-            return webURLAccessRule.checkNotBlockedAndPinToIP(url, securityAuthorizationHandler, securityContext);
+            if (URIAccessRules.WEB_SCHEMES.contains(url.getProtocol())) {
+                return webURLAccessRule.checkNotBlockedAndPinToIP(url, securityAuthorizationHandler, securityContext);
+            } else {
+                securityAuthorizationHandler.assertLoadAllowed(securityContext, url.toURI(), null);
+                return url;
+            }
         } catch (Exception e) {
             if (e instanceof URLAccessValidationError) {
                 throw (URLAccessValidationError) e;

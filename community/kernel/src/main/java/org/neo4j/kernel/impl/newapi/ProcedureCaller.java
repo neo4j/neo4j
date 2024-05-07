@@ -45,8 +45,8 @@ import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureKernelTransac
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
+import org.neo4j.kernel.impl.security.ProcedureUrlAccessChecker;
 import org.neo4j.kernel.impl.security.URIAccessRules;
-import org.neo4j.kernel.impl.security.WebUrlAccessChecker;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.AnyValue;
@@ -220,7 +220,7 @@ public abstract class ProcedureCaller {
     abstract ClockContext clockContext();
 
     URLAccessChecker urlAccessChecker() {
-        return new WebUrlAccessChecker(
+        return new ProcedureUrlAccessChecker(
                 this.databaseDependencies
                         .resolveDependency(URIAccessRules.class)
                         .webAccess(),

@@ -47,7 +47,6 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.util.VisibleForTesting;
 
 public class WebURLAccessRule implements AccessRule<URL> {
     public static final String LOAD_CSV_USER_AGENT_PREFIX = "NeoLoadCSV_";
@@ -77,7 +76,6 @@ public class WebURLAccessRule implements AccessRule<URL> {
         return agent + " Java/" + version;
     }
 
-    @VisibleForTesting
     URL checkNotBlockedAndPinToIP(
             URL url, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
             throws UnknownHostException, MalformedURLException, URISyntaxException, URLAccessValidationError {
