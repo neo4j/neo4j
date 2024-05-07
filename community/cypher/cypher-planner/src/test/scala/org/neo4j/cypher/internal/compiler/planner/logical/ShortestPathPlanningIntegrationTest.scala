@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.functions.EndNode
@@ -2120,7 +2121,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         v"r",
         OUTGOING,
         Some(v"d"),
-        MultiRelationshipPathStep(v"s", OUTGOING, Some(v"g"), NilPathStep()(pos))(pos)
+        MultiRelationshipPathStep(v"s", INCOMING, Some(v"g"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos))(pos)
 
@@ -2164,7 +2165,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         v"r",
         OUTGOING,
         Some(v"d"),
-        MultiRelationshipPathStep(v"s", OUTGOING, Some(v"g"), NilPathStep()(pos))(pos)
+        MultiRelationshipPathStep(v"s", INCOMING, Some(v"g"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos))(pos)
 
@@ -2212,7 +2213,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         v"r",
         OUTGOING,
         Some(v"d"),
-        MultiRelationshipPathStep(v"s", OUTGOING, Some(v"g"), NilPathStep()(pos))(pos)
+        MultiRelationshipPathStep(v"s", INCOMING, Some(v"g"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos))(pos)
 

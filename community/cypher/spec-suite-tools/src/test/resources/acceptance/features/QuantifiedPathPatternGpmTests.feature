@@ -23,7 +23,7 @@
 Feature: QuantifiedPathPatternGpmTests
 
   # The scenarios in this feature represent examples from the document "Testing GPM" with
-  # the numbers indicating which of the rows in that document the scenrio refers to.
+  # the numbers indicating which of the rows in that document the scenario refers to.
   Background:
     Given an empty graph
     And having executed:

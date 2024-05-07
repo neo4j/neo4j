@@ -33,13 +33,12 @@ import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
-import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -2685,10 +2684,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"p" -> PathExpression(
           step = NodePathStep(
             node = v"start",
-            next = RepeatPathStep(
-              variables = List(NodeRelPair(v"a", v"r")),
-              toNode = v"end",
-              next = NilPathStep()(pos)
+            next = MultiRelationshipPathStep(
+              v"r",
+              OUTGOING,
+              Some(v"end"),
+              NilPathStep()(pos)
             )(pos)
           )(pos)
         )(pos),

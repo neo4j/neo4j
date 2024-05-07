@@ -82,7 +82,6 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         providedOrders,
         context.logicalPlanIdGen
       )),
-      Some(RepeatPathStepToMultiRelationshipRewriter),
       Some(RemoveUnusedGroupVariablesRewriter),
       Option.when(context.config.gpmShortestToLegacyShortestEnabled)(StatefulShortestToFindShortestRewriter(
         solveds,
