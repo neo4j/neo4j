@@ -372,7 +372,7 @@ trait DdlShowBuilder extends CypherParserListener {
     ctx.ast = ShowDatabase(
       dbScope,
       astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
-    )(pos(ctx))
+    )(pos(ctx.getParent))
   }
 
   final override def exitShowFunctions(

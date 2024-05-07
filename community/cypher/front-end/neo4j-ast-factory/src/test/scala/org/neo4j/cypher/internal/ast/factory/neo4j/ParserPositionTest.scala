@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
@@ -66,7 +65,7 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
   }
 
   test("SHOW ALL ROLES YIELD role") {
-    parses[Statements](NotAnyAntlr).withPositionOf[Yield](InputPosition(15, 1, 16))
+    parses[Statements].withPositionOf[Yield](InputPosition(15, 1, 16))
   }
 
   test("RETURN 3 IN list[0] AS r") {
@@ -126,7 +125,7 @@ class ParserPositionTest extends AstParsingTestBase with LoneElement {
     ("DATABASE neo4j YIELD name", 26)
   ).foreach { case (name, variableOffset) =>
     test(s"SHOW $name") {
-      parses[Statements](NotAnyAntlr)
+      parses[Statements]
         .withPositionOf[ShowDatabase](InputPosition(0, 1, 1))
         .withAstLike { ast =>
           ast.folder.treeFind[Variable](_.name == "name").map(_.position) shouldBe

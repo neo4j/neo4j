@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
@@ -52,14 +51,14 @@ trait LegacyAstParsingTestSupport {
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   final def yields[T <: ASTNode : ClassTag](expected: InputPosition => T): Unit =
-    parses[T](NotAnyAntlr).toAst(expected(InputPosition.NONE))
+    parses[T].toAst(expected(InputPosition.NONE))
 
   /**
    * @deprecated use [[parsesTo]], `parsesTo[T](expected)`
    *             or [[parseTo]], `"cypher" should parseTo[T](expected)`
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
-  final def gives[T <: ASTNode : ClassTag](expected: T): Unit = parsesTo[T](NotAnyAntlr)(expected)
+  final def gives[T <: ASTNode : ClassTag](expected: T): Unit = parsesTo[T](expected)
 
   /**
    * @deprecated use [[parses]], `parses[T].toAstPositioned(expected)`
@@ -67,7 +66,7 @@ trait LegacyAstParsingTestSupport {
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   final def givesIncludingPositions[T <: ASTNode : ClassTag](expected: T, query: String = testName): Unit =
-    query should parse[T](NotAnyAntlr).toAstPositioned(expected)
+    query should parse[T].toAstPositioned(expected)
 
   /**
    * @deprecated use [[parse]] instead, `"cypher" should parse[T].toAstLike(ast => ast.hej shouldBe "hej")`
@@ -79,21 +78,21 @@ trait LegacyAstParsingTestSupport {
    * @deprecated use [[failsParsing]].
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
-  def failsToParse[T <: ASTNode : ClassTag](): Unit = failsParsing[T](NotAnyAntlr)
+  def failsToParse[T <: ASTNode : ClassTag](): Unit = failsParsing[T]
 
   /**
    * @deprecated use [[notParse]].
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   def failsToParse[T <: ASTNode : ClassTag](cypher: String): Unit =
-    cypher should notParse[T](NotAnyAntlr)
+    cypher should notParse[T]
 
   /**
    * @deprecated use [[notParse]] instead.
    */
   @deprecated("Use methods from AstParsingTestBase", "-")
   def assertFails[T <: ASTNode : ClassTag](cypher: String): Unit =
-    cypher should notParse[T](NotAnyAntlr)
+    cypher should notParse[T]
 
   /**
    * @deprecated use [[parseAs]], `"cypher" should parseAs[T].parseIn(JavaCc)(_.withAnyFailure)`.
@@ -133,7 +132,7 @@ trait LegacyAstParsingTestSupport {
         .parseIn(Antlr)(_.withoutErrors)
         .parseIn(JavaCc)(_.withAnyFailure.withMessage(expectedMessage))
     else
-      cypher should notParse[T](NotAnyAntlr).withMessage(expectedMessage)
+      cypher should notParse[T].withMessage(expectedMessage)
   }
 
   /**
@@ -150,7 +149,7 @@ trait LegacyAstParsingTestSupport {
         .parseIn(Antlr)(_.withoutErrors)
         .parseIn(JavaCc)(_.withAnyFailure.withMessageStart(expectedMessage))
     else
-      cypher should notParse[T](NotAnyAntlr).withMessageStart(expectedMessage)
+      cypher should notParse[T].withMessageStart(expectedMessage)
   }
 
   /**
@@ -161,7 +160,7 @@ trait LegacyAstParsingTestSupport {
     cypher: String,
     expectedMessage: String
   ): Unit = {
-    cypher should notParse[T](NotAnyAntlr).withMessageContaining(expectedMessage)
+    cypher should notParse[T].withMessageContaining(expectedMessage)
   }
 
   /**
@@ -172,7 +171,7 @@ trait LegacyAstParsingTestSupport {
     cypher: String,
     expected: Exception
   ): Unit = {
-    cypher should notParse[T](NotAnyAntlr).similarTo(expected)
+    cypher should notParse[T].similarTo(expected)
   }
 
   // If these are helpful, why not add them to AstConstructionTestSupport!
@@ -185,8 +184,8 @@ trait LegacyAstParsingTestSupport {
   final def ne(lhs: Expression, rhs: Expression): Expression = notEquals(lhs, rhs)
 
   class LegacyParse[T <: ASTNode : ClassTag](cypher: String) {
-    def shouldVerify(assertion: T => Unit): Unit = cypher should parse[T](NotAnyAntlr).withAstLike(assertion)
-    def shouldGive(expected: T): Unit = cypher should parseTo[T](NotAnyAntlr)(expected)
-    def shouldGive(expected: InputPosition => T): Unit = cypher should parseTo[T](NotAnyAntlr)(expected(pos))
+    def shouldVerify(assertion: T => Unit): Unit = cypher should parse[T].withAstLike(assertion)
+    def shouldGive(expected: T): Unit = cypher should parseTo[T](expected)
+    def shouldGive(expected: InputPosition => T): Unit = cypher should parseTo[T](expected(pos))
   }
 }

@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.ParseResults
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.All
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAnyAntlr
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -152,18 +151,16 @@ trait AstParsingMatchers extends TestName {
   // Handle general limited support in antlr during development
   protected def handleAntlrParse[T <: FluentMatchers[T, _]](f: T): T = {
     f.support match {
-      case NotAntlr    => f.parseIn(Antlr)(_.withoutErrors.toAst(null))
-      case NotAnyAntlr => f.parseIn(Antlr)(_.withoutErrors)
-      case _           => f
+      case NotAntlr => f.parseIn(Antlr)(_.withoutErrors.toAst(null))
+      case _        => f
     }
   }
 
   // Handle general limited support in antlr during development
   protected def handleAntlrNotParse[T <: FluentMatchers[T, _]](f: T): T = {
     f.support match {
-      case NotAntlr    => f.parseIn(Antlr)(_.withAnyFailure)
-      case NotAnyAntlr => f.parseIn(Antlr)(_.withAnyFailure)
-      case _           => f
+      case NotAntlr => f.parseIn(Antlr)(_.withAnyFailure)
+      case _        => f
     }
   }
 }

@@ -75,21 +75,21 @@ class ImpersonatePrivilegeParserTest extends AdministrationAndSchemaCommandParse
         immutable =>
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString IMPERSONATE ON DBMS $preposition role") {
-            assertAstNotAntlr(
+            assertAst(
               func(List(ast.UserAllQualifier()(pos)), List(literalRole), immutable)(defaultPos),
               comparePosition = false
             )
           }
 
           test(s"$verb$immutableString IMPERSONATE (*) ON DBMS $preposition role") {
-            assertAstNotAntlr(
+            assertAst(
               func(List(ast.UserAllQualifier()(pos)), List(literalRole), immutable)(defaultPos),
               comparePosition = false
             )
           }
 
           test(s"$verb$immutableString IMPERSONATE (foo) ON DBMS $preposition role") {
-            assertAstNotAntlr(
+            assertAst(
               func(List(ast.UserQualifier(literalFoo)(pos)), List(literalRole), immutable)(defaultPos),
               comparePosition = false
             )
@@ -98,7 +98,7 @@ class ImpersonatePrivilegeParserTest extends AdministrationAndSchemaCommandParse
           test(s"$verb$immutableString IMPERSONATE (foo, $$userParam) ON DBMS $preposition role") {
             val fooColumn: Int = verb.length + immutableString.length + " IMPERSONATE (".length
             val useParamColumn: Int = fooColumn + "foo $".length
-            assertAstNotAntlr(func(
+            assertAst(func(
               List(
                 ast.UserQualifier(literalFoo)((1, fooColumn + 1, fooColumn)),
                 ast.UserQualifier(ExplicitParameter("userParam", CTString)((

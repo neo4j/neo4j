@@ -18,6 +18,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.exceptions.SyntaxException
 
 class RenameUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase {
 
@@ -64,70 +67,123 @@ class RenameUserAdministrationCommandParserTest extends UserAdministrationComman
   // fails parsing
 
   test("RENAME USER foo TO") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))
+          |"RENAME USER foo TO"
+          |                   ^""".stripMargin
+      ))
   }
 
   test("RENAME USER TO bar") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'bar': expected 'IF EXISTS' or 'TO' (line 1, column 16 (offset: 15))
+          |"RENAME USER TO bar"
+          |                ^""".stripMargin
+      ))
   }
 
   test("RENAME USER TO") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input '': expected 'IF EXISTS' or 'TO' (line 1, column 15 (offset: 14))
+          |"RENAME USER TO"
+          |               ^""".stripMargin
+      ))
   }
 
   test("RENAME USER foo SET NAME TO bar") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'SET': expected 'IF EXISTS' or 'TO' (line 1, column 17 (offset: 16))
+          |"RENAME USER foo SET NAME TO bar"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("RENAME USER foo SET NAME bar") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'SET': expected 'IF EXISTS' or 'TO' (line 1, column 17 (offset: 16))
+          |"RENAME USER foo SET NAME bar"
+          |                 ^""".stripMargin
+      ))
   }
 
   test("RENAME USER foo IF EXIST TO bar") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'EXIST': expected 'EXISTS' (line 1, column 20 (offset: 19))
+          |"RENAME USER foo IF EXIST TO bar"
+          |                    ^""".stripMargin
+      ))
   }
 
   test("RENAME USER foo IF NOT EXISTS TO bar") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'NOT': expected 'EXISTS' (line 1, column 20 (offset: 19))
+          |"RENAME USER foo IF NOT EXISTS TO bar"
+          |                    ^""".stripMargin
+      ))
   }
 
   test("RENAME USER foo TO bar IF EXISTS") {
-    assertFailsWithMessage[Statements](testName, "Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))")
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))
+          |"RENAME USER foo TO bar IF EXISTS"
+          |                        ^""".stripMargin
+      ))
   }
 
   test("RENAME IF EXISTS USER foo TO bar") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'IF': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input 'IF': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'IF': expected 'ROLE', 'SERVER' or 'USER' (line 1, column 8 (offset: 7))
+          |"RENAME IF EXISTS USER foo TO bar"
+          |        ^""".stripMargin
+      ))
   }
 
   test("RENAME OR REPLACE USER foo TO bar") {
-    assertFailsWithMessage[Statements](
-      testName,
-      "Invalid input 'OR': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        "Invalid input 'OR': expected \"ROLE\", \"SERVER\" or \"USER\" (line 1, column 8 (offset: 7))"
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'OR': expected 'ROLE', 'SERVER' or 'USER' (line 1, column 8 (offset: 7))
+          |"RENAME OR REPLACE USER foo TO bar"
+          |        ^""".stripMargin
+      ))
   }
 
   test("RENAME USER foo TO bar SET PASSWORD 'secret'") {

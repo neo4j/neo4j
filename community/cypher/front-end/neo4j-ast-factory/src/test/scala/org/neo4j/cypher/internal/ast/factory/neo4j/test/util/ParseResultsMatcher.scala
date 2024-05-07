@@ -287,8 +287,4 @@ object ParserSupport {
   case object NotAntlr extends ParserSupport {
     override def ignore(parser: ParserInTest): Boolean = parser == Antlr
   }
-
-  case object NotAnyAntlr extends ParserSupport {
-    override def ignore(parser: ParserInTest): Boolean = parser == Antlr
-  }
 }

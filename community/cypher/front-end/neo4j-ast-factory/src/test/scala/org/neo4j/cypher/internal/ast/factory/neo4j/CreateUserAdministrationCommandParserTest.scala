@@ -980,18 +980,36 @@ class CreateUserAdministrationCommandParserTest extends UserAdministrationComman
   test("CREATE USER foo SET PASSWORD $password CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {
     val exceptionMessage =
       s"""Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 60 (offset: 59))""".stripMargin
-    assertFailsWithMessage[Statements](testName, exceptionMessage)
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(exceptionMessage))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 64 (offset: 63))
+          |"CREATE USER foo SET PASSWORD $password CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED"
+          |                                                                ^""".stripMargin
+      ))
   }
 
   test("CREATE USER foo SET PASSWORD $password SET STATUS ACTIVE SET STATUS SUSPENDED") {
     val exceptionMessage =
       s"""Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 58 (offset: 57))""".stripMargin
-    assertFailsWithMessage[Statements](testName, exceptionMessage)
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(exceptionMessage))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 62 (offset: 61))
+          |"CREATE USER foo SET PASSWORD $password SET STATUS ACTIVE SET STATUS SUSPENDED"
+          |                                                              ^""".stripMargin
+      ))
   }
 
   test("CREATE USER foo SET PASSWORD $password SET HOME DATABASE db SET HOME DATABASE db") {
     val exceptionMessage =
       s"""Duplicate SET HOME DATABASE clause (line 1, column 61 (offset: 60))""".stripMargin
-    assertFailsWithMessage[Statements](testName, exceptionMessage)
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(exceptionMessage))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Duplicate SET HOME DATABASE clause (line 1, column 65 (offset: 64))
+          |"CREATE USER foo SET PASSWORD $password SET HOME DATABASE db SET HOME DATABASE db"
+          |                                                                 ^""".stripMargin
+      ))
   }
 }

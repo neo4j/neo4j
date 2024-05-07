@@ -463,7 +463,7 @@ trait StatementBuilder extends CypherParserListener {
     val batchParam = if (batch.isEmpty) None else Some(batch.get(0).ast[SubqueryCall.InTransactionsBatchParameters]())
     val concurrencyParam =
       if (ctx.CONCURRENT() != null)
-        Some(InTransactionsConcurrencyParameters(astOpt[Expression](ctx.expression()))(pos(ctx.CONCURRENT().getSymbol)))
+        Some(InTransactionsConcurrencyParameters(astOpt[Expression](ctx.expression()))(pos(ctx.IN().getSymbol)))
       else None
     val errorParam = if (error.isEmpty) None else Some(error.get(0).ast[SubqueryCall.InTransactionsErrorParameters]())
     val reportParam =

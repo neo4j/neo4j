@@ -18,6 +18,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.Antlr
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
+import org.neo4j.exceptions.SyntaxException
 
 class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandParserTestBase {
 
@@ -161,23 +164,38 @@ class ShowUserAdministrationCommandParserTest extends UserAdministrationCommandP
   // fails parsing
 
   test("SHOW CURRENT USERS") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))"""
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'USERS': expected 'USER' (line 1, column 14 (offset: 13))
+          |"SHOW CURRENT USERS"
+          |              ^""".stripMargin
+      ))
   }
 
   test("SHOW CURRENT USERS YIELD *") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))"""
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'USERS': expected 'USER' (line 1, column 14 (offset: 13))
+          |"SHOW CURRENT USERS YIELD *"
+          |              ^""".stripMargin
+      ))
   }
 
   test("SHOW CURRENT USERS WHERE user = 'GRANTED'") {
-    assertFailsWithMessage[Statements](
-      testName,
-      """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))"""
-    )
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessage(
+        """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))"""
+      ))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
+        """Invalid input 'USERS': expected 'USER' (line 1, column 14 (offset: 13))
+          |"SHOW CURRENT USERS WHERE user = 'GRANTED'"
+          |              ^""".stripMargin
+      ))
   }
 }
