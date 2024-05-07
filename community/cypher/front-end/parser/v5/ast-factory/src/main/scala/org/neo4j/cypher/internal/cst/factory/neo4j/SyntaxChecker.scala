@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.parser.CypherParser.SymbolicAliasNameOrParamete
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
-import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.mutable
 
@@ -509,7 +508,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   }
 
   private def checkTypePart(ctx: CypherParser.TypePartContext): Unit = {
-    val cypherType = ctx.typeName().ast[CypherType]()
+    val cypherType = ctx.typeName().ast
     if (cypherType.isInstanceOf[ClosedDynamicUnionType] && ctx.typeNullability() != null) {
       errors :+= exceptionFactory.syntaxException(
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead.",

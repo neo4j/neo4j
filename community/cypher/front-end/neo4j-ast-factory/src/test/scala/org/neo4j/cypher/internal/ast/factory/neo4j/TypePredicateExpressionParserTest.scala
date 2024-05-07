@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.util.symbols.RelationshipType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
 import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
+import org.neo4j.exceptions.SyntaxException
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.prop.TableFor2
 import org.scalatest.prop.Tables
@@ -173,37 +174,68 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
       ))
   }
 
-  // The code that throws these next 2 errors is not inside of Cypher.jj, so the ANTLR parser doesn't know about it
   test("x :: ANY<BOOLEAN> NOT NULL") {
     whenParsing[Expression]
-      .parseIn(JavaCc)(_.withAnyFailure.withMessage(
-        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))"
-      ))
-      .parseIn(Antlr)(_.withoutErrors) // TODO ANTLR
+      .withAnyFailure.withMessageStart(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("x :: ANY<BOOLEAN>!") {
     whenParsing[Expression]
-      .parseIn(JavaCc)(_.withAnyFailure.withMessage(
-        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))"
-      ))
-      .parseIn(Antlr)(_.withoutErrors) // TODO ANTLR
+      .withAnyFailure.withMessageStart(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("x :: ANY VALUE<BOOLEAN> NOT NULL") {
     whenParsing[Expression]
-      .parseIn(JavaCc)(_.withAnyFailure.withMessage(
-        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))"
-      ))
-      .parseIn(Antlr)(_.withoutErrors) // TODO ANTLR
+      .withAnyFailure.withMessageStart(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("x :: ANY VALUE<BOOLEAN>!") {
     whenParsing[Expression]
-      .parseIn(JavaCc)(_.withAnyFailure.withMessage(
-        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))"
-      ))
-      .parseIn(Antlr)(_.withoutErrors) // TODO ANTLR
+      .withAnyFailure.withMessageStart(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("x :: ANY<ANY <BOOLEAN> NOT NULL>") {
+    whenParsing[Expression]
+      .withAnyFailure.withMessageStart(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("x :: ANY<ANY <BOOLEAN>> NOT NULL") {
+    whenParsing[Expression]
+      .withAnyFailure.withMessageStart(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("x :: ANY<ANY <BOOLEAN> NOT NULL> NOT NULL") {
+    whenParsing[Expression]
+      .withAnyFailure.withMessageStart(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("x :: ANY<STRING|BOOLEAN> NOT NULL") {
+    whenParsing[Expression]
+      .withAnyFailure.withMessageStart(
+        "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead."
+      )
+      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("RETURN x :: ANY VALUE<>") {

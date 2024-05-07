@@ -839,13 +839,13 @@ trait ExpressionBuilder extends CypherParserListener {
   }
 
   final override def exitType(ctx: CypherParser.TypeContext): Unit = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
-    ctx.ast = ctx.children.size() match {
-      case 1 => ctxChild(ctx, 0).ast
+    val cypherType = ctx.children.size() match {
+      case 1 => ctxChild(ctx, 0).ast[CypherType]
       case _ =>
-        val types = ctx.typePart().asScala.map(_.ast[CypherType]()).toSet
-        if (types.size == 1) types.head.simplify else ClosedDynamicUnionType(types)(pos(ctx)).simplify
+        val types = astSeq[CypherType](ctx.typePart()).toSet
+        if (types.size == 1) types.head else ClosedDynamicUnionType(types)(pos(ctx))
     }
+    ctx.ast = cypherType.simplify
   }
 
   final override def exitTypePart(ctx: CypherParser.TypePartContext): Unit = {
@@ -913,15 +913,20 @@ trait ExpressionBuilder extends CypherParserListener {
               case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
             }
           case CypherParser.ANY => nodeChild(ctx, 1).getSymbol.getType match {
-              case CypherParser.PROPERTY                => PropertyValueType(true)(p)
-              case CypherParser.VALUE | CypherParser.LT => ctx.`type`().ast
+              case CypherParser.PROPERTY => PropertyValueType(true)(p)
               case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
             }
           case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
         }
       case _ => firstToken match {
           case CypherParser.LIST | CypherParser.ARRAY => ListType(ctx.`type`().ast(), true)(p)
-          case CypherParser.ANY                       => ctx.`type`().ast[CypherType]()
+          case CypherParser.ANY =>
+            AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.LT() != null && ctx.GT() != null)
+            ctx.`type`().ast[CypherType]() match {
+              case du: ClosedDynamicUnionType => du
+              case other                      => ClosedDynamicUnionType(Set(other))(other.position)
+            }
+
           case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
         }
     }
