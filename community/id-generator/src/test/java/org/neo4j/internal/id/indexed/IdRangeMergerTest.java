@@ -23,10 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 
 import org.junit.jupiter.api.Test;
 
 class IdRangeMergerTest {
+    private static final IdRangeMerger DEFAULT = new IdRangeMerger(false, NO_MONITOR, null);
+    private static final IdRangeMerger RECOVERY = new IdRangeMerger(true, NO_MONITOR, null);
     private static final IdRangeKey K = new IdRangeKey(1);
 
     @Test
@@ -36,11 +39,11 @@ class IdRangeMergerTest {
         v1.setGeneration(1);
         v2.setGeneration(1);
 
-        IdRangeMerger.DEFAULT.merge(K, K, v1, v2);
+        DEFAULT.merge(K, K, v1, v2);
         verify(v1, never()).normalize();
 
         v2.setGeneration(2);
-        IdRangeMerger.DEFAULT.merge(K, K, v1, v2);
+        DEFAULT.merge(K, K, v1, v2);
         verify(v1).normalize();
         assertEquals(2, v1.getGeneration());
     }
@@ -52,10 +55,10 @@ class IdRangeMergerTest {
         v1.setGeneration(1);
         v2.setGeneration(1);
 
-        IdRangeMerger.RECOVERY.merge(K, K, v1, v2);
+        RECOVERY.merge(K, K, v1, v2);
 
         v2.setGeneration(2);
-        IdRangeMerger.RECOVERY.merge(K, K, v1, v2);
+        RECOVERY.merge(K, K, v1, v2);
 
         verify(v1, never()).normalize();
     }

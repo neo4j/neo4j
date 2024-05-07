@@ -76,6 +76,8 @@ import org.neo4j.test.utils.TestDirectory;
 @PageCacheExtension
 @ExtendWith(RandomExtension.class)
 class IdRangeMarkerTest {
+    private static final IdRangeMerger MERGER = new IdRangeMerger(false, NO_MONITOR, null);
+
     @Inject
     PageCache pageCache;
 
@@ -168,7 +170,7 @@ class IdRangeMarkerTest {
     void shouldRemoveEntryOnLastRemoval() throws IOException {
         // given
         int ids = 5;
-        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), IdRangeMerger.DEFAULT)) {
+        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), MERGER)) {
             for (long id = 0; id < ids; id++) {
                 // let the id go through the desired states
                 marker.markUsed(id);
@@ -191,7 +193,7 @@ class IdRangeMarkerTest {
                 NULL_CONTEXT);
 
         // when
-        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), IdRangeMerger.DEFAULT)) {
+        try (IdRangeMarker marker = instantiateMarker(mock(Lock.class), MERGER)) {
             for (long id = 0; id < ids; id++) {
                 marker.markUsed(id);
             }
@@ -267,7 +269,7 @@ class IdRangeMarkerTest {
                 layout,
                 tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                 mock(Lock.class),
-                IdRangeMerger.DEFAULT,
+                MERGER,
                 true,
                 new AtomicInteger(),
                 1,
@@ -296,7 +298,7 @@ class IdRangeMarkerTest {
                 layout,
                 writer,
                 mock(Lock.class),
-                IdRangeMerger.DEFAULT,
+                MERGER,
                 true,
                 new AtomicInteger(),
                 1,
@@ -328,7 +330,7 @@ class IdRangeMarkerTest {
                 layout,
                 writer,
                 mock(Lock.class),
-                IdRangeMerger.DEFAULT,
+                MERGER,
                 true,
                 new AtomicInteger(),
                 1,
@@ -362,7 +364,7 @@ class IdRangeMarkerTest {
                 layout,
                 tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                 mock(Lock.class),
-                IdRangeMerger.DEFAULT,
+                MERGER,
                 true,
                 freeIdsNotifier,
                 1,
@@ -390,7 +392,7 @@ class IdRangeMarkerTest {
                 layout,
                 tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                 mock(Lock.class),
-                IdRangeMerger.DEFAULT,
+                MERGER,
                 true,
                 new AtomicInteger(),
                 1,
@@ -418,7 +420,7 @@ class IdRangeMarkerTest {
     private static ValueMerger realMergerMock() {
         ValueMerger merger = mock(ValueMerger.class);
         when(merger.merge(any(), any(), any(), any()))
-                .thenAnswer(invocation -> IdRangeMerger.DEFAULT.merge(
+                .thenAnswer(invocation -> MERGER.merge(
                         invocation.getArgument(0),
                         invocation.getArgument(1),
                         invocation.getArgument(2),

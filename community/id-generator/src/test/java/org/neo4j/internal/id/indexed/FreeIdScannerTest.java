@@ -75,7 +75,8 @@ import org.neo4j.test.utils.TestDirectory;
 @PageCacheExtension
 class FreeIdScannerTest {
     private static final int IDS_PER_ENTRY = 256;
-    public static final IdCache.IdRangeConsumer EMPTY_ID_RANGE_CONSUMER = (id, size) -> {};
+    private static final IdCache.IdRangeConsumer EMPTY_ID_RANGE_CONSUMER = (id, size) -> {};
+    private static final IdRangeMerger MERGER = new IdRangeMerger(false, NO_MONITOR, null);
 
     @Inject
     PageCache pageCache;
@@ -947,7 +948,7 @@ class FreeIdScannerTest {
                 layout,
                 tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                 mock(Lock.class),
-                IdRangeMerger.DEFAULT,
+                MERGER,
                 true,
                 freeIdsNotifier,
                 generation,
@@ -1029,7 +1030,7 @@ class FreeIdScannerTest {
                         layout,
                         tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
                         null,
-                        new IdRangeMerger(false, NO_MONITOR, null),
+                        MERGER,
                         true,
                         freeIdsNotifier,
                         generation,

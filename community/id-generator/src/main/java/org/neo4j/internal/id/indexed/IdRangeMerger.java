@@ -21,7 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.MERGED;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REMOVED;
-import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.index.internal.gbptree.ValueMerger;
@@ -31,9 +30,6 @@ import org.neo4j.index.internal.gbptree.ValueMerger;
  * Updates to a tree entry of an older generation during normal mode will first normalize states before applying new changes.
  */
 final class IdRangeMerger implements ValueMerger<IdRangeKey, IdRange> {
-    public static final IdRangeMerger DEFAULT = new IdRangeMerger(false, NO_MONITOR, null);
-    public static final IdRangeMerger RECOVERY = new IdRangeMerger(true, NO_MONITOR, null);
-
     private final boolean recoveryMode;
     private final IndexedIdGenerator.Monitor monitor;
     private final AtomicLong numUnusedIds;
