@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
@@ -550,7 +551,7 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .build())(SymmetricalLogicalPlanEquality)
   }
 
-  test("SHORTEST should NOT be rewritten since path is referenced in return") {
+  test("SHORTEST should be rewritten even if path is referenced in return") {
     val query =
       s"""
          |MATCH p = ANY SHORTEST (a) ((c)-[r]->(d)) +(b)
@@ -566,6 +567,35 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .projection(Map("p" -> pathExpression))
       .shortestPath(
         "(a)-[r*1..]->(b)",
+        pathName = Some("anon_0"),
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(),
+        sameNodeMode = AllowSameNode
+      )
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    plan should equal(expected)(SymmetricalLogicalPlanEquality)
+  }
+
+  test("SHORTEST should be rewritten even if path is referenced in return, incoming rel") {
+    val query =
+      s"""
+         |MATCH p = ANY SHORTEST (a) ((c)<-[r]-(d)) +(b)
+         |RETURN p
+         |""".stripMargin
+    val plan = planner.plan(query)
+    val pathExpression = PathExpression(NodePathStep(
+      v"a",
+      MultiRelationshipPathStep(varFor("r"), INCOMING, Some(varFor("b")), NilPathStep()(pos))(pos)
+    )(pos))(pos)
+    val expected = planner.planBuilder()
+      .produceResults("p")
+      .projection(Map("p" -> pathExpression))
+      .shortestPath(
+        "(a)<-[r*1..]-(b)",
         pathName = Some("anon_0"),
         nodePredicates = Seq(),
         relationshipPredicates = Seq(),

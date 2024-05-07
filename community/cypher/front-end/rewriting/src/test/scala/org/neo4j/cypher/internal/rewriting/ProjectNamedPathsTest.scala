@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.Query
@@ -36,11 +37,15 @@ import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
@@ -1214,10 +1219,11 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         RepeatPathStep.asRepeatPathStep(
           List(Variable("n")(pos), Variable("r")(pos), Variable("m")(pos), Variable("q")(pos)),
           Variable("  UNNAMED0")(pos),
-          RepeatPathStep.asRepeatPathStep(
-            List(Variable("b")(pos), Variable("r2")(pos)),
-            Variable("k")(pos),
-            NilPathStep()(pos)
+          MultiRelationshipPathStep(
+            rel = v"r2",
+            toNode = Some(v"k"),
+            next = NilPathStep()(pos),
+            direction = BOTH
           )(pos)
         )(pos)
       )(pos)
@@ -1459,16 +1465,54 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     rewritten should equal(expected)
   }
 
-  test("MATCH p = ANY SHORTEST ((a)-[r]->+(b) WHERE a.prop IS NOT NULL) RETURN p") {
+  test("Shortest path with predicate and path assignment, 1 relationship, OUTGOING") {
     val returns = parseReturnedExpr("MATCH p = ANY SHORTEST ((a)-[r]->+(b) WHERE a.prop IS NOT NULL) RETURN p")
 
     val expectedPathExpression =
       PathExpression(step =
         NodePathStep(
           node = varFor("a"),
+          next = MultiRelationshipPathStep(
+            rel = v"r",
+            toNode = Some(v"b"),
+            next = NilPathStep()(pos),
+            direction = OUTGOING
+          )(pos)
+        )(pos)
+      )(pos)
+
+    returns shouldEqual expectedPathExpression
+  }
+
+  test("Shortest path with predicate and path assignment, 1 relationship, INCOMING") {
+    val returns = parseReturnedExpr("MATCH p = ANY SHORTEST ((a)<-[r]-+(b) WHERE a.prop IS NOT NULL) RETURN p")
+
+    val expectedPathExpression =
+      PathExpression(step =
+        NodePathStep(
+          node = varFor("a"),
+          next = MultiRelationshipPathStep(
+            rel = v"r",
+            toNode = Some(v"b"),
+            next = NilPathStep()(pos),
+            direction = INCOMING
+          )(pos)
+        )(pos)
+      )(pos)
+
+    returns shouldEqual expectedPathExpression
+  }
+
+  test("Shortest path with path assignment, 2 relationships") {
+    val returns = parseReturnedExpr("MATCH p = ANY SHORTEST ((a) ((a_in)-[r]->(b_in)-[r2]->(c_in))+ (c)) RETURN p")
+
+    val expectedPathExpression =
+      PathExpression(step =
+        NodePathStep(
+          node = varFor("a"),
           next = RepeatPathStep(
-            variables = Nil,
-            toNode = varFor("b"),
+            variables = Seq(NodeRelPair(v"a_in", v"r"), NodeRelPair(v"b_in", v"r2")),
+            toNode = varFor("c"),
             next = NilPathStep()(pos)
           )(pos)
         )(pos)

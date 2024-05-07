@@ -244,10 +244,25 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
 
       case PathConcatenation(factors) =>
         factors.reverse.foldLeft(step) {
+          // Special case for a QPP with just a single relationship inside.
+          // Then we can use MultiRelationshipPathStep instead of RepeatPathStep.
+          case (
+              NodePathStep(node, innerStep),
+              qpp @ QuantifiedPath(
+                PathPatternPart(RelationshipChain(_: NodePattern, RelationshipPattern(rel, _, _, _, _, direction), _)),
+                _,
+                _,
+                _
+              )
+            ) =>
+            val relSingletonVar = rel.get
+            val relGroupVar = qpp.variableGroupings.find(_.singleton == relSingletonVar).get.group
+            MultiRelationshipPathStep(relGroupVar, direction, Some(node), innerStep)(qpp.position)
+
           // Remove the first NodePathStep after a QPP (list is traversed in reverse).
           // This is needed because it will be included as the toNode of the RepeatPathStep, instead.
           case (NodePathStep(node, innerStep), qpp @ QuantifiedPath(PathPatternPart(element), _, _, _)) =>
-            val qppSingletonVars = collectVar(element)
+            val qppSingletonVars = collectRelationshipVarsInQpp(element)
             val groupVars =
               qppSingletonVars.map(singletonVar => qpp.variableGroupings.find(_.singleton == singletonVar).get.group)
             RepeatPathStep.asRepeatPathStep(groupVars, node, innerStep)(qpp.position)
@@ -262,7 +277,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
     }
   }
 
-  private def collectVar(element: PatternElement): Seq[LogicalVariable] =
+  private def collectRelationshipVarsInQpp(element: PatternElement): Seq[LogicalVariable] =
     element match {
       case rc @ RelationshipChain(_, RelationshipPattern(_, _, _, _, _, _), _) =>
         // Leave out last variable because it will be the same as the toNode

@@ -918,5 +918,19 @@ Feature: QuantifiedPathPatternAcceptance
       RETURN *
       """
     Then the result should be, in any order:
-      | a | b | e | f | x | y |
+      | a           | b      | e          | f          | x         | y        |
       | [(:A:User)] | [(:B)] | [[:KNOWS]] | [[:LIKES]] | (:A:User) | [:KNOWS] |
+
+  Scenario: QPP with incoming relationship should project correct path
+    And having executed:
+    """
+    CREATE (:Test {id:1})-[:NEXT]->(:Test {id:2})-[:NEXT]->(:Test {id:3})-[:NEXT]->(:Test {id:4})-[:NEXT]->(:Test {id:5})
+    """
+    When executing query:
+      """
+      MATCH p=(a:Test {id:5}) ((b)<-[r:NEXT]-(c)){4} (d)
+      RETURN [x in nodes(p) | x.id] AS ids
+      """
+    Then the result should be, in order:
+      | ids             |
+      | [5, 4, 3, 2, 1] |
