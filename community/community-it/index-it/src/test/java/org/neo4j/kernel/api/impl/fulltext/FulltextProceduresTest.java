@@ -162,9 +162,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         });
 
         // Fails at parsing, schema descriptor must have at least one label.
-        assertThat(e)
-                .message()
-                .containsAnyOf("Invalid input ')': expected \":\"", "Mismatched input ')': expected ':'");
+        assertThat(e).message().containsAnyOf("Invalid input ')': expected \":\"", "Invalid input ')': expected ':'");
     }
 
     @Test
@@ -176,9 +174,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         });
 
         // Fails at parsing, schema descriptor must have at least one relationship type.
-        assertThat(e)
-                .message()
-                .containsAnyOf("Invalid input ']': expected \":\"", "Mismatched input ']': expected ':'");
+        assertThat(e).message().containsAnyOf("Invalid input ']': expected \":\"", "Invalid input ']': expected ':'");
     }
 
     @Test

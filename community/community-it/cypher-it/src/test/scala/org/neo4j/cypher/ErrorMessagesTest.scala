@@ -36,7 +36,7 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
     expectError(
       "match (s) where id(s) = 0 return",
       "Invalid input '': expected \"*\", \"DISTINCT\" or an expression (line 1, column 33 (offset: 32))",
-      "Mismatched input '': expected 'DISTINCT', '*', an expression (line 1, column 33 (offset: 32))"
+      "Invalid input '': expected an expression, '*' or 'DISTINCT' (line 1, column 33 (offset: 32))"
     )
   }
 
