@@ -565,12 +565,14 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public static final class AppendList extends ListValue {
         private final ListValue base;
         private final AnyValue appended;
+        private int size;
         private volatile long memoizedEstimatedHeapUsage;
-        private static final long NOT_MEMOIZED = -1;
+        private static final int NOT_MEMOIZED = -1;
 
         AppendList(ListValue base, AnyValue appended) {
             this.base = base;
             this.appended = appended;
+            this.size = NOT_MEMOIZED;
             this.memoizedEstimatedHeapUsage = NOT_MEMOIZED;
         }
 
@@ -592,7 +594,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public int size() {
-            return base.size() + 1;
+            if (size == NOT_MEMOIZED) {
+                size = base.size() + 1;
+            }
+            return size;
         }
 
         @Override
@@ -645,13 +650,14 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     static final class PrependList extends ListValue {
         private final ListValue base;
         private final AnyValue prepended;
-
+        private int size;
         private volatile long memoizedEstimatedHeapUsage;
-        private static final long NOT_MEMOIZED = -1;
+        private static final int NOT_MEMOIZED = -1;
 
         PrependList(ListValue base, AnyValue prepended) {
             this.base = base;
             this.prepended = prepended;
+            this.size = NOT_MEMOIZED;
             this.memoizedEstimatedHeapUsage = NOT_MEMOIZED;
         }
 
@@ -662,7 +668,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public int size() {
-            return 1 + base.size();
+            if (size == NOT_MEMOIZED) {
+                size = base.size() + 1;
+            }
+            return size;
         }
 
         @Override
