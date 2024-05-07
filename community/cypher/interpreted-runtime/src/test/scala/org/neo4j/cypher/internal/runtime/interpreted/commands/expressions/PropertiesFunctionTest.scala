@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.eclipse.collections.api.set.primitive.IntSet
-import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
@@ -30,12 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.stringValue
-import org.neo4j.values.virtual.MapValueBuilder
-import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.map
 
 import java.util
