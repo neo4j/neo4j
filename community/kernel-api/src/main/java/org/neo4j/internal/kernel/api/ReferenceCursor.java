@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.helpers;
+package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.kernel.api.SkippableCursor;
-
-public interface SkippableCompositeCursor extends SkippableCursor, CompositeCursor {}
+public interface ReferenceCursor extends Cursor {
+    long reference();
+}

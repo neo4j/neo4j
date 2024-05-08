@@ -19,7 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
-public interface SkippableCursor extends Cursor {
+import org.neo4j.kernel.api.StatementConstants;
+
+public interface SkippableCursor extends ReferenceCursor {
     /**
      * Moves cursor to specified id efficiently
      * does not consume, thus a call to skipUntil should be paired with next()
@@ -28,4 +30,47 @@ public interface SkippableCursor extends Cursor {
      * @param id to move cursor to
      */
     void skipUntil(long id);
+
+    SkippableCursor EMPTY = new SkippableCursor() {
+        @Override
+        public void skipUntil(long id) {}
+
+        @Override
+        public long reference() {
+            return StatementConstants.NO_SUCH_ENTITY;
+        }
+
+        @Override
+        public boolean next() {
+            return false;
+        }
+
+        @Override
+        public void setTracer(KernelReadTracer tracer) {}
+
+        @Override
+        public void removeTracer() {}
+
+        @Override
+        public void close() {}
+
+        @Override
+        public void closeInternal() {}
+
+        @Override
+        public boolean isClosed() {
+            return false;
+        }
+
+        @Override
+        public void setCloseListener(CloseListener closeListener) {}
+
+        @Override
+        public void setToken(int token) {}
+
+        @Override
+        public int getToken() {
+            return 0;
+        }
+    };
 }

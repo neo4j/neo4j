@@ -20,16 +20,16 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Arrays;
-import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.internal.kernel.api.ReferenceCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.util.Preconditions;
 
-public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends DefaultCloseListenable
-        implements CompositeCursor {
+public abstract class UnionTokenIndexCursor<CURSOR extends ReferenceCursor> extends DefaultCloseListenable
+        implements ReferenceCursor {
     private static final int UNINITIALIZED = -1;
-    private final CURSOR[] cursors;
+    protected final CURSOR[] cursors;
     private int currentCursorIndex = UNINITIALIZED;
 
     UnionTokenIndexCursor(CURSOR[] cursors) {
@@ -40,8 +40,6 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
     }
 
     abstract int compare(long current, long other);
-
-    abstract long reference(CURSOR cursor);
 
     abstract long extremeValue();
 
@@ -56,7 +54,7 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
 
     private boolean internalNext() {
         if (cursors[currentCursorIndex].next()) {
-            findNext(reference(cursors[currentCursorIndex]));
+            findNext(cursors[currentCursorIndex].reference());
             return true;
         } else {
             int oldCursorIndex = currentCursorIndex;
@@ -71,7 +69,7 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
             if (i != currentCursorIndex) {
                 var cursor = cursors[i];
                 if (cursor != null) {
-                    long otherReference = reference(cursor);
+                    long otherReference = cursor.reference();
                     if (otherReference != StatementConstants.NO_SUCH_NODE) {
                         int compare = compare(currentReference, otherReference);
                         if (compare > 0) {
@@ -93,7 +91,7 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
         for (int i = 0; i < cursors.length; i++) {
             final var cursor = cursors[i];
             if (cursor != null && cursor.next()) {
-                long otherReference = reference(cursor);
+                long otherReference = cursor.reference();
                 int compare = compare(currentReference, otherReference);
                 if (compare > 0) {
                     currentReference = otherReference;
@@ -133,7 +131,7 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
         Preconditions.checkArgument(
                 cursors[currentCursorIndex] != null,
                 "Calling `reference` after `next` has returned `false` is not allowed");
-        return reference(cursors[currentCursorIndex]);
+        return cursors[currentCursorIndex].reference();
     }
 
     protected CURSOR current() {

@@ -25,13 +25,13 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SkippableCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListenable
-        implements SkippableCompositeCursor {
+public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListenable implements SkippableCursor {
 
     public static IntersectionNodeLabelIndexCursor ascendingIntersectionNodeLabelIndexCursor(
             Read read,
@@ -52,6 +52,11 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         return new AscendingIntersectionLabelIndexCursor(cursors);
     }
 
+    public static IntersectionNodeLabelIndexCursor ascendingIntersectionNodeLabelIndexCursor(
+            SkippableCursor[] cursors) {
+        return new AscendingIntersectionLabelIndexCursor(cursors);
+    }
+
     public static IntersectionNodeLabelIndexCursor descendingIntersectionNodeLabelIndexCursor(
             Read read,
             TokenReadSession tokenReadSession,
@@ -60,6 +65,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
             NodeLabelIndexCursor[] cursors)
             throws KernelException {
         assert labels.length == cursors.length;
+
         for (int i = 0; i < labels.length; i++) {
             read.nodeLabelScan(
                     tokenReadSession,
@@ -71,13 +77,18 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         return new DescendingIntersectionLabelIndexCursor(cursors);
     }
 
+    public static IntersectionNodeLabelIndexCursor descendingIntersectionNodeLabelIndexCursor(
+            SkippableCursor[] cursors) {
+        return new DescendingIntersectionLabelIndexCursor(cursors);
+    }
+
     public static IntersectionNodeLabelIndexCursor intersectionNodeLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
         return new AscendingIntersectionLabelIndexCursor(cursors);
     }
 
-    private final NodeLabelIndexCursor[] cursors;
+    private final SkippableCursor[] cursors;
 
-    IntersectionNodeLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+    IntersectionNodeLabelIndexCursor(SkippableCursor[] cursors) {
         assert cursors != null && cursors.length > 0;
         this.cursors = cursors;
     }
@@ -88,7 +99,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
     public boolean next() {
 
         // advance all cursors once
-        for (NodeLabelIndexCursor cursor : cursors) {
+        for (SkippableCursor cursor : cursors) {
             if (!cursor.next()) {
                 return false;
             }
@@ -102,8 +113,8 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         for (int i = 0; ; ) {
             var first = cursors[i];
             var second = cursors[i + 1];
-            long firstReference = first.nodeReference();
-            long secondReference = second.nodeReference();
+            long firstReference = first.reference();
+            long secondReference = second.reference();
             int compare = compare(firstReference, secondReference);
             if (compare == 0) {
                 // we found a match, advance
@@ -133,7 +144,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
 
     @Override
     public void setTracer(KernelReadTracer tracer) {
-        for (NodeLabelIndexCursor cursor : cursors) {
+        for (var cursor : cursors) {
             if (cursor != null) {
                 cursor.setTracer(tracer);
             }
@@ -142,7 +153,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
 
     @Override
     public void removeTracer() {
-        for (NodeLabelIndexCursor cursor : cursors) {
+        for (var cursor : cursors) {
             if (cursor != null) {
                 cursor.removeTracer();
             }
@@ -151,7 +162,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
 
     @Override
     public long reference() {
-        return cursors[0].nodeReference();
+        return cursors[0].reference();
     }
 
     @Override
@@ -161,7 +172,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
 
     @Override
     public void skipUntil(long id) {
-        for (NodeLabelIndexCursor cursor : cursors) {
+        for (var cursor : cursors) {
             cursor.skipUntil(id);
         }
     }
@@ -172,7 +183,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
     }
 
     private static final class AscendingIntersectionLabelIndexCursor extends IntersectionNodeLabelIndexCursor {
-        AscendingIntersectionLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+        AscendingIntersectionLabelIndexCursor(SkippableCursor[] cursors) {
             super(cursors);
         }
 
@@ -183,7 +194,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
     }
 
     private static final class DescendingIntersectionLabelIndexCursor extends IntersectionNodeLabelIndexCursor {
-        DescendingIntersectionLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+        DescendingIntersectionLabelIndexCursor(SkippableCursor[] cursors) {
             super(cursors);
         }
 

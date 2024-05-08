@@ -27,13 +27,14 @@ import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SkippableCursor;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListenable implements CompositeCursor {
+public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListenable implements SkippableCursor {
 
-    private final SkippableCompositeCursor positiveCursor;
-    private final SkippableCompositeCursor negativeCursor;
+    private final SkippableCursor positiveCursor;
+    private final SkippableCursor negativeCursor;
     private boolean negativeCursorHasData;
     private boolean first = true;
 
@@ -76,7 +77,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
                 IntersectionNodeLabelIndexCursor.intersectionNodeLabelIndexCursor(negativeCursor));
     }
 
-    SubtractionNodeLabelIndexCursor(SkippableCompositeCursor positiveCursor, SkippableCompositeCursor negativeCursor) {
+    SubtractionNodeLabelIndexCursor(SkippableCursor positiveCursor, SkippableCursor negativeCursor) {
         this.positiveCursor = positiveCursor;
         this.negativeCursor = negativeCursor;
     }
@@ -94,6 +95,12 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
     @Override
     public boolean isClosed() {
         return false;
+    }
+
+    @Override
+    public void skipUntil(long id) {
+        positiveCursor.skipUntil(id);
+        negativeCursor.skipUntil(id);
     }
 
     abstract int compare(long a, long b);
@@ -142,8 +149,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
     }
 
     private static final class AscendingSubtractionLabelIndexCursor extends SubtractionNodeLabelIndexCursor {
-        AscendingSubtractionLabelIndexCursor(
-                SkippableCompositeCursor positiveCursor, SkippableCompositeCursor negativeCursor) {
+        AscendingSubtractionLabelIndexCursor(SkippableCursor positiveCursor, SkippableCursor negativeCursor) {
             super(positiveCursor, negativeCursor);
         }
 
@@ -154,8 +160,7 @@ public abstract class SubtractionNodeLabelIndexCursor extends DefaultCloseListen
     }
 
     private static final class DescendingSubtractionLabelIndexCursor extends SubtractionNodeLabelIndexCursor {
-        DescendingSubtractionLabelIndexCursor(
-                SkippableCompositeCursor positiveCursor, SkippableCompositeCursor negativeCursor) {
+        DescendingSubtractionLabelIndexCursor(SkippableCursor positiveCursor, SkippableCursor negativeCursor) {
             super(positiveCursor, negativeCursor);
         }
 

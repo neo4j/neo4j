@@ -23,12 +23,14 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SkippableCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-public abstract class UnionNodeLabelIndexCursor extends UnionTokenIndexCursor<NodeLabelIndexCursor> {
+public abstract class UnionNodeLabelIndexCursor extends UnionTokenIndexCursor<SkippableCursor>
+        implements SkippableCursor {
 
     public static UnionNodeLabelIndexCursor ascendingUnionNodeLabelIndexCursor(
             Read read,
@@ -46,6 +48,10 @@ public abstract class UnionNodeLabelIndexCursor extends UnionTokenIndexCursor<No
                     new TokenPredicate(labels[i]),
                     cursorContext);
         }
+        return new AscendingUnionLabelIndexCursor(cursors);
+    }
+
+    public static UnionNodeLabelIndexCursor ascendingUnionNodeLabelIndexCursor(SkippableCursor[] cursors) {
         return new AscendingUnionLabelIndexCursor(cursors);
     }
 
@@ -68,21 +74,29 @@ public abstract class UnionNodeLabelIndexCursor extends UnionTokenIndexCursor<No
         return new DescendingUnionLabelIndexCursor(cursors);
     }
 
+    public static UnionNodeLabelIndexCursor descendingUnionNodeLabelIndexCursor(SkippableCursor[] cursors) {
+        return new DescendingUnionLabelIndexCursor(cursors);
+    }
+
     public static UnionNodeLabelIndexCursor unionNodeLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
         return new AscendingUnionLabelIndexCursor(cursors);
     }
 
-    UnionNodeLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+    UnionNodeLabelIndexCursor(SkippableCursor[] cursors) {
         super(cursors);
     }
 
     @Override
-    long reference(NodeLabelIndexCursor cursor) {
-        return cursor.nodeReference();
+    public void skipUntil(long id) {
+        for (SkippableCursor cursor : cursors) {
+            if (cursor != null) {
+                cursor.skipUntil(id);
+            }
+        }
     }
 
     private static final class AscendingUnionLabelIndexCursor extends UnionNodeLabelIndexCursor {
-        AscendingUnionLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+        AscendingUnionLabelIndexCursor(SkippableCursor[] cursors) {
             super(cursors);
         }
 
@@ -98,7 +112,7 @@ public abstract class UnionNodeLabelIndexCursor extends UnionTokenIndexCursor<No
     }
 
     private static final class DescendingUnionLabelIndexCursor extends UnionNodeLabelIndexCursor {
-        DescendingUnionLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
+        DescendingUnionLabelIndexCursor(SkippableCursor[] cursors) {
             super(cursors);
         }
 

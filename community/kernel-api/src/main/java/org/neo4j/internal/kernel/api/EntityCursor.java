@@ -24,9 +24,7 @@ import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 
-public interface EntityCursor extends Cursor {
-    long reference();
-
+public interface EntityCursor extends ReferenceCursor {
     default void properties(PropertyCursor cursor) {
         properties(cursor, ALL_PROPERTIES);
     }

@@ -84,11 +84,6 @@ public abstract class UnionRelationshipTypeIndexCursor extends UnionTokenIndexCu
     }
 
     @Override
-    long reference(RelationshipTypeIndexCursor cursor) {
-        return cursor.relationshipReference();
-    }
-
-    @Override
     public boolean readFromStore() {
         return current().readFromStore();
     }
