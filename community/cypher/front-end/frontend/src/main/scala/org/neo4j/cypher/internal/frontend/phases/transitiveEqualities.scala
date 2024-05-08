@@ -26,8 +26,12 @@ import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
+import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities.PropertyEquivalence
+import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities.PropertyMapping
+import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities.Transitions
 import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
@@ -46,65 +50,8 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
 case object transitiveEqualities extends StatementRewriter with StepSequencer.Step with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
-  override def instance(from: BaseState, ignored: BaseContext): Rewriter = transitiveEqualitiesRewriter
-
-  private case object transitiveEqualitiesRewriter extends Rewriter {
-
-    def apply(that: AnyRef): AnyRef = instance.apply(that)
-
-    private val instance: Rewriter = bottomUp(Rewriter.lift {
-      case where: Where => fixedPoint((w: Where) => w.endoRewrite(whereRewriter))(where)
-    })
-
-    private def subTreeReference(prop: Property, other: Expression): Boolean =
-      other.folder.treeExists {
-        case PropertyEquivalence(p1, p2, _) => p1 == prop || p2 == prop
-      }
-
-    // Collects property equalities, e.g `a.prop = 42`
-    private def collect(e: Expression): Transitions = e.folder.treeFold(Transitions.empty) {
-      case _: Or                          => acc => SkipChildren(acc)
-      case _: And                         => acc => TraverseChildren(acc)
-      case PropertyEquivalence(p1, p2, _) => acc => SkipChildren(acc.withEquivalence(p1 -> p2))
-      case PropertyMapping(p: Property, other) if !subTreeReference(p, other) =>
-        acc => SkipChildren(acc.withMapping(p -> other))
-      case Not(Equals(_, _)) => acc => SkipChildren(acc)
-    }
-
-    // NOTE that this might introduce duplicate predicates, however at a later rewrite
-    // when AND is turned into ANDS we remove all duplicates
-    private val whereRewriter: Rewriter = bottomUp(Rewriter.lift {
-      // Do not rewrite if there are multiple scopes in the WHERE clause to avoid to leak variables between different scopes
-      case and: And if and.containsScopeExpression =>
-        and
-      case and @ And(lhs, rhs) =>
-        val transitions = collect(lhs) ++ collect(rhs)
-        val inner = andRewriter(transitions)
-        val newAnd = and.copy(lhs = lhs.endoRewrite(inner), rhs = rhs.endoRewrite(inner))(and.position)
-
-        // ALSO take care of case WHERE b.prop = a.prop AND b.prop = 42
-        // turns into WHERE b.prop = a.prop AND b.prop = 42 AND a.prop = 42
-        transitions.emergentEqualities.foldLeft(newAnd) {
-          case (acc, (prop, expr)) =>
-            And(acc, Equals(prop, expr)(acc.position))(acc.position)
-        }
-    })
-
-    private def andRewriter(transitions: Transitions): Rewriter = {
-      val stopOnNotEquals: RewriterStopper = {
-        case Not(Equals(_, _)) => true
-        case _                 => false
-      }
-
-      bottomUp(
-        Rewriter.lift {
-          case PropertyEquivalence(_, p2, equals) if transitions.mapping.contains(p2) =>
-            equals.copy(rhs = transitions.mapping(p2))(equals.position)
-        },
-        stopOnNotEquals
-      )
-    }
-  }
+  override def instance(from: BaseState, context: BaseContext): Rewriter =
+    transitiveEqualities(context.cancellationChecker)
 
   case class Transitions(
     mapping: Map[Property, Expression] = Map.empty,
@@ -158,5 +105,63 @@ case object transitiveEqualities extends StatementRewriter with StepSequencer.St
       case Equals(p1: Property, expr: Expression) => Some((p1, expr))
       case _                                      => None
     }
+  }
+}
+
+case class transitiveEqualities(cancellationChecker: CancellationChecker) extends Rewriter {
+
+  def apply(that: AnyRef): AnyRef = instance.apply(that)
+
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
+    case where: Where => fixedPoint(cancellationChecker)((w: Where) => w.endoRewrite(whereRewriter))(where)
+  })
+
+  private def subTreeReference(prop: Property, other: Expression): Boolean =
+    other.folder.treeExists {
+      case PropertyEquivalence(p1, p2, _) => p1 == prop || p2 == prop
+    }
+
+  // Collects property equalities, e.g `a.prop = 42`
+  private def collect(e: Expression): Transitions = e.folder.treeFold(Transitions.empty) {
+    case _: Or                          => acc => SkipChildren(acc)
+    case _: And                         => acc => TraverseChildren(acc)
+    case PropertyEquivalence(p1, p2, _) => acc => SkipChildren(acc.withEquivalence(p1 -> p2))
+    case PropertyMapping(p: Property, other) if !subTreeReference(p, other) =>
+      acc => SkipChildren(acc.withMapping(p -> other))
+    case Not(Equals(_, _)) => acc => SkipChildren(acc)
+  }
+
+  // NOTE that this might introduce duplicate predicates, however at a later rewrite
+  // when AND is turned into ANDS we remove all duplicates
+  private val whereRewriter: Rewriter = bottomUp(Rewriter.lift {
+    // Do not rewrite if there are multiple scopes in the WHERE clause to avoid to leak variables between different scopes
+    case and: And if and.containsScopeExpression =>
+      and
+    case and @ And(lhs, rhs) =>
+      val transitions = collect(lhs) ++ collect(rhs)
+      val inner = andRewriter(transitions)
+      val newAnd = and.copy(lhs = lhs.endoRewrite(inner), rhs = rhs.endoRewrite(inner))(and.position)
+
+      // ALSO take care of case WHERE b.prop = a.prop AND b.prop = 42
+      // turns into WHERE b.prop = a.prop AND b.prop = 42 AND a.prop = 42
+      transitions.emergentEqualities.foldLeft(newAnd) {
+        case (acc, (prop, expr)) =>
+          And(acc, Equals(prop, expr)(acc.position))(acc.position)
+      }
+  })
+
+  private def andRewriter(transitions: Transitions): Rewriter = {
+    val stopOnNotEquals: RewriterStopper = {
+      case Not(Equals(_, _)) => true
+      case _                 => false
+    }
+
+    bottomUp(
+      Rewriter.lift {
+        case PropertyEquivalence(_, p2, equals) if transitions.mapping.contains(p2) =>
+          equals.copy(rhs = transitions.mapping(p2))(equals.position)
+      },
+      stopOnNotEquals
+    )
   }
 }
