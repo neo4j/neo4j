@@ -176,7 +176,7 @@
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
     <antlr.version>4.13.1</antlr.version>
     <error_prone_annotations.version>2.27.1</error_prone_annotations.version>
-    <teavm.version>0.9.2</teavm.version>
+    <teavm.version>0.10.0</teavm.version>
     <javapoet.version>1.13.0</javapoet.version>
     <build-resources.version>2024-03.2</build-resources.version>
   </properties>

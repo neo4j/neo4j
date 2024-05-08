@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
-import org.neo4j.cypher.internal.util.CrossCompilation
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
@@ -34,7 +33,7 @@ case class Parse(useAntlr: Boolean) extends Phase[BaseContext, BaseState, BaseSt
     with ParsePipelineTransformerFactory {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    if (useAntlr && !CrossCompilation.isTeaVM) {
+    if (useAntlr) {
       in.withStatement(CypherAstParser.parseStatements(
         in.queryText,
         context.cypherExceptionFactory,
