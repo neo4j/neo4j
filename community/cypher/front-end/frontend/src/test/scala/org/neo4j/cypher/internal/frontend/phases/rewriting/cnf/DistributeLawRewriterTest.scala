@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.distributeLawsRewriter.dnfCounts
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -39,7 +40,7 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
 
   private def getRewriterAndMonitor: (Rewriter, AstRewritingMonitor) = {
     val monitor: AstRewritingMonitor = mock[AstRewritingMonitor]
-    val rewriter: Rewriter = distributeLawsRewriter()(monitor)
+    val rewriter: Rewriter = distributeLawsRewriter(CancellationChecker.neverCancelled())(monitor)
     (rewriter, monitor)
   }
 

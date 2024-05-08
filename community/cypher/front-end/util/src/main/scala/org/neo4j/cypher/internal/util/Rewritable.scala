@@ -372,7 +372,7 @@ object topDownWithParent {
   def apply(
     rewriter: RewriterWithParent,
     stopper: RewriterStopperWithParent = RewriterStopperWithParent.neverStop,
-    cancellation: CancellationChecker = CancellationChecker.NeverCancelled
+    cancellation: CancellationChecker
   ): Rewriter =
     new TopDownWithParentRewriter(rewriter, stopper, cancellation)
 }

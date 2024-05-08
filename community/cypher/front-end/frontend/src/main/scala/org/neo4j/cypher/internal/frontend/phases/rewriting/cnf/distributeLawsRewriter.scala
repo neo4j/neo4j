@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.OrRewrittenToOrs
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.copyVariables
 import org.neo4j.cypher.internal.rewriting.rewriters.repeatWithSizeLimit
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -41,7 +42,8 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.topDownWithParent
 
-case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
+case class distributeLawsRewriter(cancellationChecker: CancellationChecker)(implicit monitor: AstRewritingMonitor)
+    extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = {
     instance(that)
@@ -55,7 +57,8 @@ case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) exten
     stopper = {
       case (_, Some(_: Or)) => true
       case _                => false
-    }
+    },
+    cancellationChecker
   )
 
   private def rewriteOrIfSmallEnough(or: Or): AnyRef = {
@@ -77,7 +80,7 @@ case object distributeLawsRewriter extends CnfPhase {
 
   override def instance(from: BaseState, context: BaseContext): Rewriter = {
     implicit val monitor: AstRewritingMonitor = context.monitors.newMonitor[AstRewritingMonitor]()
-    distributeLawsRewriter()
+    distributeLawsRewriter(context.cancellationChecker)
   }
 
   private[cnf] def dnfCounts(or: Or): Int =

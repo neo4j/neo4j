@@ -99,7 +99,7 @@ class RewritableTest extends CypherFunSuite {
       val f: RewriterWithParent = {
         case (value, _) => liftedPf(value)
       }
-      ast.rewrite(topDownWithParent(f))
+      ast.rewrite(topDownWithParent(f, cancellation = CancellationChecker.neverCancelled()))
     })
   ) foreach { case (name, rewrite) =>
     test(s"$name should be identical when no rule matches") {
@@ -344,11 +344,14 @@ class RewritableTest extends CypherFunSuite {
       grandParent -> None
     )
 
-    val result = grandParent.rewrite(topDownWithParent(RewriterWithParent.lift {
-      case (x: Exp, parent) =>
-        assert(parent === parentOf(x))
-        x
-    }))
+    val result = grandParent.rewrite(topDownWithParent(
+      RewriterWithParent.lift {
+        case (x: Exp, parent) =>
+          assert(parent === parentOf(x))
+          x
+      },
+      cancellation = CancellationChecker.neverCancelled()
+    ))
 
     assert(result === grandParent)
   }
