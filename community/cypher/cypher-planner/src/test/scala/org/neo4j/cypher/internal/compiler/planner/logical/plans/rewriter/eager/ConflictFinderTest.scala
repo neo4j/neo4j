@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -236,7 +237,7 @@ class ConflictFinderTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private def childrenIdsForPlan(lp: LogicalPlan): ChildrenIds = {
     val childrenIds = new ChildrenIds
-    LogicalPlans.simpleFoldPlan(())(lp, (_, p) => childrenIds.recordChildren(p))
+    LogicalPlans.simpleFoldPlan(())(lp, (_, p) => childrenIds.recordChildren(p))(CancellationChecker.neverCancelled())
     childrenIds
   }
 }

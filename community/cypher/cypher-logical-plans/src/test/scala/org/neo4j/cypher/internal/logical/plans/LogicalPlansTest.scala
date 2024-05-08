@@ -328,7 +328,7 @@ class LogicalPlansTest extends CypherFunSuite {
       LogicalPlans.simpleFoldPlan("")(
         p3,
         (acc, plan) => s"$acc->${id(plan)}"
-      )
+      )(CancellationChecker.neverCancelled())
 
     foldedString shouldBe "->p0->p1->p2->p3"
   }
@@ -358,7 +358,7 @@ class LogicalPlansTest extends CypherFunSuite {
       LogicalPlans.simpleFoldPlan("")(
         p7,
         (acc, plan) => s"$acc->${id(plan)}"
-      )
+      )(CancellationChecker.neverCancelled())
 
     foldedString shouldBe "->p0->p1->p2->p3->p4->p5->p6->p7"
   }

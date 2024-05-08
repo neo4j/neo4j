@@ -234,7 +234,7 @@ object LogicalPlans {
   def simpleFoldPlan[ACC](initialAcc: ACC)(
     root: LogicalPlan,
     f: (ACC, LogicalPlan) => ACC
-  ): ACC = {
+  )(cancellation: CancellationChecker): ACC = {
     var stack: List[LogicalPlan] = root :: Nil
     var acc: ACC = initialAcc
     var comingFrom: LogicalPlan = null
@@ -248,6 +248,7 @@ object LogicalPlans {
     populate()
 
     while (stack != Nil) {
+      cancellation.throwIfCancelled()
       val current = stack.head
       val newStack = stack.tail
       stack = newStack

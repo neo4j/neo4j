@@ -85,7 +85,7 @@ case class EagerWhereNeededRewriter(
     val conflicts = ConflictFinder.withCaching().findConflictingPlans(readsAndWrites, plan)
 
     // Step 3: Find candidate lists where Eager can be planned
-    val candidateLists = findCandidateLists(plan, conflicts)
+    val candidateLists = findCandidateLists(plan, conflicts, cancellationChecker)
 
     // Step 4: Pick the best candidate in each sequence.
     val plansToEagerize = pickPlansToEagerize(cardinalities, candidateLists)

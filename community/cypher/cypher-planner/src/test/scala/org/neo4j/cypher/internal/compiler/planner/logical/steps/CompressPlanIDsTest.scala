@@ -73,7 +73,7 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
         planId should be < highestId
         planId
       }
-    )
+    )(CancellationChecker.neverCancelled())
   }
 
   test("should compress planning attributes") {

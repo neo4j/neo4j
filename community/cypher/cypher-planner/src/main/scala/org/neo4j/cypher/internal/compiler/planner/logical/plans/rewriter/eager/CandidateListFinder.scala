@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 
@@ -456,7 +457,8 @@ object CandidateListFinder {
    */
   private[eager] def findCandidateLists(
     plan: LogicalPlan,
-    conflicts: Seq[ConflictingPlanPair]
+    conflicts: Seq[ConflictingPlanPair],
+    cancellationChecker: CancellationChecker
   )(implicit planChildrenLookup: PlanChildrenLookup): Seq[CandidateList] = {
     val conflictsMapBuilder = scala.collection.mutable.MultiDict.empty[Ref[LogicalPlan], ConflictingPlanPair]
     conflicts.foreach {
@@ -468,7 +470,7 @@ object CandidateListFinder {
     val sequencesAcc = LogicalPlans.simpleFoldPlan(SequencesAcc(conflictsMap))(
       plan,
       processPlan
-    )
+    )(cancellationChecker)
 
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.openSequences.isEmpty)
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(sequencesAcc.openConflicts.isEmpty)

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.E
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -45,7 +46,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("p2").id.x), conflicts(0))
     )
@@ -63,7 +64,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should be(empty)
   }
 
@@ -81,7 +82,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x), conflicts(0)),
       CandidateList(BitSet(p.get("p3").id.x, p.get("p4").id.x), conflicts(1))
@@ -102,7 +103,11 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    the[IllegalStateException] thrownBy CandidateListFinder.findCandidateLists(p.plan, conflicts) should have message (
+    the[IllegalStateException] thrownBy CandidateListFinder.findCandidateLists(
+      p.plan,
+      conflicts,
+      CancellationChecker.neverCancelled()
+    ) should have message (
       "Eagerness analysis does not support if the RHS of a SemiApply contains writes."
     )
   }
@@ -122,7 +127,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x), conflicts(0))
     )
@@ -143,7 +148,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x, p.get("p4").id.x), conflicts(0))
     )
@@ -164,7 +169,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("p2").id.x), conflicts(0))
     )
@@ -185,7 +190,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x), conflicts(0))
     )
@@ -206,7 +211,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x, p.get("p4").id.x), conflicts(0))
     )
@@ -227,7 +232,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("p2").id.x), conflicts(0))
     )
@@ -255,7 +260,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("a").id.x), conflicts(0)),
       CandidateList(BitSet(p.get("a").id.x), conflicts(1)),
@@ -282,7 +287,11 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    the[IllegalStateException] thrownBy CandidateListFinder.findCandidateLists(p.plan, conflicts) should have message (
+    the[IllegalStateException] thrownBy CandidateListFinder.findCandidateLists(
+      p.plan,
+      conflicts,
+      CancellationChecker.neverCancelled()
+    ) should have message (
       "We do not expect conflicts between the two branches of a AssertSameNode yet."
     )
   }
@@ -308,7 +317,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("a").id.x), conflicts(0)),
       CandidateList(BitSet(p.get("a").id.x), conflicts(1)),
@@ -334,7 +343,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should be(empty)
   }
 
@@ -353,7 +362,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should be(empty)
   }
 
@@ -372,7 +381,7 @@ class CandidateListFinderTest extends CypherFunSuite {
     )
 
     implicit val childrenIds: ChildrenIds = childrenIdsForPlan(p.plan)
-    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts)
+    val result = CandidateListFinder.findCandidateLists(p.plan, conflicts, CancellationChecker.neverCancelled())
     result should contain theSameElementsAs Seq(
       CandidateList(BitSet(p.get("p2").id.x, p.get("p3").id.x, p.get("p4").id.x), conflicts(0))
     )
@@ -380,7 +389,7 @@ class CandidateListFinderTest extends CypherFunSuite {
 
   private def childrenIdsForPlan(lp: LogicalPlan): ChildrenIds = {
     val childrenIds = new ChildrenIds
-    LogicalPlans.simpleFoldPlan(())(lp, (_, p) => childrenIds.recordChildren(p))
+    LogicalPlans.simpleFoldPlan(())(lp, (_, p) => childrenIds.recordChildren(p))(CancellationChecker.neverCancelled())
     childrenIds
   }
 }
