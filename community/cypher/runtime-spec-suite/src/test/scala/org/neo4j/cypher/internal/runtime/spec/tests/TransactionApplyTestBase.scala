@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.runtime.spec.rewriters.RussianRoulette
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionForEachTests.genRandomTestSetup
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionApplyTestBase.ComplexRhsTestSetup
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.RewriterWithParent
 import org.neo4j.cypher.internal.util.bottomUpWithParent
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
@@ -81,7 +82,6 @@ import org.scalatest.LoneElement
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Failure
 import scala.util.Success
@@ -992,7 +992,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       RewriterWithParent.lift {
         case (rhs: LogicalPlan, Some(parent: TransactionApply)) if parent.right == rhs =>
           rhs.endoRewrite(RussianRoulette(0.0005, 0.25, planBuilder.idGen))
-      }
+      }, cancellation = CancellationChecker.neverCancelled()
     ))
 
     // The result Seqs represent 1) tx batch, 2) rows in tx batch 3) columns in row

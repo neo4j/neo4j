@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriterConfig.PlanRewriterStepConfig
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterWithParent
 import org.neo4j.cypher.internal.util.bottomUpWithParent
@@ -56,7 +57,8 @@ object TestPlanRewriterTemplates {
           if isParentOkToInterject(parent) && randomShouldApply(weight, random) =>
           rewritePlan(p)
       },
-      onlyRewriteLogicalPlansStopper
+      onlyRewriteLogicalPlansStopper,
+      CancellationChecker.neverCancelled()
     )
   }
 

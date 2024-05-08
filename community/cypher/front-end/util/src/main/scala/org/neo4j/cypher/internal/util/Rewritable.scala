@@ -489,7 +489,7 @@ object bottomUpWithParent {
   def apply(
     rewriter: RewriterWithParent,
     stopper: AnyRef => Boolean = _ => false,
-    cancellation: CancellationChecker = CancellationChecker.NeverCancelled
+    cancellation: CancellationChecker
   ): Rewriter =
     new BottomUpWithParentRewriter(rewriter, stopper, cancellation)
 }
