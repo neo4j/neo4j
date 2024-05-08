@@ -364,7 +364,7 @@ class RewritableTest extends CypherFunSuite {
       ast.rewrite(bottomUp(Rewriter.lift(rewritePf)))
     ),
     "bottomUpWithRecorder" -> ((ast: Rewritable, rewritePf: PartialFunction[AnyRef, AnyRef]) =>
-      ast.rewrite(bottomUpWithRecorder(Rewriter.lift(rewritePf)))
+      ast.rewrite(bottomUpWithRecorder(Rewriter.lift(rewritePf), cancellation = CancellationChecker.neverCancelled()))
     )
   ) foreach { case (name, bottomUpVariant) =>
     test(s"$name should be identical when no rule matches") {

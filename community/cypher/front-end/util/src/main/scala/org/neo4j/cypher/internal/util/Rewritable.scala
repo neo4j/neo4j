@@ -549,7 +549,7 @@ object bottomUpWithRecorder {
     rewriter: Rewriter,
     stopper: RewriterStopper = RewriterStopper.neverStop,
     recorder: (AnyRef, AnyRef) => Unit = (_, _) => (),
-    cancellation: CancellationChecker = CancellationChecker.NeverCancelled
+    cancellation: CancellationChecker
   ): Rewriter =
     new BottomUpRewriter(rewriter, stopper, recorder, cancellation)
 }
