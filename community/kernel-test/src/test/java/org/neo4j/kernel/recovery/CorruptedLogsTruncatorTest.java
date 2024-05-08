@@ -137,7 +137,7 @@ class CorruptedLogsTruncatorTest {
 
     @Test
     void doNotPruneEmptyLogs() throws IOException {
-        logPruner.truncate(new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()));
+        logPruner.truncate(new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()), null);
         assertTrue(FileSystemUtils.isEmptyOrNonExistingDirectory(fs, databaseDirectory));
     }
 
@@ -151,7 +151,7 @@ class CorruptedLogsTruncatorTest {
         long expectedFileSizeAfterTruncate = Files.size(logFile.getHighestLogFile());
         assertEquals(TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES - 1, highestLogVersion);
 
-        logPruner.truncate(logPosAfterGeneratingLogs);
+        logPruner.truncate(logPosAfterGeneratingLogs, null);
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
         assertEquals(expectedFileSizeAfterTruncate, Files.size(logFile.getHighestLogFile()));
@@ -172,7 +172,7 @@ class CorruptedLogsTruncatorTest {
         assertNotEquals(logPosAfterGeneratingLogs, channel.getCurrentLogPosition());
 
         long expectedFileSizeAfterTruncate = Files.size(logFile.getHighestLogFile());
-        logPruner.truncate(logPosAfterGeneratingLogs);
+        logPruner.truncate(logPosAfterGeneratingLogs, null);
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
         assertEquals(expectedFileSizeAfterTruncate, Files.size(logFile.getHighestLogFile()));
@@ -199,7 +199,7 @@ class CorruptedLogsTruncatorTest {
         channel.prepareForFlush().flush();
         assertNotEquals(logPosAfterGeneratingLogs, channel.getCurrentLogPosition());
 
-        logPruner.truncate(logPosAfterGeneratingLogs);
+        logPruner.truncate(logPosAfterGeneratingLogs, null);
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
         assertEquals(expectedFileSizeAfterTruncate, Files.size(logFile.getHighestLogFile()));
@@ -224,7 +224,7 @@ class CorruptedLogsTruncatorTest {
         long byteOffset = logPosAfterGeneratingLogs.getByteOffset() - bytesToPrune;
         LogPosition prunePosition = new LogPosition(highestLogVersion, byteOffset);
 
-        logPruner.truncate(prunePosition);
+        logPruner.truncate(prunePosition, null);
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
         assertEquals(byteOffset, Files.size(highestLogFile));
@@ -284,7 +284,7 @@ class CorruptedLogsTruncatorTest {
 
         life.shutdown();
 
-        logPruner.truncate(prunePosition);
+        logPruner.truncate(prunePosition, null);
 
         life.start();
 
@@ -293,9 +293,9 @@ class CorruptedLogsTruncatorTest {
         assertEquals(7, logFiles.logFiles().length);
         assertEquals(byteOffset, Files.size(highestCorrectLogFile));
         assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(1);
+        // Truncate assumes that all checkpoints are broken when null is sent in as last checkpoint
         assertEquals(
-                LATEST_LOG_FORMAT.getHeaderSize() + RECORD_LENGTH_BYTES /* one checkpoint */,
-                Files.size(checkpointFile.getDetachedCheckpointFiles()[0]));
+                LATEST_LOG_FORMAT.getHeaderSize(), Files.size(checkpointFile.getDetachedCheckpointFiles()[0]));
 
         Path corruptedLogsDirectory = databaseDirectory.resolve(CORRUPTED_TX_LOGS_BASE_NAME);
         assertTrue(Files.exists(corruptedLogsDirectory));
@@ -318,7 +318,7 @@ class CorruptedLogsTruncatorTest {
             checkEntryNameAndSize(
                     zipFile,
                     TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX + ".0",
-                    RECORD_LENGTH_BYTES * 3 /* 3 checkpoints */);
+                    RECORD_LENGTH_BYTES * 4 /* 4 checkpoints */);
             if (NativeAccessProvider.getNativeAccess().isAvailable()) {
                 // whole file is corrupted in above scenario and its preallocated
                 checkEntryNameAndSize(

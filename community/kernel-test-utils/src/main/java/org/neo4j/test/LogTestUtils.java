@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.function.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadUtils;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -76,17 +76,25 @@ public final class LogTestUtils {
     }
 
     public static Path[] filterNeostoreLogicalLog(
-            LogFiles logFiles, FileSystemAbstraction fileSystem, LogHook<LogEntry> filter) throws IOException {
+            LogFiles logFiles,
+            FileSystemAbstraction fileSystem,
+            LogHook<LogEntry> filter,
+            CommandReaderFactory commandReaderFactory)
+            throws IOException {
         Path[] files = logFiles.logFiles();
         for (Path file : files) {
-            filterTransactionLogFile(fileSystem, file, filter);
+            filterTransactionLogFile(fileSystem, file, filter, commandReaderFactory);
         }
 
         return files;
     }
 
     private static void filterTransactionLogFile(
-            FileSystemAbstraction fileSystem, Path file, final LogHook<LogEntry> filter) throws IOException {
+            FileSystemAbstraction fileSystem,
+            Path file,
+            final LogHook<LogEntry> filter,
+            CommandReaderFactory commandReaderFactory)
+            throws IOException {
         filter.file(file);
         try (StoreChannel in = fileSystem.read(file)) {
             LogHeader logHeader = readLogHeader(in, true, file, INSTANCE);
@@ -95,7 +103,7 @@ public final class LogTestUtils {
                     in, logHeader, file, ChannelNativeAccessor.EMPTY_ACCESSOR, DatabaseTracer.NULL);
             ReadableLogChannel inBuffer = ReadAheadUtils.newChannel(inChannel, logHeader, INSTANCE);
             LogEntryReader entryReader =
-                    new VersionAwareLogEntryReader(TestCommandReaderFactory.INSTANCE, LatestVersions.BINARY_VERSIONS);
+                    new VersionAwareLogEntryReader(commandReaderFactory, LatestVersions.BINARY_VERSIONS);
 
             LogEntry entry;
             while ((entry = entryReader.readLogEntry(inBuffer)) != null) {

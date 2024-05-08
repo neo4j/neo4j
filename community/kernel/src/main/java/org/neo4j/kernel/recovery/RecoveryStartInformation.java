@@ -19,26 +19,27 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 public class RecoveryStartInformation {
     static final RecoveryStartInformation NO_RECOVERY_REQUIRED =
-            new RecoveryStartInformation(LogPosition.UNSPECIFIED, LogPosition.UNSPECIFIED, -1);
+            new RecoveryStartInformation(LogPosition.UNSPECIFIED, null, -1);
     static final RecoveryStartInformation MISSING_LOGS = new RecoveryStartInformation(null, null, -1, true);
 
     private final long firstTxIdAfterLastCheckPoint;
     private final LogPosition transactionLogPosition;
-    private final LogPosition checkpointPosition;
+    private final CheckpointInfo checkpointPosition;
     private final boolean missingLogs;
 
     public RecoveryStartInformation(
-            LogPosition transactionLogPosition, LogPosition checkpointPosition, long firstTxIdAfterLastCheckPoint) {
+            LogPosition transactionLogPosition, CheckpointInfo checkpointPosition, long firstTxIdAfterLastCheckPoint) {
         this(transactionLogPosition, checkpointPosition, firstTxIdAfterLastCheckPoint, false);
     }
 
     private RecoveryStartInformation(
             LogPosition transactionLogPosition,
-            LogPosition checkpointPosition,
+            CheckpointInfo checkpointPosition,
             long firstTxIdAfterLastCheckPoint,
             boolean missingLogs) {
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
@@ -60,6 +61,10 @@ public class RecoveryStartInformation {
     }
 
     public LogPosition getCheckpointPosition() {
+        return checkpointPosition != null ? checkpointPosition.checkpointEntryPosition() : LogPosition.UNSPECIFIED;
+    }
+
+    public CheckpointInfo getCheckpoint() {
         return checkpointPosition;
     }
 

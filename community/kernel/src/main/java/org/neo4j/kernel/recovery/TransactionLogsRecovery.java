@@ -215,7 +215,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                     monitor.failToRecoverTransactionsAfterPosition(t, recoveryStartPosition);
                 }
             }
-            logsTruncator.truncate(recoveryToPosition);
+            logsTruncator.truncate(recoveryToPosition, recoveryStartInformation.getCheckpoint());
             appendIndexProvider = new RecoveryRollbackAppendIndexProvider(lastBatchInfo);
             var rollbackTransactionInfo = recoveryService.rollbackTransactions(
                     recoveryToPosition, transactionIdTracker, lastHighestTransactionBatchInfo, appendIndexProvider);

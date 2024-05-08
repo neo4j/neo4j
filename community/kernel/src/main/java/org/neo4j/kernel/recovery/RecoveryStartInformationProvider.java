@@ -104,12 +104,17 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
                 }
                 monitor.noCheckPointFound();
                 LogPosition position = tryExtractHeaderAndGetStartPosition();
-                return createRecoveryInformation(position, LogPosition.UNSPECIFIED, txIdAfterLastCheckPoint);
+                return createRecoveryInformation(position, null, txIdAfterLastCheckPoint);
             }
             LogPosition transactionLogPosition = lastCheckPoint.transactionLogPosition();
             monitor.logsAfterLastCheckPoint(transactionLogPosition, txIdAfterLastCheckPoint);
+            return createRecoveryInformation(transactionLogPosition, lastCheckPoint, txIdAfterLastCheckPoint);
+        } else if (logTailInformation.hasUnreadableBytesInCheckpointLogs()) {
+            // The problem is just corruption in the checkpoint log file
             return createRecoveryInformation(
-                    transactionLogPosition, lastCheckPoint.checkpointEntryPosition(), txIdAfterLastCheckPoint);
+                    lastCheckPoint.transactionLogPosition(),
+                    lastCheckPoint,
+                    lastCheckPoint.transactionId().id());
         } else {
             throw new UnderlyingStorageException(
                     "Fail to determine recovery information Log tail info: " + logTailInformation);
@@ -127,7 +132,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
     }
 
     private static RecoveryStartInformation createRecoveryInformation(
-            LogPosition transactionLogPosition, LogPosition checkpointLogPosition, long firstTxId) {
-        return new RecoveryStartInformation(transactionLogPosition, checkpointLogPosition, firstTxId);
+            LogPosition transactionLogPosition, CheckpointInfo checkpoint, long firstTxId) {
+        return new RecoveryStartInformation(transactionLogPosition, checkpoint, firstTxId);
     }
 }

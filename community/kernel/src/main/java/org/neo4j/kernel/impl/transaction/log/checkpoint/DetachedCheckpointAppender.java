@@ -131,8 +131,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private void seekCheckpointChannel(long expectedVersion) throws IOException {
         LogTailMetadata tailMetadata = logTailScanner.getTailMetadata();
         if (tailMetadata.hasUnreadableBytesInCheckpointLogs()) {
-            // we have unreadable bytes in the tail and can't find correct position anyway -> rotate this file away
-            return;
+            // we had unreadable bytes in the tail before recovery, those should have been truncated away by now
         }
         var lastCheckPoint = tailMetadata.getLastCheckPoint();
         if (lastCheckPoint.isEmpty()) {

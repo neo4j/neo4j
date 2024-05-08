@@ -739,9 +739,6 @@ public final class Recovery {
             recoveryLife.start();
 
             if (databaseHealth.hasNoPanic()) {
-                if (logTailMetadata.hasUnreadableBytesInCheckpointLogs()) {
-                    logFiles.getCheckpointFile().rotate();
-                }
                 if (awaitIndexesOnlineMillis > 0) {
                     awaitIndexesOnline(indexingService, awaitIndexesOnlineMillis);
                 }

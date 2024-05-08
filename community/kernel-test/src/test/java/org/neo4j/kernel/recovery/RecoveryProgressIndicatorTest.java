@@ -63,10 +63,9 @@ class RecoveryProgressIndicatorTest {
                 emptyList(),
                 newCommitEntry(LATEST_KERNEL_VERSION, lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM));
         LogPosition transactionLogPosition = new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize());
-        LogPosition checkpointLogPosition = new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize());
         int firstTxIdAfterLastCheckPoint = 10;
-        RecoveryStartInformation startInformation = new RecoveryStartInformation(
-                transactionLogPosition, checkpointLogPosition, firstTxIdAfterLastCheckPoint);
+        RecoveryStartInformation startInformation =
+                new RecoveryStartInformation(transactionLogPosition, null, firstTxIdAfterLastCheckPoint);
 
         when(reverseCommandBatchCursor.next()).thenAnswer(new NextTransactionAnswer(transactionsToRecover));
         when(commandBatchCursor.next()).thenAnswer(new NextTransactionAnswer(transactionsToRecover));

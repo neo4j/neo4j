@@ -25,6 +25,7 @@ import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.io.ByteUnit.MebiByte;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.IOUtils.uncheckedLongConsumer;
+import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,8 +33,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.zip.ZipEntry;
@@ -45,10 +44,12 @@ import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -79,27 +80,29 @@ public class CorruptedLogsTruncator {
     /**
      * Truncate all transaction logs after provided position. Log version specified in a position will be
      * truncated to provided byte offset, any subsequent log files will be deleted.
-     * Any checkpoints pointing ahead of the position will be removed.
+     * Any checkpoints pointing ahead of the checkpoint will be removed.
      * Backup copy of removed data will be stored in separate archive.
+     *
      * @param positionAfterLastRecoveredTransaction position after last recovered transaction
+     * @param lastCheckpoint last known checkpoint
      * @throws IOException
      */
-    public void truncate(LogPosition positionAfterLastRecoveredTransaction) throws IOException {
+    public void truncate(LogPosition positionAfterLastRecoveredTransaction, CheckpointInfo lastCheckpoint)
+            throws IOException {
         long recoveredTransactionLogVersion = positionAfterLastRecoveredTransaction.getLogVersion();
         long recoveredTransactionOffset = positionAfterLastRecoveredTransaction.getByteOffset();
-        if (isRecoveredLogCorrupted(recoveredTransactionLogVersion, recoveredTransactionOffset)
-                || haveMoreRecentLogFiles(recoveredTransactionLogVersion)) {
-            Optional<CheckpointInfo> corruptCheckpoint =
-                    findFirstCorruptDetachedCheckpoint(recoveredTransactionLogVersion, recoveredTransactionOffset);
-            backupCorruptedContent(recoveredTransactionLogVersion, recoveredTransactionOffset, corruptCheckpoint);
-            truncateLogFiles(recoveredTransactionLogVersion, recoveredTransactionOffset, corruptCheckpoint);
+        boolean txLogCorrupted = isRecoveredLogCorrupted(recoveredTransactionLogVersion, recoveredTransactionOffset)
+                || haveMoreRecentLogFiles(recoveredTransactionLogVersion);
+
+        CheckpointFileInfo checkpointFileInfo = checkCheckpointFileNeedsTruncation(lastCheckpoint);
+        if (txLogCorrupted || checkpointFileInfo.needTruncation) {
+            backupCorruptedContent(recoveredTransactionLogVersion, recoveredTransactionOffset, checkpointFileInfo);
+            truncateLogFiles(recoveredTransactionLogVersion, recoveredTransactionOffset, checkpointFileInfo);
         }
     }
 
     private void truncateLogFiles(
-            long recoveredTransactionLogVersion,
-            long recoveredTransactionOffset,
-            Optional<CheckpointInfo> corruptCheckpoint)
+            long recoveredTransactionLogVersion, long recoveredTransactionOffset, CheckpointFileInfo checkpointFileInfo)
             throws IOException {
         LogFile transactionLogFile = logFiles.getLogFile();
         truncateFilesFromVersion(
@@ -108,8 +111,8 @@ public class CorruptedLogsTruncator {
                 transactionLogFile.getHighestLogVersion(),
                 transactionLogFile::getLogFileForVersion);
 
-        if (corruptCheckpoint.isPresent()) {
-            LogPosition checkpointPosition = corruptCheckpoint.get().checkpointEntryPosition();
+        if (checkpointFileInfo.needTruncation) {
+            LogPosition checkpointPosition = checkpointFileInfo.place;
             CheckpointFile checkpointFile = logFiles.getCheckpointFile();
 
             truncateFilesFromVersion(
@@ -141,9 +144,7 @@ public class CorruptedLogsTruncator {
     }
 
     private void backupCorruptedContent(
-            long recoveredTransactionLogVersion,
-            long recoveredTransactionOffset,
-            Optional<CheckpointInfo> corruptCheckpoint)
+            long recoveredTransactionLogVersion, long recoveredTransactionOffset, CheckpointFileInfo checkpointFileInfo)
             throws IOException {
         Path corruptedLogArchive = getArchiveFile(recoveredTransactionLogVersion, recoveredTransactionOffset);
         try (ZipOutputStream recoveryContent = new ZipOutputStream(fs.openAsOutputStream(corruptedLogArchive, false));
@@ -158,8 +159,8 @@ public class CorruptedLogsTruncator {
                     bufferScope,
                     transactionLogFile::getLogFileForVersion);
 
-            if (corruptCheckpoint.isPresent()) {
-                LogPosition checkpointPosition = corruptCheckpoint.get().checkpointEntryPosition();
+            if (checkpointFileInfo.needTruncation) {
+                LogPosition checkpointPosition = checkpointFileInfo.place;
                 CheckpointFile checkpointFile = logFiles.getCheckpointFile();
 
                 copyLogsContent(
@@ -237,27 +238,18 @@ public class CorruptedLogsTruncator {
         return logFiles.getLogFile().getHighestLogVersion() > recoveredTransactionLogVersion;
     }
 
+    private boolean haveMoreRecentCheckpointLogFiles(long recoveredTransactionLogVersion) {
+        return logFiles.getCheckpointFile().getHighestLogVersion() > recoveredTransactionLogVersion;
+    }
+
     private boolean isRecoveredLogCorrupted(long recoveredTransactionLogVersion, long recoveredTransactionOffset)
             throws IOException {
         try {
             LogFile logFile = logFiles.getLogFile();
             if (fs.getFileSize(logFile.getLogFileForVersion(recoveredTransactionLogVersion))
                     > recoveredTransactionOffset) {
-                try (PhysicalLogVersionedStoreChannel channel = logFile.openForVersion(recoveredTransactionLogVersion);
-                        var scopedBuffer = new NativeScopedBuffer(
-                                safeCastLongToInt(kibiBytes(64)), ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
-                    channel.position(recoveredTransactionOffset);
-                    ByteBuffer byteBuffer = scopedBuffer.getBuffer();
-                    while (channel.read(byteBuffer) >= 0) {
-                        byteBuffer.flip();
-                        while (byteBuffer.hasRemaining()) {
-                            if (byteBuffer.get() != 0) {
-                                return true;
-                            }
-                        }
-                        byteBuffer.clear();
-                    }
-                }
+                return checkOnlyZeroesAfterPosition(
+                        recoveredTransactionOffset, logFile.openForVersion(recoveredTransactionLogVersion));
             }
             return false;
         } catch (NoSuchFileException ignored) {
@@ -265,18 +257,75 @@ public class CorruptedLogsTruncator {
         }
     }
 
-    private Optional<CheckpointInfo> findFirstCorruptDetachedCheckpoint(
+    private boolean isRecoveredCheckpointLogCorrupted(
             long recoveredTransactionLogVersion, long recoveredTransactionOffset) throws IOException {
-        List<CheckpointInfo> detachedCheckpoints = logFiles.getCheckpointFile().getReachableDetachedCheckpoints();
-        for (CheckpointInfo checkpoint : detachedCheckpoints) {
-            LogPosition transactionLogPosition = checkpoint.transactionLogPosition();
-            long logVersion = transactionLogPosition.getLogVersion();
-            if (logVersion > recoveredTransactionLogVersion
-                    || (logVersion == recoveredTransactionLogVersion
-                            && transactionLogPosition.getByteOffset() > recoveredTransactionOffset)) {
-                return Optional.of(checkpoint);
+        try {
+            CheckpointFile logFile = logFiles.getCheckpointFile();
+            if (fs.getFileSize(logFile.getDetachedCheckpointFileForVersion(recoveredTransactionLogVersion))
+                    > recoveredTransactionOffset) {
+                return checkOnlyZeroesAfterPosition(
+                        recoveredTransactionOffset, logFile.openForVersion(recoveredTransactionLogVersion));
+            }
+            return false;
+        } catch (NoSuchFileException ignored) {
+            return false;
+        }
+    }
+
+    private boolean checkOnlyZeroesAfterPosition(
+            long recoveredTransactionOffset, PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel)
+            throws IOException {
+        try (PhysicalLogVersionedStoreChannel channel = physicalLogVersionedStoreChannel;
+                var scopedBuffer = new NativeScopedBuffer(
+                        safeCastLongToInt(kibiBytes(64)), ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
+            channel.position(recoveredTransactionOffset);
+            ByteBuffer byteBuffer = scopedBuffer.getBuffer();
+            while (channel.read(byteBuffer) >= 0) {
+                byteBuffer.flip();
+                while (byteBuffer.hasRemaining()) {
+                    if (byteBuffer.get() != 0) {
+                        return true;
+                    }
+                }
+                byteBuffer.clear();
             }
         }
-        return Optional.empty();
+        return false;
     }
+
+    private CheckpointFileInfo checkCheckpointFileNeedsTruncation(CheckpointInfo lastCheckpoint) throws IOException {
+        if (lastCheckpoint != null
+                && (!lastCheckpoint
+                                .channelPositionAfterCheckpoint()
+                                .equals(lastCheckpoint.checkpointFilePostReadPosition())
+                        || isRecoveredCheckpointLogCorrupted(
+                                lastCheckpoint.channelPositionAfterCheckpoint().getLogVersion(),
+                                lastCheckpoint.channelPositionAfterCheckpoint().getByteOffset())
+                        || haveMoreRecentCheckpointLogFiles(
+                                lastCheckpoint.channelPositionAfterCheckpoint().getLogVersion()))) {
+            return new CheckpointFileInfo(true, lastCheckpoint.channelPositionAfterCheckpoint());
+        }
+        // We didn't see any checkpoints, but that doesn't mean there isn't unreadable things in the log.
+        // Let's do a best effort to see if there is any garbage in the file to remove.
+        if (lastCheckpoint == null
+                && logFiles.getCheckpointFile().getCurrentDetachedLogVersion() >= INITIAL_LOG_VERSION) {
+            try {
+                long lowestLogVersion = logFiles.getCheckpointFile().getLowestLogVersion();
+                LogPosition startPosition = LogHeaderReader.readLogHeader(
+                                fs,
+                                logFiles.getCheckpointFile().getDetachedCheckpointFileForVersion(lowestLogVersion),
+                                EmptyMemoryTracker.INSTANCE)
+                        .getStartPosition();
+                if (isRecoveredCheckpointLogCorrupted(startPosition.getLogVersion(), startPosition.getByteOffset())) {
+                    return new CheckpointFileInfo(true, startPosition);
+                }
+            } catch (NoSuchFileException ignore) {
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to handle corrupt checkpoint file", e);
+            }
+        }
+        return new CheckpointFileInfo(false, LogPosition.UNSPECIFIED);
+    }
+
+    record CheckpointFileInfo(boolean needTruncation, LogPosition place) {}
 }

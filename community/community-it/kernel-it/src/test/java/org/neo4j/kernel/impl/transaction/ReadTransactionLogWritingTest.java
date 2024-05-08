@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.LogTestUtils.CountingLogHook;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -95,7 +96,13 @@ class ReadTransactionLogWritingTest {
     private long countLogEntries() {
         try {
             CountingLogHook<LogEntry> logicalLogCounter = new CountingLogHook<>();
-            filterNeostoreLogicalLog(logFiles, fileSystem, logicalLogCounter);
+            filterNeostoreLogicalLog(
+                    logFiles,
+                    fileSystem,
+                    logicalLogCounter,
+                    db.getDependencyResolver()
+                            .resolveDependency(StorageEngineFactory.class)
+                            .commandReaderFactory());
 
             long txLogRecordCount =
                     logFiles.getLogFile().getLogFileInformation().getLastEntryId();

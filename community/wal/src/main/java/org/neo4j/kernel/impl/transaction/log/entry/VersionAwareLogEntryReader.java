@@ -76,7 +76,9 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
                 // we reached the end of available records but still have space available in pre-allocated file
                 // we reset channel position to restore last read byte in case someone would like to re-read or check it
                 // again if possible
-                // and we report that we reach end of record stream from our point of view
+                // and we report that we reach end of record stream from our point of view.
+                // Let's double-check that it isn't a corrupt byte by checking part of the tail first
+                checkSmallChunkOfTail(channel, channel.getCurrentLogPosition(), null);
                 rewindToEntryStartPosition(channel, positionMarker, entryStartPosition);
                 return null;
             }
@@ -88,8 +90,8 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
             return entry;
         } catch (ReadPastEndException e) {
             return null;
-        } catch (UnsupportedLogVersionException lve) {
-            throw lve;
+        } catch (UnsupportedLogVersionException | IllegalStateException e) {
+            throw e;
         } catch (IOException | RuntimeException e) {
             LogPosition currentLogPosition = channel.getCurrentLogPosition();
             // check if error was in the last command or is there anything else after that
@@ -106,11 +108,26 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
 
     private static void checkTail(ReadableLogPositionAwareChannel channel, LogPosition currentLogPosition, Exception e)
             throws IOException {
-        var zeroArray = new byte[(int) kibiBytes(16)];
-        try (var scopedBuffer = new HeapScopedBuffer((int) kibiBytes(16), LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
+        checkTail(channel, currentLogPosition, (int) kibiBytes(16), true, e);
+    }
+
+    private static void checkSmallChunkOfTail(
+            ReadableLogPositionAwareChannel channel, LogPosition currentLogPosition, Exception e) throws IOException {
+        checkTail(channel, currentLogPosition, (int) kibiBytes(1), false, e);
+    }
+
+    private static void checkTail(
+            ReadableLogPositionAwareChannel channel,
+            LogPosition currentLogPosition,
+            int bufferSize,
+            boolean checkToEnd,
+            Exception e)
+            throws IOException {
+        var zeroArray = new byte[bufferSize];
+        try (var scopedBuffer = new HeapScopedBuffer(bufferSize, LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
             var buffer = scopedBuffer.getBuffer();
             boolean endReached = false;
-            while (!endReached) {
+            do {
                 try {
                     channel.read(buffer);
                 } catch (ReadPastEndException ee) {
@@ -125,7 +142,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
                                     + ". Unreadable bytes are encountered after last readable position.",
                             e);
                 }
-            }
+            } while (!endReached && checkToEnd);
         }
     }
 

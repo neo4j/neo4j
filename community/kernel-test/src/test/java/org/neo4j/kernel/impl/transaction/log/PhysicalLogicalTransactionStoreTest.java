@@ -30,7 +30,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -473,9 +472,7 @@ class PhysicalLogicalTransactionStoreTest {
         @Override
         public RecoveryStartInformation getRecoveryStartInformation() throws IOException {
             return new RecoveryStartInformation(
-                    logFiles.getLogFile().extractHeader(0).getStartPosition(),
-                    new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize()),
-                    1);
+                    logFiles.getLogFile().extractHeader(0).getStartPosition(), null, 1);
         }
 
         @Override

@@ -614,7 +614,7 @@ class TransactionLogsRecoveryTest {
                 .rootCause()
                 .isInstanceOf(DatabaseStartAbortedException.class);
 
-        verify(logsTruncator, never()).truncate(any());
+        verify(logsTruncator, never()).truncate(any(), any());
         verify(monitor, never()).recoveryCompleted(anyLong(), any(RecoveryMode.class));
     }
 
