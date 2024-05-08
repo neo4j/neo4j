@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.CharLengthFunctionRewritte
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -48,7 +49,8 @@ case object CharLengthFunctionRewriter extends StepSequencer.Step with ASTRewrit
     semanticState: SemanticState,
     parameterTypeMapping: Map[String, ParameterTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
   ): Rewriter = instance
 
   val instance: Rewriter = bottomUp(Rewriter.lift {

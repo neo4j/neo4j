@@ -52,7 +52,8 @@ case object LabelExpressionPredicateNormalizer extends StepSequencer.Step with A
     semanticState: SemanticState,
     parameterTypeMapping: Map[String, ParameterTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
   ): Rewriter = instance
 
   /**

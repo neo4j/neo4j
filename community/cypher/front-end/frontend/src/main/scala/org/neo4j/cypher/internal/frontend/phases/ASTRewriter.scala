@@ -109,7 +109,13 @@ object ASTRewriter {
   ): Statement = {
     val rewriters = orderedSteps.map { step =>
       val rewriter =
-        step.getRewriter(semanticState, parameterTypeMapping, cypherExceptionFactory, anonymousVariableNameGenerator)
+        step.getRewriter(
+          semanticState,
+          parameterTypeMapping,
+          cypherExceptionFactory,
+          anonymousVariableNameGenerator,
+          cancellationChecker
+        )
       RewriterStep.validatingRewriter(rewriter, step, cancellationChecker)
     }
 

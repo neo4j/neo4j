@@ -63,8 +63,8 @@ class InlineRelationshipTypePredicatesTest extends CypherFunSuite with PlannerQu
       LabelExpressionPredicateNormalizer.instance,
       normalizeHasLabelsAndHasType(orgAstState),
       QuantifiedPathPatternNodeInsertRewriter.instance,
-      nameAllPatternElements.getRewriter(orgAstState, Map.empty, ceF, anonVarGen),
-      normalizePredicates.getRewriter(orgAstState, Map.empty, ceF, anonVarGen),
+      nameAllPatternElements.getRewriter(orgAstState, Map.empty, ceF, anonVarGen, CancellationChecker.neverCancelled()),
+      normalizePredicates.getRewriter(orgAstState, Map.empty, ceF, anonVarGen, CancellationChecker.neverCancelled()),
       flattenBooleanOperators.instance(CancellationChecker.NeverCancelled),
       expandStar(orgAstState),
       simplifyPredicates(orgAstState)

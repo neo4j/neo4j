@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
@@ -46,7 +47,8 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
         semanticState,
         Map.empty,
         OpenCypherExceptionFactory(None),
-        new AnonymousVariableNameGenerator
+        new AnonymousVariableNameGenerator,
+        CancellationChecker.neverCancelled()
       ),
       normalizeHasLabelsAndHasType(semanticState)
     )
