@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -38,7 +39,7 @@ class RepeatTest extends CypherFunSuite {
     count = 0
 
     // when
-    val output: Object = fixedPoint(mockedRewriter)(result)
+    val output: Object = fixedPoint(CancellationChecker.neverCancelled())(mockedRewriter)(result)
 
     // then
     output should equal(result)
@@ -50,7 +51,7 @@ class RepeatTest extends CypherFunSuite {
     count = 0
 
     // when
-    val output: Object = fixedPoint(mockedRewriter)(new Object)
+    val output: Object = fixedPoint(CancellationChecker.neverCancelled())(mockedRewriter)(new Object)
 
     // then
     output should equal(result)

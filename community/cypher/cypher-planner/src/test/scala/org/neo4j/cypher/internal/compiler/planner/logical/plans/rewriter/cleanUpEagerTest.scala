@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
@@ -170,5 +171,7 @@ class cleanUpEagerTest extends CypherFunSuite
   }
 
   private def rewrite(p: LogicalPlan, cardinalities: Cardinalities, idGen: IdGen): LogicalPlan =
-    fixedPoint((p: LogicalPlan) => p.endoRewrite(cleanUpEager(cardinalities, Attributes(idGen))))(p)
+    fixedPoint(CancellationChecker.neverCancelled())((p: LogicalPlan) =>
+      p.endoRewrite(cleanUpEager(cardinalities, Attributes(idGen)))
+    )(p)
 }

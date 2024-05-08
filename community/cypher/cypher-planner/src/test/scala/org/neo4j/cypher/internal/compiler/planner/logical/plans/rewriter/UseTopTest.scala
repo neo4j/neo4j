@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -65,5 +66,5 @@ class UseTopTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =
-    fixedPoint((p: LogicalPlan) => p.endoRewrite(useTop))(p)
+    fixedPoint(CancellationChecker.neverCancelled())((p: LogicalPlan) => p.endoRewrite(useTop))(p)
 }

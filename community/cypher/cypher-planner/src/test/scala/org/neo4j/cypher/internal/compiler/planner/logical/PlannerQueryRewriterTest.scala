@@ -64,7 +64,9 @@ trait PlannerQueryRewriterTest {
       removeGeneratedNamesAndParamsOnTree(getTheWholePlannerQueryFrom(expectedQuery.stripMargin, expectedGen))
     val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin, actualGen)
 
-    val result = removeGeneratedNamesAndParamsOnTree(original.endoRewrite(fixedPoint(rewriter(actualGen))))
+    val result = removeGeneratedNamesAndParamsOnTree(
+      original.endoRewrite(fixedPoint(CancellationChecker.neverCancelled())(rewriter(actualGen)))
+    )
     assert(
       result === expected,
       s"""$originalQuery
@@ -85,7 +87,9 @@ trait PlannerQueryRewriterTest {
     val actualGen = new AnonymousVariableNameGenerator()
     val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin, actualGen)
 
-    val result = removeGeneratedNamesAndParamsOnTree(original.endoRewrite(fixedPoint(rewriter(actualGen))))
+    val result = removeGeneratedNamesAndParamsOnTree(
+      original.endoRewrite(fixedPoint(CancellationChecker.neverCancelled())(rewriter(actualGen)))
+    )
     assert(
       expected.exists(_ === result),
       s"""$originalQuery
@@ -100,7 +104,7 @@ trait PlannerQueryRewriterTest {
   protected def assertIsNotRewritten(query: String): Unit = {
     val actualGen = new AnonymousVariableNameGenerator()
     val plannerQuery = getTheWholePlannerQueryFrom(query.stripMargin, actualGen)
-    val result = plannerQuery.endoRewrite(fixedPoint(rewriter(actualGen)))
+    val result = plannerQuery.endoRewrite(fixedPoint(CancellationChecker.neverCancelled())(rewriter(actualGen)))
     assert(result === plannerQuery, "\nShould not have been rewritten\n" + query)
   }
 
