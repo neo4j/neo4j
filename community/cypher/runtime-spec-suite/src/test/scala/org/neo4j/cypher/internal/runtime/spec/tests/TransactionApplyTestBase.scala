@@ -82,6 +82,7 @@ import org.scalatest.LoneElement
 
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Failure
 import scala.util.Success
@@ -992,7 +993,8 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       RewriterWithParent.lift {
         case (rhs: LogicalPlan, Some(parent: TransactionApply)) if parent.right == rhs =>
           rhs.endoRewrite(RussianRoulette(0.0005, 0.25, planBuilder.idGen))
-      }, cancellation = CancellationChecker.neverCancelled()
+      },
+      cancellation = CancellationChecker.neverCancelled()
     ))
 
     // The result Seqs represent 1) tx batch, 2) rows in tx batch 3) columns in row

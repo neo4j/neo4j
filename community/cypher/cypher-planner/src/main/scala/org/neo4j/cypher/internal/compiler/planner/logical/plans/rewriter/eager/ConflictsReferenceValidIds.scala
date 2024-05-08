@@ -33,7 +33,7 @@ case object ConflictsReferenceValidIds extends ValidatingCondition {
   override def apply(a: Any)(cancellationChecker: CancellationChecker): Seq[String] = {
     // Using flatten instead of treeCollect to explicitly exclude IDs in nested plan expressions and such.
     val ids = (a match {
-      case lp: LogicalPlan => lp.flatten.map(_.id)
+      case lp: LogicalPlan => lp.flatten(cancellationChecker).map(_.id)
       case _               => throw new IllegalStateException(s"Did not pass a LogicalPlan to $name")
     }).toSet
 
