@@ -129,7 +129,7 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
   private def extractExpressionsToInclude(originalExpressions: Set[Expression])(
     cancellationChecker: CancellationChecker
   ): Set[Expression] = {
-    val expressionsToGoToWith: Set[Expression] = fixedPoint {
+    val expressionsToGoToWith: Set[Expression] = fixedPoint(cancellationChecker) {
       (expressions: Set[Expression]) =>
         expressions.flatMap {
           case e @ ReduceExpression(scope, init, coll) if hasAggregateButIsNotAggregate(e)(cancellationChecker) =>
