@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.OrRewrittenToOrs
 import org.neo4j.cypher.internal.rewriting.conditions.PredicatesSimplified
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.copyVariables
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.collection.immutable.ListSet
@@ -48,13 +49,13 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.topDown
 
-case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
+case class simplifyPredicates(semanticState: SemanticState, cancellationChecker: CancellationChecker) extends Rewriter {
   private val T = True()(null)
   private val F = False()(null)
 
   private val step: Rewriter = Rewriter.lift { case e: Expression => computeReplacement(e) }
 
-  private val instance = fixedPoint(topDown(step))
+  private val instance = fixedPoint(cancellationChecker)(topDown(step))
 
   def apply(that: AnyRef): AnyRef = {
     instance.apply(that)
@@ -139,6 +140,7 @@ case object simplifyPredicates extends StepSequencer.Step with PlanPipelineTrans
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
-  override def instance(from: BaseState, context: BaseContext): Rewriter = this(from.semantics())
+  override def instance(from: BaseState, context: BaseContext): Rewriter =
+    this(from.semantics(), context.cancellationChecker)
 
 }

@@ -189,7 +189,7 @@ class SimplifyPredicatesTest extends CypherFunSuite {
       )(position)
     ))(position)
     val rewriter = flattenBooleanOperators.instance(CancellationChecker.NeverCancelled) andThen
-      simplifyPredicates(SemanticState.clean)
+      simplifyPredicates(SemanticState.clean, CancellationChecker.neverCancelled())
     val result = ast.rewrite(rewriter)
     ast should equal(result)
   }
@@ -274,7 +274,10 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     val original = JavaCCParser.parse("RETURN " + originalQuery, exceptionFactory)
     val checkResult = original.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
     val rewriter =
-      flattenBooleanOperators.instance(CancellationChecker.NeverCancelled) andThen simplifyPredicates(checkResult.state)
+      flattenBooleanOperators.instance(CancellationChecker.NeverCancelled) andThen simplifyPredicates(
+        checkResult.state,
+        CancellationChecker.neverCancelled()
+      )
     val result = original.endoRewrite(rewriter)
     val maybeReturnExp = result.folder.treeFind({
       case UnaliasedReturnItem(expression, _) =>
