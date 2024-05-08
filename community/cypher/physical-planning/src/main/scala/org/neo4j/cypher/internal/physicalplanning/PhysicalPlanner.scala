@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableE
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.runtime.slottedParameters
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 
 object PhysicalPlanner {
 
@@ -46,6 +47,7 @@ object PhysicalPlanner {
     breakingPolicy: PipelineBreakingPolicy,
     config: CypherRuntimeConfiguration,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker,
     allocatePipelinedSlots: Boolean = false
   ): PhysicalPlan = {
     DebugSupport.PHYSICAL_PLANNING.log(
@@ -66,6 +68,7 @@ object PhysicalPlanner {
       config,
       anonymousVariableNameGenerator,
       liveVariables,
+      cancellationChecker,
       allocatePipelinedSlots
     )
     val slottedRewriter = new SlottedRewriter(tokenContext)

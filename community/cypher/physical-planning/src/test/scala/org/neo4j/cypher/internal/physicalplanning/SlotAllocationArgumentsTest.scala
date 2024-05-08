@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.Size
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -445,6 +446,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     availableExpressionVariables,
     config,
     anonymousVariableNameGenerator,
-    new LiveVariables()
+    new LiveVariables(),
+    CancellationChecker.neverCancelled()
   )
 }

@@ -142,7 +142,8 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       table,
       SlottedPipelineBreakingPolicy,
       CypherRuntimeConfiguration.defaultConfiguration,
-      anonymousVariableNameGenerator
+      anonymousVariableNameGenerator,
+      CancellationChecker.neverCancelled()
     )
     val converters = new ExpressionConverters(
       None,

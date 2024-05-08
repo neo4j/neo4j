@@ -84,7 +84,8 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
         query.semanticTable,
         SlottedPipelineBreakingPolicy,
         context.config,
-        context.anonymousVariableNameGenerator
+        context.anonymousVariableNameGenerator,
+        () => context.assertOpen.assertOpen()
       )
 
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {

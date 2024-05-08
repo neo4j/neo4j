@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.exceptions.InternalException
 
 /**
@@ -79,7 +80,7 @@ trait TreeBuilder[T, ARGUMENT] {
   protected def onTwoChildPlanComingFromRight(plan: LogicalPlan, lhs: T, rhs: T, argument: ARGUMENT): T
   protected def validatePlan(plan: LogicalPlan): Unit
 
-  def build(plan: LogicalPlan): T = {
+  def build(plan: LogicalPlan, cancellationChecker: CancellationChecker): T = {
 
     val planStack = new java.util.ArrayDeque[LogicalPlan]()
     val outputStack = new java.util.ArrayDeque[T]()
@@ -104,6 +105,7 @@ trait TreeBuilder[T, ARGUMENT] {
     argumentStack.push(initialArgument(planStack.peek()))
 
     while (!planStack.isEmpty) {
+      cancellationChecker.throwIfCancelled()
       val current = planStack.pop()
       val argument = argumentStack.peek()
 

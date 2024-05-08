@@ -171,6 +171,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlot
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -250,6 +251,7 @@ object SlotAllocation {
     config: CypherRuntimeConfiguration,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     liveVariables: LiveVariables,
+    cancellationChecker: CancellationChecker,
     allocatePipelinedSlots: Boolean = false
   ): SlotMetaData =
     new SingleQuerySlotAllocator(
@@ -259,7 +261,7 @@ object SlotAllocation {
       config,
       anonymousVariableNameGenerator,
       liveVariables = liveVariables
-    ).allocateSlots(lp, semanticTable, None)
+    ).allocateSlots(lp, semanticTable, None, cancellationChecker)
 
   final val LOAD_CSV_METADATA_KEY: String = "csv"
 
@@ -299,7 +301,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   def allocateSlots(
     lp: LogicalPlan,
     semanticTable: SemanticTable,
-    initialSlotsAndArgument: Option[SlotsAndArgument]
+    initialSlotsAndArgument: Option[SlotsAndArgument],
+    cancellationChecker: CancellationChecker
   ): SlotMetaData = {
 
     val planStack = new util.ArrayDeque[(Boolean, LogicalPlan)]()
@@ -341,6 +344,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     populate(lp, nullIn = false)
 
     while (!planStack.isEmpty) {
+      cancellationChecker.throwIfCancelled()
       val (nullable, current) = planStack.pop()
 
       val (outerApplyPlan, outerTrailPlan) = if (argumentStack.isEmpty) (Id.INVALID_ID, Id.INVALID_ID)
@@ -356,7 +360,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
           val slots = breakingPolicy.invoke(current, argument.slotConfiguration, argument.slotConfiguration, applyPlans)
 
-          allocateExpressionsOneChild(current, nullable, slots, semanticTable)
+          allocateExpressionsOneChild(current, nullable, slots, semanticTable, cancellationChecker)
           allocateLeaf(current, nullable, slots)
           allocations.set(current.id, slots)
           resultStack.push(slots)
@@ -364,7 +368,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         case (Some(_), None) =>
           val sourceSlots = resultStack.pop()
           val argument = getArgument()
-          allocateExpressionsOneChildOnInput(current, nullable, sourceSlots, semanticTable)
+          allocateExpressionsOneChildOnInput(current, nullable, sourceSlots, semanticTable, cancellationChecker)
 
           val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, applyPlans)
           allocateOneChild(
@@ -376,7 +380,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             recordArgument(_, argument),
             semanticTable
           )
-          allocateExpressionsOneChildOnOutput(current, nullable, slots, semanticTable)
+          allocateExpressionsOneChildOnOutput(current, nullable, slots, semanticTable, cancellationChecker)
           allocations.set(current.id, slots)
           resultStack.push(slots)
 
@@ -403,7 +407,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           }
           allocateLhsOfApply(current, nullable, argumentSlots, semanticTable)
           val lhsSlots = allocations.get(left.id)
-          allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true)
+          allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true, cancellationChecker)
           argumentStack.push(SlotsAndArgument(
             argumentSlots,
             argumentSlots.size(),
@@ -429,7 +433,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
               previousArgument.trailPlan
             ))
           }
-          allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true)
+          allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true, cancellationChecker)
 
           populate(right, nullable)
 
@@ -439,7 +443,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           val argument = getArgument()
           // NOTE: If we introduce a two sourced logical plan with an expression that needs to be evaluated in a
           //       particular scope (lhs or rhs) we need to add handling of it to allocateExpressionsTwoChild.
-          allocateExpressionsTwoChild(current, rhsSlots, semanticTable, comingFromLeft = false)
+          allocateExpressionsTwoChild(current, rhsSlots, semanticTable, comingFromLeft = false, cancellationChecker)
 
           val result = allocateTwoChild(current, nullable, lhsSlots, rhsSlots, recordArgument(_, argument), argument)
           allocations.set(current.id, result)
@@ -461,34 +465,36 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     plan: LogicalPlan,
     nullable: Boolean,
     slots: SlotConfiguration,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    cancellationChecker: CancellationChecker
   ): Unit = plan match {
     case ssp: StatefulShortestPath =>
-      allocateExpressionsInternal(ssp.nfa, slots, semanticTable, plan.id)
+      allocateExpressionsInternal(ssp.nfa, slots, semanticTable, plan.id, cancellationChecker)
     case _: OptionalExpand                                               =>
     case FindShortestPaths(_, _, nodePredicates, relPredicates, _, _, _) =>
       // Node & Relationship predicates may contain NestPlanExpressions.
       // In those cases the nested plan must have the same slot configuration as input rows,
       // otherwise argument copying breaks with index out of bounds.
-      nodePredicates.foreach(allocateExpressionsInternal(_, slots, semanticTable, plan.id))
-      relPredicates.foreach(allocateExpressionsInternal(_, slots, semanticTable, plan.id))
-    case _ => allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
+      nodePredicates.foreach(allocateExpressionsInternal(_, slots, semanticTable, plan.id, cancellationChecker))
+      relPredicates.foreach(allocateExpressionsInternal(_, slots, semanticTable, plan.id, cancellationChecker))
+    case _ => allocateExpressionsOneChild(plan, nullable, slots, semanticTable, cancellationChecker)
   }
 
   private def allocateExpressionsOneChildOnOutput(
     plan: LogicalPlan,
     nullable: Boolean,
     slots: SlotConfiguration,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    cancellationChecker: CancellationChecker
   ): Unit = plan match {
     case ssp: StatefulShortestPath =>
-      allocateExpressionsInternal(ssp.nonInlinedPreFilters, slots, semanticTable, plan.id)
+      allocateExpressionsInternal(ssp.nonInlinedPreFilters, slots, semanticTable, plan.id, cancellationChecker)
     case _: OptionalExpand =>
-      allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
+      allocateExpressionsOneChild(plan, nullable, slots, semanticTable, cancellationChecker)
     case FindShortestPaths(_, pattern, _, _, pathPredicates, _, _) =>
       // Path predicates must be allocated after 'rels' and 'path' slots have been allocated.
-      allocateExpressionsInternal(pattern, slots, semanticTable, plan.id)
-      allocateExpressionsInternal(pathPredicates, slots, semanticTable, plan.id)
+      allocateExpressionsInternal(pattern, slots, semanticTable, plan.id, cancellationChecker)
+      allocateExpressionsInternal(pathPredicates, slots, semanticTable, plan.id, cancellationChecker)
     case _ =>
   }
 
@@ -496,7 +502,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     plan: LogicalPlan,
     nullable: Boolean,
     slots: SlotConfiguration,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    cancellationChecker: CancellationChecker
   ): Unit = {
 
     plan.folder.treeFold[Accumulator](Accumulator(doNotTraverseExpression = None)) {
@@ -516,7 +523,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         }
 
       case e: Expression =>
-        allocateExpressionsInternal(e, slots, semanticTable, plan.id)
+        allocateExpressionsInternal(e, slots, semanticTable, plan.id, cancellationChecker)
         (acc: Accumulator) =>
           SkipChildren(acc)
     }
@@ -526,7 +533,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     plan: LogicalPlan,
     slots: SlotConfiguration,
     semanticTable: SemanticTable,
-    comingFromLeft: Boolean
+    comingFromLeft: Boolean,
+    cancellationChecker: CancellationChecker
   ): Unit = {
     plan.folder.treeFold[Accumulator](Accumulator(doNotTraverseExpression = None)) {
       case otherPlan: LogicalPlan if otherPlan.id != plan.id =>
@@ -547,7 +555,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
       case e: Expression =>
         (acc: Accumulator) =>
-          allocateExpressionsInternal(e, slots, semanticTable, plan.id, acc)
+          allocateExpressionsInternal(e, slots, semanticTable, plan.id, cancellationChecker, acc)
           SkipChildren(acc)
     }
   }
@@ -557,6 +565,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     slots: SlotConfiguration,
     semanticTable: SemanticTable,
     planId: Id,
+    cancellationChecker: CancellationChecker,
     acc: Accumulator = Accumulator(doNotTraverseExpression = None)
   ): Unit = {
     expression.folder.treeFold[Accumulator](acc) {
@@ -612,7 +621,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
               withoutArgumentAllocationAndWithBreakingPolicy(breakingPolicy.nestedPlanBreakingPolicy).allocateSlots(
                 e.plan,
                 semanticTable,
-                Some(slotsAndArgument)
+                Some(slotsAndArgument),
+                cancellationChecker
               )
 
             // Allocate slots for the projection expression, based on the resulting slot configuration
@@ -620,7 +630,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             val nestedSlots = nestedPhysicalPlan.slotConfigurations(e.plan.id)
             e match {
               case NestedPlanCollectExpression(_, projection, _) =>
-                allocateExpressionsInternal(projection, nestedSlots, semanticTable, planId)
+                allocateExpressionsInternal(projection, nestedSlots, semanticTable, planId, cancellationChecker)
               case _ => // do nothing
             }
 

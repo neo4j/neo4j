@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.physicalplanning
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -37,7 +38,7 @@ class TreeBuilderTest extends CypherFunSuite {
     val logicalPlan = leaf("a")
 
     // when
-    treeBuilder.build(logicalPlan)
+    treeBuilder.build(logicalPlan, CancellationChecker.neverCancelled())
 
     // then
     treeBuilder.callbacks shouldBe Seq(
@@ -51,7 +52,7 @@ class TreeBuilderTest extends CypherFunSuite {
     val logicalPlan = link("a", leaf("b"))
 
     // when
-    treeBuilder.build(logicalPlan)
+    treeBuilder.build(logicalPlan, CancellationChecker.neverCancelled())
 
     // then
     treeBuilder.callbacks shouldBe Seq(
@@ -66,7 +67,7 @@ class TreeBuilderTest extends CypherFunSuite {
     val logicalPlan = branch("a", leaf("b"), leaf("c"))
 
     // when
-    treeBuilder.build(logicalPlan)
+    treeBuilder.build(logicalPlan, CancellationChecker.neverCancelled())
 
     // then
     treeBuilder.callbacks shouldBe Seq(
@@ -84,7 +85,7 @@ class TreeBuilderTest extends CypherFunSuite {
       branch("a", branch("b", link("d", leaf("h")), leaf("e")), branch("c", leaf("f"), leaf("g")))
 
     // when
-    treeBuilder.build(logicalPlan)
+    treeBuilder.build(logicalPlan, CancellationChecker.neverCancelled())
 
     // then
     treeBuilder.callbacks shouldBe Seq(
@@ -109,7 +110,7 @@ class TreeBuilderTest extends CypherFunSuite {
       branch("a", branch("b", link("d", leaf("h")), leaf("e")), branch("INVALID", leaf("f"), leaf("g")))
 
     // when
-    a[GracefulError] should be thrownBy treeBuilder.build(logicalPlan)
+    a[GracefulError] should be thrownBy treeBuilder.build(logicalPlan, CancellationChecker.neverCancelled())
   }
 
   class TestTreeBuilder extends TreeBuilder[String, Option[String]] {
