@@ -51,7 +51,7 @@ object LogicalPlans {
    *   B = mapOneChildPlan(b, D)
    *   A = mapTwoChildPlan(a, B, C)
    */
-  def map[T](plan: LogicalPlan, mapper: Mapper[T]): T = {
+  def map[T](plan: LogicalPlan, mapper: Mapper[T])(cancellationChecker: CancellationChecker): T = {
     val planStack = new mutable.Stack[LogicalPlan]()
     val resultStack = new mutable.Stack[T]()
     var comingFrom = plan
@@ -75,6 +75,7 @@ object LogicalPlans {
     populate(plan)
 
     while (planStack.nonEmpty) {
+      cancellationChecker.throwIfCancelled()
       val current = planStack.pop()
 
       (current.lhs, current.rhs) match {

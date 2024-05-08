@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NoInput
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionCancellationChecker
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -246,7 +247,7 @@ abstract class ExecutionEngine(
       context.executingQuery().onObfuscatorReady(executableQuery.queryObfuscator, query.options.offset.offset)
       context.executingQuery().onCompilationCompleted(
         executableQuery.compilerInfo,
-        executableQuery.planDescriptionSupplier()
+        executableQuery.planDescriptionSupplier(new TransactionCancellationChecker(context.kernelTransaction()))
       )
     }
 

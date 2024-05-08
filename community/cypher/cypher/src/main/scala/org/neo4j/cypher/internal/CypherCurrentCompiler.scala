@@ -68,7 +68,9 @@ import org.neo4j.cypher.internal.runtime.ResourceMonitor
 import org.neo4j.cypher.internal.runtime.WRITE
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionCancellationChecker
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -475,7 +477,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
 
           new ExplainExecutionResult(
             columns,
-            planDescriptionBuilder.explain(),
+            planDescriptionBuilder.explain(
+              new TransactionCancellationChecker(transactionalContext.kernelTransaction())
+            ),
             internalQueryType,
             filteredPlannerNotifications.toSet,
             subscriber
@@ -501,7 +505,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
             innerExecutionMode,
             planDescriptionBuilder,
             subscriber,
-            filteredPlannerNotifications ++ filteredRuntimeNotifications
+            filteredPlannerNotifications ++ filteredRuntimeNotifications,
+            new TransactionCancellationChecker(transactionalContext.kernelTransaction())
           )
         }
 
@@ -522,9 +527,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState =
       reusabilityState
 
-    override def planDescriptionSupplier(): Supplier[ExecutionPlanDescription] = {
+    override def planDescriptionSupplier(cancellationChecker: CancellationChecker)
+      : Supplier[ExecutionPlanDescription] = {
       val builder = planDescriptionBuilder
-      () => builder.explain()
+      () => builder.explain(cancellationChecker)
     }
   }
 

@@ -115,6 +115,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.SortSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UnwindSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -165,7 +166,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )(table)
     val pipeBuilder =
       new SlottedPipeMapper(fallback, converters, physicalPlan, true, mock[QueryIndexRegistrator])(table)
-    PipeTreeBuilder(pipeBuilder).build(physicalPlan.logicalPlan)
+    PipeTreeBuilder(pipeBuilder).build(physicalPlan.logicalPlan, CancellationChecker.neverCancelled())
   }
 
   private val label = labelName("label")

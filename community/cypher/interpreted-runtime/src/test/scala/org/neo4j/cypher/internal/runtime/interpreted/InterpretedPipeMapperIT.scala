@@ -73,6 +73,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SingleSeekArg
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -110,7 +111,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     )(semanticTable)
 
   private def build(logicalPlan: LogicalPlan): Pipe =
-    PipeTreeBuilder(pipeMapper).build(logicalPlan)
+    PipeTreeBuilder(pipeMapper).build(logicalPlan, CancellationChecker.neverCancelled())
 
   test("projection only query") {
     val logicalPlan = Projection(

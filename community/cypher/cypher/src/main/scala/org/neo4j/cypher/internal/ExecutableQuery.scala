@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.QueryObfuscator
@@ -73,7 +74,7 @@ trait ExecutableQuery extends CacheabilityInfo {
   /**
    * Plan desc.
    */
-  def planDescriptionSupplier(): Supplier[ExecutionPlanDescription]
+  def planDescriptionSupplier(cancellationChecker: CancellationChecker): Supplier[ExecutionPlanDescription]
 
   /**
    * Meta-data about the compiled used for this query.

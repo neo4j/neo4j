@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewri
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
@@ -697,7 +698,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
           executionPlan,
           renderPlanDescription = false
         )
-      planDescriptionBuilder.explain()
+      planDescriptionBuilder.explain(CancellationChecker.neverCancelled())
     }
     (newRecordingRuntimeResult(result, subscriber), executionPlanDescription)
   }

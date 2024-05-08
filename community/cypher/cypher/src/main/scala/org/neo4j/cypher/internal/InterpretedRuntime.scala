@@ -83,8 +83,13 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     )(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
     val logicalPlanWithConvertedNestedPlans =
-      NestedPipeExpressions.build(pipeTreeBuilder, withSlottedParameters, availableExpressionVars)
-    val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
+      NestedPipeExpressions.build(
+        pipeTreeBuilder,
+        withSlottedParameters,
+        availableExpressionVars,
+        () => context.assertOpen.assertOpen()
+      )
+    val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans, () => context.assertOpen.assertOpen())
     val columns = query.resultColumns
 
     val startsTransactions = doesStartTransactions(query)

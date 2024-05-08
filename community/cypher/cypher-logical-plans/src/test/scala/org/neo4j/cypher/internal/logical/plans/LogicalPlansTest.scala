@@ -52,7 +52,7 @@ class LogicalPlansTest extends CypherFunSuite {
     val p5 = Apply(p1, p4)
 
     val idStrings = new IdStrings()
-    LogicalPlans.map(p5, idStrings)
+    LogicalPlans.map(p5, idStrings)(CancellationChecker.neverCancelled())
 
     idStrings.calls should equal(List(
       "onLeaf p3",

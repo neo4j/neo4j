@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -32,24 +33,25 @@ object NestedPipeExpressions {
   def build(
     pipeBuilder: PipeTreeBuilder,
     in: LogicalPlan,
-    availableExpressionVariables: AvailableExpressionVariables
+    availableExpressionVariables: AvailableExpressionVariables,
+    cancellationChecker: CancellationChecker
   ): LogicalPlan = {
 
     val buildPipeExpressions: Rewriter = new Rewriter {
       private val instance = bottomUp(Rewriter.lift {
         case expr @ NestedPlanExistsExpression(patternPlan, _) =>
           val availableForPlan = availableExpressionVariables(patternPlan.id)
-          val pipe = pipeBuilder.build(patternPlan)
+          val pipe = pipeBuilder.build(patternPlan, cancellationChecker)
           NestedPipeExistsExpression(pipe, availableForPlan)(expr.position)
 
         case expr @ NestedPlanCollectExpression(patternPlan, expression, _) =>
           val availableForPlan = availableExpressionVariables(patternPlan.id)
-          val pipe = pipeBuilder.build(patternPlan)
+          val pipe = pipeBuilder.build(patternPlan, cancellationChecker)
           NestedPipeCollectExpression(pipe, expression, availableForPlan)(expr.position)
 
         case expr @ NestedPlanGetByNameExpression(patternPlan, columnToGet, _) =>
           val availableForPlan = availableExpressionVariables(patternPlan.id)
-          val pipe = pipeBuilder.build(patternPlan)
+          val pipe = pipeBuilder.build(patternPlan, cancellationChecker)
           NestedPipeGetByNameExpression(pipe, columnToGet.name, availableForPlan)(expr.position)
       })
 

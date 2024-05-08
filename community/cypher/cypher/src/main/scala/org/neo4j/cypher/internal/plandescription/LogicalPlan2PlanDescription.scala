@@ -299,6 +299,7 @@ import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInte
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Limited
@@ -318,7 +319,8 @@ object LogicalPlan2PlanDescription {
     withRawCardinalities: Boolean,
     withDistinctness: Boolean,
     providedOrders: ProvidedOrders,
-    runtimeOperatorMetadata: Id => Seq[Argument]
+    runtimeOperatorMetadata: Id => Seq[Argument],
+    cancellationChecker: CancellationChecker
   ): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(
       readOnly,
@@ -326,7 +328,8 @@ object LogicalPlan2PlanDescription {
       withRawCardinalities,
       withDistinctness,
       providedOrders,
-      runtimeOperatorMetadata
+      runtimeOperatorMetadata,
+      cancellationChecker
     )
       .create(input)
       .addArgument(RuntimeVersion.currentVersion)
@@ -354,12 +357,13 @@ case class LogicalPlan2PlanDescription(
   withRawCardinalities: Boolean,
   withDistinctness: Boolean = false,
   providedOrders: ProvidedOrders,
-  runtimeOperatorMetadata: Id => Seq[Argument]
+  runtimeOperatorMetadata: Id => Seq[Argument],
+  cancellationChecker: CancellationChecker
 ) extends LogicalPlans.Mapper[InternalPlanDescription] {
   private val SEPARATOR = ", "
 
   def create(plan: LogicalPlan): InternalPlanDescription =
-    LogicalPlans.map(plan, this)
+    LogicalPlans.map(plan, this)(cancellationChecker)
 
   override def onLeaf(plan: LogicalPlan): InternalPlanDescription = {
     checkOnlyWhenAssertionsAreEnabled(plan.isLeaf)

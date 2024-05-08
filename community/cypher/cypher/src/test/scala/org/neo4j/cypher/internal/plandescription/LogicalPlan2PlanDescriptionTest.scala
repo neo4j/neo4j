@@ -415,6 +415,7 @@ import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.InputPosition
@@ -8043,7 +8044,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       withRawCardinalities = false,
       withDistinctness = false,
       providedOrders = providedOrders,
-      StubExecutionPlan().operatorMetadata
+      StubExecutionPlan().operatorMetadata,
+      CancellationChecker.neverCancelled()
     )
 
     def shouldValidateArg(arg: Argument) =

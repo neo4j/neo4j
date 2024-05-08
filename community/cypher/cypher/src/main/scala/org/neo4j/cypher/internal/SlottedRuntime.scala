@@ -135,9 +135,10 @@ trait SlottedRuntime[-CONTEXT <: RuntimeContext] extends CypherRuntime[CONTEXT] 
       val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(
         pipeTreeBuilder,
         physicalPlan.logicalPlan,
-        physicalPlan.availableExpressionVariables
+        physicalPlan.availableExpressionVariables,
+        () => context.assertOpen.assertOpen()
       )
-      val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
+      val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans, () => context.assertOpen.assertOpen())
       val columns = query.resultColumns
 
       val startsTransactions = InterpretedRuntime.doesStartTransactions(query)

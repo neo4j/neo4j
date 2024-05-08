@@ -99,7 +99,7 @@ case object Flattener extends LogicalPlans.Mapper[Seq[LogicalPlan]] {
     (plan +: lhs) ++ rhs
 
   def create(plan: LogicalPlan): Seq[LogicalPlan] =
-    LogicalPlans.map(plan, this)
+    LogicalPlans.map(plan, this)(???) // FIXME
 }
 
 sealed trait IndexUsage {
