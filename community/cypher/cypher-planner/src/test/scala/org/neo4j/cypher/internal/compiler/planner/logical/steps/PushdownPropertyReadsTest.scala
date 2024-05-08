@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -57,7 +58,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -82,7 +84,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -109,7 +112,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -138,7 +142,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -162,7 +167,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -188,7 +194,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -203,7 +210,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -225,7 +233,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -255,7 +264,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -289,7 +299,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -320,7 +331,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -348,7 +360,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -381,7 +394,8 @@ class PushdownPropertyReadsTest
       planner.effectiveCardinalities,
       Attributes(planner.idGen, planner.effectiveCardinalities),
       planner.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -414,7 +428,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -445,7 +460,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -465,7 +481,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -486,7 +503,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -516,7 +534,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -545,7 +564,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -573,7 +593,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -594,7 +615,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -632,7 +654,8 @@ class PushdownPropertyReadsTest
         plan,
         effectiveCardinalities,
         semanticTable,
-        PropertyCachingMode.CacheProperties
+        PropertyCachingMode.CacheProperties,
+        CancellationChecker.neverCancelled()
       )
 
     propertyReadOptima.size should equal(1)
@@ -652,7 +675,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -677,7 +701,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -705,7 +730,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -737,7 +763,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -760,7 +787,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -790,7 +818,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -821,7 +850,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -842,7 +872,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -862,7 +893,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -883,7 +915,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -910,7 +943,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -935,7 +969,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -963,7 +998,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -992,7 +1028,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1020,7 +1057,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1050,7 +1088,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1077,7 +1116,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1097,7 +1137,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("x")
@@ -1124,7 +1165,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1144,7 +1186,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("x")
@@ -1171,7 +1214,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1191,7 +1235,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("x")
@@ -1218,7 +1263,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1237,7 +1283,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1256,7 +1303,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1275,7 +1323,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1294,7 +1343,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1314,7 +1364,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1343,7 +1394,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1372,7 +1424,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1403,7 +1456,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
@@ -1434,7 +1488,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1456,7 +1511,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1474,7 +1530,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1501,7 +1558,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1539,7 +1597,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1570,7 +1629,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1601,7 +1661,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1624,7 +1685,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1642,7 +1704,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1661,7 +1724,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1680,7 +1744,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1699,7 +1764,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1718,7 +1784,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1737,7 +1804,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1756,7 +1824,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1775,7 +1844,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1795,7 +1865,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1814,7 +1885,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1834,7 +1906,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1853,7 +1926,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1873,7 +1947,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1892,7 +1967,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -1915,7 +1991,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1944,7 +2021,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1972,7 +2050,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.effectiveCardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -1998,7 +2077,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -2016,7 +2096,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -2032,7 +2113,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -2060,7 +2142,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -2084,7 +2167,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -2116,7 +2200,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe planBuilder.build()
   }
@@ -2133,7 +2218,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -2157,7 +2243,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -2182,7 +2269,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -2208,7 +2296,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -2233,7 +2322,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.cardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()
@@ -2258,7 +2348,8 @@ class PushdownPropertyReadsTest
       planBuilder.effectiveCardinalities,
       Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities),
       planBuilder.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe plan
   }
@@ -2278,7 +2369,8 @@ class PushdownPropertyReadsTest
       plan.effectiveCardinalities,
       Attributes(plan.idGen, plan.cardinalities),
       plan.getSemanticTable,
-      PropertyCachingMode.CacheProperties
+      PropertyCachingMode.CacheProperties,
+      CancellationChecker.neverCancelled()
     )
     rewritten shouldBe
       new LogicalPlanBuilder()

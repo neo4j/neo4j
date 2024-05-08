@@ -185,6 +185,7 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -311,7 +312,8 @@ object ReadFinder {
     plan: LogicalPlan,
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    childrenIds: ChildrenIds
+    childrenIds: ChildrenIds,
+    cancellationChecker: CancellationChecker
   ): PlanReads = {
     // Match on plans
     val planReads = plan match {
@@ -999,7 +1001,13 @@ object ReadFinder {
       case npe: NestedPlanExpression =>
         // A nested plan expression cannot have writes
         val nestedReads =
-          collectReadsAndWrites(npe.plan, semanticTable, anonymousVariableNameGenerator, childrenIds).reads
+          collectReadsAndWrites(
+            npe.plan,
+            semanticTable,
+            anonymousVariableNameGenerator,
+            childrenIds,
+            cancellationChecker
+          ).reads
 
         // Remap all reads to the outer plan, i.e. to the PlanReads currently being built
         val readNodeProperties = nestedReads.readNodeProperties.plansReadingConcreteSymbol.view

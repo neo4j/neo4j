@@ -71,6 +71,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -103,7 +104,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     EagerWhereNeededRewriter(
       planBuilder.cardinalities,
       Attributes(planBuilder.idGen),
-      shouldCompressReasons
+      shouldCompressReasons,
+      CancellationChecker.neverCancelled()
     ).eagerize(
       plan,
       planBuilder.getSemanticTable,
@@ -208,7 +210,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       EagerWhereNeededRewriter(
         planBuilder.cardinalities,
         Attributes(planBuilder.idGen),
-        shouldCompressReasons = false
+        shouldCompressReasons = false,
+        CancellationChecker.neverCancelled()
       ).eagerize(
         plan,
         planBuilder.getSemanticTable,
@@ -231,7 +234,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val rewriter = EagerRewriter.defaultRewriterWithFallback(
       planBuilder.cardinalities,
       Attributes(planBuilder.idGen),
-      shouldCompressReasons = false
+      shouldCompressReasons = false,
+      CancellationChecker.neverCancelled()
     )
 
     val result = rewriter.eagerize(plan, planBuilder.getSemanticTable, new AnonymousVariableNameGenerator)
@@ -264,7 +268,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       EagerWhereNeededRewriter(
         planBuilder.cardinalities,
         Attributes(planBuilder.idGen),
-        shouldCompressReasons = false
+        shouldCompressReasons = false,
+        CancellationChecker.neverCancelled()
       ).eagerize(
         plan,
         planBuilder.getSemanticTable,
@@ -287,7 +292,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val rewriter = EagerRewriter.defaultRewriterWithFallback(
       planBuilder.cardinalities,
       Attributes(planBuilder.idGen),
-      shouldCompressReasons = false
+      shouldCompressReasons = false,
+      CancellationChecker.neverCancelled()
     )
 
     val result = rewriter.eagerize(
@@ -3294,7 +3300,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       EagerWhereNeededRewriter(
         planBuilder.cardinalities,
         Attributes(planBuilder.idGen),
-        shouldCompressReasons = false
+        shouldCompressReasons = false,
+        CancellationChecker.neverCancelled()
       ).eagerize(
         plan,
         planBuilder.getSemanticTable,
@@ -3316,7 +3323,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val rewriter = EagerRewriter.defaultRewriterWithFallback(
       planBuilder.cardinalities,
       Attributes(planBuilder.idGen),
-      shouldCompressReasons = false
+      shouldCompressReasons = false,
+      CancellationChecker.neverCancelled()
     )
 
     val res = rewriter.eagerize(
@@ -3354,7 +3362,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       EagerWhereNeededRewriter(
         planBuilder.cardinalities,
         Attributes(planBuilder.idGen),
-        shouldCompressReasons = false
+        shouldCompressReasons = false,
+        CancellationChecker.neverCancelled()
       ).eagerize(
         plan,
         planBuilder.getSemanticTable,

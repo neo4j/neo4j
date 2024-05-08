@@ -96,6 +96,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -142,7 +143,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
           effectiveCardinalities,
           attributes,
           from.semanticTable(),
-          context.config.propertyCachingMode
+          context.config.propertyCachingMode,
+          context.cancellationChecker
         )
       } else {
         from.logicalPlan
@@ -150,7 +152,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
     // In the first step we collect all property usages and renaming while going over the tree
     val propertyUsagesAndRenamings =
-      findPropertiesInTree(PropertyUsagesAndRenamings.empty, logicalPlan, from.semanticTable())
+      findPropertiesInTree(
+        PropertyUsagesAndRenamings.empty,
+        logicalPlan,
+        from.semanticTable(),
+        context.cancellationChecker
+      )
 
     // In the second step we rewrite both properties and index plans
     val (rewrittenPlan, newSemanticTable) = rewrite(logicalPlan, propertyUsagesAndRenamings, from.semanticTable())
@@ -165,7 +172,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
   private def findPropertiesInTree(
     initialAcc: PropertyUsagesAndRenamings,
     logicalPlan: LogicalPlan,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    cancellationChecker: CancellationChecker
   ): PropertyUsagesAndRenamings = {
     // Traverses the plan tree in plan execution order
     LogicalPlans.foldPlan(initialAcc)(
@@ -173,7 +181,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       (acc, p) => {
         val accWithProps = {
           val initialAcc = if (!p.isLeaf) acc else acc.resetUsagesCount()
-          findPropertiesInPlan(initialAcc, p, semanticTable)
+          findPropertiesInPlan(initialAcc, p, semanticTable, cancellationChecker)
         }
 
         p match {
@@ -233,15 +241,16 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
           case plan =>
             val combinedChildAcc = lhsAcc ++ rhsAcc
-            findPropertiesInPlan(combinedChildAcc, plan, semanticTable)
+            findPropertiesInPlan(combinedChildAcc, plan, semanticTable, cancellationChecker)
         }
-    )
+    )(cancellationChecker)
   }
 
   private def findPropertiesInPlan(
     acc: PropertyUsagesAndRenamings,
     logicalPlan: LogicalPlan,
     semanticTable: SemanticTable,
+    cancellationChecker: CancellationChecker,
     lookIn: Option[Foldable] = None
   ): PropertyUsagesAndRenamings = {
     lookIn.getOrElse(logicalPlan).folder.treeFold(acc) {
@@ -271,7 +280,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
       // New fold for nested plan expression
       case nested: NestedPlanExpression => acc =>
-          val accWithNested = findPropertiesInTree(acc, nested.plan, semanticTable)
+          val accWithNested = findPropertiesInTree(acc, nested.plan, semanticTable, cancellationChecker)
           TraverseChildren(accWithNested)
 
       // We don't cache all properties in case expressions to avoid the risk of reading properties that are not used.
@@ -279,7 +288,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       case caseExp: CaseExpression => acc =>
           val whenExprs = caseExp.alternatives.map { case (when, _) => when }
           val accWithCase = whenExprs.foldLeft(acc) {
-            case (acc, expr) => findPropertiesInPlan(acc, logicalPlan, semanticTable, Some(expr))
+            case (acc, expr) => findPropertiesInPlan(acc, logicalPlan, semanticTable, cancellationChecker, Some(expr))
           }
           SkipChildren(accWithCase)
     }

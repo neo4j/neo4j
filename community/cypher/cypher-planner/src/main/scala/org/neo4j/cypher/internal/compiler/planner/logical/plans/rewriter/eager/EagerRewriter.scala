@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
@@ -80,9 +81,9 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
         val rewriter = {
           val shouldCompressReasons = !context.debugOptions.verboseEagernessReasons
           if (context.config.lpEagerFallbackEnabled)
-            defaultRewriterWithFallback(cardinalities, attributes, shouldCompressReasons)
+            defaultRewriterWithFallback(cardinalities, attributes, shouldCompressReasons, context.cancellationChecker)
           else
-            defaultRewriter(cardinalities, attributes, shouldCompressReasons)
+            defaultRewriter(cardinalities, attributes, shouldCompressReasons, context.cancellationChecker)
         }
 
         rewriter.eagerize(
@@ -98,18 +99,20 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
   def defaultRewriter(
     cardinalities: Cardinalities,
     attributes: Attributes[LogicalPlan],
-    shouldCompressReasons: Boolean
+    shouldCompressReasons: Boolean,
+    cancellationChecker: CancellationChecker
   ): EagerWhereNeededRewriter = {
-    EagerWhereNeededRewriter(cardinalities, attributes, shouldCompressReasons)
+    EagerWhereNeededRewriter(cardinalities, attributes, shouldCompressReasons, cancellationChecker)
   }
 
   def defaultRewriterWithFallback(
     cardinalities: Cardinalities,
     attributes: Attributes[LogicalPlan],
-    shouldCompressReasons: Boolean
+    shouldCompressReasons: Boolean,
+    cancellationChecker: CancellationChecker
   ): EagerRewriterWithFallback = {
     EagerRewriterWithFallback(
-      defaultRewriter(cardinalities, attributes, shouldCompressReasons),
+      defaultRewriter(cardinalities, attributes, shouldCompressReasons, cancellationChecker),
       EagerEverywhereRewriter(attributes),
       attributes
     )

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -96,7 +97,9 @@ class LogicalPlansTest extends CypherFunSuite {
     val p3 = Apply(p1, p2)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (_, rhs, plan) => s"$rhs=>${id(plan)}")
+      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (_, rhs, plan) => s"$rhs=>${id(plan)}")(
+        CancellationChecker.neverCancelled()
+      )
 
     foldedString shouldBe "->p0->p1->p2=>p3"
   }
@@ -111,7 +114,9 @@ class LogicalPlansTest extends CypherFunSuite {
     val p3 = Apply(p0, p2)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (_, rhs, plan) => s"$rhs=>${id(plan)}")
+      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (_, rhs, plan) => s"$rhs=>${id(plan)}")(
+        CancellationChecker.neverCancelled()
+      )
 
     foldedString shouldBe "->p0->p1->p2=>p3"
   }
@@ -126,7 +131,9 @@ class LogicalPlansTest extends CypherFunSuite {
     val p3 = Selection(List(True()(pos)), p2)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (_, rhs, plan) => s"$rhs=>${id(plan)}")
+      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (_, rhs, plan) => s"$rhs=>${id(plan)}")(
+        CancellationChecker.neverCancelled()
+      )
 
     foldedString shouldBe "->p0->p1=>p2->p3"
   }
@@ -152,7 +159,7 @@ class LogicalPlansTest extends CypherFunSuite {
           case (acc, `p2`) => acc.copy(uppercase = true)
           case _           => fail("Should only call mapArguments with p2")
         }
-      )
+      )(CancellationChecker.neverCancelled())
 
     foldedString shouldBe "->p0->P1=>p2->p3"
   }
@@ -175,7 +182,7 @@ class LogicalPlansTest extends CypherFunSuite {
         },
         (lhs, rhs, plan) => Acc(s"${id(plan, lhs.uppercase)}(${lhs.str}, ${rhs.str})", lhs.uppercase),
         mapArguments = (acc, _) => acc.copy(uppercase = true)
-      )
+      )(CancellationChecker.neverCancelled())
 
     foldedString shouldBe "p2(->p0, ->p1)->p3"
   }
@@ -190,7 +197,11 @@ class LogicalPlansTest extends CypherFunSuite {
     val p3 = Selection(List(True()(pos)), p2)
 
     val foldedString =
-      LogicalPlans.foldPlan("")(p3, (acc, plan) => s"$acc->${id(plan)}", (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)")
+      LogicalPlans.foldPlan("")(
+        p3,
+        (acc, plan) => s"$acc->${id(plan)}",
+        (lhs, rhs, plan) => s"${id(plan)}($lhs, $rhs)"
+      )(CancellationChecker.neverCancelled())
 
     foldedString shouldBe "p2(->p0, ->p1)->p3"
   }
@@ -226,7 +237,7 @@ class LogicalPlansTest extends CypherFunSuite {
             case _: Apply => s"$rhs=>${id(plan)}"
             case _        => s"${id(plan)}($lhs, $rhs)"
           }
-      )
+      )(CancellationChecker.neverCancelled())
 
     foldedString shouldBe "p5(->p0->p1->p2->p3, ->p0->p1->p2->p4)=>p6=>p7"
   }
@@ -264,7 +275,7 @@ class LogicalPlansTest extends CypherFunSuite {
         mapArguments = {
           case (acc, _) => acc.copy(uppercase = true)
         }
-      )
+      )(CancellationChecker.neverCancelled())
 
     foldedString shouldBe "P4(->p0->p1->P2, ->p0->p1->P3)=>p5"
   }
@@ -300,7 +311,7 @@ class LogicalPlansTest extends CypherFunSuite {
             case _: Apply => s"$rhs=>${id(plan)}"
             case _        => s"${id(plan)}($lhs, $rhs)"
           }
-      )
+      )(CancellationChecker.neverCancelled())
 
     foldedString shouldBe "p6(->p0->p1=>p2, ->p3->p4=>p5)->p7"
   }

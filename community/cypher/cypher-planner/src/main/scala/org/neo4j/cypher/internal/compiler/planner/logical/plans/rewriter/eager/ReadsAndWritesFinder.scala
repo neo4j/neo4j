@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
@@ -997,10 +998,12 @@ object ReadsAndWritesFinder {
     wholePlan: LogicalPlan,
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    childrenIds: ChildrenIds
+    childrenIds: ChildrenIds,
+    cancellationChecker: CancellationChecker
   ): ReadsAndWrites = {
     def processPlan(acc: ReadsAndWrites, plan: LogicalPlan): ReadsAndWrites = {
-      val planReads = collectReads(plan, semanticTable, anonymousVariableNameGenerator, childrenIds)
+      val planReads =
+        collectReads(plan, semanticTable, anonymousVariableNameGenerator, childrenIds, cancellationChecker)
       val planWrites = collectWrites(plan)
 
       childrenIds.recordChildren(plan)
@@ -1048,6 +1051,6 @@ object ReadsAndWritesFinder {
             val acc = lhsAcc.mergeWith(rhsAcc, plan)
             processPlan(acc, plan)
         }
-    )
+    )(cancellationChecker)
   }
 }

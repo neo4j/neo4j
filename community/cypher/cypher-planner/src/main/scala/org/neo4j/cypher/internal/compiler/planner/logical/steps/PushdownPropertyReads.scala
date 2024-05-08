@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -427,9 +428,16 @@ case object PushdownPropertyReads {
     effectiveCardinalities: EffectiveCardinalities,
     attributes: Attributes[LogicalPlan],
     semanticTable: SemanticTable,
-    propertyCachingMode: PropertyCachingMode
+    propertyCachingMode: PropertyCachingMode,
+    cancellationChecker: CancellationChecker
   ): LogicalPlan = {
-    val propertyMap = findPropertyReadOptima(logicalPlan, effectiveCardinalities, semanticTable, propertyCachingMode)
+    val propertyMap = findPropertyReadOptima(
+      logicalPlan,
+      effectiveCardinalities,
+      semanticTable,
+      propertyCachingMode,
+      cancellationChecker
+    )
 
     val propertyReadInsertRewriter = bottomUp(Rewriter.lift {
       case lp: LogicalPlan if propertyMap.contains(lp.id) =>
@@ -454,7 +462,8 @@ case object PushdownPropertyReads {
     logicalPlan: LogicalPlan,
     effectiveCardinalities: EffectiveCardinalities,
     semanticTable: SemanticTable,
-    propertyCachingMode: PropertyCachingMode
+    propertyCachingMode: PropertyCachingMode,
+    cancellationChecker: CancellationChecker
   ): Map[Id, Set[PushDownProperty]] = {
     val Acc(_, propertyReadOptima, _, _, _) =
       LogicalPlans.foldPlan(Acc(Map.empty, Map.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
@@ -462,7 +471,7 @@ case object PushdownPropertyReads {
         foldSingleChildPlan(effectiveCardinalities, semanticTable, propertyCachingMode),
         foldTwoChildPlan(effectiveCardinalities, semanticTable, propertyCachingMode),
         mapArguments
-      )
+      )(cancellationChecker)
     propertyReadOptima
   }
 

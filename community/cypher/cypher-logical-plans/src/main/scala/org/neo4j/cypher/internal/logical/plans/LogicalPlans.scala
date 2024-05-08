@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.util.CancellationChecker
+
 import scala.collection.mutable
 
 object LogicalPlans {
@@ -142,7 +144,7 @@ object LogicalPlans {
     f: (ACC, LogicalPlan) => ACC,
     combineLeftAndRight: (ACC, ACC, LogicalBinaryPlan) => ACC,
     mapArguments: (ACC, LogicalPlan) => ACC = (acc: ACC, _: LogicalPlan) => acc
-  ): ACC = {
+  )(cancellation: CancellationChecker): ACC = {
     var stack: List[LogicalPlan] = root :: Nil
 
     /**
@@ -167,6 +169,7 @@ object LogicalPlans {
     populate()
 
     while (stack != Nil) {
+      cancellation.throwIfCancelled()
       val current = stack.head
       val newStack = stack.tail
       stack = newStack

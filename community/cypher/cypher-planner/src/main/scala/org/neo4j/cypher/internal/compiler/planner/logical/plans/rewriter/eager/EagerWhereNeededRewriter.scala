@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -64,7 +65,8 @@ import scala.collection.mutable
 case class EagerWhereNeededRewriter(
   cardinalities: Cardinalities,
   attributes: Attributes[LogicalPlan],
-  shouldCompressReasons: Boolean
+  shouldCompressReasons: Boolean,
+  cancellationChecker: CancellationChecker
 ) extends EagerRewriter(attributes) {
 
   override def eagerize(
@@ -76,7 +78,8 @@ case class EagerWhereNeededRewriter(
     implicit val childrenIds: ChildrenIds = new ChildrenIds
 
     // Step 1: Find reads and writes
-    val readsAndWrites = collectReadsAndWrites(plan, semanticTable, anonymousVariableNameGenerator, childrenIds)
+    val readsAndWrites =
+      collectReadsAndWrites(plan, semanticTable, anonymousVariableNameGenerator, childrenIds, cancellationChecker)
 
     // Step 2: Find conflicting plans
     val conflicts = ConflictFinder.withCaching().findConflictingPlans(readsAndWrites, plan)
