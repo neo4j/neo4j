@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CypherException
@@ -267,7 +268,7 @@ trait MetricsFactory {
     expressionEvaluator: ExpressionEvaluator
   ): CardinalityModel
 
-  def newCostModel(executionModel: ExecutionModel): CostModel
+  def newCostModel(executionModel: ExecutionModel, cancellationChecker: CancellationChecker): CostModel
 
   def newQueryGraphCardinalityModel(
     planContext: PlanContext,
@@ -282,12 +283,13 @@ trait MetricsFactory {
     planContext: PlanContext,
     expressionEvaluator: ExpressionEvaluator,
     executionModel: ExecutionModel,
+    cancellationChecker: CancellationChecker,
     labelInferenceStrategy: LabelInferenceStrategy = LabelInferenceStrategy.NoInference
   ): Metrics = {
     val selectivityCalculator = newSelectivityCalculator(planContext)
     val queryGraphCardinalityModel =
       newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInferenceStrategy)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
-    Metrics(newCostModel(executionModel), cardinality)
+    Metrics(newCostModel(executionModel, cancellationChecker), cardinality)
   }
 }

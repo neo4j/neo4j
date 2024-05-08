@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -98,8 +99,8 @@ case object Flattener extends LogicalPlans.Mapper[Seq[LogicalPlan]] {
   override def onTwoChildPlan(plan: LogicalPlan, lhs: Seq[LogicalPlan], rhs: Seq[LogicalPlan]): Seq[LogicalPlan] =
     (plan +: lhs) ++ rhs
 
-  def create(plan: LogicalPlan): Seq[LogicalPlan] =
-    LogicalPlans.map(plan, this)(???) // FIXME
+  def create(plan: LogicalPlan, cancellationChecker: CancellationChecker): Seq[LogicalPlan] =
+    LogicalPlans.map(plan, this)(cancellationChecker)
 }
 
 sealed trait IndexUsage {
@@ -277,7 +278,7 @@ sealed abstract class LogicalPlan(idGen: IdGen)
 
   def debugId: String = f"0x$hashCode%08x"
 
-  def flatten: Seq[LogicalPlan] = Flattener.create(this)
+  def flatten(cancellationChecker: CancellationChecker): Seq[LogicalPlan] = Flattener.create(this, cancellationChecker)
 
   /**
    * @return `true` if this plan can perform updates.

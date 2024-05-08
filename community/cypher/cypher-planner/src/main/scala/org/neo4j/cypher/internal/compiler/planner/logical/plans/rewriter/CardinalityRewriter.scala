@@ -55,7 +55,13 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     readOnly: Boolean
   ): Rewriter =
-    recordEffectiveOutputCardinality(context.executionModel, cardinalities, effectiveCardinalities, providedOrders)
+    recordEffectiveOutputCardinality(
+      context.executionModel,
+      cardinalities,
+      effectiveCardinalities,
+      providedOrders,
+      context.cancellationChecker
+    )
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan

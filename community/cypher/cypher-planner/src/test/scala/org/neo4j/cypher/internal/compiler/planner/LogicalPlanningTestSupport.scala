@@ -149,8 +149,11 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     ): CardinalityModel =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, evaluator)
 
-    override def newCostModel(executionModel: ExecutionModel): Metrics.CostModel =
-      SimpleMetricsFactory.newCostModel(executionModel)
+    override def newCostModel(
+      executionModel: ExecutionModel,
+      cancellationChecker: CancellationChecker
+    ): Metrics.CostModel =
+      SimpleMetricsFactory.newCostModel(executionModel, cancellationChecker)
 
     override def newQueryGraphCardinalityModel(
       planContext: PlanContext,
@@ -174,7 +177,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     newMetricsFactory.newMetrics(
       planContext,
       newExpressionEvaluator,
-      ExecutionModel.default
+      ExecutionModel.default,
+      CancellationChecker.neverCancelled()
     )
   }
 

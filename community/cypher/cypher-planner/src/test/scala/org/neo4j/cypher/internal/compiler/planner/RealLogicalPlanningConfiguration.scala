@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 
@@ -66,7 +67,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
     Cost
   ] = {
     case (plan, input, semanticTable, cardinalities, providedOrders, propertyAccess, statistics, monitor) =>
-      CardinalityCostModel(executionModel).costFor(
+      CardinalityCostModel(executionModel, CancellationChecker.neverCancelled()).costFor(
         plan,
         input,
         semanticTable,

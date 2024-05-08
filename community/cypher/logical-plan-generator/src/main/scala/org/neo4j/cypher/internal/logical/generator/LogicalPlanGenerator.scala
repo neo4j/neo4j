@@ -87,6 +87,7 @@ import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
@@ -252,7 +253,7 @@ class LogicalPlanGenerator(
       val po = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
         override protected def defaultValue: ProvidedOrder = ProvidedOrder.empty
       }
-      CardinalityCostModel(Volcano)
+      CardinalityCostModel(Volcano, CancellationChecker.neverCancelled())
         .costFor(
           plan,
           QueryGraphSolverInput.empty,

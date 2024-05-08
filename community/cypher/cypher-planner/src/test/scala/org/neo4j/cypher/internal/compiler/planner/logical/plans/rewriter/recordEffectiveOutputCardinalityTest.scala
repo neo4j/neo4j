@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -785,7 +786,8 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
       executionModel,
       pb.cardinalities,
       pb.effectiveCardinalities,
-      pb.providedOrders
+      pb.providedOrders,
+      CancellationChecker.neverCancelled()
     ))
     (plan, pb.effectiveCardinalities)
   }

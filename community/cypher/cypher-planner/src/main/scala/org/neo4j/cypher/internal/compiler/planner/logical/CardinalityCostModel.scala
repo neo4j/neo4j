@@ -123,6 +123,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
@@ -134,7 +135,8 @@ import org.neo4j.cypher.internal.util.WorkReduction
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
-case class CardinalityCostModel(executionModel: ExecutionModel) extends CostModel {
+case class CardinalityCostModel(executionModel: ExecutionModel, cancellationChecker: CancellationChecker)
+    extends CostModel {
 
   override def costFor(
     plan: LogicalPlan,
@@ -149,7 +151,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     // The plan we use here to select the batch size will obviously not be the final plan for the whole query.
     // So it could very well be that we select the small chunk size here for cost estimation purposes, but the cardinalities increase
     // in the later course of the plan and it will actually be executed with the big chunk size.
-    val batchSize = executionModel.selectBatchSize(plan, cardinalities)
+    val batchSize = executionModel.selectBatchSize(plan, cardinalities, cancellationChecker)
     calculateCost(
       plan,
       WorkReduction(input.limitSelectivity),

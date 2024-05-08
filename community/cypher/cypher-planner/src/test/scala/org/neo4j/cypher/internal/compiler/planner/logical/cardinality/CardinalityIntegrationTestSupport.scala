@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -74,7 +75,7 @@ trait CardinalityIntegrationTestSupport extends StatisticsBackedLogicalPlanningS
   ): Unit = {
     val planState = config.planState(s"$query RETURN 1 AS result")
 
-    val planId = planState.logicalPlan.flatten.collectFirst {
+    val planId = planState.logicalPlan.flatten(CancellationChecker.neverCancelled()).collectFirst {
       case lp if findPlanId.applyOrElse(lp, (_: LogicalPlan) => false) => lp.id
     }.get
     val actualCardinality = planState.planningAttributes.effectiveCardinalities.get(planId)

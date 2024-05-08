@@ -75,6 +75,7 @@ import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
@@ -1399,6 +1400,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       planContext,
       simpleExpressionEvaluator,
       options.executionModel,
+      CancellationChecker.neverCancelled(),
       labelInferenceStrategy
     )
 

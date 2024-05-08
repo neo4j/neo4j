@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ApplyPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
@@ -29,7 +30,7 @@ class ApplyPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   test("does not use Apply for aggregation and order by") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (n) RETURN DISTINCT n.name")
-    no(plan.flatten) should matchPattern {
+    no(plan.flatten(CancellationChecker.neverCancelled())) should matchPattern {
       case _: Apply =>
     }
   }

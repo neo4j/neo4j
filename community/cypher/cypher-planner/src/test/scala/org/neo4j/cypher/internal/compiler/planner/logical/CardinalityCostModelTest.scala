@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFact
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
@@ -77,7 +78,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     statistics: GraphStatistics = HardcodedGraphStatistics,
     propertyAccess: Set[PropertyAccess] = Set.empty
   ): Cost = {
-    CardinalityCostModel(executionModel).costFor(
+    CardinalityCostModel(executionModel, CancellationChecker.neverCancelled()).costFor(
       plan,
       input,
       semanticTable,
@@ -578,7 +579,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .build()
     val executionModel =
       if (chunkSize == 1) ExecutionModel.Volcano else ExecutionModel.BatchedSingleThreaded(chunkSize, chunkSize)
-    val batchSize = executionModel.selectBatchSize(plan, builder.cardinalities)
+    val batchSize = executionModel.selectBatchSize(plan, builder.cardinalities, CancellationChecker.neverCancelled())
     val workReduction = limit.map(l =>
       WorkReduction(Selectivity(Multiplier.of(l.toDouble / (lhsCard * rhsCard)).getOrElse(Multiplier.ZERO).coefficient))
     )
@@ -673,7 +674,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     ) = {
       val builder = new LogicalPlanBuilder(wholePlan = false)
       val plan = buildPlan(builder)
-      val batchSize = executionModel.selectBatchSize(plan, builder.cardinalities)
+      val batchSize = executionModel.selectBatchSize(plan, builder.cardinalities, CancellationChecker.neverCancelled())
       val reduction =
         CardinalityCostModel.childrenWorkReduction(plan, incomingWorkReduction, batchSize, builder.cardinalities)
       (plan, reduction)

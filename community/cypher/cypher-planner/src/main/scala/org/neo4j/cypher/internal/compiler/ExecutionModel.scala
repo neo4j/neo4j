@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.BatchedCartesianOrdering
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
 import org.neo4j.cypher.internal.util.VolcanoCartesianOrdering
@@ -42,7 +43,11 @@ sealed trait ExecutionModel {
    */
   def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering
 
-  def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize
+  def selectBatchSize(
+    logicalPlan: LogicalPlan,
+    cardinalities: Cardinalities,
+    cancellationChecker: CancellationChecker
+  ): SelectedBatchSize
 
   /**
    * In single-threaded runtimes with a deterministic execution order, the order of rows will be preserved, whereas
@@ -75,7 +80,11 @@ object ExecutionModel {
   case object Volcano extends ExecutionModel {
     override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = VolcanoCartesianOrdering
 
-    override def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize =
+    override def selectBatchSize(
+      logicalPlan: LogicalPlan,
+      cardinalities: Cardinalities,
+      cancellationChecker: CancellationChecker
+    ): SelectedBatchSize =
       VolcanoBatchSize
     override def providedOrderPreserving: Boolean = true
     override def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = false
@@ -143,8 +152,12 @@ object ExecutionModel {
     /**
      * Select the batch size for executing a logical plan.
      */
-    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize = {
-      val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
+    def selectBatchSize(
+      logicalPlan: LogicalPlan,
+      cardinalities: Cardinalities,
+      cancellationChecker: CancellationChecker
+    ): SelectedBatchSize = {
+      val maxCardinality = logicalPlan.flatten(cancellationChecker).map(plan => cardinalities.get(plan.id)).max
       BatchedBatchSize(selectBatchSize(maxCardinality.amount))
     }
 
@@ -153,9 +166,10 @@ object ExecutionModel {
      */
     def selectBatchSize(
       logicalPlan: LogicalPlan,
-      cardinalities: EffectiveCardinalities
+      cardinalities: EffectiveCardinalities,
+      cancellationChecker: CancellationChecker
     ): Int = {
-      val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
+      val maxCardinality = logicalPlan.flatten(cancellationChecker).map(plan => cardinalities.get(plan.id)).max
       val selectedBatchSize = selectBatchSize(maxCardinality.amount)
       selectedBatchSize
     }

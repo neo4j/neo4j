@@ -26,9 +26,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCal
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.util.CancellationChecker
 
 object SimpleMetricsFactory extends MetricsFactory {
-  override def newCostModel(executionModel: ExecutionModel): CostModel = CardinalityCostModel(executionModel)
+
+  override def newCostModel(executionModel: ExecutionModel, cancellationChecker: CancellationChecker): CostModel =
+    CardinalityCostModel(executionModel, cancellationChecker)
 
   override def newCardinalityEstimator(
     queryGraphCardinalityModel: QueryGraphCardinalityModel,

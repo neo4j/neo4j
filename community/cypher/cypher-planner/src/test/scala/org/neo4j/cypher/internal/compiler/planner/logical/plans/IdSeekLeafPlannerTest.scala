@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
@@ -63,7 +64,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def newMockedMetrics(factory: MetricsFactory): Metrics =
-    factory.newMetrics(planContext, evaluator, ExecutionModel.default)
+    factory.newMetrics(planContext, evaluator, ExecutionModel.default, CancellationChecker.neverCancelled())
 
   private val planContext = notImplementedPlanContext(hardcodedStatistics)
   // NOTE: rewriters make sure that all EQUALS will be rewritten to IN so here only the latter should be tested
@@ -79,7 +80,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -119,7 +120,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -158,7 +159,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -199,7 +200,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -238,7 +239,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -280,7 +281,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -330,7 +331,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -396,7 +397,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -469,7 +470,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -526,7 +527,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -579,7 +580,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -629,7 +630,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -680,7 +681,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,

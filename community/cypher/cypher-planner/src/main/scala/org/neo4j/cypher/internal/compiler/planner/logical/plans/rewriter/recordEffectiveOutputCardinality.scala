@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
@@ -48,7 +49,8 @@ case class recordEffectiveOutputCardinality(
   executionModel: ExecutionModel,
   cardinalities: Cardinalities,
   effectiveCardinalities: EffectiveCardinalities,
-  providedOrders: ProvidedOrders
+  providedOrders: ProvidedOrders,
+  cancellationChecker: CancellationChecker
 ) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = {
@@ -56,7 +58,7 @@ case class recordEffectiveOutputCardinality(
     val workReductions: mutable.Map[Id, WorkReduction] = mutable.Map().withDefaultValue(WorkReduction.NoReduction)
     val rhsMultipliers: mutable.Map[Id, Cardinality] = mutable.Map().withDefaultValue(Cardinality.SINGLE)
 
-    val batchSize = executionModel.selectBatchSize(input.asInstanceOf[LogicalPlan], cardinalities)
+    val batchSize = executionModel.selectBatchSize(input.asInstanceOf[LogicalPlan], cardinalities, cancellationChecker)
 
     val rewriter: Rewriter = {
       topDown(Rewriter.lift {
@@ -98,7 +100,7 @@ case class recordEffectiveOutputCardinality(
             val rhsInvocations = calculateRhsInvocations(lhsEffective, rhsEffective)
             // If nested, we want to multiply the new multiplier with any previous multiplier
             val rhsMultiplier = rhsInvocations * rhsMultipliers(right.id)
-            right.flatten.foreach { c => rhsMultipliers(c.id) = rhsMultiplier }
+            right.flatten(cancellationChecker).foreach { c => rhsMultipliers(c.id) = rhsMultiplier }
           }
 
           p match {

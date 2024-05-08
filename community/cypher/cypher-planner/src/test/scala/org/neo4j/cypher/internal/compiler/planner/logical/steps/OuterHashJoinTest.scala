@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -63,7 +64,12 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     PatternRelationship(r1Var, (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   private def newMockedMetrics(factory: MetricsFactory): Metrics =
-    factory.newMetrics(planContext, simpleExpressionEvaluator, ExecutionModel.default)
+    factory.newMetrics(
+      planContext,
+      simpleExpressionEvaluator,
+      ExecutionModel.default,
+      CancellationChecker.neverCancelled()
+    )
 
   test("solve optional match with outer joins") {
     // MATCH a OPTIONAL MATCH a-->b
@@ -76,7 +82,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -121,7 +127,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,
@@ -169,7 +175,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(ExecutionModel.default)).thenReturn((
+    when(factory.newCostModel(ExecutionModel.default, CancellationChecker.neverCancelled())).thenReturn((
       (
         plan: LogicalPlan,
         _: QueryGraphSolverInput,

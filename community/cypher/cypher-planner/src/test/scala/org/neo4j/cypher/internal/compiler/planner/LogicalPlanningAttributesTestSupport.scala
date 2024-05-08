@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Attribute
@@ -126,7 +127,9 @@ trait LogicalPlanningAttributesTestSupport {
       }
 
     val results = for {
-      (actualOperator, expectedOperator) <- actualPlan.flatten.zip(expectedPlan.flatten)
+      (actualOperator, expectedOperator) <- actualPlan.flatten(CancellationChecker.neverCancelled()).zip(
+        expectedPlan.flatten(CancellationChecker.neverCancelled())
+      )
       expectedAttribute <- attributeComparisonStrategy match {
         case AttributeComparisonStrategy.ComparingAllAttributes => Some(expectedAttributes.get(expectedOperator.id))
         case AttributeComparisonStrategy.ComparingProvidedAttributesOnly =>

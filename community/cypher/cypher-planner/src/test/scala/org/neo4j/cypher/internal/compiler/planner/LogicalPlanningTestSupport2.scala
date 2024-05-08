@@ -235,7 +235,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
 
     def metricsFactory: MetricsFactory = new MetricsFactory {
 
-      override def newCostModel(executionModel: ExecutionModel): CostModel =
+      override def newCostModel(executionModel: ExecutionModel, cancellationChecker: CancellationChecker): CostModel =
         (
           plan: LogicalPlan,
           input: QueryGraphSolverInput,
@@ -477,7 +477,12 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
     ): PlannerContext = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
 
-      val metrics = metricsFactory.newMetrics(planContext, simpleExpressionEvaluator, config.executionModel)
+      val metrics = metricsFactory.newMetrics(
+        planContext,
+        simpleExpressionEvaluator,
+        config.executionModel,
+        CancellationChecker.neverCancelled()
+      )
 
       ContextHelper.create(
         planContext = planContext,
@@ -494,14 +499,24 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
     }
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(planContext, simpleExpressionEvaluator, config.executionModel)
+      val metrics = metricsFactory.newMetrics(
+        planContext,
+        simpleExpressionEvaluator,
+        config.executionModel,
+        CancellationChecker.neverCancelled()
+      )
       val planningAttributes = PlanningAttributes.newAttributes
       val ctx = newLogicalPlanningContext(metrics, planningAttributes)
       f(config, ctx)
     }
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(planContext, simpleExpressionEvaluator, config.executionModel)
+      val metrics = metricsFactory.newMetrics(
+        planContext,
+        simpleExpressionEvaluator,
+        config.executionModel,
+        CancellationChecker.neverCancelled()
+      )
       val planningAttributes = newStubbedPlanningAttributes
       val ctx = newLogicalPlanningContext(metrics, planningAttributes)
       f(config, ctx)

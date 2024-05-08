@@ -212,6 +212,7 @@ object PlannerContext {
       planContext,
       evaluator,
       executionModel,
+      cancellationChecker,
       labelInferenceStrategy
     )
 

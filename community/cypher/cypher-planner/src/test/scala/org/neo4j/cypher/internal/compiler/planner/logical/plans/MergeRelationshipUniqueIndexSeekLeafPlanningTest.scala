@@ -95,7 +95,12 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
   private def buildLogicalPlanningContext(
     config: StubbedLogicalPlanningConfiguration
   ): LogicalPlanningContext = {
-    val metrics = config.metricsFactory.newMetrics(config.planContext, simpleExpressionEvaluator, config.executionModel)
+    val metrics = config.metricsFactory.newMetrics(
+      config.planContext,
+      simpleExpressionEvaluator,
+      config.executionModel,
+      CancellationChecker.neverCancelled()
+    )
 
     val planningAttributes = PlanningAttributes.newAttributes
 

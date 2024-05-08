@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -555,7 +556,8 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val planState = config.planState(query + " RETURN n")
     val plan = planState.logicalPlan
     val cardinalities = planState.planningAttributes.effectiveCardinalities
-    val nodeIndexSeekCardinality = plan.flatten.collectFirst { case lp: NodeIndexSeek => cardinalities.get(lp.id) }.get
+    val nodeIndexSeekCardinality = plan.flatten(CancellationChecker.neverCancelled())
+      .collectFirst { case lp: NodeIndexSeek => cardinalities.get(lp.id) }.get
 
     // The range selectivity defaults to equality selectivity if there are few unique values.
     nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * existsSelectivity * sqrt(uniqueSelectivity))
@@ -756,7 +758,8 @@ class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrat
     val planState = config.planState(query + " RETURN n")
     val plan = planState.logicalPlan
     val cardinalities = planState.planningAttributes.effectiveCardinalities
-    val nodeIndexSeekCardinality = plan.flatten.collectFirst { case lp: NodeIndexSeek => cardinalities.get(lp.id) }.get
+    val nodeIndexSeekCardinality = plan.flatten(CancellationChecker.neverCancelled())
+      .collectFirst { case lp: NodeIndexSeek => cardinalities.get(lp.id) }.get
 
     nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
 
