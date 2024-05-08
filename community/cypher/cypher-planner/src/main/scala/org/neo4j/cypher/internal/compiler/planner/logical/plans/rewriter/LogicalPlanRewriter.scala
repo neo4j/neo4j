@@ -96,7 +96,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         solveds,
         cardinalities,
         providedOrders,
-        otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos)
+        otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos),
+        context.cancellationChecker
       )),
       Some(unnestCartesianProduct),
       Option.when(context.eagerAnalyzer != CypherEagerAnalyzerOption.lp)(cleanUpEager(

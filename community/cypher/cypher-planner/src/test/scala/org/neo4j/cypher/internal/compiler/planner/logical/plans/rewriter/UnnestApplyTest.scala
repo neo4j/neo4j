@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFact
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -804,7 +805,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     idGen: IdGen
   ): LogicalPlan = {
     val solveds = new StubSolveds
-    val unnest = UnnestApply(solveds, cardinalities, providedOrders, Attributes(idGen))
+    val unnest =
+      UnnestApply(solveds, cardinalities, providedOrders, Attributes(idGen), CancellationChecker.neverCancelled())
 
     p.endoRewrite(unnest)
   }

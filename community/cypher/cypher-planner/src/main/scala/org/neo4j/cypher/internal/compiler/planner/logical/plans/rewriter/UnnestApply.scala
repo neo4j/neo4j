@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Rewriter.TopDownMergeableRewriter
@@ -53,7 +54,8 @@ case class UnnestApply(
   override val solveds: Solveds,
   override val cardinalities: Cardinalities,
   override val providedOrders: ProvidedOrders,
-  override val attributes: Attributes[LogicalPlan]
+  override val attributes: Attributes[LogicalPlan],
+  cancellationChecker: CancellationChecker
 ) extends Rewriter with UnnestingRewriter with TopDownMergeableRewriter {
 
   /*
@@ -157,7 +159,7 @@ case class UnnestApply(
       res
   }
 
-  private val instance: Rewriter = topDown(innerRewriter)
+  private val instance: Rewriter = fixedPoint(cancellationChecker)(topDown(innerRewriter))
 
   private def putOnTopOf(bottom: LogicalPlan, top: LogicalPlan): LogicalPlan = {
     top match {
@@ -182,7 +184,7 @@ case class UnnestApply(
     }
   }
 
-  override def apply(input: AnyRef): AnyRef = fixedPoint(instance).apply(input)
+  override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }
 
 object UnnestApply {
