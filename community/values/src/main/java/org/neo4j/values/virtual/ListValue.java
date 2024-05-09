@@ -24,6 +24,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 import static org.neo4j.values.virtual.ArrayHelpers.assertValueRepresentation;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
@@ -46,16 +47,37 @@ import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.Comparison;
+import org.neo4j.values.Equality;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueRepresentation;
 import org.neo4j.values.storable.Values;
 
 public abstract class ListValue extends VirtualValue implements SequenceValue, Iterable<AnyValue> {
     public abstract int size();
+
+    public Value ternaryContains(AnyValue value) {
+        Iterator<AnyValue> iterator = iterator();
+
+        boolean undefinedEquality = false;
+        while (iterator.hasNext()) {
+            AnyValue nextValue = iterator.next();
+            Equality equality = nextValue.ternaryEquals(value);
+
+            if (equality == Equality.TRUE) {
+                return BooleanValue.TRUE;
+            } else if (equality == Equality.UNDEFINED && !undefinedEquality) {
+                undefinedEquality = true;
+            }
+        }
+
+        return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
+    }
 
     public abstract ValueRepresentation itemValueRepresentation();
 
@@ -606,6 +628,22 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public boolean isEmpty() {
             return false;
+        }
+
+        @Override
+        public Value ternaryContains(AnyValue value) {
+            Equality equality = appended.ternaryEquals(value);
+            if (equality == Equality.TRUE) {
+                return BooleanValue.TRUE;
+            } else {
+                Value baseContains = base.ternaryContains(value);
+                if (baseContains == BooleanValue.FALSE) {
+                    boolean undefinedEquality = equality == Equality.UNDEFINED;
+                    return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
+                } else {
+                    return baseContains;
+                }
+            }
         }
 
         @Override

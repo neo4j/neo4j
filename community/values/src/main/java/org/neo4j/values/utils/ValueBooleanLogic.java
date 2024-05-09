@@ -48,6 +48,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
@@ -193,9 +194,9 @@ public final class ValueBooleanLogic {
             return NO_VALUE;
         }
 
-        var iterator = asList(lookIn).iterator();
+        ListValue list = asList(lookIn);
 
-        if (!iterator.hasNext()) {
+        if (list.isEmpty()) {
             return BooleanValue.FALSE;
         }
 
@@ -203,19 +204,7 @@ public final class ValueBooleanLogic {
             return NO_VALUE;
         }
 
-        var undefinedEquality = false;
-        while (iterator.hasNext()) {
-            var nextValue = iterator.next();
-            var equality = nextValue.ternaryEquals(findMe);
-
-            if (equality == Equality.TRUE) {
-                return BooleanValue.TRUE;
-            } else if (equality == Equality.UNDEFINED && !undefinedEquality) {
-                undefinedEquality = true;
-            }
-        }
-
-        return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
+        return list.ternaryContains(findMe);
     }
 
     @CalledFromGeneratedCode
