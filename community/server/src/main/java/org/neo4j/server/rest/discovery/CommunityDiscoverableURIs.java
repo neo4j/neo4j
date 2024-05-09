@@ -25,7 +25,7 @@ import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.CypherResource;
-import org.neo4j.server.httpv2.QueryResource;
+import org.neo4j.server.queryapi.QueryResource;
 
 public class CommunityDiscoverableURIs {
     /**

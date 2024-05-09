@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.web;
 
-import static org.neo4j.server.httpv2.response.HttpErrorResponse.singleError;
+import static org.neo4j.server.queryapi.response.HttpErrorResponse.singleError;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -31,8 +31,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
-import org.neo4j.server.httpv2.response.format.QueryAPICodec;
-import org.neo4j.server.httpv2.response.format.View;
+import org.neo4j.server.queryapi.response.format.QueryAPICodec;
+import org.neo4j.server.queryapi.response.format.View;
 
 public class NeoJettyErrorHandler extends ErrorHandler {
 

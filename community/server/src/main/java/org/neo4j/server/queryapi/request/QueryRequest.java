@@ -17,23 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.error;
+package org.neo4j.server.queryapi.request;
 
-import static org.neo4j.server.queryapi.response.HttpErrorResponse.singleError;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JacksonException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import org.neo4j.kernel.api.exceptions.Status;
+public record QueryRequest(
+        String statement,
+        Map<String, Object> parameters,
+        boolean includeCounters,
+        AccessMode accessMode,
+        int maxExecutionTime,
+        List<String> bookmarks,
+        String impersonatedUser) {
 
-public class JacksonExceptionMapper implements ExceptionMapper<JacksonException> {
+    public QueryRequest(String statement, List<String> bookmarks) {
+        this(statement, Map.of(), false, AccessMode.WRITE, 0, bookmarks, null);
+    }
 
-    @Override
-    public Response toResponse(JacksonException exception) {
-        // For some reason, json parsing errors return a 500 status code.
-        // todo make this error more helpful.
-        return Response.status(400)
-                .entity(singleError(Status.Request.Invalid.code().serialize(), "Request body invalid."))
-                .build();
+    public QueryRequest(String statement) {
+        this(statement, Map.of(), false, AccessMode.WRITE, 0, List.of(), null);
     }
 }

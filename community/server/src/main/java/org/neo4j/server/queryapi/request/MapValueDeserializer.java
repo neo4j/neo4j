@@ -17,23 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.error;
+package org.neo4j.server.queryapi.request;
 
-import static org.neo4j.server.queryapi.response.HttpErrorResponse.singleError;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import java.io.IOException;
+import java.util.Map;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.value.MapValue;
 
-import com.fasterxml.jackson.core.JacksonException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import org.neo4j.kernel.api.exceptions.Status;
+public class MapValueDeserializer extends StdDeserializer<MapValue> {
 
-public class JacksonExceptionMapper implements ExceptionMapper<JacksonException> {
+    public MapValueDeserializer() {
+        super(MapValue.class);
+    }
 
     @Override
-    public Response toResponse(JacksonException exception) {
-        // For some reason, json parsing errors return a 500 status code.
-        // todo make this error more helpful.
-        return Response.status(400)
-                .entity(singleError(Status.Request.Invalid.code().serialize(), "Request body invalid."))
-                .build();
+    public MapValue deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        Map<String, Value> map = p.readValueAs(new TypeReference<Map<String, Value>>() {});
+        return new MapValue(map);
     }
 }

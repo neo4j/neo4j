@@ -22,13 +22,13 @@ package org.neo4j.server.modules;
 import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.httpv2.QueryResource;
-import org.neo4j.server.httpv2.metrics.QueryAPIMetricsFilter;
-import org.neo4j.server.httpv2.metrics.QueryAPIMetricsMonitor;
-import org.neo4j.server.httpv2.request.JsonMessageBodyReader;
-import org.neo4j.server.httpv2.request.TypedJsonMessageBodyReader;
-import org.neo4j.server.httpv2.response.PlainJsonDriverResultWriter;
-import org.neo4j.server.httpv2.response.TypedJsonDriverResultWriter;
+import org.neo4j.server.queryapi.QueryResource;
+import org.neo4j.server.queryapi.metrics.QueryAPIMetricsFilter;
+import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
+import org.neo4j.server.queryapi.request.JsonMessageBodyReader;
+import org.neo4j.server.queryapi.request.TypedJsonMessageBodyReader;
+import org.neo4j.server.queryapi.response.PlainJsonDriverResultWriter;
+import org.neo4j.server.queryapi.response.TypedJsonDriverResultWriter;
 import org.neo4j.server.web.WebServer;
 
 /**
