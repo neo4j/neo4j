@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.internal.helpers.NameUtil;
+
 public class UserSegment implements Segment
 {
     private final String username;
@@ -37,6 +39,18 @@ public class UserSegment implements Segment
             return username == null || username.equals( other.username );
         }
         return false;
+    }
+
+    public String toCypherSnippet()
+    {
+        if ( username == null )
+        {
+            return "*";
+        }
+        else
+        {
+            return NameUtil.escapeName( username );
+        }
     }
 
     @Override

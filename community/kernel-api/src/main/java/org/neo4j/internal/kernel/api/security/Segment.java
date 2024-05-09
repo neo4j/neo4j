@@ -23,5 +23,10 @@ public interface Segment
 {
     boolean satisfies( Segment segment );
 
+    default String toCypherSnippet()
+    {
+        return toString();
+    }
+
     Segment ALL = segment -> true;
 }

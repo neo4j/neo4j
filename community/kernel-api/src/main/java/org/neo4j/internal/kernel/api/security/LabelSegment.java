@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.internal.kernel.api.security;
+import org.neo4j.internal.helpers.NameUtil;
 
 public class LabelSegment implements Segment
 {
@@ -60,6 +61,19 @@ public class LabelSegment implements Segment
             }
         }
         return false;
+    }
+
+    @Override
+    public String toCypherSnippet()
+    {
+        if ( label == null )
+        {
+            return "NODE *";
+        }
+        else
+        {
+            return String.format( "NODE %s", NameUtil.escapeName( label ) );
+        }
     }
 
     @Override
