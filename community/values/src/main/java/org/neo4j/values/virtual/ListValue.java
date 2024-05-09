@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.github.jamm.Unmetered;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.internal.helpers.ArrayUtil;
@@ -617,6 +618,28 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             } else {
                 throw new IndexOutOfBoundsException(offset + " is outside range " + size);
             }
+        }
+
+        @Override
+        public void forEach(Consumer<? super AnyValue> consumer) {
+            forEach(consumer, base);
+            consumer.accept(appended);
+        }
+
+        private void forEach(Consumer<? super AnyValue> consumer, ListValue outer) {
+            if (outer instanceof AppendList appendList) {
+                forEach(consumer, appendList.base);
+                consumer.accept(appendList.appended);
+            } else {
+                for (AnyValue value : outer) {
+                    consumer.accept(value);
+                }
+            }
+        }
+
+        @Override
+        public AnyValue last() {
+            return appended;
         }
 
         @Override

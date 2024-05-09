@@ -242,16 +242,16 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             // nothing to do here
             return;
         }
-        int i;
-        for (i = 0; i < relationships.size() - 1; i++) {
-            AnyValue value = relationships.value(i);
+
+        relationships.forEach(value -> {
             if (notNoValue(value)) {
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
                 nodes.add(VirtualValues.node(relationship.startNodeId(this)));
                 rels.add(relationship);
             }
-        }
-        AnyValue last = relationships.value(i);
+        });
+
+        AnyValue last = relationships.last();
         if (notNoValue(last)) {
             nodes.add(target);
             rels.add(((VirtualRelationshipValue) last));
@@ -311,16 +311,16 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             // nothing to do here
             return;
         }
-        int i;
-        for (i = 0; i < relationships.size() - 1; i++) {
-            AnyValue value = relationships.value(i);
+
+        relationships.forEach(value -> {
             if (notNoValue(value)) {
                 VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
                 nodes.add(VirtualValues.node(relationship.endNodeId(this)));
                 rels.add(relationship);
             }
-        }
-        AnyValue last = relationships.value(i);
+        });
+
+        AnyValue last = relationships.last();
         if (notNoValue(last)) {
             rels.add(((VirtualRelationshipValue) last));
             nodes.add(target);
@@ -382,14 +382,13 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             return;
         }
 
-        for (int i = 0; i < relationships.size() - 1; i++) {
-            AnyValue value = relationships.value(i);
+        relationships.forEach(value -> {
             if (notNoValue(value)) {
                 addUndirected((VirtualRelationshipValue) value);
             }
-        }
+        });
 
-        AnyValue last = relationships.value(relationships.size() - 1);
+        AnyValue last = relationships.last();
         if (notNoValue(last)) {
             rels.add(((VirtualRelationshipValue) last));
             nodes.add(target);
