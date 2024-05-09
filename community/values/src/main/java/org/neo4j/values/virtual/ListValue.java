@@ -318,27 +318,29 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public Iterator<AnyValue> iterator() {
             return switch (inner.iterationPreference()) {
                 case RANDOM_ACCESS -> super.iterator();
-                case ITERATION -> new PrefetchingIterator<>() {
-                    private int count;
-                    private final Iterator<AnyValue> innerIterator = inner.iterator();
-
-                    @Override
-                    protected AnyValue fetchNextOrNull() {
-                        // make sure we are at least at first element
-                        while (count < from && innerIterator.hasNext()) {
-                            innerIterator.next();
-                            count++;
-                        }
-                        // check if we are done
-                        if (count < from || count >= to || !innerIterator.hasNext()) {
-                            return null;
-                        }
-                        // take the next step
-                        count++;
-                        return innerIterator.next();
-                    }
-                };
+                case ITERATION -> new ListSliceIterator();
             };
+        }
+
+        private class ListSliceIterator extends PrefetchingIterator<AnyValue> {
+            private int count;
+            private final Iterator<AnyValue> innerIterator = inner.iterator();
+
+            @Override
+            protected AnyValue fetchNextOrNull() {
+                // make sure we are at least at first element
+                while (count < from && innerIterator.hasNext()) {
+                    innerIterator.next();
+                    count++;
+                }
+                // check if we are done
+                if (count < from || count >= to || !innerIterator.hasNext()) {
+                    return null;
+                }
+                // take the next step
+                count++;
+                return innerIterator.next();
+            }
         }
 
         @Override
@@ -782,22 +784,24 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
     @Override
     public Iterator<AnyValue> iterator() {
-        return new Iterator<>() {
-            private int count;
+        return new ListValueIterator();
+    }
 
-            @Override
-            public boolean hasNext() {
-                return count < size();
-            }
+    private class ListValueIterator implements Iterator<AnyValue> {
+        private int count;
 
-            @Override
-            public AnyValue next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-                return value(count++);
+        @Override
+        public boolean hasNext() {
+            return count < size();
+        }
+
+        @Override
+        public AnyValue next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
             }
-        };
+            return value(count++);
+        }
     }
 
     @Override
