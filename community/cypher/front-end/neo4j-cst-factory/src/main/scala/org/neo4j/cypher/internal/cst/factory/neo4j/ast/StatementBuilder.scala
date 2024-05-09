@@ -111,6 +111,8 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 
+import java.util.stream.Collectors
+
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -209,7 +211,7 @@ trait StatementBuilder extends CypherParserListener {
   }
 
   final override def exitOrderItem(ctx: CypherParser.OrderItemContext): Unit = {
-    ctx.ast = if (ctx.children.size() == 1 || nodeChild(ctx, 1).getSymbol.getType == CypherParser.ASC) {
+    ctx.ast = if (ctx.children.size() == 1 || ctx.ascToken() != null) {
       AscSortItem(astChild(ctx, 0))(pos(ctx))
     } else {
       DescSortItem(astChild(ctx, 0))(pos(ctx))
@@ -406,12 +408,13 @@ trait StatementBuilder extends CypherParserListener {
   final override def exitCallClause(
     ctx: CypherParser.CallClauseContext
   ): Unit = {
-    val namespace = ctx.namespace().ast[Namespace]()
-    val procedureName = ProcedureName(ctx.symbolicNameString().ast())(pos(ctx.symbolicNameString()))
+    val (namespace, procedureName) = ctx.procedureName.ast[(Namespace, ProcedureName)]()
     val procedureArguments =
       if (ctx.RPAREN() == null) None
       else
-        Some(astSeq[Expression](ctx.expression()))
+        Some(
+          astSeq[Expression](ctx.procedureArgument.stream().map(arg => arg.expression()).collect(Collectors.toList()))
+        )
     val yieldAll = ctx.TIMES() != null
     val procedureResults = {
       if (ctx.YIELD() == null || yieldAll) None
@@ -421,6 +424,20 @@ trait StatementBuilder extends CypherParserListener {
       }
     }
     ctx.ast = UnresolvedCall(namespace, procedureName, procedureArguments, procedureResults, yieldAll)(pos(ctx))
+  }
+
+  final override def exitProcedureName(
+    ctx: CypherParser.ProcedureNameContext
+  ): Unit = {
+    val namespace = ctx.namespace().ast[Namespace]()
+    val procedureName = ProcedureName(ctx.symbolicNameString().ast())(pos(ctx.symbolicNameString()))
+    ctx.ast = (namespace, procedureName)
+  }
+
+  final override def exitProcedureArgument(
+    ctx: CypherParser.ProcedureArgumentContext
+  ): Unit = {
+    ctx.ast = ctx.expression()
   }
 
   final override def exitProcedureResultItem(

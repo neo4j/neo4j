@@ -49,11 +49,11 @@ trait LiteralBuilder extends CypherParserListener {
     ctx.ast = ctx.children.get(0) match {
       case rule: AstRuleCtx => rule.ast
       case token: TerminalNode => token.getSymbol.getType match {
-          case CypherParser.TRUE     => True()(pos(ctx))
-          case CypherParser.FALSE    => False()(pos(ctx))
-          case CypherParser.INFINITY => Infinity()(pos(ctx))
-          case CypherParser.NAN      => NaN()(pos(ctx))
-          case CypherParser.NULL     => Null()(pos(ctx))
+          case CypherParser.TRUE                        => True()(pos(ctx))
+          case CypherParser.FALSE                       => False()(pos(ctx))
+          case CypherParser.INF | CypherParser.INFINITY => Infinity()(pos(ctx))
+          case CypherParser.NAN                         => NaN()(pos(ctx))
+          case CypherParser.NULL                        => Null()(pos(ctx))
         }
       case other => throw new IllegalStateException(s"Unexpected child $other")
     }

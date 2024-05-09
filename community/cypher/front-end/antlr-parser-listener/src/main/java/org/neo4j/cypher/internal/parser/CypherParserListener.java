@@ -51,6 +51,10 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitOrderItem(CypherParser.OrderItemContext ctx);
 
+    void exitAscToken(CypherParser.AscTokenContext ctx);
+
+    void exitDescToken(CypherParser.DescTokenContext ctx);
+
     void exitOrderBy(CypherParser.OrderByContext ctx);
 
     void exitSkip(CypherParser.SkipContext ctx);
@@ -89,6 +93,10 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitCallClause(CypherParser.CallClauseContext ctx);
 
+    void exitProcedureName(CypherParser.ProcedureNameContext ctx);
+
+    void exitProcedureArgument(CypherParser.ProcedureArgumentContext ctx);
+
     void exitProcedureResultItem(CypherParser.ProcedureResultItemContext ctx);
 
     void exitLoadCSVClause(CypherParser.LoadCSVClauseContext ctx);
@@ -122,6 +130,10 @@ public interface CypherParserListener extends ParseTreeListener {
     void exitPatternElement(CypherParser.PatternElementContext ctx);
 
     void exitSelector(CypherParser.SelectorContext ctx);
+
+    void exitGroupToken(CypherParser.GroupTokenContext ctx);
+
+    void exitPathToken(CypherParser.PathTokenContext ctx);
 
     void exitPathPatternNonEmpty(CypherParser.PathPatternNonEmptyContext ctx);
 
@@ -325,6 +337,8 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitShowFunctions(CypherParser.ShowFunctionsContext ctx);
 
+    void exitFunctionToken(CypherParser.FunctionTokenContext ctx);
+
     void exitExecutableBy(CypherParser.ExecutableByContext ctx);
 
     void exitShowFunctionsType(CypherParser.ShowFunctionsTypeContext ctx);
@@ -336,6 +350,8 @@ public interface CypherParserListener extends ParseTreeListener {
     void exitTerminateTransactions(CypherParser.TerminateTransactionsContext ctx);
 
     void exitShowSettings(CypherParser.ShowSettingsContext ctx);
+
+    void exitSettingToken(CypherParser.SettingTokenContext ctx);
 
     void exitNamesAndClauses(CypherParser.NamesAndClausesContext ctx);
 
@@ -455,6 +471,10 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitGrantRole(CypherParser.GrantRoleContext ctx);
 
+    void exitUserNames(CypherParser.UserNamesContext ctx);
+
+    void exitRoleNames(CypherParser.RoleNamesContext ctx);
+
     void exitDenyCommand(CypherParser.DenyCommandContext ctx);
 
     void exitRevokeCommand(CypherParser.RevokeCommandContext ctx);
@@ -547,7 +567,11 @@ public interface CypherParserListener extends ParseTreeListener {
 
     void exitPrimaryTopology(CypherParser.PrimaryTopologyContext ctx);
 
+    void exitPrimaryToken(CypherParser.PrimaryTokenContext ctx);
+
     void exitSecondaryTopology(CypherParser.SecondaryTopologyContext ctx);
+
+    void exitSecondaryToken(CypherParser.SecondaryTokenContext ctx);
 
     void exitDropDatabase(CypherParser.DropDatabaseContext ctx);
 
@@ -564,6 +588,8 @@ public interface CypherParserListener extends ParseTreeListener {
     void exitStopDatabase(CypherParser.StopDatabaseContext ctx);
 
     void exitWaitClause(CypherParser.WaitClauseContext ctx);
+
+    void exitSecondsToken(CypherParser.SecondsTokenContext ctx);
 
     void exitShowDatabase(CypherParser.ShowDatabaseContext ctx);
 

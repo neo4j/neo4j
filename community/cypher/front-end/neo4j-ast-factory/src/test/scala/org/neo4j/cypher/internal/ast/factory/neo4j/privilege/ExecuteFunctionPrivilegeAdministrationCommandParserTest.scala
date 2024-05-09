@@ -369,7 +369,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                    |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
               ))
               .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-                s"""Invalid input 'DEFINED': expected 'ADMIN', 'ADMINISTRATOR', 'BOOSTED', 'FUNCTIONS', 'PROCEDURE', 'PROCEDURES' or 'USER' (line 1, column ${offset + 1} (offset: $offset))"""
+                s"""Invalid input 'DEFINED': expected 'ADMIN', 'ADMINISTRATOR', 'BOOSTED', 'FUNCTION', 'FUNCTIONS', 'PROCEDURE', 'PROCEDURES' or 'USER' (line 1, column ${offset + 1} (offset: $offset))"""
               ))
           }
       }

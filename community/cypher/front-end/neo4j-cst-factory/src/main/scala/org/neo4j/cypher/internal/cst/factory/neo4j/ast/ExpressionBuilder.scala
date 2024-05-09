@@ -866,8 +866,8 @@ trait ExpressionBuilder extends CypherParserListener {
       case 1 => firstToken match {
           case CypherParser.NOTHING                          => NothingType()(p)
           case CypherParser.NULL                             => NullType()(p)
-          case CypherParser.BOOLEAN                          => BooleanType(true)(p)
-          case CypherParser.STRING                           => StringType(true)(p)
+          case CypherParser.BOOL | CypherParser.BOOLEAN      => BooleanType(true)(p)
+          case CypherParser.STRING | CypherParser.VARCHAR    => StringType(true)(p)
           case CypherParser.INT | CypherParser.INTEGER       => IntegerType(true)(p)
           case CypherParser.FLOAT                            => FloatType(true)(p)
           case CypherParser.DATE                             => DateType(true)(p)
@@ -876,7 +876,7 @@ trait ExpressionBuilder extends CypherParserListener {
           case CypherParser.NODE | CypherParser.VERTEX       => NodeType(true)(p)
           case CypherParser.RELATIONSHIP | CypherParser.EDGE => RelationshipType(true)(p)
           case CypherParser.MAP                              => MapType(true)(p)
-          case CypherParser.PATH                             => PathType(true)(p)
+          case CypherParser.PATH | CypherParser.PATHS        => PathType(true)(p)
           case CypherParser.ANY                              => AnyType(true)(p)
           case _ => throw new IllegalStateException(s"Unexpected context $ctx (first token type $firstToken)")
         }

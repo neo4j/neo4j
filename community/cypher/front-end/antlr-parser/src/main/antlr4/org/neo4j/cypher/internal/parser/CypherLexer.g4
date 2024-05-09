@@ -149,7 +149,7 @@ ASC
    ;
 
 ASCENDING
-   : A S C E N D I N G -> type (ASC)
+   : A S C E N D I N G
    ;
 
 ASSERT
@@ -173,7 +173,7 @@ BINDINGS
    ;
 
 BOOL
-   : B O O L -> type (BOOLEAN)
+   : B O O L
    ;
 
 BOOLEAN
@@ -345,7 +345,7 @@ DESC
    ;
 
 DESCENDING
-   : D E S C E N D I N G -> type (DESC)
+   : D E S C E N D I N G
    ;
 
 DESTROY
@@ -505,7 +505,7 @@ FULLTEXT
    ;
 
 FUNCTION
-   : F U N C T I O N -> type(FUNCTIONS)
+   : F U N C T I O N
    ;
 
 FUNCTIONS
@@ -533,7 +533,7 @@ GROUP
    ;
 
 GROUPS
-   : G R O U P S -> type (GROUP)
+   : G R O U P S
    ;
 
 GT
@@ -573,7 +573,7 @@ INDEXES
    ;
 
 INF
-   : I N F -> type (INFINITY)
+   : I N F
    ;
 
 INFINITY
@@ -817,7 +817,7 @@ PATH
    ;
 
 PATHS
-   : P A T H S -> type (PATH)
+   : P A T H S
    ;
 
 PERIODIC
@@ -853,7 +853,7 @@ PRIMARY
    ;
 
 PRIMARIES
-   : P R I M A R I E S -> type (PRIMARY)
+   : P R I M A R I E S
    ;
 
 PRIVILEGE
@@ -985,11 +985,11 @@ SCAN
    ;
 
 SEC
-   : S E C -> type (SECONDS)
+   : S E C
    ;
 
 SECOND
-   : S E C O N D -> type (SECONDS)
+   : S E C O N D
    ;
 
 SECONDARY
@@ -997,7 +997,7 @@ SECONDARY
    ;
 
 SECONDARIES
-   : S E C O N D A R I E S -> type (SECONDARY)
+   : S E C O N D A R I E S
    ;
 
 SECONDS
@@ -1029,7 +1029,7 @@ SETTING
    ;
 
 SETTINGS
-   : S E T T I N G S -> type(SETTING)
+   : S E T T I N G S
    ;
 
 SHORTEST_PATH
@@ -1201,7 +1201,7 @@ VALUE
    ;
 
 VARCHAR
-   : V A R C H A R -> type (STRING)
+   : V A R C H A R
    ;
 
 VECTOR

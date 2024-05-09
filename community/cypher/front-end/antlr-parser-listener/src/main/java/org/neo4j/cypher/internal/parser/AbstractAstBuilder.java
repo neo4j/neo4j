@@ -48,6 +48,8 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_returnItem -> exitReturnItem((CypherParser.ReturnItemContext) ctx);
             case CypherParser.RULE_returnItems -> exitReturnItems((CypherParser.ReturnItemsContext) ctx);
             case CypherParser.RULE_orderItem -> exitOrderItem((CypherParser.OrderItemContext) ctx);
+            case CypherParser.RULE_ascToken -> exitAscToken((CypherParser.AscTokenContext) ctx);
+            case CypherParser.RULE_descToken -> exitDescToken((CypherParser.DescTokenContext) ctx);
             case CypherParser.RULE_orderBy -> exitOrderBy((CypherParser.OrderByContext) ctx);
             case CypherParser.RULE_skip -> exitSkip((CypherParser.SkipContext) ctx);
             case CypherParser.RULE_limit -> exitLimit((CypherParser.LimitContext) ctx);
@@ -67,6 +69,9 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_mergeAction -> exitMergeAction((CypherParser.MergeActionContext) ctx);
             case CypherParser.RULE_unwindClause -> exitUnwindClause((CypherParser.UnwindClauseContext) ctx);
             case CypherParser.RULE_callClause -> exitCallClause((CypherParser.CallClauseContext) ctx);
+            case CypherParser.RULE_procedureName -> exitProcedureName((CypherParser.ProcedureNameContext) ctx);
+            case CypherParser.RULE_procedureArgument -> exitProcedureArgument(
+                    (CypherParser.ProcedureArgumentContext) ctx);
             case CypherParser.RULE_procedureResultItem -> exitProcedureResultItem(
                     (CypherParser.ProcedureResultItemContext) ctx);
             case CypherParser.RULE_loadCSVClause -> exitLoadCSVClause((CypherParser.LoadCSVClauseContext) ctx);
@@ -91,6 +96,8 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
                     (CypherParser.ShortestPathPatternContext) ctx);
             case CypherParser.RULE_patternElement -> exitPatternElement((CypherParser.PatternElementContext) ctx);
             case CypherParser.RULE_selector -> exitSelector((CypherParser.SelectorContext) ctx);
+            case CypherParser.RULE_groupToken -> exitGroupToken((CypherParser.GroupTokenContext) ctx);
+            case CypherParser.RULE_pathToken -> exitPathToken((CypherParser.PathTokenContext) ctx);
             case CypherParser.RULE_pathPatternNonEmpty -> exitPathPatternNonEmpty(
                     (CypherParser.PathPatternNonEmptyContext) ctx);
             case CypherParser.RULE_nodePattern -> exitNodePattern((CypherParser.NodePatternContext) ctx);
@@ -228,6 +235,7 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
                     (CypherParser.ShowConstraintsAllowYieldContext) ctx);
             case CypherParser.RULE_showProcedures -> exitShowProcedures((CypherParser.ShowProceduresContext) ctx);
             case CypherParser.RULE_showFunctions -> exitShowFunctions((CypherParser.ShowFunctionsContext) ctx);
+            case CypherParser.RULE_functionToken -> exitFunctionToken((CypherParser.FunctionTokenContext) ctx);
             case CypherParser.RULE_executableBy -> exitExecutableBy((CypherParser.ExecutableByContext) ctx);
             case CypherParser.RULE_showFunctionsType -> exitShowFunctionsType(
                     (CypherParser.ShowFunctionsTypeContext) ctx);
@@ -236,6 +244,7 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_terminateTransactions -> exitTerminateTransactions(
                     (CypherParser.TerminateTransactionsContext) ctx);
             case CypherParser.RULE_showSettings -> exitShowSettings((CypherParser.ShowSettingsContext) ctx);
+            case CypherParser.RULE_settingToken -> exitSettingToken((CypherParser.SettingTokenContext) ctx);
             case CypherParser.RULE_namesAndClauses -> exitNamesAndClauses((CypherParser.NamesAndClausesContext) ctx);
             case CypherParser.RULE_composableCommandClauses -> exitComposableCommandClauses(
                     (CypherParser.ComposableCommandClausesContext) ctx);
@@ -317,6 +326,8 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_privilegeToken -> exitPrivilegeToken((CypherParser.PrivilegeTokenContext) ctx);
             case CypherParser.RULE_grantCommand -> exitGrantCommand((CypherParser.GrantCommandContext) ctx);
             case CypherParser.RULE_grantRole -> exitGrantRole((CypherParser.GrantRoleContext) ctx);
+            case CypherParser.RULE_userNames -> exitUserNames((CypherParser.UserNamesContext) ctx);
+            case CypherParser.RULE_roleNames -> exitRoleNames((CypherParser.RoleNamesContext) ctx);
             case CypherParser.RULE_denyCommand -> exitDenyCommand((CypherParser.DenyCommandContext) ctx);
             case CypherParser.RULE_revokeCommand -> exitRevokeCommand((CypherParser.RevokeCommandContext) ctx);
             case CypherParser.RULE_revokeRole -> exitRevokeRole((CypherParser.RevokeRoleContext) ctx);
@@ -378,8 +389,10 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
                     (CypherParser.CreateCompositeDatabaseContext) ctx);
             case CypherParser.RULE_createDatabase -> exitCreateDatabase((CypherParser.CreateDatabaseContext) ctx);
             case CypherParser.RULE_primaryTopology -> exitPrimaryTopology((CypherParser.PrimaryTopologyContext) ctx);
+            case CypherParser.RULE_primaryToken -> exitPrimaryToken((CypherParser.PrimaryTokenContext) ctx);
             case CypherParser.RULE_secondaryTopology -> exitSecondaryTopology(
                     (CypherParser.SecondaryTopologyContext) ctx);
+            case CypherParser.RULE_secondaryToken -> exitSecondaryToken((CypherParser.SecondaryTokenContext) ctx);
             case CypherParser.RULE_dropDatabase -> exitDropDatabase((CypherParser.DropDatabaseContext) ctx);
             case CypherParser.RULE_alterDatabase -> exitAlterDatabase((CypherParser.AlterDatabaseContext) ctx);
             case CypherParser.RULE_alterDatabaseAccess -> exitAlterDatabaseAccess(
@@ -391,6 +404,7 @@ public abstract class AbstractAstBuilder implements CypherParserListener {
             case CypherParser.RULE_startDatabase -> exitStartDatabase((CypherParser.StartDatabaseContext) ctx);
             case CypherParser.RULE_stopDatabase -> exitStopDatabase((CypherParser.StopDatabaseContext) ctx);
             case CypherParser.RULE_waitClause -> exitWaitClause((CypherParser.WaitClauseContext) ctx);
+            case CypherParser.RULE_secondsToken -> exitSecondsToken((CypherParser.SecondsTokenContext) ctx);
             case CypherParser.RULE_showDatabase -> exitShowDatabase((CypherParser.ShowDatabaseContext) ctx);
             case CypherParser.RULE_databaseScope -> exitDatabaseScope((CypherParser.DatabaseScopeContext) ctx);
             case CypherParser.RULE_graphScope -> exitGraphScope((CypherParser.GraphScopeContext) ctx);

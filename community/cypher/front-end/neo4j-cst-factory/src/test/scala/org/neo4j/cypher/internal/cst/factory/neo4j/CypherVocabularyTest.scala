@@ -31,7 +31,9 @@ class CypherVocabularyTest extends CypherFunSuite {
       val literalName = vocab.getLiteralName(token)
       withClue(s"displayName=$displayName, symbolicName=$symbolicName, literalName=$literalName\n") {
         expectedDisplayNames.get(token) match {
-          case Some(expected) => displayName shouldBe expected
+          case Some(expected) =>
+            if (displayName != expected) println(token)
+            displayName shouldBe expected
           case _ => fail(
               s"""Hello! I can see that you have added a new token type ($symbolicName)
                  |You need to add an expected display name in ${getClass.getName}.
@@ -80,11 +82,13 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.ARRAY -> "'ARRAY'",
     CypherParser.AS -> "'AS'",
     CypherParser.ASC -> "'ASC'",
+    CypherParser.ASCENDING -> "'ASCENDING'",
     CypherParser.ASSERT -> "'ASSERT'",
     CypherParser.ASSIGN -> "'ASSIGN'",
     CypherParser.AT -> "'AT'",
     CypherParser.BAR -> "'|'",
     CypherParser.BINDINGS -> "'BINDINGS'",
+    CypherParser.BOOL -> "'BOOL'",
     CypherParser.BOOLEAN -> "'BOOLEAN'",
     CypherParser.BOOSTED -> "'BOOSTED'",
     CypherParser.BOTH -> "'BOTH'",
@@ -127,6 +131,7 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.DELETE -> "'DELETE'",
     CypherParser.DENY -> "'DENY'",
     CypherParser.DESC -> "'DESC'",
+    CypherParser.DESCENDING -> "'DESCENDING'",
     CypherParser.DESTROY -> "'DESTROY'",
     CypherParser.DETACH -> "'DETACH'",
     CypherParser.DIFFERENT -> "'DIFFERENT'",
@@ -167,12 +172,14 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.FOREACH -> "'FOREACH'",
     CypherParser.FROM -> "'FROM'",
     CypherParser.FULLTEXT -> "'FULLTEXT'",
+    CypherParser.FUNCTION -> "'FUNCTION'",
     CypherParser.FUNCTIONS -> "'FUNCTIONS'",
     CypherParser.GE -> "'>='",
     CypherParser.GRANT -> "'GRANT'",
     CypherParser.GRAPH -> "'GRAPH'",
     CypherParser.GRAPHS -> "'GRAPHS'",
     CypherParser.GROUP -> "'GROUP'",
+    CypherParser.GROUPS -> "'GROUPS'",
     CypherParser.GT -> "'>'",
     CypherParser.HEADERS -> "'HEADERS'",
     CypherParser.HOME -> "'HOME'",
@@ -182,6 +189,7 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.IN -> "'IN'",
     CypherParser.INDEX -> "'INDEX'",
     CypherParser.INDEXES -> "'INDEXES'",
+    CypherParser.INF -> "'INF'",
     CypherParser.INFINITY -> "'INFINITY'",
     CypherParser.INSERT -> "'INSERT'",
     CypherParser.INT -> "'INT'",
@@ -242,6 +250,7 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.PASSWORD -> "'PASSWORD'",
     CypherParser.PASSWORDS -> "'PASSWORDS'",
     CypherParser.PATH -> "'PATH'",
+    CypherParser.PATHS -> "'PATHS'",
     CypherParser.PERIODIC -> "'PERIODIC'",
     CypherParser.PLAINTEXT -> "'PLAINTEXT'",
     CypherParser.PLUS -> "'+'",
@@ -250,6 +259,7 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.POPULATED -> "'POPULATED'",
     CypherParser.POW -> "'^'",
     CypherParser.PRIMARY -> "'PRIMARY'",
+    CypherParser.PRIMARIES -> "'PRIMARIES'",
     CypherParser.PRIVILEGE -> "'PRIVILEGE'",
     CypherParser.PRIVILEGES -> "'PRIVILEGES'",
     CypherParser.PROCEDURE -> "'PROCEDURE'",
@@ -283,6 +293,9 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.RPAREN -> "')'",
     CypherParser.SCAN -> "'SCAN'",
     CypherParser.SECONDARY -> "'SECONDARY'",
+    CypherParser.SECONDARIES -> "'SECONDARIES'",
+    CypherParser.SEC -> "'SEC'",
+    CypherParser.SECOND -> "'SECOND'",
     CypherParser.SECONDS -> "'SECONDS'",
     CypherParser.SEEK -> "'SEEK'",
     CypherParser.SEMICOLON -> "';'",
@@ -290,6 +303,7 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.SERVERS -> "'SERVERS'",
     CypherParser.SET -> "'SET'",
     CypherParser.SETTING -> "'SETTING'",
+    CypherParser.SETTINGS -> "'SETTINGS'",
     CypherParser.SHORTEST_PATH -> "'shortestPath'",
     CypherParser.SHORTEST -> "'SHORTEST'",
     CypherParser.SHOW -> "'SHOW'",
@@ -332,6 +346,7 @@ class CypherVocabularyTest extends CypherFunSuite {
     CypherParser.USERS -> "'USERS'",
     CypherParser.USING -> "'USING'",
     CypherParser.VALUE -> "'VALUE'",
+    CypherParser.VARCHAR -> "'VARCHAR'",
     CypherParser.VECTOR -> "'VECTOR'",
     CypherParser.VERBOSE -> "'VERBOSE'",
     CypherParser.VERTEX -> "'VERTEX'",

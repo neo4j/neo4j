@@ -449,7 +449,7 @@ trait DdlShowBuilder extends CypherParserListener {
     val (asCommand, asRevoke) = astOpt[(Boolean, Boolean)](ctx.privilegeAsCommand(), (false, false))
     val cmdYield = astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
     val scope = ShowRolesPrivileges(
-      ctx.symbolicNameOrStringParameterList().ast[Seq[Expression]]().toList
+      ctx.roleNames.symbolicNameOrStringParameterList().ast[Seq[Expression]]().toList
     )(pos(ctx))
     ctx.ast = if (asCommand) {
       ShowPrivilegeCommands(scope, asRevoke, cmdYield)(pos(ctx))
@@ -462,9 +462,10 @@ trait DdlShowBuilder extends CypherParserListener {
     ctx: CypherParser.ShowUserPrivilegesContext
   ): Unit = {
     val (asCommand, asRevoke) = astOpt[(Boolean, Boolean)](ctx.privilegeAsCommand(), (false, false))
-    val namesList = ctx.symbolicNameOrStringParameterList()
+    val namesList = ctx.userNames
     val cmdYield = astOpt[Either[(Yield, Option[Return]), Where]](ctx.showCommandYield())
-    val scope = if (namesList != null) ShowUsersPrivileges(astOpt(namesList, Seq()).toList)(pos(ctx))
+    val scope = if (namesList != null)
+      ShowUsersPrivileges(namesList.ast[ArraySeq[Expression]]().toList)(pos(ctx))
     else ShowUserPrivileges(None)(pos(ctx))
     ctx.ast = if (asCommand) {
       ShowPrivilegeCommands(scope, asRevoke, cmdYield)(pos(ctx))

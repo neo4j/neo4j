@@ -230,7 +230,7 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input ''"))
       .parseIn(Antlr)(_.withMessage(
-        """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VERTEX' or 'ZONED' (line 1, column 12 (offset: 11))
+        """Invalid input '': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 12 (offset: 11))
           |"RETURN x ::"
           |            ^""".stripMargin
       ))
@@ -260,7 +260,7 @@ class TypePredicateExpressionParserTest extends AstParsingTestBase
     failsParsing[Statements]
       .parseIn(JavaCc)(_.withMessageStart("Invalid input 'NOT'"))
       .parseIn(Antlr)(_.withMessage(
-        """Invalid input 'NOT': expected 'ARRAY', 'LIST', 'ANY', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VERTEX' or 'ZONED' (line 1, column 13 (offset: 12))
+        """Invalid input 'NOT': expected 'ARRAY', 'LIST', 'ANY', 'BOOL', 'BOOLEAN', 'DATE', 'DURATION', 'EDGE', 'FLOAT', 'INT', 'INTEGER', 'LOCAL', 'MAP', 'NODE', 'NOTHING', 'NULL', 'PATH', 'PATHS', 'POINT', 'RELATIONSHIP', 'SIGNED', 'STRING', 'TIME', 'TIMESTAMP', 'PROPERTY VALUE', 'VARCHAR', 'VERTEX' or 'ZONED' (line 1, column 13 (offset: 12))
           |"RETURN x :: NOT NULL"
           |             ^""".stripMargin
       ))

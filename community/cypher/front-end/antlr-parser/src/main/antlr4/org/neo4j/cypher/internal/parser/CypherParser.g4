@@ -88,7 +88,15 @@ returnItems
    ;
 
 orderItem
-   : expression (ASC | DESC)?
+   : expression (ascToken | descToken)?
+   ;
+
+ascToken
+   : ASC | ASCENDING
+   ;
+
+descToken
+   : DESC | DESCENDING
    ;
 
 orderBy
@@ -180,7 +188,15 @@ unwindClause
    ;
 
 callClause
-   : CALL namespace symbolicNameString (LPAREN (expression (COMMA expression)*)? RPAREN)? (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?
+   : CALL procedureName (LPAREN (procedureArgument (COMMA procedureArgument)*)? RPAREN)? (YIELD (TIMES | procedureResultItem (COMMA procedureResultItem)* whereClause?))?
+   ;
+
+procedureName
+   : namespace symbolicNameString
+   ;
+
+procedureArgument
+   : expression
    ;
 
 procedureResultItem
@@ -252,12 +268,20 @@ patternElement
    ;
 
 selector
-   : ANY SHORTEST PATH?                             # AnyShortestPath
-   | ALL SHORTEST PATH?                             # AllShortestPath
-   | ANY UNSIGNED_DECIMAL_INTEGER? PATH?            # AnyPath
-   | ALL PATH?                                      # AllPath
-   | SHORTEST UNSIGNED_DECIMAL_INTEGER? PATH? GROUP # ShortestGroup
-   | SHORTEST UNSIGNED_DECIMAL_INTEGER PATH?        # AnyShortestPath
+   : ANY SHORTEST pathToken?                                  # AnyShortestPath
+   | ALL SHORTEST pathToken?                                  # AllShortestPath
+   | ANY UNSIGNED_DECIMAL_INTEGER? pathToken?                 # AnyPath
+   | ALL pathToken?                                           # AllPath
+   | SHORTEST UNSIGNED_DECIMAL_INTEGER? pathToken? groupToken # ShortestGroup
+   | SHORTEST UNSIGNED_DECIMAL_INTEGER pathToken?             # AnyShortestPath
+   ;
+
+groupToken
+   : GROUP | GROUPS
+   ;
+
+pathToken
+   : PATH | PATHS
    ;
 
 pathPatternNonEmpty
@@ -359,14 +383,14 @@ labelExpression2Is
 
 labelExpression1
    : LPAREN labelExpression4 RPAREN #ParenthesizedLabelExpression
-   | PERCENT                      #AnyLabel
-   | symbolicNameString           #LabelName
+   | PERCENT                        #AnyLabel
+   | symbolicNameString             #LabelName
    ;
 
 labelExpression1Is
    : LPAREN labelExpression4Is RPAREN #ParenthesizedLabelExpressionIs
-   | PERCENT                        #AnyLabelIs
-   | symbolicLabelNameString        #LabelNameIs
+   | PERCENT                          #AnyLabelIs
+   | symbolicLabelNameString          #LabelNameIs
    ;
 
 insertNodeLabelExpression
@@ -497,6 +521,7 @@ literal
    | map           # OtherLiteral
    | TRUE          # BooleanLiteral
    | FALSE         # BooleanLiteral
+   | INF           # KeywordLiteral
    | INFINITY      # KeywordLiteral
    | NAN           # KeywordLiteral
    | NULL          # KeywordLiteral
@@ -833,7 +858,11 @@ showProcedures
    ;
 
 showFunctions
-   : showFunctionsType? FUNCTIONS executableBy? showCommandYield? composableCommandClauses?
+   : showFunctionsType? functionToken executableBy? showCommandYield? composableCommandClauses?
+   ;
+
+functionToken
+   : FUNCTION | FUNCTIONS
    ;
 
 executableBy
@@ -859,7 +888,11 @@ terminateTransactions
    ;
 
 showSettings
-   : SETTING namesAndClauses
+   : settingToken namesAndClauses
+   ;
+
+settingToken
+   : SETTING | SETTINGS
    ;
 
 namesAndClauses
@@ -899,7 +932,9 @@ typeName
    // Note! These are matched based on the first token. Take precaution in ExpressionBuilder.scala when modifying
    : NOTHING
    | NULL
+   | BOOL
    | BOOLEAN
+   | VARCHAR
    | STRING
    | INT
    | SIGNED? INTEGER
@@ -918,6 +953,7 @@ typeName
    | MAP
    | (LIST | ARRAY) LT type GT
    | PATH
+   | PATHS
    | PROPERTY VALUE
    | ANY (
       NODE
@@ -1135,11 +1171,11 @@ showSupportedPrivileges
    ;
 
 showRolePrivileges
-   : (ROLE | ROLES) symbolicNameOrStringParameterList privilegeToken privilegeAsCommand? showCommandYield?
+   : (ROLE | ROLES) roleNames privilegeToken privilegeAsCommand? showCommandYield?
    ;
 
 showUserPrivileges
-   : (USER | USERS) symbolicNameOrStringParameterList? privilegeToken privilegeAsCommand? showCommandYield?
+   : (USER | USERS) userNames? privilegeToken privilegeAsCommand? showCommandYield?
    ;
 
 privilegeAsCommand
@@ -1153,28 +1189,36 @@ privilegeToken
 
 grantCommand
    : GRANT (
-      IMMUTABLE? privilege TO symbolicNameOrStringParameterList
+      IMMUTABLE? privilege TO roleNames
       | roleToken grantRole
    )
    ;
 
 grantRole
-   : symbolicNameOrStringParameterList TO symbolicNameOrStringParameterList
+   : roleNames TO userNames
+   ;
+
+userNames
+   : symbolicNameOrStringParameterList
+   ;
+
+roleNames
+   : symbolicNameOrStringParameterList
    ;
 
 denyCommand
-   : DENY IMMUTABLE? privilege TO symbolicNameOrStringParameterList
+   : DENY IMMUTABLE? privilege TO roleNames
    ;
 
 revokeCommand
    : REVOKE (
-      (DENY | GRANT)? IMMUTABLE? privilege FROM symbolicNameOrStringParameterList
+      (DENY | GRANT)? IMMUTABLE? privilege FROM roleNames
       | roleToken revokeRole
    )
    ;
 
 revokeRole
-   : symbolicNameOrStringParameterList FROM symbolicNameOrStringParameterList
+   : roleNames FROM userNames
    ;
 
 privilege
@@ -1259,7 +1303,7 @@ loadPrivilege
 showPrivilege
    : SHOW (
       (indexToken | constraintToken | transactionToken userQualifier?) ON databaseScope
-      | (ALIAS | PRIVILEGE | ROLE | SERVER | SERVERS | SETTING settingQualifier | USER) ON DBMS
+      | (ALIAS | PRIVILEGE | ROLE | SERVER | SERVERS | settingToken settingQualifier | USER) ON DBMS
    )
    ;
 
@@ -1315,7 +1359,7 @@ dbmsPrivilegeExecute
       adminToken PROCEDURES
       | BOOSTED? (
          procedureToken executeProcedureQualifier
-         | (USER DEFINED?)? FUNCTIONS executeFunctionQualifier
+         | (USER DEFINED?)? functionToken executeFunctionQualifier
       )
    )
    ;
@@ -1346,7 +1390,7 @@ transactionToken
    ;
 
 userQualifier
-   : LPAREN (TIMES | symbolicNameOrStringParameterList) RPAREN
+   : LPAREN (TIMES | userNames) RPAREN
    ;
 
 executeFunctionQualifier
@@ -1424,11 +1468,19 @@ createDatabase
    ;
 
 primaryTopology
-   : UNSIGNED_DECIMAL_INTEGER PRIMARY
+   : UNSIGNED_DECIMAL_INTEGER primaryToken
+   ;
+
+primaryToken
+   : PRIMARY | PRIMARIES
    ;
 
 secondaryTopology
-   : UNSIGNED_DECIMAL_INTEGER SECONDARY
+   : UNSIGNED_DECIMAL_INTEGER secondaryToken
+   ;
+
+secondaryToken
+   : SECONDARY | SECONDARIES
    ;
 
 dropDatabase
@@ -1463,9 +1515,12 @@ stopDatabase
    ;
 
 waitClause
-   : WAIT (UNSIGNED_DECIMAL_INTEGER SECONDS?)?
+   : WAIT (UNSIGNED_DECIMAL_INTEGER secondsToken?)?
    | NOWAIT
    ;
+
+secondsToken
+   : SEC | SECOND | SECONDS;
 
 showDatabase
    : (DEFAULT | HOME) DATABASE showCommandYield?
@@ -1638,10 +1693,12 @@ unescapedLabelSymbolicNameString
    | ARRAY
    | AS
    | ASC
+   | ASCENDING
    | ASSERT
    | ASSIGN
    | AT
    | BINDINGS
+   | BOOL
    | BOOLEAN
    | BOOSTED
    | BOTH
@@ -1681,6 +1738,7 @@ unescapedLabelSymbolicNameString
    | DELETE
    | DENY
    | DESC
+   | DESCENDING
    | DESTROY
    | DETACH
    | DIFFERENT
@@ -1714,11 +1772,13 @@ unescapedLabelSymbolicNameString
    | FOR
    | FROM
    | FULLTEXT
+   | FUNCTION
    | FUNCTIONS
    | GRANT
    | GRAPH
    | GRAPHS
    | GROUP
+   | GROUPS
    | HEADERS
    | HOME
    | IF
@@ -1727,6 +1787,7 @@ unescapedLabelSymbolicNameString
    | IN
    | INDEX
    | INDEXES
+   | INF
    | INFINITY
    | INSERT
    | INT
@@ -1769,11 +1830,13 @@ unescapedLabelSymbolicNameString
    | PASSWORD
    | PASSWORDS
    | PATH
+   | PATHS
    | PERIODIC
    | PLAINTEXT
    | POINT
    | POPULATED
    | PRIMARY
+   | PRIMARIES
    | PRIVILEGE
    | PRIVILEGES
    | PROCEDURE
@@ -1802,12 +1865,16 @@ unescapedLabelSymbolicNameString
    | ROWS
    | SCAN
    | SECONDARY
+   | SECONDARIES
+   | SEC
+   | SECOND
    | SECONDS
    | SEEK
    | SERVER
    | SERVERS
    | SET
    | SETTING
+   | SETTINGS
    | SHORTEST
    | SHORTEST_PATH
    | SHOW
@@ -1818,6 +1885,7 @@ unescapedLabelSymbolicNameString
    | STARTS
    | STATUS
    | STOP
+   | VARCHAR
    | STRING
    | SUPPORTED
    | SUSPENDED

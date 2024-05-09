@@ -384,7 +384,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
                  |  "USER" (line 1, column ${offset + 6} (offset: ${offset + 5}))""".stripMargin
             ))
             .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
-              s"""Invalid input 'DATABASE': expected 'ALIAS', 'CONSTRAINT', 'CONSTRAINTS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'ROLE', 'SERVER', 'SERVERS', 'SETTING', 'TRANSACTION', 'TRANSACTIONS' or 'USER' (line 1, column ${offset + 6} (offset: ${offset + 5}))"""
+              s"""Invalid input 'DATABASE': expected 'ALIAS', 'CONSTRAINT', 'CONSTRAINTS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'ROLE', 'SERVER', 'SERVERS', 'SETTING', 'SETTINGS', 'TRANSACTION', 'TRANSACTIONS' or 'USER' (line 1, column ${offset + 6} (offset: ${offset + 5}))"""
             ))
         }
     }

@@ -18,6 +18,7 @@
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
 import org.antlr.v4.runtime.tree.ParseTree
+import org.antlr.v4.runtime.tree.RuleNode
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
@@ -171,7 +172,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     ctx.ast = if (ctx.privilege() != null) {
       val (privilegeType, resource, qualifier) =
         ctx.privilege().ast[(PrivilegeType, Option[ActionResource], List[PrivilegeQualifier])]
-      val roleNames = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
+      val roleNames = ctx.roleNames.ast[ArraySeq[Expression]]()
       GrantPrivilege(privilegeType, ctx.IMMUTABLE() != null, resource, qualifier, roleNames)(p)
     } else {
       val (rolenames, usernames) =
@@ -184,8 +185,8 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     ctx: CypherParser.GrantRoleContext
   ): Unit = {
     ctx.ast = (
-      ctx.symbolicNameOrStringParameterList(0).ast[Seq[Expression]](),
-      ctx.symbolicNameOrStringParameterList(1).ast[Seq[Expression]]()
+      ctx.roleNames.ast[Seq[Expression]](),
+      ctx.userNames.ast[Seq[Expression]]()
     )
   }
 
@@ -195,7 +196,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     val p = pos(ctx)
     val (privilegeType, resource, qualifier) =
       ctx.privilege().ast[(PrivilegeType, Option[ActionResource], List[PrivilegeQualifier])]
-    val roleNames = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
+    val roleNames = ctx.roleNames.ast[ArraySeq[Expression]]()
     ctx.ast = DenyPrivilege(privilegeType, ctx.IMMUTABLE() != null, resource, qualifier, roleNames)(p)
   }
 
@@ -206,7 +207,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     ctx.ast = if (ctx.privilege() != null) {
       val (privilegeType, resource, qualifier) =
         ctx.privilege().ast[(PrivilegeType, Option[ActionResource], List[PrivilegeQualifier])]
-      val roleNames = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
+      val roleNames = ctx.roleNames.ast[ArraySeq[Expression]]()
       val revokeType =
         if (ctx.DENY() != null) RevokeDenyType()(pos(ctx.DENY()))
         else if (ctx.GRANT() != null) RevokeGrantType()(pos(ctx.GRANT()))
@@ -223,8 +224,8 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     ctx: CypherParser.RevokeRoleContext
   ): Unit = {
     ctx.ast = (
-      ctx.symbolicNameOrStringParameterList(0).ast[Seq[Either[String, Parameter]]](),
-      ctx.symbolicNameOrStringParameterList(1).ast[Seq[Either[String, Parameter]]]()
+      ctx.roleNames.ast[Seq[Either[String, Parameter]]](),
+      ctx.userNames.ast[Seq[Either[String, Parameter]]]()
     )
   }
 
@@ -256,7 +257,7 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
           if (c.TIMES() != null) AllGraphsScope()(pos(ctx))
           else NamedGraphsScope(c.symbolicAliasNameList().ast())(pos(ctx))
         allQualifier(GraphPrivilege(AllGraphAction, scope)(pos(ctx)), None)
-      case c: CypherParser.DBMSTargetContext =>
+      case _: CypherParser.DBMSTargetContext =>
         allQualifier(DbmsPrivilege(AllDbmsAction)(pos(ctx)), None)
       case _ => throw new IllegalStateException("Unexpected privilege all command")
     }
@@ -496,15 +497,18 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
       val scope = ctx.databaseScope().ast[DatabaseScope]()
       (DatabasePrivilege(action, scope)(p), None, qualifier)
     } else {
-      val (action, qualifier): (DbmsAction, List[PrivilegeQualifier]) = nodeChild(ctx, 1).getSymbol.getType match {
-        case CypherParser.ALIAS                         => withQualifier(ShowAliasAction)
-        case CypherParser.PRIVILEGE                     => withQualifier(ShowPrivilegeAction)
-        case CypherParser.ROLE                          => withQualifier(ShowRoleAction)
-        case CypherParser.SERVER | CypherParser.SERVERS => withQualifier(ShowServerAction)
-        case CypherParser.SETTING =>
+      val (action, qualifier): (DbmsAction, List[PrivilegeQualifier]) = ctx.getChild(1) match {
+        case t: TerminalNode => t.getSymbol.getType match {
+            case CypherParser.ALIAS                         => withQualifier(ShowAliasAction)
+            case CypherParser.PRIVILEGE                     => withQualifier(ShowPrivilegeAction)
+            case CypherParser.ROLE                          => withQualifier(ShowRoleAction)
+            case CypherParser.SERVER | CypherParser.SERVERS => withQualifier(ShowServerAction)
+            case CypherParser.USER                          => withQualifier(ShowUserAction)
+            case _                                          => throw new IllegalStateException()
+          }
+        case r: RuleNode if r.getRuleContext.getRuleIndex == CypherParser.RULE_settingToken =>
           (ShowSettingAction, ctx.settingQualifier().ast[List[SettingQualifier]]())
-        case CypherParser.USER => withQualifier(ShowUserAction)
-        case _                 => throw new IllegalStateException()
+        case _ => throw new IllegalStateException()
       }
       (DbmsPrivilege(action)(p), None, qualifier)
     }
@@ -678,8 +682,8 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   }
 
   override def exitUserQualifier(ctx: CypherParser.UserQualifierContext): Unit = {
-    ctx.ast = if (ctx.symbolicNameOrStringParameterList() != null) {
-      ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]().map(
+    ctx.ast = if (ctx.userNames != null) {
+      ctx.userNames.ast[ArraySeq[Expression]]().map(
         UserQualifier(_)(InputPosition.NONE)
       ).toList
     } else List(UserAllQualifier()(InputPosition.NONE))
@@ -719,8 +723,15 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
     (privilege, resource, List(LabelAllQualifier()(pos)))
   }
 
-  // TOKEN CONTEXTS
+  override def exitRoleNames(ctx: CypherParser.RoleNamesContext): Unit = {
+    ctx.ast = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
+  }
 
+  override def exitUserNames(ctx: CypherParser.UserNamesContext): Unit = {
+    ctx.ast = ctx.symbolicNameOrStringParameterList().ast[ArraySeq[Expression]]()
+  }
+
+  // TOKEN CONTEXTS
   override def exitAdminToken(ctx: CypherParser.AdminTokenContext): Unit = {}
 
   override def exitConstraintToken(ctx: CypherParser.ConstraintTokenContext): Unit = {
@@ -747,5 +758,14 @@ trait DdlPrivilegeBuilder extends CypherParserListener {
   override def exitRelToken(ctx: CypherParser.RelTokenContext): Unit = {}
   override def exitRoleToken(ctx: CypherParser.RoleTokenContext): Unit = {}
   override def exitTransactionToken(ctx: CypherParser.TransactionTokenContext): Unit = {}
+  override def exitFunctionToken(ctx: CypherParser.FunctionTokenContext): Unit = {}
+  override def exitAscToken(ctx: CypherParser.AscTokenContext): Unit = {}
+  override def exitDescToken(ctx: CypherParser.DescTokenContext): Unit = {}
+  override def exitSettingToken(ctx: CypherParser.SettingTokenContext): Unit = {}
+  override def exitPrimaryToken(ctx: CypherParser.PrimaryTokenContext): Unit = {}
+  override def exitSecondaryToken(ctx: CypherParser.SecondaryTokenContext): Unit = {}
+  override def exitSecondsToken(ctx: CypherParser.SecondsTokenContext): Unit = {}
+  override def exitGroupToken(ctx: CypherParser.GroupTokenContext): Unit = {}
+  override def exitPathToken(ctx: CypherParser.PathTokenContext): Unit = {}
 
 }

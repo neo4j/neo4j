@@ -553,7 +553,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
           |  "ROLES"""".stripMargin
       ))
       .parseIn(Antlr)(_.throws[SyntaxException].withMessage(
-        """Invalid input 'SETTINGS': expected 'CONSTRAINT', 'CONSTRAINTS', 'FUNCTIONS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'ROLE' or 'ROLES' (line 1, column 10 (offset: 9))
+        """Invalid input 'SETTINGS': expected 'CONSTRAINT', 'CONSTRAINTS', 'FUNCTION', 'FUNCTIONS', 'INDEX', 'INDEXES', 'PRIVILEGE', 'PRIVILEGES', 'ROLE' or 'ROLES' (line 1, column 10 (offset: 9))
           |"SHOW ALL SETTINGS"
           |          ^""".stripMargin
       ))
