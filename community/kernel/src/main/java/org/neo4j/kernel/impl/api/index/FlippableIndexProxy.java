@@ -34,7 +34,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
-import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -353,7 +352,7 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
     }
 
     public void flip(Callable<Boolean> actionDuringFlip, FailedIndexProxyFactory failureDelegate)
-            throws FlipFailedKernelException {
+            throws IndexProxyAlreadyClosedKernelException, ExceptionDuringFlipKernelException {
         lock.writeLock().lock();
         try {
             assertOpen();

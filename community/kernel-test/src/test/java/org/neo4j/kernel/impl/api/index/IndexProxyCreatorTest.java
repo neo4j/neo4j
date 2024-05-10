@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
-import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -84,7 +83,7 @@ class IndexProxyCreatorTest {
     }
 
     @Test
-    void populatingUniquenessIndexProxyWithOwningConstraintShouldFlipToOnline() throws FlipFailedKernelException {
+    void populatingUniquenessIndexProxyWithOwningConstraintShouldFlipToOnline() throws Exception {
         // when a uniqueness constraint index with an owning constraint completes population
         final FlippableIndexProxy proxy =
                 proxyAfterCompletedPopulation(UNIQUE_INDEX.materialise(10).withOwningConstraintId(4));
@@ -94,8 +93,7 @@ class IndexProxyCreatorTest {
     }
 
     @Test
-    void populatingUniquenessIndexProxyWithoutOwningConstraintShouldFlipToTentative()
-            throws FlipFailedKernelException, IndexActivationFailedKernelException {
+    void populatingUniquenessIndexProxyWithoutOwningConstraintShouldFlipToTentative() throws Exception {
         // when a uniqueness constraint index without an owning constraint completes population
         final FlippableIndexProxy proxy = proxyAfterCompletedPopulation(UNIQUE_INDEX.materialise(10));
 
@@ -107,8 +105,7 @@ class IndexProxyCreatorTest {
         assertThat(proxy.getDelegate()).isExactlyInstanceOf(OnlineIndexProxy.class);
     }
 
-    private FlippableIndexProxy proxyAfterCompletedPopulation(IndexDescriptor descriptor)
-            throws FlipFailedKernelException {
+    private FlippableIndexProxy proxyAfterCompletedPopulation(IndexDescriptor descriptor) throws Exception {
         final var provider = newProvider();
         final var creator = newCreator(provider);
         final var job = newJob();

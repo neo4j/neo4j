@@ -54,9 +54,10 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -622,7 +623,8 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
             }
         }
 
-        void flip(CursorContext cursorContext) throws FlipFailedKernelException {
+        void flip(CursorContext cursorContext)
+                throws IndexProxyAlreadyClosedKernelException, ExceptionDuringFlipKernelException {
             phaseTracker.enterPhase(PhaseTracker.Phase.FLIP);
             flipper.flip(
                     () -> {
