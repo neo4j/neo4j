@@ -83,14 +83,15 @@ public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor 
             ReadAheadLogChannel channel,
             LogEntryReader logEntryReader,
             boolean failOnCorruptedLogFiles,
-            ReversedTransactionCursorMonitor monitor)
+            ReversedTransactionCursorMonitor monitor,
+            boolean light)
             throws IOException {
         this.channel = channel;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.monitor = monitor;
         // There's an assumption here: that the underlying channel can move in between calls and that the
         // transaction cursor will just happily read from the new position.
-        this.commandBatchCursor = new CommittedCommandBatchCursor(channel, logEntryReader);
+        this.commandBatchCursor = new CommittedCommandBatchCursor(channel, logEntryReader, light);
         this.sketchingCursor = new SketchingCommandBatchCursor(channel, logEntryReader);
         this.offsets = sketchOutTransactionStartOffsets();
     }

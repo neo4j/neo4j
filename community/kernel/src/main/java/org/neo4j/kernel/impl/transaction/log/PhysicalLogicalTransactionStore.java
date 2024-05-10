@@ -73,7 +73,8 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
                 new VersionAwareLogEntryReader(commandReaderFactory, binarySupportedKernelVersions),
                 failOnCorruptedLogFiles,
                 monitors.newMonitor(ReversedTransactionCursorMonitor.class),
-                presketchLogFiles);
+                presketchLogFiles,
+                false);
     }
 
     @Override

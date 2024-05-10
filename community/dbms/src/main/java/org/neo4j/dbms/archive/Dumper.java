@@ -101,6 +101,14 @@ public class Dumper {
         return Files.newOutputStream(archive, StandardOpenOption.CREATE_NEW);
     }
 
+    /**
+     * @param dbPath store file location
+     * @param transactionalLogsPath tx logs location
+     * @param out output stream, will be closed by this method
+     * @param format compression format
+     * @param exclude exlusion predicate
+     * @throws IOException in case of error
+     */
     public void dump(
             Path dbPath,
             Path transactionalLogsPath,

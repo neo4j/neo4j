@@ -226,7 +226,7 @@ class ReversedMultiFileCommandBatchCursorTest {
         ReadableLogChannel fileReader =
                 logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition());
         try {
-            return fromLogFile(logFile, position, logEntryReader(), false, monitor, presketch);
+            return fromLogFile(logFile, position, logEntryReader(), false, monitor, presketch, false);
         } catch (Exception e) {
             fileReader.close();
             throw e;

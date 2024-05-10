@@ -170,7 +170,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         // when
         try (ReadAheadLogChannel channel = (ReadAheadLogChannel)
                 logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition())) {
-            new ReversedSingleFileCommandBatchCursor(channel, logEntryReader(), false, monitor);
+            new ReversedSingleFileCommandBatchCursor(channel, logEntryReader(), false, monitor, false);
             fail("Should've failed");
         } catch (IllegalArgumentException e) {
             // then good
@@ -227,7 +227,7 @@ class ReversedSingleFileCommandBatchCursorTest {
                 logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition());
         try {
             return new ReversedSingleFileCommandBatchCursor(
-                    fileReader, logEntryReader(), failOnCorruptedLogFiles, monitor);
+                    fileReader, logEntryReader(), failOnCorruptedLogFiles, monitor, false);
         } catch (Exception e) {
             fileReader.close();
             throw e;

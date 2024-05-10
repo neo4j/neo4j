@@ -47,12 +47,13 @@ public class ReversedMultiFileCommandBatchCursor implements CommandBatchCursor {
      * Utility method for creating a {@link ReversedMultiFileCommandBatchCursor} with a {@link LogFile} as the source of
      * {@link CommandBatchCursor} for each log version.
      *
-     * @param logFile accessor of log files.
-     * @param backToPosition {@link LogPosition} to read backwards to.
-     * @param logEntryReader {@link LogEntryReader} to use.
+     * @param logFile                 accessor of log files.
+     * @param backToPosition          {@link LogPosition} to read backwards to.
+     * @param logEntryReader          {@link LogEntryReader} to use.
      * @param failOnCorruptedLogFiles fail reading from log files as soon as first error is encountered
-     * @param monitor reverse transaction cursor monitor
-     * @param presketch enables pre-sketching of next transaction file.
+     * @param monitor                 reverse transaction cursor monitor
+     * @param presketch               enables pre-sketching of next transaction file.
+     * @param light                   if true, actual commands will not be included into the batches
      * @return a {@link CommandBatchCursor} which returns transactions from the end of the log stream and backwards to
      * and including transaction starting at {@link LogPosition}.
      */
@@ -62,13 +63,14 @@ public class ReversedMultiFileCommandBatchCursor implements CommandBatchCursor {
             LogEntryReader logEntryReader,
             boolean failOnCorruptedLogFiles,
             ReversedTransactionCursorMonitor monitor,
-            boolean presketch) {
+            boolean presketch,
+            boolean light) {
         if (presketch) {
             return new ReversedMultiFileCommandBatchCursor(new PrefetchedCommandBatchCursors(
-                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor));
+                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor, light));
         } else {
             return new ReversedMultiFileCommandBatchCursor(new DefaultCommandBatchCursors(
-                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor));
+                    logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor, light));
         }
     }
 
