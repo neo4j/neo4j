@@ -547,8 +547,7 @@ public class Database extends AbstractDatabase {
                 databaseDependencies,
                 cursorContextFactory,
                 storageEngineFactory.commandReaderFactory());
-        commitmentFactory =
-                new TransactionCommitmentFactory(transactionLogModule.transactionMetadataCache(), metadataProvider);
+        commitmentFactory = new TransactionCommitmentFactory(metadataProvider);
 
         databaseTransactionEventListeners =
                 new DatabaseTransactionEventListeners(databaseFacade, transactionEventListeners, namedDatabaseId);

@@ -17,25 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.util.concurrent.atomic.AtomicLong;
-import org.neo4j.storageengine.AppendIndexProvider;
-
-public class SimpleAppendIndexProvider implements AppendIndexProvider {
-    private final AtomicLong index = new AtomicLong();
-
-    @Override
-    public long nextAppendIndex() {
-        return index.incrementAndGet();
-    }
-
-    @Override
-    public long getLastAppendIndex() {
-        return index.getAcquire();
-    }
-
-    public long setAppendIndex(long newIndex) {
-        return index.getAndSet(newIndex);
-    }
+/**
+ * Extracts last append index from available log file context or from provided log files
+ */
+@FunctionalInterface
+public interface LastAppendIndexLogFilesProvider {
+    long getLastAppendIndex(LogFiles logFiles);
 }

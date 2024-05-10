@@ -38,6 +38,8 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     private final SimpleLogVersionRepository logVersionRepository;
     private final ExternalStoreId externalStoreId = new ExternalStoreId(UUID.randomUUID());
     private final AtomicLong appendIndex = new AtomicLong();
+    private volatile AppendBatchInfo appendBatchInfo =
+            new AppendBatchInfo(UNKNOWN_APPEND_INDEX, LogPosition.UNSPECIFIED);
 
     public SimpleMetaDataProvider() {
         transactionIdStore = new SimpleTransactionIdStore();
@@ -156,6 +158,7 @@ public class SimpleMetaDataProvider implements MetadataProvider {
                 logVersion,
                 appendIndex);
         this.appendIndex.set(appendIndex);
+        this.appendBatchInfo = new AppendBatchInfo(appendIndex, LogPosition.UNSPECIFIED);
     }
 
     @Override
@@ -201,7 +204,14 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public void appendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex) {}
+    public void appendBatch(long appendIndex, LogPosition logPositionAfter) {
+        this.appendBatchInfo = new AppendBatchInfo(appendIndex, logPositionAfter);
+    }
+
+    @Override
+    public AppendBatchInfo lastBatch() {
+        return appendBatchInfo;
+    }
 
     @Override
     public Optional<UUID> getDatabaseIdUuid(CursorContext cursorContext) {

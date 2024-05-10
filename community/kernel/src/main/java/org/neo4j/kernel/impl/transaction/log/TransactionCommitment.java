@@ -25,7 +25,6 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionCommitment implements Commitment {
 
-    private final TransactionMetadataCache transactionMetadataCache;
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
     private long transactionId;
@@ -36,8 +35,7 @@ public class TransactionCommitment implements Commitment {
     private LogPosition logPositionAfterCommit;
     private long transactionCommitTimestamp;
 
-    TransactionCommitment(TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore) {
-        this.transactionMetadataCache = transactionMetadataCache;
+    TransactionCommitment(TransactionIdStore transactionIdStore) {
         this.transactionIdStore = transactionIdStore;
     }
 
@@ -46,7 +44,6 @@ public class TransactionCommitment implements Commitment {
             long transactionId,
             long appendIndex,
             KernelVersion kernelVersion,
-            LogPosition beforeCommit,
             LogPosition logPositionAfterCommit,
             int checksum,
             long consensusIndex) {
@@ -55,15 +52,14 @@ public class TransactionCommitment implements Commitment {
         this.logPositionAfterCommit = logPositionAfterCommit;
         this.checksum = checksum;
         this.consensusIndex = consensusIndex;
-        transactionIdStore.appendBatch(appendIndex, beforeCommit);
+        transactionIdStore.appendBatch(appendIndex, logPositionAfterCommit);
     }
 
     @Override
-    public void publishAsCommitted(long transactionCommitTimestamp, long appendIndex, LogPosition beforeCommit) {
+    public void publishAsCommitted(long transactionCommitTimestamp, long appendIndex) {
         this.committed = true;
         this.appendIndex = appendIndex;
         this.transactionCommitTimestamp = transactionCommitTimestamp;
-        this.transactionMetadataCache.cacheTransactionMetadata(transactionId, beforeCommit);
         transactionIdStore.transactionCommitted(
                 transactionId, appendIndex, kernelVersion, checksum, transactionCommitTimestamp, consensusIndex);
     }

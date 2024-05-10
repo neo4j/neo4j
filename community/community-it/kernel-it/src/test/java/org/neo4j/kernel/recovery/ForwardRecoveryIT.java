@@ -276,7 +276,7 @@ class ForwardRecoveryIT {
         }
 
         @Override
-        public void reverseStoreRecoveryCompleted(long lowestRecoveredTxId) {
+        public void reverseStoreRecoveryCompleted(long lowestRecoveredAppendIndex) {
             reverseCompletionCalled = true;
         }
 

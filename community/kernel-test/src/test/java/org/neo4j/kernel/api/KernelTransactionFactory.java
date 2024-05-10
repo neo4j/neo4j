@@ -67,7 +67,6 @@ import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
@@ -136,7 +135,7 @@ public final class KernelTransactionFactory {
                 TransactionExecutionMonitor.NO_OP,
                 CommunitySecurityLog.NULL_LOG,
                 locks,
-                new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore),
+                new TransactionCommitmentFactory(transactionIdStore),
                 mock(KernelTransactions.class),
                 TransactionIdGenerator.EMPTY,
                 mock(DbmsRuntimeVersionProvider.class),

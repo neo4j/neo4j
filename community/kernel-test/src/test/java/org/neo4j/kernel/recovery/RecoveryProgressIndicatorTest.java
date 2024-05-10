@@ -57,11 +57,12 @@ class RecoveryProgressIndicatorTest {
 
         int transactionsToRecover = 5;
         int expectedMax = transactionsToRecover * 2;
-        int lastCommittedTransactionId = 14;
+        int appendIndexAndTxId = 14;
         CommittedTransactionRepresentation transactionRepresentation = new CommittedTransactionRepresentation(
-                newStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, 4, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                newStartEntry(
+                        LATEST_KERNEL_VERSION, 1, 2, appendIndexAndTxId, 4, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 emptyList(),
-                newCommitEntry(LATEST_KERNEL_VERSION, lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM));
+                newCommitEntry(LATEST_KERNEL_VERSION, appendIndexAndTxId, 1L, BASE_TX_CHECKSUM));
         LogPosition transactionLogPosition = new LogPosition(0, LATEST_LOG_FORMAT.getHeaderSize());
         int firstTxIdAfterLastCheckPoint = 10;
         RecoveryStartInformation startInformation =

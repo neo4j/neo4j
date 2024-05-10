@@ -385,7 +385,7 @@ class TransactionLogsRecoveryTest {
 
             // incomplete tx
             channel.getCurrentLogPosition(marker); // <-- marker has the last good position
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, 9, EMPTY_BYTE_ARRAY);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 78, 9, EMPTY_BYTE_ARRAY);
             channel.putChecksum();
 
             return true;
@@ -423,7 +423,7 @@ class TransactionLogsRecoveryTest {
                     "test");
 
             // write incomplete tx to trigger recovery
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, 2, EMPTY_BYTE_ARRAY);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 28, 2, EMPTY_BYTE_ARRAY);
             writer.getChannel().putChecksum();
             return true;
         });
@@ -478,7 +478,7 @@ class TransactionLogsRecoveryTest {
                     "invalid checkpoint");
 
             // incomplete tx
-            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, 1, EMPTY_BYTE_ARRAY);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 27, 1, EMPTY_BYTE_ARRAY);
             return true;
         });
         assertTrue(recovery(storeDir));

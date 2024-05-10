@@ -77,15 +77,14 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleAppendIndexProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.AppendedChunkLogVersionLocator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionLogVersionLocator;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -120,7 +119,7 @@ class TransactionLogFileTest {
 
     private final long rotationThreshold = ByteUnit.mebiBytes(1);
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
-    private final AppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
+    private final SimpleAppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore(
             2L, 3L, DEFAULT_BOOTSTRAP_VERSION, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
 
@@ -156,6 +155,8 @@ class TransactionLogFileTest {
         life.add(logFiles);
         life.start();
 
+        // set append index to be the same as for our test transaction
+        appendIndexProvider.setAppendIndex(6L);
         // simulate new file without header presence
         logVersionRepository.incrementAndGetVersion();
         fileSystem
@@ -163,7 +164,7 @@ class TransactionLogFileTest {
                 .close();
         transactionIdStore.transactionCommitted(5L, 6L, DEFAULT_BOOTSTRAP_VERSION, 5, 5L, 6L);
 
-        TransactionLogVersionLocator versionLocator = new TransactionLogVersionLocator(4L);
+        var versionLocator = new AppendedChunkLogVersionLocator(4L);
         logFiles.getLogFile().accept(versionLocator);
 
         LogPosition logPosition = versionLocator.getLogPositionOrThrow();

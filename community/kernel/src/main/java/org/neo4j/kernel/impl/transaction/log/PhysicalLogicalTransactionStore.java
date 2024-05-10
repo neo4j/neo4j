@@ -77,12 +77,12 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
     }
 
     @Override
-    public CommandBatchCursor getCommandBatches(final long transactionIdToStartFrom) throws IOException {
+    public CommandBatchCursor getCommandBatches(final long appendIndexToStartFrom) throws IOException {
         // look up in position cache
         try {
             var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory, binarySupportedKernelVersions);
             TransactionMetadataCache.TransactionMetadata transactionMetadata =
-                    transactionMetadataCache.getTransactionMetadata(transactionIdToStartFrom);
+                    transactionMetadataCache.getTransactionMetadata(appendIndexToStartFrom);
             if (transactionMetadata != null) {
                 // we're good
                 var channel = logFile.getReader(transactionMetadata.startPosition());
@@ -90,19 +90,18 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
             }
 
             // ask logFiles about the version it may be in
-            var headerVisitor = new TransactionLogVersionLocator(transactionIdToStartFrom);
+            var headerVisitor = new AppendedChunkLogVersionLocator(appendIndexToStartFrom);
             logFile.accept(headerVisitor);
 
             // ask LogFile
-            var transactionPositionLocator =
-                    new TransactionOrEndPositionLocator(transactionIdToStartFrom, logEntryReader);
+            var transactionPositionLocator = new AppendedChunkPositionLocator(appendIndexToStartFrom, logEntryReader);
             logFile.accept(transactionPositionLocator, headerVisitor.getLogPositionOrThrow());
-            var position = transactionPositionLocator.getLogPosition();
-            transactionMetadataCache.cacheTransactionMetadata(transactionIdToStartFrom, position);
+            var position = transactionPositionLocator.getLogPositionOrThrow();
+            transactionMetadataCache.cacheTransactionMetadata(appendIndexToStartFrom, position);
             return new CommittedCommandBatchCursor(logFile.getReader(position), logEntryReader);
         } catch (NoSuchFileException e) {
-            throw new NoSuchTransactionException(
-                    transactionIdToStartFrom,
+            throw new NoSuchLogEntryException(
+                    appendIndexToStartFrom,
                     "Log position acquired, but couldn't find the log file itself. Perhaps it just recently was "
                             + "deleted? [" + e.getMessage() + "]",
                     e);

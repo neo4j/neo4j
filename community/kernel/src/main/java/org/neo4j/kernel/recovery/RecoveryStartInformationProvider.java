@@ -83,7 +83,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
     public RecoveryStartInformation get() {
         var logTailInformation = (LogTailInformation) logFiles.getTailMetadata();
         CheckpointInfo lastCheckPoint = logTailInformation.lastCheckPoint;
-        long txIdAfterLastCheckPoint = logTailInformation.firstTxIdAfterLastCheckPoint;
+        long appendIndexAfterLastCheckPoint = logTailInformation.firstAppendIndexAfterLastCheckPoint;
 
         if (!logTailInformation.isRecoveryRequired()) {
             monitor.noCommitsAfterLastCheckPoint(
@@ -104,17 +104,15 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
                 }
                 monitor.noCheckPointFound();
                 LogPosition position = tryExtractHeaderAndGetStartPosition();
-                return createRecoveryInformation(position, null, txIdAfterLastCheckPoint);
+                return createRecoveryInformation(position, null, appendIndexAfterLastCheckPoint);
             }
             LogPosition transactionLogPosition = lastCheckPoint.transactionLogPosition();
-            monitor.logsAfterLastCheckPoint(transactionLogPosition, txIdAfterLastCheckPoint);
-            return createRecoveryInformation(transactionLogPosition, lastCheckPoint, txIdAfterLastCheckPoint);
+            monitor.logsAfterLastCheckPoint(transactionLogPosition, appendIndexAfterLastCheckPoint);
+            return createRecoveryInformation(transactionLogPosition, lastCheckPoint, appendIndexAfterLastCheckPoint);
         } else if (logTailInformation.hasUnreadableBytesInCheckpointLogs()) {
             // The problem is just corruption in the checkpoint log file
             return createRecoveryInformation(
-                    lastCheckPoint.transactionLogPosition(),
-                    lastCheckPoint,
-                    lastCheckPoint.transactionId().id());
+                    lastCheckPoint.transactionLogPosition(), lastCheckPoint, lastCheckPoint.appendIndex());
         } else {
             throw new UnderlyingStorageException(
                     "Fail to determine recovery information Log tail info: " + logTailInformation);
@@ -132,7 +130,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
     }
 
     private static RecoveryStartInformation createRecoveryInformation(
-            LogPosition transactionLogPosition, CheckpointInfo checkpoint, long firstTxId) {
-        return new RecoveryStartInformation(transactionLogPosition, checkpoint, firstTxId);
+            LogPosition transactionLogPosition, CheckpointInfo checkpoint, long firstAppendIndex) {
+        return new RecoveryStartInformation(transactionLogPosition, checkpoint, firstAppendIndex);
     }
 }

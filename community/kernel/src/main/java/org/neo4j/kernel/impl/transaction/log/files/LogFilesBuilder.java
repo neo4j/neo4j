@@ -336,8 +336,12 @@ public class LogFilesBuilder {
         Supplier<StoreId> storeIdSupplier = getStoreId();
         LogVersionRepositoryProvider logVersionRepositorySupplier = getLogVersionRepositoryProvider();
         LogFileVersionTracker versionTracker = getLogFileVersionTracker();
+
+        LastAppendIndexProvider availableAppendIndexProvider = availableAppendIndexProvider();
+        LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider =
+                lastAppendIndexLogFilesProvider(availableAppendIndexProvider);
+        var appendIndexProvider = lastAppendIndexProvider(availableAppendIndexProvider);
         LastCommittedTransactionIdProvider lastCommittedIdSupplier = lastCommittedIdProvider();
-        LastAppendIndexProvider lastAppendIndexProvider = lastAppendIndexProvider();
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
         LastClosedPositionProvider lastClosedTransactionPositionProvider = closePositionProvider();
 
@@ -355,8 +359,9 @@ public class LogFilesBuilder {
                 checkpointThreshold,
                 tryPreallocateTransactionLogs,
                 commandReaderFactory(),
+                lastAppendIndexLogFilesProvider,
+                appendIndexProvider,
                 lastCommittedIdSupplier,
-                lastAppendIndexProvider,
                 committingTransactionIdSupplier,
                 lastClosedTransactionPositionProvider,
                 logVersionRepositorySupplier,
@@ -381,13 +386,20 @@ public class LogFilesBuilder {
                 getBufferSizeBytes());
     }
 
-    private LastAppendIndexProvider lastAppendIndexProvider() {
+    private LastAppendIndexProvider availableAppendIndexProvider() {
         if (appendIndexProvider != null) {
             return appendIndexProvider::getLastAppendIndex;
         }
         if (dependencies != null && dependencies.containsDependency(MetadataProvider.class)) {
             MetadataProvider metadataProvider = resolveDependency(MetadataProvider.class);
             return metadataProvider::getLastAppendIndex;
+        }
+        return null;
+    }
+
+    private LastAppendIndexProvider lastAppendIndexProvider(LastAppendIndexProvider availableProvider) {
+        if (availableProvider != null) {
+            return availableProvider;
         }
         return () -> {
             throw new UnsupportedOperationException(
@@ -536,6 +548,30 @@ public class LogFilesBuilder {
         return LogFileVersionTracker.NO_OP;
     }
 
+    private LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider(
+            LastAppendIndexProvider lastAppendIndexProvider) {
+        if (lastAppendIndexProvider != null) {
+            return new LongSupplierLastAppendIndexLogFilesProvider(lastAppendIndexProvider::lastAppendIndex);
+        }
+        if (fileBasedOperationsOnly) {
+            return any -> {
+                throw new UnsupportedOperationException("Current version of log files can't perform any "
+                        + "operation that require availability of append index provider. Please build full version of log files "
+                        + "to be able to use them.");
+            };
+        }
+        if (readOnlyStores) {
+            requireNonNull(databaseLayout, "Store directory is required.");
+            return new ReadOnlyLastAppendIndexLogFilesProvider();
+        } else {
+            return any -> {
+                throw new UnsupportedOperationException("Current version of log files can't perform any "
+                        + "operation that require availability of append index provider. Please build full version of log files "
+                        + "to be able to use them.");
+            };
+        }
+    }
+
     private LastCommittedTransactionIdProvider lastCommittedIdProvider() {
         if (lastCommittedTransactionIdSupplier != null) {
             return new LongSupplierLastCommittedTransactionIdProvider(lastCommittedTransactionIdSupplier);
@@ -653,6 +689,26 @@ public class LogFilesBuilder {
         @Override
         public long getLastCommittedTransactionId(LogFiles logFiles) {
             return logFiles.getTailMetadata().getLastCommittedTransaction().id();
+        }
+    }
+
+    private static class LongSupplierLastAppendIndexLogFilesProvider implements LastAppendIndexLogFilesProvider {
+        private final LongSupplier idSupplier;
+
+        LongSupplierLastAppendIndexLogFilesProvider(LongSupplier idSupplier) {
+            this.idSupplier = idSupplier;
+        }
+
+        @Override
+        public long getLastAppendIndex(LogFiles logFiles) {
+            return idSupplier.getAsLong();
+        }
+    }
+
+    private static class ReadOnlyLastAppendIndexLogFilesProvider implements LastAppendIndexLogFilesProvider {
+        @Override
+        public long getLastAppendIndex(LogFiles logFiles) {
+            return logFiles.getTailMetadata().getLastCheckpointedAppendIndex();
         }
     }
 

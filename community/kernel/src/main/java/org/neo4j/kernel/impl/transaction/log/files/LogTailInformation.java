@@ -34,7 +34,7 @@ import org.neo4j.storageengine.api.TransactionId;
 
 public class LogTailInformation implements LogTailMetadata {
     public final CheckpointInfo lastCheckPoint;
-    public final long firstTxIdAfterLastCheckPoint;
+    public final long firstAppendIndexAfterLastCheckPoint;
     public final boolean filesNotFound;
     public final long currentLogVersion;
     public final byte firstLogEntryVersionAfterCheckpoint;
@@ -44,7 +44,7 @@ public class LogTailInformation implements LogTailMetadata {
 
     public LogTailInformation(
             boolean recordAfterCheckpoint,
-            long firstTxIdAfterLastCheckPoint,
+            long firstAppendIndexAfterLastCheckPoint,
             boolean filesNotFound,
             long currentLogVersion,
             byte firstLogEntryVersionAfterCheckpoint,
@@ -52,7 +52,7 @@ public class LogTailInformation implements LogTailMetadata {
         this(
                 null,
                 recordAfterCheckpoint,
-                firstTxIdAfterLastCheckPoint,
+                firstAppendIndexAfterLastCheckPoint,
                 filesNotFound,
                 currentLogVersion,
                 firstLogEntryVersionAfterCheckpoint,
@@ -63,14 +63,14 @@ public class LogTailInformation implements LogTailMetadata {
     public LogTailInformation(
             CheckpointInfo lastCheckPoint,
             boolean recordAfterCheckpoint,
-            long firstTxIdAfterLastCheckPoint,
+            long firstAppendIndexAfterLastCheckPoint,
             boolean filesNotFound,
             long currentLogVersion,
             byte firstLogEntryVersionAfterCheckpoint,
             StoreId storeId,
             KernelVersionProvider fallbackKernelVersionProvider) {
         this.lastCheckPoint = lastCheckPoint;
-        this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
+        this.firstAppendIndexAfterLastCheckPoint = firstAppendIndexAfterLastCheckPoint;
         this.filesNotFound = filesNotFound;
         this.currentLogVersion = currentLogVersion;
         this.firstLogEntryVersionAfterCheckpoint = firstLogEntryVersionAfterCheckpoint;
@@ -113,8 +113,8 @@ public class LogTailInformation implements LogTailMetadata {
 
     @Override
     public String toString() {
-        return "LogTailInformation{" + "lastCheckPoint=" + lastCheckPoint + ", firstTxIdAfterLastCheckPoint="
-                + firstTxIdAfterLastCheckPoint + ", filesNotFound="
+        return "LogTailInformation{" + "lastCheckPoint=" + lastCheckPoint + ", firstAppendIndexAfterLastCheckPoint="
+                + firstAppendIndexAfterLastCheckPoint + ", filesNotFound="
                 + filesNotFound + ", currentLogVersion=" + currentLogVersion + ", firstLogEntryVersionAfterCheckpoint="
                 + firstLogEntryVersionAfterCheckpoint
                 + ", recordAfterCheckpoint=" + recordAfterCheckpoint + '}';

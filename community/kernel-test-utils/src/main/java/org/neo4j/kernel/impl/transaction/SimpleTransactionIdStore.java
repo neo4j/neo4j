@@ -199,5 +199,10 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     }
 
     @Override
-    public void appendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex) {}
+    public void appendBatch(long appendIndex, LogPosition logPositionAfter) {}
+
+    @Override
+    public AppendBatchInfo lastBatch() {
+        throw new UnsupportedOperationException();
+    }
 }

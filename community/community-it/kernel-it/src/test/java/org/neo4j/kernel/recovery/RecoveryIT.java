@@ -1794,7 +1794,7 @@ class RecoveryIT {
             private final AtomicBoolean recoveryCompleted = new AtomicBoolean();
 
             @Override
-            public void reverseStoreRecoveryCompleted(long lowestRecoveredTxId) {
+            public void reverseStoreRecoveryCompleted(long lowestRecoveredAppendIndex) {
                 try {
                     guardExtensionFactory.getProvidedGuardConsumer().globalGuard.stop();
                 } catch (Exception e) {

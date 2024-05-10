@@ -89,7 +89,6 @@ class TransactionAppenderRotationIT {
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final AppendIndexProvider appendIndexProvider = new SimpleAppendIndexProvider();
-    private final TransactionMetadataCache metadataCache = new TransactionMetadataCache();
     private ThreadPoolJobScheduler jobScheduler;
 
     @BeforeEach
@@ -144,7 +143,7 @@ class TransactionAppenderRotationIT {
         List<StorageCommand> commands = createCommands();
         CompleteTransaction transactionRepresentation = new CompleteTransaction(
                 commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
-        var transactionCommitment = new TransactionCommitment(metadataCache, transactionIdStore);
+        var transactionCommitment = new TransactionCommitment(transactionIdStore);
         return new TransactionToApply(
                 transactionRepresentation,
                 NULL_CONTEXT,

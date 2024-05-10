@@ -234,8 +234,18 @@ public interface TransactionIdStore {
 
     /**
      * Signals that some new chunk of info was added to transaction logs with new provided index and position
-     * @param appendIndex transaction logs latest append index
-     * @param logPositionBeforeAppendIndex log position before providedAppendIndex
+     *
+     * @param appendIndex latest append index
+     * @param logPositionAfter log position after entry with provided appendIndex
      */
-    void appendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex);
+    void appendBatch(long appendIndex, LogPosition logPositionAfter);
+
+    /**
+     * Returns information about last encountered appended registered batch.
+     * After database restart and before first applied transaction position after the batch will be UNSPECIFFIED and interested
+     * parties should do lookup in their side.
+     */
+    AppendBatchInfo lastBatch();
+
+    record AppendBatchInfo(long appendIndex, LogPosition logPositionAfter) {}
 }

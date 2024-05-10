@@ -36,7 +36,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -86,7 +85,6 @@ class QueueTransactionAppenderConcurrencyIT {
     private SimpleLogVersionRepository logVersionRepository;
     private SimpleTransactionIdStore transactionIdStore;
     private TransactionMetadataCache metadataCache;
-    private Config config;
     private DatabaseHealth databaseHealth;
     private NullLogProvider logProvider;
     private ExecutorService executor;
@@ -101,7 +99,6 @@ class QueueTransactionAppenderConcurrencyIT {
         appendIndexProvider = new SimpleAppendIndexProvider();
         logProvider = NullLogProvider.getInstance();
         metadataCache = new TransactionMetadataCache();
-        config = Config.defaults();
         databaseHealth = new DatabaseHealth(NO_OP, logProvider.getLog(DatabaseHealth.class));
         executor = Executors.newFixedThreadPool(20);
     }
@@ -216,7 +213,7 @@ class QueueTransactionAppenderConcurrencyIT {
                 4,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
-        var transactionCommitment = new TransactionCommitment(metadataCache, transactionIdStore);
+        var transactionCommitment = new TransactionCommitment(transactionIdStore);
         return new TransactionToApply(
                 tx,
                 CursorContext.NULL_CONTEXT,

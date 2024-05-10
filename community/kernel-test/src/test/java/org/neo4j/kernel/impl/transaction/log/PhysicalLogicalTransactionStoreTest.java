@@ -93,6 +93,7 @@ import org.neo4j.test.utils.TestDirectory;
 @Neo4jLayoutExtension
 class PhysicalLogicalTransactionStoreTest {
     private static final Panic DATABASE_PANIC = mock(DatabaseHealth.class);
+    private static SimpleAppendIndexProvider appendIndexProvider;
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
@@ -111,6 +112,7 @@ class PhysicalLogicalTransactionStoreTest {
     void setup() {
         jobScheduler = new ThreadPoolJobScheduler();
         databaseDirectory = testDirectory.homePath();
+        appendIndexProvider = new SimpleAppendIndexProvider();
     }
 
     @AfterEach
@@ -127,6 +129,8 @@ class PhysicalLogicalTransactionStoreTest {
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
+        long initialAppendIndex = appendIndexProvider.getLastAppendIndex();
+
         LifeSupport life = new LifeSupport();
         final LogFiles logFiles = buildLogFiles(transactionIdStore);
         life.add(logFiles);
@@ -156,7 +160,13 @@ class PhysicalLogicalTransactionStoreTest {
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore(
                 logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
         verifyTransaction(
-                positionCache, consensusIndex, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store);
+                positionCache,
+                consensusIndex,
+                timeStarted,
+                latestCommittedTxWhenStarted,
+                timeCommitted,
+                store,
+                initialAppendIndex);
     }
 
     @Test
@@ -168,7 +178,8 @@ class PhysicalLogicalTransactionStoreTest {
         final LogFiles logFiles = buildLogFiles(transactionIdStore);
         life.add(logFiles);
 
-        life.add(createTransactionAppender(transactionIdStore, logFiles, Config.defaults(), jobScheduler));
+        life.add(createTransactionAppender(
+                transactionIdStore, logFiles, Config.defaults(), jobScheduler, new TransactionMetadataCache()));
 
         try {
             // WHEN
@@ -218,7 +229,8 @@ class PhysicalLogicalTransactionStoreTest {
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
                 logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
 
-        life.add(createTransactionAppender(transactionIdStore, logFiles, Config.defaults(), jobScheduler));
+        life.add(createTransactionAppender(
+                transactionIdStore, logFiles, Config.defaults(), jobScheduler, positionCache));
         CorruptedLogsTruncator logPruner =
                 new CorruptedLogsTruncator(databaseDirectory, logFiles, fileSystem, INSTANCE);
         life.add(new TransactionLogsRecovery(
@@ -255,6 +267,8 @@ class PhysicalLogicalTransactionStoreTest {
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
+        long initialAppendIndex = appendIndexProvider.getLastAppendIndex();
+
         LifeSupport life = new LifeSupport();
         final LogFiles logFiles = buildLogFiles(transactionIdStore);
         life.start();
@@ -283,7 +297,13 @@ class PhysicalLogicalTransactionStoreTest {
         life.start();
         try {
             verifyTransaction(
-                    positionCache, consensusIndex, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store);
+                    positionCache,
+                    consensusIndex,
+                    timeStarted,
+                    latestCommittedTxWhenStarted,
+                    timeCommitted,
+                    store,
+                    initialAppendIndex);
         } finally {
             life.shutdown();
         }
@@ -312,7 +332,7 @@ class PhysicalLogicalTransactionStoreTest {
 
             // WHEN
             // we ask for that transaction and forward
-            assertThrows(NoSuchTransactionException.class, () -> txStore.getCommandBatches(10));
+            assertThrows(NoSuchLogEntryException.class, () -> txStore.getCommandBatches(10));
         } finally {
             life.shutdown();
         }
@@ -323,7 +343,7 @@ class PhysicalLogicalTransactionStoreTest {
         return LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withTransactionIdStore(transactionIdStore)
-                .withAppendIndexProvider(new SimpleAppendIndexProvider())
+                .withAppendIndexProvider(appendIndexProvider)
                 .withLogVersionRepository(mock(LogVersionRepository.class))
                 .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
@@ -341,8 +361,8 @@ class PhysicalLogicalTransactionStoreTest {
             long timeCommitted,
             JobScheduler jobScheduler)
             throws Exception {
-        TransactionAppender appender =
-                life.add(createTransactionAppender(transactionIdStore, logFiles, Config.defaults(), jobScheduler));
+        TransactionAppender appender = life.add(createTransactionAppender(
+                transactionIdStore, logFiles, Config.defaults(), jobScheduler, positionCache));
         CompleteTransaction transaction = new CompleteTransaction(
                 singleTestCommand(),
                 consensusIndex,
@@ -352,7 +372,7 @@ class PhysicalLogicalTransactionStoreTest {
                 -1,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
-        var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
+        var transactionCommitment = new TransactionCommitment(transactionIdStore);
         appender.append(
                 new TransactionToApply(
                         transaction,
@@ -373,9 +393,10 @@ class PhysicalLogicalTransactionStoreTest {
             long timeStarted,
             long latestCommittedTxWhenStarted,
             long timeCommitted,
-            LogicalTransactionStore store)
+            LogicalTransactionStore store,
+            long initialAppendIndex)
             throws IOException {
-        try (CommandBatchCursor cursor = store.getCommandBatches(TransactionIdStore.BASE_TX_ID + 1)) {
+        try (CommandBatchCursor cursor = store.getCommandBatches(initialAppendIndex + 1)) {
             boolean hasNext = cursor.next();
             assertTrue(hasNext);
             CommittedCommandBatch commandBatch = cursor.get();
@@ -390,16 +411,20 @@ class PhysicalLogicalTransactionStoreTest {
     }
 
     private static TransactionAppender createTransactionAppender(
-            TransactionIdStore transactionIdStore, LogFiles logFiles, Config config, JobScheduler jobScheduler) {
+            TransactionIdStore transactionIdStore,
+            LogFiles logFiles,
+            Config config,
+            JobScheduler jobScheduler,
+            TransactionMetadataCache positionCache) {
         return TransactionAppenderFactory.createTransactionAppender(
                 logFiles,
                 transactionIdStore,
-                new SimpleAppendIndexProvider(),
+                appendIndexProvider,
                 config,
                 DATABASE_PANIC,
                 jobScheduler,
                 NullLogProvider.getInstance(),
-                new TransactionMetadataCache());
+                positionCache);
     }
 
     private static class FakeRecoveryVisitor implements RecoveryApplier {

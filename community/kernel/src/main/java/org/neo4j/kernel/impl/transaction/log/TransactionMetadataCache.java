@@ -23,27 +23,28 @@ import java.util.Objects;
 import org.neo4j.internal.helpers.collection.LfuCache;
 
 public class TransactionMetadataCache {
-    private static final int DEFAULT_TRANSACTION_CACHE_SIZE = 10_000;
-    private final LfuCache<Long, TransactionMetadata> txIdMetadataCache;
+    private static final int DEFAULT_METADATA_CACHE_SIZE = 10_000;
+    private final LfuCache<Long, TransactionMetadata> appendIndexMetadataCache;
 
     public TransactionMetadataCache() {
-        this.txIdMetadataCache = new LfuCache<>("Tx start position cache", DEFAULT_TRANSACTION_CACHE_SIZE);
+        this.appendIndexMetadataCache =
+                new LfuCache<>("Append index start position cache", DEFAULT_METADATA_CACHE_SIZE);
     }
 
     public void clear() {
-        txIdMetadataCache.clear();
+        appendIndexMetadataCache.clear();
     }
 
-    public TransactionMetadata getTransactionMetadata(long txId) {
-        return txIdMetadataCache.get(txId);
+    public TransactionMetadata getTransactionMetadata(long appendIndex) {
+        return appendIndexMetadataCache.get(appendIndex);
     }
 
-    public void cacheTransactionMetadata(long txId, LogPosition position) {
+    public void cacheTransactionMetadata(long appendIndex, LogPosition position) {
         if (LogPosition.UNSPECIFIED == position) {
             throw new IllegalArgumentException("Metadata cache only supports specified log positions.");
         }
         TransactionMetadata result = new TransactionMetadata(position);
-        txIdMetadataCache.put(txId, result);
+        appendIndexMetadataCache.put(appendIndex, result);
     }
 
     public record TransactionMetadata(LogPosition startPosition) {

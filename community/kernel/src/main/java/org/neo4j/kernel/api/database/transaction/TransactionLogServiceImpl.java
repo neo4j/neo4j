@@ -34,12 +34,12 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.impl.transaction.log.AppendedChunkLogVersionLocator;
+import org.neo4j.kernel.impl.transaction.log.AppendedChunkPositionLocator;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.transaction.log.TransactionLogVersionLocator;
-import org.neo4j.kernel.impl.transaction.log.TransactionOrEndPositionLocator;
+import org.neo4j.kernel.impl.transaction.log.NoSuchLogEntryException;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -48,12 +48,13 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionLogServiceImpl implements TransactionLogService {
     private final LogicalTransactionStore transactionStore;
-    private final TransactionIdStore transactionIdStore;
+    private final MetadataProvider metadataProvider;
 
     private final Lock pruneLock;
     private final LogFile logFile;
@@ -64,7 +65,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
 
     public TransactionLogServiceImpl(
-            TransactionIdStore transactionIdStore,
+            MetadataProvider metadataProvider,
             LogFiles logFiles,
             LogicalTransactionStore transactionStore,
             Lock pruneLock,
@@ -73,7 +74,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
             CheckPointer checkPointer,
             CommandReaderFactory commandReaderFactory,
             BinarySupportedKernelVersions binarySupportedKernelVersions) {
-        this.transactionIdStore = transactionIdStore;
+        this.metadataProvider = metadataProvider;
         this.transactionStore = transactionStore;
         this.pruneLock = pruneLock;
         this.logFile = logFiles.getLogFile();
@@ -85,19 +86,21 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     }
 
     @Override
-    public TransactionLogChannels logFilesChannels(long startingTxId) throws IOException {
-        requirePositive(startingTxId);
-        LogPosition minimalLogPosition = getLogPosition(startingTxId, false);
+    public TransactionLogChannels logFilesChannels(long startAppendIndex) throws IOException {
+        requirePositive(startAppendIndex);
+        LogPosition minimalLogPosition = getLogPosition(startAppendIndex);
         // prevent pruning while we build log channels to avoid cases when we will actually prevent pruning to remove
-        // files (on some file systems and OSs),
-        // or unexpected exceptions while traversing files
+        // files (on some file systems and OSs), or unexpected exceptions while traversing files
         pruneLock.lock();
         try {
             long minimalVersion = minimalLogPosition.getLogVersion();
-            var highestTxId = transactionIdStore.getLastCommittedTransactionId();
-            var highestLogPosition = getLogPosition(highestTxId, true);
-            var channels =
-                    collectChannels(startingTxId, minimalLogPosition, minimalVersion, highestTxId, highestLogPosition);
+            var lastAppendBatch = getLastAppendBatch();
+            var channels = collectChannels(
+                    startAppendIndex,
+                    minimalLogPosition,
+                    minimalVersion,
+                    lastAppendBatch.appendIndex(),
+                    lastAppendBatch.logPositionAfter());
             return new TransactionLogChannels(channels);
         } finally {
             pruneLock.unlock();
@@ -105,9 +108,10 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     }
 
     @Override
-    public LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId) throws IOException {
+    public LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId, OptionalLong appendIndex)
+            throws IOException {
         checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
-        return logFile.append(byteBuffer, transactionId);
+        return logFile.append(byteBuffer, transactionId, appendIndex);
     }
 
     @Override
@@ -117,36 +121,43 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     }
 
     @Override
-    public void appendCheckpoint(TransactionId transactionId, String reason) throws IOException {
+    public void appendCheckpoint(TransactionId transactionId, long appendIndex, String reason) throws IOException {
         checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
-        long txId = transactionId.id() + 1;
+        long appendIndexToLookup = appendIndex + 1;
         var logHeader = requireNonNull(logFile.extractHeader(logFile.getHighestLogVersion()));
 
         var lastHeaderPosition = logHeader.getStartPosition();
-        var versionLocator = new TransactionLogVersionLocator(txId);
+        var versionLocator = new AppendedChunkLogVersionLocator(appendIndexToLookup);
         logFile.accept(versionLocator);
 
         var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory, binarySupportedKernelVersions);
-        var transactionPositionLocator = new TransactionOrEndPositionLocator(txId, logEntryReader);
+        var transactionPositionLocator = new AppendedChunkPositionLocator(appendIndexToLookup, logEntryReader);
         logFile.accept(
                 transactionPositionLocator,
                 versionLocator.getOptionalLogPosition().orElse(lastHeaderPosition));
-        var position = transactionPositionLocator.getLogPosition();
+        var position = transactionPositionLocator.getLogPositionOrThrow();
 
         log.info(
-                "Writing checkpoint to force recovery from transaction id:`%d` from specific position:`%s`.",
-                txId, position);
+                "Writing checkpoint to force recovery from append index:`%d` from specific position:`%s` with transaction id:'%s'.",
+                appendIndex, position, transactionId);
 
         // Write checkpoint at the end of txId
-        // TODO:misha for now we shipping duplicate of transaction id as append index
-        checkPointer.forceCheckPoint(transactionId, transactionId.id(), position, new SimpleTriggerInfo(reason));
+        checkPointer.forceCheckPoint(transactionId, appendIndex, position, new SimpleTriggerInfo(reason));
+    }
+
+    private TransactionIdStore.AppendBatchInfo getLastAppendBatch() throws IOException {
+        var lastBatchInfo = metadataProvider.lastBatch();
+        if (!LogPosition.UNSPECIFIED.equals(lastBatchInfo.logPositionAfter())) {
+            return lastBatchInfo;
+        }
+        return getAppendBatchInfo(lastBatchInfo.appendIndex());
     }
 
     private ArrayList<LogChannel> collectChannels(
-            long startingTxId,
+            long startingAppendIndex,
             LogPosition minimalLogPosition,
             long minimalVersion,
-            long highestTxId,
+            long highestAppendIndex,
             LogPosition highestLogPosition)
             throws IOException {
         var highestLogVersion = highestLogPosition.getLogVersion();
@@ -154,8 +165,8 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         var channels = new ArrayList<LogChannel>(exposedChannels);
         var internalChannels = LongObjectMaps.mutable.<StoreChannel>ofInitialCapacity(exposedChannels);
         for (long version = minimalVersion; version <= highestLogVersion; version++) {
-            var startPositionTxId = logFileTransactionId(startingTxId, minimalVersion, version);
-            var kernelVersion = getKernelVersion(startPositionTxId);
+            var startPositionAppendIndex = logFileAppendIndex(startingAppendIndex, minimalVersion, version);
+            var kernelVersion = getKernelVersion(startPositionAppendIndex);
             var readOnlyStoreChannel = new ReadOnlyStoreChannel(logFile, version);
             if (version == minimalVersion) {
                 readOnlyStoreChannel.position(minimalLogPosition.getByteOffset());
@@ -163,42 +174,49 @@ public class TransactionLogServiceImpl implements TransactionLogService {
             internalChannels.put(version, readOnlyStoreChannel);
             var endOffset =
                     version < highestLogVersion ? readOnlyStoreChannel.size() : highestLogPosition.getByteOffset();
-            var lastTxId = version < highestLogVersion ? getHeaderLastCommittedTx(version + 1) : highestTxId;
-            channels.add(new LogChannel(startPositionTxId, kernelVersion, readOnlyStoreChannel, endOffset, lastTxId));
+            var lastAppendIndex =
+                    version < highestLogVersion ? getHeaderLastAppendIndex(version + 1) : highestAppendIndex;
+            channels.add(new LogChannel(
+                    startPositionAppendIndex, kernelVersion, readOnlyStoreChannel, endOffset, lastAppendIndex));
         }
         logFile.registerExternalReaders(internalChannels);
         return channels;
     }
 
-    private long logFileTransactionId(long startingTxId, long minimalVersion, long version) throws IOException {
-        return version == minimalVersion ? startingTxId : getHeaderLastCommittedTx(version) + 1;
+    private long logFileAppendIndex(long startingAppendIndex, long minimalVersion, long version) throws IOException {
+        return version == minimalVersion ? startingAppendIndex : getHeaderLastAppendIndex(version) + 1;
     }
 
-    private long getHeaderLastCommittedTx(long version) throws IOException {
-        return logFile.extractHeader(version).getLastCommittedTxId();
+    private long getHeaderLastAppendIndex(long version) throws IOException {
+        return logFile.extractHeader(version).getLastAppendIndex();
     }
 
-    private LogPosition getLogPosition(long startingTxId, boolean returnEndPosition) throws IOException {
-
-        try (CommandBatchCursor commandBatchCursor = transactionStore.getCommandBatches(startingTxId)) {
-            if (returnEndPosition) {
-                commandBatchCursor.next();
-            }
+    private LogPosition getLogPosition(long appendIndex) throws IOException {
+        try (CommandBatchCursor commandBatchCursor = transactionStore.getCommandBatches(appendIndex)) {
             return commandBatchCursor.position();
-        } catch (NoSuchTransactionException e) {
-            throw new IllegalArgumentException("Transaction id " + startingTxId + " not found in transaction logs.", e);
+        } catch (NoSuchLogEntryException e) {
+            throw new IllegalArgumentException("Append index " + appendIndex + " not found in transaction logs.", e);
         }
     }
 
-    private KernelVersion getKernelVersion(long txId) throws IOException {
-        try (CommandBatchCursor commandBatchCursor = transactionStore.getCommandBatches(txId)) {
+    private TransactionIdStore.AppendBatchInfo getAppendBatchInfo(long appendIndex) throws IOException {
+        try (CommandBatchCursor commandBatchCursor = transactionStore.getCommandBatches(appendIndex)) {
+            commandBatchCursor.next();
+            return new TransactionIdStore.AppendBatchInfo(appendIndex, commandBatchCursor.position());
+        } catch (NoSuchLogEntryException e) {
+            throw new IllegalArgumentException("Append index " + appendIndex + " not found in transaction logs.", e);
+        }
+    }
+
+    private KernelVersion getKernelVersion(long appendIndex) throws IOException {
+        try (CommandBatchCursor commandBatchCursor = transactionStore.getCommandBatches(appendIndex)) {
             if (!commandBatchCursor.next()) {
-                throw new NoSuchTransactionException(txId);
+                throw new NoSuchLogEntryException(appendIndex);
             }
             return commandBatchCursor.get().commandBatch().kernelVersion();
-        } catch (NoSuchTransactionException e) {
+        } catch (NoSuchLogEntryException e) {
             throw new IllegalArgumentException(
-                    "Couldn't get kernel version for transaction id " + txId
+                    "Couldn't get kernel version for append index " + appendIndex
                             + " as it can't be found in transaction logs.",
                     e);
         }

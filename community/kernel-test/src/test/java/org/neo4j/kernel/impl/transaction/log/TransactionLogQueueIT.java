@@ -160,7 +160,7 @@ class TransactionLogQueueIT {
                 4,
                 LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
-        var transactionCommitment = new TransactionCommitment(metadataCache, transactionIdStore);
+        var transactionCommitment = new TransactionCommitment(transactionIdStore);
         return new TransactionToApply(
                 tx,
                 CursorContext.NULL_CONTEXT,

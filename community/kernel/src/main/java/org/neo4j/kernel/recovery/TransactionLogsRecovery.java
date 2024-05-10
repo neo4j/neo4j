@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.kernel.recovery.Recovery.throwUnableToCleanRecover;
 import static org.neo4j.kernel.recovery.RecoveryMode.FORWARD;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.AppendIndexProvider;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Stopwatch;
 
 /**
@@ -137,17 +137,17 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                 // but we will try to load first transaction before checkpoint to see if we just on the
                                 // edge of provided criteria
                                 // and will fail otherwise.
-                                long beforeCheckpointTransaction =
-                                        recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() - 1;
-                                if (beforeCheckpointTransaction < TransactionIdStore.BASE_TX_ID) {
+                                long beforeCheckpointAppendIndex =
+                                        recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint() - 1;
+                                if (beforeCheckpointAppendIndex < BASE_APPEND_INDEX) {
                                     throw new RecoveryPredicateException(format(
                                             "Partial recovery criteria can't be satisfied. No transaction after checkpoint matching to provided "
                                                     + "criteria found and transaction before checkpoint is not valid. "
-                                                    + "Transaction id before checkpoint: %d, criteria %s.",
-                                            beforeCheckpointTransaction, recoveryPredicate.describe()));
+                                                    + "Append index before checkpoint: %d, criteria %s.",
+                                            beforeCheckpointAppendIndex, recoveryPredicate.describe()));
                                 }
                                 try (var beforeCheckpointCursor =
-                                        recoveryService.getCommandBatches(beforeCheckpointTransaction)) {
+                                        recoveryService.getCommandBatches(beforeCheckpointAppendIndex)) {
                                     if (beforeCheckpointCursor.next()) {
                                         CommittedCommandBatch candidate = beforeCheckpointCursor.get();
                                         if (!recoveryPredicate.test(candidate)) {
@@ -257,7 +257,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             return;
         }
         CommittedCommandBatch lastReversedCommandBatch = null;
-        long lowestRecoveredTxId = recoveryStartInformation.getFirstTxIdAfterLastCheckPoint();
+        long lowestRecoveredAppendIndex = recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint();
         try (var transactionsToRecover = recoveryService.getCommandBatchesInReverseOrder(recoveryStartPosition);
                 var recoveryVisitor =
                         recoveryService.getRecoveryApplier(REVERSE_RECOVERY, contextFactory, REVERSE_RECOVERY_TAG)) {
@@ -270,11 +270,11 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 }
                 recoveryVisitor.visit(commandBatch);
                 transactionIdTracker.trackBatch(commandBatch);
-                lowestRecoveredTxId = commandBatch.txId();
+                lowestRecoveredAppendIndex = commandBatch.appendIndex();
                 reportProgress();
             }
         }
-        monitor.reverseStoreRecoveryCompleted(lowestRecoveredTxId);
+        monitor.reverseStoreRecoveryCompleted(lowestRecoveredAppendIndex);
     }
 
     private void initProgressReporter(
@@ -292,7 +292,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             CommittedCommandBatch lastReversedBatch,
             RecoveryMode mode) {
         long numberOfTransactionToRecover =
-                estimateNumberOfTransactionToRecover(recoveryStartInformation, lastReversedBatch);
+                estimateNumberOfBatchesToRecover(recoveryStartInformation, lastReversedBatch);
         // In full mode we will process each transaction twice (doing reverse and direct detour) we need to
         // multiply number of transactions that we want to recover by 2 to be able to report correct progress
         progressListener = progressMonitorFactory.singlePart(
@@ -310,9 +310,11 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         }
     }
 
-    private static long estimateNumberOfTransactionToRecover(
+    private static long estimateNumberOfBatchesToRecover(
             RecoveryStartInformation recoveryStartInformation, CommittedCommandBatch lastReversedCommandBatch) {
-        return lastReversedCommandBatch.txId() - recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() + 1;
+        return lastReversedCommandBatch.appendIndex()
+                - recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint()
+                + 1;
     }
 
     @Override

@@ -35,7 +35,7 @@ public interface RecoveryMonitor {
         // noop
     }
 
-    default void reverseStoreRecoveryCompleted(long lowestRecoveredTxId) {
+    default void reverseStoreRecoveryCompleted(long lowestRecoveredAppendIndex) {
         // noop
     }
 

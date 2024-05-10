@@ -23,27 +23,26 @@ import java.util.Optional;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogHeaderVisitor;
 
-public final class TransactionLogVersionLocator implements LogHeaderVisitor {
-    private final long transactionId;
+public class AppendedChunkLogVersionLocator implements LogHeaderVisitor {
+    private final long appendIndex;
     private LogPosition foundPosition;
 
-    public TransactionLogVersionLocator(long transactionId) {
-        this.transactionId = transactionId;
+    public AppendedChunkLogVersionLocator(long appendIndex) {
+        this.appendIndex = appendIndex;
     }
 
     @Override
-    public boolean visit(
-            LogHeader logHeader, LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog) {
-        boolean foundIt = transactionId >= firstTransactionIdInLog && transactionId <= lastTransactionIdInLog;
+    public boolean visit(LogHeader logHeader, LogPosition position, long lowApplyIndex, long lastApplyIndex) {
+        boolean foundIt = appendIndex >= lowApplyIndex && appendIndex <= lastApplyIndex;
         if (foundIt) {
             foundPosition = position;
         }
         return !foundIt; // continue as long we don't find it
     }
 
-    public LogPosition getLogPositionOrThrow() throws NoSuchTransactionException {
+    public LogPosition getLogPositionOrThrow() throws NoSuchLogEntryException {
         if (foundPosition == null) {
-            throw new NoSuchTransactionException(transactionId, "Couldn't find any log containing " + transactionId);
+            throw new NoSuchLogEntryException(appendIndex);
         }
         return foundPosition;
     }

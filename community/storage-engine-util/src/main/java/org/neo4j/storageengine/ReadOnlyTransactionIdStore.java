@@ -30,12 +30,12 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     private final LogPosition logPosition;
     private final TransactionId lastCommittedTransaction;
-    private final long appendIndex;
+    private final AppendBatchInfo lastBatch;
 
     public ReadOnlyTransactionIdStore(LogTailLogVersionsMetadata logTailMetadata) {
         this.lastCommittedTransaction = logTailMetadata.getLastCommittedTransaction();
-        logPosition = logTailMetadata.getLastTransactionLogPosition();
-        appendIndex = logTailMetadata.getLastCheckpointedAppendIndex();
+        this.logPosition = logTailMetadata.getLastTransactionLogPosition();
+        this.lastBatch = new AppendBatchInfo(logTailMetadata.getLastCheckpointedAppendIndex(), LogPosition.UNSPECIFIED);
     }
 
     @Override
@@ -125,5 +125,10 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     }
 
     @Override
-    public void appendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex) {}
+    public void appendBatch(long appendIndex, LogPosition logPositionAfter) {}
+
+    @Override
+    public AppendBatchInfo lastBatch() {
+        return lastBatch;
+    }
 }

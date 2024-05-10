@@ -284,7 +284,7 @@ class BatchingTransactionAppenderTest {
                             transaction,
                             NULL_CONTEXT,
                             StoreCursors.NULL,
-                            new TransactionCommitment(positionCache, transactionIdStore),
+                            new TransactionCommitment(transactionIdStore),
                             transactionIdGenerator),
                     logAppendEvent);
         }
@@ -338,7 +338,7 @@ class BatchingTransactionAppenderTest {
                                 transaction,
                                 NULL_CONTEXT,
                                 StoreCursors.NULL,
-                                new TransactionCommitment(positionCache, transactionIdStore),
+                                new TransactionCommitment(transactionIdStore),
                                 new IdStoreTransactionIdGenerator(transactionIdStore)),
                         logAppendEvent));
         assertThat(e.getMessage()).contains("to be applied, but appending it ended up generating an");
@@ -386,7 +386,7 @@ class BatchingTransactionAppenderTest {
                                 transaction,
                                 NULL_CONTEXT,
                                 StoreCursors.NULL,
-                                new TransactionCommitment(positionCache, transactionIdStore),
+                                new TransactionCommitment(transactionIdStore),
                                 transactionIdGenerator),
                         logAppendEvent));
         assertSame(failure, e);
@@ -451,7 +451,7 @@ class BatchingTransactionAppenderTest {
                                 commandBatch,
                                 NULL_CONTEXT,
                                 StoreCursors.NULL,
-                                new TransactionCommitment(metadataCache, transactionIdStore),
+                                new TransactionCommitment(transactionIdStore),
                                 new IdStoreTransactionIdGenerator(transactionIdStore)),
                         logAppendEvent));
         assertSame(failure, e);
@@ -475,7 +475,7 @@ class BatchingTransactionAppenderTest {
         var commitProcess =
                 new InternalTransactionCommitProcess(appender, mock(StorageEngine.class, RETURNS_MOCKS), false);
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(42L);
-        var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
+        var transactionCommitment = new TransactionCommitment(transactionIdStore);
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         var transaction = new CommittedTransactionRepresentation(
                 newStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, 4, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
@@ -526,7 +526,7 @@ class BatchingTransactionAppenderTest {
     private TransactionToApply batchOf(CommandBatch... transactions) {
         TransactionToApply first = null;
         TransactionToApply last = null;
-        var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
+        var transactionCommitment = new TransactionCommitment(transactionIdStore);
         for (CommandBatch transaction : transactions) {
             TransactionToApply tx = new TransactionToApply(
                     transaction, NULL_CONTEXT, StoreCursors.NULL, transactionCommitment, transactionIdGenerator);

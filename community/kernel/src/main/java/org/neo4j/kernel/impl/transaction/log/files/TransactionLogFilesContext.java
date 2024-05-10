@@ -44,6 +44,7 @@ public class TransactionLogFilesContext {
     private final AtomicBoolean tryPreallocateTransactionLogs;
     private final CommandReaderFactory commandReaderFactory;
     private final LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier;
+    private final LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider;
     private final LastAppendIndexProvider lastAppendIndexProvider;
     private final LongSupplier committingTransactionIdSupplier;
     private final LastClosedPositionProvider lastClosedPositionProvider;
@@ -73,8 +74,9 @@ public class TransactionLogFilesContext {
             long checkpointRotationThreshold,
             AtomicBoolean tryPreallocateTransactionLogs,
             CommandReaderFactory commandReaderFactory,
-            LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier,
+            LastAppendIndexLogFilesProvider lastAppendIndexLogFilesProvider,
             LastAppendIndexProvider lastAppendIndexProvider,
+            LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier,
             LongSupplier committingTransactionIdSupplier,
             LastClosedPositionProvider lastClosedPositionProvider,
             LogVersionRepositoryProvider logVersionRepositoryProvider,
@@ -101,8 +103,9 @@ public class TransactionLogFilesContext {
         this.checkpointRotationThreshold = checkpointRotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.commandReaderFactory = commandReaderFactory;
-        this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
+        this.lastAppendIndexLogFilesProvider = lastAppendIndexLogFilesProvider;
         this.lastAppendIndexProvider = lastAppendIndexProvider;
+        this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
         this.committingTransactionIdSupplier = committingTransactionIdSupplier;
         this.lastClosedPositionProvider = lastClosedPositionProvider;
         this.logVersionRepositoryProvider = logVersionRepositoryProvider;
@@ -149,6 +152,10 @@ public class TransactionLogFilesContext {
 
     public LastCommittedTransactionIdProvider getLastCommittedTransactionIdProvider() {
         return lastCommittedTransactionIdSupplier;
+    }
+
+    public LastAppendIndexLogFilesProvider getLastAppendIndexLogFilesProvider() {
+        return lastAppendIndexLogFilesProvider;
     }
 
     public long committingTransactionId() {

@@ -68,6 +68,7 @@ import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -427,6 +428,8 @@ class CheckPointerImplTest {
         when(metadataProvider.getLastClosedTransaction()).thenReturn(initialCommitted, otherCommitted);
         when(metadataProvider.getLastClosedTransactionId())
                 .thenReturn(initialTransactionId, transactionId, transactionId);
+        when(metadataProvider.lastBatch())
+                .thenReturn(new TransactionIdStore.AppendBatchInfo(transactionId, logPosition));
     }
 
     private class CheckpointCountingLock extends ReentrantLock {

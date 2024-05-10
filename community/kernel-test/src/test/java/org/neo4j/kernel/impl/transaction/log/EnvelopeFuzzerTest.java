@@ -265,7 +265,8 @@ class EnvelopeFuzzerTest {
             }
 
             @Override
-            public boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long lastTransactionId) {
+            public boolean batchedRotateLogIfNeeded(
+                    LogRotateEvents logRotateEvents, long lastTransactionId, long appendIndex) {
                 throw new UnsupportedOperationException();
             }
 

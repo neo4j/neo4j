@@ -156,8 +156,8 @@ public class DefaultRecoveryService implements RecoveryService {
     }
 
     @Override
-    public CommandBatchCursor getCommandBatches(long transactionId) throws IOException {
-        return logicalTransactionStore.getCommandBatches(transactionId);
+    public CommandBatchCursor getCommandBatches(long appendIndex) throws IOException {
+        return logicalTransactionStore.getCommandBatches(appendIndex);
     }
 
     @Override

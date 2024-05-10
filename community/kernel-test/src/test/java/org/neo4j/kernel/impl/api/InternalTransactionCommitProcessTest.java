@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.TestableTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -216,7 +215,7 @@ class InternalTransactionCommitProcessTest {
         CommandBatch batch = mock(CommandBatch.class);
         when(batch.consensusIndex()).thenReturn(UNKNOWN_CONSENSUS_INDEX);
         when(batch.kernelVersion()).thenReturn(LatestVersions.LATEST_KERNEL_VERSION);
-        var commitmentFactory = new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore);
+        var commitmentFactory = new TransactionCommitmentFactory(transactionIdStore);
         var transactionCommitment = commitmentFactory.newCommitment();
         return new TransactionToApply(
                 batch,

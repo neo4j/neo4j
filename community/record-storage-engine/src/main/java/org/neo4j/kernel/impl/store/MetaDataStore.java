@@ -121,7 +121,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private final OutOfOrderSequence lastClosedTx;
     private volatile boolean closed;
     private final AtomicLong appendIndex;
-    private volatile LastAppendBatch lastBatch;
+    private volatile AppendBatchInfo lastBatch;
 
     MetaDataStore(
             FileSystemAbstraction fileSystem,
@@ -162,6 +162,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
         long lastCommittedAppendIndex = logTailMetadata.getLastCheckpointedAppendIndex();
         appendIndex = new AtomicLong(lastCommittedAppendIndex);
+        lastBatch = new AppendBatchInfo(lastCommittedAppendIndex, LogPosition.UNSPECIFIED);
         lastClosedTx = new ArrayQueueOutOfOrderSequence(
                 lastCommittedTx.id(),
                 200,
@@ -252,6 +253,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         highestCommittedTransaction.set(
                 transactionId, transactionAppendIndex, kernelVersion, checksum, commitTimestamp, consensusIndex);
         this.appendIndex.set(appendIndex);
+        this.lastBatch = new AppendBatchInfo(appendIndex, LogPosition.UNSPECIFIED);
     }
 
     @Override
@@ -403,8 +405,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    public void appendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex) {
-        lastBatch = new LastAppendBatch(appendIndex, logPositionBeforeAppendIndex);
+    public void appendBatch(long appendIndex, LogPosition logPositionAfter) {
+        lastBatch = new AppendBatchInfo(appendIndex, logPositionAfter);
+    }
+
+    @Override
+    public AppendBatchInfo lastBatch() {
+        return lastBatch;
     }
 
     public void logRecords(final DiagnosticsLogger logger) {
@@ -680,6 +687,4 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         var lastPosition = Position.values()[Position.values().length - 1];
         return lastPosition.firstSlotId + lastPosition.slotCount - 1;
     }
-
-    private record LastAppendBatch(long appendIndex, LogPosition logPositionBeforeAppendIndex) {}
 }

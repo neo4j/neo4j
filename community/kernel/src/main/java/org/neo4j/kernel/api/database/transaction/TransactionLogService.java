@@ -30,31 +30,32 @@ import org.neo4j.storageengine.api.TransactionId;
  */
 public interface TransactionLogService {
     /**
-     * Provide list of channels for underlying transaction log files starting with requested initial transaction id.
+     * Provide list of channels for underlying transaction log files starting with requested initial append index.
      * Provided channels can be closed for any reason by underlying database, if it will choose to do so in any moment.
      * Its client responsibility to repeat request in such cases to retrieve new set of readers.
      *
-     * @param initialTxId initial transaction id to retrieve channels from. Should be positive number and be in range of existing transaction ids.
+     * @param startAppendIndex initial append index to retrieve channels from. Should be positive number and be in range of existing append indexes.
      * @return object with access to read only transaction log channels to be able to access requested transaction logs content
      * @throws IOException on failure performing underlying transaction logs operation
-     * @throws IllegalArgumentException invalid transaction id, transaction id not found in any of the log files
+     * @throws IllegalArgumentException invalid append index, append index not found in any of the log files
      */
-    TransactionLogChannels logFilesChannels(long initialTxId) throws IOException;
+    TransactionLogChannels logFilesChannels(long startAppendIndex) throws IOException;
 
     /**
      * Append buffer content to the end of transaction logs. Buffer content is only appended and is not interpreted at this point.
      * Meaning transactions will be replayed as subsequent recovery. There is no guarantee what buffer will contain in terms of transactions: it can
      * be completely empty, contain only part of transaction, several of those etc.
-     * Unlike transactional log append log rotation will be performed only when transaction id is provided and rotations is required.
+     * Unlike transactional log append log rotation will be performed only when transaction id and append index is provided and rotations is required.
      * Transactions that are appended by this method do not perform commit, as result there no updates to metadata store will be executed.
      * Mixing bulk append and applying standard transactional workload is not supported and will result in corrupted database.
      * Provided byte buffer can be reused, if required, after append operation completion.
      * @param byteBuffer buffer with transactional content
      * @param transactionId optional known transaction id
+     * @param appendIndex optional known append index
      * @return log position before any buffer content updates happen
      * @throws IOException on failure performing underlying transaction logs operation
      */
-    LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId) throws IOException;
+    LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId, OptionalLong appendIndex) throws IOException;
 
     /**
      * Reset writer position after failed transactional log bulk update.
@@ -67,8 +68,9 @@ public interface TransactionLogService {
     /**
      * Append checkpoint record to log files that uses provided {@link TransactionId transactionId} as last closed transaction.
      * @param transactionId last closed transaction id to be used in a checkpoint record.
+     * @param appendIndex last append index to be used in a checkpoint record.
      * @param reason checkpoint reason
      * @throws IOException on failure performing underlying log files operation
      */
-    void appendCheckpoint(TransactionId transactionId, String reason) throws IOException;
+    void appendCheckpoint(TransactionId transactionId, long appendIndex, String reason) throws IOException;
 }

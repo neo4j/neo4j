@@ -65,7 +65,6 @@ import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.CommandBatchToApply;
@@ -106,7 +105,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
     void setUp() throws Throwable {
         storageEngineRule.before();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
-        commitmentFactory = new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore);
+        commitmentFactory = new TransactionCommitmentFactory(transactionIdStore);
         transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
     }
 

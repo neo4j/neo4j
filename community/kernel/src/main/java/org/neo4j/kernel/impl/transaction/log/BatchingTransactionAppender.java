@@ -127,6 +127,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
                     appendIndex,
                     previousChecksum,
                     commands.previousBatchLogPosition());
+            metadataCache.cacheTransactionMetadata(appendIndex, logPositionBeforeCommit);
             var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
             logAppendEvent.appendedBytes(transactionLogWriter.getAppendedBytes());
             commands.batchAppended(appendIndex, logPositionBeforeCommit, logPositionAfterCommit, previousChecksum);

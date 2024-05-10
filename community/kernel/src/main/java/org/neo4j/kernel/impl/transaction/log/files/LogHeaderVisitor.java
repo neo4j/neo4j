@@ -27,5 +27,5 @@ public interface LogHeaderVisitor {
      * Used for visiting log headers in reverse order of age, meaning latest first.
      * Stops visiting when false is returned.
      */
-    boolean visit(LogHeader logHeader, LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog);
+    boolean visit(LogHeader logHeader, LogPosition position, long firstAppendIndexInLog, long lastAppendIndexInLog);
 }

@@ -418,6 +418,10 @@ public enum LogFormat {
         return headerSize;
     }
 
+    public KernelVersion getFromKernelVersion() {
+        return fromKernelVersion;
+    }
+
     public int getDefaultSegmentBlockSize() {
         return defaultSegmentBlockSize;
     }

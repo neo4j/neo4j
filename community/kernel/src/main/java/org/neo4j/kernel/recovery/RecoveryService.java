@@ -29,7 +29,7 @@ import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public interface RecoveryService {
-    CommandBatchCursor getCommandBatches(long transactionId) throws IOException;
+    CommandBatchCursor getCommandBatches(long appendIndex) throws IOException;
 
     CommandBatchCursor getCommandBatches(LogPosition recoveryFromPosition) throws IOException;
 

@@ -103,15 +103,18 @@ public class FileLogRotation implements LogRotation {
     }
 
     @Override
-    public boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long lastTransactionId)
-            throws IOException {
+    public boolean batchedRotateLogIfNeeded(
+            LogRotateEvents logRotateEvents, long lastTransactionId, long lastAppendIndex) throws IOException {
         if (rotatableFile.rotationNeeded()) {
             synchronized (rotatableFile) {
                 if (rotatableFile.rotationNeeded()) {
                     TransactionLogFile logFile = (TransactionLogFile) rotatableFile;
                     long version = logFile.getHighestLogVersion();
                     doRotate(
-                            logRotateEvents, lastTransactionId, () -> version, () -> logFile.rotate(lastTransactionId));
+                            logRotateEvents,
+                            lastTransactionId,
+                            () -> version,
+                            () -> logFile.rotate(lastTransactionId, lastAppendIndex));
                     return true;
                 }
                 return false;

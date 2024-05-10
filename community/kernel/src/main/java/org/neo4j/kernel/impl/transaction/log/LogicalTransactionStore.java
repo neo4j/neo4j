@@ -28,17 +28,17 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 public interface LogicalTransactionStore {
     /**
      * Acquires a {@link CommandBatchCursor cursor} which will provide {@link CommittedCommandBatch}
-     * instances for committed command batches, starting from the specified {@code transactionIdToStartFrom}.
+     * instances for committed command batches, starting from the specified {@code appendIndexToStartFrom}.
      * Command batches will be returned from the cursor in sequential order.
      *
-     * @param transactionIdToStartFrom id of the first transaction that the cursor will return.
+     * @param appendIndexToStartFrom id of the first append batch that the cursor will return.
      * @return an {@link CommandBatchCursor} capable of returning {@link CommittedCommandBatch} instances
-     * for committed transactions, starting from the specified {@code transactionIdToStartFrom}.
-     * @throws NoSuchTransactionException if the requested transaction hasn't been committed,
-     * or if the transaction has been committed, but information about it is no longer available for some reason.
+     * for committed transactions or parts of transactions, starting from the specified {@code appendIndexToStartFrom}.
+     * @throws NoSuchLogEntryException if the requested index hasn't been found,
+     * or if the batch has been committed, but information about it is no longer available for some reason.
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
-    CommandBatchCursor getCommandBatches(long transactionIdToStartFrom) throws IOException;
+    CommandBatchCursor getCommandBatches(long appendIndexToStartFrom) throws IOException;
 
     /**
      * Acquires a {@link CommandBatchCursor cursor} which will provide {@link CommittedCommandBatch}
@@ -49,7 +49,7 @@ public interface LogicalTransactionStore {
      * @param position {@link LogPosition} of the first transaction that the cursor will return.
      * @return an {@link CommandBatchCursor} capable of returning {@link CommittedCommandBatch} instances
      * for committed transactions, starting from the specified {@code position}.
-     * @throws NoSuchTransactionException if the requested transaction hasn't been committed,
+     * @throws NoSuchLogEntryException if the requested transaction hasn't been committed,
      * or if the transaction has been committed, but information about it is no longer available for some reason.
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */

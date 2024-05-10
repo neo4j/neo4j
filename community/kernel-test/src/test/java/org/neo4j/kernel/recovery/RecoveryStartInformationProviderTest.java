@@ -50,7 +50,7 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.LatestVersions;
 
 class RecoveryStartInformationProviderTest {
-    private static final long NO_TRANSACTION_ID = -1;
+    private static final long NO_APPEND_INDEX = -1;
     private final long currentLogVersion = 2L;
     private final LogFiles logFiles = mock(LogFiles.class);
     private final LogFile logFile = mock(LogFile.class);
@@ -71,7 +71,7 @@ class RecoveryStartInformationProviderTest {
         when(logFiles.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         false,
-                        NO_TRANSACTION_ID,
+                        NO_APPEND_INDEX,
                         false,
                         currentLogVersion,
                         LatestVersions.LATEST_KERNEL_VERSION.version(),
@@ -85,7 +85,7 @@ class RecoveryStartInformationProviderTest {
         verify(monitor).noCommitsAfterLastCheckPoint(null);
         assertEquals(LogPosition.UNSPECIFIED, recoveryStartInformation.getTransactionLogPosition());
         assertEquals(LogPosition.UNSPECIFIED, recoveryStartInformation.getCheckpointPosition());
-        assertEquals(NO_TRANSACTION_ID, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint());
+        assertEquals(NO_APPEND_INDEX, recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint());
         assertFalse(recoveryStartInformation.isRecoveryRequired());
     }
 
@@ -126,7 +126,7 @@ class RecoveryStartInformationProviderTest {
         verify(monitor).logsAfterLastCheckPoint(txPosition, 10L);
         assertEquals(txPosition, recoveryStartInformation.getTransactionLogPosition());
         assertEquals(checkpointPosition, recoveryStartInformation.getCheckpointPosition());
-        assertEquals(10L, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint());
+        assertEquals(10L, recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint());
         assertTrue(recoveryStartInformation.isRecoveryRequired());
     }
 
@@ -148,7 +148,7 @@ class RecoveryStartInformationProviderTest {
                 new LogPosition(0, LogFormat.fromKernelVersion(kernelVersion).getHeaderSize()),
                 recoveryStartInformation.getTransactionLogPosition());
         assertEquals(LogPosition.UNSPECIFIED, recoveryStartInformation.getCheckpointPosition());
-        assertEquals(10L, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint());
+        assertEquals(10L, recoveryStartInformation.getFirstAppendIndexAfterLastCheckPoint());
         assertTrue(recoveryStartInformation.isRecoveryRequired());
     }
 

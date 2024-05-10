@@ -27,22 +27,24 @@ public class RecoveryStartInformation {
             new RecoveryStartInformation(LogPosition.UNSPECIFIED, null, -1);
     static final RecoveryStartInformation MISSING_LOGS = new RecoveryStartInformation(null, null, -1, true);
 
-    private final long firstTxIdAfterLastCheckPoint;
+    private final long firstAppendIndexAfterLastCheckPoint;
     private final LogPosition transactionLogPosition;
     private final CheckpointInfo checkpointPosition;
     private final boolean missingLogs;
 
     public RecoveryStartInformation(
-            LogPosition transactionLogPosition, CheckpointInfo checkpointPosition, long firstTxIdAfterLastCheckPoint) {
-        this(transactionLogPosition, checkpointPosition, firstTxIdAfterLastCheckPoint, false);
+            LogPosition transactionLogPosition,
+            CheckpointInfo checkpointPosition,
+            long firstAppendIndexAfterLastCheckPoint) {
+        this(transactionLogPosition, checkpointPosition, firstAppendIndexAfterLastCheckPoint, false);
     }
 
     private RecoveryStartInformation(
             LogPosition transactionLogPosition,
             CheckpointInfo checkpointPosition,
-            long firstTxIdAfterLastCheckPoint,
+            long firstAppendIndexAfterLastCheckPoint,
             boolean missingLogs) {
-        this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
+        this.firstAppendIndexAfterLastCheckPoint = firstAppendIndexAfterLastCheckPoint;
         this.transactionLogPosition = transactionLogPosition;
         this.checkpointPosition = checkpointPosition;
         this.missingLogs = missingLogs;
@@ -52,8 +54,8 @@ public class RecoveryStartInformation {
         return transactionLogPosition != LogPosition.UNSPECIFIED;
     }
 
-    long getFirstTxIdAfterLastCheckPoint() {
-        return firstTxIdAfterLastCheckPoint;
+    long getFirstAppendIndexAfterLastCheckPoint() {
+        return firstAppendIndexAfterLastCheckPoint;
     }
 
     LogPosition getTransactionLogPosition() {

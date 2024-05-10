@@ -24,16 +24,13 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionCommitmentFactory {
 
-    private final TransactionMetadataCache transactionMetadataCache;
     private final TransactionIdStore transactionIdStore;
 
-    public TransactionCommitmentFactory(
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore) {
-        this.transactionMetadataCache = transactionMetadataCache;
+    public TransactionCommitmentFactory(TransactionIdStore transactionIdStore) {
         this.transactionIdStore = transactionIdStore;
     }
 
     public Commitment newCommitment() {
-        return new TransactionCommitment(transactionMetadataCache, transactionIdStore);
+        return new TransactionCommitment(transactionIdStore);
     }
 }

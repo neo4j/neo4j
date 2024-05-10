@@ -278,14 +278,16 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     }
 
     @Override
-    public synchronized LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId) throws IOException {
+    public synchronized LogPosition append(ByteBuffer byteBuffer, OptionalLong transactionId, OptionalLong appendIndex)
+            throws IOException {
         checkArgument(byteBuffer.isDirect(), "It is required for byte buffer to be direct.");
         var transactionLogWriter = getTransactionLogWriter();
 
         try (var logAppendEvent =
                 context.getDatabaseTracers().getDatabaseTracer().logAppend()) {
             if (transactionId.isPresent()) {
-                logRotation.batchedRotateLogIfNeeded(logAppendEvent, transactionId.getAsLong() - 1);
+                logRotation.batchedRotateLogIfNeeded(
+                        logAppendEvent, transactionId.getAsLong() - 1, appendIndex.getAsLong() - 1);
             }
 
             var logPositionBefore = transactionLogWriter.getCurrentPosition();
@@ -297,7 +299,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
     @Override
     public synchronized Path rotate() throws IOException {
-        return rotate(context::committingTransactionId);
+        return rotate(context::committingTransactionId, context::appendIndex);
     }
 
     @Override
@@ -305,8 +307,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         return rotateAtSize.get();
     }
 
-    public synchronized Path rotate(long lastTransactionId) throws IOException {
-        return rotate(() -> lastTransactionId);
+    public synchronized Path rotate(long lastTransactionId, long appendIndex) throws IOException {
+        return rotate(() -> lastTransactionId, () -> appendIndex);
     }
 
     @Override
@@ -450,17 +452,16 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     public void accept(LogHeaderVisitor visitor) throws IOException {
         // Start from the where we're currently at and go backwards in time (versions)
         long logVersion = getHighestLogVersion();
-        long highTransactionId =
-                context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles);
+        long highAppendIndex = context.getLastAppendIndexLogFilesProvider().getLastAppendIndex(logFiles);
         while (versionExists(logVersion)) {
             LogHeader logHeader = extractHeader(logVersion, false);
             if (logHeader != null) {
-                long lowTransactionId = logHeader.getLastCommittedTxId() + 1;
+                long lowAppendIndex = logHeader.getLastAppendIndex() + 1;
                 LogPosition position = logHeader.getStartPosition();
-                if (!visitor.visit(logHeader, position, lowTransactionId, highTransactionId)) {
+                if (!visitor.visit(logHeader, position, lowAppendIndex, highAppendIndex)) {
                     break;
                 }
-                highTransactionId = logHeader.getLastCommittedTxId();
+                highAppendIndex = logHeader.getLastAppendIndex();
             }
             logVersion--;
         }
@@ -587,8 +588,9 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         return externalFileReaders;
     }
 
-    private synchronized Path rotate(LongSupplier committedTransactIdSupplier) throws IOException {
-        channel = rotate(channel, committedTransactIdSupplier);
+    private synchronized Path rotate(LongSupplier committedTransactIdSupplier, LongSupplier appendIndexSupplier)
+            throws IOException {
+        channel = rotate(channel, committedTransactIdSupplier, appendIndexSupplier);
         writer.setChannel(channel, channelAllocator.readLogHeaderForVersion(channel.getLogVersion()));
         return channel.getPath();
     }
@@ -633,11 +635,15 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
      *
      * @param currentLog current {@link LogVersionedStoreChannel channel} to flush and close.
      * @param lastTransactionIdSupplier transaction ID supplier
+     * @param lastTransactionIdSupplier append index supplier
      * @return the channel of the newly opened/created log file.
      * @throws IOException if an error regarding closing or opening log files occur.
      */
     private PhysicalLogVersionedStoreChannel rotate(
-            LogVersionedStoreChannel currentLog, LongSupplier lastTransactionIdSupplier) throws IOException {
+            LogVersionedStoreChannel currentLog,
+            LongSupplier lastTransactionIdSupplier,
+            LongSupplier lastAppendIndexSupplier)
+            throws IOException {
         /*
          * The store is now flushed. If we fail now the recovery code will open the
          * current log file and replay everything. That's unnecessary but totally ok.
@@ -669,7 +675,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(
                 newLogVersion,
                 lastTransactionIdSupplier,
-                context::appendIndex,
+                lastAppendIndexSupplier,
                 context.getKernelVersionProvider(),
                 checksum);
         currentLog.close();

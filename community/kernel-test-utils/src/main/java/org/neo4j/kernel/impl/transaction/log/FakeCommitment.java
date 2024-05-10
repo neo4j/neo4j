@@ -46,13 +46,12 @@ public class FakeCommitment implements Commitment {
             long transactionId,
             long appendIndex,
             KernelVersion kernelVersion,
-            LogPosition beforeCommit,
             LogPosition logPositionAfterCommit,
             int checksum,
             long consensusIndex) {}
 
     @Override
-    public void publishAsCommitted(long transactionCommitTimestamp, long appendIndex, LogPosition beforeCommit) {
+    public void publishAsCommitted(long transactionCommitTimestamp, long appendIndex) {
         committed = true;
         transactionIdStore.transactionCommitted(
                 id, appendIndex, DEFAULT_BOOTSTRAP_VERSION, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);

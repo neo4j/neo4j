@@ -25,64 +25,51 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.transaction.log.AppendedChunkLogVersionLocator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.transaction.log.TransactionLogVersionLocator;
+import org.neo4j.kernel.impl.transaction.log.NoSuchLogEntryException;
 
 class LogVersionLocatorTest {
-    private static final long firstTxIdInLog = 3;
-    private static final long lastTxIdInLog = 67;
+    private static final long firstAppendIndexInLog = 3;
+    private static final long lastAppendIndexInLog = 67;
 
     @Test
-    void shouldFindLogPosition() throws NoSuchTransactionException {
-        // given
-        final long txId = 42L;
+    void findLogPosition() throws NoSuchLogEntryException {
+        final long appendIndex = 42L;
+        var locator = new AppendedChunkLogVersionLocator(appendIndex);
+        var position = new LogPosition(1, 128);
 
-        final TransactionLogVersionLocator locator = new TransactionLogVersionLocator(txId);
+        final boolean result = locator.visit(null, position, firstAppendIndexInLog, lastAppendIndexInLog);
 
-        final LogPosition position = new LogPosition(1, 128);
-
-        // when
-        final boolean result = locator.visit(null, position, firstTxIdInLog, lastTxIdInLog);
-
-        // then
         assertFalse(result);
         assertEquals(position, locator.getLogPositionOrThrow());
     }
 
     @Test
-    void shouldNotFindLogPosition() {
-        // given
-        final long txId = 1L;
+    void doNotFindLogPosition() {
+        final long appendIndex = 1L;
+        var locator = new AppendedChunkLogVersionLocator(appendIndex);
+        var position = new LogPosition(1, 128);
 
-        final TransactionLogVersionLocator locator = new TransactionLogVersionLocator(txId);
+        final boolean result = locator.visit(null, position, firstAppendIndexInLog, lastAppendIndexInLog);
 
-        final LogPosition position = new LogPosition(1, 128);
-
-        // when
-        final boolean result = locator.visit(null, position, firstTxIdInLog, lastTxIdInLog);
-
-        // then
         assertTrue(result);
-
-        var e = assertThrows(NoSuchTransactionException.class, locator::getLogPositionOrThrow);
+        var e = assertThrows(NoSuchLogEntryException.class, locator::getLogPositionOrThrow);
         assertEquals(
-                "Unable to find transaction " + txId + " in any of my logical logs: "
-                        + "Couldn't find any log containing " + txId,
+                "Unable to find transaction or chunk with append index " + appendIndex
+                        + " in any of available logical logs.",
                 e.getMessage());
     }
 
     @Test
-    void shouldAlwaysThrowIfVisitIsNotCalled() {
-        // given
-        final long txId = 1L;
+    void alwaysThrowIfVisitIsNotCalled() {
+        final long appendIndex = 1L;
+        var locator = new AppendedChunkLogVersionLocator(appendIndex);
 
-        final TransactionLogVersionLocator locator = new TransactionLogVersionLocator(txId);
-
-        var e = assertThrows(NoSuchTransactionException.class, locator::getLogPositionOrThrow);
+        var e = assertThrows(NoSuchLogEntryException.class, locator::getLogPositionOrThrow);
         assertEquals(
-                "Unable to find transaction " + txId + " in any of my logical logs: "
-                        + "Couldn't find any log containing " + txId,
+                "Unable to find transaction or chunk with append index " + appendIndex
+                        + " in any of available logical logs.",
                 e.getMessage());
     }
 }

@@ -25,8 +25,11 @@ import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
+import static org.neo4j.kernel.KernelVersion.VERSION_APPEND_INDEX_INTRODUCED;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor.UNKNOWN;
+import static org.neo4j.storageengine.AppendIndexProvider.BASE_APPEND_INDEX;
+import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
@@ -50,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -57,6 +61,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryRollback;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
@@ -157,39 +163,50 @@ public class DetachedLogTailScanner {
     private LogTailInformation validCheckpointLogTail(
             LogFile logFile, long highestLogVersion, long lowestLogVersion, CheckpointInfo checkpoint)
             throws IOException {
-        var entries = getFirstTransactionIdAfterCheckpoint(logFile, checkpoint.transactionLogPosition());
+
+        var postCheckPointInfo =
+                getPostCheckpointInfo(logFile, checkpoint.kernelVersion(), checkpoint.transactionLogPosition());
         return new LogTailInformation(
                 loadConsensusIndexIfNeeded(logFile, checkpoint),
-                entries.isPresent(),
-                entries.getTransactionId(),
+                postCheckPointInfo.isPresent(),
+                postCheckPointInfo.appendIndex(),
                 lowestLogVersion == UNKNOWN,
                 highestLogVersion,
-                entries.getEntryVersion(),
+                postCheckPointInfo.getEntryVersion(),
                 checkpoint.storeId(),
                 fallbackKernelVersionProvider);
     }
 
+    private PostCheckpointInfo getPostCheckpointInfo(
+            LogFile logFile, KernelVersion kernelVersion, LogPosition logPosition) throws IOException {
+        return kernelVersion.isAtLeast(VERSION_APPEND_INDEX_INTRODUCED)
+                ? getAppendIndexPostCheckPointInfo(logFile, logPosition)
+                : getLegacyPostCheckPointInfo(logFile, logPosition).toPostCheckpointInfo();
+    }
+
     private LogTailInformation noCheckpointLogTail(LogFile logFile, long highestLogVersion, long lowestLogVersion)
             throws IOException {
-        var entries = getFirstTransactionId(logFile, lowestLogVersion);
+        var entries = getFirstEntryInfo(logFile, lowestLogVersion);
         return new LogTailInformation(
                 entries.isPresent(),
-                entries.getTransactionId(),
+                entries.appendIndex(),
                 lowestLogVersion == UNKNOWN,
                 highestLogVersion,
                 entries.getEntryVersion(),
                 fallbackKernelVersionProvider);
     }
 
-    private StartCommitEntries getFirstTransactionId(LogFile logFile, long lowestLogVersion) throws IOException {
-        LogPosition logPosition = LogPosition.UNSPECIFIED;
+    private PostCheckpointInfo getFirstEntryInfo(LogFile logFile, long lowestLogVersion) throws IOException {
+        var logPosition = LogPosition.UNSPECIFIED;
+        var kernelVersion = KernelVersion.EARLIEST;
         if (logFile.versionExists(lowestLogVersion)) {
             LogHeader logHeader = logFile.extractHeader(lowestLogVersion);
             if (logHeader != null) {
                 logPosition = logHeader.getStartPosition();
+                kernelVersion = logHeader.getLogFormatVersion().getFromKernelVersion();
             }
         }
-        return getFirstTransactionIdAfterCheckpoint(logFile, logPosition);
+        return getPostCheckpointInfo(logFile, kernelVersion, logPosition);
     }
 
     /**
@@ -216,7 +233,7 @@ public class DetachedLogTailScanner {
                 || checkpointInfo.storeId().isSameOrUpgradeSuccessor(headerStoreId);
     }
 
-    private StartCommitEntries getFirstTransactionIdAfterCheckpoint(LogFile logFile, LogPosition logPosition)
+    private LegacyPostCheckpointInfo getLegacyPostCheckPointInfo(LogFile logFile, LogPosition logPosition)
             throws IOException {
         boolean corruptedTransactionLogs = false;
         LogEntryStart start = null;
@@ -250,7 +267,7 @@ public class DetachedLogTailScanner {
                         position = reader.getCurrentLogPosition();
                     }
                     if ((start != null) && (commit != null || chunkEnd != null)) {
-                        return new StartCommitEntries(start, commit, chunkEnd);
+                        return new LegacyPostCheckpointInfo(start, commit, chunkEnd);
                     }
                     // signal that we still need recovery since our logs look broken
                     corruptedTransactionLogs = logEntryReader.hasBrokenLastEntry();
@@ -271,7 +288,71 @@ public class DetachedLogTailScanner {
                 corruptedTransactionLogs = true;
             }
         }
-        return new StartCommitEntries(start, commit, chunkEnd, corruptedTransactionLogs);
+        return new LegacyPostCheckpointInfo(start, commit, chunkEnd, corruptedTransactionLogs);
+    }
+
+    private PostCheckpointInfo getAppendIndexPostCheckPointInfo(LogFile logFile, LogPosition logPosition)
+            throws IOException {
+        boolean corruptedTransactionLogs = false;
+        LogPosition lookupPosition = null;
+        if (logPosition != LogPosition.UNSPECIFIED) {
+            long logVersion = logPosition.getLogVersion();
+            try {
+                while (logFile.versionExists(logVersion)) {
+                    lookupPosition = lookupPosition == null
+                            ? logPosition
+                            : logFile.extractHeader(logVersion).getStartPosition();
+
+                    var logEntryReader =
+                            new VersionAwareLogEntryReader(commandReaderFactory, binarySupportedKernelVersions);
+                    try (var reader = logFile.getReader(lookupPosition, NO_MORE_CHANNELS);
+                            var cursor = new LogEntryCursor(logEntryReader, reader)) {
+                        AbstractVersionAwareLogEntry entry;
+                        LogPosition position;
+                        if (cursor.next()) {
+                            entry = (AbstractVersionAwareLogEntry) cursor.get();
+                            if (entry instanceof LogEntryStart startEntry) {
+                                return new PostCheckpointInfo(
+                                        startEntry.getAppendIndex(),
+                                        startEntry.kernelVersion().version(),
+                                        false);
+                            } else if (entry instanceof LogEntryChunkStart chunkStart) {
+                                return new PostCheckpointInfo(
+                                        chunkStart.getAppendIndex(),
+                                        chunkStart.kernelVersion().version(),
+                                        false);
+                            } else if (entry instanceof LogEntryRollback rollback) {
+                                return new PostCheckpointInfo(
+                                        rollback.getAppendIndex(),
+                                        rollback.kernelVersion().version(),
+                                        false);
+                            } else {
+                                return new PostCheckpointInfo(
+                                        UNKNOWN_APPEND_INDEX,
+                                        entry.kernelVersion().version(),
+                                        true);
+                            }
+                        }
+                        position = reader.getCurrentLogPosition();
+                        corruptedTransactionLogs = logEntryReader.hasBrokenLastEntry();
+                        if (!corruptedTransactionLogs) {
+                            verifyReaderPosition(logVersion, position);
+                        }
+                    }
+                    logVersion++;
+                }
+            } catch (Error | ClosedByInterruptException e) {
+                // These should not be parsing errors
+                throw e;
+            } catch (Throwable t) {
+                monitor.corruptedLogFile(logVersion, t);
+                if (failOnCorruptedLogFiles) {
+                    throwUnableToCleanRecover(t);
+                }
+                corruptedTransactionLogs = true;
+            }
+        }
+        return new PostCheckpointInfo(UNKNOWN_APPEND_INDEX, NO_ENTRY, corruptedTransactionLogs);
     }
 
     private CheckpointInfo loadConsensusIndexIfNeeded(LogFile logFile, CheckpointInfo checkpoint) throws IOException {
@@ -505,17 +586,27 @@ public class DetachedLogTailScanner {
         return true;
     }
 
-    private static class StartCommitEntries {
+    private record PostCheckpointInfo(long appendIndex, byte kernelVersion, boolean corruptedLogs) {
+        public boolean isPresent() {
+            return (appendIndex >= BASE_APPEND_INDEX) || corruptedLogs;
+        }
+
+        public byte getEntryVersion() {
+            return kernelVersion;
+        }
+    }
+
+    private static class LegacyPostCheckpointInfo {
         private final LogEntryStart start;
         private final LogEntryCommit commit;
         private final LogEntryChunkEnd chunkEnd;
         private final boolean corruptedLogs;
 
-        StartCommitEntries(LogEntryStart start, LogEntryCommit commit, LogEntryChunkEnd chunkEnd) {
+        LegacyPostCheckpointInfo(LogEntryStart start, LogEntryCommit commit, LogEntryChunkEnd chunkEnd) {
             this(start, commit, chunkEnd, false);
         }
 
-        StartCommitEntries(
+        LegacyPostCheckpointInfo(
                 LogEntryStart start, LogEntryCommit commit, LogEntryChunkEnd chunkEnd, boolean corruptedLogs) {
             this.start = start;
             this.commit = commit;
@@ -523,21 +614,24 @@ public class DetachedLogTailScanner {
             this.corruptedLogs = corruptedLogs;
         }
 
-        public long getTransactionId() {
+        PostCheckpointInfo toPostCheckpointInfo() {
+            return new PostCheckpointInfo(getAppendIndex(), getEntryVersion(), corruptedLogs);
+        }
+
+        private long getAppendIndex() {
             if (commit != null) {
                 return commit.getTxId();
             }
             if (chunkEnd != null) {
                 return chunkEnd.getTransactionId();
             }
+            if (start != null) {
+                return start.getAppendIndex();
+            }
             return NO_TRANSACTION_ID;
         }
 
-        public boolean isPresent() {
-            return start != null || corruptedLogs;
-        }
-
-        public byte getEntryVersion() {
+        private byte getEntryVersion() {
             if (start != null) {
                 return start.kernelVersion().version();
             }
