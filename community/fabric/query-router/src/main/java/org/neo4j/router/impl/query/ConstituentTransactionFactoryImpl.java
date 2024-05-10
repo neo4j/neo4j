@@ -99,7 +99,9 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
                     // the session database can be ignored in the constituent for now
                     query, targetService, (dbRef) -> location, cancellationChecker, false, null);
             statementLifecycle.doneRouterProcessing(
-                    processedQuery.obfuscationMetadata().get(), targetReference.isComposite());
+                    processedQuery.obfuscationMetadata().get(),
+                    processedQuery.queryOptions().offset().offset(),
+                    targetReference.isComposite());
             TransactionMode mode = TransactionMode.from(
                     context.transactionInfo().accessMode(),
                     queryOptions.queryOptions().executionMode(),

@@ -243,7 +243,7 @@ abstract class ExecutionEngine(
     val combinedParams = params.updatedWith(executableQuery.extractedParams)
 
     if (isOutermostQuery) {
-      context.executingQuery().onObfuscatorReady(executableQuery.queryObfuscator)
+      context.executingQuery().onObfuscatorReady(executableQuery.queryObfuscator, query.options.offset.offset)
       context.executingQuery().onCompilationCompleted(
         executableQuery.compilerInfo,
         executableQuery.planDescriptionSupplier()

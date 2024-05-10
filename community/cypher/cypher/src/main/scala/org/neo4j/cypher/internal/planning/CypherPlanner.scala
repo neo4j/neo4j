@@ -416,7 +416,10 @@ case class CypherPlanner(
 
     // Get obfuscator out ASAP to make query text available for `dbms.listQueries`, etc
     val obfuscator = CypherQueryObfuscator(preparedQuery.obfuscationMetadata())
-    transactionalContextWrapper.kernelTransactionalContext.executingQuery.onObfuscatorReady(obfuscator)
+    transactionalContextWrapper.kernelTransactionalContext.executingQuery.onObfuscatorReady(
+      obfuscator,
+      options.offset.offset
+    )
 
     checkForSchemaChanges(transactionalContextWrapper)
 

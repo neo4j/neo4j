@@ -39,7 +39,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    ob.obfuscateText(originalText) should equal(originalText)
+    ob.obfuscateText(originalText, 0) should equal(originalText)
   }
 
   test("should obfuscate simple password") {
@@ -53,7 +53,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    ob.obfuscateText(originalText) should equal(expectedText)
+    ob.obfuscateText(originalText, 0) should equal(expectedText)
   }
 
   test("should obfuscate multiline password") {
@@ -67,7 +67,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    ob.obfuscateText(originalText) should equal(expectedText)
+    ob.obfuscateText(originalText, 0) should equal(expectedText)
   }
 
   test("should obfuscate password with nested quotes") {
@@ -81,7 +81,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    ob.obfuscateText(originalText) should equal(expectedText)
+    ob.obfuscateText(originalText, 0) should equal(expectedText)
   }
 
   test("should obfuscate password with escaped quotes") {
@@ -95,7 +95,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    ob.obfuscateText(originalText) should equal(expectedText)
+    ob.obfuscateText(originalText, 0) should equal(expectedText)
   }
 
   test("should obfuscate multiple passwords") {
@@ -109,7 +109,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    ob.obfuscateText(originalText) should equal(expectedText)
+    ob.obfuscateText(originalText, 0) should equal(expectedText)
   }
 
   test("should obfuscate multiple passwords next to each other") {
@@ -123,7 +123,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    ob.obfuscateText(originalText) should equal(expectedText)
+    ob.obfuscateText(originalText, 0) should equal(expectedText)
   }
 
   test("empty obfuscator should not change query parameters") {
@@ -164,7 +164,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    ob.obfuscateText(originalText) should equal(expectedText)
+    ob.obfuscateText(originalText, 0) should equal(expectedText)
   }
 
   test("should throw when missing closing quote") {
@@ -177,7 +177,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
+    an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText, 0)
   }
 
   test("should throw when index is out of bounds") {
@@ -190,7 +190,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
+    an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText, 0)
   }
 
   private def makeParams(params: (String, String)*): MapValue = {

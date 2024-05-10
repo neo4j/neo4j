@@ -524,7 +524,7 @@ class Neo4jTransactionalContextIT {
         var growingArraySize = localMem.heapHighWaterMark();
 
         // Start query execution
-        executingQuery.onObfuscatorReady(QueryObfuscator.PASSTHROUGH);
+        executingQuery.onObfuscatorReady(QueryObfuscator.PASSTHROUGH, 0);
         executingQuery.onCompilationCompleted(null, null);
         executingQuery.onExecutionStarted(queryMemoryTracker);
 
@@ -853,7 +853,7 @@ class Neo4jTransactionalContextIT {
                 .newContext(outerTx, queryText, MapValue.EMPTY, QueryExecutionConfiguration.DEFAULT_CONFIG);
 
         // We need to be done with parsing and provide an obfuscator to see the query text in the procedure
-        ctx.executingQuery().onObfuscatorReady(QueryObfuscator.PASSTHROUGH);
+        ctx.executingQuery().onObfuscatorReady(QueryObfuscator.PASSTHROUGH, 0);
 
         var innerCtx = ctx.contextWithNewTransaction();
         var innerTx = innerCtx.transaction();
@@ -889,7 +889,7 @@ class Neo4jTransactionalContextIT {
                 .newContext(outerTx, queryText, MapValue.EMPTY, QueryExecutionConfiguration.DEFAULT_CONFIG);
 
         // We need to be done with parsing and provide an obfuscator to see the query text in the procedure
-        ctx.executingQuery().onObfuscatorReady(QueryObfuscator.PASSTHROUGH);
+        ctx.executingQuery().onObfuscatorReady(QueryObfuscator.PASSTHROUGH, 0);
 
         var innerCtx = ctx.contextWithNewTransaction();
         var innerTx = innerCtx.transaction();

@@ -27,4 +27,6 @@ object ObfuscationMetadata {
   def empty() = new ObfuscationMetadata(Vector.empty, Set.empty)
 }
 
-case class LiteralOffset(start: Int, length: Option[Int])
+case class LiteralOffset(private val start: Int, length: Option[Int]) {
+  def start(preParserOffset: Int): Int = start + preParserOffset
+}

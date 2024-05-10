@@ -296,16 +296,17 @@ public class ExecutingQuery {
                 (pageFaultsOfClosedTransactionsIncludingCommits - pageFaultsOfClosedTransactionsExcludingCommits);
     }
 
-    public void onObfuscatorReady(QueryObfuscator queryObfuscator) {
+    public void onObfuscatorReady(QueryObfuscator queryObfuscator, int preparserOffset) {
         if (status != SimpleState.parsing()) // might get called multiple times due to caching and/or internal queries
         {
             return;
         }
 
         try {
-            obfuscatedQueryText = queryObfuscator.obfuscateText(rawQueryText);
+            obfuscatedQueryText = queryObfuscator.obfuscateText(rawQueryText, preparserOffset);
             obfuscatedQueryParameters = queryObfuscator.obfuscateParameters(rawQueryParameters);
         } catch (Exception ignore) {
+            ignore.printStackTrace();
             obfuscatedQueryText = null;
             obfuscatedQueryParameters = null;
         }

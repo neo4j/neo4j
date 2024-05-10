@@ -228,7 +228,9 @@ public class QueryRouterImpl implements QueryRouter {
             var location = locationService.locationOf(target);
             updateQueryRouterMetric(location);
             statementLifecycle.doneRouterProcessing(
-                    processedQueryInfo.obfuscationMetadata().get(), target.isComposite());
+                    processedQueryInfo.obfuscationMetadata().get(),
+                    queryOptions.offset().offset(),
+                    target.isComposite());
 
             RouterTransaction routerTransaction = context.routerTransaction();
             var constituentTransactionFactory = getConstituentTransactionFactory(context, queryOptions);

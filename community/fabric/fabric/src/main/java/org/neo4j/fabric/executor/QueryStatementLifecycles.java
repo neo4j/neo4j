@@ -106,8 +106,8 @@ public class QueryStatementLifecycles {
             getQueryExecutionMonitor().startProcessing(executingQuery);
         }
 
-        public void doneFabricProcessing(FabricPlan plan) {
-            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(plan.obfuscationMetadata()));
+        public void doneFabricProcessing(FabricPlan plan, int preParserOffset) {
+            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(plan.obfuscationMetadata()), preParserOffset);
 
             if (plan.inCompositeContext()) {
                 monitoringMode = new ParentChildMonitoringMode();
@@ -116,8 +116,9 @@ public class QueryStatementLifecycles {
             }
         }
 
-        public void doneRouterProcessing(ObfuscationMetadata obfuscateMetadata, boolean inCompositeContext) {
-            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(obfuscateMetadata));
+        public void doneRouterProcessing(
+                ObfuscationMetadata obfuscateMetadata, int preParserOffset, boolean inCompositeContext) {
+            executingQuery.onObfuscatorReady(CypherQueryObfuscator.apply(obfuscateMetadata), preParserOffset);
 
             if (inCompositeContext) {
                 monitoringMode = new ParentChildMonitoringMode();

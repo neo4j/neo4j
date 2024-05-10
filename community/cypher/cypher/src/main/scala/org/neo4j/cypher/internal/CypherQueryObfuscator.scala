@@ -28,14 +28,14 @@ import scala.collection.mutable
 
 class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator {
 
-  override def obfuscateText(rawQueryText: String): String =
+  override def obfuscateText(rawQueryText: String, preParserOffset: Int): String =
     if (state.sensitiveLiteralOffsets.isEmpty)
       rawQueryText
     else {
       val sb = new mutable.StringBuilder()
       var i = 0
       for (literalOffset <- state.sensitiveLiteralOffsets) {
-        val start = literalOffset.start
+        val start = literalOffset.start(preParserOffset)
         if (start >= rawQueryText.length || start < i) {
           throw new IllegalStateException(s"Literal offset out of bounds: $literalOffset.")
         }

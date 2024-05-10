@@ -66,7 +66,7 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
     for ((rawText, obfuscatedText) <- literalTests) {
       test(s"$rawText [text]") {
         val ob = obfuscatorFactory.obfuscatorForQuery(rawText)
-        ob.obfuscateText(rawText) should equal(obfuscatedText)
+        ob.obfuscateText(rawText, 0) should equal(obfuscatedText)
       }
     }
   }
@@ -116,7 +116,7 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
       val params = ValueUtils.asMapValue(rawParameters.asJava)
       val expectedParams = ValueUtils.asMapValue(obfuscatedParameters.asJava)
       val ob = obfuscatorFactory.obfuscatorForQuery(rawText)
-      ob.obfuscateText(rawText) should equal(obfuscatedText)
+      ob.obfuscateText(rawText, 0) should equal(obfuscatedText)
       ob.obfuscateParameters(params) should equal(expectedParams)
     }
   }

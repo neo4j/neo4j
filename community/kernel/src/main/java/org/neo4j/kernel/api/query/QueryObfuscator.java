@@ -22,14 +22,14 @@ package org.neo4j.kernel.api.query;
 import org.neo4j.values.virtual.MapValue;
 
 public interface QueryObfuscator {
-    String obfuscateText(String rawQueryText);
+    String obfuscateText(String rawQueryText, int preparserOffset);
 
     MapValue obfuscateParameters(MapValue rawQueryParameters);
 
     QueryObfuscator PASSTHROUGH = new QueryObfuscator() {
 
         @Override
-        public String obfuscateText(String rawQueryText) {
+        public String obfuscateText(String rawQueryText, int preparserOffset) {
             return rawQueryText;
         }
 

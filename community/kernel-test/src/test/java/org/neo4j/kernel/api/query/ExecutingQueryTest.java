@@ -75,7 +75,7 @@ class ExecutingQueryTest {
         assertEquals("parsing", query.snapshot().status());
 
         // when
-        query.onObfuscatorReady(null);
+        query.onObfuscatorReady(null, 0);
 
         // then
         assertEquals("planning", query.snapshot().status());
@@ -107,7 +107,7 @@ class ExecutingQueryTest {
         clock.forward(124, TimeUnit.MICROSECONDS);
 
         // then
-        query.onObfuscatorReady(null);
+        query.onObfuscatorReady(null, 0);
         QuerySnapshot snapshot = query.snapshot();
         assertEquals(snapshot.compilationTimeMicros(), snapshot.elapsedTimeMicros());
 
@@ -125,7 +125,7 @@ class ExecutingQueryTest {
     @Test
     void shouldReportWaitTime() {
         // given
-        query.onObfuscatorReady(null);
+        query.onObfuscatorReady(null, 0);
         query.onCompilationCompleted(new CompilerInfo("the-planner", "the-runtime", emptyList()), null);
         query.onExecutionStarted(new FakeMemoryTracker());
 
@@ -291,7 +291,7 @@ class ExecutingQueryTest {
 
     @Test
     void shouldNotAllowCompletingCompilationMultipleTimes() {
-        query.onObfuscatorReady(null);
+        query.onObfuscatorReady(null, 0);
         query.onCompilationCompleted(null, null);
         assertThatIllegalStateException().isThrownBy(() -> query.onCompilationCompleted(null, null));
     }
@@ -305,7 +305,7 @@ class ExecutingQueryTest {
     void shouldAllowRetryingAfterStartingExecutiong() {
         assertEquals("parsing", query.snapshot().status());
 
-        query.onObfuscatorReady(null);
+        query.onObfuscatorReady(null, 0);
         assertEquals("planning", query.snapshot().status());
 
         query.onCompilationCompleted(null, null);
@@ -320,7 +320,7 @@ class ExecutingQueryTest {
 
     @Test
     void shouldNotAllowRetryingWithoutStartingExecuting() {
-        query.onObfuscatorReady(null);
+        query.onObfuscatorReady(null, 0);
         query.onCompilationCompleted(null, null);
         assertThatIllegalStateException().isThrownBy(query::onRetryAttempted);
     }

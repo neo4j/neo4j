@@ -144,6 +144,7 @@ class ConstituentTransactionFactoryImplTest {
         when(queryProcessor.processQuery(any(), any(), any(), any(), anyBoolean(), any()))
                 .thenReturn(processedQueryInfo);
         when(processedQueryInfo.obfuscationMetadata()).thenReturn(Optional.of(ObfuscationMetadata.empty()));
+        when(processedQueryInfo.queryOptions()).thenReturn(queryOptions);
         when(processedQueryInfo.statementType()).thenReturn(statementType);
 
         LocationService locationService = (databaseReference) -> mock(Location.Local.class);
