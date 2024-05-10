@@ -412,6 +412,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public Value ternaryContains(AnyValue value) {
+            return inner.ternaryContains(value);
+        }
+
+        @Override
         public AnyValue value(int offset) {
             return inner.value(size() - 1 - offset);
         }
@@ -660,19 +665,8 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public void forEach(Consumer<? super AnyValue> consumer) {
-            forEach(consumer, base);
+            base.forEach(consumer);
             consumer.accept(appended);
-        }
-
-        private void forEach(Consumer<? super AnyValue> consumer, ListValue outer) {
-            if (outer instanceof AppendList appendList) {
-                forEach(consumer, appendList.base);
-                consumer.accept(appendList.appended);
-            } else {
-                for (AnyValue value : outer) {
-                    consumer.accept(value);
-                }
-            }
         }
 
         @Override
@@ -735,6 +729,13 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 size = base.size() + 1;
             }
             return size;
+        }
+
+        // TODO test
+        @Override
+        public void forEach(Consumer<? super AnyValue> consumer) {
+            consumer.accept(prepended);
+            base.forEach(consumer);
         }
 
         @Override
