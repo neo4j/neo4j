@@ -244,12 +244,6 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
         }
 
         relationships.forEach(this::addIncoming);
-
-        AnyValue last = relationships.last();
-        if (notNoValue(last)) {
-            nodes.add(target);
-            rels.add(((VirtualRelationshipValue) last));
-        }
     }
 
     /**
@@ -307,12 +301,6 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
         }
 
         relationships.forEach(this::addOutgoing);
-
-        AnyValue last = relationships.last();
-        if (notNoValue(last)) {
-            rels.add(((VirtualRelationshipValue) last));
-            nodes.add(target);
-        }
     }
 
     /**
@@ -371,12 +359,6 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
         }
 
         relationships.forEach(this::addUndirected);
-
-        AnyValue last = relationships.last();
-        if (notNoValue(last)) {
-            rels.add(((VirtualRelationshipValue) last));
-            nodes.add(target);
-        }
     }
 
     /**
