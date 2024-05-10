@@ -166,7 +166,7 @@ public class TypeCheckers {
         return converterFor(javaType);
     }
 
-    DefaultValueConverter converterFor(Type javaType) throws ProcedureException {
+    public DefaultValueConverter converterFor(Type javaType) throws ProcedureException {
         if (isAnyValue(javaType)) {
             // For AnyValue we support subtyping
             javaType = findValidSuperClass(javaType);
