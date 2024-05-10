@@ -195,27 +195,9 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         }
 
         @Override
-        public int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
-            initView();
-            return view.getIdsOfFunctionsMatching(predicate);
-        }
-
-        @Override
-        public int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
-            initView();
-            return view.getIdsOfAggregatingFunctionsMatching(predicate);
-        }
-
-        @Override
         public Set<ProcedureSignature> getAllProcedures() {
             initView();
             return view.getAllProcedures();
-        }
-
-        @Override
-        public int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
-            initView();
-            return view.getIdsOfProceduresMatching(predicate);
         }
 
         @Override
@@ -247,13 +229,6 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         public UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException {
             initView();
             return view.createAggregationFunction(ctx, id);
-        }
-
-        @Override
-        public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(
-                Class<T> cls, boolean safe) {
-            initView();
-            return view.lookupComponentProvider(cls, safe);
         }
 
         @Override

@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
@@ -33,9 +32,6 @@ import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.ResourceMonitor;
-import org.neo4j.kernel.api.procedure.CallableProcedure;
-import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
-import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.string.Globbing;
@@ -87,18 +83,6 @@ public class ProcedureViewImpl implements ProcedureView {
                 ComponentRegistry.copyOf(allComponents));
     }
 
-    /**
-     * Lookup registered component providers functions that capable to provide user requested type in scope of procedure invocation context
-     * @param cls the type of registered component
-     * @param safe set to false if desired component can bypass security, true if it respects security
-     * @return registered provider function if registered, null otherwise
-     */
-    @Override
-    public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe) {
-        var registryView = safe ? safeComponents : allComponents;
-        return registryView.providerFor(cls);
-    }
-
     @Override
     public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
         return registry.procedure(name);
@@ -115,23 +99,8 @@ public class ProcedureViewImpl implements ProcedureView {
     }
 
     @Override
-    public int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
-        return registry.getIdsOfFunctionsMatching(predicate);
-    }
-
-    @Override
-    public int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
-        return registry.getIdsOfAggregatingFunctionsMatching(predicate);
-    }
-
-    @Override
     public Set<ProcedureSignature> getAllProcedures() {
         return registry.getAllProcedures();
-    }
-
-    @Override
-    public int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
-        return registry.getIdsOfProceduresMatching(predicate);
     }
 
     @Override
@@ -167,7 +136,7 @@ public class ProcedureViewImpl implements ProcedureView {
             return cachedResult;
         }
         Predicate<String> matcherPredicate = Globbing.globPredicate(procedureGlobbing);
-        int[] data = getIdsOfProceduresMatching(
+        int[] data = registry.getIdsOfProceduresMatching(
                 p -> matcherPredicate.test(p.signature().name().toString()));
         proceduresLookupCache.put(procedureGlobbing, data);
         return data;
@@ -175,7 +144,7 @@ public class ProcedureViewImpl implements ProcedureView {
 
     @Override
     public int[] getAdminProcedureIds() {
-        return getIdsOfProceduresMatching(p -> p.signature().admin());
+        return registry.getIdsOfProceduresMatching(p -> p.signature().admin());
     }
 
     @Override
@@ -185,7 +154,7 @@ public class ProcedureViewImpl implements ProcedureView {
             return cachedResult;
         }
         Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
-        int[] data = getIdsOfFunctionsMatching(
+        int[] data = registry.getIdsOfFunctionsMatching(
                 f -> matcherPredicate.test(f.signature().name().toString()));
         functionsLookupCache.put(functionGlobbing, data);
         return data;
@@ -198,7 +167,7 @@ public class ProcedureViewImpl implements ProcedureView {
             return cachedResult;
         }
         Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
-        int[] data = getIdsOfAggregatingFunctionsMatching(
+        int[] data = registry.getIdsOfAggregatingFunctionsMatching(
                 f -> matcherPredicate.test(f.signature().name().toString()));
         aggregationFunctionsLookupCache.put(functionGlobbing, data);
         return data;
