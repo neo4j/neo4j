@@ -735,7 +735,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public void forEach(Consumer<? super AnyValue> consumer) {
             consumer.accept(prepended);
-            base.forEach(consumer);
+            ListValue baseList = base;
+            while (baseList instanceof PrependList prependList) {
+                consumer.accept(prependList.prepended);
+                baseList = prependList.base;
+            }
+            baseList.forEach(consumer);
         }
 
         @Override
