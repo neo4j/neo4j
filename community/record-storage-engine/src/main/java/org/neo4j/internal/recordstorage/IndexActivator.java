@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import java.util.HashSet;
 import java.util.Set;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.InternalKernelRuntimeException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 
@@ -49,7 +50,7 @@ public class IndexActivator implements AutoCloseable {
             for (IndexDescriptor index : indexesToActivate) {
                 try {
                     listener.activateIndex(index);
-                } catch (KernelException e) {
+                } catch (KernelException | InternalKernelRuntimeException e) {
                     throw new IllegalStateException("Unable to enable constraint, backing index is not online.", e);
                 }
             }

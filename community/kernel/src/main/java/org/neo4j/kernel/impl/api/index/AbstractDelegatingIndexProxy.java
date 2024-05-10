@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IncompleteConstraintValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -99,7 +98,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy {
     }
 
     @Override
-    public void activate() throws IndexActivationFailedKernelException {
+    public void activate() {
         getDelegate().activate();
     }
 

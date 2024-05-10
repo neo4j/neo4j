@@ -65,6 +65,7 @@ import org.neo4j.internal.helpers.Format;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.InternalKernelRuntimeException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -78,7 +79,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -651,8 +651,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     @Override
     public void activateIndex(IndexDescriptor descriptor)
-            throws IndexNotFoundKernelException, IndexActivationFailedKernelException,
-                    IndexPopulationFailedKernelException {
+            throws IndexNotFoundKernelException, IndexPopulationFailedKernelException {
         try {
             if (state == State.RUNNING) // don't do this during recovery.
             {
@@ -663,7 +662,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             }
         } catch (InterruptedException e) {
             Thread.interrupted();
-            throw new IndexActivationFailedKernelException(e, "Unable to activate index, thread was interrupted.");
+            throw new InternalKernelRuntimeException(e, "Unable to activate index, thread was interrupted.");
         }
     }
 

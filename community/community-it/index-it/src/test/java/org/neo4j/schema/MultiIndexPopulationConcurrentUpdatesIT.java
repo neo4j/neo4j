@@ -76,7 +76,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
@@ -412,8 +411,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
     }
 
     private void waitAndActivateIndexes(Map<String, Integer> labelsIds, int propertyId)
-            throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
-                    IndexActivationFailedKernelException {
+            throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException {
         try (Transaction tx = db.beginTx()) {
             for (int labelId : labelsIds.values()) {
                 waitIndexOnline(indexService, propertyId, labelId);
@@ -434,8 +432,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
     }
 
     private void waitIndexOnline(IndexingService indexService, int propertyId, int labelId)
-            throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException,
-                    IndexActivationFailedKernelException {
+            throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException {
         LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, propertyId);
         IndexDescriptor index = single(schemaCache.indexesForSchema(schema));
         IndexProxy indexProxy = indexService.getIndexProxy(index);

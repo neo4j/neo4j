@@ -34,7 +34,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
@@ -263,7 +262,7 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
     }
 
     @Override
-    public void activate() throws IndexActivationFailedKernelException {
+    public void activate() {
         // use write lock, since activate() might call flip*() which acquires a write lock itself.
         lock.writeLock().lock();
         try {

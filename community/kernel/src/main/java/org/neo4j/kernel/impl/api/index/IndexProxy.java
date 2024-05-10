@@ -27,7 +27,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IncompleteConstraintValidationException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -102,7 +101,7 @@ public interface IndexProxy extends MinimalIndexAccessor {
     boolean awaitStoreScanCompleted(long time, TimeUnit unit)
             throws IndexPopulationFailedKernelException, InterruptedException;
 
-    void activate() throws IndexActivationFailedKernelException;
+    void activate();
 
     /**
      * @throws IncompleteConstraintValidationException if the data is violating the constraint.

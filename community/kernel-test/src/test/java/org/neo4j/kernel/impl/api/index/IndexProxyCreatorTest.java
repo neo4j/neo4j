@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -65,8 +64,7 @@ class IndexProxyCreatorTest {
     }
 
     @Test
-    void onlineUniquenessIndexProxyWithoutOwningConstraintShouldBeTentative()
-            throws IndexActivationFailedKernelException {
+    void onlineUniquenessIndexProxyWithoutOwningConstraintShouldBeTentative() {
         final var provider = newProvider();
         final var creator = newCreator(provider);
 
