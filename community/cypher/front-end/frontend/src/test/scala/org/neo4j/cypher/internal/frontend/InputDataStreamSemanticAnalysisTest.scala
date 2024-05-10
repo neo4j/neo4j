@@ -110,6 +110,6 @@ class InputDataStreamSemanticAnalysisTest extends CypherFunSuite with AstConstru
 
   private def initStartState(statement: Statement) = {
     // As the test only checks ast -> semantic analysis, the query isn't used.
-    InitialState("whatever", None, NoPlannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(statement))
+    InitialState("whatever", NoPlannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(statement))
   }
 }

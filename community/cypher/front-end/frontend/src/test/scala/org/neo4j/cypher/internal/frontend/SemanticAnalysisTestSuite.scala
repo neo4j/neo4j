@@ -64,7 +64,7 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
   }
 
   def initialStateWithQuery(query: String): InitialState =
-    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+    InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
 
   def runSemanticAnalysisWithPipeline(pipeline: Pipeline, query: String): SemanticAnalysisResult =
     runSemanticAnalysisWithPipelineAndState(pipeline, initialStateWithQuery(query))

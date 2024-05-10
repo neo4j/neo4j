@@ -55,7 +55,6 @@ class CypherQueryObfuscatorFactory {
     val preParsedQuery = preParser.preParseQuery(query, devNullLogger)
     val state = InitialState(
       preParsedQuery.statement,
-      Some(preParsedQuery.options.offset),
       null,
       new AnonymousVariableNameGenerator()
     )

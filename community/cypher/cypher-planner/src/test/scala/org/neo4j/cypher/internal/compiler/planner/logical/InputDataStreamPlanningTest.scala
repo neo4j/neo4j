@@ -126,7 +126,6 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
     val fakeQueryString = "RETURN 1"
     InputDataStreamTestInitialState(
       fakeQueryString,
-      None,
       IDPPlannerName,
       new AnonymousVariableNameGenerator(),
       maybeStatement = Some(ast)

@@ -104,7 +104,6 @@ trait QueryGraphProducer {
       )
     val state = LogicalPlanState(
       query,
-      None,
       IDPPlannerName,
       newStubbedPlanningAttributes,
       anonymousVariableNameGenerator,

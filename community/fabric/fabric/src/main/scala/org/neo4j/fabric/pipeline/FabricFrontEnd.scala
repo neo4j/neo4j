@@ -152,7 +152,7 @@ case class FabricFrontEnd(
 
       def process(): BaseState =
         transformer.transform(
-          InitialState(query.statement, Some(query.options.offset), null, anonymousVariableNameGenerator),
+          InitialState(query.statement, null, anonymousVariableNameGenerator),
           context
         )
     }
@@ -174,7 +174,6 @@ case class FabricFrontEnd(
         val plannerName = PlannerNameFor(query.options.queryOptions.planner.name)
         val state = InitialState(
           localQueryString,
-          None,
           plannerName,
           anonymousVariableNameGenerator = anonymousVariableNameGenerator
         )

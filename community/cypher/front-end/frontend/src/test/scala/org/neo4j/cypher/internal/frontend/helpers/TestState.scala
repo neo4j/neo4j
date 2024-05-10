@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.util.ObfuscationMetadata
 case class TestState(override val maybeStatement: Option[ast.Statement]) extends BaseState {
   override def queryText: String = statement().toString
 
-  override def startPosition: None.type = None
-
   override object plannerName extends PlannerName {
     override def name: String = "Test"
 

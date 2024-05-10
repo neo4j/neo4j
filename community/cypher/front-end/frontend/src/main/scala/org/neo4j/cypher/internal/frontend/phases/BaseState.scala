@@ -23,13 +23,11 @@ import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
 
 trait BaseState {
   def queryText: String
-  def startPosition: Option[InputPosition]
   def plannerName: PlannerName
   def maybeProcedureSignatureVersion: Option[Long]
   def maybeStatement: Option[Statement]
@@ -63,7 +61,6 @@ trait BaseState {
 
 case class InitialState(
   queryText: String,
-  startPosition: Option[InputPosition],
   plannerName: PlannerName,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   maybeProcedureSignatureVersion: Option[Long] = None,

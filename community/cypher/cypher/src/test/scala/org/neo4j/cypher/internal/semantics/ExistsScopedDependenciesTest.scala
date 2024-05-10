@@ -87,7 +87,6 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val state = InitialState(
       queryString,
-      None,
       IDPPlannerName,
       new AnonymousVariableNameGenerator
     )
@@ -121,7 +120,6 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val state = InitialState(
       queryString,
-      None,
       IDPPlannerName,
       new AnonymousVariableNameGenerator
     )
@@ -153,7 +151,6 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val state = InitialState(
       queryString,
-      None,
       IDPPlannerName,
       new AnonymousVariableNameGenerator
     )
@@ -186,7 +183,6 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val state = InitialState(
       queryString,
-      None,
       IDPPlannerName,
       new AnonymousVariableNameGenerator
     )
@@ -219,7 +215,6 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val state = InitialState(
       queryString,
-      None,
       IDPPlannerName,
       new AnonymousVariableNameGenerator
     )

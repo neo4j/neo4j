@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
 
@@ -44,7 +43,6 @@ the pipe line
  */
 case class LogicalPlanState(
   queryText: String,
-  startPosition: Option[InputPosition],
   plannerName: PlannerName,
   planningAttributes: PlanningAttributes,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
@@ -105,7 +103,6 @@ object LogicalPlanState {
   def apply(state: BaseState): LogicalPlanState =
     LogicalPlanState(
       queryText = state.queryText,
-      startPosition = state.startPosition,
       plannerName = state.plannerName,
       planningAttributes = PlanningAttributes.newAttributes,
       maybeProcedureSignatureVersion = state.maybeProcedureSignatureVersion,

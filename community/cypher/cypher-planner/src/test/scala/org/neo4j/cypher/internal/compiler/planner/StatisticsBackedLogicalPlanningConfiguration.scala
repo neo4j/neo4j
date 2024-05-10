@@ -1416,7 +1416,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       databaseReferenceRepository = options.databaseReferenceRepository,
       labelInferenceStrategy = labelInferenceStrategy
     )
-    val state = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
+    val state = InitialState(queryString, IDPPlannerName, new AnonymousVariableNameGenerator)
     val parsingConfig = {
       val cfg = LogicalPlanningTestSupport2.defaultParsingConfig
       cfg.copy(semanticFeatures = cfg.semanticFeatures ++ options.semanticFeatures)

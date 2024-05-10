@@ -61,5 +61,5 @@ class SemanticScopeRecordingTest extends CypherFunSuite {
   }
 
   private def initStartState(query: String) =
-    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+    InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
 }

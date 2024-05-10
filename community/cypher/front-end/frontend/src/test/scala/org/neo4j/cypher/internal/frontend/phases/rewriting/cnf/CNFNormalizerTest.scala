@@ -190,7 +190,7 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
     rewriter = {
       case e: Expression =>
         val initialState =
-          InitialState("", None, NoPlannerName, new AnonymousVariableNameGenerator()).withStatement(TestStatement(e))
+          InitialState("", NoPlannerName, new AnonymousVariableNameGenerator()).withStatement(TestStatement(e))
         val finalState = cnfNormalizerTransformer.transform(initialState, new TestContext(monitors))
         val expression = finalState.statement() match {
           case TestStatement(e) => e

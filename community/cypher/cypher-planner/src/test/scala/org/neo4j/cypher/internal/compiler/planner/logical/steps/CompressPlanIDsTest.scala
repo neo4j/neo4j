@@ -111,7 +111,7 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
   }
 
   private def logicalPlanStateWithAttrributes(plan: LogicalPlan): LogicalPlanState = {
-    val state = LogicalPlanState(InitialState("", None, IDPPlannerName, new AnonymousVariableNameGenerator))
+    val state = LogicalPlanState(InitialState("", IDPPlannerName, new AnonymousVariableNameGenerator))
       .withMaybeLogicalPlan(Some(plan))
     allPlans(plan).foreach { p =>
       // Some plans do not get solved assigned during planning. That must still work with CompressIDs.

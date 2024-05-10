@@ -219,7 +219,7 @@ class SemanticTypeCheckTest extends CypherFunSuite {
   }
 
   private def runPipeline(query: String): ErrorCollectingContext = {
-    val startState = InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+    val startState = InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
     val context = new ErrorCollectingContext()
     pipeline.transform(startState, context)
 

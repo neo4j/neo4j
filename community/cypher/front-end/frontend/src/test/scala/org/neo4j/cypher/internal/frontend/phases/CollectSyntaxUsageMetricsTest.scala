@@ -115,7 +115,7 @@ class CollectSyntaxUsageMetricsTest extends CypherFunSuite {
   }
 
   private def runPipeline(query: String): InternalSyntaxUsageStats = {
-    val startState = InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
+    val startState = InitialState(query, NoPlannerName, new AnonymousVariableNameGenerator)
     val context = new ErrorCollectingContext() {
       override val internalSyntaxUsageStats: InternalSyntaxUsageStats = InternalSyntaxUsageStats.newImpl()
     }

@@ -100,7 +100,6 @@ trait FragmentTestUtils {
       def toTextOutput: String = ""
       def version: String = ""
     }
-    override val startPosition: Option[InputPosition] = Option.empty
     override val maybeProcedureSignatureVersion: Option[Long] = Option.empty
     override val maybeStatement: Option[Statement] = Option.empty
     override val maybeReturnColumns: Option[Seq[String]] = Option.empty

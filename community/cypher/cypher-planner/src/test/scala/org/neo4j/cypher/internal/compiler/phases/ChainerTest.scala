@@ -59,7 +59,6 @@ class ChainerTest extends CypherFunSuite {
   test("legal chain") {
     val init = InitialState(
       "Q",
-      None,
       IDPPlannerName,
       new AnonymousVariableNameGenerator
     )
@@ -73,7 +72,6 @@ class ChainerTest extends CypherFunSuite {
   test("illegal chain") {
     val init = InitialState(
       "Q",
-      None,
       IDPPlannerName,
       new AnonymousVariableNameGenerator
     )

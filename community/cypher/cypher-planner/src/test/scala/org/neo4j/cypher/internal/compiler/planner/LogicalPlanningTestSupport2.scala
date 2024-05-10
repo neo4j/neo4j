@@ -218,7 +218,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
   val realConfig: RealLogicalPlanningConfiguration = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
   def createInitState(queryString: String): BaseState =
-    InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
+    InitialState(queryString, IDPPlannerName, new AnonymousVariableNameGenerator)
 
   def pipeLine(deduplicateNames: Boolean = deduplicateNames)
     : Transformer[PlannerContext, BaseState, LogicalPlanState] = {

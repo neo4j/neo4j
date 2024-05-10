@@ -478,7 +478,6 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
     val state = LogicalPlanState(
       query,
-      None,
       CostBasedPlannerName.default,
       PlanningAttributes.newAttributes,
       new AnonymousVariableNameGenerator()

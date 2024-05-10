@@ -142,7 +142,7 @@ trait RewritePhaseTest {
   ): BaseState = {
     val fromAst = parseAndRewrite(from, features: _*)
     val initialState =
-      InitialState(from, None, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(fromAst))
+      InitialState(from, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(fromAst))
     val fromInState =
       if (astRewriteAndAnalyze) {
         preProcessPhase(features: _*).transform(

@@ -24,14 +24,12 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case class InputDataStreamTestInitialState(
   queryText: String,
-  startPosition: Option[InputPosition],
   plannerName: PlannerName,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   initialFields: Map[String, CypherType] = Map.empty,
