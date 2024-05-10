@@ -234,6 +234,23 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public ValueRepresentation itemValueRepresentation() {
             return itemRepresentation;
         }
+
+        @Override
+        public Value ternaryContains(AnyValue value) {
+            if (values.length == 0) {
+                return BooleanValue.FALSE;
+            }
+            boolean undefinedEquality = false;
+            for (AnyValue nextValue : values) {
+                Equality equality = nextValue.ternaryEquals(value);
+                if (equality == Equality.TRUE) {
+                    return BooleanValue.TRUE;
+                } else if (equality == Equality.UNDEFINED && !undefinedEquality) {
+                    undefinedEquality = true;
+                }
+            }
+            return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
+        }
     }
 
     private static final long JAVA_LIST_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance(JavaListListValue.class);
@@ -273,6 +290,23 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public int size() {
             return values.size();
+        }
+
+        @Override
+        public Value ternaryContains(AnyValue value) {
+            if (values.isEmpty()) {
+                return BooleanValue.FALSE;
+            }
+            boolean undefinedEquality = false;
+            for (AnyValue nextValue : values) {
+                Equality equality = nextValue.ternaryEquals(value);
+                if (equality == Equality.TRUE) {
+                    return BooleanValue.TRUE;
+                } else if (equality == Equality.UNDEFINED && !undefinedEquality) {
+                    undefinedEquality = true;
+                }
+            }
+            return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
         }
 
         @Override
@@ -641,9 +675,21 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             if (equality == Equality.TRUE) {
                 return BooleanValue.TRUE;
             } else {
-                Value baseContains = base.ternaryContains(value);
+                boolean undefinedEquality = false;
+                ListValue baseList = base;
+                while (baseList instanceof AppendList appendList) {
+                    Equality baseEquality = appendList.appended.ternaryEquals(value);
+                    if (baseEquality == Equality.TRUE) {
+                        return BooleanValue.TRUE;
+                    } else {
+                        if (baseEquality == Equality.UNDEFINED && !undefinedEquality) {
+                            undefinedEquality = true;
+                        }
+                        baseList = appendList.base;
+                    }
+                }
+                Value baseContains = baseList.ternaryContains(value);
                 if (baseContains == BooleanValue.FALSE) {
-                    boolean undefinedEquality = equality == Equality.UNDEFINED;
                     return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
                 } else {
                     return baseContains;
@@ -741,6 +787,34 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 baseList = prependList.base;
             }
             baseList.forEach(consumer);
+        }
+
+        @Override
+        public Value ternaryContains(AnyValue value) {
+            Equality equality = prepended.ternaryEquals(value);
+            if (equality == Equality.TRUE) {
+                return BooleanValue.TRUE;
+            } else {
+                boolean undefinedEquality = false;
+                ListValue baseList = base;
+                while (baseList instanceof PrependList prependList) {
+                    Equality baseEquality = prependList.prepended.ternaryEquals(value);
+                    if (baseEquality == Equality.TRUE) {
+                        return BooleanValue.TRUE;
+                    } else {
+                        if (baseEquality == Equality.UNDEFINED && !undefinedEquality) {
+                            undefinedEquality = true;
+                        }
+                        baseList = prependList.base;
+                    }
+                }
+                Value baseContains = baseList.ternaryContains(value);
+                if (baseContains == BooleanValue.FALSE) {
+                    return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
+                } else {
+                    return baseContains;
+                }
+            }
         }
 
         @Override
