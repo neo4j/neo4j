@@ -52,6 +52,7 @@
         <module>neo4j-cst-factory</module>
         <module>neo4j-cst-factory-license</module>
         <module>ast-generator</module>
+        <module>parser</module>
     </modules>
 
     <profiles>
