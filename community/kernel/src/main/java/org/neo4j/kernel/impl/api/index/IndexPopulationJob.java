@@ -47,7 +47,7 @@ import org.neo4j.util.concurrent.Runnables;
 /**
  * A background job for initially populating one or more index over existing data in the database.
  * Use provided store view to scan store. Participating {@link IndexPopulator} are added with
- * {@link #addPopulator(IndexPopulator, IndexProxyStrategy, FlippableIndexProxy, FailedIndexProxyFactory)}
+ * {@link #addPopulator(IndexPopulator, IndexProxyStrategy, FlippableIndexProxy)}
  * before {@link #run() running} this job.
  */
 public class IndexPopulationJob implements Runnable {
@@ -104,16 +104,12 @@ public class IndexPopulationJob implements Runnable {
      *  @param populator {@link IndexPopulator} to participate.
      * @param indexProxyStrategy {@link IndexProxyStrategy} meta information about index.
      * @param flipper {@link FlippableIndexProxy} to call after a successful population.
-     * @param failedIndexProxyFactory {@link FailedIndexProxyFactory} to use after an unsuccessful population.
      */
     MultipleIndexPopulator.IndexPopulation addPopulator(
-            IndexPopulator populator,
-            IndexProxyStrategy indexProxyStrategy,
-            FlippableIndexProxy flipper,
-            FailedIndexProxyFactory failedIndexProxyFactory) {
+            IndexPopulator populator, IndexProxyStrategy indexProxyStrategy, FlippableIndexProxy flipper) {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
         populatedIndexes.add(indexProxyStrategy.getIndexDescriptor());
-        return this.multiPopulator.addPopulator(populator, indexProxyStrategy, flipper, failedIndexProxyFactory);
+        return this.multiPopulator.addPopulator(populator, indexProxyStrategy, flipper);
     }
 
     /**

@@ -255,13 +255,12 @@ public class BatchingMultipleIndexPopulatorTest {
         IndexPopulator populator = mock(IndexPopulator.class);
 
         IndexProxyFactory indexProxyFactory = mock(IndexProxyFactory.class);
-        FailedIndexProxyFactory failedIndexProxyFactory = mock(FailedIndexProxyFactory.class);
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget(indexProxyFactory);
 
         IndexProxyStrategy indexProxyStrategy =
                 new ValueIndexProxyStrategy(descriptor, mock(IndexStatisticsStore.class), tokens);
-        batchingPopulator.addPopulator(populator, indexProxyStrategy, flipper, failedIndexProxyFactory);
+        batchingPopulator.addPopulator(populator, indexProxyStrategy, flipper);
 
         return populator;
     }

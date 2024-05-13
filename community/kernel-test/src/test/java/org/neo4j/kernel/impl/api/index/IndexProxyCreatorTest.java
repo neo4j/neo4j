@@ -113,7 +113,7 @@ class IndexProxyCreatorTest {
         final var flipper = (FlippableIndexProxy) proxy.getDelegate();
 
         // when population job completes the index is flipped
-        flipper.flip(() -> true, mock(FailedIndexProxyFactory.class));
+        flipper.flip(() -> true);
 
         return flipper;
     }

@@ -41,7 +41,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.DatabaseIndexStats;
@@ -62,12 +61,10 @@ class IndexPopulationTest {
             new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER);
 
     @Test
-    void mustFlipToFailedIfFailureToApplyLastBatchWhileFlipping() throws Exception {
+    void mustFlipToFailedIfFailureToApplyLastBatchWhileFlipping() {
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();
         IndexStoreView storeView = emptyIndexStoreViewThatProcessUpdates();
-        IndexPopulator.Adapter populator = emptyPopulatorWithThrowingUpdater();
-        FailedIndexProxy failedProxy = failedIndexProxy(populator);
         OnlineIndexProxy onlineProxy = onlineIndexProxy();
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget(() -> onlineProxy);
@@ -85,30 +82,22 @@ class IndexPopulationTest {
                         "",
                         AUTH_DISABLED,
                         Config.defaults())) {
-            MultipleIndexPopulator.IndexPopulation indexPopulation =
-                    multipleIndexPopulator.addPopulator(populator, dummyIndex(), flipper, t -> failedProxy);
             multipleIndexPopulator.queueConcurrentUpdate(someUpdate());
             multipleIndexPopulator.createStoreScan(CONTEXT_FACTORY).run(StoreScan.NO_EXTERNAL_UPDATES);
+            multipleIndexPopulator.addPopulator(emptyPopulatorWithThrowingUpdater(), dummyIndex(), flipper);
 
             // when
-            indexPopulation.flip(CursorContext.NULL_CONTEXT);
+            multipleIndexPopulator.flipAfterStoreScan(CursorContext.NULL_CONTEXT);
 
             // then
             assertSame(InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy");
+            assertSame(FailedIndexProxy.class, flipper.getDelegate().getClass());
         }
     }
 
     private OnlineIndexProxy onlineIndexProxy() {
         return new OnlineIndexProxy(
                 dummyIndex(), IndexAccessor.EMPTY, false, NO_USAGE_TRACKING, new DatabaseIndexStats());
-    }
-
-    private FailedIndexProxy failedIndexProxy(MinimalIndexAccessor minimalIndexAccessor) {
-        return new FailedIndexProxy(
-                dummyIndex(),
-                minimalIndexAccessor,
-                IndexPopulationFailure.failure("failure"),
-                NullLogProvider.getInstance());
     }
 
     private static IndexPopulator.Adapter emptyPopulatorWithThrowingUpdater() {

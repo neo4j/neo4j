@@ -491,7 +491,7 @@ class IndexPopulationJobTest {
 
         // THEN
         verify(populator).close(eq(false), any());
-        verify(index, never()).flip(any(), any());
+        verify(index, never()).flip(any());
         verify(jobHandle).cancel();
     }
 
@@ -575,12 +575,11 @@ class IndexPopulationJobTest {
     @Test
     void shouldFlipToFailedUsingFailedIndexProxyFactory() throws Exception {
         // Given
-        FailedIndexProxyFactory failureDelegateFactory = mock(FailedIndexProxyFactory.class);
+        FlippableIndexProxy proxy = spy(new FlippableIndexProxy());
         IndexPopulator populator = spy(indexPopulator(false));
         IndexPopulationJob job = newIndexPopulationJob(
-                failureDelegateFactory,
                 populator,
-                new FlippableIndexProxy(),
+                proxy,
                 indexStoreView,
                 NullLogProvider.getInstance(),
                 EntityType.NODE,
@@ -594,7 +593,8 @@ class IndexPopulationJobTest {
         job.run();
 
         // Then
-        verify(failureDelegateFactory).create(any(Throwable.class));
+        verify(populator).close(eq(true), any());
+        verify(proxy).flipTo(any(FailedIndexProxy.class));
     }
 
     @Test
@@ -879,39 +879,11 @@ class IndexPopulationJobTest {
             IndexStoreView storeView,
             InternalLogProvider logProvider,
             EntityType type,
-            IndexPrototype prototype,
-            CursorContextFactory contextFactory) {
-        return newIndexPopulationJob(
-                mock(FailedIndexProxyFactory.class),
-                populator,
-                flipper,
-                storeView,
-                logProvider,
-                type,
-                prototype,
-                contextFactory);
-    }
-
-    private IndexPopulationJob newIndexPopulationJob(
-            IndexPopulator populator,
-            FlippableIndexProxy flipper,
-            IndexStoreView storeView,
-            InternalLogProvider logProvider,
-            EntityType type,
             IndexPrototype prototype) {
-        return newIndexPopulationJob(
-                mock(FailedIndexProxyFactory.class),
-                populator,
-                flipper,
-                storeView,
-                logProvider,
-                type,
-                prototype,
-                CONTEXT_FACTORY);
+        return newIndexPopulationJob(populator, flipper, storeView, logProvider, type, prototype, CONTEXT_FACTORY);
     }
 
     private IndexPopulationJob newIndexPopulationJob(
-            FailedIndexProxyFactory failureDelegateFactory,
             IndexPopulator populator,
             FlippableIndexProxy flipper,
             IndexStoreView storeView,
@@ -945,7 +917,7 @@ class IndexPopulationJobTest {
                 Config.defaults());
         IndexDescriptor descriptor = prototype.withName("index_" + indexId).materialise(indexId);
         IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy(descriptor, indexStatisticsStore, tokens);
-        job.addPopulator(populator, indexProxyStrategy, flipper, failureDelegateFactory);
+        job.addPopulator(populator, indexProxyStrategy, flipper);
         return job;
     }
 

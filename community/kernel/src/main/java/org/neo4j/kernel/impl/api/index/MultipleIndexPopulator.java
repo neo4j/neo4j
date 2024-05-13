@@ -92,7 +92,7 @@ import org.neo4j.values.storable.Value;
  * Usage of this class should be something like:
  * <ol>
  * <li>Instantiation.</li>
- * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexProxyStrategy, FlippableIndexProxy, FailedIndexProxyFactory)}.</li>
+ * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexProxyStrategy, FlippableIndexProxy)}.</li>
  * <li>Call to {@link #create(CursorContext)} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #createStoreScan(CursorContextFactory)} and {@link StoreScan#run(StoreScan.ExternalUpdatesCheck)}(blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
@@ -175,21 +175,15 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     }
 
     IndexPopulation addPopulator(
-            IndexPopulator populator,
-            IndexProxyStrategy indexProxyStrategy,
-            FlippableIndexProxy flipper,
-            FailedIndexProxyFactory failedIndexProxyFactory) {
-        IndexPopulation population = createPopulation(populator, indexProxyStrategy, flipper, failedIndexProxyFactory);
+            IndexPopulator populator, IndexProxyStrategy indexProxyStrategy, FlippableIndexProxy flipper) {
+        IndexPopulation population = createPopulation(populator, indexProxyStrategy, flipper);
         populations.add(population);
         return population;
     }
 
     private IndexPopulation createPopulation(
-            IndexPopulator populator,
-            IndexProxyStrategy indexProxyStrategy,
-            FlippableIndexProxy flipper,
-            FailedIndexProxyFactory failedIndexProxyFactory) {
-        return new IndexPopulation(populator, indexProxyStrategy, flipper, failedIndexProxyFactory);
+            IndexPopulator populator, IndexProxyStrategy indexProxyStrategy, FlippableIndexProxy flipper) {
+        return new IndexPopulation(populator, indexProxyStrategy, flipper);
     }
 
     boolean hasPopulators() {
@@ -345,7 +339,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
      * {@link IndexStatisticsStore index statistics store} will be updated with {@link IndexSample index samples},
      * {@link SchemaState schema cache} will be cleared,
      * {@link IndexPopulator index populators} will be closed and
-     * {@link IndexProxy index proxy} will be {@link FlippableIndexProxy#flip(Callable, FailedIndexProxyFactory) flipped}
+     * {@link IndexProxy index proxy} will be {@link FlippableIndexProxy#flip(Callable)}  flipped}
      * to {@link OnlineIndexProxy online}, given that nothing goes wrong.
      *
      */
@@ -559,19 +553,13 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         public final IndexPopulator populator;
         final FlippableIndexProxy flipper;
         private final IndexProxyStrategy indexProxyStrategy;
-        private final FailedIndexProxyFactory failedIndexProxyFactory;
         private boolean populationOngoing = true;
         private final ReentrantLock populatorLock = new ReentrantLock();
 
-        IndexPopulation(
-                IndexPopulator populator,
-                IndexProxyStrategy indexProxyStrategy,
-                FlippableIndexProxy flipper,
-                FailedIndexProxyFactory failedIndexProxyFactory) {
+        IndexPopulation(IndexPopulator populator, IndexProxyStrategy indexProxyStrategy, FlippableIndexProxy flipper) {
             this.populator = populator;
             this.indexProxyStrategy = indexProxyStrategy;
             this.flipper = flipper;
-            this.failedIndexProxyFactory = failedIndexProxyFactory;
         }
 
         private void cancel(IndexPopulationFailure failure) {
@@ -626,30 +614,28 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         void flip(CursorContext cursorContext)
                 throws IndexProxyAlreadyClosedKernelException, ExceptionDuringFlipKernelException {
             phaseTracker.enterPhase(PhaseTracker.Phase.FLIP);
-            flipper.flip(
-                    () -> {
-                        populatorLock.lock();
-                        try {
-                            if (populationOngoing) {
-                                applyExternalUpdates(Long.MAX_VALUE);
-                                if (populations.contains(IndexPopulation.this)) {
-                                    if (indexProxyStrategy.getIndexDescriptor().getIndexType() != IndexType.LOOKUP) {
-                                        IndexSample sample = populator.sample(cursorContext);
-                                        indexProxyStrategy.replaceStatisticsForIndex(sample);
-                                    }
-                                    populator.close(true, cursorContext);
-                                    schemaState.clear();
-                                    return true;
-                                }
+            flipper.flip(() -> {
+                populatorLock.lock();
+                try {
+                    if (populationOngoing) {
+                        applyExternalUpdates(Long.MAX_VALUE);
+                        if (populations.contains(IndexPopulation.this)) {
+                            if (indexProxyStrategy.getIndexDescriptor().getIndexType() != IndexType.LOOKUP) {
+                                IndexSample sample = populator.sample(cursorContext);
+                                indexProxyStrategy.replaceStatisticsForIndex(sample);
                             }
-                            return false;
-                        } finally {
-                            logCompletionMessage();
-                            populationOngoing = false;
-                            populatorLock.unlock();
+                            populator.close(true, cursorContext);
+                            schemaState.clear();
+                            return true;
                         }
-                    },
-                    failedIndexProxyFactory);
+                    }
+                    return false;
+                } finally {
+                    logCompletionMessage();
+                    populationOngoing = false;
+                    populatorLock.unlock();
+                }
+            });
             removeFromOngoingPopulations(this);
         }
 

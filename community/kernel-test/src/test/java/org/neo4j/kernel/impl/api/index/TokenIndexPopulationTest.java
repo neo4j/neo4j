@@ -217,8 +217,7 @@ class TokenIndexPopulationTest {
                     TestIndexDescriptorFactory.forLabel(1, 1), mock(IndexStatisticsStore.class), new InMemoryTokens());
         }
 
-        multipleIndexPopulator.addPopulator(
-                populator, indexProxyStrategy, mock(FlippableIndexProxy.class), mock(FailedIndexProxyFactory.class));
+        multipleIndexPopulator.addPopulator(populator, indexProxyStrategy, mock(FlippableIndexProxy.class));
     }
 
     private static class IndexEntryUpdateScan implements StoreScan {

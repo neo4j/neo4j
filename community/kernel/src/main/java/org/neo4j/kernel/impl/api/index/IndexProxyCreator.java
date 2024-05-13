@@ -84,11 +84,9 @@ class IndexProxyCreator {
                 index, samplingConfig, populationJob.bufferFactory(), populationJob.getMemoryTracker());
 
         IndexProxyStrategy indexProxyStrategy = createIndexProxyStrategy(index);
-        FailedIndexProxyFactory failureDelegateFactory =
-                new FailedPopulatingIndexProxyFactory(indexProxyStrategy, populator, logProvider);
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =
-                populationJob.addPopulator(populator, indexProxyStrategy, flipper, failureDelegateFactory);
+                populationJob.addPopulator(populator, indexProxyStrategy, flipper);
         PopulatingIndexProxy populatingIndex = new PopulatingIndexProxy(index, populationJob, indexPopulation);
 
         flipper.flipTo(populatingIndex);

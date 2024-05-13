@@ -232,7 +232,7 @@ class MultipleIndexPopulatorTest {
 
         multipleIndexPopulator.flipAfterStoreScan(NULL_CONTEXT);
 
-        verify(populationToKeepActive.flipper).flip(any(Callable.class), any(FailedIndexProxyFactory.class));
+        verify(populationToKeepActive.flipper).flip(any(Callable.class));
     }
 
     @Test
@@ -253,7 +253,7 @@ class MultipleIndexPopulatorTest {
 
         multipleIndexPopulator.flipAfterStoreScan(NULL_CONTEXT);
 
-        verify(populationToCancel.flipper, never()).flip(any(Callable.class), any(FailedIndexProxyFactory.class));
+        verify(populationToCancel.flipper, never()).flip(any(Callable.class));
     }
 
     @Test
@@ -345,8 +345,8 @@ class MultipleIndexPopulatorTest {
 
         multipleIndexPopulator.flipAfterStoreScan(NULL_CONTEXT);
 
-        verify(flipper1).flip(any(Callable.class), any(FailedIndexProxyFactory.class));
-        verify(flipper2).flip(any(Callable.class), any(FailedIndexProxyFactory.class));
+        verify(flipper1).flip(any(Callable.class));
+        verify(flipper2).flip(any(Callable.class));
     }
 
     @Test
@@ -382,14 +382,13 @@ class MultipleIndexPopulatorTest {
     @Test
     void testIndexFlip() {
         IndexProxyFactory indexProxyFactory = mock(IndexProxyFactory.class);
-        FailedIndexProxyFactory failedIndexProxyFactory = mock(FailedIndexProxyFactory.class);
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget(indexProxyFactory);
 
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
-        addPopulator(indexPopulator1, 1, flipper, failedIndexProxyFactory);
-        addPopulator(indexPopulator2, 2, flipper, failedIndexProxyFactory);
+        addPopulator(indexPopulator1, 1, flipper);
+        addPopulator(indexPopulator2, 2, flipper);
 
         when(indexPopulator1.sample(any(CursorContext.class))).thenThrow(getSampleError());
 
@@ -397,7 +396,6 @@ class MultipleIndexPopulatorTest {
         multipleIndexPopulator.flipAfterStoreScan(NULL_CONTEXT);
 
         verify(indexPopulator1).close(false, NULL_CONTEXT);
-        verify(failedIndexProxyFactory).create(any(RuntimeException.class));
 
         verify(indexPopulator2).close(true, NULL_CONTEXT);
         verify(indexPopulator2).sample(NULL_CONTEXT);
@@ -482,12 +480,11 @@ class MultipleIndexPopulatorTest {
     @Test
     void shouldIncludeIndexSampleUpdatesInStatsOnFlip() {
         IndexProxyFactory indexProxyFactory = mock(IndexProxyFactory.class);
-        FailedIndexProxyFactory failedIndexProxyFactory = mock(FailedIndexProxyFactory.class);
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget(indexProxyFactory);
 
         IndexPopulator indexPopulator = createIndexPopulator();
-        addPopulator(indexPopulator, 1, flipper, failedIndexProxyFactory);
+        addPopulator(indexPopulator, 1, flipper);
 
         int indexSize = 100;
         int uniqueValues = 110;
@@ -628,35 +625,28 @@ class MultipleIndexPopulatorTest {
     }
 
     private IndexPopulation addPopulator(
-            IndexPopulator indexPopulator,
-            int id,
-            FlippableIndexProxy flippableIndexProxy,
-            FailedIndexProxyFactory failedIndexProxyFactory) {
-        return addPopulator(multipleIndexPopulator, indexPopulator, id, flippableIndexProxy, failedIndexProxyFactory);
+            IndexPopulator indexPopulator, int id, FlippableIndexProxy flippableIndexProxy) {
+        return addPopulator(multipleIndexPopulator, indexPopulator, id, flippableIndexProxy);
     }
 
     private IndexPopulation addPopulator(
             MultipleIndexPopulator multipleIndexPopulator,
             IndexPopulator indexPopulator,
             int id,
-            FlippableIndexProxy flippableIndexProxy,
-            FailedIndexProxyFactory failedIndexProxyFactory) {
+            FlippableIndexProxy flippableIndexProxy) {
         IndexDescriptor descriptor = IndexPrototype.forSchema(SchemaDescriptors.forLabel(id, id))
                 .withName("index_" + id)
                 .materialise(id);
-        return addPopulator(
-                multipleIndexPopulator, descriptor, indexPopulator, flippableIndexProxy, failedIndexProxyFactory);
+        return addPopulator(multipleIndexPopulator, descriptor, indexPopulator, flippableIndexProxy);
     }
 
     private IndexPopulation addPopulator(
             MultipleIndexPopulator multipleIndexPopulator,
             IndexDescriptor descriptor,
             IndexPopulator indexPopulator,
-            FlippableIndexProxy flippableIndexProxy,
-            FailedIndexProxyFactory failedIndexProxyFactory) {
+            FlippableIndexProxy flippableIndexProxy) {
         IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy(descriptor, indexStatisticsStore, tokens);
-        return multipleIndexPopulator.addPopulator(
-                indexPopulator, indexProxyStrategy, flippableIndexProxy, failedIndexProxyFactory);
+        return multipleIndexPopulator.addPopulator(indexPopulator, indexProxyStrategy, flippableIndexProxy);
     }
 
     private IndexPopulation addPopulator(IndexPopulator indexPopulator, int id) throws Exception {
@@ -667,7 +657,7 @@ class MultipleIndexPopulatorTest {
                     return argument.call();
                 })
                 .when(indexProxy)
-                .flip(any(Callable.class), any(FailedIndexProxyFactory.class));
-        return addPopulator(indexPopulator, id, indexProxy, mock(FailedIndexProxyFactory.class));
+                .flip(any(Callable.class));
+        return addPopulator(indexPopulator, id, indexProxy);
     }
 }

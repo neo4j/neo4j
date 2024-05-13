@@ -109,7 +109,7 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
      * the reader we would be waiting on would be waiting on the log rotation lock held by the thread calling this
      * method. The reason we would wait for a read lock while trying to acquire a read lock is if there is a third
      * thread waiting on the write lock, probably an index populator wanting to
-     * {@linkplain #flip(Callable, FailedIndexProxyFactory) flip the index into active state}.
+     * {@linkplain #flip(Callable) flip the index into active state}.
      * <p/>
      * We avoid this deadlock situation by "barging" on the read lock, i.e. acquire it in an <i>unfair</i> way, where
      * we don't care about waiting threads, only about whether the exclusive lock is held or not.
@@ -350,7 +350,7 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
         }
     }
 
-    public void flip(Callable<Boolean> actionDuringFlip, FailedIndexProxyFactory failureDelegate)
+    public void flip(Callable<Boolean> actionDuringFlip)
             throws IndexProxyAlreadyClosedKernelException, ExceptionDuringFlipKernelException {
         lock.writeLock().lock();
         try {
@@ -364,7 +364,6 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
                     }
                 }
             } catch (Exception e) {
-                this.delegate = failureDelegate.create(e);
                 throw new ExceptionDuringFlipKernelException(e);
             }
         } finally {

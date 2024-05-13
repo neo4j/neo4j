@@ -48,7 +48,7 @@ class FlippableIndexProxyTest {
         delegate.setFlipTarget(singleProxy(other));
 
         // WHEN
-        delegate.flip(noOp(), null);
+        delegate.flip(noOp());
         delegate.drop();
 
         // THEN
@@ -69,14 +69,13 @@ class FlippableIndexProxyTest {
         delegate.setFlipTarget(indexContextFactory);
 
         // THEN
-        assertThrows(IndexProxyAlreadyClosedKernelException.class, () -> delegate.flip(noOp(), null));
+        assertThrows(IndexProxyAlreadyClosedKernelException.class, () -> delegate.flip(noOp()));
     }
 
     @Test
     void shouldNotBeAbleToFlipAfterDrop() {
         // GIVEN
         IndexProxy actual = mockIndexProxy();
-        IndexProxy failed = mockIndexProxy();
         IndexProxyFactory indexContextFactory = mock(IndexProxyFactory.class);
 
         FlippableIndexProxy delegate = new FlippableIndexProxy(actual);
@@ -86,9 +85,7 @@ class FlippableIndexProxyTest {
         delegate.drop();
 
         // THEN
-        assertThrows(
-                IndexProxyAlreadyClosedKernelException.class,
-                () -> delegate.flip(noOp(), singleFailedDelegate(failed)));
+        assertThrows(IndexProxyAlreadyClosedKernelException.class, () -> delegate.flip(noOp()));
     }
 
     @Test
@@ -164,13 +161,11 @@ class FlippableIndexProxyTest {
             final CountDownLatch triggerFinishFlip,
             final CountDownLatch triggerExternalAccess) {
         return () -> {
-            flippable.flip(
-                    () -> {
-                        triggerExternalAccess.countDown();
-                        assertTrue(awaitLatch(triggerFinishFlip));
-                        return Boolean.TRUE;
-                    },
-                    null);
+            flippable.flip(() -> {
+                triggerExternalAccess.countDown();
+                assertTrue(awaitLatch(triggerFinishFlip));
+                return Boolean.TRUE;
+            });
             return null;
         };
     }
@@ -181,10 +176,6 @@ class FlippableIndexProxyTest {
 
     private static IndexProxyFactory singleProxy(final IndexProxy proxy) {
         return () -> proxy;
-    }
-
-    private static FailedIndexProxyFactory singleFailedDelegate(final IndexProxy failed) {
-        return failure -> failed;
     }
 
     private static class FakePopulatingIndexProxy extends IndexProxyAdapter {

@@ -141,7 +141,7 @@ class IndexPopulationJobMonitoringTest {
         var indexDescriptor = idxPrototype.materialise(99);
         var indexProxyInfo = new ValueIndexProxyStrategy(
                 indexDescriptor, mock(IndexStatisticsStore.class), SchemaTestUtil.SIMPLE_NAME_LOOKUP);
-        job.addPopulator(null, indexProxyInfo, null, null);
+        job.addPopulator(null, indexProxyInfo, null);
     }
 
     private static void verifyCurrentState(
