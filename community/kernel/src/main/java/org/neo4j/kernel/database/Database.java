@@ -458,9 +458,6 @@ public class Database extends AbstractDatabase {
                 otherDatabaseMemoryTracker,
                 readOnlyDatabaseChecker);
 
-        // The state in the idGeneratorFactory should not be kept between restarts
-        // What idfiles we have can have changed by for example a migration, and we will open them all again anyway.
-        idGeneratorFactory.clear();
         storageEngine = storageEngineFactory.instantiate(
                 fs,
                 clock,
@@ -1041,7 +1038,7 @@ public class Database extends AbstractDatabase {
         life.add(kernel);
 
         final StoreFileListing fileListing =
-                new StoreFileListing(databaseLayout, logFiles, indexingService, storageEngine, idGeneratorFactory);
+                new StoreFileListing(databaseLayout, logFiles, indexingService, storageEngine);
         databaseDependencies.satisfyDependency(fileListing);
 
         return new DatabaseKernelModule(

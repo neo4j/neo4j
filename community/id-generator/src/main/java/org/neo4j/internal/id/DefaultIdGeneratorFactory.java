@@ -222,9 +222,4 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory {
     public Collection<Path> listIdFiles() {
         return generators.values().stream().map(IndexedIdGenerator::path).collect(Collectors.toList());
     }
-
-    @Override
-    public void clear() {
-        generators.clear();
-    }
 }

@@ -393,6 +393,11 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
+        public void listIdFiles(Collection<StoreFileMetadata> target) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public StoreId retrieveStoreId() {
             throw new UnsupportedOperationException();
         }

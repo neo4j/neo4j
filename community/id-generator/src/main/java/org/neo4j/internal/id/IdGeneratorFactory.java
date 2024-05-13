@@ -68,6 +68,4 @@ public interface IdGeneratorFactory {
     Collection<Path> listIdFiles();
 
     default void notifyTransactionRollback(long transactionId) {}
-
-    default void clear() {}
 }

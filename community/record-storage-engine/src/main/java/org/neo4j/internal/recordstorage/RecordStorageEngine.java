@@ -29,6 +29,7 @@ import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -653,6 +654,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             StoreFileMetadata metadata =
                     new StoreFileMetadata(recordStore.getStorageFile(), recordStore.getRecordSize());
             replayable.add(metadata);
+        }
+    }
+
+    @Override
+    public void listIdFiles(Collection<StoreFileMetadata> target) {
+        for (Path idFile : databaseLayout.idFiles()) {
+            target.add(new StoreFileMetadata(idFile, 0));
         }
     }
 

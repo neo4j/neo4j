@@ -31,7 +31,6 @@ import java.util.function.Function;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -45,7 +44,6 @@ public class StoreFileListing implements FileStoreProviderRegistry {
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
-    private final IdGeneratorFactory idGeneratorFactory;
     private static final Function<Path, StoreFileMetadata> logFileMapper = path -> new StoreFileMetadata(path, 1, true);
     private final SchemaAndIndexingFileIndexListing fileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
@@ -54,12 +52,10 @@ public class StoreFileListing implements FileStoreProviderRegistry {
             DatabaseLayout databaseLayout,
             LogFiles logFiles,
             IndexingService indexingService,
-            StorageEngine storageEngine,
-            IdGeneratorFactory idGeneratorFactory) {
+            StorageEngine storageEngine) {
         this.databaseLayout = databaseLayout;
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
-        this.idGeneratorFactory = idGeneratorFactory;
         this.fileIndexListing = new SchemaAndIndexingFileIndexListing(indexingService);
         this.additionalProviders = new CopyOnWriteArraySet<>();
     }
@@ -219,9 +215,7 @@ public class StoreFileListing implements FileStoreProviderRegistry {
     }
 
     private void gatherIdFiles(List<StoreFileMetadata> targetFiles) {
-        targetFiles.addAll(idGeneratorFactory.listIdFiles().stream()
-                .map(file -> new StoreFileMetadata(file, 0))
-                .toList());
+        storageEngine.listIdFiles(targetFiles);
     }
 
     private void gatherStorageFiles(

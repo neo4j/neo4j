@@ -181,6 +181,11 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      */
     void listStorageFiles(Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable);
 
+    /**
+     * Add id files into the provided collection.
+     */
+    void listIdFiles(Collection<StoreFileMetadata> target);
+
     StoreId retrieveStoreId();
 
     /**

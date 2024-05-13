@@ -47,7 +47,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
@@ -98,9 +97,7 @@ class StoreFileListingTest {
         LogFiles logFiles = mock(LogFiles.class);
         filesInStoreDirAre(databaseLayout, indexDir);
         StorageEngine storageEngine = mock(StorageEngine.class);
-        IdGeneratorFactory idGeneratorFactory = mock(IdGeneratorFactory.class);
-        StoreFileListing fileListing =
-                new StoreFileListing(databaseLayout, logFiles, indexingService, storageEngine, idGeneratorFactory);
+        StoreFileListing fileListing = new StoreFileListing(databaseLayout, logFiles, indexingService, storageEngine);
 
         ResourceIterator<Path> indexSnapshot =
                 indexFilesAre(indexingService, new String[] {indexDir + "/mock/my.index"});
@@ -166,6 +163,20 @@ class StoreFileListingTest {
             final var listedStoreFiles =
                     storeFiles.stream().map(StoreFileMetadata::path).collect(Collectors.toSet());
             assertThat(listedStoreFiles).containsExactlyInAnyOrderElementsOf(expectedFiles);
+        }
+    }
+
+    @Test
+    void shouldListIdFiles() throws Exception {
+        final var layout = database.getDatabaseLayout();
+        final var expectedFiles = new HashSet<>(layout.idFiles());
+        final var fileListingBuilder = database.getStoreFileListing().builder();
+        fileListingBuilder.excludeAll();
+        fileListingBuilder.includeIdFiles();
+        try (var storeFiles = fileListingBuilder.build()) {
+            final var listedIdFiles =
+                    storeFiles.stream().map(StoreFileMetadata::path).collect(Collectors.toSet());
+            assertThat(listedIdFiles).containsExactlyInAnyOrderElementsOf(expectedFiles);
         }
     }
 
