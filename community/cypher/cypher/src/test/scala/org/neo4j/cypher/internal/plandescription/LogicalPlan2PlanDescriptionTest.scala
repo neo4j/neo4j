@@ -6119,8 +6119,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "StatefulShortestPath(Into)",
         SingleChild(lhsPD),
         Seq(details(
-          """SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)
-            |        expanding from: a""".stripMargin
+          """SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)""".stripMargin
         )),
         Set("a")
       )

@@ -1986,7 +1986,10 @@ case class LogicalPlan2PlanDescription(
 
         val modeDescr = expandModeDescription(mode)
         val patternStr = asPrettyString.solvedExpressionString(solvedExpressionString)
-        val expandDirStr = pretty"\n        expanding from: ${asPrettyString(sourceNode)}"
+        val expandDirStr = mode match {
+          case ExpandAll  => pretty"\n        expanding from: ${asPrettyString(sourceNode)}"
+          case ExpandInto => pretty"" // We expand from both ends in ExpandInto
+        }
         val inlinedPredicatesStr = {
           val prefix = pretty"    inlined predicates: "
           val inlinedPredicates = nfa.predicates.flatMap {
