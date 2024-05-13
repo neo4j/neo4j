@@ -125,7 +125,11 @@ abstract class AbstractConcurrentTransactionApplyPipe(
         val taskOutputResult = outputQueue.take()
         val newError = taskOutputResult.error
         if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
-          DebugSupport.CONCURRENT_TRANSACTIONS.log("Drained %s %s", taskOutputResult.status, if (newError != null) newError else "")
+          DebugSupport.CONCURRENT_TRANSACTIONS.log(
+            "Drained %s %s",
+            taskOutputResult.status,
+            if (newError != null) newError else ""
+          )
         }
         if (newError != null && newError != error && shouldReportError(newError)) {
           error.addSuppressed(newError)
@@ -303,5 +307,9 @@ abstract class AbstractConcurrentTransactionApplyPipe(
     }
   }
 
-  case class TaskOutputResult(status: TransactionStatus, outputIterator: ClosingIterator[CypherRow] = null, error: Throwable = null)
+  case class TaskOutputResult(
+    status: TransactionStatus,
+    outputIterator: ClosingIterator[CypherRow] = null,
+    error: Throwable = null
+  )
 }
