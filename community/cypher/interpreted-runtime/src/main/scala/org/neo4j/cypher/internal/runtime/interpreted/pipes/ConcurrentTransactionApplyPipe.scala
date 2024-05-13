@@ -92,47 +92,50 @@ abstract class AbstractConcurrentTransactionApplyPipe(
       logMessageWithVerboseStatus("-- PRODUCE NEXT --")
 
       maybeEnqueueTasks()
-
-      while (currentOutputIterator == null || !currentOutputIterator.hasNext) {
-        if (pendingTaskCount < 1) {
-          if (hasAvailableInput) {
+      do {
+        if (!hasAvailableOutputRow) {
+          if (pendingTaskCount > 0) {
+            if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
+              logMessage(s"Waiting on output queue pendingTaskCount=$pendingTaskCount")
+            }
+            val taskResult = outputQueue.take() // NOTE: blocking operation!
+            val error = taskResult.error
+            pendingTaskCount -= 1
+            if (error != null && shouldReportError(error)) {
+              try {
+                drainOutputQueue(error)
+              } finally {
+                throw error
+              }
+            }
+            currentOutputIterator = taskResult.outputIterator
             maybeEnqueueTasks()
           } else {
             logMessage("No more rows to prefetch. Iterator will finish on next call to .next")
             return None
           }
         }
-
-        if (pendingTaskCount > 0) {
-          logMessage(s"Waiting on output queue pendingTaskCount=$pendingTaskCount")
-          val taskResult = outputQueue.take() // NOTE: blocking operation!
-          pendingTaskCount -= 1
-          if (taskResult.error != null && !taskResult.error.isInstanceOf[CypherExecutionInterruptedException]) {
-            drainOutputQueue()
-            throw taskResult.error
-          }
-          currentOutputIterator = taskResult.outputIterator
-        }
-        maybeEnqueueTasks()
-
-        if (pendingTaskCount == 0 && (currentOutputIterator == null || !currentOutputIterator.hasNext)) {
-          // FIXME: remove debugging
-          logMessage("Busy waiting")
-        }
-      }
-
+      } while (!hasAvailableOutputRow)
       logMessage("Outputting row")
       Some(currentOutputIterator.next())
     }
 
-    private def drainOutputQueue(): Unit = {
+    private def drainOutputQueue(error: Throwable): Unit = {
       while (pendingTaskCount > 0) {
         val taskOutputResult = outputQueue.take()
+        val newError = taskOutputResult.error
         if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
-          DebugSupport.CONCURRENT_TRANSACTIONS.log("Drained %s %s", taskOutputResult.status, if (taskOutputResult.error != null) taskOutputResult.error else "")
+          DebugSupport.CONCURRENT_TRANSACTIONS.log("Drained %s %s", taskOutputResult.status, if (newError != null) newError else "")
+        }
+        if (newError != null && newError != error && shouldReportError(newError)) {
+          error.addSuppressed(newError)
         }
         pendingTaskCount -= 1
       }
+    }
+
+    private def shouldReportError(error: Throwable): Boolean = {
+      !error.isInstanceOf[CypherExecutionInterruptedException]
     }
 
     private def maybeEnqueueTasks(): Unit = {
@@ -189,7 +192,7 @@ abstract class AbstractConcurrentTransactionApplyPipe(
     }
 
     private def hasAvailableInput: Boolean = {
-      input.hasNext || !inputQueue.isEmpty
+      !inputQueue.isEmpty || input.hasNext
     }
 
     private def hasPendingOutput: Boolean = {
@@ -201,31 +204,33 @@ abstract class AbstractConcurrentTransactionApplyPipe(
     }
 
     private def logMessage(message: String, verbose: Boolean = false): Unit = {
-      def doLogMessage(message: String): Unit =
-        DebugSupport.CONCURRENT_TRANSACTIONS.log(String.format("[%s] %s", this, message))
+      if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
+        def doLogMessage(message: String): Unit =
+          DebugSupport.CONCURRENT_TRANSACTIONS.log(String.format("[%s] %s", this, message))
 
-      doLogMessage(message)
+        doLogMessage(message)
 
-      if (verbose) {
-        if (hasAvailableInput) {
-          if (input.hasNext) {
-            doLogMessage("Pending input is a NEW BATCH")
-          } else if (!inputQueue.isEmpty) {
-            doLogMessage("Pending input is a QUEUED BATCH")
+        if (verbose) {
+          if (hasAvailableInput) {
+            if (input.hasNext) {
+              doLogMessage("Pending input is a NEW BATCH")
+            } else if (!inputQueue.isEmpty) {
+              doLogMessage("Pending input is a QUEUED BATCH")
+            }
+          } else {
+            doLogMessage("Pending input NOT AVAILABLE")
           }
-        } else {
-          doLogMessage("Pending input NOT AVAILABLE")
-        }
 
-        if (hasPendingOutput) {
-          if (currentOutputIterator != null && currentOutputIterator.hasNext) {
-            doLogMessage("Pending output is READY")
+          if (hasPendingOutput) {
+            if (currentOutputIterator != null && currentOutputIterator.hasNext) {
+              doLogMessage("Pending output is READY")
+            }
+          } else {
+            doLogMessage("Pending output NOT AVAILABLE")
           }
-        } else {
-          doLogMessage("Pending output NOT AVAILABLE")
-        }
 
-        doLogMessage(s"Have $pendingTaskCount pending tasks")
+          doLogMessage(s"Have $pendingTaskCount pending tasks")
+        }
       }
     }
 
@@ -274,6 +279,7 @@ abstract class AbstractConcurrentTransactionApplyPipe(
           outputResult = TaskOutputResult(NotRun /*TODO: FIXME*/, null, error = e)
           throw e
       } finally {
+        // TODO: Do not handle interrupts
         var interrupted: Boolean = false
         do {
           interrupted = false
