@@ -82,10 +82,41 @@ class CypherAstParser private (
     // Save memory by removing the parse tree as we go.
     // Some listeners access children of children so we only do this at certain safe points
     // where we know the children are not needed anymore for ast building or syntax checker.
-    val ruleIndex = localCtx.getRuleIndex
-    if (ruleIndex == CypherParser.RULE_expression || ruleIndex == CypherParser.RULE_clause) {
-      localCtx.children = null
+    localCtx.getRuleIndex match {
+      case CypherParser.RULE_allPrivilegeTarget               =>
+      case CypherParser.RULE_allPrivilegeType                 =>
+      case CypherParser.RULE_alterAliasDriver                 =>
+      case CypherParser.RULE_alterAliasPassword               =>
+      case CypherParser.RULE_alterAliasProperties             =>
+      case CypherParser.RULE_alterAliasTarget                 =>
+      case CypherParser.RULE_alterAliasUser                   =>
+      case CypherParser.RULE_alterDatabaseAccess              =>
+      case CypherParser.RULE_alterDatabaseTopology            =>
+      case CypherParser.RULE_comparisonExpression6            =>
+      case CypherParser.RULE_constraintType                   =>
+      case CypherParser.RULE_createIndex                      =>
+      case CypherParser.RULE_extendedCaseAlternative          =>
+      case CypherParser.RULE_extendedWhen                     =>
+      case CypherParser.RULE_functionName                     =>
+      case CypherParser.RULE_functionArgument                 =>
+      case CypherParser.RULE_procedureName                    =>
+      case CypherParser.RULE_procedureArgument                =>
+      case CypherParser.RULE_roleNames                        =>
+      case CypherParser.RULE_userNames                        =>
+      case CypherParser.RULE_globPart                         =>
+      case CypherParser.RULE_lookupIndexRelPattern            =>
+      case CypherParser.RULE_nonEmptyNameList                 =>
+      case CypherParser.RULE_password                         =>
+      case CypherParser.RULE_postFix                          =>
+      case CypherParser.RULE_propertyList                     =>
+      case CypherParser.RULE_symbolicAliasName                =>
+      case CypherParser.RULE_symbolicAliasNameOrParameter     =>
+      case CypherParser.RULE_symbolicNameString               =>
+      case CypherParser.RULE_unescapedLabelSymbolicNameString =>
+      case CypherParser.RULE_unescapedSymbolicNameString      =>
+      case _                                                  => localCtx.children = null
     }
+
   }
 
   private def buildAstWithErrorHandling(ctx: ParserRuleContext): Unit = {

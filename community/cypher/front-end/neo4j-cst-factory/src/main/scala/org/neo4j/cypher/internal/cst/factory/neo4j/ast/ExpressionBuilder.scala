@@ -276,7 +276,6 @@ trait ExpressionBuilder extends CypherParserListener {
       case p: NonPrefixedPatternPart => p
       case p: PatternPartWithSelector =>
         val pathPatternKind = if (ctx.quantifier() == null) "parenthesized" else "quantified"
-
         throw exceptionFactory.syntaxException(
           s"Path selectors such as `${p.selector.prettified}` are not supported within $pathPatternKind path patterns.",
           p.position
