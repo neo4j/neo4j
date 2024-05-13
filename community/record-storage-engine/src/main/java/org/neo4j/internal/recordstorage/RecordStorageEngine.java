@@ -733,7 +733,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public long estimateAvailableReservedSpace() throws IOException {
+    public long estimateAvailableReservedSpace() {
         return neoStores.estimateAvailableReservedSpace();
     }
 

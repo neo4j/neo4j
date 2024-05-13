@@ -622,7 +622,7 @@ public class NeoStores implements AutoCloseable {
         return fs.fileExists(databaseLayout.pathForExistsMarker());
     }
 
-    public long estimateAvailableReservedSpace() throws IOException {
+    public long estimateAvailableReservedSpace() {
         final var bytes = new MutableLong();
         visitStores(store -> bytes.add(store.estimateAvailableReservedSpace()));
         return bytes.longValue();

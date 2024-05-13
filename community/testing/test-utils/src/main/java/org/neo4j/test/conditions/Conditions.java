@@ -61,6 +61,11 @@ public final class Conditions {
         return new Condition<>(v -> v.compareTo(value) >= 0, "Should be greater than or equal to " + value);
     }
 
+    public static <T extends Comparable<T>> Condition<T> lessThan(T value) {
+        Objects.requireNonNull(value);
+        return new Condition<>(v -> v.compareTo(value) < 0, "Should be less than " + value);
+    }
+
     public static <T extends Comparable<T>> Condition<T> lessThanOrEqualTo(T value) {
         Objects.requireNonNull(value);
         return new Condition<>(v -> v.compareTo(value) <= 0, "Should be less than or equal to " + value);

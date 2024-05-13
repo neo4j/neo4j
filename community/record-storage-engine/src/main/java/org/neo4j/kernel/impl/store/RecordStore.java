@@ -305,5 +305,5 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
      * @return available reserved space estimate in bytes
      * @throws IOException on error reading from store.
      */
-    long estimateAvailableReservedSpace() throws IOException;
+    long estimateAvailableReservedSpace();
 }

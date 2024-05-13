@@ -1349,7 +1349,7 @@ class IndexedIdGeneratorTest {
         }
 
         @Override
-        public long getUnusedIdCount() throws IOException {
+        public long getUnusedIdCount() {
             return withReadLock(() -> leader().getUnusedIdCount());
         }
 

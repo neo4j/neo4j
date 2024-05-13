@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.database;
 
 import static org.neo4j.io.fs.FileSystemUtils.size;
 
-import java.io.IOException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -39,7 +38,7 @@ public class DatabaseSizeServiceImpl implements DatabaseSizeService {
     }
 
     @Override
-    public long getDatabaseTotalSize(NamedDatabaseId databaseId) throws IOException {
+    public long getDatabaseTotalSize(NamedDatabaseId databaseId) {
         var abstractDatabase = getDatabase(databaseId);
         if (abstractDatabase instanceof Database database) {
             var fs = getFileSystem(database);
@@ -50,7 +49,7 @@ public class DatabaseSizeServiceImpl implements DatabaseSizeService {
     }
 
     @Override
-    public long getDatabaseDataSize(NamedDatabaseId databaseId) throws IOException {
+    public long getDatabaseDataSize(NamedDatabaseId databaseId) {
         var abstractDatabase = getDatabase(databaseId);
         if (abstractDatabase instanceof Database database) {
             var fs = getFileSystem(database);
@@ -61,7 +60,7 @@ public class DatabaseSizeServiceImpl implements DatabaseSizeService {
     }
 
     @Override
-    public long getDatabaseAvailableReservedSize(NamedDatabaseId databaseId) throws IOException {
+    public long getDatabaseAvailableReservedSize(NamedDatabaseId databaseId) {
         final var abstractDatabase = getDatabase(databaseId);
         if (abstractDatabase instanceof Database database) {
             return database.estimateAvailableReservedSpace();
@@ -81,7 +80,7 @@ public class DatabaseSizeServiceImpl implements DatabaseSizeService {
                 .database();
     }
 
-    private static long getTotalSize(FileSystemAbstraction fs, DatabaseLayout databaseLayout) throws IOException {
+    private static long getTotalSize(FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
         long dataDirectorySize = getDataDirectorySize(fs, databaseLayout);
         if (databaseLayout.getTransactionLogsDirectory().equals(databaseLayout.databaseDirectory())) {
             return dataDirectorySize;
@@ -89,8 +88,7 @@ public class DatabaseSizeServiceImpl implements DatabaseSizeService {
         return dataDirectorySize + size(fs, databaseLayout.getTransactionLogsDirectory());
     }
 
-    private static long getDataDirectorySize(FileSystemAbstraction fs, DatabaseLayout databaseLayout)
-            throws IOException {
+    private static long getDataDirectorySize(FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
         return size(fs, databaseLayout.databaseDirectory());
     }
 }

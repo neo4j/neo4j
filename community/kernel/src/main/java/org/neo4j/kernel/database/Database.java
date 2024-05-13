@@ -1217,7 +1217,7 @@ public class Database extends AbstractDatabase {
         return elementIdMapper;
     }
 
-    public long estimateAvailableReservedSpace() throws IOException {
+    public long estimateAvailableReservedSpace() {
         return storageEngine.estimateAvailableReservedSpace();
     }
 

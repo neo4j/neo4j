@@ -233,7 +233,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * @return available reserved space estimate in bytes
      * @throws IOException on error reading from store.
      */
-    default long estimateAvailableReservedSpace() throws IOException {
+    default long estimateAvailableReservedSpace() {
         return 0L;
     }
 }

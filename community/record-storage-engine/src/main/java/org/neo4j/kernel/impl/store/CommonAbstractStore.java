@@ -999,7 +999,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     @Override
-    public long estimateAvailableReservedSpace() throws IOException {
+    public long estimateAvailableReservedSpace() {
         // This doesn't account for unallocated records in the last page whose IDs are greater than highId,
         // which means it is only accurate up to the page size. This is fine since it's a conservative estimate.
         return idGenerator.getUnusedIdCount() * recordSize;

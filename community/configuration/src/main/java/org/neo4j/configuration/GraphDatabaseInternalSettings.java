@@ -1364,12 +1364,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("Enables the available reserved space metric, as well as the job that computes it.")
-    public static final Setting<Boolean> available_reserved_space_metric_enabled = newBuilder(
-                    "internal.server.metrics.available_reserved_space_metric_enabled", BOOL, false)
-            .build();
-
-    @Internal
     @Description(
             "Feature flag to enable/disable the use of soft references for Cypher query caches (Executable query and Logical plan caches only). "
                     + "The cache will consist of one part strongly referenced items and one part softly referenced items, which can be individually sized. "

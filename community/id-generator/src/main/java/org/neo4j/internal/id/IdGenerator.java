@@ -89,7 +89,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
     long getHighestPossibleIdInUse();
 
-    long getUnusedIdCount() throws IOException;
+    long getUnusedIdCount();
 
     TransactionalMarker transactionalMarker(CursorContext cursorContext);
 
@@ -368,7 +368,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public long getUnusedIdCount() throws IOException {
+        public long getUnusedIdCount() {
             return delegate.getUnusedIdCount();
         }
 
