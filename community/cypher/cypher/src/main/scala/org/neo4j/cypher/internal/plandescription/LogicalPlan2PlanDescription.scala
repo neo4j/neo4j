@@ -319,8 +319,7 @@ object LogicalPlan2PlanDescription {
     withRawCardinalities: Boolean,
     withDistinctness: Boolean,
     providedOrders: ProvidedOrders,
-    runtimeOperatorMetadata: Id => Seq[Argument],
-    cancellationChecker: CancellationChecker
+    runtimeOperatorMetadata: Id => Seq[Argument]
   ): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(
       readOnly,
@@ -328,8 +327,7 @@ object LogicalPlan2PlanDescription {
       withRawCardinalities,
       withDistinctness,
       providedOrders,
-      runtimeOperatorMetadata,
-      cancellationChecker
+      runtimeOperatorMetadata
     )
       .create(input)
       .addArgument(RuntimeVersion.currentVersion)
@@ -357,13 +355,15 @@ case class LogicalPlan2PlanDescription(
   withRawCardinalities: Boolean,
   withDistinctness: Boolean = false,
   providedOrders: ProvidedOrders,
-  runtimeOperatorMetadata: Id => Seq[Argument],
-  cancellationChecker: CancellationChecker
+  runtimeOperatorMetadata: Id => Seq[Argument]
 ) extends LogicalPlans.Mapper[InternalPlanDescription] {
   private val SEPARATOR = ", "
 
-  def create(plan: LogicalPlan): InternalPlanDescription =
-    LogicalPlans.map(plan, this)(cancellationChecker)
+  def create(plan: LogicalPlan): InternalPlanDescription = {
+    // We don't use an actual CancellationChecker here,
+    // because it is possible to get here even after the transaction has been closed.
+    LogicalPlans.map(plan, this)(CancellationChecker.neverCancelled())
+  }
 
   override def onLeaf(plan: LogicalPlan): InternalPlanDescription = {
     checkOnlyWhenAssertionsAreEnabled(plan.isLeaf)

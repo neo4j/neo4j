@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.rewrite.InternalPlanDescriptionRewriter
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
@@ -90,7 +89,7 @@ class PlanDescriptionBuilder(
   includeStringRepresentation: Boolean
 ) {
 
-  def explain(cancellationChecker: CancellationChecker): InternalPlanDescription = {
+  def explain(): InternalPlanDescription = {
     val description =
       LogicalPlan2PlanDescription
         .create(
@@ -101,8 +100,7 @@ class PlanDescriptionBuilder(
           withRawCardinalities,
           withDistinctness,
           providedOrders,
-          runtimeOperatorMetadata,
-          cancellationChecker
+          runtimeOperatorMetadata
         )
         .addArgument(Runtime(runtimeName.toTextOutput))
         .addArgument(RuntimeImpl(runtimeName.name))
@@ -118,9 +116,9 @@ class PlanDescriptionBuilder(
     }
   }
 
-  def profile(queryProfile: QueryProfile, cancellationChecker: CancellationChecker): InternalPlanDescription = {
+  def profile(queryProfile: QueryProfile): InternalPlanDescription = {
 
-    val planDescription = BuildPlanDescription(explain(cancellationChecker))
+    val planDescription = BuildPlanDescription(explain())
       .addArgument(Arguments.GlobalMemory, queryProfile.maxAllocatedMemory())
       .plan
       .map { (input: InternalPlanDescription) =>

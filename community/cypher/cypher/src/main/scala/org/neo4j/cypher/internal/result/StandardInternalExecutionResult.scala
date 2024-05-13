@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.WRITE
-import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.exceptions.ProfilerStatisticsNotReadyException
@@ -42,8 +41,7 @@ class StandardInternalExecutionResult(
   override val executionMode: ExecutionMode,
   planDescriptionBuilder: PlanDescriptionBuilder,
   subscriber: QuerySubscriber,
-  val internalNotifications: Seq[Notification],
-  cancellationChecker: CancellationChecker
+  val internalNotifications: Seq[Notification]
 ) extends InternalExecutionResult {
 
   self =>
@@ -138,9 +136,9 @@ class StandardInternalExecutionResult(
         outerCloseable.close()
         throw error
       }
-      planDescriptionBuilder.profile(runtimeResult.queryProfile, cancellationChecker)
+      planDescriptionBuilder.profile(runtimeResult.queryProfile)
     } else {
-      planDescriptionBuilder.explain(cancellationChecker)
+      planDescriptionBuilder.explain()
     }
 
   }

@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.READ_WRITE
 import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
 import org.neo4j.cypher.internal.runtime.WRITE
-import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryProfile
@@ -162,8 +161,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       NormalMode,
       mock[PlanDescriptionBuilder],
       subscriber,
-      Seq.empty,
-      CancellationChecker.neverCancelled()
+      Seq.empty
     )
 
   case class TestRuntimeResult(

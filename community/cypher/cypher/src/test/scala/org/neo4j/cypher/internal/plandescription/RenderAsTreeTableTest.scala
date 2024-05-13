@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.plandescription.asPrettyString.distinctness
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -441,8 +440,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       withRawCardinalities = false,
       withDistinctness = false,
       providedOrders,
-      StubExecutionPlan().operatorMetadata,
-      CancellationChecker.neverCancelled()
+      StubExecutionPlan().operatorMetadata
     )
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
@@ -1290,8 +1288,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       withRawCardinalities = false,
       withDistinctness = false,
       new ProvidedOrders,
-      StubExecutionPlan().operatorMetadata,
-      CancellationChecker.neverCancelled()
+      StubExecutionPlan().operatorMetadata
     )
 
     renderAsTreeTable(plan) should equal(
