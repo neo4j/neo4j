@@ -191,7 +191,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         assertThat(e)
                 .message()
                 .containsAnyOf(
-                        "Invalid input ']': expected an identifier", "Mismatched input ']': expected a variable name");
+                        "Invalid input ']': expected an identifier", "Invalid input ']': expected a variable name");
     }
 
     @Test
@@ -208,7 +208,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport {
         assertThat(e)
                 .message()
                 .containsAnyOf(
-                        "Invalid input ']': expected an identifier", "Mismatched input ']': expected a variable name");
+                        "Invalid input ']': expected an identifier", "Invalid input ']': expected a variable name");
     }
 
     @Test

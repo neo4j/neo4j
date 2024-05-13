@@ -28,10 +28,6 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
 
   // pure syntax errors -- not sure if TCK material?
 
-  test("foo") {
-    execute("RETURN 42")
-  }
-
   test("noReturnColumns") {
     expectError(
       "match (s) where id(s) = 0 return",
@@ -45,7 +41,7 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
       "match (a) where id(a) = 0 match (a)-[WORKED_ON]-, return a",
       48,
       "Invalid input ',': expected",
-      "Mismatched input ',': expected '{', '+', '*', '(' (line 1, column 49 (offset: 48))"
+      "Invalid input ',': expected '{', '+', '*', '(' (line 1, column 49 (offset: 48))"
     )
   }
 
@@ -108,8 +104,7 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
     expectSyntaxError(
       "match (p) where id(p) = 2 match (p)-[:IS_A->dude return dude.name",
       42,
-      "Invalid input '-'",
-      "Mismatched input '-': expected '*', '{', '$', 'WHERE', ']' (line 1, column 43 (offset: 42))"
+      "Invalid input '-'"
     )
   }
 
@@ -117,8 +112,7 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
     expectSyntaxError(
       "match (p) where id(p) = 2 match (p)-[!]->dude return dude.name",
       37,
-      "Invalid input '!'",
-      "Extraneous input '!': expected a variable name, ':', 'IS', '*', '{', '$', 'WHERE', ']' (line 1, column 38 (offset: 37))"
+      "Invalid input '!'"
     )
   }
 
@@ -126,16 +120,14 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
     expectSyntaxError(
       "match (p) where id(p) = 2 match (p)[:likes]->dude return dude.name",
       35,
-      "Invalid input '['",
-      "Mismatched input '[': expected ';', <EOF> (line 1, column 36 (offset: 35))"
+      "Invalid input '['"
     )
   }
 
   test("invalidLabel") {
     expectError(
       "match (p) where id(p) = 2 match (p:super-man) return p.name",
-      "Invalid input",
-      "Mismatched input '-': expected '{', '$', 'WHERE', ')' (line 1, column 41 (offset: 40))"
+      "Invalid input"
     )
   }
 
@@ -225,7 +217,7 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
       "MATCH 123",
       "      ^",
       "Invalid input '1",
-      "Mismatched input '123'"
+      "Invalid input '123'"
     )
   }
 
@@ -233,8 +225,7 @@ class ErrorMessagesTest extends ExecutionEngineWithoutRestartFunSuite {
     testSyntaxErrorWithCaret(
       "EXPLAIN MATCH 123",
       "              ^",
-      "Invalid input '1",
-      "Mismatched input '123'"
+      "Invalid input '1"
     )
   }
 

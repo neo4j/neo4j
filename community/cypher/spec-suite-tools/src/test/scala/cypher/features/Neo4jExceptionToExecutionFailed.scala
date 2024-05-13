@@ -270,8 +270,6 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_ARGUMENT_EXPRESSION
     else if (msg.startsWith("Invalid input '—':"))
       INVALID_UNICODE_CHARACTER
-    else if (msg.startsWith("Mismatched input '—':"))
-      INVALID_UNICODE_CHARACTER
     else if (msg.matches(semanticError("Can't use aggregating expressions inside of expressions executing over lists")))
       INVALID_AGGREGATION
     else if (
