@@ -57,6 +57,7 @@ import org.neo4j.dbms.archive.backup.BackupFormatSelector;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Parameters;
 
@@ -314,7 +315,7 @@ public class LoadCommand extends AbstractAdminCommand {
         }
         var dbsToArchives = listArchivesMatching(fs, sourcePath, database, includeDiff);
         if (!database.containsPattern()) {
-            var archives = dbsToArchives.getOrDefault(database.getDatabaseName(), emptyList());
+            var archives = dbsToArchives.getOrDefault(database.getNormalizedDatabaseName(), emptyList());
             return Set.of(new DumpInfo(database.getDatabaseName(), false, archives));
         }
 
@@ -334,18 +335,21 @@ public class LoadCommand extends AbstractAdminCommand {
                 String fileName = path.getFileName().toString();
                 if (!fs.isDirectory(path)) {
                     if (fileName.endsWith(DUMP_EXTENSION)) {
-                        String dbName = fileName.substring(0, fileName.length() - DUMP_EXTENSION.length());
+                        String dbName = new NormalizedDatabaseName(
+                                        fileName.substring(0, fileName.length() - DUMP_EXTENSION.length()))
+                                .name();
                         if (pattern.matches(dbName)) {
                             result.computeIfAbsent(dbName, name -> new ArrayList<>())
                                     .add(path);
                         }
                     } else if (fileName.endsWith(BACKUP_EXTENSION)) {
-                        BackupDescription backupDescription =
-                                BackupFormatSelector.readDescription(fs.openAsInputStream(path));
-                        String dbName = backupDescription.getDatabaseName();
-                        if (pattern.matches(dbName) && (includeDiff || backupDescription.isFull())) {
-                            result.computeIfAbsent(dbName, name -> new ArrayList<>())
-                                    .add(path);
+                        try (var inputStream = fs.openAsInputStream(path)) {
+                            BackupDescription backupDescription = BackupFormatSelector.readDescription(inputStream);
+                            String dbName = backupDescription.getDatabaseName();
+                            if (pattern.matches(dbName) && (includeDiff || backupDescription.isFull())) {
+                                result.computeIfAbsent(dbName, name -> new ArrayList<>())
+                                        .add(path);
+                            }
                         }
                     }
                 }
