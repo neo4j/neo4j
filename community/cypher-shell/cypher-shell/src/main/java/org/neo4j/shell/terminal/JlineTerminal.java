@@ -205,7 +205,7 @@ public class JlineTerminal implements CypherShellTerminal {
             getParser().setEnableStatementParsing(true);
             jLineReader.setVariable(LineReader.SECONDARY_PROMPT_PATTERN, continuationPromptPattern(prompt));
 
-            var line = readLine(prompt.renderedString(), null);
+            var line = readLine(prompt.resetAndRender(), null);
             var parsed = jLineReader.getParsedLine();
 
             if (parsed instanceof ParsedLineStatements statements) {

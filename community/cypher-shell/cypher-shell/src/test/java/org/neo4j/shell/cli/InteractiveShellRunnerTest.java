@@ -50,6 +50,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import org.fusesource.jansi.Ansi;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -98,6 +100,7 @@ class InteractiveShellRunnerTest {
 
     @BeforeEach
     void setup() throws Exception {
+        Ansi.setEnabled(true);
         printer = mock(Printer.class);
         cmdExecuter = mock(StatementExecuter.class);
         txHandler = mock(TransactionHandler.class);
@@ -116,6 +119,11 @@ class InteractiveShellRunnerTest {
         parameters = mock(ParameterService.class);
 
         doThrow(badLineError).when(cmdExecuter).execute(statementContains("bad"));
+    }
+
+    @AfterEach
+    void cleanup() {
+        Ansi.setEnabled(Ansi.isDetected());
     }
 
     @Test
@@ -408,12 +416,13 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
+
         verify(printer)
                 .printIfVerbose(
                         """
-                 Connected to Neo4j at @|BOLD neo4j://localhost:7687|@ as user @|BOLD myusername|@.
-                 Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
-                 Note that Cypher queries must end with a @|BOLD semicolon.|@""");
+                            Connected to Neo4j at [1mneo4j://localhost:7687[22m as user [1mmyusername[22m.
+                            Type [1m:help[22m for a list of available commands or [1m:exit[22m to exit the shell.
+                            Note that Cypher queries must end with a [1msemicolon.[22;0m""");
         verify(printer).printIfVerbose("\nBye!");
     }
 
@@ -465,8 +474,8 @@ class InteractiveShellRunnerTest {
         verify(cmdExecuter).execute(new CommandStatement(":exit", List.of(), true, 0, 0));
         verifyNoMoreInteractions(cmdExecuter);
         var expectedError =
-                "@|RED Interrupted (Note that Cypher queries must end with a |@@|RED,BOLD semicolon|@@|RED . "
-                        + "Type |@@|RED,BOLD :exit|@@|RED  to exit the shell.)|@";
+                "\u001B[91mInterrupted (Note that Cypher queries must end with a \u001B[1msemicolon\u001B[22m."
+                        + " Type \u001B[1m:exit\u001B[22m to exit the shell.)\u001B[m";
         verify(printer).printError(expectedError);
     }
 

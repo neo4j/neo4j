@@ -98,27 +98,27 @@ public class AnsiPrinter implements Printer {
 
     @Override
     public void printError(String s) {
-        err.println(Ansi.ansi().render(s).toString());
+        err.println(s);
     }
 
     @Override
     public void printOut(final String msg) {
-        out.println(Ansi.ansi().render(msg).toString());
+        out.println(msg);
     }
 
     /**
      * Formatting for Bolt exceptions.
      */
     public String getFormattedMessage(final Throwable e) {
-        AnsiFormattedText msg = AnsiFormattedText.s().colorRed();
+        AnsiFormattedText msg = AnsiFormattedText.s().brightRed();
 
-        if (e instanceof AnsiFormattedException) {
-            msg = msg.append(((AnsiFormattedException) e).getFormattedMessage());
+        if (e instanceof AnsiFormattedException ae) {
+            msg.append(ae.getFormattedMessage());
         } else if (e instanceof ClientException
                 && e.getMessage() != null
                 && e.getMessage().contains("Missing username")) {
             // Username and password was not specified
-            msg = msg.append(e.getMessage())
+            msg.append(e.getMessage())
                     .append("\nPlease specify --username, and optionally --password, as argument(s)")
                     .append("\nor as environment variable(s), NEO4J_USERNAME, and NEO4J_PASSWORD respectively.")
                     .append("\nSee --help for more info.");
@@ -137,12 +137,12 @@ public class AnsiPrinter implements Printer {
             }
 
             if (cause.getMessage() != null) {
-                msg = msg.append(cause.getMessage());
+                msg.append(cause.getMessage());
             } else {
-                msg = msg.append(cause.getClass().getSimpleName());
+                msg.append(cause.getClass().getSimpleName());
             }
         }
 
-        return msg.formattedString();
+        return msg.resetAndRender();
     }
 }

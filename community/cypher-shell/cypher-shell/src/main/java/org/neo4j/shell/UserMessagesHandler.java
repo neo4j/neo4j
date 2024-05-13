@@ -49,10 +49,10 @@ public record UserMessagesHandler(Connector connector) {
                 .append(" to exit the shell.")
                 .append("\nNote that Cypher queries must end with a ")
                 .bold("semicolon.")
-                .formattedString();
+                .resetAndRender();
     }
 
     public static String getExitMessage() {
-        return AnsiFormattedText.s().append("\nBye!").formattedString();
+        return "\nBye!";
     }
 }

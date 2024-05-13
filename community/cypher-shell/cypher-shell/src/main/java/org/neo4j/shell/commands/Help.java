@@ -69,7 +69,7 @@ public class Help implements Command {
                 .append("\n\n")
                 .append(cmd.metadata().help())
                 .append("\n")
-                .formattedString());
+                .resetAndRender());
     }
 
     private void printGeneralHelp() {
@@ -85,14 +85,14 @@ public class Help implements Command {
         allCommands.forEach(cmd -> printer.printOut(AnsiFormattedText.from("  ")
                 .bold(String.format("%-" + leftColWidth + "s", cmd.name()))
                 .append(" " + cmd.description())
-                .formattedString()));
+                .resetAndRender()));
 
         printer.printOut("\nFor help on a specific command type:");
         printer.printOut(AnsiFormattedText.from("    ")
                 .append(metadata().name())
                 .bold(" command")
                 .append("\n")
-                .formattedString());
+                .resetAndRender());
 
         printer.printOut("Keyboard shortcuts:");
         printer.printOut("    Up and down arrows to access statement history.");
@@ -103,7 +103,7 @@ public class Help implements Command {
         printer.printOut(AnsiFormattedText.from("    ")
                 .append(CYPHER_MANUAL_LINK)
                 .append("\n")
-                .formattedString());
+                .resetAndRender());
     }
 
     private static int longestCmdLength(List<Command.Metadata> allCommands) {

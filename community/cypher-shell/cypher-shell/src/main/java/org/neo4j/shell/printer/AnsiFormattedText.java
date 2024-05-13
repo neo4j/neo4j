@@ -19,214 +19,120 @@
  */
 package org.neo4j.shell.printer;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import org.fusesource.jansi.Ansi;
 
 /**
  * A piece of text which can be rendered with Ansi format codes.
  */
 public class AnsiFormattedText {
+    private final Ansi ansi = Ansi.ansi();
+    private final StringBuilder plain = new StringBuilder();
+    private boolean needsReset = false;
 
-    private static final String RED = "RED";
-    private static final String YELLOW = "YELLOW";
-    private static final String BOLD = "BOLD";
-    private static final String DEFAULT_COLOR = "DEFAULT";
-    // no mapping means not defined
-    private final Map<String, Boolean> attributes = new HashMap<>();
-    // Each piece is formatted separately
-    private final LinkedList<AnsiFormattedString> pieces = new LinkedList<>();
-    // can be defined, or undefined. null means undefined.
-    private String color;
-
-    /**
-     * Return a new map which is a copy of the first map, with the keys/values from the second if they do not override anything already defined in the first
-     * map.
-     */
-    private static <K, V> Map<K, V> mergeMaps(Map<K, V> primary, Map<K, V> secondary) {
-        Map<K, V> result = new HashMap<>(primary);
-        secondary.forEach(result::putIfAbsent);
-        return result;
-    }
-
-    /**
-     * @return a new empty instance
-     */
+    /** Returns a new empty instance */
     public static AnsiFormattedText s() {
         return new AnsiFormattedText();
     }
 
-    /**
-     * @param string to start with, may be null in which case it is ignored
-     * @return a new instance containing the unformatted text in string, or empty if it was null
-     */
     public static AnsiFormattedText from(String string) {
-        AnsiFormattedText st = new AnsiFormattedText();
-        if (string != null) {
-            st.append(string);
+        return new AnsiFormattedText().append(string != null ? string : "");
+    }
+
+    private AnsiFormattedText reset() {
+        if (needsReset) {
+            ansi.reset();
+            needsReset = false;
         }
-        return st;
+        return this;
     }
 
-    /**
-     * @return the text as a string including possible formatting, ready for ANSI formatting
-     */
-    public String formattedString() {
-        StringBuilder sb = new StringBuilder();
-        for (AnsiFormattedString s : pieces) {
-            List<String> codes = new ArrayList<>();
-
-            // color
-            if (s.color != null && !DEFAULT_COLOR.equals(s.color)) {
-                codes.add(s.color);
-            }
-            // attributes
-            if (s.attributes.getOrDefault(BOLD, false)) {
-                codes.add(BOLD);
-            }
-            // Only do formatting if we actually have some formatting to apply
-            if (!codes.isEmpty()) {
-                sb.append("@|").append(String.join(",", codes)).append(" ");
-            }
-            // string
-            sb.append(s.string);
-            // Only reset formatting if we actually did some formatting
-            if (!codes.isEmpty()) {
-                sb.append("|@");
-            }
-        }
-        return sb.toString();
+    /** Adds reset and returns the formatted string. */
+    public String resetAndRender() {
+        reset();
+        return ansi.toString();
     }
 
-    /**
-     * @return the text as a string rendered with ANSI escape codes
-     */
-    public String renderedString() {
-        return Ansi.ansi().render(formattedString()).toString();
-    }
-
-    /**
-     * @return the text as a plain string without any formatting
-     */
+    /** Returns the text without formatting. */
     public String plainString() {
-        StringBuilder sb = new StringBuilder();
-        pieces.forEach(sb::append);
-        return sb.toString();
+        return plain.toString();
     }
 
-    /**
-     * Append an already formatted string. If any formatting codes are defined, then they will be ignored in favor of this instance's formatting.
-     *
-     * @param existing text to append using this instance's formatting
-     * @return this
-     */
-    public AnsiFormattedText append(AnsiFormattedText existing) {
-        existing.pieces.forEach(s -> pieces.add(new AnsiFormattedString(
-                color != null ? color : s.color, mergeMaps(attributes, s.attributes), s.string)));
+    /** Append a string using the current formatting */
+    public AnsiFormattedText append(CharSequence s) {
+        ansi.a(s);
+        plain.append(s);
         return this;
     }
 
-    /**
-     * Append a string using the current formatting
-     *
-     * @param s string to append using this instance's formatting
-     * @return this
-     */
-    public AnsiFormattedText append(String s) {
-        pieces.add(new AnsiFormattedString(color, attributes, s));
+    public AnsiFormattedText append(AnsiFormattedText s) {
+        ansi.a(s.resetAndRender());
+        plain.append(s.plain);
+        needsReset = false;
         return this;
     }
 
-    /**
-     * Append a new line
-     *
-     * @return this
-     */
-    public AnsiFormattedText appendNewLine() {
-        pieces.add(new AnsiFormattedString(color, attributes, System.lineSeparator()));
+    public AnsiFormattedText newLine() {
+        return append(System.lineSeparator());
+    }
+
+    private AnsiFormattedText formatChange() {
+        needsReset = true;
         return this;
     }
 
-    /**
-     * Set formatting to bold. Note that this has no effect on strings already in the text.
-     *
-     * @return this
-     */
+    /** Append bold ansi code. */
     public AnsiFormattedText bold() {
-        attributes.put(BOLD, true);
-        return this;
+        ansi.bold();
+        return formatChange();
     }
 
     public AnsiFormattedText bold(String bold) {
         return bold().append(bold).boldOff();
     }
 
-    /**
-     * Set formatting to not bold. Note that this has no effect on strings already in the text.
-     *
-     * @return this
-     */
+    /** Append bold reset ansi code. */
     public AnsiFormattedText boldOff() {
-        attributes.put(BOLD, false);
-        return this;
+        ansi.boldOff();
+        return formatChange();
     }
 
-    /**
-     * Set color to red. Note that this has no effect on strings already in the text.
-     *
-     * @return this
-     */
+    /** Append red foreground ansi code. */
     public AnsiFormattedText colorRed() {
-        color = RED;
-        return this;
+        ansi.fgRed();
+        return formatChange();
     }
 
+    public AnsiFormattedText colorRed(CharSequence s) {
+        return colorRed().append(s).colorDefault();
+    }
+
+    /** Append bright red foreground ansi code. */
+    public AnsiFormattedText brightRed() {
+        ansi.fgBrightRed();
+        return formatChange();
+    }
+
+    public AnsiFormattedText brightRed(CharSequence s) {
+        return brightRed().append(s).colorDefault();
+    }
+
+    /** Append yellow foreground ansi code. */
     public AnsiFormattedText colorOrange() {
-        color = YELLOW;
-        return this;
+        ansi.fgYellow();
+        return formatChange();
     }
 
     public AnsiFormattedText orange(String s) {
-        pieces.add(new AnsiFormattedString(YELLOW, attributes, s));
-        return this;
+        return colorOrange().append(s).colorDefault();
     }
 
-    /**
-     * Set color to default. Note that this has no effect on strings already in the text.
-     *
-     * @return this
-     */
+    /** Append reset foreground color ansi code. */
     public AnsiFormattedText colorDefault() {
-        color = DEFAULT_COLOR;
-        return this;
+        ansi.fgDefault();
+        return formatChange();
     }
 
     public int textLength() {
-        return pieces.stream().mapToInt(p -> p.string.length()).sum();
-    }
-
-    /**
-     * A formatted string
-     */
-    private static class AnsiFormattedString {
-        // can be defined, or undefined. null means undefined.
-        final String color;
-        // same here, no mapping means undefined
-        final Map<String, Boolean> attributes = new HashMap<>();
-        final String string;
-
-        AnsiFormattedString(String color, Map<String, Boolean> attributes, String s) {
-            this.color = color;
-            this.attributes.putAll(attributes);
-            this.string = s;
-        }
-
-        @Override
-        public String toString() {
-            return string;
-        }
+        return plain.length();
     }
 }

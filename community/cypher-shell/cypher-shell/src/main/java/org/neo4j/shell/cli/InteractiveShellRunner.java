@@ -179,13 +179,13 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
 
         // If we encountered an error with the connection ping query we display it in the prompt in RED
         if (!errorSuffix.isEmpty()) {
-            prePrompt.colorRed().append(errorSuffix).colorDefault();
+            prePrompt.brightRed().append(errorSuffix).colorDefault();
         }
 
         if (promptIndent <= PROMPT_MAX_LENGTH) {
             return prePrompt.append(txHandler.isTransactionOpen() ? TRANSACTION_PROMPT : FRESH_PROMPT);
         } else {
-            return prePrompt.appendNewLine().append(txHandler.isTransactionOpen() ? TRANSACTION_PROMPT : FRESH_PROMPT);
+            return prePrompt.newLine().append(txHandler.isTransactionOpen() ? TRANSACTION_PROMPT : FRESH_PROMPT);
         }
     }
 
@@ -220,10 +220,10 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
             terminal.setHistoryBehaviour(behaviour);
         } catch (Exception e) {
             final var message = AnsiFormattedText.s()
-                    .colorRed()
+                    .brightRed()
                     .append(String.format(
                             "Could not load history file, falling back to session-based history: %s%n", e.getMessage()))
-                    .formattedString();
+                    .resetAndRender();
             printer.printError(message);
             log.error(e);
         }
@@ -246,13 +246,13 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
             executer.reset();
         } else {
             printer.printError(AnsiFormattedText.s()
-                    .colorRed()
+                    .brightRed()
                     .append("Interrupted (Note that Cypher queries must end with a ")
                     .bold("semicolon")
                     .append(". Type ")
                     .bold(":exit")
                     .append(" to exit the shell.)")
-                    .formattedString());
+                    .resetAndRender());
         }
     }
 }

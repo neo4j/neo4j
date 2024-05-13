@@ -26,6 +26,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import org.fusesource.jansi.Ansi;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
@@ -39,8 +41,14 @@ class HelpTest {
 
     @BeforeEach
     public void setup() {
+        Ansi.setEnabled(true);
         cmdHelper = mock(CommandFactoryHelper.class);
         cmd = new Help(printer, cmdHelper);
+    }
+
+    @AfterEach
+    public void cleanup() {
+        Ansi.setEnabled(Ansi.isDetected());
     }
 
     @Test
@@ -66,10 +74,10 @@ class HelpTest {
 
         // then
         verify(printer).printOut("\nAvailable commands:");
-        verify(printer).printOut("  @|BOLD bob  |@ description for bob");
-        verify(printer).printOut("  @|BOLD bobby|@ description for bobby");
+        verify(printer).printOut("  \u001B[1mbob  \u001B[22m description for bob\u001B[m");
+        verify(printer).printOut("  \u001B[1mbobby\u001B[22m description for bobby\u001B[m");
         verify(printer).printOut("\nFor help on a specific command type:");
-        verify(printer).printOut("    :help@|BOLD  command|@\n");
+        verify(printer).printOut("    :help\u001B[1m command\u001B[22m\n\u001B[m");
         verify(printer).printOut("\nFor help on cypher please visit:");
         verify(printer).printOut("    " + Help.CYPHER_MANUAL_LINK + "\n");
     }
@@ -84,7 +92,9 @@ class HelpTest {
         cmd.execute(List.of("bob"));
 
         // then
-        verify(printer).printOut("\nusage: @|BOLD bob|@ usage for bob\n" + "\nhelp for bob\n");
+        verify(printer)
+                .printOut(
+                        "\n" + "usage: \u001B[1mbob\u001B[22m usage for bob\n" + "\n" + "help for bob\n" + "\u001B[m");
     }
 
     @Test
@@ -104,7 +114,11 @@ class HelpTest {
         cmd.execute(List.of("bob"));
 
         // then
-        verify(printer).printOut("\nusage: @|BOLD :bob|@ usage for :bob\n" + "\nhelp for :bob\n");
+        verify(printer)
+                .printOut("\n" + "usage: \u001B[1m:bob\u001B[22m usage for :bob\n"
+                        + "\n"
+                        + "help for :bob\n"
+                        + "\u001B[m");
     }
 
     private static Command.Factory mockFactory(String name) {

@@ -26,6 +26,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.io.PrintStream;
+import org.fusesource.jansi.Ansi;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.cli.Format;
@@ -36,6 +39,16 @@ class AnsiPrinterTest {
     private final PrintStream err = mock(PrintStream.class);
     private AnsiPrinter logger = new AnsiPrinter(Format.VERBOSE, out, err);
 
+    @BeforeEach
+    void setup() {
+        Ansi.setEnabled(true);
+    }
+
+    @AfterEach
+    void cleanup() {
+        Ansi.setEnabled(Ansi.isDetected());
+    }
+
     @Test
     void printError() {
         logger.printError("bob");
@@ -45,7 +58,7 @@ class AnsiPrinterTest {
     @Test
     void printException() {
         logger.printError(new Throwable("bam"));
-        verify(err).println("bam");
+        verify(err).println("\u001B[91mbam\u001B[m");
     }
 
     @Test
@@ -100,29 +113,29 @@ class AnsiPrinterTest {
 
     @Test
     void testSimple() {
-        assertEquals("@|RED yahoo|@", logger.getFormattedMessage(new NullPointerException("yahoo")));
+        assertEquals("\u001B[91myahoo\u001B[m", logger.getFormattedMessage(new NullPointerException("yahoo")));
     }
 
     @Test
     void testNested() {
         assertEquals(
-                "@|RED outer|@",
+                "\u001B[91mouter\u001B[m",
                 logger.getFormattedMessage(new ClientException("outer", new CommandException("nested"))));
     }
 
     @Test
     void testNestedDeep() {
         assertEquals(
-                "@|RED outer|@",
+                "\u001B[91mouter\u001B[m",
                 logger.getFormattedMessage(new ClientException(
                         "outer", new ClientException("nested", new ClientException("nested deep")))));
     }
 
     @Test
     void testNullMessage() {
-        assertEquals("@|RED ClientException|@", logger.getFormattedMessage(new ClientException(null)));
+        assertEquals("\u001B[91mClientException\u001B[m", logger.getFormattedMessage(new ClientException(null)));
         assertEquals(
-                "@|RED outer|@",
+                "\u001B[91mouter\u001B[m",
                 logger.getFormattedMessage(new ClientException("outer", new NullPointerException(null))));
     }
 
@@ -130,6 +143,6 @@ class AnsiPrinterTest {
     void testExceptionGetsFormattedMessage() {
         AnsiPrinter logger = spy(this.logger);
         logger.printError(new NullPointerException("yahoo"));
-        verify(logger).printError("@|RED yahoo|@");
+        verify(logger).printError("\u001B[91myahoo\u001B[m");
     }
 }
