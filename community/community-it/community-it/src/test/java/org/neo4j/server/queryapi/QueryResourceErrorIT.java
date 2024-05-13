@@ -20,6 +20,7 @@
 package org.neo4j.server.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.server.queryapi.response.TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -205,6 +206,24 @@ class QueryResourceErrorIT {
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(MediaType.APPLICATION_JSON);
+        assertThat(response.body())
+                .startsWith("{\"errors\":[{\"error\":\"Neo.ClientError.Statement.SyntaxError\","
+                        + "\"message\":\"Query cannot conclude with MATCH");
+    }
+
+    @Test
+    void invalidTypedCypher() throws IOException, InterruptedException {
+        var request = HttpRequest.newBuilder()
+                .uri(URI.create(queryEndpoint.replace("{databaseName}", "neo4j")))
+                .header("Content-Type", TYPED_JSON_MIME_TYPE_VALUE)
+                .header("Accept", TYPED_JSON_MIME_TYPE_VALUE)
+                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"MATCH (n)\"}"))
+                .build();
+
+        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.headers().allValues(HttpHeaders.CONTENT_TYPE)).contains(TYPED_JSON_MIME_TYPE_VALUE);
         assertThat(response.body())
                 .startsWith("{\"errors\":[{\"error\":\"Neo.ClientError.Statement.SyntaxError\","
                         + "\"message\":\"Query cannot conclude with MATCH");

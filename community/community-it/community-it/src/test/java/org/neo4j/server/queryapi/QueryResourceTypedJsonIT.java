@@ -256,7 +256,9 @@ class QueryResourceTypedJsonIT {
     @Test
     void list() throws IOException, InterruptedException {
         var response = simpleRequest(
-                client, queryEndpoint, "{\"statement\": \"RETURN [1,true,'hello',date('+2015-W13-4')] as list\"}");
+                client,
+                queryEndpoint,
+                "{\"statement\": \"RETURN [1,true,'hello',date('+2015-W13-4'), {amap: 'hello'}] as list\"}");
 
         assertThat(response.statusCode()).isEqualTo(202);
 
@@ -274,12 +276,27 @@ class QueryResourceTypedJsonIT {
 
         var resultArray = parsedJson.get(DATA_KEY).get(VALUES_KEY).get(0).get(CYPHER_VALUE);
 
-        assertThat(resultArray.size()).isEqualTo(4);
+        assertThat(resultArray.size()).isEqualTo(5);
         QueryAssertions.assertThat(resultArray.get(0)).hasTypedResult("Integer", "1");
         assertThat(resultArray.get(1).get(CYPHER_TYPE).asText()).isEqualTo("Boolean");
         assertThat(resultArray.get(1).get(CYPHER_VALUE).asBoolean()).isEqualTo(true);
         QueryAssertions.assertThat(resultArray.get(2)).hasTypedResult("String", "hello");
         QueryAssertions.assertThat(resultArray.get(3)).hasTypedResult("Date", "2015-03-26");
+        assertThat(resultArray.get(4).get(CYPHER_TYPE).asText()).isEqualTo("Map");
+        assertThat(resultArray
+                        .get(4)
+                        .get(CYPHER_VALUE)
+                        .get("amap")
+                        .get(CYPHER_TYPE)
+                        .asText())
+                .isEqualTo("String");
+        assertThat(resultArray
+                        .get(4)
+                        .get(CYPHER_VALUE)
+                        .get("amap")
+                        .get(CYPHER_VALUE)
+                        .asText())
+                .isEqualTo("hello");
     }
 
     @Test

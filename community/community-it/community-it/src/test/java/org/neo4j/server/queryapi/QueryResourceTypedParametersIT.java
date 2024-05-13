@@ -307,6 +307,60 @@ class QueryResourceTypedParametersIT {
     }
 
     @Test
+    void shouldHandleMapNestedInList() throws IOException, InterruptedException {
+        var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","
+                        + "\"parameters\": {\"parameter\": {\"$type\":\"List\",\"_value\": "
+                        + "[{\"$type\":\"Map\",\"_value\":{\"innerMap\": "
+                        + "{\"$type\":\"Boolean\",\"_value\":true}}}]}}}"))
+                .build();
+        var response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(202);
+        var parsedJson = MAPPER.readTree(response.body());
+
+        assertThat(parsedJson.get(DATA_KEY).get(FIELDS_KEY).size()).isEqualTo(1);
+        assertThat(parsedJson
+                        .get(DATA_KEY)
+                        .get(VALUES_KEY)
+                        .get(0)
+                        .get(CYPHER_TYPE)
+                        .asText())
+                .isEqualTo("List");
+        assertThat(parsedJson
+                        .get(DATA_KEY)
+                        .get(VALUES_KEY)
+                        .get(0)
+                        .get(CYPHER_VALUE)
+                        .get(0)
+                        .get(CYPHER_TYPE)
+                        .asText())
+                .isEqualTo("Map");
+        assertThat(parsedJson
+                        .get(DATA_KEY)
+                        .get(VALUES_KEY)
+                        .get(0)
+                        .get(CYPHER_VALUE)
+                        .get(0)
+                        .get(CYPHER_VALUE)
+                        .get("innerMap")
+                        .get(CYPHER_TYPE)
+                        .asText())
+                .isEqualTo("Boolean");
+        assertThat(parsedJson
+                        .get(DATA_KEY)
+                        .get(VALUES_KEY)
+                        .get(0)
+                        .get(CYPHER_VALUE)
+                        .get(0)
+                        .get(CYPHER_VALUE)
+                        .get("innerMap")
+                        .get(CYPHER_VALUE)
+                        .asBoolean())
+                .isEqualTo(true);
+    }
+
+    @Test
     void shouldHandleEmptyMaps() throws IOException, InterruptedException {
         var httpRequest = baseRequestBuilder(queryEndpoint, "neo4j")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"statement\": \"RETURN $parameter\","

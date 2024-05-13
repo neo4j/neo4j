@@ -27,6 +27,7 @@ import org.neo4j.server.queryapi.metrics.QueryAPIMetricsFilter;
 import org.neo4j.server.queryapi.metrics.QueryAPIMetricsMonitor;
 import org.neo4j.server.queryapi.request.JsonMessageBodyReader;
 import org.neo4j.server.queryapi.request.TypedJsonMessageBodyReader;
+import org.neo4j.server.queryapi.response.ErrorResponseWriter;
 import org.neo4j.server.queryapi.response.PlainJsonDriverResultWriter;
 import org.neo4j.server.queryapi.response.TypedJsonDriverResultWriter;
 import org.neo4j.server.web.WebServer;
@@ -69,6 +70,7 @@ public class QueryModule implements ServerModule {
                 PlainJsonDriverResultWriter.class,
                 TypedJsonDriverResultWriter.class,
                 JsonMessageBodyReader.class,
-                TypedJsonMessageBodyReader.class);
+                TypedJsonMessageBodyReader.class,
+                ErrorResponseWriter.class);
     }
 }

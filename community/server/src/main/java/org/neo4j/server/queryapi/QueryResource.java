@@ -21,6 +21,7 @@ package org.neo4j.server.queryapi;
 
 import static org.neo4j.server.queryapi.request.AccessMode.toDriverAccessMode;
 import static org.neo4j.server.queryapi.response.HttpErrorResponse.fromDriverException;
+import static org.neo4j.server.queryapi.response.HttpErrorResponse.singleError;
 import static org.neo4j.server.queryapi.response.TypedJsonDriverResultWriter.TYPED_JSON_MIME_TYPE_VALUE;
 
 import java.util.stream.Collectors;
@@ -43,6 +44,8 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.queryapi.request.QueryRequest;
 import org.neo4j.server.queryapi.request.ResultContainer;
@@ -57,9 +60,11 @@ public class QueryResource {
     static final String FULL_PATH = "/{" + DB_PATH_PARAM_NAME + "}/" + API_PATH_FRAGMENT;
 
     private final Driver driver;
+    private final InternalLog log;
 
-    public QueryResource(@Context Driver driver) {
+    public QueryResource(@Context Driver driver, @Context InternalLog log) {
         this.driver = driver;
+        this.log = log;
     }
 
     @POST
@@ -90,13 +95,15 @@ public class QueryResource {
                     .entity(fromDriverException(ex))
                     .build();
         } catch (ClientException | TransientException clientException) {
-
             response = Response.status(Response.Status.BAD_REQUEST)
                     .entity(fromDriverException(clientException))
                     .build();
-        } catch (Exception clientException) {
-            response = Response.status(Response.Status.BAD_REQUEST)
-                    .entity(clientException)
+        } catch (Exception exception) {
+            log.error("Local driver failed to execute query", exception);
+            response = Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(singleError(
+                            Status.General.UnknownError.code().serialize(),
+                            Status.General.UnknownError.code().description()))
                     .build();
         }
 

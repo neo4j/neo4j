@@ -57,7 +57,9 @@ public class ValueDeserializer extends StdDeserializer<Value> {
                     p.nextToken();
                     return listValue;
                 } else if (typeString.equals(CypherTypes.Map.name())) {
-                    return p.readValueAs(MapValue.class);
+                    var mapValue = p.readValueAs(MapValue.class);
+                    p.nextToken();
+                    return mapValue;
                 } else if (typeString.equals(CypherTypes.Boolean.name())) {
                     var boolValue = BooleanValue.fromBoolean(p.getBooleanValue());
                     p.nextToken();
