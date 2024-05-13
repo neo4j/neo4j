@@ -43,7 +43,7 @@ package org.neo4j.cypher.internal.preparser.javacc;
 import org.neo4j.cypher.internal.PreParsedStatement;
 import org.neo4j.cypher.internal.PreParserOption;
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
-import org.neo4j.cypher.internal.parser.javacc.InvalidUnicodeLiteral;
+import org.neo4j.cypher.internal.parser.InvalidUnicodeLiteral;
 import org.neo4j.cypher.internal.util.InputPosition;
 
 import java.util.ArrayList;

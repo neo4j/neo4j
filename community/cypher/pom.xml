@@ -50,7 +50,6 @@
                 <module>cypher-testing</module>
                 <module>cypher-config</module>
                 <module>cypher-cache</module>
-                <module>literal-interpreter</module>
                 <module>graph-counts</module>
                 <module>cypher-rendering</module>
             </modules>

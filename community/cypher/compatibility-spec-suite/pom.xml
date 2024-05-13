@@ -131,7 +131,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-cst-factory</artifactId>
+            <artifactId>cypher-v5-ast-factory</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

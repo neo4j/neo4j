@@ -8,12 +8,16 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-cypher-ast-factory</artifactId>
-    <packaging>jar</packaging>
-    <name>Neo4j - Neo4j/OpenCypher AST factory</name>
+    <!-- NOTE! The tests that remains in this project will be moved to
+               public/community/cypher/front-end/parser/parser-test!
+               We're only waiting for the builds to be updated.-->
 
-    <description>Neo4j Cypher AST factory</description>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>neo4j-cypher-ast-factory-tests</artifactId>
+    <packaging>jar</packaging>
+    <name>Cypher Parser Tests</name>
+
+    <description>Cypher Parser Tests</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
@@ -30,21 +34,16 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-util</artifactId>
+            <artifactId>neo4j-cypher-ast-factory</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-ast</artifactId>
+            <artifactId>cypher-v5-ast-factory</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-javacc-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <!-- test dependencies -->
 
         <dependency>
             <groupId>org.neo4j</groupId>
@@ -56,57 +55,22 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-cst-factory</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-test-util</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.opencypher</groupId>
-            <artifactId>tck</artifactId>
-            <version>${opencypher.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.opencypher</groupId>
-            <artifactId>tck-api_${scala.binary.version}</artifactId>
-            <version>${opencypher.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.junit.jupiter</groupId>
-                    <artifactId>junit-jupiter-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apiguardian</groupId>
-                    <artifactId>apiguardian-api</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- shared versions are defined in the parent pom -->
-
-        <!-- scala -->
-
-        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
+            <scope>test</scope>
         </dependency>
-
-        <!-- scala test dependencies -->
 
         <dependency>
             <groupId>org.scalatest</groupId>
