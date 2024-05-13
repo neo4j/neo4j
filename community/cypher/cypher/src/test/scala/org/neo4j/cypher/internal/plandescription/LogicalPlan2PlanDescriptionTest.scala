@@ -7943,7 +7943,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "Projection",
         SingleChild(lhsPD),
-        Seq(details("ns.datetime(23391882379) AS function")),
+        Seq(details("RuntimeConstant(ns.datetime(23391882379)) AS function")),
         Set("a", "function")
       )
     )
@@ -7963,7 +7963,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "Projection",
         SingleChild(lhsPD),
-        Seq(details("ns.datetime(23391882379) AS function")),
+        Seq(details("RuntimeConstant(ns.datetime(23391882379)) AS function")),
         Set("a", "function")
       )
     )

@@ -2476,7 +2476,7 @@ class IndexPlanningIntegrationTest
         |RETURN a""".stripMargin
     ).asLogicalPlanBuilderString() should equal(
       """.produceResults("a")
-        |.nodeIndexOperator("a:Label(prop > datetime('2021-01-01'))", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = Map("prop" -> GetValue), unique = false, indexType = IndexType.RANGE, supportPartitionedScan = true)
+        |.nodeIndexOperator("a:Label(prop > RuntimeConstant(datetime('2021-01-01')))", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = Map("prop" -> GetValue), unique = false, indexType = IndexType.RANGE, supportPartitionedScan = true)
         |.build()""".stripMargin
     )
   }

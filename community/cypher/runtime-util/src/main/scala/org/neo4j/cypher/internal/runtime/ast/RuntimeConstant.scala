@@ -39,7 +39,7 @@ case class RuntimeConstant(variable: LogicalVariable, inner: Expression) extends
 
   override def isConstantForQuery: Boolean = true
 
-  override def asCanonicalStringVal: String = STRINGIFIER(inner)
+  override def asCanonicalStringVal: String = s"RuntimeConstant(${STRINGIFIER(inner)})"
 
 }
 
