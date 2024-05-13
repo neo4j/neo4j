@@ -36,16 +36,8 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
   final protected[Transformer] def checkConditions(
     state: Any,
     conditions: Set[StepSequencer.Condition]
-  )(cancellationChecker: CancellationChecker): Boolean = {
-    val messages: Seq[String] = conditions.toSeq.collect {
-      case v: ValidatingCondition => v(state)(cancellationChecker)
-    }.flatten
-    if (messages.nonEmpty) {
-      val prefix = s"Conditions started failing after running these phases: $name\n"
-      throw new IllegalStateException(prefix + messages.mkString(", "))
-    }
-    true
-  }
+  )(cancellationChecker: CancellationChecker): Boolean =
+    Transformer.checkConditions(state, conditions, name)(cancellationChecker)
 }
 
 object Transformer {
@@ -67,6 +59,21 @@ object Transformer {
 
       override def name: String = "print ast"
     }
+
+  def checkConditions(
+    state: Any,
+    conditions: Set[StepSequencer.Condition],
+    name: String
+  )(cancellationChecker: CancellationChecker): Boolean = {
+    val messages: Seq[String] = conditions.toSeq.collect {
+      case v: ValidatingCondition => v(state)(cancellationChecker)
+    }.flatten
+    if (messages.nonEmpty) {
+      val prefix = s"Conditions started failing after running these phases: $name\n"
+      throw new IllegalStateException(prefix + messages.mkString(", "))
+    }
+    true
+  }
 }
 
 class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO])
