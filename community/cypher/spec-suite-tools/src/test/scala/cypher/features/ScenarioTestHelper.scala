@@ -229,7 +229,7 @@ object ScenarioTestHelper {
     val resourceUri: URI = resourceUrl.toURI
 
     val denyList = loadFile(denylistPathString, validate, resourceUri)
-    formatSpecificDenyList.diff(denyList) ::: denyList
+    (formatSpecificDenyList ++ denyList).distinct
   }
 
   /*
