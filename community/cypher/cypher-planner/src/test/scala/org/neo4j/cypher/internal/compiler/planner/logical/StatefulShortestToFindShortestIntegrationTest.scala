@@ -450,7 +450,10 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandInto
+          ExpandInto,
+          false,
+          2,
+          None
         )
         .skip(1)
         .cartesianProduct()
@@ -514,7 +517,10 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
         Set(),
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
-        ExpandInto
+        ExpandInto,
+        false,
+        1,
+        None
       )
       .cartesianProduct()
       .|.nodeByLabelScan("anon_1", "User")
@@ -623,6 +629,170 @@ class StatefulShortestToFindShortestIntegrationTest extends CypherFunSuite with 
       .|.allNodeScan("b")
       .filter("a.prop = 1")
       .allNodeScan("a")
+      .build())(SymmetricalLogicalPlanEquality)
+  }
+
+  test("SHORTEST should be rewritten since inner nodes are not referenced with large NFA") {
+    val query =
+      s"""
+         |MATCH p = ANY SHORTEST (start:User {prop: 1})-[r]->{1,101}(end:User {prop: 1})
+         |RETURN p
+         |""".stripMargin
+    val pathExpression = PathExpression(NodePathStep(
+      v"start",
+      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("end")), NilPathStep()(pos))(pos)
+    )(pos))(pos)
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("p" -> pathExpression))
+      .shortestPath(
+        "(start)-[r*1..101]->(end)",
+        pathName = Some("anon_0"),
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(),
+        sameNodeMode = AllowSameNode
+      )
+      .cartesianProduct()
+      .|.nodeIndexOperator("end:User(prop = 1)")
+      .nodeIndexOperator("start:User(prop = 1)")
+      .build())(SymmetricalLogicalPlanEquality)
+  }
+
+  test("SHORTEST with varLengthPattern should be rewritten since inner nodes are not referenced with large NFA") {
+    val query =
+      s"""
+         |MATCH p = ANY SHORTEST (start:User {prop: 1})-[r*1..101]->(end:User {prop: 1})
+         |RETURN p
+         |""".stripMargin
+    val pathExpression = PathExpression(NodePathStep(
+      v"start",
+      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("end")), NilPathStep()(pos))(pos)
+    )(pos))(pos)
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("p" -> pathExpression))
+      .shortestPath(
+        "(start)-[r*1..101]->(end)",
+        pathName = Some("anon_0"),
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(),
+        sameNodeMode = AllowSameNode
+      )
+      .cartesianProduct()
+      .|.nodeIndexOperator("end:User(prop = 1)")
+      .nodeIndexOperator("start:User(prop = 1)")
+      .build())(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "SHORTEST with varLengthPattern with total bound set should be rewritten since inner nodes are not referenced with large NFA"
+  ) {
+    val query =
+      s"""
+         |MATCH p = ANY SHORTEST (start:User {prop: 1})-[r*101]->(end:User {prop: 1})
+         |RETURN p
+         |""".stripMargin
+    val pathExpression = PathExpression(NodePathStep(
+      v"start",
+      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("end")), NilPathStep()(pos))(pos)
+    )(pos))(pos)
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("p" -> pathExpression))
+      .shortestPath(
+        "(start)-[r*101]->(end)",
+        pathName = Some("anon_0"),
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(),
+        sameNodeMode = AllowSameNode
+      )
+      .cartesianProduct()
+      .|.nodeIndexOperator("end:User(prop = 1)")
+      .nodeIndexOperator("start:User(prop = 1)")
+      .build())(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "SHORTEST with varLengthPattern with lower and upper bound set should be rewritten since inner nodes are not referenced with large NFA"
+  ) {
+    val query =
+      s"""
+         |MATCH p = ANY SHORTEST (start:User {prop: 1})-[r*101..1001]->(end:User {prop: 1})
+         |RETURN p
+         |""".stripMargin
+    val pathExpression = PathExpression(NodePathStep(
+      v"start",
+      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("end")), NilPathStep()(pos))(pos)
+    )(pos))(pos)
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("p" -> pathExpression))
+      .shortestPath(
+        "(start)-[r*101..1001]->(end)",
+        pathName = Some("anon_0"),
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(),
+        sameNodeMode = AllowSameNode
+      )
+      .cartesianProduct()
+      .|.nodeIndexOperator("end:User(prop = 1)")
+      .nodeIndexOperator("start:User(prop = 1)")
+      .build())(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "SHORTEST with varLengthPattern with only lower bound set should be rewritten since inner nodes are not referenced with large NFA"
+  ) {
+    val query =
+      s"""
+         |MATCH p = ANY SHORTEST (start:User {prop: 1})-[r*101..1001]->(end:User {prop: 1})
+         |RETURN p
+         |""".stripMargin
+    val pathExpression = PathExpression(NodePathStep(
+      v"start",
+      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("end")), NilPathStep()(pos))(pos)
+    )(pos))(pos)
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("p" -> pathExpression))
+      .shortestPath(
+        "(start)-[r*101..1001]->(end)",
+        pathName = Some("anon_0"),
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(),
+        sameNodeMode = AllowSameNode
+      )
+      .cartesianProduct()
+      .|.nodeIndexOperator("end:User(prop = 1)")
+      .nodeIndexOperator("start:User(prop = 1)")
+      .build())(SymmetricalLogicalPlanEquality)
+  }
+
+  test(
+    "SHORTEST with varLengthPattern with only upper bound set should be rewritten since inner nodes are not referenced with large NFA"
+  ) {
+    val query =
+      s"""
+         |MATCH p = ANY SHORTEST (start:User {prop: 1})-[r*..101]->(end:User {prop: 1})
+         |RETURN p
+         |""".stripMargin
+    val pathExpression = PathExpression(NodePathStep(
+      v"start",
+      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("end")), NilPathStep()(pos))(pos)
+    )(pos))(pos)
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .projection(Map("p" -> pathExpression))
+      .shortestPath(
+        "(start)-[r*..101]->(end)",
+        pathName = Some("anon_0"),
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(),
+        sameNodeMode = AllowSameNode
+      )
+      .cartesianProduct()
+      .|.nodeIndexOperator("end:User(prop = 1)")
+      .nodeIndexOperator("start:User(prop = 1)")
       .build())(SymmetricalLogicalPlanEquality)
   }
 

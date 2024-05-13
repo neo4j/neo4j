@@ -25,16 +25,51 @@ import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
+import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionTransition
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFA.Transition
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Repetition
 
 import scala.collection.immutable.ArraySeq
 
 object NFA {
+
+  case class PathLength(min: Int, maybeMax: Option[Int]) {
+    def addMin(addition: Int): PathLength = PathLength(min + addition, maybeMax)
+
+    def addMax(maybeAddition: Option[Int]): PathLength =
+      PathLength(min, maybeAddition.flatMap(addition => maybeMax.map(_ + addition)))
+  }
+
+  object PathLength {
+    val none: PathLength = PathLength(0, None)
+
+    def from(nodeConnections: NodeConnections[ExhaustiveNodeConnection]): PathLength =
+      nodeConnections.connections.foldLeft(PathLength(0, Some(0)): PathLength) {
+        case (pathLength, nodeConnection) => nodeConnection match {
+            case PatternRelationship(_, _, _, _, length) =>
+              length match {
+                case SimplePatternLength        => pathLength.addMin(1).addMax(Some(1))
+                case VarPatternLength(min, max) => pathLength.addMin(min).addMax(max)
+              }
+            case QuantifiedPathPattern(_, _, _, _, Repetition(qppMin, qppMax), _, relationshipVariableGroupings) =>
+              val amountOfRelationships = relationshipVariableGroupings.size
+              val max = qppMax.limit.map(_.toInt * amountOfRelationships)
+              val min = qppMin.toInt * amountOfRelationships
+              pathLength.addMin(min).addMax(max)
+          }
+
+      }
+  }
 
   object State {
     private[plans] def expressionStringifier: ExpressionStringifier = ExpressionStringifier(_.asCanonicalStringVal)

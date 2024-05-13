@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.planner.logical.ConvertToNFA
+import org.neo4j.cypher.internal.compiler.planner.logical.LimitRangesOnSelectivePathPattern
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.LogicalPlanWithSSPHeuristic
@@ -56,6 +57,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NFA.PathLength
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -522,10 +524,14 @@ object expandSolverStep {
           case _: RelationshipPathVariable => singletonRelVariables.addOne(mapping)
         }
       }
+    // Get minimum and maximum path lengths from the pattern.
+    val pathLength = PathLength.from(spp.pathPattern)
+    // Limit ranges for quantified patterns in SPP so we don't create NFAs that are too large.
+    val rewrittenSpp = LimitRangesOnSelectivePathPattern(spp)
 
     val (nfa, nonInlinedSelections, syntheticVarLengthSingletons) = {
       ConvertToNFA.convertToNfa(
-        spp,
+        rewrittenSpp,
         fromLeft,
         availableSymbols,
         unsolvedPredicatesOnEndNode,
@@ -545,11 +551,11 @@ object expandSolverStep {
     val rewrittenNfa = nfa.endoRewrite(bottomUp(Rewriter.lift {
       case variable: LogicalVariable => rewriteLookup.getOrElse(variable, variable)
     }))
-    val selector = convertSelectorFromIr(spp.selector)
+    val selector = convertSelectorFromIr(rewrittenSpp.selector)
     val nodeVariableGroupings =
-      spp.allQuantifiedPathPatterns.flatMap(_.nodeVariableGroupings)
+      rewrittenSpp.allQuantifiedPathPatterns.flatMap(_.nodeVariableGroupings)
     val relationshipVariableGroupings =
-      spp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings) ++
+      rewrittenSpp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings) ++
         syntheticVarLengthSingletons.map(entry =>
           VariableGrouping(entry._2, entry._1)(InputPosition.NONE)
         )
@@ -571,12 +577,13 @@ object expandSolverStep {
         singletonNodeVariables.result(),
         singletonRelVariables.result(),
         selector,
-        spp.solvedString,
+        rewrittenSpp.solvedString,
         originalSpp,
         unsolvedPredicatesOnEndNode,
         reverseGroupVariableProjections = !fromLeft,
         matchingHints,
-        context
+        context,
+        pathLength
       ),
       context
     )

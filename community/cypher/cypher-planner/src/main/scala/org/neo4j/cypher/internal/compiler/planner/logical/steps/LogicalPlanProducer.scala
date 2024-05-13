@@ -183,6 +183,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NFA
+import org.neo4j.cypher.internal.logical.plans.NFA.PathLength
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -2467,7 +2468,8 @@ case class LogicalPlanProducer(
     solvedPredicates: Seq[Expression],
     reverseGroupVariableProjections: Boolean,
     hints: Set[UsingStatefulShortestPathHint],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    pathLength: PathLength
   ): StatefulShortestPath = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
       _.addSelectivePathPattern(solvedSpp)
@@ -2497,7 +2499,7 @@ case class LogicalPlanProducer(
       selector,
       solvedExpressionAsString,
       reverseGroupVariableProjections,
-      LengthBounds.none // TODO: calculate length bounds if applicable
+      LengthBounds(pathLength.min, pathLength.maybeMax)
     )
     annotate(plan, solved, ProvidedOrder.Left, context)
   }

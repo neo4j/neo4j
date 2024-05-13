@@ -709,7 +709,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     singletonNodeVariables: Set[(String, String)],
     singletonRelationshipVariables: Set[(String, String)],
     selector: StatefulShortestPath.Selector,
-    nfa: NFA
+    nfa: NFA,
+    minLength: Int,
+    maybeMaxLength: Option[Int]
   )
 
   implicit class SSPLogicalPlanBuilder(builder: LogicalPlanBuilder) {
@@ -727,7 +729,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           parameters.singletonRelationshipVariables,
           StatefulShortestPath.Selector.Shortest(1),
           parameters.nfa,
-          ExpandAll
+          ExpandAll,
+          false,
+          parameters.minLength,
+          parameters.maybeMaxLength
         )
   }
 
@@ -742,7 +747,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       new TestNFABuilder(0, "start")
         .addTransition(0, 1, "(start)-[r]->(end)")
         .setFinalState(1)
-        .build()
+        .build(),
+      1,
+      Some(1)
     )
 
   val `((start)((a{prop: 5})-[r:R]->(b))+(end))` : ShortestPathParameters =
@@ -759,7 +766,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .addTransition(2, 1, "(b) (a WHERE a.prop = 5)")
         .addTransition(2, 3, "(b) (end)")
         .setFinalState(3)
-        .build()
+        .build(),
+      1,
+      None
     )
 
   val `((start)(({prop: 5})-[r:R]->())+(end))` : ShortestPathParameters =
@@ -776,7 +785,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .addTransition(2, 1, "(b) (anon_0 WHERE anon_0.prop = 5)")
         .addTransition(2, 3, "(b) (end)")
         .setFinalState(3)
-        .build()
+        .build(),
+      1,
+      None
     )
 
   val `(start)-[r:R]->(end)` : ShortestPathParameters =
@@ -790,7 +801,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       new TestNFABuilder(0, "start")
         .addTransition(0, 1, "(start)-[r:R]->(end)")
         .setFinalState(1)
-        .build()
+        .build(),
+      1,
+      Some(1)
     )
 
   test("Shortest match produces an eager when there is a relationship overlap") {
@@ -874,7 +887,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(0, 1, "(start)-[r]->(end)")
             .setFinalState(1)
             .build(),
-          ExpandAll
+          ExpandAll,
+          false,
+          1,
+          Some(1)
         )
         .filter("start.prop = 1")
         .apply()
@@ -1001,7 +1017,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(3, 4, "(b) (end)")
             .setFinalState(4)
             .build(),
-          ExpandAll
+          ExpandAll,
+          false,
+          2,
+          None
         )
         .filter("start.prop = 5")
         .allNodeScan("start")
@@ -1039,7 +1058,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(0, 1, "(start)-[r:R]->(end)")
             .setFinalState(1)
             .build(),
-          ExpandAll
+          ExpandAll,
+          false,
+          1,
+          Some(1)
         )
         .filter("start.prop = 1")
         .allNodeScan("start")
@@ -1171,7 +1193,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
             .setFinalState(3)
             .build(),
-          ExpandAll
+          ExpandAll,
+          false,
+          1,
+          None
         )
         .filter("NOT start:Label", "start.prop = 5")
         .allNodeScan("start")
@@ -1231,7 +1256,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
             .setFinalState(3)
             .build(),
-          ExpandAll
+          ExpandAll,
+          false,
+          1,
+          None
         )
         .filter("NOT start:Label", "start.prop = 5")
         .apply()
