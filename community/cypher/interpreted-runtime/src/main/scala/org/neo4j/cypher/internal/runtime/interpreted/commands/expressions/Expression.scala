@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 
 abstract class Expression extends AstNode[Expression] {
 
@@ -72,25 +71,9 @@ case class CachedExpression(key: String, typ: CypherType) extends Expression {
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
-
-  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
-    val aVal = left(row, state)
-    val bVal = right(row, state)
-
-    applyWithValues(aVal, bVal)
-  }
-
-  protected def applyWithValues(aVal: AnyValue, bVal: AnyValue): AnyValue = {
-    (aVal, bVal) match {
-      case (x, y) if (x eq Values.NO_VALUE) || (y eq Values.NO_VALUE) => Values.NO_VALUE
-      case (x, y)                                                     => calc(x, y)
-    }
-  }
-
-  def calc(a: AnyValue, b: AnyValue): AnyValue
-
   override def arguments: Seq[Expression] = Seq(left, right)
 
+  override def children: Seq[AstNode[_]] = Seq(left, right)
 }
 
 trait ExtendedExpression extends Expression {

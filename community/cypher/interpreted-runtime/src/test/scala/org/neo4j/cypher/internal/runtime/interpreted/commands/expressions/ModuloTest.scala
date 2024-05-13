@@ -19,32 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toDoubleValue
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toLongValue
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values.storable.Values.doubleValue
 import org.neo4j.values.storable.Values.longValue
 
 class ModuloTest extends CypherFunSuite {
 
   test("should handle large integers") {
-    // Given
-    val modulo = Modulo(expressionMock, expressionMock)
-
-    modulo.calc(16000000000000001L, 16000) should equal(longValue(1L))
+    CypherMath.modulo(longValue(16000000000000001L), longValue(16000)) should equal(longValue(1L))
   }
 
   test("should handle large integers and floating point values") {
-    // Given
-    val modulo = Modulo(expressionMock, expressionMock)
-
-    modulo.calc(16000000000000001L, 16000d) should equal(doubleValue(0.0))
-  }
-
-  def expressionMock: Expression = {
-    val expression = mock[Expression]
-    when(expression.children).thenReturn(Seq.empty)
-    expression
+    CypherMath.modulo(longValue(16000000000000001L), doubleValue(16000d)) should equal(doubleValue(0.0))
   }
 }

@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherMath
 import org.neo4j.values.AnyValue
 
 case class Pow(a: Expression, b: Expression) extends Arithmetics(a, b) {
-  override def calc(a: AnyValue, b: AnyValue): AnyValue = CypherMath.pow(a, b)
 
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    CypherMath.pow(a(row, state), b(row, state))
+  }
   override def rewrite(f: Expression => Expression): Expression = f(Pow(a.rewrite(f), b.rewrite(f)))
-
-  override def children: Seq[AstNode[_]] = Seq(a, b)
 }

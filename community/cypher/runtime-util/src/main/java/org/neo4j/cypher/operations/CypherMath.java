@@ -51,7 +51,9 @@ public final class CypherMath {
 
     // TODO this is horrible spaghetti code, we should push most of this down to AnyValue
     public static AnyValue add(AnyValue lhs, AnyValue rhs) {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (lhs == NO_VALUE || rhs == NO_VALUE) {
+            return NO_VALUE;
+        }
 
         if (lhs instanceof NumberValue && rhs instanceof NumberValue) {
             try {
@@ -122,9 +124,12 @@ public final class CypherMath {
     }
 
     public static AnyValue subtract(AnyValue lhs, AnyValue rhs) {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (lhs == NO_VALUE || rhs == NO_VALUE) {
+            return NO_VALUE;
+        }
 
         // numbers
+
         if (lhs instanceof NumberValue && rhs instanceof NumberValue) {
             try {
                 return ((NumberValue) lhs).minus((NumberValue) rhs);
@@ -148,7 +153,9 @@ public final class CypherMath {
     }
 
     public static AnyValue multiply(AnyValue lhs, AnyValue rhs) {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (lhs == NO_VALUE || rhs == NO_VALUE) {
+            return NO_VALUE;
+        }
 
         if (lhs instanceof NumberValue && rhs instanceof NumberValue) {
             try {
@@ -172,7 +179,7 @@ public final class CypherMath {
                 String.format("Cannot multiply `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName()));
     }
 
-    public static boolean divideCheckForNull(AnyValue lhs, AnyValue rhs) {
+    private static boolean divideCheckForNull(AnyValue lhs, AnyValue rhs) {
         if (rhs instanceof IntegralValue && rhs.equals(ZERO_INT)) {
             throw new ArithmeticException("/ by zero", null);
         } else {
@@ -181,7 +188,9 @@ public final class CypherMath {
     }
 
     public static AnyValue divide(AnyValue lhs, AnyValue rhs) {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (divideCheckForNull(lhs, rhs)) {
+            return NO_VALUE;
+        }
 
         if (lhs instanceof NumberValue && rhs instanceof NumberValue) {
             return ((NumberValue) lhs).divideBy((NumberValue) rhs);
@@ -197,9 +206,9 @@ public final class CypherMath {
     }
 
     public static AnyValue modulo(AnyValue lhs, AnyValue rhs) {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-
-        if (lhs instanceof NumberValue && rhs instanceof NumberValue) {
+        if (lhs == NO_VALUE || rhs == NO_VALUE) {
+            return NO_VALUE;
+        } else if (lhs instanceof NumberValue && rhs instanceof NumberValue) {
             try {
                 if (lhs instanceof FloatingPointValue || rhs instanceof FloatingPointValue) {
                     return doubleValue(((NumberValue) lhs).doubleValue() % ((NumberValue) rhs).doubleValue());
@@ -215,9 +224,9 @@ public final class CypherMath {
     }
 
     public static AnyValue pow(AnyValue lhs, AnyValue rhs) {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-
-        if (lhs instanceof NumberValue && rhs instanceof NumberValue) {
+        if (lhs == NO_VALUE || rhs == NO_VALUE) {
+            return NO_VALUE;
+        } else if (lhs instanceof NumberValue && rhs instanceof NumberValue) {
             return doubleValue(Math.pow(((NumberValue) lhs).doubleValue(), ((NumberValue) rhs).doubleValue()));
         }
         throw new CypherTypeException(
