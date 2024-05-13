@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.security;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -72,13 +71,9 @@ public class FileURIAccessRule implements AccessRule<URI> {
                     "configuration property '" + GraphDatabaseSettings.allow_file_urls.name() + "' is false");
         }
 
-        try {
-            URI result = fileLikeScheme ? normalizeURI(uri) : uri.normalize();
-            securityAuthorizationHandler.assertLoadAllowed(securityContext, result, null);
-            return result;
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+        URI result = fileLikeScheme ? normalizeURI(uri) : uri.normalize();
+        securityAuthorizationHandler.assertLoadAllowed(securityContext, result, null);
+        return result;
     }
 
     @Override
@@ -105,20 +100,21 @@ public class FileURIAccessRule implements AccessRule<URI> {
         return scheme == null || "file".equalsIgnoreCase(scheme);
     }
 
-    private URI normalizeURI(URI uri) throws URISyntaxException, URLAccessValidationError {
+    private URI normalizeURI(URI uri) throws URLAccessValidationError {
         if (!config.isExplicitlySet(GraphDatabaseSettings.load_csv_file_url_root)) {
             return uri;
         }
 
-        final Path root = config.get(GraphDatabaseSettings.load_csv_file_url_root);
-        // normalize to prevent path traversal exploits like '../'
-        final Path uriPath = Path.of(uri.normalize());
-        final Path rootPath = root.normalize().toAbsolutePath();
-        final Path result = rootPath.resolve(uriPath.getRoot().relativize(uriPath))
+        final Path root = config.get(GraphDatabaseSettings.load_csv_file_url_root)
                 .normalize()
                 .toAbsolutePath();
 
-        if (result.startsWith(rootPath)) {
+        // normalize to prevent path traversal exploits like '../'
+        final var uriPath = Path.of(uri.normalize());
+        final var relativeUriPath = uriPath.getRoot().relativize(uriPath);
+
+        final Path result = root.resolve(relativeUriPath).normalize().toAbsolutePath();
+        if (result.startsWith(root)) {
             return result.toUri();
         }
 

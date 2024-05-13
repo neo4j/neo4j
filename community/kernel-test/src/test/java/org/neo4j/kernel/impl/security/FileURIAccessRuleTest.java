@@ -27,14 +27,11 @@ import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationSta
 import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationStatus.ERR_PATH;
 import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationStatus.ERR_QUERY;
 import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationStatus.ERR_URI;
-import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationStatus.ERR_URL;
 import static org.neo4j.kernel.impl.security.FileURIAccessRuleTest.ValidationStatus.OK;
 
 import java.io.File;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -53,7 +50,13 @@ import org.neo4j.logging.NullLog;
 
 class FileURIAccessRuleTest {
 
-    private final SecurityAuthorizationHandler securityAuthorizationHandler =
+    private static final Pattern FILE_URI_PATTERN = Pattern.compile("file:///[^/].*");
+    private static final Pattern LEADING_SLASHES_PATTERN = Pattern.compile("file:/+%2F.*");
+    private static final Pattern WINDOWS_RESERVED_CHARS_PATTERN =
+            Pattern.compile(".*(<|>|:|\"|\\|\\?|\\*|%3C|%3E|%3A|%22|%5C|%3F|%2A).*");
+    private static final Pattern UNICODE_C0_RANGE_PATTERN = Pattern.compile(".*%[01][0-9A-F].*");
+
+    private static final SecurityAuthorizationHandler AUTHORIZATION_HANDLER =
             new SecurityAuthorizationHandler(new CommunitySecurityLog(NullLog.getInstance()));
 
     @Test
@@ -64,7 +67,7 @@ class FileURIAccessRuleTest {
         assertThatThrownBy(() -> new FileURIAccessRule(config)
                         .validate(
                                 URI.create("file:///dir/file.csv"),
-                                securityAuthorizationHandler,
+                                AUTHORIZATION_HANDLER,
                                 SecurityContext.AUTH_DISABLED))
                 .isInstanceOf(URLAccessValidationError.class)
                 .hasMessageContaining(errorMessage);
@@ -72,7 +75,7 @@ class FileURIAccessRuleTest {
         assertThatThrownBy(() -> new FileURIAccessRule(config)
                         .validate(
                                 URI.create("s3://some-bucket/file.csv"),
-                                securityAuthorizationHandler,
+                                AUTHORIZATION_HANDLER,
                                 SecurityContext.AUTH_DISABLED))
                 .isInstanceOf(URLAccessValidationError.class)
                 .hasMessageContaining(errorMessage);
@@ -83,7 +86,7 @@ class FileURIAccessRuleTest {
         assertThatThrownBy(() -> new FileURIAccessRule(Config.defaults())
                         .getReader(
                                 URI.create("boom://dir/file.csv"),
-                                securityAuthorizationHandler,
+                                AUTHORIZATION_HANDLER,
                                 SecurityContext.AUTH_DISABLED))
                 .isInstanceOf(URLAccessValidationError.class)
                 .hasMessageContaining("Invalid URL 'boom://dir/file.csv': unknown protocol: boom");
@@ -676,7 +679,6 @@ class FileURIAccessRuleTest {
         ERR_AUTH, // Invalid URL because it contains an authority
         ERR_QUERY, // Invalid URL because it contains a query string
         ERR_FRAGMENT, // Invalid URL because it contains a query fragment
-        ERR_URL, // Syntactic error because URL can't be created from String
         ERR_URI, // Syntactic error because URL can't be converted to URI
         ERR_PATH, // Syntactic error because URL can't be converted to Path
         ERR_ARG, // Syntactic error because URL can't be created from String
@@ -702,8 +704,6 @@ class FileURIAccessRuleTest {
             assertThatThrownBy(() -> validate(root, uri)).isInstanceOf(IllegalArgumentException.class);
         } else if (status.equals(ERR_PATH)) {
             assertThatThrownBy(() -> validate(root, uri)).isInstanceOf(InvalidPathException.class);
-        } else if (status.equals(ERR_URL)) {
-            assertThatThrownBy(() -> validate(root, uri)).isInstanceOf(MalformedURLException.class);
         } else if (status.equals(ERR_URI)) {
             // validate should throw either a URISyntaxException,
             // or a RuntimeException whose cause is a URISyntaxException
@@ -721,7 +721,7 @@ class FileURIAccessRuleTest {
     private URI validate(String root, String uri) throws URLAccessValidationError, URISyntaxException {
         final Config config = Config.defaults(GraphDatabaseSettings.load_csv_file_url_root, Path.of(root));
         return new FileURIAccessRule(config)
-                .validate(new URI(uri), securityAuthorizationHandler, SecurityContext.AUTH_DISABLED);
+                .validate(new URI(uri), AUTHORIZATION_HANDLER, SecurityContext.AUTH_DISABLED);
     }
 
     /**
@@ -803,29 +803,50 @@ class FileURIAccessRuleTest {
         public static Arguments transform(ValidationStatus status, String location, String result) {
             if (status != OK) {
                 return Arguments.of(status, location, null);
-            } else if (urlContainsEncodedLeadingSlashes(location)) {
+            } else if (uriContainsEncodedLeadingSlashes(location)) {
                 return Arguments.of(ERR_PATH, location, null);
-            } else if (urlContainsWindowsReservedCharactersInPath(location)) {
+            } else if (uriContainsWindowsReservedCharactersInPath(location)) {
                 return Arguments.of(ERR_PATH, location, null);
-            } else if (urlContainsEncodedUnicodeC0RangeCharacters(location)) {
+            } else if (uriContainsEncodedUnicodeC0RangeCharacters(location)) {
                 return Arguments.of(ERR_PATH, location, null);
             } else {
-                final var resultWithDrive = urlWithDefaultDrive(result);
-                return Arguments.of(status, location, resultWithDrive);
+                if (uriIsS3Based(location)) {
+                    return Arguments.of(status, location, result);
+                }
+
+                var resultUri = uriWithDefaultDrive(result);
+                if (uriContainsEncodedTrailingSlashes(location)) {
+                    // need to strip that trailing slash for the special windows case
+                    return Arguments.of(status, location, resultUri.substring(0, resultUri.length() - 1));
+                } else {
+                    return Arguments.of(status, location, resultUri);
+                }
             }
+        }
+
+        private static boolean uriIsS3Based(String uri) {
+            return uri.startsWith("s3://");
         }
 
         /**
          * Windows doesn't normalise encoded leading slashes in the same way that other operating systems do. It will
          * throw an invalid Path exception instead. This utility method detects such cases.
          *
-         * @param url candidate to check
+         * @param uri candidate to check
          * @return whether url contains encoded leading slashes
          */
-        private static boolean urlContainsEncodedLeadingSlashes(String url) {
-            final var pattern = Pattern.compile("file:/+%2F.*");
-            final var matcher = pattern.matcher(url);
-            return matcher.matches();
+        private static boolean uriContainsEncodedLeadingSlashes(String uri) {
+            return LEADING_SLASHES_PATTERN.matcher(uri).matches();
+        }
+
+        /**
+         * In <code>file:///file.csv%2f</code>, the terminal <code>/</code> gets stripped for compatability with the
+         * Java {@link File} creation
+         * @param uri candidate to check
+         * @return if the terminal <code>/</code> should be removed
+         */
+        private static boolean uriContainsEncodedTrailingSlashes(String uri) {
+            return uri.endsWith("%2F") && FILE_URI_PATTERN.matcher(uri).matches();
         }
 
         /**
@@ -833,15 +854,15 @@ class FileURIAccessRuleTest {
          * <a href="https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions">Find out
          * more here</a>.
          *
-         * @param url candidate to check
+         * @param uri candidate to check
          * @return whether url contains Windows reserved characters
          */
-        private static boolean urlContainsWindowsReservedCharactersInPath(String url) {
+        private static boolean uriContainsWindowsReservedCharactersInPath(String uri) {
             try {
-                final var pattern = Pattern.compile(".*(<|>|:|\"|\\|\\?|\\*|%3C|%3E|%3A|%22|%5C|%3F|%2A).*");
-                final var matcher = pattern.matcher(new URL(url).getPath());
-                return matcher.matches();
-            } catch (MalformedURLException e) {
+                return WINDOWS_RESERVED_CHARS_PATTERN
+                        .matcher(new URI(uri).getRawPath())
+                        .matches();
+            } catch (URISyntaxException e) {
                 throw new RuntimeException(e.getMessage());
             }
         }
@@ -852,26 +873,24 @@ class FileURIAccessRuleTest {
          * more here</a> and <a href="https://en.wikipedia.org/wiki/List_of_Unicode_characters#Control_codes">here</a>.
          * > (banned) Characters whose integer representations are in the range from 1 through 31.
          *
-         * @param url candidate to check
+         * @param uri candidate to check
          * @return whether url contains Unicode C0 range characters
          */
-        private static boolean urlContainsEncodedUnicodeC0RangeCharacters(String url) {
-            final var pattern = Pattern.compile(".*%[01][0-9A-F].*");
-            final var matcher = pattern.matcher(url);
-            return matcher.matches();
+        private static boolean uriContainsEncodedUnicodeC0RangeCharacters(String uri) {
+            return UNICODE_C0_RANGE_PATTERN.matcher(uri).matches();
         }
 
         /**
-         * The Path returned by Windows contains a URL with a drive. This utility method helps can transform a URL
-         * into a URL with Windows' default drive.
+         * The Path returned by Windows contains a URI with a drive. This utility method helps can transform a URI
+         * into a URI with Windows' default drive.
          *
-         * @param url input to transform
+         * @param uri input to transform
          * @return the url containing a Windows drive
          */
-        private static String urlWithDefaultDrive(String url) {
+        private static String uriWithDefaultDrive(String uri) {
             final var root =
                     GraphDatabaseSettings.neo4j_home.defaultValue().toString().substring(0, 2);
-            return "file:/" + root + "/" + url.substring("file:/".length());
+            return "file:///" + root + "/" + uri.substring("file:///".length());
         }
     }
 

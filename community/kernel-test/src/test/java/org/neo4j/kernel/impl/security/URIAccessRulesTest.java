@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Paths;
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -41,22 +40,28 @@ public class URIAccessRulesTest {
     @ParameterizedTest
     @ValueSource(strings = {"file", "FILE", "FiLe"})
     public void shouldValidateAndOpenFileUrls(String fileScheme) throws Exception {
-        File file = File.createTempFile("test", "csv");
+        final var file = File.createTempFile("test", "csv");
         file.deleteOnExit();
 
-        URIAccessRules rules = new URIAccessRules(new CommunitySecurityLog(NullLog.getInstance()), Config.defaults());
+        final var rules = new URIAccessRules(new CommunitySecurityLog(NullLog.getInstance()), Config.defaults());
 
-        // Windows needs triple-slashes...
-        String slashes = SystemUtils.IS_OS_WINDOWS ? "///" : "//";
-
+        final var fileUri = file.toURI();
         rules.validateAndOpen(
-                SecurityContext.AUTH_DISABLED,
-                new URI(String.format("%s:%s%s", fileScheme, slashes, file.getAbsolutePath())));
+                        SecurityContext.AUTH_DISABLED,
+                        new URI(
+                                fileScheme,
+                                fileUri.getRawAuthority(),
+                                fileUri.getRawPath(),
+                                fileUri.getRawQuery(),
+                                fileUri.getRawFragment()))
+                .close();
     }
 
     @Test
     public void shouldNotReadUnknownScheme() {
-        URIAccessRules rules = new URIAccessRules(new CommunitySecurityLog(NullLog.getInstance()), Config.defaults());
+        final var rules = new URIAccessRules(new CommunitySecurityLog(NullLog.getInstance()), Config.defaults());
+
+        //noinspection resource
         assertThrows(
                 URLAccessValidationError.class,
                 () -> rules.validateAndOpen(
@@ -66,20 +71,16 @@ public class URIAccessRulesTest {
 
     @Test
     public void shouldNotAllowReadOutsideOfImportDir() throws Exception {
-        File file = File.createTempFile("test", "csv");
+        final var file = File.createTempFile("test", "csv");
         file.deleteOnExit();
 
-        URIAccessRules rules = new URIAccessRules(
+        final var rules = new URIAccessRules(
                 new CommunitySecurityLog(NullLog.getInstance()),
                 Config.defaults(GraphDatabaseSettings.load_csv_file_url_root, Paths.get("/import")));
 
-        // Windows needs triple-slashes...
-        String slashes = SystemUtils.IS_OS_WINDOWS ? "///" : "//";
-
+        //noinspection resource
         assertThrows(
                 LoadExternalResourceException.class,
-                () -> rules.validateAndOpen(
-                        SecurityContext.AUTH_DISABLED,
-                        new URI(String.format("file:%s%s", slashes, file.getAbsolutePath()))));
+                () -> rules.validateAndOpen(SecurityContext.AUTH_DISABLED, file.toURI()));
     }
 }
