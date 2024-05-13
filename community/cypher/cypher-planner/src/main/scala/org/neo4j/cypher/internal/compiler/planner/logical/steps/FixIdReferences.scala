@@ -32,6 +32,8 @@ import scala.collection.mutable
 
 /**
  * Fix ID references in a plan, after some rewriters have changed plan IDs.
+ *
+ * For now, the only place where we reference plans by ID that needs to be fixed is in EagernessReason.Conflict.
  */
 class FixIdReferences(cancellationChecker: CancellationChecker) {
 
