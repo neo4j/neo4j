@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.cst.factory.neo4j
+package org.neo4j.cypher.internal.parser.lexer
 
 import org.antlr.v4.runtime.CharStream
 import org.antlr.v4.runtime.CommonToken
@@ -28,10 +28,7 @@ import org.antlr.v4.runtime.misc.Pair
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.ParseTreeVisitor
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
 import org.neo4j.cypher.internal.util.InputPosition
-
-import java.util
 
 /**
  * Implementation of [[Token]] that provides [[position()]] to retrieve correct [[InputPosition]]s.
@@ -39,16 +36,16 @@ import java.util
 trait CypherToken extends Token {
 
   /**
-   * See [[CypherAstLexer#inputPosition]] for caveats!
+   * See [[CypherQueryAccess#inputPosition]] for caveats!
    */
-  def position(): InputPosition = cypherLexer.inputPosition(getStartIndex, getLine, getCharPositionInLine)
+  def position(): InputPosition = queryAccess.inputPosition(getStartIndex, getLine, getCharPositionInLine)
 
   /**
-   * See [[CypherAstLexer#inputOffset]] for caveats!
+   * See [[CypherQueryAccess#inputOffset]] for caveats!
    */
-  def inputOffset(parserOffset: Int): Int = cypherLexer.inputOffset(parserOffset)
+  def inputOffset(parserOffset: Int): Int = queryAccess.inputOffset(parserOffset)
 
-  @inline private def cypherLexer: CypherAstLexer = getTokenSource.asInstanceOf[CypherAstLexer]
+  @inline private def queryAccess: CypherQueryAccess = getTokenSource.asInstanceOf[CypherQueryAccess]
 }
 
 object CypherToken {
@@ -106,10 +103,6 @@ private class FullCypherToken(
   start: Int,
   stop: Int
 ) extends CommonToken(src, typ, ch, start, stop) with CypherToken
-
-case class OffsetTable(offsets: Array[Int], start: Int) {
-  override def toString: String = s"OffsetTable(${util.Arrays.toString(offsets)}, $start)"
-}
 
 object CypherTokenFactory extends TokenFactory[CypherToken] {
   private type Src = Pair[TokenSource, CharStream]

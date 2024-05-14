@@ -55,6 +55,11 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>cypher-antlr-ast-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-macros</artifactId>
             <version>${project.version}</version>
         </dependency>

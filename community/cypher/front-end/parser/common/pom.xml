@@ -26,6 +26,7 @@
     <modules>
         <module>parser-common</module>
         <module>antlr-common</module>
+        <module>antlr-ast-common</module>
         <module>antlr-parser-listener-maven-plugin</module>
         <module>antlr-completion-license</module>
     </modules>

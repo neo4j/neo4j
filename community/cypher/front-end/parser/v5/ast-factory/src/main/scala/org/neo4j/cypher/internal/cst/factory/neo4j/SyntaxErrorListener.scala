@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.cst.factory.neo4j
 import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer
+import org.neo4j.cypher.internal.parser.lexer.CypherToken
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 

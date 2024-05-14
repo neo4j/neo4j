@@ -32,11 +32,10 @@ import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
-import org.neo4j.cypher.internal.cst.factory.neo4j.ThinCypherToken
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
-import org.neo4j.cypher.internal.parser.InvalidUnicodeLiteral
+import org.neo4j.cypher.internal.parser.lexer.UnicodeEscapeReplacementReader
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -133,8 +132,8 @@ class CypherAstParser private (
 
   override def createTerminalNode(parent: ParserRuleContext, t: Token): TerminalNode = {
     t match {
-      case ct: ThinCypherToken => ct
-      case _                   => super.createTerminalNode(parent, t)
+      case ct: TerminalNode => ct
+      case _                => super.createTerminalNode(parent, t)
     }
   }
 
@@ -258,8 +257,8 @@ object CypherAstParser {
       lexer.addErrorListener(listener)
       new CommonTokenStream(lexer)
     } catch {
-      case e: InvalidUnicodeLiteral =>
-        throw exceptionFactory.syntaxException(e.getMessage, InputPosition(e.offset, e.line, e.column))
+      case e: UnicodeEscapeReplacementReader.InvalidUnicodeLiteral =>
+        throw exceptionFactory.syntaxException(e.getMessage, InputPosition(e.offset, e.line, e.col))
     }
 }
 
