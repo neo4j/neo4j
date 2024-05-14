@@ -39,28 +39,44 @@ public class BackupZstdFormatV1 implements BackupCompressionFormat {
     public OutputStream compress(OutputStream stream) throws IOException {
         stream.write(MAGIC_HEADER.getBytes());
         OutputStream compressionStream = StandardCompressionFormat.ZSTD.compress(stream);
-        metadata.writeToStream(compressionStream);
-        return compressionStream;
+        try {
+            metadata.writeToStream(compressionStream);
+            return compressionStream;
+        } catch (IOException e) {
+            compressionStream.close();
+            throw e;
+        }
     }
 
     @Override
     public InputStream decompress(InputStream stream) throws IOException {
         InputStream decompress = StandardCompressionFormat.ZSTD.decompress(stream);
-        readMetadataFromZstdStream(decompress);
-        return decompress;
+        try {
+            readMetadataFromZstdStream(decompress);
+            return decompress;
+        } catch (IOException e) {
+            decompress.close();
+            throw e;
+        }
     }
 
     @Override
     public StreamWithDescription decompressAndDescribe(InputStream stream) throws IOException {
         InputStream decompress = StandardCompressionFormat.ZSTD.decompress(stream);
-        var description = readMetadataFromZstdStream(decompress).toBackupDescription();
-        return new StreamWithDescription(decompress, description);
+        try {
+            var description = readMetadataFromZstdStream(decompress).toBackupDescription();
+            return new StreamWithDescription(decompress, description);
+        } catch (IOException e) {
+            decompress.close();
+            throw e;
+        }
     }
 
     @Override
     public BackupDescription readMetadata(InputStream inputStream) throws IOException {
-        return readMetadataFromZstdStream(StandardCompressionFormat.ZSTD.decompress(inputStream))
-                .toBackupDescription();
+        try (var decompress = StandardCompressionFormat.ZSTD.decompress(inputStream)) {
+            return readMetadataFromZstdStream(decompress).toBackupDescription();
+        }
     }
 
     private static BackupMetadataV1 readMetadataFromZstdStream(InputStream inputStream) throws IOException {
