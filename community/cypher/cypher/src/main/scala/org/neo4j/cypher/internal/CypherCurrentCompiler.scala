@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.runtime.WRITE
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -78,6 +79,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.query.CompilerInfo
+import org.neo4j.kernel.api.query.DeprecationNotificationsProvider
 import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.api.query.RelationshipTypeIndexUsage
@@ -525,6 +527,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     override def planDescriptionSupplier(): Supplier[ExecutionPlanDescription] = {
       val builder = planDescriptionBuilder
       () => builder.explain()
+    }
+
+    override def deprecationNotificationsProvider(queryOptionsOffset: InputPosition)
+      : DeprecationNotificationsProvider = {
+      CypherDeprecationNotificationsProvider(
+        queryOptionsOffset = queryOptionsOffset,
+        notifications = executionPlan.notifications ++ planningNotifications
+      )
     }
   }
 

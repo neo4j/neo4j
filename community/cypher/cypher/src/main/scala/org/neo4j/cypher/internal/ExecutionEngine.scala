@@ -246,7 +246,8 @@ abstract class ExecutionEngine(
       context.executingQuery().onObfuscatorReady(executableQuery.queryObfuscator, query.options.offset.offset)
       context.executingQuery().onCompilationCompleted(
         executableQuery.compilerInfo,
-        executableQuery.planDescriptionSupplier()
+        executableQuery.planDescriptionSupplier(),
+        executableQuery.deprecationNotificationsProvider(query.options.offset)
       )
     }
 

@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.kernel.api.query.CompilerInfo
+import org.neo4j.kernel.api.query.DeprecationNotificationsProvider
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.api.query.RelationshipTypeIndexUsage
 import org.neo4j.kernel.api.query.SchemaIndexUsage
@@ -74,6 +76,11 @@ trait ExecutableQuery extends CacheabilityInfo {
    * Plan desc.
    */
   def planDescriptionSupplier(): Supplier[ExecutionPlanDescription]
+
+  /**
+   * Deprecation notifications for this query.
+   */
+  def deprecationNotificationsProvider(queryOptionsOffset: InputPosition): DeprecationNotificationsProvider
 
   /**
    * Meta-data about the compiled used for this query.

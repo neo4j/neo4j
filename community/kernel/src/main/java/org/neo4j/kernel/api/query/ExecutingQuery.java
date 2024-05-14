@@ -79,6 +79,7 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
     private String obfuscatedQueryText;
     private MapValue obfuscatedQueryParameters;
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
+    private DeprecationNotificationsProvider deprecationNotificationsProvider;
     private volatile ExecutingQueryStatus status = SimpleState.parsing();
     private volatile ExecutingQuery previousQuery;
 
@@ -297,12 +298,15 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
     }
 
     public void onCompilationCompleted(
-            CompilerInfo compilerInfo, Supplier<ExecutionPlanDescription> planDescriptionSupplier) {
+            CompilerInfo compilerInfo,
+            Supplier<ExecutionPlanDescription> planDescriptionSupplier,
+            DeprecationNotificationsProvider deprecationNotificationsProvider) {
         assertExpectedStatus(SimpleState.planning());
 
         this.compilerInfo = compilerInfo;
         this.compilationCompletedNanos = clock.nanos();
         this.planDescriptionSupplier = planDescriptionSupplier;
+        this.deprecationNotificationsProvider = deprecationNotificationsProvider;
         this.status = SimpleState.planned(); // write barrier - must be last
     }
 
@@ -319,6 +323,7 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
         this.compilerInfo = null;
         this.compilationCompletedNanos = 0;
         this.planDescriptionSupplier = null;
+        this.deprecationNotificationsProvider = null;
         this.memoryTracker = HeapHighWaterMarkTracker.NONE;
         this.obfuscatedQueryParameters = null;
         this.obfuscatedQueryText = null;
@@ -461,6 +466,10 @@ public class ExecutingQuery implements QueryTransactionStatisticsAggregator {
 
     Supplier<ExecutionPlanDescription> planDescriptionSupplier() {
         return planDescriptionSupplier;
+    }
+
+    public DeprecationNotificationsProvider getDeprecationNotificationsProvider() {
+        return deprecationNotificationsProvider;
     }
 
     public Optional<NamedDatabaseId> databaseId() {

@@ -32,7 +32,7 @@ import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public final class NotificationImplementation implements Notification {
-    private final Status.Code statusCode;
+    private final Status neo4jStatus;
     private final GqlStatus gqlStatus;
     private final DiagnosticRecord diagnosticRecord;
     private final String title;
@@ -53,12 +53,13 @@ public final class NotificationImplementation implements Notification {
             String subCondition,
             Condition condition) {
 
-        this.statusCode = notificationCodeWithDescription.getStatus().code();
+        this.neo4jStatus = notificationCodeWithDescription.getStatus();
 
         String classification;
         this.subCondition = subCondition;
         this.condition = condition;
 
+        var statusCode = neo4jStatus.code();
         if (statusCode instanceof Status.NotificationCode) {
             this.severity = ((Status.NotificationCode) statusCode).getSeverity();
             classification = ((Status.NotificationCode) statusCode).getNotificationCategory();
@@ -147,9 +148,13 @@ public final class NotificationImplementation implements Notification {
         }
     }
 
+    public Status getNeo4jStatus() {
+        return neo4jStatus;
+    }
+
     @Override
     public String getCode() {
-        return statusCode.serialize();
+        return neo4jStatus.code().serialize();
     }
 
     @Override
