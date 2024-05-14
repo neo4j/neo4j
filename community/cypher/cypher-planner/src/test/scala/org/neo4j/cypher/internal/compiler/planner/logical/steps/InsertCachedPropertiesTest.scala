@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -2898,7 +2897,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     when(plannerContext.logicalPlanIdGen).thenReturn(idGen)
     when(plannerContext.tracer).thenReturn(NO_TRACING)
     when(plannerContext.cancellationChecker).thenReturn(CancellationChecker.NeverCancelled)
-    when(plannerContext.config).thenReturn(config)
+    when(plannerContext.planContext).thenReturn(planContext)
+    when(plannerContext.planContext.databaseMode).thenReturn(databaseMode)
     when(plannerContext.planContext).thenReturn(planContext)
     when(plannerContext.planContext.databaseMode).thenReturn(databaseMode)
 
