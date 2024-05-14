@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.config.PropertyCachingMode
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -72,7 +71,10 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
@@ -2877,7 +2879,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities,
     idGen: IdGen = new SequentialIdGen(),
     pushdownPropertyReads: Boolean = false,
-    cachePropertiesForEntities: Boolean = true
+    cachePropertiesForEntities: Boolean = true,
+    databaseMode: DatabaseMode = DatabaseMode.SINGLE
   ): (LogicalPlan, SemanticTable) = {
     val state = LogicalPlanState(InitialState("", IDPPlannerName, new AnonymousVariableNameGenerator))
       .withSemanticTable(initialTable)
@@ -2887,14 +2890,17 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val icp = new InsertCachedProperties(pushdownPropertyReads = pushdownPropertyReads)
 
     val config = mock[CypherPlannerConfiguration](RETURNS_DEEP_STUBS)
-    when(config.propertyCachingMode()).thenReturn(PropertyCachingMode.CacheProperties)
     when(config.cachePropertiesForEntities()).thenReturn(cachePropertiesForEntities)
+
+    val planContext = mock[PlanContext]
 
     val plannerContext = mock[PlannerContext]
     when(plannerContext.logicalPlanIdGen).thenReturn(idGen)
     when(plannerContext.tracer).thenReturn(NO_TRACING)
     when(plannerContext.cancellationChecker).thenReturn(CancellationChecker.NeverCancelled)
     when(plannerContext.config).thenReturn(config)
+    when(plannerContext.planContext).thenReturn(planContext)
+    when(plannerContext.planContext.databaseMode).thenReturn(databaseMode)
 
     val resultState = icp.transform(state, plannerContext)
     (resultState.logicalPlan, resultState.semanticTable())

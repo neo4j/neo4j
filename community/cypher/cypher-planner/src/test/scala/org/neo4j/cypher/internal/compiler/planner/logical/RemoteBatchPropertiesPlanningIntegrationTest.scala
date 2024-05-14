@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
@@ -27,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -36,10 +36,7 @@ class RemoteBatchPropertiesPlanningIntegrationTest extends CypherFunSuite with L
   // Graph counts based on a subset of LDBC SF 1
   final private val planner =
     plannerBuilder()
-      .withSetting(
-        GraphDatabaseInternalSettings.cypher_property_caching_mode,
-        GraphDatabaseInternalSettings.PropertyCachingMode.REMOTE_BATCH_PROPERTIES
-      )
+      .setDatabaseMode(DatabaseMode.SHARDED)
       .setAllNodesCardinality(3181725)
       .setLabelCardinality("Person", 9892)
       .setLabelCardinality("Message", 3055774)

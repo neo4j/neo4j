@@ -91,6 +91,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -489,6 +491,8 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
 
       override def txStateHasChanges(): Boolean = false
+
+      override def databaseMode: DatabaseMode = DatabaseMode.SINGLE
     }
 
     def getLogicalPlanFor(

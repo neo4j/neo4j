@@ -44,6 +44,8 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACI
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
@@ -256,6 +258,8 @@ class CypherPlannerTest extends CypherFunSuite {
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
 
       override def procedureSignatureVersion: Long = -1
+
+      override def databaseMode: DatabaseMode = DatabaseMode.SINGLE
     }
 
     CypherPlanner.customPlanContextCreator = Some((_, _, _, _) => planContext)

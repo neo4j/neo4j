@@ -102,6 +102,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
 import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable
@@ -142,7 +143,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
     val logicalPlan =
       // always push down property reads in a sharded properties database
-      if (pushdownPropertyReads || context.config.propertyCachingMode().isRemoteBatchProperties) {
+      if (pushdownPropertyReads || context.planContext.databaseMode == DatabaseMode.SHARDED) {
         val effectiveCardinalities = from.planningAttributes.effectiveCardinalities
         val attributes = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
         PushdownPropertyReads.pushdown(
@@ -150,7 +151,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
           effectiveCardinalities,
           attributes,
           from.semanticTable(),
-          context.config.propertyCachingMode(),
+          context.planContext.databaseMode,
           context.cancellationChecker
         )
       } else {

@@ -39,6 +39,8 @@ import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.frontend.phases.TryRewriteProcedureCalls
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -215,4 +217,6 @@ class TestSignatureResolvingPlanContext(
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = funcSignatureLookup(name)
 
   override def procedureSignatureVersion: Long = -1
+
+  override def databaseMode: DatabaseMode = DatabaseMode.SINGLE
 }

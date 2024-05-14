@@ -101,6 +101,8 @@ import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.parser.AstParserFactory
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
@@ -233,6 +235,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
 
       override def txStateHasChanges(): Boolean = false
+
+      override def databaseMode: DatabaseMode = DatabaseMode.SINGLE
     }
   }
 

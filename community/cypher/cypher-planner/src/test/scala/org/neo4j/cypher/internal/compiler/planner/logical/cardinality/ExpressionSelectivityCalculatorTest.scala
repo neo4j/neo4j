@@ -57,6 +57,8 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType.Node
@@ -2337,6 +2339,8 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       InstrumentedGraphStatistics(stats, new MutableGraphStatisticsSnapshot())
 
     override def txStateHasChanges(): Boolean = false
+
+    override def databaseMode: DatabaseMode = DatabaseMode.SINGLE
   }
 
   private def getNameId(descriptor: IndexDescriptor): Int = descriptor.entityType match {

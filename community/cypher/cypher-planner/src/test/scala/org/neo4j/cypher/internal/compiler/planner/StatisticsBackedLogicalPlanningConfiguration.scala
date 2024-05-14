@@ -66,6 +66,8 @@ import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
 import org.neo4j.cypher.internal.options.OptionReader
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode
+import org.neo4j.cypher.internal.planner.spi.DatabaseMode.DatabaseMode
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -289,7 +291,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
   propertyTypeConstraints: Seq[PropertyTypeDefinition] = Seq.empty,
   procedures: Set[ProcedureSignature] = Set.empty,
   functions: Set[UserFunctionSignature] = Set.empty,
-  settings: Map[Setting[_], AnyRef] = Map.empty
+  settings: Map[Setting[_], AnyRef] = Map.empty,
+  dbMode: DatabaseMode = DatabaseMode.SINGLE
 ) {
 
   def withSetting[T <: AnyRef](setting: Setting[T], value: T): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -307,6 +310,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
   def addProperty(prop: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(tokens = tokens.addProperty(prop))
   }
+
+  def setDatabaseMode(databaseMode: DatabaseMode): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    this.copy(dbMode = databaseMode)
 
   def setAllNodesCardinality(c: Double): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(cardinalities = cardinalities.copy(allNodes = Some(c)))
@@ -1106,6 +1112,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
         internalGraphStatistics
       }
     val planContext: PlanContext = new NotImplementedPlanContext() {
+
+      override def databaseMode: DatabaseMode = dbMode
+
       override def statistics: InstrumentedGraphStatistics =
         InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())
 

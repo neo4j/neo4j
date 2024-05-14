@@ -172,9 +172,6 @@ class CypherConfiguration private (val config: Config) {
   val lpEagerFallbackEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.cypher_lp_eager_analysis_fallback_enabled)
 
-  val propertyCachingMode: PropertyCachingMode =
-    PropertyCachingMode.fromSetting(config.get(GraphDatabaseInternalSettings.cypher_property_caching_mode))
-
   val statefulShortestPlanningRewriteQuantifiersAbove: Int =
     config.get(GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above)
 
