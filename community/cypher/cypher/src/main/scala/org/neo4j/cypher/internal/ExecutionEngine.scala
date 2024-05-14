@@ -211,7 +211,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
     if (isOutermostQuery) {
       context.executingQuery().onObfuscatorReady(executableQuery.queryObfuscator)
-      context.executingQuery().onCompilationCompleted(executableQuery.compilerInfo, executableQuery.planDescriptionSupplier)
+      context.executingQuery().onCompilationCompleted(
+        executableQuery.compilerInfo,
+        executableQuery.planDescriptionSupplier(),
+        executableQuery.deprecationNotificationsProvider(query.options.offset))
     }
 
     executableQuery.execute(context, isOutermostQuery, query.options, combinedParams, prePopulate, input, queryMonitor, subscriber)

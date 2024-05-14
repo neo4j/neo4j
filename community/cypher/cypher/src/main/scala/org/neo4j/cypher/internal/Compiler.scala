@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.Neo4jException
-import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
@@ -43,7 +43,7 @@ trait Compiler {
   @throws[Neo4jException]
   def compile(query: InputQuery,
               tracer: CompilationPhaseTracer,
-              preParsingNotifications: Set[Notification],
+              preParsingNotifications: Set[InternalNotification],
               transactionalContext: TransactionalContext,
               params: MapValue
              ): ExecutableQuery

@@ -110,6 +110,11 @@ public class QuerySnapshot
         return query.planDescriptionSupplier();
     }
 
+    public DeprecationNotificationsProvider deprecationNotificationsProvider()
+    {
+        return query.getDeprecationNotificationsProvider();
+    }
+
     public String executingUsername()
     {
         return query.executingUsername();

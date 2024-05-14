@@ -355,6 +355,11 @@ public enum NotificationCode
             }
         }
 
+        public Status getStatus()
+        {
+            return status;
+        }
+
         @Override
         public String getCode()
         {

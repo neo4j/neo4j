@@ -74,8 +74,6 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
 
     val logger = new RecordingNotificationLogger(Some(query.options.offset))
 
-    def notificationsSoFar(): Set[Notification] = logger.notifications.map(asKernelNotification(None))
-
     // Do the compilation
     val compiler = compilerLibrary.selectCompiler(
       query.options.queryOptions.version,
@@ -83,6 +81,6 @@ class MasterCompiler(compilerLibrary: CompilerLibrary) {
       query.options.queryOptions.runtime
     )
 
-    compiler.compile(query, tracer, notificationsSoFar(), transactionalContext, params)
+    compiler.compile(query, tracer, logger.notifications, transactionalContext, params)
   }
 }

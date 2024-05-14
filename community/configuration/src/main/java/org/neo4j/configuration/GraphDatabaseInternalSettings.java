@@ -492,6 +492,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.logs.query.heap_dump_enabled", BOOL, false ).dynamic().build();
 
     @Internal
+    @Description( "Enables or disables logging of deprecation notifications to the structured query log." )
+    public static final Setting<Boolean> log_queries_deprecation_notifications =
+            newBuilder( "internal.dbms.logs.query.deprecation_notifications.enabled", BOOL, false ).dynamic().build();
+
+    @Internal
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
             "flushing data into underlying storage." )
     public static final Setting<Integer> batch_inserter_batch_size =
