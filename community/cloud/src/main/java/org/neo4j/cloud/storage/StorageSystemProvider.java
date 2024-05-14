@@ -87,7 +87,7 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
      * @return the channel for performing read/write operations
      * @throws IOException if unable to create the channel
      */
-    public abstract SeekableByteChannel newByteChannel(StoragePath path, Set<? extends OpenOption> options)
+    protected abstract SeekableByteChannel openAsByteChannel(StoragePath path, Set<? extends OpenOption> options)
             throws IOException;
 
     /**
@@ -104,7 +104,7 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
      * @return the stream for performing read operations
      * @throws IOException if unable to create the channel
      */
-    public abstract InputStream openAsInputStream(StoragePath fileName) throws IOException;
+    protected abstract InputStream openAsInputStream(StoragePath fileName) throws IOException;
 
     /**
      * Creates a storage system for the remote resource represented by a {@link URI}
@@ -127,6 +127,16 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
      */
     public StorageSystem getStorageSystem(URI uri) {
         return internalCreateFileSystem(resolve(checkScheme(uri)).systemUri);
+    }
+
+    /**
+     * @param path the storage path to access
+     * @param options the options to use when opening the channel for read/write operations
+     * @return the channel for performing read/write operations
+     * @throws IOException if unable to create the channel
+     */
+    public SeekableByteChannel newByteChannel(StoragePath path, Set<? extends OpenOption> options) throws IOException {
+        return openAsByteChannel(ensureNotDirectory(path), options);
     }
 
     @Override
@@ -152,7 +162,7 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
 
     @Override
     public OutputStream newOutputStream(Path path, OpenOption... options) throws IOException {
-        return openAsOutputStream(ensureCorrectPath(path), normalizeForWrite(options));
+        return openAsOutputStream(ensureNotDirectory(path), normalizeForWrite(options));
     }
 
     @Override
@@ -194,13 +204,13 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
             throws IOException {
         final var normalized = options.contains(WRITE) ? normalizeForWrite(options) : normalizeForRead(options);
-        return newByteChannel(ensureCorrectPath(path), normalized);
+        return newByteChannel(ensureNotDirectory(path), normalized);
     }
 
     @Override
     public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
         Preconditions.checkArgument(!normalizeForRead(options).contains(WRITE), "Opening for WRITE is not allowed");
-        return openAsInputStream(ensureCorrectPath(path));
+        return openAsInputStream(ensureNotDirectory(path));
     }
 
     @Override
@@ -213,12 +223,27 @@ public abstract class StorageSystemProvider extends FileSystemProvider implement
     }
 
     protected StoragePath ensureCorrectPath(Path path) {
-        requireNonNull(path, "Path must not be null");
         Preconditions.checkArgument(path instanceof StoragePath, "Path provided must be a storage path");
-        final var storagePath = (StoragePath) path;
+        return ensureCorrectPath((StoragePath) path);
+    }
+
+    protected StoragePath ensureCorrectPath(StoragePath storagePath) {
+        requireNonNull(storagePath, "Path must not be null");
         Preconditions.checkArgument(
                 storagePath.scheme().equals(getScheme()),
                 "Path provided must have the correct scheme for this storage system");
+        return storagePath;
+    }
+
+    protected StoragePath ensureNotDirectory(Path path) throws IOException {
+        return ensureNotDirectory(ensureCorrectPath(path));
+    }
+
+    protected StoragePath ensureNotDirectory(StoragePath path) throws IOException {
+        final var storagePath = ensureCorrectPath(path);
+        if (storagePath.isDirectory()) {
+            throw new IOException("Path provided is a directory but must be a regular file: " + storagePath);
+        }
         return storagePath;
     }
 

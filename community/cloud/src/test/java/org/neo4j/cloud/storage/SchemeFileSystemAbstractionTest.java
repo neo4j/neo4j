@@ -226,7 +226,7 @@ class SchemeFileSystemAbstractionTest {
     @Test
     void openAsInputStream() throws IOException {
         when(fs.openAsInputStream(eq(FS_PATH))).thenReturn(mock(InputStream.class));
-        when(systemProvider.openAsInputStream(eq(schemePath))).thenReturn(mock(InputStream.class));
+        when(systemProvider.newInputStream(eq(schemePath))).thenReturn(mock(InputStream.class));
 
         assertThat(schemeFs.openAsInputStream(FS_PATH)).isNotNull();
         assertThat(schemeFs.openAsInputStream(schemePath)).isNotNull();

@@ -187,7 +187,7 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     public InputStream openAsInputStream(Path fileName) throws IOException {
         if (fileName instanceof StoragePath path) {
             //noinspection resource
-            return provider(path).openAsInputStream(path);
+            return provider(path).newInputStream(path);
         }
 
         return fs.openAsInputStream(fileName);
@@ -196,9 +196,9 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
     @Override
     public void truncate(Path file, long size) throws IOException {
         if (file instanceof StoragePath path) {
-            // must go this route as the default Files impl requires a FileChannel which we don't support
             //noinspection resource
             try (var channel = provider(path).newByteChannel(path, WRITE_OPTIONS)) {
+                // must go this route as the default Files impl requires a FileChannel which we don't support
                 channel.truncate(size);
             }
         } else {

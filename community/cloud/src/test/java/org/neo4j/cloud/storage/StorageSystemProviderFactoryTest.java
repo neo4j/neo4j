@@ -105,7 +105,7 @@ class StorageSystemProviderFactoryTest {
         }
 
         @Override
-        public SeekableByteChannel newByteChannel(StoragePath path, Set<? extends OpenOption> options) {
+        protected SeekableByteChannel openAsByteChannel(StoragePath path, Set<? extends OpenOption> options) {
             throw new UnsupportedOperationException();
         }
 
@@ -115,7 +115,7 @@ class StorageSystemProviderFactoryTest {
         }
 
         @Override
-        public InputStream openAsInputStream(StoragePath fileName) {
+        protected InputStream openAsInputStream(StoragePath fileName) {
             throw new UnsupportedOperationException();
         }
 

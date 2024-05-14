@@ -56,7 +56,7 @@ public abstract class StorageSystem extends FileSystem {
      */
     protected abstract String uriPrefix();
 
-    protected abstract void internalClose();
+    protected abstract void internalClose() throws IOException;
 
     /**
      *

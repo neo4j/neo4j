@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cloud.storage;
+package org.neo4j.cloud.storage.io;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Set;
+import org.neo4j.cloud.storage.StorageSystem;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.StoreFileChannel;
 

@@ -32,9 +32,12 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.eclipse.collections.api.factory.Sets;
 
@@ -84,6 +87,44 @@ public interface StorageUtils {
      */
     static Set<OpenOption> normalizeForWrite(Set<? extends OpenOption> options) throws IOException {
         return normalize(WRITE, options);
+    }
+
+    /**
+     * @param ex the error
+     * @return the underlying error as an {@link IOException} if it's cause is an IO problem
+     */
+    static Exception toIOException(Exception ex) {
+        if (ex instanceof IOException ioEx) {
+            return ioEx;
+        } else if (ex instanceof UncheckedIOException ioEx) {
+            return ioEx.getCause();
+        } else if (ex instanceof ExecutionException eEx && eEx.getCause() instanceof Exception) {
+            return toIOException((Exception) eEx.getCause());
+        } else {
+            return ex;
+        }
+    }
+
+    /**
+     * @param ex the error
+     * @param ioMessage the message to use when wrapping the original error
+     * @return the error as an {@link IOException}
+     */
+    static IOException toIOException(Exception ex, Supplier<String> ioMessage) {
+        if (ex instanceof IOException ioEx) {
+            return ioEx;
+        } else if (ex instanceof UncheckedIOException ioEx) {
+            return ioEx.getCause();
+        } else if (ex instanceof ExecutionException eEx && eEx.getCause() instanceof Exception) {
+            final var exception = toIOException((Exception) eEx.getCause());
+            if (exception instanceof IOException ioEx) {
+                return ioEx;
+            }
+
+            return new IOException(ioMessage.get(), exception);
+        } else {
+            return new IOException(ioMessage.get(), ex);
+        }
     }
 
     private static Set<OpenOption> normalize(OpenOption defaultOption, Set<? extends OpenOption> options)
