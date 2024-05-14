@@ -265,13 +265,12 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      */
     @CalledFromGeneratedCode
     public void addMultipleIncoming(ListValue relationships) {
-        for (AnyValue value : relationships) {
-            if (notNoValue(value)) {
-                VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                nodes.add(VirtualValues.node(relationship.startNodeId(this)));
-                rels.add(relationship);
-            }
+        if (relationships.isEmpty()) {
+            // nothing to do here
+            return;
         }
+
+        relationships.forEach(this::addIncoming);
     }
 
     /**
@@ -322,14 +321,12 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      */
     @CalledFromGeneratedCode
     public void addMultipleOutgoing(ListValue relationships) {
-        for (AnyValue value : relationships) {
-            if (notNoValue(value)) {
-
-                VirtualRelationshipValue relationship = (VirtualRelationshipValue) value;
-                nodes.add(VirtualValues.node(relationship.endNodeId(this)));
-                rels.add(relationship);
-            }
+        if (relationships.isEmpty()) {
+            // nothing to do here
+            return;
         }
+
+        relationships.forEach(this::addOutgoing);
     }
 
     /**
@@ -384,14 +381,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             // nothing to add
             return;
         }
-        var previous = nodes.get(nodes.size() - 1);
-        VirtualRelationshipValue first = (VirtualRelationshipValue) relationships.head();
 
-        for (AnyValue value : relationships) {
-            if (notNoValue(value)) {
-                addUndirected((VirtualRelationshipValue) value);
-            }
-        }
+        relationships.forEach(this::addUndirected);
     }
 
     public void addNoValue() {
