@@ -767,7 +767,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             return size;
         }
 
-        // TODO test
         @Override
         public void forEach(Consumer<? super AnyValue> consumer) {
             consumer.accept(prepended);
@@ -809,10 +808,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public AnyValue value(int offset) {
-            int size = base.size();
-            if (offset < 1) {
+            if (offset == 0) {
                 return prepended;
-            } else if (offset < size + 1) {
+            } else if (offset < base.size() + 1) {
                 return base.value(offset - 1);
             } else {
                 throw new IndexOutOfBoundsException(offset + " is outside range " + size);

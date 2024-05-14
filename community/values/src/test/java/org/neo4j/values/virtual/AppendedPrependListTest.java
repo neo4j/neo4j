@@ -32,8 +32,110 @@ import static org.neo4j.values.virtual.VirtualValues.fromArray;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.values.storable.BooleanValue;
 
 class AppendedPrependListTest {
+
+    @Test
+    void shouldContainsOnAppendList() {
+        // Given
+        // When
+        ListValue list = list(longValue(1L)).append(longValue(2L)).append(longValue(3L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(4L)), BooleanValue.FALSE);
+    }
+
+    @Test
+    void shouldContainsOnAppendListWithNulls() {
+        // Given
+        // When
+        ListValue list = list(longValue(1L)).append(NO_VALUE).append(longValue(3L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(4L)), NO_VALUE);
+    }
+
+    @Test
+    void shouldContainsOnAppendListAroundLongerInner() {
+        // Given
+        // When
+        ListValue list = list(longValue(1L), longValue(2L), longValue(3L))
+                .append(longValue(4L))
+                .append(longValue(5L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(4L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(6L)), BooleanValue.FALSE);
+    }
+
+    @Test
+    void shouldContainsOnAppendListAroundLongerInnerWithNulls() {
+        // Given
+        // When
+        ListValue list = list(longValue(1L), NO_VALUE, longValue(3L))
+                .append(longValue(4L))
+                .append(longValue(5L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(4L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(6L)), NO_VALUE);
+    }
+
+    @Test
+    void shouldContainsOnPrependList() {
+        // Given
+        // When
+        ListValue list = list(longValue(1L)).prepend(longValue(2L)).prepend(longValue(3L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(4L)), BooleanValue.FALSE);
+    }
+
+    @Test
+    void shouldContainsOnPrependListWithNulls() {
+        // Given
+        // When
+        ListValue list = list(longValue(1L)).prepend(NO_VALUE).prepend(longValue(3L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(4L)), NO_VALUE);
+    }
+
+    @Test
+    void shouldContainsOnPrependListAroundLongerInner() {
+        // Given
+        // When
+        ListValue list = list(longValue(1L), longValue(2L), longValue(3L))
+                .prepend(longValue(4L))
+                .prepend(longValue(5L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(4L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(6L)), BooleanValue.FALSE);
+    }
+
+    @Test
+    void shouldContainsOnPrependListAroundLongerInnerWithNulls() {
+        // Given
+        // When
+        ListValue list = list(longValue(1L), NO_VALUE, longValue(3L))
+                .prepend(longValue(4L))
+                .prepend(longValue(5L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(4L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(6L)), NO_VALUE);
+    }
+
     @Test
     void shouldAppendToList() {
         // Given

@@ -24,6 +24,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.values.storable.NoValue.NO_VALUE;
 import static org.neo4j.values.storable.Values.booleanArray;
@@ -54,6 +55,7 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.CypherTypeException;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DoubleArray;
 import org.neo4j.values.storable.FloatArray;
 import org.neo4j.values.storable.LongArray;
@@ -83,6 +85,28 @@ class ListTest {
         list(15L, 12L, 9L).reverse(),
         VirtualValues.concat(list(10L, 13L), list(16L))
     };
+
+    @Test
+    void shouldContainsOnList() {
+        // Given
+        // When
+        ListValue list = VirtualValues.list(longValue(1L), longValue(2L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(3L)), BooleanValue.FALSE);
+    }
+
+    @Test
+    void shouldContainsOnAppendListWithNulls() {
+        // Given
+        // When
+        ListValue list = VirtualValues.list(longValue(1L), NO_VALUE, longValue(3L));
+
+        // Then
+        assertEquals(list.ternaryContains(longValue(1L)), BooleanValue.TRUE);
+        assertEquals(list.ternaryContains(longValue(4L)), Values.NO_VALUE);
+    }
 
     @Test
     void shouldBeEqualToItself() {
