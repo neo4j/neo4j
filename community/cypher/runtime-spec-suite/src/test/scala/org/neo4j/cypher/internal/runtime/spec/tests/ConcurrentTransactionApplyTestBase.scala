@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.runtime.spec.RowsMatcher
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.StatusWrapCypherException
@@ -65,7 +66,7 @@ abstract class ConcurrentTransactionApplyTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int,
   concurrency: TransactionConcurrency = TransactionConcurrency.Serial
-) extends RuntimeTestSuite[CONTEXT](edition, runtime)
+) extends RuntimeTestSuite[CONTEXT](edition, runtime, testPlanCombinationRewriterHints = Set(NoRewrites))
     with SideEffectingInputStream[CONTEXT]
     with LoneElement
     with TimeLimitedCypherTest {

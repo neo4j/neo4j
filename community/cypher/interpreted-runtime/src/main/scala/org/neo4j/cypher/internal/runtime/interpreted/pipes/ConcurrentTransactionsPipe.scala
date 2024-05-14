@@ -37,15 +37,25 @@ import java.util
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
-abstract class AbstractConcurrentTransactionApplyPipe(
+abstract class AbstractConcurrentTransactionsPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
   concurrency: Expression,
   onErrorBehaviour: InTransactionsOnErrorBehaviour
 ) extends PipeWithSource(source) {
+
   protected def withStatus(output: ClosingIterator[CypherRow], status: TransactionStatus): ClosingIterator[CypherRow]
   protected def nullRows(value: EagerBuffer[CypherRow], state: QueryState): ClosingIterator[CypherRow]
+
+  protected def createTask(
+    innerPipe: TransactionPipeWrapper,
+    batch: EagerBuffer[CypherRow],
+    memoryTracker: MemoryTracker,
+    state: QueryState,
+    outputQueue: ArrayBlockingQueue[TaskOutputResult],
+    activeTaskCount: AtomicInteger
+  ): Runnable
 
   final override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
@@ -126,9 +136,8 @@ abstract class AbstractConcurrentTransactionApplyPipe(
         val newError = taskOutputResult.error
         if (DebugSupport.DEBUG_CONCURRENT_TRANSACTIONS) {
           DebugSupport.CONCURRENT_TRANSACTIONS.log(
-            "Drained %s %s",
-            taskOutputResult.status,
-            if (newError != null) newError else ""
+            "Drained %s",
+            if (newError != null) newError else "<committed>"
           )
         }
         if (newError != null && newError != error && shouldReportError(newError)) {
@@ -164,7 +173,7 @@ abstract class AbstractConcurrentTransactionApplyPipe(
       if (hasAvailableInput) {
         if (activeTaskCount.get() < maxConcurrency.toInt) {
           if (activeTaskCount.getAndAdd(1) < maxConcurrency.toInt) {
-            createTask(nextAvailableInput())
+            executeTask(nextAvailableInput())
             pendingTaskCount += 1
             logMessage("Created new task")
           } else {
@@ -184,8 +193,8 @@ abstract class AbstractConcurrentTransactionApplyPipe(
       throw new NoSuchElementException()
     }
 
-    private def createTask(batch: EagerBuffer[CypherRow]): Unit = {
-      executorService.execute(new ConcurrentTransactionsResultsTask(
+    private def executeTask(batch: EagerBuffer[CypherRow]): Unit = {
+      executorService.execute(createTask(
         innerPipe,
         batch,
         memoryTracker,
@@ -247,11 +256,7 @@ abstract class AbstractConcurrentTransactionApplyPipe(
     }
   }
 
-  private class ConcurrentTransactionsResultsTask(
-    innerPipe: TransactionPipeWrapper,
-    batch: EagerBuffer[CypherRow],
-    memoryTracker: MemoryTracker,
-    state: QueryState,
+  abstract protected class AbstractConcurrentTransactionsResultsTask(
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ) extends Runnable {
@@ -259,18 +264,8 @@ abstract class AbstractConcurrentTransactionApplyPipe(
     override def run(): Unit = {
       var outputResult: TaskOutputResult = null
       try {
-        DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Starting batch of %d rows", this, batch.size)
-        val innerResult: TransactionResult = innerPipe.createResults(state, batch, memoryTracker)
-        DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Have results", this)
-
-        val output = innerResult.committedResults match {
-          case Some(result) =>
-            batch.close()
-            result.autoClosingIterator().asClosingIterator
-          case _ => nullRows(batch, state)
-        }
-        val outputIterator = withStatus(output, innerResult.status)
-        outputResult = TaskOutputResult(innerResult.status, outputIterator)
+        val outputIterator = consumeBatch()
+        outputResult = TaskOutputResult(outputIterator)
         DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Done", this)
       } catch {
         case e: Throwable =>
@@ -280,7 +275,7 @@ abstract class AbstractConcurrentTransactionApplyPipe(
             e.toString,
             e.getStackTrace.mkString("\n")
           )
-          outputResult = TaskOutputResult(NotRun /*TODO: FIXME*/, null, error = e)
+          outputResult = TaskOutputResult(null, error = e)
           throw e
       } finally {
         // TODO: Do not handle interrupts
@@ -302,13 +297,63 @@ abstract class AbstractConcurrentTransactionApplyPipe(
       }
     }
 
+    protected def consumeBatch(): ClosingIterator[CypherRow]
+
     override def toString: String = {
       String.format("%-16s", Thread.currentThread().getName)
     }
   }
 
+  protected class ConcurrentTransactionApplyResultsTask(
+    innerPipe: TransactionPipeWrapper,
+    batch: EagerBuffer[CypherRow],
+    memoryTracker: MemoryTracker,
+    state: QueryState,
+    outputQueue: ArrayBlockingQueue[TaskOutputResult],
+    activeTaskCount: AtomicInteger
+  ) extends AbstractConcurrentTransactionsResultsTask(
+        outputQueue,
+        activeTaskCount
+      ) {
+
+    override protected def consumeBatch(): ClosingIterator[CypherRow] = {
+      DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Starting batch of %d rows", this, batch.size)
+      val innerResult: TransactionResult = innerPipe.createResults(state, batch, memoryTracker)
+      DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Have results", this)
+
+      val results = innerResult.committedResults match {
+        case Some(result) =>
+          batch.close()
+          result.autoClosingIterator().asClosingIterator
+        case _ => nullRows(batch, state)
+      }
+      withStatus(results, innerResult.status)
+    }
+  }
+
+  protected class ConcurrentTransactionForeachResultsTask(
+    innerPipe: TransactionPipeWrapper,
+    batch: EagerBuffer[CypherRow],
+    memoryTracker: MemoryTracker,
+    state: QueryState,
+    outputQueue: ArrayBlockingQueue[TaskOutputResult],
+    activeTaskCount: AtomicInteger
+  ) extends AbstractConcurrentTransactionsResultsTask(
+        outputQueue,
+        activeTaskCount
+      ) {
+
+    override protected def consumeBatch(): ClosingIterator[CypherRow] = {
+      DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Starting batch of %d rows", this, batch.size)
+      val status = innerPipe.consume(state, batch)
+      DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Have results", this)
+
+      val output = batch.autoClosingIterator().asClosingIterator
+      withStatus(output, status)
+    }
+  }
+
   case class TaskOutputResult(
-    status: TransactionStatus,
     outputIterator: ClosingIterator[CypherRow] = null,
     error: Throwable = null
   )

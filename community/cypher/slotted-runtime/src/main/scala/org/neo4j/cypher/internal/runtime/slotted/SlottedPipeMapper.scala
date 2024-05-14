@@ -249,6 +249,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.AssertSameRelationshipSlo
 import org.neo4j.cypher.internal.runtime.slotted.pipes.BFSPruningVarLengthExpandSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CartesianProductSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ConcurrentTransactionApplySlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.ConcurrentTransactionForeachSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ConditionalApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateNodeSlottedCommand
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CreateRelationshipSlottedCommand
@@ -1868,19 +1869,26 @@ class SlottedPipeMapper(
           maybeReportAs.map(slots.apply)
         )(id = id)
 
-//      case TransactionForeach(_, _, batchSize, TransactionConcurrency.Concurrent(maybeConcurrency), onErrorBehaviour, maybeReportAs) =>
-//        val concurrency = maybeConcurrency match {
-//          case Some(concurrency) => concurrency
-//          case _ => Literal(intValue(50))
-//        }
-//        ConcurrentTransactionForeachSlottedPipe(
-//          lhs,
-//          rhs,
-//          expressionConverters.toCommandExpression(id, batchSize),
-//          concurrency,
-//          onErrorBehaviour,
-//          maybeReportAs.map(slots.apply)
-//        )(id = id)
+      case TransactionForeach(
+          _,
+          _,
+          batchSize,
+          TransactionConcurrency.Concurrent(maybeConcurrency),
+          onErrorBehaviour,
+          maybeReportAs
+        ) =>
+        val concurrency: internal.expressions.Expression = maybeConcurrency match {
+          case Some(concurrency) => concurrency
+          case _                 => SignedDecimalIntegerLiteral("50")(InputPosition.NONE) // FIXME: use CPU count?
+        }
+        ConcurrentTransactionForeachSlottedPipe(
+          lhs,
+          rhs,
+          expressionConverters.toCommandExpression(id, batchSize),
+          expressionConverters.toCommandExpression(id, concurrency),
+          onErrorBehaviour,
+          maybeReportAs.map(slots.apply)
+        )(id = id)
 
       case TransactionApply(
           lhsPlan,
