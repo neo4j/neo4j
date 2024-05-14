@@ -6,14 +6,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>4.4.34-SNAPSHOT</version>
+    <version>4.4.35-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-logical-plan-generator</artifactId>
   <packaging>jar</packaging>
-  <version>4.4.34-SNAPSHOT</version>
+  <version>4.4.35-SNAPSHOT</version>
   <name>Neo4j - Cypher Logical Plan Generator</name>
   <description>Neo4j - Cypher logical plan generator</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>

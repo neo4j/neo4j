@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>testing-parent</artifactId>
-        <version>4.4.34-SNAPSHOT</version>
+        <version>4.4.35-SNAPSHOT</version>
     </parent>
 
     <artifactId>log-test-utils</artifactId>
