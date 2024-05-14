@@ -306,7 +306,6 @@ public class ExecutingQuery {
             obfuscatedQueryText = queryObfuscator.obfuscateText(rawQueryText, preparserOffset);
             obfuscatedQueryParameters = queryObfuscator.obfuscateParameters(rawQueryParameters);
         } catch (Exception ignore) {
-            ignore.printStackTrace();
             obfuscatedQueryText = null;
             obfuscatedQueryParameters = null;
         }
