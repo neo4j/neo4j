@@ -170,7 +170,7 @@ object expandSolverStep {
     val availableSymbols = sourcePlan.availableSymbols
 
     if (availableSymbols(nodeId)) {
-      Some(produceLogicalPlan(
+      produceLogicalPlan(
         qg,
         nodeConnection,
         sourcePlan,
@@ -178,7 +178,7 @@ object expandSolverStep {
         availableSymbols,
         context,
         qppInnerPlanner
-      ))
+      )
     } else {
       None
     }
@@ -192,12 +192,12 @@ object expandSolverStep {
     availableSymbols: Set[LogicalVariable],
     context: LogicalPlanningContext,
     qppInnerPlanner: QPPInnerPlanner
-  ): LogicalPlanWithSSPHeuristic = {
+  ): Option[LogicalPlanWithSSPHeuristic] = {
     patternRel match {
       case rel: PatternRelationship =>
-        produceExpandLogicalPlan(qg, rel, rel.variable, sourcePlan, nodeId, availableSymbols, context)
+        Some(produceExpandLogicalPlan(qg, rel, rel.variable, sourcePlan, nodeId, availableSymbols, context))
       case qpp: QuantifiedPathPattern =>
-        produceTrailLogicalPlan(
+        Some(produceTrailLogicalPlan(
           qpp,
           sourcePlan,
           nodeId,
@@ -206,7 +206,7 @@ object expandSolverStep {
           qppInnerPlanner,
           unsolvedPredicates(context.staticComponents.planningAttributes.solveds, qg.selections, sourcePlan),
           qg
-        )
+        ))
       case spp: SelectivePathPattern =>
         produceStatefulShortestLogicalPlan(
           spp,
@@ -480,19 +480,10 @@ object expandSolverStep {
     availableSymbols: Set[LogicalVariable],
     queryGraph: QueryGraph,
     context: LogicalPlanningContext
-  ): LogicalPlanWithSSPHeuristic = {
+  ): Option[LogicalPlanWithSSPHeuristic] = {
     val spp = inlineQPPPredicates(originalSpp, availableSymbols)
     val fromLeft = startNode == spp.left
     val endNode = if (fromLeft) spp.right else spp.left
-
-    val unsolvedPredicatesOnEndNode = queryGraph.selections
-      .predicatesGiven(availableSymbols + endNode)
-      .filterNot(predicate =>
-        context.staticComponents.planningAttributes.solveds
-          .get(sourcePlan.id)
-          .asSinglePlannerQuery
-          .exists(_.queryGraph.selections.contains(predicate))
-      )
 
     val (mode, matchingHints) = if (availableSymbols.contains(endNode)) {
       val matchingHints = queryGraph.statefulShortestPathIntoHints
@@ -503,6 +494,22 @@ object expandSolverStep {
         .filter(_.variables.toIndexedSeq == spp.pathVariables.map(_.variable))
       (ExpandAll, matchingHints)
     }
+
+    if (!fromLeft && mode == ExpandInto) {
+      // ExpandInto is symmetrical.
+      // So there is no point considering it both from left and from right.
+      // When coming from right, we stop here.
+      return None
+    }
+
+    val unsolvedPredicatesOnEndNode = queryGraph.selections
+      .predicatesGiven(availableSymbols + endNode)
+      .filterNot(predicate =>
+        context.staticComponents.planningAttributes.solveds
+          .get(sourcePlan.id)
+          .asSinglePlannerQuery
+          .exists(_.queryGraph.selections.contains(predicate))
+      )
 
     val rewriteLookup = mutable.Map.empty[LogicalVariable, LogicalVariable]
     val nonSingletons =
@@ -564,28 +571,30 @@ object expandSolverStep {
         Ands.create(nonInlinedSelectionsWithoutUniqPreds.flatPredicates.to(ListSet))
       )
 
-    heuristicForStatefulShortestInto(
-      context.staticComponents.logicalPlanProducer.planStatefulShortest(
-        sourcePlan,
-        startNode,
-        endNode,
-        rewrittenNfa,
-        mode,
-        nonInlinedPreFilters,
-        nodeVariableGroupings,
-        relationshipVariableGroupings,
-        singletonNodeVariables.result(),
-        singletonRelVariables.result(),
-        selector,
-        rewrittenSpp.solvedString,
-        originalSpp,
-        unsolvedPredicatesOnEndNode,
-        reverseGroupVariableProjections = !fromLeft,
-        matchingHints,
-        context,
-        pathLength
-      ),
-      context
+    Some(
+      heuristicForStatefulShortestInto(
+        context.staticComponents.logicalPlanProducer.planStatefulShortest(
+          sourcePlan,
+          startNode,
+          endNode,
+          rewrittenNfa,
+          mode,
+          nonInlinedPreFilters,
+          nodeVariableGroupings,
+          relationshipVariableGroupings,
+          singletonNodeVariables.result(),
+          singletonRelVariables.result(),
+          selector,
+          rewrittenSpp.solvedString,
+          originalSpp,
+          unsolvedPredicatesOnEndNode,
+          reverseGroupVariableProjections = !fromLeft,
+          matchingHints,
+          context,
+          pathLength
+        ),
+        context
+      )
     )
   }
 
