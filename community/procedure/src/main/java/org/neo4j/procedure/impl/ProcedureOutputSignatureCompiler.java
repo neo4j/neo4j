@@ -41,6 +41,11 @@ import org.neo4j.kernel.api.exceptions.Status;
  * of <tt>MyOut</tt> to produce a signature.
  */
 class ProcedureOutputSignatureCompiler {
+
+    private static final String ERROR_MESSAGE =
+            "Procedures must return a Stream of records, where a record is a concrete class%n"
+                    + "that you define and not a %s.";
+
     ProcedureOutputSignatureCompiler(TypeCheckers typeCheckers) {
         this.typeCheckers = typeCheckers;
     }
@@ -52,7 +57,7 @@ class ProcedureOutputSignatureCompiler {
      *
      * @param method the procedure method
      * @return an output mapper for the return type of the method.
-     * @throws ProcedureException
+     * @throws ProcedureException when the types are incorrect
      */
     List<FieldSignature> fieldSignatures(Method method) throws ProcedureException {
         Class<?> cls = method.getReturnType();
@@ -66,25 +71,16 @@ class ProcedureOutputSignatureCompiler {
 
         Type genericReturnType = method.getGenericReturnType();
         if (!(genericReturnType instanceof ParameterizedType genType)) {
-            throw new ProcedureException(
-                    Status.Procedure.TypeError,
-                    "Procedures must return a Stream of records, where a record is a concrete class%n"
-                            + "that you define and not a raw Stream.");
+            throw new ProcedureException(Status.Procedure.TypeError, ERROR_MESSAGE, "raw Stream");
         }
 
         Type recordType = genType.getActualTypeArguments()[0];
         if (recordType instanceof WildcardType) {
-            throw new ProcedureException(
-                    Status.Procedure.TypeError,
-                    "Procedures must return a Stream of records, where a record is a concrete class%n"
-                            + "that you define and not a Stream<?>.");
+            throw new ProcedureException(Status.Procedure.TypeError, ERROR_MESSAGE, "Stream<?>");
         }
         if (recordType instanceof ParameterizedType type) {
             throw new ProcedureException(
-                    Status.Procedure.TypeError,
-                    "Procedures must return a Stream of records, where a record is a concrete class%n"
-                            + "that you define and not a parameterized type such as %s.",
-                    type);
+                    Status.Procedure.TypeError, ERROR_MESSAGE, "parameterized type such as " + type);
         }
 
         return fieldSignatures((Class<?>) recordType);

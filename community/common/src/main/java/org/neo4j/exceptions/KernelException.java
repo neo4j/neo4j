@@ -26,7 +26,7 @@ public abstract class KernelException extends Exception implements Status.HasSta
     private final Status statusCode;
 
     protected KernelException(Status statusCode, Throwable cause, String message, Object... parameters) {
-        super((parameters.length > 0) ? String.format(message, parameters) : message, cause);
+        super(toMessage(message, parameters), cause);
         this.statusCode = statusCode;
     }
 
@@ -36,7 +36,7 @@ public abstract class KernelException extends Exception implements Status.HasSta
     }
 
     protected KernelException(Status statusCode, String message, Object... parameters) {
-        super(String.format(message, parameters));
+        super(toMessage(message, parameters));
         this.statusCode = statusCode;
     }
 
@@ -48,5 +48,11 @@ public abstract class KernelException extends Exception implements Status.HasSta
 
     public String getUserMessage(TokenNameLookup tokenNameLookup) {
         return getMessage();
+    }
+
+    private static String toMessage(String message, Object... parameters) {
+        // need to check for params as some messages (when no params are provided) could have a '%' within
+        // and that makes String.format most unhappy and we get exceptions thrown in exception code
+        return (parameters.length > 0) ? String.format(message, parameters) : message;
     }
 }

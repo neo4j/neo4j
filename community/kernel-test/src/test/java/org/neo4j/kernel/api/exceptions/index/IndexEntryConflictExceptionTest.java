@@ -164,7 +164,21 @@ class IndexEntryConflictExceptionTest {
                 .hasMessage(
                         "Both Relationship(0) and Relationship(1) have the type `RelationshipType[1]` and properties `PropertyKey[2]` = true, `PropertyKey[3]` = 'hi', `PropertyKey[4]` = [6, 4]");
         assertThat(e.getUserMessage(tokens))
-                .isEqualTo("Both Relationship(0) and Relationship(1) have the type `type1` and properties "
-                        + "`p2` = true, `p3` = 'hi', `p4` = [6, 4]");
+                .isEqualTo(
+                        "Both Relationship(0) and Relationship(1) have the type `type1` and properties `p2` = true, `p3` = 'hi', `p4` = [6, 4]");
+    }
+
+    @Test
+    void shouldNotThrowWhenMessageContainsAPercent() {
+        SchemaDescriptor schema = SchemaDescriptors.forRelType(typeId, 2, 3, 4);
+        ValueTuple values = ValueTuple.of(true, "hi", "100%");
+        IndexEntryConflictException e = new IndexEntryConflictException(schema, 0L, 1L, values);
+
+        assertThat(e)
+                .hasMessage(
+                        "Both Relationship(0) and Relationship(1) have the type `RelationshipType[1]` and properties `PropertyKey[2]` = true, `PropertyKey[3]` = 'hi', `PropertyKey[4]` = '100%'");
+        assertThat(e.getUserMessage(tokens))
+                .isEqualTo(
+                        "Both Relationship(0) and Relationship(1) have the type `type1` and properties `p2` = true, `p3` = 'hi', `p4` = '100%'");
     }
 }
