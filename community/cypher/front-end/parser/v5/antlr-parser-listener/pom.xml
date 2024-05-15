@@ -65,7 +65,7 @@
                 <plugins>
                     <plugin>
                         <groupId>org.neo4j</groupId>
-                        <artifactId>neo4j-cypher-antlr-parser-listener-maven-plugin</artifactId>
+                        <artifactId>antlr-parser-listener-maven-plugin</artifactId>
                         <version>${project.version}</version>
                         <executions>
                             <execution>
