@@ -135,6 +135,6 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
     private StoreResource toStoreResource(Path databaseDirectory, StoreFileMetadata storeFileMetadata) {
         var file = storeFileMetadata.path();
         var relativePath = databaseDirectory.relativize(file).toString();
-        return new StoreResource(file, relativePath, storeFileMetadata.recordSize(), fs);
+        return new StoreResource(file, relativePath, fs);
     }
 }

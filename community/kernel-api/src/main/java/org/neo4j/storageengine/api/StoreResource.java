@@ -36,22 +36,16 @@ import org.neo4j.util.VisibleForTesting;
 public final class StoreResource {
     private final Path path;
     private final String relativePath;
-    private final int recordSize;
     private final FileSystemAbstraction fs;
 
     public StoreResource(StoreFileMetadata storeFileMetadata, DatabaseLayout dbLayout, FileSystemAbstraction fs) {
-        this(
-                storeFileMetadata.path(),
-                relativeFilePath(storeFileMetadata, dbLayout),
-                storeFileMetadata.recordSize(),
-                fs);
+        this(storeFileMetadata.path(), relativeFilePath(storeFileMetadata, dbLayout), fs);
     }
 
     @VisibleForTesting
-    public StoreResource(Path path, String relativePath, int recordSize, FileSystemAbstraction fs) {
+    public StoreResource(Path path, String relativePath, FileSystemAbstraction fs) {
         this.path = path;
         this.relativePath = relativePath;
-        this.recordSize = recordSize;
         this.fs = fs;
     }
 
@@ -81,14 +75,6 @@ public final class StoreResource {
         return path;
     }
 
-    /**
-     * @see StoreFileMetadata
-     * @return the number of bytes occupied by each record in this resource's store file
-     */
-    public int recordSize() {
-        return recordSize;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -98,18 +84,16 @@ public final class StoreResource {
             return false;
         }
         StoreResource that = (StoreResource) o;
-        return recordSize == that.recordSize
-                && Objects.equals(path, that.path)
-                && Objects.equals(relativePath, that.relativePath);
+        return Objects.equals(path, that.path) && Objects.equals(relativePath, that.relativePath);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, relativePath, recordSize);
+        return Objects.hash(path, relativePath);
     }
 
     @Override
     public String toString() {
-        return "StoreResource{" + "path='" + relativePath + '\'' + ", recordSize=" + recordSize + '}';
+        return "StoreResource{path='" + relativePath + "'}";
     }
 }

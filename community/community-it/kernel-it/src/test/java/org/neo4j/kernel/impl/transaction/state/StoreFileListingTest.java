@@ -300,7 +300,7 @@ class StoreFileListingTest {
     private static class MarkerFileProvider implements StoreFileProvider {
         @Override
         public Resource addFilesTo(Collection<StoreFileMetadata> fileMetadataCollection) {
-            fileMetadataCollection.add(new StoreFileMetadata(Path.of("marker"), 0));
+            fileMetadataCollection.add(new StoreFileMetadata(Path.of("marker")));
             return Resource.EMPTY;
         }
     }

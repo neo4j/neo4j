@@ -90,7 +90,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.stats.RecordDatabaseEntityCounters;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
@@ -647,12 +646,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
     @Override
     public void listStorageFiles(Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable) {
-        atomic.add(new StoreFileMetadata(databaseLayout.countStore(), RecordFormat.NO_RECORD_SIZE));
-        atomic.add(new StoreFileMetadata(databaseLayout.relationshipGroupDegreesStore(), RecordFormat.NO_RECORD_SIZE));
+        atomic.add(new StoreFileMetadata(databaseLayout.countStore()));
+        atomic.add(new StoreFileMetadata(databaseLayout.relationshipGroupDegreesStore()));
         for (StoreType type : StoreType.STORE_TYPES) {
             final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore(type);
-            StoreFileMetadata metadata =
-                    new StoreFileMetadata(recordStore.getStorageFile(), recordStore.getRecordSize());
+            StoreFileMetadata metadata = new StoreFileMetadata(recordStore.getStorageFile());
             replayable.add(metadata);
         }
     }
@@ -660,7 +658,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @Override
     public void listIdFiles(Collection<StoreFileMetadata> target) {
         for (Path idFile : databaseLayout.idFiles()) {
-            target.add(new StoreFileMetadata(idFile, 0));
+            target.add(new StoreFileMetadata(idFile));
         }
     }
 

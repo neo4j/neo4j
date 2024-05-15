@@ -44,7 +44,7 @@ public class StoreFileListing implements FileStoreProviderRegistry {
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
-    private static final Function<Path, StoreFileMetadata> logFileMapper = path -> new StoreFileMetadata(path, 1, true);
+    private static final Function<Path, StoreFileMetadata> logFileMapper = path -> new StoreFileMetadata(path, true);
     private final SchemaAndIndexingFileIndexListing fileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 

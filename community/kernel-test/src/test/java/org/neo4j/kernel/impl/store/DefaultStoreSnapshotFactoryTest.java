@@ -102,7 +102,7 @@ class DefaultStoreSnapshotFactoryTest {
     void shouldReturnExpectedListOfFileNamesForEachType() throws Exception {
         // given
         var expectedFiles = new StoreFileMetadata[] {
-            new StoreFileMetadata(databaseLayout.file("a"), 1), new StoreFileMetadata(databaseLayout.file("b"), 2)
+            new StoreFileMetadata(databaseLayout.file("a")), new StoreFileMetadata(databaseLayout.file("b"))
         };
         setExpectedFiles(expectedFiles);
 
@@ -116,8 +116,7 @@ class DefaultStoreSnapshotFactoryTest {
         var expectedFilesConverted =
                 Arrays.stream(expectedFiles).map(StoreFileMetadata::path).toArray(Path[]::new);
         var expectedAtomicFilesConverted = Arrays.stream(expectedFiles)
-                .map(f ->
-                        new StoreResource(f.path(), getRelativePath(f), f.recordSize(), testDirectory.getFileSystem()))
+                .map(f -> new StoreResource(f.path(), getRelativePath(f), testDirectory.getFileSystem()))
                 .toArray(StoreResource[]::new);
         assertArrayEquals(expectedFilesConverted, files);
         assertEquals(expectedAtomicFilesConverted.length, atomicFilesSnapshot.length);
@@ -126,7 +125,6 @@ class DefaultStoreSnapshotFactoryTest {
             StoreResource actual = atomicFilesSnapshot[i];
             var relativePath = databaseLayout.databaseDirectory().relativize(actual.path());
             assertEquals(expected.relativePath(), relativePath.toString());
-            assertEquals(expected.recordSize(), actual.recordSize());
         }
     }
 

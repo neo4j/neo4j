@@ -22,14 +22,12 @@ package org.neo4j.kernel.impl.store;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.function.Function;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 public class SchemaAndIndexingFileIndexListing {
-    private static final Function<Path, StoreFileMetadata> toStoreFileMetadata = path -> new StoreFileMetadata(path, 1);
 
     private final IndexingService indexingService;
 
@@ -47,6 +45,6 @@ public class SchemaAndIndexingFileIndexListing {
 
     private static void getSnapshotFilesMetadata(
             ResourceIterator<Path> snapshot, Collection<StoreFileMetadata> targetFiles) {
-        snapshot.stream().map(toStoreFileMetadata).forEach(targetFiles::add);
+        snapshot.stream().map(StoreFileMetadata::new).forEach(targetFiles::add);
     }
 }

@@ -21,12 +21,8 @@ package org.neo4j.storageengine.api;
 
 import java.nio.file.Path;
 
-public record StoreFileMetadata(Path path, int recordSize, boolean isLogFile) {
-    public StoreFileMetadata(Path path, int recordSize) {
-        this(path, recordSize, false);
-    }
-
+public record StoreFileMetadata(Path path, boolean isLogFile) {
     public StoreFileMetadata(Path path) {
-        this(path, 1);
+        this(path, false);
     }
 }
