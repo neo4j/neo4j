@@ -136,7 +136,7 @@ class SnapshotExecutionIT {
         var query = joinAsLines(
                 "MATCH (f:First)", "WITH f AS f", "CALL se.doConcurrently('MATCH (f:First)\nDELETE f')", "RETURN f");
 
-        var result = driver.session().run(query).list();
+        var result = driver.session().executeWrite(tx -> tx.run(query).list());
         assertEquals(List.of(), result);
     }
 
