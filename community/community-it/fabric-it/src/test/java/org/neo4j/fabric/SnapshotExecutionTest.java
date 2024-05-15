@@ -139,7 +139,7 @@ class SnapshotExecutionTest
                 "RETURN f"
         );
 
-        var result = driver.session().run( query ).list();
+        var result = driver.session().writeTransaction( t -> t.run( query ).list() );
         assertEquals( List.of(), result );
     }
 
