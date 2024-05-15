@@ -80,7 +80,7 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
       case `defaultUpdateStrategy` =>
         val rewriter = {
           val shouldCompressReasons = !context.debugOptions.verboseEagernessReasons
-          if (context.config.lpEagerFallbackEnabled)
+          if (context.config.lpEagerFallbackEnabled())
             defaultRewriterWithFallback(cardinalities, attributes, shouldCompressReasons, context.cancellationChecker)
           else
             defaultRewriter(cardinalities, attributes, shouldCompressReasons, context.cancellationChecker)

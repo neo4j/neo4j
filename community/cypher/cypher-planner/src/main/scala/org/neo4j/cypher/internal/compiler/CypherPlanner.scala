@@ -271,9 +271,26 @@ class CypherPlannerConfiguration(
     () => config.statefulShortestPlanningMode
   }
 
-  val gpmShortestToLegacyShortestEnabled: Boolean = config.gpmShortestToLegacyShortestEnabled
+  val gpmShortestToLegacyShortestEnabled: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.gpm_shortest_to_legacy_shortest_enabled.dynamic()
+    )
+    () => config.gpmShortestToLegacyShortestEnabled
+  }
 
-  val lpEagerFallbackEnabled: Boolean = config.lpEagerFallbackEnabled
+  val lpEagerFallbackEnabled: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.cypher_lp_eager_analysis_fallback_enabled.dynamic()
+    )
+    () => config.lpEagerFallbackEnabled
+  }
+
+  val propertyCachingMode: () => PropertyCachingMode = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.cypher_property_caching_mode.dynamic()
+    )
+    () => config.propertyCachingMode
+  }
 
   val propertyCachingMode: PropertyCachingMode = config.propertyCachingMode
 }

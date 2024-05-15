@@ -2775,7 +2775,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val icp = new InsertCachedProperties(pushdownPropertyReads = pushdownPropertyReads)
 
     val config = mock[CypherPlannerConfiguration]
-    when(config.propertyCachingMode).thenReturn(PropertyCachingMode.CacheProperties)
+    when(config.propertyCachingMode()).thenReturn(PropertyCachingMode.CacheProperties)
 
     val plannerContext = mock[PlannerContext]
     when(plannerContext.logicalPlanIdGen).thenReturn(idGen)
