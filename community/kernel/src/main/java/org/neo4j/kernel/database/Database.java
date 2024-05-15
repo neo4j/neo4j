@@ -98,6 +98,7 @@ import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
+import org.neo4j.kernel.impl.api.CommandCommitListeners;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
@@ -248,6 +249,7 @@ public class Database extends AbstractDatabase {
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final CursorContextFactory cursorContextFactory;
     private final VersionStorageFactory versionStorageFactory;
+    private final CommandCommitListeners commandCommitListeners;
     private MemoryTracker otherDatabaseMemoryTracker;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private DatabaseAvailability databaseAvailability;
@@ -308,6 +310,7 @@ public class Database extends AbstractDatabase {
         this.startupController = context.getStartupController();
         this.readOnlyDatabaseChecker = context.getDbmsReadOnlyChecker().forDatabase(namedDatabaseId);
         this.externalIdReuseConditionProvider = context.externalIdReuseConditionProvider();
+        this.commandCommitListeners = context.getCommandCommitListeners();
     }
 
     /**
@@ -961,7 +964,8 @@ public class Database extends AbstractDatabase {
                 logsModule.transactionAppender(),
                 storageEngine,
                 readOnlyDatabaseChecker,
-                databaseConfig.get(GraphDatabaseInternalSettings.out_of_disk_space_protection));
+                databaseConfig.get(GraphDatabaseInternalSettings.out_of_disk_space_protection),
+                commandCommitListeners);
         var transactionValidatorFactory = storageEngine.createTransactionValidatorFactory(databaseConfig);
 
         /*

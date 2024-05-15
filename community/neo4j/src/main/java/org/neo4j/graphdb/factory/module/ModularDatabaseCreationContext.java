@@ -50,6 +50,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.StorageEngineFactorySupplier;
 import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.impl.api.CommandCommitListeners;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.LeaseService;
@@ -124,6 +125,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final ReadOnlyDatabases readOnlyDatabases;
+    private final CommandCommitListeners commandCommitListeners;
 
     public ModularDatabaseCreationContext(
             HostedOnMode mode,
@@ -151,7 +153,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             DatabaseStartupController databaseStartupController,
             ReadOnlyDatabases readOnlyDatabases,
             IOControllerService ioControllerService,
-            DatabaseTracers tracers) {
+            DatabaseTracers tracers,
+            CommandCommitListeners commandCommitListeners) {
         this.serverIdentity = serverIdentity;
         this.namedDatabaseId = namedDatabaseId;
         this.databaseConfig = databaseConfig;
@@ -201,6 +204,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.leaseService = leaseService;
         this.startupController = databaseStartupController;
         this.readOnlyDatabases = readOnlyDatabases;
+        this.commandCommitListeners = commandCommitListeners;
     }
 
     @Override
@@ -416,6 +420,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     @Override
     public DeviceMapper getDeviceMapper() {
         return deviceMapper;
+    }
+
+    @Override
+    public CommandCommitListeners getCommandCommitListeners() {
+        return commandCommitListeners;
     }
 
     @Override

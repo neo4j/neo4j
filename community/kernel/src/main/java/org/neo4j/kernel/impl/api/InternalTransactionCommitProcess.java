@@ -37,28 +37,40 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
     private final TransactionAppender appender;
     private final StorageEngine storageEngine;
     private final boolean preAllocateSpaceInStores;
+    private final CommandCommitListeners commandCommitListeners;
 
     public InternalTransactionCommitProcess(
-            TransactionAppender appender, StorageEngine storageEngine, boolean preAllocateSpaceInStores) {
+            TransactionAppender appender,
+            StorageEngine storageEngine,
+            boolean preAllocateSpaceInStores,
+            CommandCommitListeners commandCommitListeners) {
         this.appender = appender;
         this.storageEngine = storageEngine;
         this.preAllocateSpaceInStores = preAllocateSpaceInStores;
+        this.commandCommitListeners = commandCommitListeners;
     }
 
     @Override
     public long commit(
             CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent, TransactionApplicationMode mode)
             throws TransactionFailureException {
-        if (preAllocateSpaceInStores) {
-            preAllocateSpaceInStores(batch, transactionWriteEvent, mode);
-        }
-
-        long lastTxId = appendToLog(batch, transactionWriteEvent);
         try {
-            applyToStore(batch, transactionWriteEvent, mode);
+            if (preAllocateSpaceInStores) {
+                preAllocateSpaceInStores(batch, transactionWriteEvent, mode);
+            }
+
+            long lastTxId = appendToLog(batch, transactionWriteEvent);
+            try {
+                applyToStore(batch, transactionWriteEvent, mode);
+            } finally {
+                close(batch);
+            }
+
+            commandCommitListeners.registerSuccess(batch.commandBatch(), lastTxId);
             return lastTxId;
-        } finally {
-            close(batch);
+        } catch (Exception e) {
+            commandCommitListeners.registerFailure(batch.commandBatch(), e);
+            throw e;
         }
     }
 

@@ -28,5 +28,6 @@ public interface CommitProcessFactory {
             TransactionAppender appender,
             StorageEngine storageEngine,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker,
-            boolean preAllocateSpaceInStoreFiles);
+            boolean preAllocateSpaceInStoreFiles,
+            CommandCommitListeners commandCommitListeners);
 }

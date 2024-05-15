@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.impl.api.CommandCommitListeners;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.LeaseService;
@@ -158,4 +159,6 @@ public interface DatabaseCreationContext {
     VersionStorageFactory getVersionStorageFactory();
 
     DeviceMapper getDeviceMapper();
+
+    CommandCommitListeners getCommandCommitListeners();
 }

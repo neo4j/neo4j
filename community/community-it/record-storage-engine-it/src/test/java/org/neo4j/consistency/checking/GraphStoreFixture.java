@@ -58,6 +58,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.kernel.impl.api.CommandCommitListeners;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -147,7 +148,8 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         commitProcess = new InternalTransactionCommitProcess(
                 dependencyResolver.resolveDependency(TransactionAppender.class),
                 dependencyResolver.resolveDependency(StorageEngine.class),
-                false);
+                false,
+                CommandCommitListeners.NO_LISTENERS);
         transactionIdStore = database.getDependencyResolver().resolveDependency(TransactionIdStore.class);
         commitmentFactory = database.getDependencyResolver().resolveDependency(TransactionCommitmentFactory.class);
 

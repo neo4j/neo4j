@@ -75,6 +75,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.impl.api.CommandCommitListeners;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -472,8 +473,8 @@ class BatchingTransactionAppenderTest {
     void shouldFailIfTransactionIdsMismatch() {
         // Given
         BatchingTransactionAppender appender = life.add(createTransactionAppender());
-        var commitProcess =
-                new InternalTransactionCommitProcess(appender, mock(StorageEngine.class, RETURNS_MOCKS), false);
+        var commitProcess = new InternalTransactionCommitProcess(
+                appender, mock(StorageEngine.class, RETURNS_MOCKS), false, CommandCommitListeners.NO_LISTENERS);
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(42L);
         var transactionCommitment = new TransactionCommitment(transactionIdStore);
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);

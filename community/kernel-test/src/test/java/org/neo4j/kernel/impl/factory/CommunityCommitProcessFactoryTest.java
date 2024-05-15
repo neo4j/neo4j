@@ -25,6 +25,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.api.CommandCommitListeners;
 import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -34,8 +35,12 @@ class CommunityCommitProcessFactoryTest {
     void createRegularCommitProcessWhenWritable() {
         var factory = new CommunityCommitProcessFactory();
 
-        var commitProcess =
-                factory.create(mock(TransactionAppender.class), mock(StorageEngine.class), writable(), false);
+        var commitProcess = factory.create(
+                mock(TransactionAppender.class),
+                mock(StorageEngine.class),
+                writable(),
+                false,
+                CommandCommitListeners.NO_LISTENERS);
 
         assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
     }
@@ -44,8 +49,12 @@ class CommunityCommitProcessFactoryTest {
     void createRegularCommitProcessWhenDynamicallyReadOnly() {
         var factory = new CommunityCommitProcessFactory();
 
-        var commitProcess =
-                factory.create(mock(TransactionAppender.class), mock(StorageEngine.class), readOnly(), false);
+        var commitProcess = factory.create(
+                mock(TransactionAppender.class),
+                mock(StorageEngine.class),
+                readOnly(),
+                false,
+                CommandCommitListeners.NO_LISTENERS);
 
         assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
     }

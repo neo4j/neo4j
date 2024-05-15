@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.kernel.impl.api.CommandCommitListeners;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
@@ -33,9 +34,11 @@ public class CommunityCommitProcessFactory implements CommitProcessFactory {
             TransactionAppender appender,
             StorageEngine storageEngine,
             DatabaseReadOnlyChecker readOnlyChecker,
-            boolean preAllocateSpaceInStoreFiles) {
+            boolean preAllocateSpaceInStoreFiles,
+            CommandCommitListeners commandCommitListeners) {
         return new DatabaseTransactionCommitProcess(
-                new InternalTransactionCommitProcess(appender, storageEngine, preAllocateSpaceInStoreFiles),
+                new InternalTransactionCommitProcess(
+                        appender, storageEngine, preAllocateSpaceInStoreFiles, commandCommitListeners),
                 readOnlyChecker);
     }
 }
