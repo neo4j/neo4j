@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.cst.factory.neo4j.ast
+package org.neo4j.cypher.internal.parser
 
 import org.antlr.v4.runtime.ANTLRErrorStrategy
 import org.antlr.v4.runtime.InputMismatchException
@@ -27,12 +27,26 @@ import org.antlr.v4.runtime.Vocabulary
 import org.antlr.v4.runtime.VocabularyImpl
 import org.antlr.v4.runtime.misc.IntervalSet
 import org.neo4j.cypher.internal.ast.factory.neo4j.completion.CodeCompletionCore
-import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.CypherRuleGroup
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.DatabaseNameRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.ExpressionRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.GraphPatternRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.IdentifierRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.LabelExpression1Rule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.LabelExpressionRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.NodePatternRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.NumberLiteralRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.ParameterRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.RelationshipPatternRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.StringLiteralRule
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy.VariableRule
 
 import java.util
 
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.math.Ordering.Implicits.seqOrdering
 import scala.util.control.NonFatal
 
@@ -42,8 +56,8 @@ import scala.util.control.NonFatal
  * Based on https://github.com/neo4j/cypher-language-support/blob/main/packages/language-support/src/syntaxValidation/completionCoreErrors.ts
  * Please consider updating there if you make improvements here.
  */
-final class CypherErrorStrategy extends ANTLRErrorStrategy {
-  private val vocabulary = new CypherErrorVocabulary
+final class CypherErrorStrategy(conf: CypherErrorStrategy.Conf) extends ANTLRErrorStrategy {
+  private val vocabulary = new CypherErrorVocabulary(conf)
   private var inErrorMode = false
 
   override def reportError(parser: Parser, e: RecognitionException): Unit = {
@@ -107,7 +121,7 @@ final class CypherErrorStrategy extends ANTLRErrorStrategy {
 
   private def codeCompletion(parser: Parser, e: RecognitionException): Seq[String] = {
     try {
-      val completion = new CodeCompletionCore(parser, vocabulary.rulesOfInterest, vocabulary.ignoredTokens)
+      val completion = new CodeCompletionCore(parser, conf.preferredRules.asJava, conf.ignoredTokens)
       val tokenIndex = e.getOffendingToken.getTokenIndex
       vocabulary.expected(completion.collectCandidates(tokenIndex, e.getCtx.asInstanceOf[ParserRuleContext]))
     } catch {
@@ -137,44 +151,50 @@ final class CypherErrorStrategy extends ANTLRErrorStrategy {
 
 object CypherErrorStrategy {
 
+  trait Conf {
+    def vocabulary: VocabularyImpl
+
+    def preferredRules: Set[java.lang.Integer] = {
+      val preferredGroups = Set[CypherRuleGroup](
+        ExpressionRule,
+        StringLiteralRule,
+        NumberLiteralRule,
+        ParameterRule,
+        VariableRule,
+        IdentifierRule,
+        DatabaseNameRule,
+        GraphPatternRule
+      )
+      ruleGroups.view
+        .collect { case (i, group) if preferredGroups.contains(group) => java.lang.Integer.valueOf(i) }
+        .toSet
+    }
+    def ignoredTokens: util.Set[Integer]
+    def customTokenDisplayNames: Map[Int, String]
+    def errorCharTokenType: Int
+    def ruleGroups: Map[Int, CypherRuleGroup]
+  }
+
+  sealed trait CypherRuleGroup
+  case object ExpressionRule extends CypherRuleGroup
+  case object StringLiteralRule extends CypherRuleGroup
+  case object NumberLiteralRule extends CypherRuleGroup
+  case object ParameterRule extends CypherRuleGroup
+  case object VariableRule extends CypherRuleGroup
+  case object IdentifierRule extends CypherRuleGroup
+  case object DatabaseNameRule extends CypherRuleGroup
+  case object GraphPatternRule extends CypherRuleGroup
+  case object LabelExpressionRule extends CypherRuleGroup
+  case object LabelExpression1Rule extends CypherRuleGroup
+  case object NodePatternRule extends CypherRuleGroup
+  case object RelationshipPatternRule extends CypherRuleGroup
+
   val quoteMismatchErrorMessage =
     "Failed to parse string literal. The query must contain an even number of non-escaped quotes."
   val commentMismatchErrorMessage = "Failed to parse comment. A comment starting on `/*` must have a closing `*/`."
 }
 
-final class CypherErrorVocabulary extends Vocabulary {
-  private val inner = CypherParser.VOCABULARY.asInstanceOf[VocabularyImpl]
-
-  val rulesOfInterest: util.Set[Integer] = java.util.Set.of[java.lang.Integer](
-    CypherParser.RULE_expression,
-    CypherParser.RULE_expression1,
-    CypherParser.RULE_expression2,
-    CypherParser.RULE_expression3,
-    CypherParser.RULE_expression4,
-    CypherParser.RULE_expression5,
-    CypherParser.RULE_expression6,
-    CypherParser.RULE_expression7,
-    CypherParser.RULE_expression8,
-    CypherParser.RULE_expression9,
-    CypherParser.RULE_expression10,
-    CypherParser.RULE_expression11,
-    CypherParser.RULE_stringLiteral,
-    CypherParser.RULE_numberLiteral,
-    CypherParser.RULE_parameter,
-    CypherParser.RULE_variable,
-    CypherParser.RULE_symbolicNameString,
-    CypherParser.RULE_escapedSymbolicNameString,
-    CypherParser.RULE_unescapedSymbolicNameString,
-    CypherParser.RULE_symbolicLabelNameString,
-    CypherParser.RULE_unescapedLabelSymbolicNameString,
-    CypherParser.RULE_symbolicAliasName,
-    CypherParser.RULE_pattern
-  )
-
-  val ignoredTokens: util.Set[Integer] = java.util.Set.of[java.lang.Integer](
-    Token.EPSILON,
-    CypherParser.SEMICOLON
-  )
+final class CypherErrorVocabulary(conf: CypherErrorStrategy.Conf) extends Vocabulary {
 
   def expected(candidates: CodeCompletionCore.CandidatesCollection): Seq[String] = {
     // println("Candidates:")
@@ -188,7 +208,7 @@ final class CypherErrorVocabulary extends Vocabulary {
     // )
 
     val ruleNames = candidates.rules.entrySet().asScala.toSeq
-      .flatMap(e => ruleDisplayName(e.getKey, e.getValue))
+      .flatMap(e => ruleDisplayName(e.getKey, e.getValue.asScala))
       .sorted
 
     val tokenNames = candidates.tokens.entrySet().asScala.toSeq
@@ -199,48 +219,29 @@ final class CypherErrorVocabulary extends Vocabulary {
     (ruleNames ++ tokenNames).distinct
   }
 
-  private def ruleDisplayName(ruleIndex: Int, ruleCallStack: java.util.List[java.lang.Integer]): Option[String] = {
-    def inStack(rules: Int*): Boolean = rules.forall(r => ruleCallStack.contains(r))
-    ruleIndex match {
-      case CypherParser.RULE_expression |
-        CypherParser.RULE_expression1 |
-        CypherParser.RULE_expression2 |
-        CypherParser.RULE_expression3 |
-        CypherParser.RULE_expression4 |
-        CypherParser.RULE_expression5 |
-        CypherParser.RULE_expression6 |
-        CypherParser.RULE_expression7 |
-        CypherParser.RULE_expression8 |
-        CypherParser.RULE_expression9 |
-        CypherParser.RULE_expression10 |
-        CypherParser.RULE_expression11 =>
-        Some("an expression")
-      case CypherParser.RULE_stringLiteral => Some("a string")
-      case CypherParser.RULE_numberLiteral => Some("a number")
-      case CypherParser.RULE_parameter     => Some("a parameter")
-      case CypherParser.RULE_variable      => Some("a variable name")
-      case CypherParser.RULE_symbolicNameString |
-        CypherParser.RULE_escapedSymbolicNameString |
-        CypherParser.RULE_unescapedSymbolicNameString |
-        CypherParser.RULE_symbolicLabelNameString |
-        CypherParser.RULE_unescapedLabelSymbolicNameString =>
-        if (inStack(CypherParser.RULE_labelExpression, CypherParser.RULE_relationshipPattern))
-          Some("a relationship type name")
-        else if (inStack(CypherParser.RULE_labelExpression, CypherParser.RULE_nodePattern))
-          Some("a node label name")
-        else if (inStack(CypherParser.RULE_labelExpression1))
-          Some("a node label/relationship type name")
-        else
-          Some("an identifier")
-      case CypherParser.RULE_symbolicAliasName => Some("a database name")
-      case CypherParser.RULE_pattern           => Some("a graph pattern")
-      case _                                   => None
+  private def ruleDisplayName(ruleIndex: Int, ruleCallStack: collection.Seq[java.lang.Integer]): Option[String] = {
+    def inStack(gs: CypherRuleGroup*): Boolean =
+      gs.forall(g => ruleCallStack.exists(r => conf.ruleGroups.get(r).contains(g)))
+
+    conf.ruleGroups.get(ruleIndex).collect {
+      case ExpressionRule    => "an expression"
+      case StringLiteralRule => "a string"
+      case NumberLiteralRule => "a number"
+      case ParameterRule     => "a parameter"
+      case VariableRule      => "a variable name"
+      case IdentifierRule =>
+        if (inStack(LabelExpressionRule, RelationshipPatternRule)) "a relationship type name"
+        else if (inStack(LabelExpressionRule, NodePatternRule)) "a node label name"
+        else if (inStack(LabelExpression1Rule)) "a node label/relationship type name"
+        else "an identifier"
+      case DatabaseNameRule => "a database name"
+      case GraphPatternRule => "a graph pattern"
     }
   }
 
-  override def getMaxTokenType: Int = inner.getMaxTokenType
-  override def getLiteralName(tokenType: Int): String = inner.getLiteralName(tokenType)
-  override def getSymbolicName(tokenType: Int): String = inner.getSymbolicName(tokenType)
+  override def getMaxTokenType: Int = conf.vocabulary.getMaxTokenType
+  override def getLiteralName(tokenType: Int): String = conf.vocabulary.getLiteralName(tokenType)
+  override def getSymbolicName(tokenType: Int): String = conf.vocabulary.getSymbolicName(tokenType)
 
   def displayName(tokenTypes: Seq[Integer]): String = {
     if (tokenTypes.forall(t => getDisplayName(t) == "'" + getSymbolicName(t) + "'"))
@@ -249,32 +250,14 @@ final class CypherErrorVocabulary extends Vocabulary {
   }
 
   override def getDisplayName(tokenType: Int): String = {
-    tokenType match {
-      case CypherParser.SPACE                    => "' '"
-      case CypherParser.SINGLE_LINE_COMMENT      => "'//'"
-      case CypherParser.DECIMAL_DOUBLE           => "a float value"
-      case CypherParser.UNSIGNED_DECIMAL_INTEGER => "an integer value"
-      case CypherParser.UNSIGNED_HEX_INTEGER     => "a hexadecimal integer value"
-      case CypherParser.UNSIGNED_OCTAL_INTEGER   => "an octal integer value"
-      case CypherParser.IDENTIFIER               => "an identifier"
-      case CypherParser.ARROW_LINE               => "'-'"
-      case CypherParser.ARROW_LEFT_HEAD          => "'<'"
-      case CypherParser.ARROW_RIGHT_HEAD         => "'>'"
-      case CypherParser.MULTI_LINE_COMMENT       => "'/*'"
-      case CypherParser.STRING_LITERAL1          => "a string value"
-      case CypherParser.STRING_LITERAL2          => "a string value"
-      case CypherParser.ESCAPED_SYMBOLIC_NAME    => "an identifier"
-      case CypherParser.ALL_SHORTEST_PATHS       => "'allShortestPaths'"
-      case CypherParser.SHORTEST_PATH            => "'shortestPath'"
-      case CypherParser.LIMITROWS                => "'LIMIT'"
-      case CypherParser.SKIPROWS                 => "'SKIP'"
-      case Token.EOF                             => "<EOF>"
+    conf.customTokenDisplayNames.get(tokenType) match {
+      case Some(name) => name
       case _ =>
-        val displayNames = inner.getDisplayNames
+        val displayNames = conf.vocabulary.getDisplayNames
         if (tokenType > 0 && tokenType < displayNames.length && displayNames(tokenType) != null) displayNames(tokenType)
         else {
-          Option(inner.getLiteralName(tokenType))
-            .orElse(Option(inner.getSymbolicName(tokenType)).map(n => "'" + n + "'"))
+          Option(conf.vocabulary.getLiteralName(tokenType))
+            .orElse(Option(conf.vocabulary.getSymbolicName(tokenType)).map(n => "'" + n + "'"))
             .getOrElse(tokenType.toString)
         }
     }
@@ -292,11 +275,11 @@ final class CypherErrorVocabulary extends Vocabulary {
 
   def tokenDisplayNames(set: IntervalSet): Seq[String] = {
     set.getIntervals.asScala
-      .flatMap(i =>
+      .flatMap { i =>
         Range.inclusive(i.a, i.b)
-          .filter(t => t != Token.EPSILON || t != CypherParser.ErrorChar)
+          .filter(t => t != Token.EPSILON || t != conf.errorCharTokenType)
           .map(getDisplayName)
-      )
+      }
       .toSeq
       .sorted
   }

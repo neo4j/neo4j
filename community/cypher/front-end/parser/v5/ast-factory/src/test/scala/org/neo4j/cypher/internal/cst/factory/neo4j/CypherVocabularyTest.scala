@@ -17,12 +17,14 @@
 package org.neo4j.cypher.internal.cst.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.completion.CodeCompletionCore.CandidatesCollection
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherErrorVocabulary
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Cypher5ErrorStrategyConf
+import org.neo4j.cypher.internal.parser.CypherErrorVocabulary
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CypherVocabularyTest extends CypherFunSuite {
-  val vocab = new CypherErrorVocabulary
+  val conf = new Cypher5ErrorStrategyConf
+  val vocab = new CypherErrorVocabulary(conf)
 
   test("user facing token names are human readable") {
     Range.inclusive(1, vocab.getMaxTokenType).foreach { token =>
@@ -47,7 +49,7 @@ class CypherVocabularyTest extends CypherFunSuite {
   }
 
   test("rules of interest have a display name") {
-    vocab.rulesOfInterest.forEach { r =>
+    conf.preferredRules.foreach { r =>
       withClue(CypherParser.ruleNames(r))(ruleDisplayName(r) should not be empty)
     }
     Range(0, CypherParser.ruleNames.length).foreach { r =>

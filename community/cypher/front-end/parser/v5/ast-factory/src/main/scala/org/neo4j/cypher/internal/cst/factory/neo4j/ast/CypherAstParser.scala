@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
 import org.neo4j.cypher.internal.parser.AstRuleCtx
+import org.neo4j.cypher.internal.parser.CypherErrorStrategy
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.lexer.UnicodeEscapeReplacementReader
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -218,7 +219,7 @@ object CypherAstParser {
         parser.getInterpreter.setPredictionMode(PredictionMode.LL)
 
         // CypherErrorStrategy allows us to get the correct error messages in case we still fail
-        parser.setErrorHandler(new CypherErrorStrategy)
+        parser.setErrorHandler(new CypherErrorStrategy(new Cypher5ErrorStrategyConf))
         parser.addErrorListener(listener)
 
         doParse(parser, listener, f)
