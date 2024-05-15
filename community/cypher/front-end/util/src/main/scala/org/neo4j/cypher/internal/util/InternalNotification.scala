@@ -16,10 +16,73 @@
  */
 package org.neo4j.cypher.internal.util
 
+import java.lang
+import scala.collection.JavaConverters.asJavaIterableConverter
+
 /**
  * Describes a notification
  */
-trait InternalNotification
+trait InternalNotification {
+  def notificationName: String = this.getClass.getSimpleName.stripSuffix("$")
+}
+
+object InternalNotification {
+
+  val allNotifications: Set[String] = Set(
+        "DeprecatedPeriodicCommit",
+        "DeprecatedCreatePropertyExistenceConstraintSyntax",
+        "SuboptimalIndexForConstainsQueryNotification",
+        "DeprecatedPropertyExistenceSyntax",
+        "DeprecatedDefaultGraphSyntax",
+        "ExperimentalFeatureNotification",
+        "RuntimeUnsupportedNotification",
+        "UnboundedShortestPathNotification",
+        "DeprecatedPointsComparison",
+        "DeprecatedFunctionNotification",
+        "DeprecatedOctalLiteralSyntax",
+        "DeprecatedDefaultDatabaseSyntax",
+        "DeprecatedCatalogKeywordForAdminCommandSyntax",
+        "IndexLookupUnfulfillableNotification",
+        "DeprecatedCreateIndexSyntax",
+        "DeprecatedStartNotification",
+        "DeprecatedAmbiguousGroupingNotification",
+        "DeprecatedPatternExpressionOutsideExistsSyntax",
+        "EagerLoadCsvNotification",
+        "MissingPropertyNameNotification",
+        "DeprecatedShowExistenceConstraintSyntax",
+        "DeprecatedCoercionOfListToBoolean",
+        "IndexHintUnfulfillableNotification",
+        "ExhaustiveShortestPathForbiddenNotification",
+        "MissingParametersNotification",
+        "MissingAliasNotification",
+        "DeprecatedCreateConstraintOnAssertSyntax",
+        "DeprecatedRepeatedRelVarInPatternExpression",
+        "CodeGenerationFailedNotification",
+        "DeprecatedBtreeIndexSyntax",
+        "DeprecatedDropConstraintSyntax",
+        "DeprecatedProcedureNotification",
+        "DeprecatedHexLiteralSyntax",
+        "DeprecatedDropIndexSyntax",
+        "DeprecatedRelTypeSeparatorNotification",
+        "DeprecatedSelfReferenceToVariableInCreatePattern",
+        "DeprecatedShowSchemaSyntax",
+        "DeprecatedParameterSyntax",
+        "LengthOnNonPathNotification",
+        "MissingLabelNotification",
+        "CartesianProductNotification",
+        "MissingRelTypeNotification",
+        "ProcedureWarningNotification",
+        "JoinHintUnfulfillableNotification",
+        "LargeLabelWithLoadCsvNotification",
+        "SuboptimalIndexForEndsWithQueryNotification",
+        "StartUnavailableFallback",
+        "SubqueryVariableShadowing",
+        "DeprecatedUseOfNullInCaseExpression",
+        "DeprecatedFieldNotification"
+  )
+
+  def allNotificationsAsJavaIterable(): lang.Iterable[String] = allNotifications.asJava
+}
 
 case class DeprecatedStartNotification(position: InputPosition, alternativeQuery: String) extends InternalNotification
 

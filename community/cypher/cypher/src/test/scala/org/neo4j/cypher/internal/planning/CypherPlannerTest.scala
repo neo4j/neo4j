@@ -145,7 +145,8 @@ class CypherPlannerTest extends CypherFunSuite {
       TestExecutorCaffeineCacheFactory,
       CypherPlannerOption.default,
       getTx,
-      compatibilityMode = Compatibility4_3)
+      compatibilityMode = Compatibility4_3,
+      null)
 
     val query =
       """MATCH (n)

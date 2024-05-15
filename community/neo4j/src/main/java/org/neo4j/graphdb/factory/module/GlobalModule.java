@@ -34,6 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.cypher.internal.util.InternalNotificationStats;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -148,6 +149,7 @@ public class GlobalModule
     private final DependencyResolver externalDependencyResolver;
     private final FileLockerService fileLockerService;
     private final MemoryPools memoryPools;
+    private final InternalNotificationStats cypherNotificationStats;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
@@ -259,6 +261,9 @@ public class GlobalModule
             databaseEventListeners.registerDatabaseEventListener( databaseListener );
         }
         globalDependencies.satisfyDependencies( databaseEventListeners );
+
+        cypherNotificationStats = new InternalNotificationStats();
+        globalDependencies.satisfyDependencies( cypherNotificationStats );
 
         transactionEventListeners = new GlobalTransactionEventListeners();
         globalDependencies.satisfyDependency( transactionEventListeners );
@@ -528,6 +533,10 @@ public class GlobalModule
         return pageCache;
     }
 
+    public InternalNotificationStats getCypherNotificationStats()
+    {
+        return cypherNotificationStats;
+    }
     public Monitors getGlobalMonitors()
     {
         return globalMonitors;

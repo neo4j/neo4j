@@ -86,6 +86,7 @@ class CypherQueryObfuscatorFactory {
       null,
       CancellationChecker.NeverCancelled,
       false,
+      null,
       null
     )
 

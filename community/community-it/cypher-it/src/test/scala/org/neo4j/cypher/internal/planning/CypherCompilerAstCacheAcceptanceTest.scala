@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL
+import org.neo4j.cypher.internal.util.InternalNotificationStats
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -86,7 +87,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       cacheFactory,
       CypherPlannerOption.default,
       () => 1,
-      compatibilityMode = Compatibility4_4)
+      compatibilityMode = Compatibility4_4,
+      new InternalNotificationStats)
     createCompiler(planner, log)
   }
 

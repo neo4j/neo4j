@@ -26,6 +26,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
+import org.neo4j.cypher.internal.util.InternalNotificationStats;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
@@ -106,6 +107,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final DatabaseLayout databaseLayout;
     private final DatabaseEventListeners eventListeners;
+    private final InternalNotificationStats cypherNotificationStats;
     private final GlobalTransactionEventListeners transactionEventListeners;
     private final StorageEngineFactory storageEngineFactory;
     private final FileLockerService fileLockerService;
@@ -147,6 +149,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
                         databaseLogService.getInternalLog( DatabaseHealth.class ) );
         this.commitProcessFactory = editionComponents.getCommitProcessFactory();
         this.pageCache = globalModule.getPageCache();
+        this.cypherNotificationStats = globalModule.getCypherNotificationStats();
         this.constraintSemantics = editionComponents.getConstraintSemantics();
         this.tracers = tracers;
         this.globalProcedures = globalProcedures;

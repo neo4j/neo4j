@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.InternalNotificationStats
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.logging.Log
 import org.neo4j.values.virtual.MapValue
@@ -83,7 +84,8 @@ class PlannerContext(cypherExceptionFactory: CypherExceptionFactory,
                      val executionModel: ExecutionModel,
                      cancellationChecker: CancellationChecker,
                      val materializedEntitiesMode: Boolean,
-                     val log: Log
+                     val log: Log,
+                     val internalNotificationStats: InternalNotificationStats
 ) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
 
 object PlannerContext {
@@ -105,7 +107,8 @@ object PlannerContext {
             params: MapValue,
             cancellationChecker: CancellationChecker,
             materializedEntitiesMode: Boolean,
-            log: Log
+            log: Log,
+            internalNotificationStats: InternalNotificationStats
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
@@ -127,7 +130,8 @@ object PlannerContext {
       executionModel,
       cancellationChecker,
       materializedEntitiesMode,
-      log
+      log,
+      internalNotificationStats
     )
   }
 }

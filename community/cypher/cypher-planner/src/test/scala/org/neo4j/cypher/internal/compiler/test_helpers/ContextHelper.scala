@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.InternalNotificationStats
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.devNullLogger
@@ -43,7 +44,6 @@ import org.neo4j.values.virtual.MapValue
 import org.scalatest.mockito.MockitoSugar
 
 import java.time.Clock
-
 import scala.reflect.ClassTag
 
 
@@ -63,10 +63,11 @@ object ContextHelper extends MockitoSugar {
              params: MapValue = MapValue.EMPTY,
              executionModel: ExecutionModel = ExecutionModel.default,
              cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled,
-             materializedEntitiesMode: Boolean = false): PlannerContext = {
+             materializedEntitiesMode: Boolean = false,
+             internalNotificationStats: InternalNotificationStats = new InternalNotificationStats): PlannerContext = {
     new PlannerContext(cypherExceptionFactory, tracer, notificationLogger, planContext,
       monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel, cancellationChecker,
-      materializedEntitiesMode, NullLog.getInstance()
+      materializedEntitiesMode, NullLog.getInstance(), internalNotificationStats
     )
   }
 

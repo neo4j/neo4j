@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.options.CypherVersion
+import org.neo4j.cypher.internal.util.InternalNotificationStats
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.logging.Log
@@ -60,6 +61,8 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
       case CypherVersion.v4_4 => Compatibility4_4
     }
 
+    val dependencies = graph.getDependencyResolver
+
     val planner =
       CypherPlanner(
         plannerConfig,
@@ -69,7 +72,8 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
         cacheFactory,
         cypherPlanner,
         LastCommittedTxIdProvider(graph),
-        compatibilityMode)
+        compatibilityMode,
+        dependencies.resolveDependency(classOf[InternalNotificationStats]))
 
     val runtime = if (plannerConfig.planSystemCommands)
       cypherVersion match {

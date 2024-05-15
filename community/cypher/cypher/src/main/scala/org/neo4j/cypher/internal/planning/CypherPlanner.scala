@@ -91,6 +91,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.InternalNotificationStats
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.DatabaseAdministrationException
@@ -174,7 +175,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                          cacheFactory: CaffeineCacheFactory,
                          plannerOption: CypherPlannerOption,
                          lastCommittedTxIdProvider: () => Long,
-                         compatibilityMode: CypherCompatibilityVersion
+                         compatibilityMode: CypherCompatibilityVersion,
+                         internalNotificationStats: InternalNotificationStats
     ) {
 
   private val parsedQueries = new LFUCache[ParsedQueriesCacheKey, BaseState](cacheFactory, config.queryCacheSize)
@@ -339,7 +341,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       params,
       transactionalContextWrapper.cancellationChecker,
       options.materializedEntitiesMode,
-      log
+      log,
+      internalNotificationStats
     )
 
     // Prepare query for caching
@@ -445,7 +448,13 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         val fingerprintReference = new PlanFingerprintReference(fingerprint)
         (MaybeReusable(fingerprintReference), shouldBeCached)
     }
-    CacheableLogicalPlan(logicalPlanState.asCachableLogicalPlanState(), reusabilityState, notificationLogger.notifications.toIndexedSeq, shouldCache)
+
+    val notifications = notificationLogger.notifications
+
+    // Record stats for finalized notifications, used for notification counter metrics
+    notifications.foreach { context.internalNotificationStats.incrementNotificationCount }
+
+    CacheableLogicalPlan(logicalPlanState.asCachableLogicalPlanState(), reusabilityState, notifications.toIndexedSeq, shouldCache)
   }
 
   private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
