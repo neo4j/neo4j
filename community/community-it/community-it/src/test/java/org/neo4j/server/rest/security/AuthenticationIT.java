@@ -51,7 +51,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         // Document
         RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus(401)
-                .expectedHeader("WWW-Authenticate", "Basic realm=\"Neo4j\"")
+                .expectedHeader("WWW-Authenticate", "Basic realm=\"Neo4j\", Bearer realm=\"Neo4j\"")
                 .get(databaseURL());
 
         // Then
@@ -93,7 +93,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         RESTRequestGenerator.ResponseEntity response = gen.get()
                 .expectedStatus(401)
                 .withHeader(HttpHeaders.AUTHORIZATION, HTTP.basicAuthHeader("neo4j", "incorrect"))
-                .expectedHeader("WWW-Authenticate", "Basic realm=\"Neo4j\"")
+                .expectedHeader("WWW-Authenticate", "Basic realm=\"Neo4j\", Bearer realm=\"Neo4j\"")
                 .post(databaseURL());
 
         // Then
@@ -101,7 +101,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         JsonNode firstError = data.get("errors").get(0);
         assertThat(firstError.get("code").asText())
                 .isEqualTo(Status.Security.Unauthorized.code().serialize());
-        assertThat(firstError.get("message").asText()).isEqualTo("Invalid username or password.");
+        assertThat(firstError.get("message").asText()).isEqualTo("Invalid credential.");
     }
 
     @Test
@@ -334,7 +334,8 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
                 .isEqualTo(Status.Security.Unauthorized.code().serialize());
         assertThat(response.get("errors").get(0).get("message").asText())
                 .isEqualTo("No authentication header supplied.");
-        assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE)).isEqualTo("Basic realm=\"Neo4j\"");
+        assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE))
+                .isEqualTo("Basic realm=\"Neo4j\", Bearer realm=\"Neo4j\"");
 
         // When malformed header
         response = HTTP.withHeaders(HttpHeaders.AUTHORIZATION, "This makes no sense")
@@ -350,8 +351,9 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         assertThat(response.status()).isEqualTo(401);
         assertThat(response.get("errors").get(0).get("code").asText())
                 .isEqualTo(Status.Security.Unauthorized.code().serialize());
-        assertThat(response.get("errors").get(0).get("message").asText()).isEqualTo("Invalid username or password.");
-        assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE)).isEqualTo("Basic realm=\"Neo4j\"");
+        assertThat(response.get("errors").get(0).get("message").asText()).isEqualTo("Invalid credential.");
+        assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE))
+                .isEqualTo("Basic realm=\"Neo4j\", Bearer realm=\"Neo4j\"");
 
         // When authorized
         response = HTTP.withBasicAuth("neo4j", "secretPassword")

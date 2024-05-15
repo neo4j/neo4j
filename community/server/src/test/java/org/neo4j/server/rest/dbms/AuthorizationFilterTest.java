@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.server.rest.dbms.AuthorizationEnabledFilter.WWW_AUTH_HEADER;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 import java.io.ByteArrayOutputStream;
@@ -125,7 +126,8 @@ class AuthorizationFilterTest {
         // Then
         verifyNoMoreInteractions(filterChain);
         verify(servletResponse).setStatus(401);
-        verify(servletResponse).addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"");
+        verify(servletResponse)
+                .addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\", Bearer realm=\"Neo4j\"");
         verify(servletResponse).addHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
         assertThat(outputStream.toString(UTF_8)).contains("\"code\":\"Neo" + ".ClientError.Security.Unauthorized\"");
         assertThat(outputStream.toString(UTF_8)).contains("\"message\":\"No authentication header supplied.\"");
@@ -137,6 +139,11 @@ class AuthorizationFilterTest {
         final AuthorizationEnabledFilter filter = newFilter();
         when(servletRequest.getMethod()).thenReturn("GET");
         when(servletRequest.getContextPath()).thenReturn("/db/data");
+        when(servletRequest.getRemoteAddr()).thenReturn("example.com");
+        when(servletRequest.getRemotePort()).thenReturn(123);
+        when(servletRequest.getServerName()).thenReturn("example.com");
+        when(servletRequest.getServerPort()).thenReturn(123);
+
         when(servletRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("NOT A VALID VALUE");
 
         // When
@@ -169,6 +176,7 @@ class AuthorizationFilterTest {
                 .thenReturn(loginContext);
         when(loginContext.subject()).thenReturn(authSubject);
         when(authSubject.getAuthenticationResult()).thenReturn(AuthenticationResult.FAILURE);
+        when(authSubject.authenticatedUser()).thenReturn("foo");
 
         // When
         filter.doFilter(servletRequest, servletResponse, filterChain);
@@ -181,8 +189,9 @@ class AuthorizationFilterTest {
                 .containsMessages("Failed authentication attempt for '%s' from %s", "foo", "remote_ip_address");
         verify(servletResponse).setStatus(401);
         verify(servletResponse).addHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
+        verify(servletResponse).addHeader(HttpHeaders.WWW_AUTHENTICATE, WWW_AUTH_HEADER);
         assertThat(outputStream.toString(UTF_8)).contains("\"code\":\"Neo.ClientError.Security.Unauthorized\"");
-        assertThat(outputStream.toString(UTF_8)).contains("\"message\":\"Invalid username or password.\"");
+        assertThat(outputStream.toString(UTF_8)).contains("\"message\":\"Invalid credential.\"");
     }
 
     @Test
@@ -204,6 +213,7 @@ class AuthorizationFilterTest {
         when(authManager.login(argThat(new AuthTokenMatcher(authToken("foo", "bar"))), any()))
                 .thenReturn(loginContext);
         when(loginContext.subject()).thenReturn(authSubject);
+        when(authSubject.authenticatedUser()).thenReturn("foo");
         when(authSubject.getAuthenticationResult()).thenReturn(AuthenticationResult.PASSWORD_CHANGE_REQUIRED);
 
         // When
@@ -234,6 +244,7 @@ class AuthorizationFilterTest {
                 .thenReturn(loginContext);
         when(loginContext.subject()).thenReturn(authSubject);
         when(authSubject.getAuthenticationResult()).thenReturn(AuthenticationResult.TOO_MANY_ATTEMPTS);
+        when(authSubject.authenticatedUser()).thenReturn("foo");
 
         // When
         filter.doFilter(servletRequest, servletResponse, filterChain);
@@ -267,6 +278,38 @@ class AuthorizationFilterTest {
                 .thenReturn(loginContext);
         when(loginContext.subject()).thenReturn(authSubject);
         when(authSubject.getAuthenticationResult()).thenReturn(AuthenticationResult.SUCCESS);
+        when(authSubject.authenticatedUser()).thenReturn("foo");
+
+        // When
+        filter.doFilter(servletRequest, servletResponse, filterChain);
+
+        // Then
+        verify(filterChain)
+                .doFilter(
+                        eq(new AuthorizedRequestWrapper(BASIC_AUTH, "foo", servletRequest, AUTH_DISABLED)),
+                        same(servletResponse));
+    }
+
+    @Test
+    void shouldAuthorizeWithBearerToken() throws Exception {
+        // Given
+        final AuthorizationEnabledFilter filter = newFilter();
+        String credentials = "atokenwithabunchofstuff";
+        BasicLoginContext loginContext = mock(BasicLoginContext.class);
+        AuthSubject authSubject = mock(AuthSubject.class);
+        when(servletRequest.getRemoteAddr()).thenReturn("client");
+        when(servletRequest.getRemotePort()).thenReturn(1337);
+        when(servletRequest.getServerName()).thenReturn("server");
+        when(servletRequest.getServerPort()).thenReturn(42);
+        when(servletRequest.getMethod()).thenReturn("GET");
+        when(servletRequest.getContextPath()).thenReturn("/db/data");
+        when(servletRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("BEARER " + credentials);
+        when(authManager.login(
+                        argThat(new AuthTokenMatcher(Map.of("scheme", "bearer", "credentials", credentials))), any()))
+                .thenReturn(loginContext);
+        when(loginContext.subject()).thenReturn(authSubject);
+        when(authSubject.getAuthenticationResult()).thenReturn(AuthenticationResult.SUCCESS);
+        when(authSubject.authenticatedUser()).thenReturn("foo");
 
         // When
         filter.doFilter(servletRequest, servletResponse, filterChain);

@@ -141,11 +141,22 @@ public class QueryResource {
 
     private static AuthToken extractAuthToken(HttpServletRequest request) {
         // Auth has already passed through AuthorizationEnabledFilter, so we know we have formatted credential
-        if (HttpServletRequest.BASIC_AUTH.equals(request.getAuthType())) {
-            var decoded = AuthorizationHeaders.decode(request.getHeader("Authorization"));
-            return decoded != null ? AuthTokens.basic(decoded[0], decoded[1]) : null;
+        var authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null) {
+            return AuthTokens.none();
         }
-        return AuthTokens.none();
+
+        var decoded = AuthorizationHeaders.decode(authHeader);
+        if (decoded == null) {
+            return AuthTokens.none();
+        }
+
+        return switch (decoded.scheme()) {
+            case BEARER -> AuthTokens.bearer(decoded.values()[0]);
+            case BASIC -> AuthTokens.basic(decoded.values()[0], decoded.values()[1]);
+            default -> AuthTokens.none();
+        };
     }
 
     public static String absoluteDatabaseTransactionPath(Config config) {

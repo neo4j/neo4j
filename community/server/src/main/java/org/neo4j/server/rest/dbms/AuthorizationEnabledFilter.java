@@ -25,6 +25,8 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -44,6 +46,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -52,6 +55,7 @@ import org.neo4j.server.web.JettyHttpConnection;
 import org.neo4j.string.UTF8;
 
 public class AuthorizationEnabledFilter extends AuthorizationFilter {
+    public static final String WWW_AUTH_HEADER = "Basic realm=\"Neo4j\", Bearer realm=\"Neo4j\"";
     private final Supplier<AuthManager> authManagerSupplier;
     private final InternalLog log;
     private final List<Pattern> uriWhitelist;
@@ -91,20 +95,17 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
             return;
         }
 
-        final String[] usernameAndPassword = extractCredential(header);
-        if (usernameAndPassword == null) {
-            badHeader.accept(response);
-            return;
-        }
-
-        final String username = usernameAndPassword[0];
-        final String password = usernameAndPassword[1];
-
         try {
             ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create(request);
-            LoginContext securityContext = authenticate(username, password, connectionInfo);
+            LoginContext securityContext = authenticate(header, connectionInfo);
+
+            if (securityContext == null) {
+                badHeader.accept(response);
+                return;
+            }
             // username is now known, make connection aware of both username and user-agent
-            JettyHttpConnection.updateUserForCurrentConnection(username, userAgent);
+            JettyHttpConnection.updateUserForCurrentConnection(
+                    securityContext.subject().authenticatedUser(), userAgent);
 
             switch (securityContext.subject().getAuthenticationResult()) {
                 case PASSWORD_CHANGE_REQUIRED:
@@ -114,7 +115,11 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
                 case SUCCESS:
                     try {
                         filterChain.doFilter(
-                                new AuthorizedRequestWrapper(BASIC_AUTH, username, request, securityContext),
+                                new AuthorizedRequestWrapper(
+                                        BASIC_AUTH,
+                                        securityContext.subject().authenticatedUser(),
+                                        request,
+                                        securityContext),
                                 servletResponse);
                     } catch (AuthorizationViolationException e) {
                         unauthorizedAccess(e.getMessage()).accept(response);
@@ -124,7 +129,9 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
                     tooManyAttempts.accept(response);
                     return;
                 default:
-                    log.warn("Failed authentication attempt for '%s' from %s", username, request.getRemoteAddr());
+                    log.warn(
+                            "Failed authentication attempt for '%s' from %s",
+                            securityContext.subject().authenticatedUser(), request.getRemoteAddr());
                     requestAuthentication(request, invalidCredential).accept(response);
             }
         } catch (InvalidAuthTokenException e) {
@@ -136,10 +143,30 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
         }
     }
 
-    private LoginContext authenticate(String username, String password, ClientConnectionInfo connectionInfo)
+    private LoginContext authenticate(String rawHeader, ClientConnectionInfo connectionInfo)
             throws InvalidAuthTokenException {
+        final AuthorizationHeaders.ParsedHeader parsedHeader = extractCredential(rawHeader);
         AuthManager authManager = authManagerSupplier.get();
-        Map<String, Object> authToken = newBasicAuthToken(username, password != null ? UTF8.encode(password) : null);
+        Map<String, Object> authToken = new HashMap<>();
+
+        if (parsedHeader == null) {
+            return null;
+        }
+
+        switch (parsedHeader.scheme()) {
+            case BEARER -> {
+                authToken.put(AuthToken.SCHEME_KEY, "bearer");
+                authToken.put(AuthToken.CREDENTIALS, parsedHeader.values()[0].getBytes(StandardCharsets.UTF_8));
+            }
+            case BASIC -> {
+                authToken.putAll(newBasicAuthToken(
+                        parsedHeader.values()[0],
+                        parsedHeader.values()[1] != null
+                                ? UTF8.encode(parsedHeader.values()[1])
+                                : null));
+            }
+        }
+
         return authManager.login(authToken, connectionInfo);
     }
 
@@ -171,7 +198,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
                             "code",
                             Status.Security.Unauthorized.code().serialize(),
                             "message",
-                            "Invalid username or password."))));
+                            "Invalid credential."))));
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> tooManyAttempts = error(
             429,
@@ -230,7 +257,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
         } else {
             return res -> {
                 responseGen.accept(res);
-                res.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"");
+                res.addHeader(HttpHeaders.WWW_AUTHENTICATE, WWW_AUTH_HEADER);
             };
         }
     }
@@ -244,7 +271,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter {
         return false;
     }
 
-    private static String[] extractCredential(String header) {
+    private static AuthorizationHeaders.ParsedHeader extractCredential(String header) {
         if (header == null) {
             return null;
         } else {

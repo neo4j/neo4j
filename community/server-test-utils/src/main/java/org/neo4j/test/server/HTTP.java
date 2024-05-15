@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.server.rest.dbms.AuthorizationHeaders;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
@@ -61,7 +62,12 @@ public final class HTTP {
 
     public static String basicAuthHeader(String username, String password) {
         var usernamePassword = username + ':' + password;
-        return "Basic " + Base64.getEncoder().encodeToString(usernamePassword.getBytes());
+        return AuthorizationHeaders.Scheme.BASIC + " "
+                + Base64.getEncoder().encodeToString(usernamePassword.getBytes());
+    }
+
+    public static String bearerAuthHeader(String token) {
+        return AuthorizationHeaders.Scheme.BEARER + " " + token;
     }
 
     public static Builder withBasicAuth(String username, String password) {

@@ -25,30 +25,59 @@ import java.util.Base64;
 import org.apache.commons.lang3.StringUtils;
 
 public class AuthorizationHeaders {
+
+    public enum Scheme {
+        BASIC,
+        BEARER
+    }
+
+    public record ParsedHeader(Scheme scheme, String[] values) {}
+
     private AuthorizationHeaders() {}
 
     /**
-     * Extract the encoded username and password from a HTTP Authorization header value.
+     * Extract the encoded Authorization header
      */
-    public static String[] decode(String authorizationHeader) {
+    public static ParsedHeader decode(String authorizationHeader) {
         String[] parts = authorizationHeader.trim().split(" ");
         String tokenSegment = parts[parts.length - 1];
+        Scheme authScheme;
 
-        if (tokenSegment.isBlank()) {
+        try {
+            authScheme = Scheme.valueOf(parts[0].toUpperCase());
+        } catch (IllegalArgumentException ex) {
             return null;
         }
 
-        String decoded = decodeBase64(tokenSegment);
-        if (decoded.isEmpty()) {
-            return null;
-        }
+        switch (authScheme) {
+            case BASIC -> {
+                if (tokenSegment.isBlank()) {
+                    return null;
+                }
 
-        String[] userAndPassword = decoded.split(":", 2);
-        if (userAndPassword.length != 2) {
-            return null;
-        }
+                String decoded = decodeBase64(tokenSegment);
+                if (decoded.isEmpty()) {
+                    return null;
+                }
 
-        return userAndPassword;
+                String[] userAndPassword = decoded.split(":", 2);
+                if (userAndPassword.length != 2) {
+                    return null;
+                }
+
+                return new ParsedHeader(Scheme.BASIC, userAndPassword);
+            }
+
+            case BEARER -> {
+                if (parts.length != 2) {
+                    return null;
+                }
+                return new ParsedHeader(Scheme.BEARER, new String[] {parts[1]});
+            }
+            default -> {
+                return null;
+            }
+        }
     }
 
     private static String decodeBase64(String base64) {

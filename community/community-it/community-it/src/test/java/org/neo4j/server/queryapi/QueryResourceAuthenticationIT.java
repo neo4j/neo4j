@@ -128,7 +128,7 @@ class QueryResourceAuthenticationIT {
 
         assertThat(response.body())
                 .isEqualTo(
-                        "{\"errors\":[{\"code\":\"Neo.ClientError.Security.Unauthorized\",\"message\":\"Invalid username or password.\"}]}");
+                        "{\"errors\":[{\"code\":\"Neo.ClientError.Security.Unauthorized\",\"message\":\"Invalid credential.\"}]}");
     }
 
     @Test

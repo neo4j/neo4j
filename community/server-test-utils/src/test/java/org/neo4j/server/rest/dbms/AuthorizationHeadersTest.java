@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.rest.dbms;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.server.rest.dbms.AuthorizationHeaders.decode;
 
@@ -29,18 +31,34 @@ import org.neo4j.test.server.HTTP;
 
 class AuthorizationHeadersTest {
     @Test
-    void shouldParseHappyPath() {
+    void shouldParseBasicAuth() {
         // Given
         String username = "jake";
         String password = "qwerty123456";
         String header = HTTP.basicAuthHeader(username, password);
 
         // When
-        String[] parsed = decode(header);
+        var parsed = decode(header);
 
         // Then
-        assertEquals(username, parsed[0]);
-        assertEquals(password, parsed[1]);
+        assertNotNull(parsed);
+        assertEquals(username, parsed.values()[0]);
+        assertEquals(password, parsed.values()[1]);
+    }
+
+    @Test
+    void shouldParseBearerAuth() {
+        // Given
+        var token = "are-you-token-to-me?";
+        String header = HTTP.bearerAuthHeader(token);
+
+        // When
+        var parsed = decode(header);
+
+        // Then
+        assertNotNull(parsed);
+        assertThat(parsed.values().length).isEqualTo(1);
+        assertThat(parsed.values()[0]).isEqualTo(token);
     }
 
     @Test
@@ -48,7 +66,10 @@ class AuthorizationHeadersTest {
         // When & then
         assertNull(decode(""));
         assertNull(decode("Basic"));
+        assertNull(decode("Bearer"));
         assertNull(decode("Basic not valid value"));
+        assertNull(decode("Bearer too many args"));
         assertNull(decode("Basic " + Base64.getEncoder().encodeToString("".getBytes())));
+        assertNull(decode("Bearer " + Base64.getEncoder().encodeToString("".getBytes())));
     }
 }
