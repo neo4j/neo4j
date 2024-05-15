@@ -25,4 +25,8 @@ public class DeletedNodeStillHasRelationshipsException extends ConstraintViolati
                 "Cannot delete node<" + nodeId
                         + ">, because it still has relationships. To delete this node, you must first delete its relationships.");
     }
+
+    public DeletedNodeStillHasRelationshipsException() {
+        super("Cannot delete node that was created in this transaction, because it still has relationships.");
+    }
 }

@@ -50,6 +50,7 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.Upgrade;
+import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationshipsException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -161,15 +162,25 @@ public class TxState implements TransactionState {
         if (relationships != null) {
             try (HeapTrackingArrayList<NodeRelationshipIds> sortedNodeRelState =
                     HeapTrackingArrayList.newArrayList(nodeStatesMap.size(), stateMemoryTracker)) {
-                nodeStatesMap.forEachValue(nodeState -> {
-                    if (nodeState.isDeleted() && nodeState.isAddedInThisBatch()) {
-                        return;
+                for (NodeStateImpl nodeState : nodeStatesMap.values()) {
+                    if (nodeState.isDeleted() && nodeState.hasAddedRelationships()) {
+                        // The usual case for nodes created in previous tx is handled by
+                        // IntegrityValidator/MutableRelationships, this is just for deleted nodes
+                        // with added rels in this tx.
+                        if (nodeState.isAddedInThisBatch()) {
+                            throw new DeletedNodeStillHasRelationshipsException();
+                        }
+                        throw new DeletedNodeStillHasRelationshipsException(nodeState.getId());
                     }
-                    if (nodeState.hasAddedRelationships() || nodeState.hasRemovedRelationships()) {
-                        sortedNodeRelState.add(StateNodeRelationshipIds.createStateNodeRelationshipIds(
-                                nodeState, this::relationshipVisitWithProperties, stateMemoryTracker));
+                    // For nodes that were added and removed in this tx there is no need to try to figure out any
+                    // relationship ids, there shouldn't be any.
+                    if (!(nodeState.isDeleted() && nodeState.isAddedInThisBatch())) {
+                        if (nodeState.hasAddedRelationships() || nodeState.hasRemovedRelationships()) {
+                            sortedNodeRelState.add(StateNodeRelationshipIds.createStateNodeRelationshipIds(
+                                    nodeState, this::relationshipVisitWithProperties, stateMemoryTracker));
+                        }
                     }
-                });
+                }
                 sortedNodeRelState.sort(Comparator.comparingLong(NodeRelationshipIds::nodeId));
 
                 // Visit relationships, this will grab all the locks needed to do the updates

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -73,6 +74,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationshipsException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -1171,6 +1173,31 @@ abstract class TxStateTest {
 
         assertTrue(state.hasDataChanges());
         assertTrue(state.hasChanges());
+    }
+
+    @Test
+    void shouldThrowOnCreatedDeletedNodeWithRelationshipsLeft() {
+        // GIVEN
+        state.nodeDoCreate(0);
+        state.nodeDoCreate(1);
+        state.relationshipDoCreate(0, 0, 0, 1);
+        state.nodeDoDelete(0);
+
+        // WHEN
+        assertThatThrownBy(() -> state.accept(new TxStateVisitor.Adapter() {}))
+                .isInstanceOf(DeletedNodeStillHasRelationshipsException.class);
+    }
+
+    @Test
+    void shouldThrowOnDeletedNodeWithRelationshipsAddedInTx() {
+        // GIVEN
+        state.nodeDoCreate(1);
+        state.relationshipDoCreate(0, 0, 0, 1);
+        state.nodeDoDelete(0);
+
+        // WHEN
+        assertThatThrownBy(() -> state.accept(new TxStateVisitor.Adapter() {}))
+                .isInstanceOf(DeletedNodeStillHasRelationshipsException.class);
     }
 
     private LongDiffSets addedNodes(long... added) {
