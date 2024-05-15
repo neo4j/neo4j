@@ -129,10 +129,8 @@ public class UnicodeEscapeReplacementReader extends Reader {
         }
     }
 
-    public CypherQueryAccess.OffsetTable offsetTable() {
-        return offsetTable != null
-                ? new CypherQueryAccess.OffsetTable(offsetTable.offsets.toArray(), offsetTable.start)
-                : null;
+    public int[] offsetTable() {
+        return offsetTable != null ? offsetTable.offsets.toArray() : null;
     }
 
     @Override
@@ -140,12 +138,10 @@ public class UnicodeEscapeReplacementReader extends Reader {
 
     private static class OffsetTableBuilder {
         IntArrayList offsets = new IntArrayList();
-        final int start;
         char lastSrcChar, lastDestChar;
 
         OffsetTableBuilder(InputPosition start, char srcChar, char destChar) {
             this.offsets.addAll(start.offset(), start.line(), start.column());
-            this.start = start.offset();
             this.lastSrcChar = srcChar;
             this.lastDestChar = destChar;
         }
@@ -163,7 +159,7 @@ public class UnicodeEscapeReplacementReader extends Reader {
         }
     }
 
-    public record Result(CharStream charStream, CypherQueryAccess.OffsetTable offsetTable) {}
+    public record Result(CharStream charStream, int[] offsetTable) {}
 
     public static class InvalidUnicodeLiteral extends RuntimeException {
         public final int offset, line, col;

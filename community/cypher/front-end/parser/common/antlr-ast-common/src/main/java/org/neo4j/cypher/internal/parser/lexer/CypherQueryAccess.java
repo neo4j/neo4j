@@ -30,10 +30,11 @@ public interface CypherQueryAccess {
     String inputQuery();
 
     /**
-     * Returns the offset table to translate from antlr positions to input query positions
-     * or null if parser offsets are equal to offsets in input string.
+     * Returns table containing offsets to translate between parser query offset and input query offsets.
+     * Or null if all parser offsets are equal to input query offsets.
+     * Contains packed offset, line, char in line like this [offset0, line0, col0, offset1, line1, col1, ...].
      */
-    OffsetTable offsetTable();
+    int[] offsetTable();
 
     /**
      * Returns a substring of the input query.
@@ -56,10 +57,10 @@ public interface CypherQueryAccess {
      */
     default int inputOffset(int parserOffset) {
         final var offsetTable = offsetTable();
-        if (offsetTable == null || parserOffset < offsetTable.start()) {
+        if (offsetTable == null || parserOffset < offsetTable[0]) {
             return parserOffset;
         } else {
-            return offsetTable.offsets()[(parserOffset - offsetTable.start()) * 3];
+            return offsetTable[(parserOffset - offsetTable[0]) * 3];
         }
     }
 
@@ -77,20 +78,11 @@ public interface CypherQueryAccess {
      */
     default InputPosition inputPosition(int parserIndex, int parserLine, int parserColumn) {
         final var offsetTable = offsetTable();
-        if (offsetTable == null || parserIndex < offsetTable.start()) {
+        if (offsetTable == null || parserIndex < offsetTable[0]) {
             return InputPosition.apply(parserIndex, parserLine, parserColumn + 1);
         } else {
-            final int i = (parserIndex - offsetTable.start()) * 3;
-            final var o = offsetTable.offsets();
-            return InputPosition.apply(o[i], o[i + 1], o[i + 2]);
+            final int i = (parserIndex - offsetTable[0]) * 3;
+            return InputPosition.apply(offsetTable[i], offsetTable[i + 1], offsetTable[i + 2]);
         }
     }
-
-    /**
-     * Input position offsets.
-     *
-     * @param offsets [offset0, line0, col0, offset1, line1, col1, ...]
-     * @param start start offset of the offsets table TODO Remove, always offsets[0]
-     */
-    record OffsetTable(int[] offsets, int start) {}
 }

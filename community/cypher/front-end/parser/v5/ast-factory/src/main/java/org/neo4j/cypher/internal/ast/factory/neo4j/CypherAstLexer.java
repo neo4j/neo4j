@@ -24,16 +24,15 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.misc.Interval;
 import org.neo4j.cypher.internal.parser.CypherLexer;
 import org.neo4j.cypher.internal.parser.lexer.CypherQueryAccess;
-import org.neo4j.cypher.internal.parser.lexer.CypherQueryAccess.OffsetTable;
 import org.neo4j.cypher.internal.parser.lexer.CypherToken;
 import org.neo4j.cypher.internal.parser.lexer.UnicodeEscapeReplacementReader;
 import org.neo4j.util.VisibleForTesting;
 
 public final class CypherAstLexer extends CypherLexer implements CypherQueryAccess {
     private final String inputQuery; // Note, not always identical to what the parser sees.
-    private final OffsetTable offsetTable;
+    private final int[] offsetTable;
 
-    private CypherAstLexer(CharStream input, String inputQuery, OffsetTable offsetTable) {
+    private CypherAstLexer(CharStream input, String inputQuery, int[] offsetTable) {
         super(input);
         this.inputQuery = inputQuery;
         this.offsetTable = offsetTable;
@@ -87,7 +86,7 @@ public final class CypherAstLexer extends CypherLexer implements CypherQueryAcce
     }
 
     @Override
-    public OffsetTable offsetTable() {
+    public int[] offsetTable() {
         return offsetTable;
     }
 }
