@@ -245,6 +245,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description(
+            "Feature flag to enable/disable the rewriting of GPM Shortest patterns into legacy findShortest where conversions are possible")
+    public static final Setting<Boolean> gpm_shortest_to_legacy_shortest_enabled = newBuilder(
+                    "internal.cypher.enable_shortest_to_legacy_shortest", BOOL, true)
+            .build();
+
+    @Internal
+    @Description(
             "The threshold when a warning is generated if a label scan is done after a load csv where the label has no index")
     public static final Setting<Long> query_non_indexed_label_warning_threshold = newBuilder(
                     "internal.cypher.non_indexed_label_warning_threshold", LONG, 10000L)
@@ -1390,13 +1397,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.server.memory.query_cache.soft_cache_num_entries", INT, 800)
             .addConstraint(min(0))
             .dynamic()
-            .build();
-
-    @Internal
-    @Description(
-            "Feature flag to enable/disable the rewriting of GPM Shortest patterns into legacy findShortest where convertions are possible")
-    public static final Setting<Boolean> gpm_shortest_to_legacy_shortest_enabled = newBuilder(
-                    "internal.cypher.enable_shortest_to_legacy_shortest", BOOL, true)
             .build();
 
     @Internal
