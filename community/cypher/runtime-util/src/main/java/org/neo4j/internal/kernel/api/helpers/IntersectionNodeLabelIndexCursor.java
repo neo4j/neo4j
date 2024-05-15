@@ -33,6 +33,8 @@ import org.neo4j.io.pagecache.context.CursorContext;
 
 public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListenable implements SkippableCursor {
 
+    private final SkippableCursor[] cursors;
+
     public static IntersectionNodeLabelIndexCursor ascendingIntersectionNodeLabelIndexCursor(
             Read read,
             TokenReadSession tokenReadSession,
@@ -85,8 +87,6 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
     public static IntersectionNodeLabelIndexCursor intersectionNodeLabelIndexCursor(NodeLabelIndexCursor[] cursors) {
         return new AscendingIntersectionLabelIndexCursor(cursors);
     }
-
-    private final SkippableCursor[] cursors;
 
     IntersectionNodeLabelIndexCursor(SkippableCursor[] cursors) {
         assert cursors != null && cursors.length > 0;
