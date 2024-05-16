@@ -251,6 +251,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Any quantifier in a selective path pattern above this limit gets removed and instead expressed "
+            + "as a predicate. This is done to limit the size of the NFA. Note that for a QPP, the limit "
+            + "is divided by the number of relationships in the QPP. As an example, if this limit is "
+            + "set to 4, a QPP with 2 relationships and the quantifier {,2} will get rewritten.")
+    public static final Setting<Integer> stateful_shortest_planning_rewrite_quantifiers_above = newBuilder(
+                    "internal.cypher.stateful_shortest_planning_rewrite_quantifiers_above", INT, 100)
+            .build();
+
+    @Internal
     @Description(
             "The threshold when a warning is generated if a label scan is done after a load csv where the label has no index")
     public static final Setting<Long> query_non_indexed_label_warning_threshold = newBuilder(

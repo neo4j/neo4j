@@ -38,9 +38,7 @@ import org.neo4j.cypher.internal.util.UpperBound
 /**
  * Update large quantified ranges in Selective Path Patterns to instead be a size restricted pre-filter predicate to limit size of built NFA and add path length restriction.
  */
-case object LimitRangesOnSelectivePathPattern {
-  private val topMin = 100
-  private val topMax = 100
+case class LimitRangesOnSelectivePathPattern(rewriteQuantifiersAbove: Int) {
 
   def apply(spp: SelectivePathPattern): SelectivePathPattern = {
     val (boundaryPredicates, newConnections) =
@@ -72,7 +70,7 @@ case object LimitRangesOnSelectivePathPattern {
   ): (Set[Expression], PatternRelationship) = {
     val startRelationship = patternRelationship.relationships.headOption
     val (newMin, maybeMinExpression) =
-      if (min < topMin)
+      if (min < rewriteQuantifiersAbove)
         (min, None)
       else
         (1, startRelationship.map(minRestrictionPredicate(_, min.toString)))
@@ -80,7 +78,7 @@ case object LimitRangesOnSelectivePathPattern {
       case None =>
         (None, None)
       case Some(limit) =>
-        if (limit < topMax)
+        if (limit < rewriteQuantifiersAbove)
           (Some(limit), None)
         else
           (None, startRelationship.map(maxRestrictionPredicate(_, limit.toString)))
@@ -97,7 +95,7 @@ case object LimitRangesOnSelectivePathPattern {
     val amountOfRelationships = qpp.relationshipVariableGroupings.size
     val startRelationship = qpp.relationshipVariableGroupings.headOption.map(_.group)
     val (newMin, maybeMinExpression) =
-      if (qpp.repetition.min * amountOfRelationships < topMin)
+      if (qpp.repetition.min * amountOfRelationships < rewriteQuantifiersAbove)
         (qpp.repetition.min.toInt, None)
       else
         (1, startRelationship.map(minRestrictionPredicate(_, qpp.repetition.min.toString)))
@@ -105,7 +103,7 @@ case object LimitRangesOnSelectivePathPattern {
       case UpperBound.Unlimited =>
         (UpperBound.Unlimited, None)
       case UpperBound.Limited(limit) =>
-        if (limit * amountOfRelationships < topMax)
+        if (limit * amountOfRelationships < rewriteQuantifiersAbove)
           (UpperBound.Limited(limit), None)
         else
           (UpperBound.Unlimited, startRelationship.map(maxRestrictionPredicate(_, limit.toString)))

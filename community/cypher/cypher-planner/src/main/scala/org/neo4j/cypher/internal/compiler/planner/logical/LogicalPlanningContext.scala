@@ -130,10 +130,12 @@ object LogicalPlanningContext {
     csvBufferSize: Int = GraphDatabaseSettings.csv_buffer_size.defaultValue().intValue(),
     planningIntersectionScansEnabled: Boolean =
       GraphDatabaseInternalSettings.planning_intersection_scans_enabled.defaultValue(),
-    eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default
+    eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default,
+    statefulShortestPlanningRewriteQuantifiersAbove: Int =
+      GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above.defaultValue()
   ) {
 
-    def cacheKey(): Seq[Any] = this match {
+    private def cacheKey(): Seq[Any] = this match {
       // Note: This extra match is here to trigger a compilation error whenever the Signature of Settings is changed,
       // to make the author aware and make them think about whether they want to include a new field in the cache key.
       case Settings(
@@ -147,7 +149,8 @@ object LogicalPlanningContext {
           legacyCsvQuoteEscaping: Boolean,
           csvBufferSize: Int,
           planningIntersectionScansEnabled: Boolean,
-          eagerAnalyzer: CypherEagerAnalyzerOption
+          eagerAnalyzer: CypherEagerAnalyzerOption,
+          statefulShortestPlanningRewriteQuantifiersAbove: Int
         ) =>
         val builder = Seq.newBuilder[Any]
 
@@ -176,6 +179,9 @@ object LogicalPlanningContext {
 
         if (GraphDatabaseInternalSettings.cypher_eager_analysis_implementation.dynamic())
           builder.addOne(eagerAnalyzer)
+
+        if (GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above.dynamic())
+          builder.addOne(statefulShortestPlanningRewriteQuantifiersAbove)
 
         builder.result()
     }

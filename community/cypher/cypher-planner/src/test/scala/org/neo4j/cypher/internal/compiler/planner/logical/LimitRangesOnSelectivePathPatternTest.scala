@@ -107,6 +107,22 @@ class LimitRangesOnSelectivePathPatternTest extends CypherFunSuite with LogicalP
     rewrittenSpp shouldEqual Set(spp)
   }
 
+  test("should move QPP (2 rels) min limit from QPP to SPP predicate when above 50") {
+    val rewrittenSpp = buildSinglePlannerQueryAndRewriteSelectivePathPattern(
+      "MATCH ANY SHORTEST ((start) ((a)-[r]->(b)-[r2]->(c)){1,51} (end)) RETURN 1 AS one"
+    )
+    val spp = get2RelsSPPWithLimits(1, UpperBound.unlimited, Seq(maxRestrictionPredicate(v"r", "51")))
+    rewrittenSpp shouldEqual Set(spp)
+  }
+
+  test("should not move QPP (2 rels) min limit from QPP to SPP predicate when below 50") {
+    val rewrittenSpp = buildSinglePlannerQueryAndRewriteSelectivePathPattern(
+      "MATCH ANY SHORTEST ((start) ((a)-[r]->(b)-[r2]->(c)){1,49} (end)) RETURN 1 AS one"
+    )
+    val spp = get2RelsSPPWithLimits(1, UpperBound.Limited(49), Seq.empty)
+    rewrittenSpp shouldEqual Set(spp)
+  }
+
   test("should move QPP limit from multiple QPPs to SPP predicate when above 100") {
     val rewrittenSpp = buildSinglePlannerQueryAndRewriteSelectivePathPattern(
       "MATCH ANY SHORTEST ((start) ((a)-[r]->(b)){1,100} (end) ((c)-[s]->(d)){1,100} (end2)) RETURN 1 AS one"
@@ -119,7 +135,7 @@ class LimitRangesOnSelectivePathPatternTest extends CypherFunSuite with LogicalP
   }
 
   test(
-    "should move QPP limit from multiple QPPs to SPP predicate but not set a path limit if query contains a unlimited UpperBound"
+    "should move QPP limit from multiple QPPs to SPP predicate but not set a path limit if query contains an unlimited UpperBound"
   ) {
     val rewrittenSpp = buildSinglePlannerQueryAndRewriteSelectivePathPattern(
       "MATCH ANY SHORTEST ((start) ((a)-[r]->(b))+ (end) ((c)-[s]->(d)){1,100} (end2)) RETURN 1 AS one"
@@ -211,9 +227,33 @@ class LimitRangesOnSelectivePathPatternTest extends CypherFunSuite with LogicalP
     rewrittenSpp shouldEqual Set(spp)
   }
 
-  private def buildSinglePlannerQueryAndRewriteSelectivePathPattern(query: String): Set[SelectivePathPattern] = {
+  test("should move QPP max limit from QPP to SPP predicate when above configured limit") {
+    val rewrittenSpp =
+      buildSinglePlannerQueryAndRewriteSelectivePathPattern(
+        "MATCH ANY SHORTEST ((start) ((a)-[r]->(b)){1,1000} (end)) RETURN 1 AS one",
+        limit = 999
+      )
+    val spp =
+      getSPPWithLimits(Seq((1, UpperBound.unlimited)), Seq(maxRestrictionPredicate(v"r", "1000")))
+    rewrittenSpp shouldEqual Set(spp)
+  }
+
+  test("should not move QPP max limit from QPP to SPP predicate when below configured limit") {
+    val rewrittenSpp = buildSinglePlannerQueryAndRewriteSelectivePathPattern(
+      "MATCH ANY SHORTEST ((start) ((a)-[r]->(b)){1,1000} (end)) RETURN 1 AS one",
+      limit = 1001
+    )
+
+    val spp = getSPPWithLimits(Seq((1, UpperBound.Limited(1000))), Seq.empty)
+    rewrittenSpp shouldEqual Set(spp)
+  }
+
+  private def buildSinglePlannerQueryAndRewriteSelectivePathPattern(
+    query: String,
+    limit: Int = 100
+  ): Set[SelectivePathPattern] = {
     val q = buildSinglePlannerQuery(query)
-    q.queryGraph.selectivePathPatterns.map(LimitRangesOnSelectivePathPattern.apply)
+    q.queryGraph.selectivePathPatterns.map(LimitRangesOnSelectivePathPattern(limit).apply)
   }
 
   private def getQPP1WithLimits(qppMin: Int, qppMax: UpperBound): QuantifiedPathPattern =
@@ -231,6 +271,34 @@ class LimitRangesOnSelectivePathPatternTest extends CypherFunSuite with LogicalP
       repetition = Repetition(min = qppMin, max = qppMax),
       nodeVariableGroupings = Set(variableGrouping(v"a", v"a"), variableGrouping(v"b", v"b")),
       relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
+    )
+
+  private def get2RelsQPP1WithLimits(qppMin: Int, qppMax: UpperBound): QuantifiedPathPattern =
+    QuantifiedPathPattern(
+      leftBinding = NodeBinding(v"a", v"start"),
+      rightBinding = NodeBinding(v"c", v"end"),
+      patternRelationships =
+        NonEmptyList(
+          PatternRelationship(
+            v"r",
+            (v"a", v"b"),
+            SemanticDirection.OUTGOING,
+            Seq.empty,
+            SimplePatternLength
+          ),
+          PatternRelationship(
+            v"r2",
+            (v"b", v"c"),
+            SemanticDirection.OUTGOING,
+            Seq.empty,
+            SimplePatternLength
+          )
+        ),
+      repetition = Repetition(min = qppMin, max = qppMax),
+      nodeVariableGroupings =
+        Set(variableGrouping(v"a", v"a"), variableGrouping(v"b", v"b"), variableGrouping(v"c", v"c")),
+      relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"), variableGrouping(v"r2", v"r2")),
+      selections = Selections.from(differentRelationships("r2", "r"))
     )
 
   private def getQPP2WithLimits(qppMin: Int, qppMax: UpperBound): QuantifiedPathPattern =
@@ -257,12 +325,26 @@ class LimitRangesOnSelectivePathPatternTest extends CypherFunSuite with LogicalP
     val qpps = qppLimits match {
       case Seq((min, max))                 => Seq(getQPP1WithLimits(min, max))
       case Seq((min1, max1), (min2, max2)) => Seq(getQPP1WithLimits(min1, max1), getQPP2WithLimits(min2, max2))
-      case _                               => Seq.empty
+      case _                               => throw new IllegalStateException()
     }
     val relUniqPreds = if (qppLimits.size == 2) Seq(Disjoint(v"r", v"s")(pos), Unique(v"r")(pos), Unique(v"s")(pos))
     else Seq(Unique(v"r")(pos))
     SelectivePathPattern(
       pathPattern = NodeConnections(NonEmptyList.from(qpps)),
+      Selections.from(relUniqPreds ++ predicates),
+      SelectivePathPattern.Selector.Shortest(1)
+    )
+  }
+
+  private def get2RelsSPPWithLimits(
+    qppMin: Int,
+    qppMax: UpperBound,
+    predicates: Seq[Expression]
+  ): SelectivePathPattern = {
+    val qpp = get2RelsQPP1WithLimits(qppMin, qppMax)
+    val relUniqPreds = Seq(Unique(add(v"r", v"r2"))(pos))
+    SelectivePathPattern(
+      pathPattern = NodeConnections(NonEmptyList(qpp)),
       Selections.from(relUniqPreds ++ predicates),
       SelectivePathPattern.Selector.Shortest(1)
     )

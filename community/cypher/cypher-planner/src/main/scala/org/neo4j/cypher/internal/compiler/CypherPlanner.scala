@@ -292,5 +292,10 @@ class CypherPlannerConfiguration(
     () => config.propertyCachingMode
   }
 
-  val propertyCachingMode: PropertyCachingMode = config.propertyCachingMode
+  val statefulShortestPlanningRewriteQuantifiersAbove: () => Int = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.stateful_shortest_planning_rewrite_quantifiers_above.dynamic()
+    )
+    () => config.statefulShortestPlanningRewriteQuantifiersAbove
+  }
 }

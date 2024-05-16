@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
@@ -2774,7 +2775,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val icp = new InsertCachedProperties(pushdownPropertyReads = pushdownPropertyReads)
 
-    val config = mock[CypherPlannerConfiguration]
+    val config = mock[CypherPlannerConfiguration](RETURNS_DEEP_STUBS)
     when(config.propertyCachingMode()).thenReturn(PropertyCachingMode.CacheProperties)
 
     val plannerContext = mock[PlannerContext]

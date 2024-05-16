@@ -534,7 +534,8 @@ object expandSolverStep {
     // Get minimum and maximum path lengths from the pattern.
     val pathLength = PathLength.from(spp.pathPattern)
     // Limit ranges for quantified patterns in SPP so we don't create NFAs that are too large.
-    val rewrittenSpp = LimitRangesOnSelectivePathPattern(spp)
+    val rewrittenSpp =
+      LimitRangesOnSelectivePathPattern(context.settings.statefulShortestPlanningRewriteQuantifiersAbove)(spp)
 
     val (nfa, nonInlinedSelections, syntheticVarLengthSingletons) = {
       ConvertToNFA.convertToNfa(
