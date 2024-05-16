@@ -588,7 +588,8 @@ public class ImportCommand {
                 showDefaultValue = NEVER,
                 required = false,
                 description = "Name of database format. Imported database will be created of the specified format "
-                        + "or use format from configuration if not specified.")
+                        + "or use format from configuration if not specified. Valid formats are standard, aligned, "
+                        + "high_limit or block")
         private String format;
 
         // Was force
