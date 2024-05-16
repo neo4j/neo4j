@@ -3666,7 +3666,9 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       ))
   }
 
-  // Drop constraint
+  // Drop constraint by schema (throws either in parsing, ast generation or semantic checking)
+
+  //   Throws in semantic checking
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NODE KEY") {
     parsesTo[Statements](ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")))(pos))
@@ -3691,12 +3693,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     )(pos))
   }
 
-  test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS NODE KEY") {
-    failsParsing[Statements]
-      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
-      .parseIn(Antlr)(_.throws[SyntaxException])
-  }
-
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
     parsesTo[Statements](ast.DropPropertyUniquenessConstraint(
       varFor("node"),
@@ -3719,12 +3715,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       labelName("Label"),
       Seq(prop("node", "prop1"), prop("node", "prop2"))
     )(pos))
-  }
-
-  test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS UNIQUE") {
-    failsParsing[Statements]
-      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
-      .parseIn(Antlr)(_.throws[SyntaxException])
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
@@ -3781,30 +3771,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     )
   }
 
-  test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NOT NULL") {
-    failsParsing[Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
-  }
-
-  test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS NOT NULL") {
-    failsParsing[Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
-  }
-
-  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT (r.prop) IS NOT NULL") {
-    failsParsing[Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
-  }
-
-  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
-    failsParsing[Statements]
-      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
-      .parseIn(Antlr)(_.throws[SyntaxException])
-  }
-
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.EXISTS) IS NODE KEY") {
     parsesTo[Statements](
       ast.DropNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "EXISTS")))(pos)
@@ -3834,6 +3800,226 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
       prop("r", "EXISTS")
     )(pos))
   }
+
+  //   Throws in ast generation/parsing
+
+  test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS NODE KEY") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY))
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS UNIQUE") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT EXISTS (n.p1, n.p2)") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_EXISTS))
+      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p1, r.p2)") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_EXISTS))
+      .parseIn(JavaCc)(_.throws[Neo4jASTConstructionException])
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS NOT NULL") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS NOT NULL") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT (r.prop) IS NOT NULL") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop IS NOT NULL") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT (n.p1, n.p2) IS NOT NULL") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT (r.p1, r.p2) IS NOT NULL") {
+    failsParsing[Statements]
+      .withMessageStart(ASTExceptionFactory.invalidDropCommand)
+      .parseIn(Antlr)(_.throws[SyntaxException])
+  }
+
+  test("DROP CONSTRAINT FOR (n:L) REQUIRE n.p IS NODE KEY") {
+    // Parses FOR as constraint name
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
+      .parseIn(Antlr)(
+        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+      )
+  }
+
+  test("DROP CONSTRAINT FOR (n:L) ASSERT n.p IS NODE KEY") {
+    // Parses FOR as constraint name
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
+      .parseIn(Antlr)(
+        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+      )
+  }
+
+  test("DROP CONSTRAINT ON (n:L) REQUIRE n.p IS NODE KEY") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input 'REQUIRE': expected 'ASSERT' (line"))
+  }
+
+  test("DROP CONSTRAINT FOR (n:L) REQUIRE n.p IS UNIQUE") {
+    // Parses FOR as constraint name
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
+      .parseIn(Antlr)(
+        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+      )
+  }
+
+  test("DROP CONSTRAINT FOR (n:L) ASSERT n.p IS UNIQUE") {
+    // Parses FOR as constraint name
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
+      .parseIn(Antlr)(
+        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+      )
+  }
+
+  test("DROP CONSTRAINT ON (n:L) REQUIRE n.p IS UNIQUE") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input 'REQUIRE': expected 'ASSERT' (line"))
+  }
+
+  test("DROP CONSTRAINT FOR (n:L) REQUIRE EXISTS n.p") {
+    // Parses FOR as constraint name
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
+      .parseIn(Antlr)(
+        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+      )
+  }
+
+  test("DROP CONSTRAINT FOR (n:L) ASSERT EXISTS n.p") {
+    // Parses FOR as constraint name
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '(': expected "IF" or <EOF> (line"""))
+      .parseIn(Antlr)(
+        _.throws[SyntaxException].withMessageStart("Invalid input '(': expected 'IF EXISTS' or <EOF> (line")
+      )
+  }
+
+  test("DROP CONSTRAINT ON (n:L) REQUIRE EXISTS n.p") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REQUIRE': expected "ASSERT" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input 'REQUIRE': expected 'ASSERT' (line"))
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS REL KEY") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REL': expected "NODE", "NOT" or "UNIQUE" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Invalid input 'REL': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+      ))
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS RELATIONSHIP KEY") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'RELATIONSHIP': expected "NODE", "NOT" or "UNIQUE" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Invalid input 'RELATIONSHIP': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+      ))
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS REL UNIQUE") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'REL': expected "NODE", "NOT" or "UNIQUE" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Invalid input 'REL': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+      ))
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS RELATIONSHIP UNIQUE") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'RELATIONSHIP': expected "NODE", "NOT" or "UNIQUE" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Invalid input 'RELATIONSHIP': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+      ))
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS NODE UNIQUE") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'UNIQUE': expected "KEY" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input 'UNIQUE': expected 'KEY' (line"))
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS TYPED INT") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'TYPED': expected "NODE", "NOT" or "UNIQUE" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Invalid input 'TYPED': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+      ))
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.p IS TYPED STRING") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input 'TYPED': expected "NODE", "NOT" or "UNIQUE" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Invalid input 'TYPED': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+      ))
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT n.p IS :: LIST<FLOAT>") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '::': expected "NODE", "NOT" or "UNIQUE" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Invalid input '::': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+      ))
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.p IS :: BOOLEAN") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '::': expected "NODE", "NOT" or "UNIQUE" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart(
+        "Invalid input '::': expected 'NODE KEY', 'NOT NULL' or 'UNIQUE' (line"
+      ))
+  }
+
+  test("DROP CONSTRAINT ON (n:L) ASSERT n.p :: ZONED DATETIME") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '::': expected "IS" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '::': expected 'IS' (line"))
+  }
+
+  test("DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.p :: LOCAL TIME") {
+    failsParsing[Statements]
+      .parseIn(JavaCc)(_.withMessageStart("""Invalid input '::': expected "IS" (line"""))
+      .parseIn(Antlr)(_.throws[SyntaxException].withMessageStart("Invalid input '::': expected 'IS' (line"))
+  }
+
+  // Drop constraint by name
 
   test("DROP CONSTRAINT my_constraint") {
     parsesTo[Statements](ast.DropConstraintOnName("my_constraint", ifExists = false)(pos))
