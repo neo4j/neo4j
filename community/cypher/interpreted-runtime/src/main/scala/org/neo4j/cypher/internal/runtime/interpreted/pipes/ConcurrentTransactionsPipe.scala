@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.evaluateBatchSize
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.evaluateConcurrency
+import org.neo4j.cypher.internal.runtime.memory.TransactionWorkerThreadDelegatingMemoryTracker
 import org.neo4j.exceptions.CypherExecutionInterruptedException
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 import org.neo4j.memory.MemoryTracker
@@ -257,13 +258,16 @@ abstract class AbstractConcurrentTransactionsPipe(
   }
 
   abstract protected class AbstractConcurrentTransactionsResultsTask(
+    state: QueryState,
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ) extends Runnable {
+    private[this] var contextMemoryTracker: MemoryTracker = null.asInstanceOf[MemoryTracker]
 
     override def run(): Unit = {
       var outputResult: TaskOutputResult = null
       try {
+        initializeMemoryTracker()
         val outputIterator = consumeBatch()
         outputResult = TaskOutputResult(outputIterator)
         DebugSupport.CONCURRENT_TRANSACTIONS_WORKER.log("[%s] Done", this)
@@ -278,26 +282,36 @@ abstract class AbstractConcurrentTransactionsPipe(
           outputResult = TaskOutputResult(null, error = e)
           throw e
       } finally {
-        // TODO: Do not handle interrupts
-        var interrupted: Boolean = false
-        do {
-          interrupted = false
-          try {
-            outputQueue.put(outputResult)
-          } catch {
-            case _: InterruptedException =>
-              interrupted = true
-              Thread.interrupted()
-          } finally {
-            if (!interrupted) {
-              activeTaskCount.getAndAdd(-1)
-            }
-          }
-        } while (interrupted)
+        try {
+          outputQueue.put(outputResult)
+        } finally {
+          activeTaskCount.getAndAdd(-1)
+          closeMemoryTracker()
+        }
       }
     }
 
     protected def consumeBatch(): ClosingIterator[CypherRow]
+
+    private def initializeMemoryTracker(): Unit = {
+      var memoryTracker = TransactionWorkerThreadDelegatingMemoryTracker.threadLocalExecutionContextMemoryTracker.get
+      if (memoryTracker == null) {
+        memoryTracker = state.query.transactionalContext.createExecutionContextMemoryTracker()
+        TransactionWorkerThreadDelegatingMemoryTracker.threadLocalExecutionContextMemoryTracker.set(memoryTracker)
+      }
+      contextMemoryTracker = memoryTracker
+    }
+
+    private def closeMemoryTracker(): Unit = {
+      val memoryTracker = contextMemoryTracker
+      if (memoryTracker != null) {
+        try {
+          memoryTracker.close()
+        } finally {
+          TransactionWorkerThreadDelegatingMemoryTracker.threadLocalExecutionContextMemoryTracker.remove()
+        }
+      }
+    }
 
     override def toString: String = {
       String.format("%-16s", Thread.currentThread().getName)
@@ -312,6 +326,7 @@ abstract class AbstractConcurrentTransactionsPipe(
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ) extends AbstractConcurrentTransactionsResultsTask(
+        state,
         outputQueue,
         activeTaskCount
       ) {
@@ -339,6 +354,7 @@ abstract class AbstractConcurrentTransactionsPipe(
     outputQueue: ArrayBlockingQueue[TaskOutputResult],
     activeTaskCount: AtomicInteger
   ) extends AbstractConcurrentTransactionsResultsTask(
+        state,
         outputQueue,
         activeTaskCount
       ) {

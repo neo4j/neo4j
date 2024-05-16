@@ -335,6 +335,11 @@ public class StubKernelTransaction implements KernelTransaction {
     }
 
     @Override
+    public MemoryTracker createExecutionContextMemoryTracker() {
+        return null;
+    }
+
+    @Override
     public QueryContext queryContext() {
         return null;
     }

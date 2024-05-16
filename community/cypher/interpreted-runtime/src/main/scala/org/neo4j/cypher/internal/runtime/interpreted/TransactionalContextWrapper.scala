@@ -203,6 +203,9 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
   }
 
   override def constituentTransactionFactory: ConstituentTransactionFactory = tc.constituentTransactionFactory()
+
+  override def createExecutionContextMemoryTracker(): MemoryTracker =
+    tc.kernelTransaction().createExecutionContextMemoryTracker()
 }
 
 object TransactionalContextWrapper {

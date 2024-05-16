@@ -1893,7 +1893,6 @@ class SlottedPipeMapper(
           onErrorBehaviour,
           maybeReportAs
         ) =>
-
         ConcurrentTransactionApplySlottedPipe(
           lhs,
           rhs,

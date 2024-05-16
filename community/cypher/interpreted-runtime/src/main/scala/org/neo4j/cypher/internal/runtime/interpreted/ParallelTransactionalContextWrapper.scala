@@ -183,4 +183,6 @@ class ParallelTransactionalContextWrapper(
   }
 
   override def constituentTransactionFactory: ConstituentTransactionFactory = ConstituentTransactionFactory.throwing()
+
+  override def createExecutionContextMemoryTracker(): MemoryTracker = unsupported()
 }

@@ -678,6 +678,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public MemoryTracker createExecutionContextMemoryTracker() {
+        var grabSize = config.get(GraphDatabaseInternalSettings.initial_transaction_heap_grab_size_per_worker);
+        var maxGrabSize = config.get(GraphDatabaseInternalSettings.max_transaction_heap_grab_size_per_worker);
+        return transactionMemoryPool.getExecutionContextPoolMemoryTracker(grabSize, maxGrabSize);
+    }
+
+    @Override
     public QueryContext queryContext() {
         return operations.queryContext();
     }

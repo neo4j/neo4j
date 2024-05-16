@@ -851,4 +851,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def createValueMapper: ValueMapper[AnyRef] = inner.createValueMapper
 
   override def constituentTransactionFactory: ConstituentTransactionFactory = inner.constituentTransactionFactory
+
+  override def createExecutionContextMemoryTracker(): MemoryTracker = inner.createExecutionContextMemoryTracker
 }

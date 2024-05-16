@@ -363,6 +363,11 @@ public class ExecutionContextProcedureKernelTransaction implements KernelTransac
     }
 
     @Override
+    public MemoryTracker createExecutionContextMemoryTracker() {
+        throw failure("createExecutionContextMemoryTracker");
+    }
+
+    @Override
     public QueryContext queryContext() {
         return ctx.queryContext();
     }

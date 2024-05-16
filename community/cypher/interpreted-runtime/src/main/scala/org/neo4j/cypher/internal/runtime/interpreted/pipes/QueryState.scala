@@ -37,6 +37,7 @@ import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.internal.kernel
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.TokenReadSession
+import org.neo4j.io.IOUtils.closeAll
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -270,11 +271,9 @@ class QueryState(
 
   override def close(): Unit = {
     if (!_closed) {
-      cursors.close()
-      cachedIn.close()
-      query.close()
+      closeAll(cursors, cachedIn, query)
+      _closed = true
     }
-    _closed = true
   }
 }
 

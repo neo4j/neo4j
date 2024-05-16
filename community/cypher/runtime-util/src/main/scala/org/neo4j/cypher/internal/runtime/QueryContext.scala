@@ -824,6 +824,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def createValueMapper: ValueMapper[AnyRef]
 
   def constituentTransactionFactory: ConstituentTransactionFactory
+
+  def createExecutionContextMemoryTracker(): MemoryTracker
 }
 
 trait KernelPredicate[T] {

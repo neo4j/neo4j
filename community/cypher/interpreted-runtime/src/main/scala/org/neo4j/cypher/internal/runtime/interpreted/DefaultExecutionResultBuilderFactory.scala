@@ -40,13 +40,15 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
 import org.neo4j.cypher.internal.runtime.memory.CustomTrackingQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.NoOpQueryMemoryTracker
+import org.neo4j.cypher.internal.runtime.memory.ParallelTrackingQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.ProfilingParallelTrackingQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker
+import org.neo4j.cypher.internal.runtime.memory.TransactionWorkerThreadDelegatingMemoryTracker
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.kernel.impl.query.QuerySubscriber
-import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.scheduler.CallableExecutor
 import org.neo4j.scheduler.Group
 import org.neo4j.values.AnyValue
@@ -69,15 +71,27 @@ abstract class BaseExecutionResultBuilderFactory(
       case _ => None
     }
 
-    protected def createQueryMemoryTracker(memoryTrackingController: MemoryTrackingController): QueryMemoryTracker = {
+    protected def createQueryMemoryTracker(
+      memoryTrackingController: MemoryTrackingController,
+      profile: Boolean,
+      queryContext: QueryContext
+    ): QueryMemoryTracker = {
       (memoryTrackingController.memoryTracking, startsTransactions) match {
         case (NO_TRACKING, _) => NoOpQueryMemoryTracker
         case (MEMORY_TRACKING, Some(Concurrent(_))) =>
-          val t = new ProfilingParallelTrackingQueryMemoryTracker
-          t.setInitializationMemoryTracker(
-            EmptyMemoryTracker.INSTANCE
-          ) // TODO: We need to solve delegation to the TransactionMemoryPool
-          t
+          val delegateFactory = () => {
+            new TransactionWorkerThreadDelegatingMemoryTracker
+          }
+          val mainThreadMemoryTracker = queryContext.transactionalContext.createExecutionContextMemoryTracker()
+          val mt = if (profile) {
+            new ProfilingParallelTrackingQueryMemoryTracker(delegateFactory)
+          } else {
+            new ParallelTrackingQueryMemoryTracker(delegateFactory)
+          }
+          // mainThreadMemoryTracker should be closed together with the query context
+          queryContext.resources.trace(DefaultCloseListenable.wrap(mainThreadMemoryTracker))
+          mt.setInitializationMemoryTracker(mainThreadMemoryTracker)
+          mt
         case (MEMORY_TRACKING, _)                   => new TrackingQueryMemoryTracker
         case (CUSTOM_MEMORY_TRACKING(decorator), _) => new CustomTrackingQueryMemoryTracker(decorator)
       }
@@ -139,7 +153,7 @@ case class InterpretedExecutionResultBuilderFactory(
       doProfile: Boolean
     ): QueryState = {
       val cursors = queryContext.createExpressionCursors()
-      val queryMemoryTracker = createQueryMemoryTracker(memoryTrackingController)
+      val queryMemoryTracker = createQueryMemoryTracker(memoryTrackingController, doProfile, queryContext)
       QueryState(
         queryContext,
         externalResource,

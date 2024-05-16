@@ -464,6 +464,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
     ExecutionContext createExecutionContext();
 
     /**
+     * Create an execution context memory tracker to be used by threads separate to where the transaction is executed.
+     */
+    MemoryTracker createExecutionContextMemoryTracker();
+
+    /**
      * @return current transaction query execution context
      */
     QueryContext queryContext();

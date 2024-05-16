@@ -71,7 +71,7 @@ class SlottedExecutionResultBuilderFactory(
       subscriber: QuerySubscriber,
       doProfile: Boolean
     ): QueryState = {
-      val queryMemoryTracker = createQueryMemoryTracker(memoryTrackingController)
+      val queryMemoryTracker = createQueryMemoryTracker(memoryTrackingController, doProfile, queryContext)
       QueryState(
         queryContext,
         externalResource,

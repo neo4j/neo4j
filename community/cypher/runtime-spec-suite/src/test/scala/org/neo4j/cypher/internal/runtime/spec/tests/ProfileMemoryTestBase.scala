@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency.Concurrent
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -169,7 +170,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // then
-    assertOnMemory(logicalQuery, NO_INPUT, 5, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 6, 1)
   }
 
   test("should profile memory of top n, where n < max array size") {
@@ -371,7 +372,8 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    for (i <- 0 until numOperators) {
+    var i = 0
+    while (i < numOperators) {
       withClue(s"Memory allocations of plan $i: ") {
         if (allocatingOperators.contains(i)) {
           queryProfile.operatorProfile(i).maxAllocatedMemory() should be > 0L
@@ -381,6 +383,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
           queryProfile.operatorProfile(i).maxAllocatedMemory() should be(OperatorProfile.NO_DATA)
         }
       }
+      i += 1
     }
     queryProfile.maxAllocatedMemory() should be > 0L
   }
@@ -554,6 +557,88 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
       .build(readOnly = false)
 
     // then
-    assertOnMemory(logicalQuery, NO_INPUT, 4, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 8, 1, 4)
+  }
+
+  test("should profile memory of operators inside transactionApply") {
+    // given
+    givenWithTransactionType(
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        }
+      ),
+      KernelTransaction.Type.IMPLICIT
+    )
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionApply()
+      .|.create(createNode("n", "N"))
+      .|.expandInto("(m)-->(m)")
+      .|.allNodeScan("m")
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    assertOnMemory(logicalQuery, NO_INPUT, 7, 1, 3)
+  }
+
+  test("should profile memory of operators inside concurrent transactionForeach") {
+    // given
+    givenWithTransactionType(
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        }
+      ),
+      KernelTransaction.Type.IMPLICIT
+    )
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionForeach(concurrency = Concurrent(None))
+      .|.emptyResult()
+      .|.create(createNode("n", "N"))
+      .|.expandInto("(m)-->(m)")
+      .|.allNodeScan("m")
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    assertOnMemory(logicalQuery, NO_INPUT, 8, 1, 4)
+  }
+
+  test("should profile memory of operators inside concurrent transactionApply") {
+    // given
+    givenWithTransactionType(
+      nodePropertyGraph(
+        SIZE,
+        {
+          case i => Map("prop" -> i)
+        }
+      ),
+      KernelTransaction.Type.IMPLICIT
+    )
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .transactionApply(concurrency = Concurrent(None))
+      .|.create(createNode("n", "N"))
+      .|.expandInto("(m)-->(m)")
+      .|.allNodeScan("m")
+      .unwind("[1, 2] AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    assertOnMemory(logicalQuery, NO_INPUT, 7, 1, 3)
   }
 }
