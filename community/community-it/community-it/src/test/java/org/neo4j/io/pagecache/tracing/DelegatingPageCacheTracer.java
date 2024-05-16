@@ -130,11 +130,6 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public double usageRatio() {
-        return delegate.usageRatio();
-    }
-
-    @Override
     public long maxPages() {
         return delegate.maxPages();
     }

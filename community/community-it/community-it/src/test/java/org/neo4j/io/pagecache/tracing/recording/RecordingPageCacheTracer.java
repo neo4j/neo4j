@@ -220,11 +220,6 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
-    public double usageRatio() {
-        return 0d;
-    }
-
-    @Override
     public long maxPages() {
         return 0;
     }

@@ -251,23 +251,6 @@ class DefaultPageCacheTracerTest {
         assertThat(tracer.hitRatio()).as("hitRation").isCloseTo(3.0 / 10, within(0.0001));
     }
 
-    @Test
-    void usageRatio() {
-        assertThat(tracer.usageRatio()).isEqualTo(0);
-        tracer.maxPages(10, 8);
-        assertThat(tracer.usageRatio()).isCloseTo(0d, within(0.0001));
-        tracer.faults(5);
-        assertThat(tracer.usageRatio()).isCloseTo(0.5, within(0.0001));
-        tracer.faults(5);
-        tracer.evictions(5);
-        assertThat(tracer.usageRatio()).isCloseTo(0.5, within(0.0001));
-        tracer.faults(5);
-        assertThat(tracer.usageRatio()).isCloseTo(1d, within(0.0001));
-
-        tracer.evictions(500);
-        assertThat(tracer.usageRatio()).isCloseTo(0, within(0.0001));
-    }
-
     private void assertCounts(
             long pins,
             long unpins,

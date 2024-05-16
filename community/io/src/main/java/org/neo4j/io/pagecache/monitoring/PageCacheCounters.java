@@ -141,12 +141,6 @@ public interface PageCacheCounters {
     double hitRatio();
 
     /**
-     * @return The current usage ration of number of used pages to the total number of pages or {@code 0} if it cannot
-     * be determined.
-     */
-    double usageRatio();
-
-    /**
      * Return max number of page cache pages. 0 if number is not available.
      */
     long maxPages();

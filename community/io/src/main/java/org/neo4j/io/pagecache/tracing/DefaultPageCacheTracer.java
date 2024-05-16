@@ -240,15 +240,6 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public double usageRatio() {
-        long pages = maxPages();
-        if (pages == 0) {
-            return 0;
-        }
-        return Math.max(0, (faults.sum() - evictions.sum()) / (double) pages);
-    }
-
-    @Override
     public long maxPages() {
         return maxPages.get();
     }

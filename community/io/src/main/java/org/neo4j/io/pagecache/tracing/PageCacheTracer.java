@@ -191,11 +191,6 @@ public interface PageCacheTracer extends PageCacheCounters {
         }
 
         @Override
-        public double usageRatio() {
-            return 0d;
-        }
-
-        @Override
         public long maxPages() {
             return 0;
         }
