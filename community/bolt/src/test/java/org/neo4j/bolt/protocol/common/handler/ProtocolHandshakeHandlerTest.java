@@ -40,7 +40,6 @@ import org.neo4j.bolt.negotiation.message.ProtocolNegotiationResponse;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -82,10 +81,7 @@ class ProtocolHandshakeHandlerTest {
         var channel = new EmbeddedChannel();
         var connection = ConnectionMockFactory.newFactory()
                 .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
-                .attachTo(
-                        channel,
-                        new ProtocolHandshakeHandler(
-                                Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider));
+                .attachTo(channel, new ProtocolHandshakeHandler(logProvider));
 
         // When
         channel.writeInbound(new ProtocolNegotiationRequest(
@@ -123,8 +119,7 @@ class ProtocolHandshakeHandlerTest {
                 // are not present within the pipeline
                 .attachTo(
                         channel,
-                        new ProtocolHandshakeHandler(
-                                Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider),
+                        new ProtocolHandshakeHandler(logProvider),
                         new ProtocolNegotiationRequestDecoder(),
                         new ProtocolNegotiationResponseEncoder());
 
@@ -159,8 +154,7 @@ class ProtocolHandshakeHandlerTest {
         var channel = ConnectionMockFactory.newFactory()
                 .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new ProtocolHandshakeHandler(
-                        Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider));
+                .createChannel(new ProtocolHandshakeHandler(logProvider));
 
         // When
         channel.writeInbound(new ProtocolNegotiationRequest(
@@ -183,9 +177,7 @@ class ProtocolHandshakeHandlerTest {
     @Test
     void shouldRejectIfWrongPreamble() {
         // Given
-        var channel = ConnectionMockFactory.newFactory()
-                .createChannel(new ProtocolHandshakeHandler(
-                        Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider));
+        var channel = ConnectionMockFactory.newFactory().createChannel(new ProtocolHandshakeHandler(logProvider));
 
         // When
         channel.writeInbound(new ProtocolNegotiationRequest(
@@ -209,8 +201,7 @@ class ProtocolHandshakeHandlerTest {
 
         var channel = ConnectionMockFactory.newFactory()
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new ProtocolHandshakeHandler(
-                        Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider));
+                .createChannel(new ProtocolHandshakeHandler(logProvider));
 
         channel.pipeline().removeFirst();
 
@@ -229,10 +220,11 @@ class ProtocolHandshakeHandlerTest {
         when(protocolRegistry.get(eq(version))).thenReturn(Optional.of(protocol));
 
         var channel = ConnectionMockFactory.newFactory()
-                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
+                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry)
+                        .withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.BOTH)
+                                .withInboundBufferThrottle(512, 1024)))
                 .withMemoryTracker(memoryTracker)
-                .createChannel(
-                        new ProtocolHandshakeHandler(Config.defaults(), true, ProtocolLoggingMode.BOTH, logProvider));
+                .createChannel(new ProtocolHandshakeHandler(logProvider));
 
         // pre-install handlers as would be the case if the prior protocol stage had initialized the
         // pipeline
@@ -270,10 +262,10 @@ class ProtocolHandshakeHandlerTest {
         when(protocolRegistry.get(eq(version))).thenReturn(Optional.of(protocol));
 
         var channel = ConnectionMockFactory.newFactory()
-                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
+                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry)
+                        .withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.RAW)))
                 .withMemoryTracker(memoryTracker)
-                .createChannel(
-                        new ProtocolHandshakeHandler(Config.defaults(), true, ProtocolLoggingMode.RAW, logProvider));
+                .createChannel(new ProtocolHandshakeHandler(logProvider));
 
         // pre-install handlers as would be the case if the prior protocol stage had initialized the
         // pipeline
@@ -310,10 +302,11 @@ class ProtocolHandshakeHandlerTest {
         when(protocolRegistry.get(eq(version))).thenReturn(Optional.of(protocol));
 
         var channel = ConnectionMockFactory.newFactory()
-                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
+                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry)
+                        .withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.DECODED)
+                                .withInboundBufferThrottle(512, 1024)))
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new ProtocolHandshakeHandler(
-                        Config.defaults(), true, ProtocolLoggingMode.DECODED, logProvider));
+                .createChannel(new ProtocolHandshakeHandler(logProvider));
 
         // pre-install handlers as would be the case if the prior protocol stage had initialized the
         // pipeline

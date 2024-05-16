@@ -48,6 +48,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.ConnectionHandle;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
+import org.neo4j.bolt.protocol.common.connector.netty.AbstractNettyConnector.NettyConfiguration;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
@@ -69,6 +70,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<ConnectionHandle,
 
         this.withId(id);
         this.withSelectedDefaultDatabase("neo4j");
+        this.withConnector(ConnectorMockFactory.newInstance());
     }
 
     public static ConnectionMockFactory newFactory(String id) {
@@ -432,5 +434,13 @@ public class ConnectionMockFactory extends AbstractMockFactory<ConnectionHandle,
 
     public ConnectionMockFactory withCloseFuture(Future<Void> future) {
         return this.withStaticValue(Connection::closeFuture, future);
+    }
+
+    public ConnectionMockFactory withConfiguration(NettyConfiguration configuration) {
+        return this.withConnector(factory -> factory.withConfiguration(configuration));
+    }
+
+    public ConnectionMockFactory withConfiguration(Consumer<ConnectorConfigurationMockFactory> configurer) {
+        return this.withConnector(factory -> factory.withConfiguration(configurer));
     }
 }

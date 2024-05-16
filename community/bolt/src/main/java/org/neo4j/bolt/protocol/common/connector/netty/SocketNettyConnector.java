@@ -22,25 +22,26 @@ package org.neo4j.bolt.protocol.common.connector.netty;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import io.netty.handler.ssl.SslContext;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.netty.SocketNettyConnector.SocketConfiguration;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
-import org.neo4j.bolt.protocol.common.handler.BoltChannelInitializer;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.tx.TransactionManager;
-import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.dbms.routing.RoutingService;
@@ -50,22 +51,16 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.config.AuthConfigProvider;
 
-public class SocketNettyConnector extends AbstractNettyConnector {
-    private final Config config;
-    private final ByteBufAllocator allocator;
+public class SocketNettyConnector extends AbstractNettyConnector<SocketConfiguration> {
     private final ConnectorTransport transport;
-    private final SslContext sslContext;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
     private final ConnectorType connectorType;
     private final ConnectorPortRegister portRegister;
-    private final boolean enableTcpKeepAlive;
-    private final InternalLogProvider logging;
 
     public SocketNettyConnector(
             String id,
             SocketAddress bindAddress,
-            Config config,
             ConnectorType connectorType,
             ConnectorPortRegister portRegister,
             MemoryPool memoryPool,
@@ -76,9 +71,6 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             ConnectorTransport transport,
             Connection.Factory connectionFactory,
             NetworkConnectionTracker connectionTracker,
-            SslContext sslContext,
-            boolean encryptionRequired,
-            boolean enableTcpKeepAlive,
             BoltProtocolRegistry protocolRegistry,
             Authentication authentication,
             AuthConfigProvider authConfigProvider,
@@ -89,8 +81,7 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             ErrorAccountant errorAccountant,
             TrafficAccountant trafficAccountant,
             BoltDriverMetricsMonitor driverMetricsMonitor,
-            int streamingBufferSize,
-            int streamingFlushThreshold,
+            SocketConfiguration configuration,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         super(
@@ -98,9 +89,11 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 bindAddress,
                 memoryPool,
                 clock,
+                allocator,
+                bossGroup,
+                workerGroup,
                 connectionFactory,
                 connectionTracker,
-                encryptionRequired,
                 protocolRegistry,
                 authentication,
                 authConfigProvider,
@@ -111,87 +104,14 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 errorAccountant,
                 trafficAccountant,
                 driverMetricsMonitor,
-                streamingBufferSize,
-                streamingFlushThreshold,
+                configuration,
                 userLogProvider,
                 logging);
-        if (encryptionRequired && sslContext == null) {
-            throw new IllegalArgumentException("SslContext must be specified when encryption is required");
-        }
-
-        this.config = config;
         this.connectorType = connectorType;
         this.portRegister = portRegister;
-        this.allocator = allocator;
         this.bossGroup = bossGroup;
         this.workerGroup = workerGroup;
         this.transport = transport;
-        this.sslContext = sslContext;
-        this.enableTcpKeepAlive = enableTcpKeepAlive;
-        this.logging = logging;
-    }
-
-    public SocketNettyConnector(
-            String id,
-            SocketAddress bindAddress,
-            Config config,
-            ConnectorType connectorType,
-            ConnectorPortRegister portRegister,
-            MemoryPool memoryPool,
-            Clock clock,
-            ByteBufAllocator allocator,
-            EventLoopGroup eventLoopGroup,
-            ConnectorTransport transport,
-            Connection.Factory connectionFactory,
-            NetworkConnectionTracker connectionTracker,
-            SslContext sslContext,
-            boolean encryptionRequired,
-            boolean enableTcpKeepAlive,
-            BoltProtocolRegistry protocolRegistry,
-            Authentication authentication,
-            AuthConfigProvider authConfigProvider,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            ConnectionHintRegistry connectionHintRegistry,
-            TransactionManager transactionManager,
-            RoutingService routingService,
-            ErrorAccountant errorAccountant,
-            TrafficAccountant trafficAccountant,
-            BoltDriverMetricsMonitor driverMetricsMonitor,
-            int streamingBufferSize,
-            int streamingFlushThreshold,
-            InternalLogProvider userLogProvider,
-            InternalLogProvider logging) {
-        this(
-                id,
-                bindAddress,
-                config,
-                connectorType,
-                portRegister,
-                memoryPool,
-                clock,
-                allocator,
-                eventLoopGroup,
-                eventLoopGroup,
-                transport,
-                connectionFactory,
-                connectionTracker,
-                sslContext,
-                encryptionRequired,
-                enableTcpKeepAlive,
-                protocolRegistry,
-                authentication,
-                authConfigProvider,
-                defaultDatabaseResolver,
-                connectionHintRegistry,
-                transactionManager,
-                routingService,
-                errorAccountant,
-                trafficAccountant,
-                driverMetricsMonitor,
-                streamingBufferSize,
-                streamingFlushThreshold,
-                userLogProvider,
-                logging);
     }
 
     @Override
@@ -210,15 +130,10 @@ public class SocketNettyConnector extends AbstractNettyConnector {
     }
 
     @Override
-    protected ChannelInitializer<Channel> channelInitializer() {
-        return new BoltChannelInitializer(config, this, allocator, sslContext, logging);
-    }
-
-    @Override
     protected void configureServer(ServerBootstrap bootstrap) {
         super.configureServer(bootstrap);
 
-        bootstrap.childOption(ChannelOption.SO_KEEPALIVE, enableTcpKeepAlive);
+        bootstrap.childOption(ChannelOption.SO_KEEPALIVE, this.configuration().enableTcpKeepAlive);
     }
 
     @Override
@@ -247,5 +162,53 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 connectorName + " enabled on %s.",
                 org.neo4j.configuration.helpers.SocketAddress.format(
                         inetSocketAddress.getHostName(), inetSocketAddress.getPort()));
+    }
+
+    public static final class SocketConfiguration extends NettyConfiguration {
+        private final boolean enableTcpKeepAlive;
+
+        public SocketConfiguration(
+                boolean enableProtocolCapture,
+                Path protocolCapturePath,
+                boolean enableProtocolLogging,
+                ProtocolLoggingMode protocolLoggingMode,
+                long maxAuthenticationInboundBytes,
+                boolean enableOutboundBufferThrottle,
+                int outboundBufferThrottleLowWatermark,
+                int outboundBufferThrottleHighWatermark,
+                Duration outboundBufferThrottleDuration,
+                int inboundBufferThrottleLowWatermark,
+                int inboundBufferThrottleHighWatermark,
+                int streamingBufferSize,
+                int streamingFlushThreshold,
+                Duration connectionShutdownDuration,
+                boolean enableMergeCumulator,
+                boolean requireEncryption,
+                SslContext sslContext,
+                boolean enableTcpKeepAlive) {
+            super(
+                    enableProtocolCapture,
+                    protocolCapturePath,
+                    enableProtocolLogging,
+                    protocolLoggingMode,
+                    maxAuthenticationInboundBytes,
+                    enableOutboundBufferThrottle,
+                    outboundBufferThrottleLowWatermark,
+                    outboundBufferThrottleHighWatermark,
+                    outboundBufferThrottleDuration,
+                    inboundBufferThrottleLowWatermark,
+                    inboundBufferThrottleHighWatermark,
+                    streamingBufferSize,
+                    streamingFlushThreshold,
+                    connectionShutdownDuration,
+                    enableMergeCumulator,
+                    requireEncryption,
+                    sslContext);
+            this.enableTcpKeepAlive = enableTcpKeepAlive;
+        }
+
+        public boolean enableTcpKeepAlive() {
+            return this.enableTcpKeepAlive;
+        }
     }
 }

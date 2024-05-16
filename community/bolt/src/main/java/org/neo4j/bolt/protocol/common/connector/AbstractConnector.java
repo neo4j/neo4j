@@ -20,19 +20,23 @@
 package org.neo4j.bolt.protocol.common.connector;
 
 import io.netty.channel.Channel;
+import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
+import org.neo4j.bolt.protocol.common.connector.AbstractConnector.AbstractConfiguration;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
@@ -43,29 +47,24 @@ import org.neo4j.server.config.AuthConfigProvider;
 /**
  * Provides a generic base implementation for connectors.
  */
-public abstract class AbstractConnector implements Connector {
+public abstract class AbstractConnector<CFG extends AbstractConfiguration> implements Connector<CFG> {
     private final String id;
     private final MemoryPool memoryPool;
     private final Clock clock;
     private final Connection.Factory connectionFactory;
-    private final boolean encryptionRequired;
     private final BoltProtocolRegistry protocolRegistry;
     private final Authentication authentication;
     private final AuthConfigProvider authConfigProvider;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
     private final ConnectionHintRegistry connectionHintRegistry;
     private final TransactionManager transactionManager;
-
     private final RoutingService routingService;
     private final ErrorAccountant errorAccountant;
     private final TrafficAccountant trafficAccountant;
 
     private final ConnectionRegistry connectionRegistry;
-
     private final BoltDriverMetricsMonitor driverMetricsMonitor;
-
-    private final int streamingBufferSize;
-    private final int streamingFlushThreshold;
+    private final CFG configuration;
 
     private final List<ConnectorListener> listeners = new ArrayList<>();
 
@@ -75,7 +74,6 @@ public abstract class AbstractConnector implements Connector {
             Clock clock,
             Connection.Factory connectionFactory,
             NetworkConnectionTracker connectionTracker,
-            boolean encryptionRequired,
             BoltProtocolRegistry protocolRegistry,
             Authentication authentication,
             AuthConfigProvider authConfigProvider,
@@ -86,14 +84,12 @@ public abstract class AbstractConnector implements Connector {
             ErrorAccountant errorAccountant,
             TrafficAccountant trafficAccountant,
             BoltDriverMetricsMonitor driverMetricsMonitor,
-            int streamingBufferSize,
-            int streamingFlushThreshold,
+            CFG configuration,
             InternalLogProvider logging) {
         this.id = id;
         this.clock = clock;
         this.memoryPool = memoryPool;
         this.connectionFactory = connectionFactory;
-        this.encryptionRequired = encryptionRequired;
         this.protocolRegistry = protocolRegistry;
         this.authentication = authentication;
         this.authConfigProvider = authConfigProvider;
@@ -101,12 +97,11 @@ public abstract class AbstractConnector implements Connector {
         this.connectionHintRegistry = connectionHintRegistry;
         this.transactionManager = transactionManager;
         this.routingService = routingService;
+        this.driverMetricsMonitor = driverMetricsMonitor;
+        this.configuration = configuration;
+
         this.errorAccountant = errorAccountant;
         this.trafficAccountant = trafficAccountant;
-        this.driverMetricsMonitor = driverMetricsMonitor;
-
-        this.streamingBufferSize = streamingBufferSize;
-        this.streamingFlushThreshold = streamingFlushThreshold;
 
         this.connectionRegistry = new ConnectionRegistry(id, connectionTracker, logging);
     }
@@ -129,11 +124,6 @@ public abstract class AbstractConnector implements Connector {
     @Override
     public ConnectionRegistry connectionRegistry() {
         return this.connectionRegistry;
-    }
-
-    @Override
-    public boolean isEncryptionRequired() {
-        return this.encryptionRequired;
     }
 
     @Override
@@ -187,13 +177,8 @@ public abstract class AbstractConnector implements Connector {
     }
 
     @Override
-    public int streamingBufferSize() {
-        return this.streamingBufferSize;
-    }
-
-    @Override
-    public int streamingFlushThreshold() {
-        return this.streamingFlushThreshold;
+    public CFG configuration() {
+        return this.configuration;
     }
 
     @Override
@@ -251,11 +236,129 @@ public abstract class AbstractConnector implements Connector {
 
     @Override
     public void stop() throws Exception {
-        this.connectionRegistry.stopIdling();
+        this.connectionRegistry.stopIdling(this.configuration().connectionShutdownDuration());
     }
 
     @Override
     public void shutdown() throws Exception {
-        this.connectionRegistry.stopAll();
+        this.connectionRegistry.stopAll(this.configuration().connectionShutdownDuration());
+    }
+
+    protected abstract static class AbstractConfiguration implements Configuration {
+        private final boolean enableProtocolCapture;
+        private final Path protocolCapturePath;
+        private final boolean enableProtocolLogging;
+        private final ProtocolLoggingMode protocolLoggingMode;
+        private final long maxAuthenticationInboundBytes;
+        private final boolean enableOutboundBufferThrottle;
+        private final int outboundBufferThrottleLowWatermark;
+        private final int outboundBufferThrottleHighWatermark;
+        private final Duration outboundBufferMaxThrottleDuration;
+        private final int inboundBufferThrottleLowWatermark;
+        private final int inboundBufferThrottleHighWatermark;
+        private final int streamingBufferSize;
+        private final int streamingFlushThreshold;
+        private final Duration connectionShutdownDuration;
+
+        protected AbstractConfiguration(
+                boolean enableProtocolCapture,
+                Path protocolCapturePath,
+                boolean enableProtocolLogging,
+                ProtocolLoggingMode protocolLoggingMode,
+                long maxAuthenticationInboundBytes,
+                boolean enableOutboundBufferThrottle,
+                int outboundBufferThrottleLowWatermark,
+                int outboundBufferThrottleHighWatermark,
+                Duration outboundBufferMaxThrottleDuration,
+                int inboundBufferThrottleLowWatermark,
+                int inboundBufferThrottleHighWatermark,
+                int streamingBufferSize,
+                int streamingFlushThreshold,
+                Duration connectionShutdownDuration) {
+            this.enableProtocolCapture = enableProtocolCapture;
+            this.protocolCapturePath = protocolCapturePath;
+            this.enableProtocolLogging = enableProtocolLogging;
+            this.protocolLoggingMode = protocolLoggingMode;
+            this.maxAuthenticationInboundBytes = maxAuthenticationInboundBytes;
+            this.enableOutboundBufferThrottle = enableOutboundBufferThrottle;
+            this.outboundBufferThrottleLowWatermark = outboundBufferThrottleLowWatermark;
+            this.outboundBufferThrottleHighWatermark = outboundBufferThrottleHighWatermark;
+            this.outboundBufferMaxThrottleDuration = outboundBufferMaxThrottleDuration;
+            this.inboundBufferThrottleLowWatermark = inboundBufferThrottleLowWatermark;
+            this.inboundBufferThrottleHighWatermark = inboundBufferThrottleHighWatermark;
+            this.streamingBufferSize = streamingBufferSize;
+            this.streamingFlushThreshold = streamingFlushThreshold;
+            this.connectionShutdownDuration = connectionShutdownDuration;
+        }
+
+        @Override
+        public boolean enableProtocolCapture() {
+            return this.enableProtocolCapture;
+        }
+
+        @Override
+        public Path protocolCapturePath() {
+            return this.protocolCapturePath;
+        }
+
+        @Override
+        public boolean enableProtocolLogging() {
+            return this.enableProtocolLogging;
+        }
+
+        @Override
+        public ProtocolLoggingMode protocolLoggingMode() {
+            return this.protocolLoggingMode;
+        }
+
+        @Override
+        public long maxAuthenticationInboundBytes() {
+            return this.maxAuthenticationInboundBytes;
+        }
+
+        @Override
+        public boolean enableOutboundBufferThrottle() {
+            return this.enableOutboundBufferThrottle;
+        }
+
+        @Override
+        public int outboundBufferThrottleLowWatermark() {
+            return this.outboundBufferThrottleLowWatermark;
+        }
+
+        @Override
+        public int outboundBufferThrottleHighWatermark() {
+            return this.outboundBufferThrottleHighWatermark;
+        }
+
+        @Override
+        public Duration outboundBufferMaxThrottleDuration() {
+            return this.outboundBufferMaxThrottleDuration;
+        }
+
+        @Override
+        public int inboundBufferThrottleLowWatermark() {
+            return this.inboundBufferThrottleLowWatermark;
+        }
+
+        @Override
+        public int inboundBufferThrottleHighWatermark() {
+            return this.inboundBufferThrottleHighWatermark;
+        }
+
+        @Override
+        public int streamingBufferSize() {
+            return this.streamingBufferSize;
+        }
+
+        @Override
+        public int streamingFlushThreshold() {
+            return this.streamingFlushThreshold;
+        }
+
+        @Override
+        public Duration connectionShutdownDuration() {
+            return this.connectionShutdownDuration;
+        }
     }
 }

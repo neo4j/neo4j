@@ -31,17 +31,14 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
-import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import java.util.List;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationRequestDecoder;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationResponseEncoder;
-import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
+import org.neo4j.bolt.protocol.common.connector.netty.AbstractNettyConnector;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -66,53 +63,30 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     private static final int MAX_WEBSOCKET_HANDSHAKE_SIZE = 65536;
     private static final int MAX_WEBSOCKET_FRAME_SIZE = 65536;
 
-    private final Config config;
-    private final SslContext sslContext;
-
-    private final boolean enableProtocolLogging;
-    private final ProtocolLoggingMode protocolLoggingMode;
-
     private final InternalLogProvider logging;
     private final InternalLog log;
 
     private final boolean isEncrypted;
 
-    private Connector connector;
+    private AbstractNettyConnector<?> connector;
     private Connection connection;
 
     @VisibleForTesting
-    TransportSelectionHandler(
-            Config config,
-            SslContext sslContext,
-            boolean enableProtocolLogging,
-            ProtocolLoggingMode protocolLoggingMode,
-            InternalLogProvider logging,
-            boolean isEncrypted) {
-        this.config = config;
-        this.sslContext = sslContext;
-
-        this.enableProtocolLogging = enableProtocolLogging;
-        this.protocolLoggingMode = protocolLoggingMode;
+    TransportSelectionHandler(boolean isEncrypted, InternalLogProvider logging) {
+        this.isEncrypted = isEncrypted;
 
         this.logging = logging;
         this.log = logging.getLog(TransportSelectionHandler.class);
-
-        this.isEncrypted = isEncrypted;
     }
 
-    public TransportSelectionHandler(
-            Config config,
-            SslContext sslContext,
-            boolean enableProtocolLogging,
-            ProtocolLoggingMode protocolLoggingMode,
-            InternalLogProvider logging) {
-        this(config, sslContext, enableProtocolLogging, protocolLoggingMode, logging, false);
+    public TransportSelectionHandler(InternalLogProvider logging) {
+        this(false, logging);
     }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         this.connection = Connection.getConnection(ctx.channel());
-        this.connector = this.connection.connector();
+        this.connector = (AbstractNettyConnector<?>) this.connection.connector();
     }
 
     @Override
@@ -173,7 +147,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     }
 
     private boolean detectSsl(ByteBuf buf) {
-        return this.sslContext != null && SslHandler.isEncrypted(buf);
+        return this.connector.configuration().sslContext() != null && SslHandler.isEncrypted(buf);
     }
 
     private static boolean isHttp(ByteBuf buf) {
@@ -190,18 +164,13 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
         // a secure channel has been established
         connection.memoryTracker().allocateHeap(SSL_HANDLER_SHALLOW_SIZE);
 
-        var handler = this.sslContext.newHandler(ctx.alloc());
+        var config = this.connector.configuration();
+        var sslContext = config.sslContext();
+        var handler = sslContext.newHandler(ctx.alloc());
 
         handler.handshakeFuture()
                 .addListener(new TransportSecuritySelectionFutureListener(
-                        ctx.channel(),
-                        this.config,
-                        this.sslContext,
-                        this.connection,
-                        this.enableProtocolLogging,
-                        this.protocolLoggingMode,
-                        this.logging,
-                        this.log));
+                        ctx.channel(), this.connection, this.logging, this.log));
 
         // discard this handler distance in order to allow SslHandler to negotiate a secure
         // connection with the peer - we will reattach once the connection has successfully been
@@ -210,7 +179,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     }
 
     private void switchToSocket(ChannelHandlerContext ctx) {
-        if (this.connector.isEncryptionRequired() && !isEncrypted) {
+        if (this.connector.configuration().requiresEncryption() && !isEncrypted) {
             throw new SecurityException("An unencrypted connection attempt was made where encryption is required.");
         }
 
@@ -243,10 +212,12 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     }
 
     private void switchToHandshake(ChannelHandlerContext ctx) {
+        var config = this.connector.configuration();
+
         // if logging of raw traffic has been enabled, we'll attach a new protocol logging handler
         // now in order to capture messages before they enter the negotiation and Packstream decoder
         // pipelines
-        if (this.enableProtocolLogging && this.protocolLoggingMode.isLoggingRawTraffic()) {
+        if (config.enableProtocolLogging() && config.protocolLoggingMode().isLoggingRawTraffic()) {
             connection.memoryTracker().allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
             ctx.pipeline().addLast(ProtocolLoggingHandler.RAW_NAME, new ProtocolLoggingHandler(this.logging));
         }
@@ -263,16 +234,12 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
 
         // if logging of decoded messages is enabled, we'll also attach another separate decoding
         // handler in order to capture negotiation requests and responses during this protocol phase
-        if (this.enableProtocolLogging && this.protocolLoggingMode.isLoggingDecodedTraffic()) {
+        if (config.enableProtocolLogging() && config.protocolLoggingMode().isLoggingDecodedTraffic()) {
             connection.memoryTracker().allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
             ctx.pipeline().addLast(ProtocolLoggingHandler.DECODED_NAME, new ProtocolLoggingHandler(this.logging));
         }
 
-        ctx.pipeline()
-                .addLast(
-                        "protocolHandshakeHandler",
-                        new ProtocolHandshakeHandler(
-                                config, this.enableProtocolLogging, this.protocolLoggingMode, logging));
+        ctx.pipeline().addLast("protocolHandshakeHandler", new ProtocolHandshakeHandler(logging));
 
         ctx.pipeline().remove(this);
     }
@@ -287,29 +254,14 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     private static class TransportSecuritySelectionFutureListener
             implements GenericFutureListener<Future<? super Channel>> {
         private final Channel channel;
-        private final Config config;
-        private final SslContext sslContext;
         private final Connection connection;
-        private final boolean enableProtocolLogging;
-        private final ProtocolLoggingMode protocolLoggingMode;
         private final InternalLogProvider logging;
         private final Log log;
 
         public TransportSecuritySelectionFutureListener(
-                Channel channel,
-                Config config,
-                SslContext sslContext,
-                Connection connection,
-                boolean enableProtocolLogging,
-                ProtocolLoggingMode protocolLoggingMode,
-                InternalLogProvider logging,
-                Log log) {
+                Channel channel, Connection connection, InternalLogProvider logging, Log log) {
             this.channel = channel;
-            this.config = config;
-            this.sslContext = sslContext;
             this.connection = connection;
-            this.enableProtocolLogging = enableProtocolLogging;
-            this.protocolLoggingMode = protocolLoggingMode;
             this.logging = logging;
             this.log = log;
         }
@@ -336,15 +288,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
             // application protocol selection as usual
             connection.memoryTracker().allocateHeap(SHALLOW_SIZE);
 
-            this.channel
-                    .pipeline()
-                    .addLast(new TransportSelectionHandler(
-                            this.config,
-                            this.sslContext,
-                            this.enableProtocolLogging,
-                            this.protocolLoggingMode,
-                            this.logging,
-                            true));
+            this.channel.pipeline().addLast(new TransportSelectionHandler(true, this.logging));
         }
     }
 }

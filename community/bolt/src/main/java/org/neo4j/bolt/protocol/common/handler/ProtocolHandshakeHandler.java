@@ -32,15 +32,12 @@ import org.neo4j.bolt.negotiation.message.ProtocolNegotiationRequest;
 import org.neo4j.bolt.negotiation.message.ProtocolNegotiationResponse;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.codec.BoltStructEncoder;
-import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.netty.AbstractNettyConnector;
 import org.neo4j.bolt.protocol.common.handler.messages.GoodbyeMessageHandler;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
 import org.neo4j.bolt.runtime.throttle.ChannelReadThrottleHandler;
 import org.neo4j.bolt.runtime.throttle.ChannelWriteThrottleHandler;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
@@ -57,23 +54,11 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
 
     private final InternalLogProvider logging;
     private final InternalLog log;
-    private final Config config;
 
-    private final boolean enableProtocolLogging;
-    private final ProtocolLoggingMode protocolLoggingMode;
-
-    private Connector connector;
+    private AbstractNettyConnector<?> connector;
     private Connection connection;
 
-    public ProtocolHandshakeHandler(
-            Config config,
-            boolean enableProtocolLogging,
-            ProtocolLoggingMode protocolLoggingMode,
-            InternalLogProvider logging) {
-        this.config = config;
-
-        this.enableProtocolLogging = enableProtocolLogging;
-        this.protocolLoggingMode = protocolLoggingMode;
+    public ProtocolHandshakeHandler(InternalLogProvider logging) {
 
         this.logging = logging;
         this.log = logging.getLog(getClass());
@@ -82,7 +67,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         this.connection = Connection.getConnection(ctx.channel());
-        this.connector = this.connection.connector();
+        this.connector = (AbstractNettyConnector<?>) this.connection.connector();
     }
 
     @Override
@@ -146,16 +131,16 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
                 .addLast(new StateSignalFilterHandler())
                 .addLast(new FrameSignalEncoder(protocol.frameSignalFilter()));
 
-        if (this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle)) {
+        var config = this.connector.configuration();
+        if (config.enableOutboundBufferThrottle()) {
             ctx.channel()
                     .config()
                     .setWriteBufferWaterMark(new WriteBufferWaterMark(
-                            config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
-                            config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark)));
+                            config.outboundBufferThrottleLowWatermark(), config.outboundBufferThrottleHighWatermark()));
         }
 
         ChunkFrameDecoder frameDecoder;
-        var readLimit = config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes);
+        var readLimit = config.maxAuthenticationInboundBytes();
         if (readLimit != 0) {
             this.log.debug(
                     "Imposing %d byte read-limit on connection '%s' until authentication is completed",
@@ -165,7 +150,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
             frameDecoder = new ChunkFrameDecoder(this.logging);
         }
 
-        if (config.get(BoltConnectorInternalSettings.netty_message_merge_cumulator)) {
+        if (config.enableMergeCumulator()) {
             this.log.warn("Enabling merge cumulator for chunk decoding - Network performance may be degraded");
             frameDecoder.setCumulator(ByteToMessageDecoder.MERGE_CUMULATOR);
         }
@@ -174,7 +159,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
         // if raw protocol logging is enabled, we'll remove the previous handler and position it
         // after the chunk decoder handlers in order to split up the continuous byte stream into
         // coherent messages before passing them to the log
-        if (this.enableProtocolLogging && this.protocolLoggingMode.isLoggingRawTraffic()) {
+        if (config.enableProtocolLogging() && config.protocolLoggingMode().isLoggingRawTraffic()) {
             ctx.pipeline().remove(ProtocolLoggingHandler.RAW_NAME);
             ctx.pipeline().addLast(ProtocolLoggingHandler.RAW_NAME, new ProtocolLoggingHandler(this.logging));
         }
@@ -189,22 +174,20 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
                         new PackstreamStructEncoder<>(
                                 ResponseMessage.class, connection, protocol.responseMessageRegistry()));
 
-        var inboundMessageThrottleHighWatermark =
-                config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_high_water_mark);
+        var inboundMessageThrottleHighWatermark = config.inboundBufferThrottleHighWatermark();
         if (inboundMessageThrottleHighWatermark != 0) {
             ctx.pipeline()
                     .addLast(
                             "readThrottleHandler",
                             new ChannelReadThrottleHandler(
-                                    config.get(
-                                            BoltConnectorInternalSettings.bolt_inbound_message_throttle_low_water_mark),
+                                    config.inboundBufferThrottleLowWatermark(),
                                     inboundMessageThrottleHighWatermark,
                                     logging));
         }
 
         // if logging of decoded messages is enabled, we'll discard the old handler and introduce a
         // new instance at the correct position within the pipeline
-        if (this.enableProtocolLogging && this.protocolLoggingMode.isLoggingDecodedTraffic()) {
+        if (config.enableProtocolLogging() && config.protocolLoggingMode().isLoggingDecodedTraffic()) {
             ctx.pipeline().remove(ProtocolLoggingHandler.DECODED_NAME);
             ctx.pipeline().addLast(ProtocolLoggingHandler.DECODED_NAME, new ProtocolLoggingHandler(this.logging));
         }
@@ -213,9 +196,8 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
                 .addLast(GoodbyeMessageHandler.HANDLER_NAME, new GoodbyeMessageHandler(logging))
                 .addLast("boltStructEncoder", new BoltStructEncoder());
 
-        var writeThrottleEnabled = config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle);
-        var writeTimeoutMillis = config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration)
-                .toMillis();
+        var writeThrottleEnabled = config.enableOutboundBufferThrottle();
+        var writeTimeoutMillis = config.outboundBufferMaxThrottleDuration().toMillis();
         if (writeThrottleEnabled && writeTimeoutMillis != 0) {
             ctx.pipeline()
                     .addLast(

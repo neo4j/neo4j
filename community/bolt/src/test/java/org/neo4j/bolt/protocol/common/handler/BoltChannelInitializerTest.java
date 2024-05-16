@@ -36,13 +36,13 @@ import org.junit.jupiter.api.condition.OS;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
-import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
+import org.neo4j.bolt.protocol.common.connector.netty.AbstractNettyConnector;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
+import org.neo4j.bolt.testing.mock.ConnectorConfigurationMockFactory;
 import org.neo4j.bolt.testing.mock.ConnectorMockFactory;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.HeapEstimator;
@@ -51,7 +51,7 @@ import org.neo4j.memory.MemoryTracker;
 class BoltChannelInitializerTest {
 
     private Config config;
-    private Connector connector;
+    private AbstractNettyConnector connector;
     private Connection connection;
     private ByteBufAllocator allocator;
     private AssertableLogProvider logProvider;
@@ -68,7 +68,7 @@ class BoltChannelInitializerTest {
         this.allocator = Mockito.mock(ByteBufAllocator.class);
         this.logProvider = new AssertableLogProvider();
 
-        this.initializer = new BoltChannelInitializer(this.config, this.connector, this.allocator, this.logProvider);
+        this.initializer = new BoltChannelInitializer(this.connector, this.allocator, this.logProvider);
     }
 
     @Test
@@ -148,8 +148,11 @@ class BoltChannelInitializerTest {
         var path = Files.createTempDirectory("bolt_");
 
         try {
-            Mockito.doReturn(true).when(this.config).get(BoltConnectorInternalSettings.protocol_capture);
-            Mockito.doReturn(path).when(this.config).get(BoltConnectorInternalSettings.protocol_capture_path);
+            var config = ConnectorConfigurationMockFactory.newFactory()
+                    .withProtocolCapture(path)
+                    .build();
+
+            Mockito.doReturn(config).when(this.connector).configuration();
 
             var memoryTracker = Mockito.mock(MemoryTracker.class);
             var pipeline = Mockito.mock(ChannelPipeline.class, Mockito.RETURNS_SELF);

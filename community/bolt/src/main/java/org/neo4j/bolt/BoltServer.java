@@ -65,6 +65,7 @@ import org.neo4j.bolt.protocol.common.connector.listener.ResetMessageConnectorLi
 import org.neo4j.bolt.protocol.common.connector.listener.ResponseMetricsConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.netty.DomainSocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.netty.LocalNettyConnector;
+import org.neo4j.bolt.protocol.common.connector.netty.LocalNettyConnector.LocalConfiguration;
 import org.neo4j.bolt.protocol.common.connector.netty.SocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.security.Authentication;
@@ -132,7 +133,8 @@ public class BoltServer extends LifecycleAdapter {
 
     private final LifeSupport connectorLife = new LifeSupport();
     private BoltMemoryPool memoryPool;
-    private EventLoopGroup eventLoopGroup;
+    private EventLoopGroup bossEventLoopGroup;
+    private EventLoopGroup workerEventLoopGroup;
     private ExecutorService executorService;
     private BoltConnectionMetricsMonitor connectionMetricsMonitor;
     private BoltDriverMetricsMonitor driverMetricsMonitor;
@@ -230,7 +232,8 @@ public class BoltServer extends LifecycleAdapter {
                         new IllegalStateException("No transport implementations available within current environment"));
         log.info("Using connector transport %s", transport.getName());
 
-        eventLoopGroup = transport.createEventLoopGroup(jobScheduler.threadFactory(Group.BOLT_NETWORK_IO));
+        bossEventLoopGroup = transport.createEventLoopGroup(jobScheduler.threadFactory(Group.BOLT_NETWORK_IO));
+        workerEventLoopGroup = transport.createEventLoopGroup(jobScheduler.threadFactory(Group.BOLT_NETWORK_IO));
         executorService = executorServiceFactory.create();
         connectionMetricsMonitor = monitors.newMonitor(BoltConnectionMetricsMonitor.class);
 
@@ -248,12 +251,7 @@ public class BoltServer extends LifecycleAdapter {
 
         if (config.get(BoltConnectorInternalSettings.enable_loopback_auth)) {
             registerConnector(createDomainSocketConnector(
-                    connectionFactory,
-                    transport,
-                    createAuthentication(loopbackAuthManager),
-                    allocator,
-                    streamingBufferSize,
-                    streamingFlushThreshold));
+                    connectionFactory, transport, createAuthentication(loopbackAuthManager), allocator));
 
             log.info("Configured loopback (domain socket) Bolt connector");
         }
@@ -284,9 +282,7 @@ public class BoltServer extends LifecycleAdapter {
                 sslContext,
                 createAuthentication(externalAuthManager),
                 ConnectorType.BOLT,
-                allocator,
-                streamingBufferSize,
-                streamingFlushThreshold));
+                allocator));
 
         log.info("Configured external Bolt connector with listener address %s", listenAddress);
 
@@ -324,9 +320,7 @@ public class BoltServer extends LifecycleAdapter {
                     internalSslContext,
                     createAuthentication(internalAuthManager),
                     ConnectorType.INTRA_BOLT,
-                    allocator,
-                    streamingBufferSize,
-                    streamingFlushThreshold));
+                    allocator));
 
             log.info("Configured internal Bolt connector with listener address %s", internalListenAddress);
         }
@@ -370,19 +364,47 @@ public class BoltServer extends LifecycleAdapter {
         if (isEnabled()) {
             log.info("Shutting down Bolt server");
 
+            // shutdown all accept threads prior to connection termination in order to prevent new
+            // connections from being established to the server
+            var bossTerminationFuture = bossEventLoopGroup.shutdownGracefully(
+                    config.get(GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period),
+                    config.get(GraphDatabaseInternalSettings.netty_server_shutdown_timeout)
+                            .toSeconds(),
+                    TimeUnit.SECONDS);
+
+            var bossTerminationCompleted = bossTerminationFuture.awaitUninterruptibly(
+                    config.get(BoltConnectorInternalSettings.thread_pool_shutdown_wait_time)
+                            .toSeconds(),
+                    TimeUnit.SECONDS);
+            if (!bossTerminationCompleted) {
+                log.warn(
+                        "Termination of boss event loop group has exceeded maximum permitted duration - Remaining jobs will be forcefully terminated");
+            } else if (!bossTerminationFuture.isSuccess()) {
+                log.warn("Termination of boss event loop group has failed", bossTerminationFuture.cause());
+            }
+
             // send shutdown notifications to all of our connectors in order to perform the necessary shutdown
             // procedures for the remaining connections
             connectorLife.shutdown();
 
             // once the remaining connections have been shut down, we'll request a graceful shutdown from the network
             // thread pool
-            eventLoopGroup
-                    .shutdownGracefully(
-                            config.get(GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period),
-                            config.get(GraphDatabaseInternalSettings.netty_server_shutdown_timeout)
-                                    .toSeconds(),
-                            TimeUnit.SECONDS)
-                    .syncUninterruptibly();
+            var workerTerminationFuture = workerEventLoopGroup.shutdownGracefully(
+                    config.get(GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period),
+                    config.get(GraphDatabaseInternalSettings.netty_server_shutdown_timeout)
+                            .toSeconds(),
+                    TimeUnit.SECONDS);
+
+            var workerTerminationCompleted = workerTerminationFuture.awaitUninterruptibly(
+                    config.get(BoltConnectorInternalSettings.thread_pool_shutdown_wait_time)
+                            .toSeconds(),
+                    TimeUnit.SECONDS);
+            if (!workerTerminationCompleted) {
+                log.warn(
+                        "Termination of worker event loop group has exceeded maximum permitted duration - Remaining jobs will be forcefully terminated");
+            } else if (!workerTerminationFuture.isSuccess()) {
+                log.warn("Termination of worker event loop group has failed", workerTerminationFuture.cause());
+            }
 
             // also make sure that our executor service is cleanly shut down - there should be no remaining jobs present
             // as connectors will kill any remaining jobs forcefully as part of their shutdown procedures
@@ -474,25 +496,40 @@ public class BoltServer extends LifecycleAdapter {
             SslContext sslContext,
             Authentication authentication,
             ConnectorType connectorType,
-            ByteBufAllocator allocator,
-            int streamingBufferSize,
-            int streamingFlushThreshold) {
+            ByteBufAllocator allocator) {
+        var config = new SocketNettyConnector.SocketConfiguration(
+                this.config.get(BoltConnectorInternalSettings.protocol_capture),
+                this.config.get(BoltConnectorInternalSettings.protocol_capture_path),
+                this.config.get(BoltConnectorInternalSettings.protocol_logging),
+                this.config.get(BoltConnectorInternalSettings.protocol_logging_mode),
+                this.config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration),
+                this.config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_low_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_high_water_mark),
+                this.config.get(BoltConnectorInternalSettings.streaming_buffer_size),
+                this.config.get(BoltConnectorInternalSettings.streaming_flush_threshold),
+                this.config.get(BoltConnectorInternalSettings.connection_shutdown_wait_time),
+                this.config.get(BoltConnectorInternalSettings.netty_message_merge_cumulator),
+                encryptionRequired,
+                sslContext,
+                this.config.get(BoltConnectorInternalSettings.tcp_keep_alive));
+
         return new SocketNettyConnector(
                 BoltConnector.NAME,
                 bindAddress,
-                config,
                 connectorType,
                 connectorPortRegister,
                 memoryPool,
                 clock,
                 allocator,
-                eventLoopGroup,
+                bossEventLoopGroup,
+                workerEventLoopGroup,
                 transport,
                 connectionFactory,
                 connectionTracker,
-                sslContext,
-                encryptionRequired,
-                config.get(BoltConnectorInternalSettings.tcp_keep_alive),
                 protocolRegistry,
                 authentication,
                 authConfigProvider,
@@ -503,8 +540,7 @@ public class BoltServer extends LifecycleAdapter {
                 createErrorAccountant(),
                 createTrafficAccountant(),
                 driverMetricsMonitor,
-                streamingBufferSize,
-                streamingFlushThreshold,
+                config,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }
@@ -513,22 +549,39 @@ public class BoltServer extends LifecycleAdapter {
             Connection.Factory connectionFactory,
             ConnectorTransport transport,
             Authentication authentication,
-            ByteBufAllocator allocator,
-            int streamingBufferSize,
-            int streamingFlushThreshold) {
-        if (config.get(BoltConnectorInternalSettings.unsupported_loopback_listen_file) == null) {
+            ByteBufAllocator allocator) {
+        var config = new DomainSocketNettyConnector.DomainSocketConfiguration(
+                this.config.get(BoltConnectorInternalSettings.protocol_capture),
+                this.config.get(BoltConnectorInternalSettings.protocol_capture_path),
+                this.config.get(BoltConnectorInternalSettings.protocol_logging),
+                this.config.get(BoltConnectorInternalSettings.protocol_logging_mode),
+                this.config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration),
+                this.config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_low_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_high_water_mark),
+                this.config.get(BoltConnectorInternalSettings.streaming_buffer_size),
+                this.config.get(BoltConnectorInternalSettings.streaming_flush_threshold),
+                this.config.get(BoltConnectorInternalSettings.connection_shutdown_wait_time),
+                this.config.get(BoltConnectorInternalSettings.netty_message_merge_cumulator),
+                this.config.get(BoltConnectorInternalSettings.unsupported_loopback_delete));
+
+        var socketFile = this.config.get(BoltConnectorInternalSettings.unsupported_loopback_listen_file);
+        if (socketFile == null) {
             throw new IllegalArgumentException(
                     "A file has not been specified for use with the loopback domain socket.");
         }
 
         return new DomainSocketNettyConnector(
                 BoltConnectorInternalSettings.LOOPBACK_NAME,
-                config.get(BoltConnectorInternalSettings.unsupported_loopback_listen_file),
-                config,
+                socketFile,
                 memoryPool,
                 clock,
                 allocator,
-                eventLoopGroup,
+                bossEventLoopGroup,
+                bossEventLoopGroup,
                 transport,
                 connectionFactory,
                 connectionTracker,
@@ -541,8 +594,7 @@ public class BoltServer extends LifecycleAdapter {
                 routingService,
                 createErrorAccountant(),
                 driverMetricsMonitor,
-                streamingBufferSize,
-                streamingFlushThreshold,
+                config,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }
@@ -554,11 +606,33 @@ public class BoltServer extends LifecycleAdapter {
             ByteBufAllocator allocator,
             int streamingBufferSize,
             int streamingFlushThreshold) {
+        var config = new LocalConfiguration(
+                this.config.get(BoltConnectorInternalSettings.protocol_capture),
+                this.config.get(BoltConnectorInternalSettings.protocol_capture_path),
+                this.config.get(BoltConnectorInternalSettings.protocol_logging),
+                this.config.get(BoltConnectorInternalSettings.protocol_logging_mode),
+                this.config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration),
+                this.config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_low_water_mark),
+                this.config.get(BoltConnectorInternalSettings.bolt_inbound_message_throttle_high_water_mark),
+                this.config.get(BoltConnectorInternalSettings.streaming_buffer_size),
+                this.config.get(BoltConnectorInternalSettings.streaming_flush_threshold),
+                this.config.get(BoltConnectorInternalSettings.connection_shutdown_wait_time),
+                this.config.get(BoltConnectorInternalSettings.netty_message_merge_cumulator));
+
+        var bindAddress = new LocalAddress(this.config.get(BoltConnectorInternalSettings.local_channel_address));
+
         return new LocalNettyConnector(
                 BoltConnectorInternalSettings.LOCAL_NAME,
-                new LocalAddress(config.get(BoltConnectorInternalSettings.local_channel_address)),
+                bindAddress,
                 memoryPool,
                 clock,
+                allocator,
+                bossEventLoopGroup,
+                workerEventLoopGroup,
                 connectionFactory,
                 connectionTracker,
                 protocolRegistry,
@@ -570,14 +644,10 @@ public class BoltServer extends LifecycleAdapter {
                 routingService,
                 createErrorAccountant(),
                 driverMetricsMonitor,
-                streamingBufferSize,
-                streamingFlushThreshold,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider(),
                 transport,
-                eventLoopGroup,
-                config,
-                allocator);
+                config);
     }
 
     private ErrorAccountant createErrorAccountant() {

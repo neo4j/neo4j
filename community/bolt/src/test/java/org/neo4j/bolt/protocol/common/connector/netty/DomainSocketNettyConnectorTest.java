@@ -33,6 +33,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Assumptions;
@@ -95,10 +96,12 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
 
     @Override
     protected DomainSocketNettyConnector createConnector(SocketAddress address) {
+        var config = new DomainSocketNettyConnector.DomainSocketConfiguration(
+                false, null, false, null, 0, false, 0, 0, null, 0, 0, 512, 0, Duration.ofHours(5), false, false);
+
         return new DomainSocketNettyConnector(
                 CONNECTOR_ID,
                 Path.of(((DomainSocketAddress) address).path()),
-                config,
                 memoryPool,
                 Clock.systemUTC(),
                 allocator,
@@ -116,8 +119,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                 Mockito.mock(RoutingService.class),
                 Mockito.mock(ErrorAccountant.class),
                 BoltDriverMetricsMonitor.noop(),
-                512,
-                0,
+                config,
                 logging,
                 logging);
     }
@@ -160,31 +162,49 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
     @Test
     void shouldFailWithIllegalArgumentWhenTransportIsIncompatible() {
         Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> new DomainSocketNettyConnector(
-                        CONNECTOR_ID,
-                        Path.of(FILE_NAME),
-                        config,
-                        memoryPool,
-                        Clock.systemUTC(),
-                        allocator,
-                        bossGroup,
-                        workerGroup,
-                        new NioConnectorTransport(),
-                        connectionFactory,
-                        connectionTracker,
-                        protocolRegistry,
-                        authentication,
-                        authConfigProvider,
-                        defaultDatabaseResolver,
-                        connectionHintRegistry,
-                        Mockito.mock(TransactionManager.class),
-                        Mockito.mock(RoutingService.class),
-                        Mockito.mock(ErrorAccountant.class),
-                        BoltDriverMetricsMonitor.noop(),
-                        512,
-                        0,
-                        logging,
-                        logging))
+                .isThrownBy(() -> {
+                    var config = new DomainSocketNettyConnector.DomainSocketConfiguration(
+                            false,
+                            null,
+                            false,
+                            null,
+                            0,
+                            false,
+                            0,
+                            0,
+                            null,
+                            0,
+                            0,
+                            512,
+                            0,
+                            Duration.ofHours(5),
+                            false,
+                            true);
+
+                    new DomainSocketNettyConnector(
+                            CONNECTOR_ID,
+                            Path.of(FILE_NAME),
+                            memoryPool,
+                            Clock.systemUTC(),
+                            allocator,
+                            bossGroup,
+                            workerGroup,
+                            new NioConnectorTransport(),
+                            connectionFactory,
+                            connectionTracker,
+                            protocolRegistry,
+                            authentication,
+                            authConfigProvider,
+                            defaultDatabaseResolver,
+                            connectionHintRegistry,
+                            Mockito.mock(TransactionManager.class),
+                            Mockito.mock(RoutingService.class),
+                            Mockito.mock(ErrorAccountant.class),
+                            BoltDriverMetricsMonitor.noop(),
+                            config,
+                            logging,
+                            logging);
+                })
                 .withMessageContaining("Unsupported transport: NIO does not support domain sockets")
                 .withNoCause();
     }

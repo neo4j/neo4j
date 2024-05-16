@@ -35,7 +35,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -49,9 +48,7 @@ class TransportSelectionHandlerTest {
         // Given
         var logging = new AssertableLogProvider();
 
-        var channel = ConnectionMockFactory.newFactory()
-                .createChannel(new TransportSelectionHandler(
-                        Config.defaults(), null, false, ProtocolLoggingMode.DECODED, logging));
+        var channel = ConnectionMockFactory.newFactory().createChannel(new TransportSelectionHandler(logging));
 
         // When
         var ex = new Throwable("Oh no!");
@@ -71,9 +68,7 @@ class TransportSelectionHandlerTest {
         // Given
         var logging = new AssertableLogProvider();
 
-        var channel = ConnectionMockFactory.newFactory()
-                .createChannel(new TransportSelectionHandler(
-                        Config.defaults(), null, false, ProtocolLoggingMode.DECODED, logging));
+        var channel = ConnectionMockFactory.newFactory().createChannel(new TransportSelectionHandler(logging));
 
         // When
         var ex = new IOException("Connection reset by peer");
@@ -99,9 +94,7 @@ class TransportSelectionHandlerTest {
                 .trustManager(InsecureTrustManagerFactory.INSTANCE)
                 .build();
 
-        var channel = ConnectionMockFactory.newFactory()
-                .createChannel(new TransportSelectionHandler(
-                        Config.defaults(), sslCtx, false, ProtocolLoggingMode.DECODED, logging, true));
+        var channel = ConnectionMockFactory.newFactory().createChannel(new TransportSelectionHandler(true, logging));
 
         // When
         channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5})); // encrypted
@@ -123,8 +116,7 @@ class TransportSelectionHandlerTest {
 
         var channel = ConnectionMockFactory.newFactory()
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(
-                        Config.defaults(), null, false, ProtocolLoggingMode.DECODED, NullLogProvider.getInstance()));
+                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         channel.pipeline().remove(TransportSelectionHandler.class);
 
@@ -142,8 +134,7 @@ class TransportSelectionHandlerTest {
 
         var channel = ConnectionMockFactory.newFactory()
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(
-                        Config.defaults(), sslCtx, false, ProtocolLoggingMode.DECODED, NullLogProvider.getInstance()));
+                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5}));
 
@@ -156,8 +147,7 @@ class TransportSelectionHandlerTest {
 
         var channel = ConnectionMockFactory.newFactory()
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(
-                        Config.defaults(), null, false, ProtocolLoggingMode.DECODED, NullLogProvider.getInstance()));
+                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         channel.writeInbound(Unpooled.wrappedBuffer("GET /\r\n".getBytes(StandardCharsets.UTF_8)));
 
@@ -178,9 +168,9 @@ class TransportSelectionHandlerTest {
         var memoryTracker = Mockito.mock(MemoryTracker.class);
 
         var channel = ConnectionMockFactory.newFactory()
+                .withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.BOTH))
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(
-                        Config.defaults(), null, true, ProtocolLoggingMode.BOTH, NullLogProvider.getInstance()));
+                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         // generate an incomplete handshake which exceeds the 5-byte threshold of the selection
         // handler
@@ -203,9 +193,9 @@ class TransportSelectionHandlerTest {
         var memoryTracker = Mockito.mock(MemoryTracker.class);
 
         var channel = ConnectionMockFactory.newFactory()
+                .withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.RAW))
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(
-                        Config.defaults(), null, true, ProtocolLoggingMode.RAW, NullLogProvider.getInstance()));
+                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         // generate an incomplete handshake which exceeds the 5-byte threshold of the selection
         // handler
@@ -225,9 +215,9 @@ class TransportSelectionHandlerTest {
         var memoryTracker = Mockito.mock(MemoryTracker.class);
 
         var channel = ConnectionMockFactory.newFactory()
+                .withConfiguration(config -> config.withProtocolLogging(ProtocolLoggingMode.DECODED))
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(
-                        Config.defaults(), null, true, ProtocolLoggingMode.DECODED, NullLogProvider.getInstance()));
+                .createChannel(new TransportSelectionHandler(NullLogProvider.getInstance()));
 
         // generate an incomplete handshake which exceeds the 5-byte threshold of the selection
         // handler

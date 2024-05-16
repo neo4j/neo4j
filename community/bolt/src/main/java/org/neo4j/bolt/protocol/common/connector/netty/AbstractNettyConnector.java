@@ -22,13 +22,17 @@ package org.neo4j.bolt.protocol.common.connector.netty;
 import static java.lang.Boolean.TRUE;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
+import io.netty.handler.ssl.SslContext;
 import java.net.SocketAddress;
+import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
@@ -36,8 +40,11 @@ import org.neo4j.bolt.protocol.common.connector.AbstractConnector;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.TrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.netty.AbstractNettyConnector.NettyConfiguration;
+import org.neo4j.bolt.protocol.common.handler.BoltChannelInitializer;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -50,8 +57,12 @@ import org.neo4j.server.config.AuthConfigProvider;
 /**
  * Provides a basis for connectors which rely on netty.
  */
-public abstract class AbstractNettyConnector extends AbstractConnector {
+public abstract class AbstractNettyConnector<CFG extends NettyConfiguration> extends AbstractConnector<CFG> {
     protected final SocketAddress bindAddress;
+    private final ByteBufAllocator allocator;
+    private final EventLoopGroup bossGroup;
+    private final EventLoopGroup workerGroup;
+    protected final InternalLogProvider logging;
     protected final InternalLog userLog;
     protected final InternalLog log;
 
@@ -62,9 +73,11 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
             SocketAddress bindAddress,
             MemoryPool memoryPool,
             Clock clock,
+            ByteBufAllocator allocator,
+            EventLoopGroup bossGroup,
+            EventLoopGroup workerGroup,
             Connection.Factory connectionFactory,
             NetworkConnectionTracker connectionTracker,
-            boolean encryptionRequired,
             BoltProtocolRegistry protocolRegistry,
             Authentication authentication,
             AuthConfigProvider authConfigProvider,
@@ -75,8 +88,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
             ErrorAccountant errorAccountant,
             TrafficAccountant trafficAccountant,
             BoltDriverMetricsMonitor driverMetricsMonitor,
-            int streamingBufferSize,
-            int streamingFlushThreshold,
+            CFG configuration,
             InternalLogProvider userLogProvider,
             InternalLogProvider internalLogProvider) {
         super(
@@ -85,7 +97,6 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
                 clock,
                 connectionFactory,
                 connectionTracker,
-                encryptionRequired,
                 protocolRegistry,
                 authentication,
                 authConfigProvider,
@@ -96,10 +107,15 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
                 errorAccountant,
                 trafficAccountant,
                 driverMetricsMonitor,
-                streamingBufferSize,
-                streamingFlushThreshold,
+                configuration,
                 internalLogProvider);
+
         this.bindAddress = bindAddress;
+        this.allocator = allocator;
+        this.bossGroup = bossGroup;
+        this.workerGroup = workerGroup;
+        this.logging = internalLogProvider;
+
         this.userLog = userLogProvider.getLog(getClass());
         this.log = internalLogProvider.getLog(getClass());
     }
@@ -112,7 +128,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
      * @return a thread group.
      */
     protected EventLoopGroup bossGroup() {
-        return workerGroup();
+        return this.bossGroup;
     }
 
     /**
@@ -120,7 +136,9 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
      *
      * @return a thread group.
      */
-    protected abstract EventLoopGroup workerGroup();
+    protected EventLoopGroup workerGroup() {
+        return this.workerGroup;
+    }
 
     /**
      * Retrieves the channel type which shall be used when binding a new address for use with this connector.
@@ -161,7 +179,9 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
      *
      * @return a channel initializer.
      */
-    protected abstract ChannelInitializer<Channel> channelInitializer();
+    protected ChannelInitializer<Channel> channelInitializer() {
+        return new BoltChannelInitializer(this, this.allocator, this.logging);
+    }
 
     @Override
     public SocketAddress address() {
@@ -226,4 +246,79 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
     }
 
     protected void logStartupMessage() {}
+
+    public static class NettyConfiguration extends AbstractConfiguration {
+        private final boolean requireEncryption;
+        private final boolean enableMergeCumulator;
+        private final SslContext sslContext;
+
+        public NettyConfiguration(
+                boolean enableProtocolCapture,
+                Path protocolCapturePath,
+                boolean enableProtocolLogging,
+                ProtocolLoggingMode protocolLoggingMode,
+                long maxAuthenticationInboundBytes,
+                boolean enableOutboundBufferThrottle,
+                int outboundBufferThrottleLowWatermark,
+                int outboundBufferThrottleHighWatermark,
+                Duration outboundBufferMaxThrottleDuration,
+                int inboundBufferThrottleLowWatermark,
+                int inboundBufferThrottleHighWatermark,
+                int streamingBufferSize,
+                int streamingFlushThreshold,
+                Duration connectionShutdownDuration,
+                boolean enableMergeCumulator,
+                boolean requireEncryption,
+                SslContext sslContext) {
+            super(
+                    enableProtocolCapture,
+                    protocolCapturePath,
+                    enableProtocolLogging,
+                    protocolLoggingMode,
+                    maxAuthenticationInboundBytes,
+                    enableOutboundBufferThrottle,
+                    outboundBufferThrottleLowWatermark,
+                    outboundBufferThrottleHighWatermark,
+                    outboundBufferMaxThrottleDuration,
+                    inboundBufferThrottleLowWatermark,
+                    inboundBufferThrottleHighWatermark,
+                    streamingBufferSize,
+                    streamingFlushThreshold,
+                    connectionShutdownDuration);
+            if (requireEncryption && sslContext == null) {
+                throw new IllegalArgumentException("SslContext must be specified when encryption is required");
+            }
+
+            this.requireEncryption = requireEncryption;
+            this.enableMergeCumulator = enableMergeCumulator;
+            this.sslContext = sslContext;
+        }
+
+        /**
+         * Identifies whether encryption is required in order to establish a connection via this
+         * connector.
+         *
+         * @return true if encryption is required for new connections.
+         */
+        public boolean requiresEncryption() {
+            return this.requireEncryption;
+        }
+
+        /**
+         * Identifies whether this connector shall use the merge cumulator instead of making use
+         * of a composite based cumulator implementation.
+         * <p />
+         * This configuration may lead to additional memory consumption as well as performance
+         * degradation.
+         *
+         * @return true if enabled, false otherwise.
+         */
+        public boolean enableMergeCumulator() {
+            return this.enableMergeCumulator;
+        }
+
+        public SslContext sslContext() {
+            return this.sslContext;
+        }
+    }
 }

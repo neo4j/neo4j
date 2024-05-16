@@ -19,18 +19,25 @@
  */
 package org.neo4j.bolt.protocol.common.connector;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.util.concurrent.Futures;
 
 /**
  * Provides an intermediary registry of Bolt connections.
  */
 public class ConnectionRegistry {
+
     private final String connectorId;
     private final NetworkConnectionTracker connectionTracker;
     private final InternalLog log;
@@ -68,11 +75,12 @@ public class ConnectionRegistry {
         log.debug("[%s] Removed connection", connection.id());
     }
 
-    public void stopIdling() {
+    public void stopIdling(Duration shutdownDeadline) {
         var it = this.connections.iterator();
 
         log.info("Stopping remaining idle connections for connector %s", this.connectorId);
         var n = 0;
+        var futures = new ArrayList<Future<?>>();
         while (it.hasNext()) {
             var connection = it.next();
             if (!connection.isIdling()) {
@@ -82,14 +90,7 @@ public class ConnectionRegistry {
             log.debug("[%s] Stopping idle connection", connection.id());
 
             connection.close();
-
-            try {
-                connection.closeFuture().get();
-            } catch (InterruptedException ex) {
-                log.warn("[" + connection.id() + "] Interrupted while awaiting clean shutdown of connection", ex);
-            } catch (ExecutionException ex) {
-                log.warn("[" + connection.id() + "] Clean shutdown of connection has failed", ex);
-            }
+            futures.add(connection.closeFuture());
 
             it.remove();
             if (this.connectionTracker != null) {
@@ -101,33 +102,60 @@ public class ConnectionRegistry {
             log.debug("[%s] Stopped idle connection", connection.id());
         }
 
+        var combined = Futures.combine(futures);
+        try {
+            if (!shutdownDeadline.isZero()) {
+                combined.get(shutdownDeadline.toMillis(), TimeUnit.MILLISECONDS);
+            } else {
+                combined.get();
+            }
+        } catch (TimeoutException ex) {
+            log.warn(
+                    "Idle connections have failed to terminate within acceptable duration (" + shutdownDeadline + ")",
+                    ex);
+        } catch (InterruptedException ex) {
+            log.warn("Interrupted while awaiting clean shutdown of idle connections", ex);
+        } catch (ExecutionException ex) {
+            log.warn("Clean shutdown of idle connections has failed", ex);
+        }
+
         log.info("Stopped %d idling connections for connector %s", n, this.connectorId);
     }
 
-    public void stopAll() {
+    public void stopAll(Duration shutdownDeadline) {
         log.info("Stopping %d connections for connector %s", this.connections.size(), this.connectorId);
 
-        this.connections.forEach(connection -> {
-            log.debug("[%s] Stopping connection", connection.id());
+        var futures = this.connections.stream()
+                .map(connection -> {
+                    log.debug("[%s] Requesting connection closure", connection.id());
 
-            connection.close();
+                    connection.close();
 
-            try {
-                connection.closeFuture().get();
-            } catch (InterruptedException ex) {
-                log.warn("[" + connection.id() + "] Interrupted while awaiting clean shutdown of connection", ex);
-            } catch (ExecutionException ex) {
-                log.warn("[" + connection.id() + "] Clean shutdown of connection has failed", ex);
+                    if (this.connectionTracker != null) {
+                        this.connectionTracker.remove(connection);
+                    }
+
+                    return connection.closeFuture();
+                })
+                .toList();
+
+        var combined = Futures.combine(futures);
+        try {
+            if (!shutdownDeadline.isZero()) {
+                combined.get(shutdownDeadline.toMillis(), TimeUnit.MILLISECONDS);
+            } else {
+                combined.get();
             }
+        } catch (TimeoutException ex) {
+            log.error("Connection have failed to terminate within acceptable duration (" + shutdownDeadline + ")", ex);
+            return;
+        } catch (InterruptedException ex) {
+            log.warn("Interrupted while awaiting clean shutdown of connections", ex);
+        } catch (ExecutionException ex) {
+            log.warn("Clean shutdown of connections has failed", ex);
+        }
 
-            if (this.connectionTracker != null) {
-                this.connectionTracker.remove(connection);
-            }
-
-            log.debug("[%s] Stopped connection", connection.id());
-        });
         this.connections.clear();
-
         log.info("Stopped all remaining connections for connector %s", this.connectorId);
     }
 }

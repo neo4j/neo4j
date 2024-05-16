@@ -134,7 +134,13 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
     @Internal
     @Description("The maximum time to wait for the thread pool to finish processing its pending jobs and shutdown")
     public static final Setting<Duration> thread_pool_shutdown_wait_time = newBuilder(
-                    "internal.server.bolt.thread_pool_shutdown_wait_time", DURATION, ofSeconds(5))
+                    "internal.server.bolt.thread_pool_shutdown_wait_time", DURATION, ofMinutes(5))
+            .build();
+
+    @Internal
+    @Description("The maximum time to wait for a connection to shut down before issuing a warning")
+    public static final Setting<Duration> connection_shutdown_wait_time = newBuilder(
+                    "internal.server.bolt.connection_shutdown_wait_time", DURATION, ofMinutes(5))
             .build();
 
     @Internal

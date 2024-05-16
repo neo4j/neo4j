@@ -228,8 +228,8 @@ public abstract class AbstractConnection implements ConnectionHandle {
         this.responseHandler = new NetworkResponseHandler(
                 this,
                 protocol().metadataHandler(),
-                this.connector.streamingBufferSize(),
-                this.connector.streamingFlushThreshold(),
+                this.connector.configuration().streamingBufferSize(),
+                this.connector.configuration().streamingFlushThreshold(),
                 this.logService);
 
         // also enable any implicitly enabled features within the protocol version as we do not want these to be enabled

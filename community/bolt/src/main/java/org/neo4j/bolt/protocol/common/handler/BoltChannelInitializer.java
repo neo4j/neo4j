@@ -27,9 +27,7 @@ import io.netty.handler.ssl.SslContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import org.neo4j.bolt.protocol.common.connector.Connector;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.bolt.protocol.common.connector.netty.AbstractNettyConnector;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
@@ -40,31 +38,26 @@ import org.neo4j.memory.HeapEstimator;
 public class BoltChannelInitializer extends ChannelInitializer<Channel> {
     private static final long SHALLOW_SIZE_PACKET_CAPTURE = HeapEstimator.shallowSizeOfInstance(PcapWriteHandler.class);
 
-    private final Config config;
-    private final Connector connector;
+    private final AbstractNettyConnector<?> connector;
     private final ByteBufAllocator allocator;
-    private final SslContext sslContext;
     private final InternalLogProvider logging;
     private final InternalLog log;
 
     public BoltChannelInitializer(
-            Config config,
-            Connector connector,
+            AbstractNettyConnector<?> connector,
             ByteBufAllocator allocator,
             SslContext sslContext,
             InternalLogProvider logging) {
-        this.config = config;
         this.allocator = allocator;
         this.connector = connector;
-        this.sslContext = sslContext;
         this.logging = logging;
 
         this.log = logging.getLog(BoltChannelInitializer.class);
     }
 
     public BoltChannelInitializer(
-            Config config, Connector connector, ByteBufAllocator allocator, InternalLogProvider logging) {
-        this(config, connector, allocator, null, logging);
+            AbstractNettyConnector<?> connector, ByteBufAllocator allocator, InternalLogProvider logging) {
+        this(connector, allocator, null, logging);
     }
 
     @Override
@@ -90,11 +83,12 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
 
         // when enabled, also register a protocol capture handler which writes all network
         // communication for this channel into a dedicated file
-        if (this.config.get(BoltConnectorInternalSettings.protocol_capture)) {
+        if (this.connector.configuration().enableProtocolCapture()) {
             connection.memoryTracker().allocateHeap(SHALLOW_SIZE_PACKET_CAPTURE);
 
-            var file = this.config
-                    .get(BoltConnectorInternalSettings.protocol_capture_path)
+            var file = this.connector
+                    .configuration()
+                    .protocolCapturePath()
                     .resolve(connection.id() + ".pcap")
                     .toAbsolutePath();
 
@@ -118,15 +112,7 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
             }
         }
 
-        // when explicitly enabled, also register a protocol logging handler within the pipeline in order to
-        // print all incoming and outgoing traffic to the internal log - this has performance implications thus
-        // requiring its own dedicated configuration option
-        var enableLogging = this.config.get(BoltConnectorInternalSettings.protocol_logging);
-        var loggingMode = this.config.get(BoltConnectorInternalSettings.protocol_logging_mode);
-
-        ch.pipeline()
-                .addLast(new TransportSelectionHandler(
-                        this.config, this.sslContext, enableLogging, loggingMode, this.logging));
+        ch.pipeline().addLast(new TransportSelectionHandler(this.logging));
 
         connection.notifyListeners(listener -> listener.onNetworkPipelineInitialized(ch.pipeline()));
     }

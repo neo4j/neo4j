@@ -22,8 +22,6 @@ package org.neo4j.bolt.protocol.common.connector.netty;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.unix.DomainSocketAddress;
@@ -32,18 +30,18 @@ import java.net.BindException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.connection.BoltDriverMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.accounting.error.ErrorAccountant;
 import org.neo4j.bolt.protocol.common.connector.accounting.traffic.NoopTrafficAccountant;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.netty.DomainSocketNettyConnector.DomainSocketConfiguration;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
-import org.neo4j.bolt.protocol.common.handler.BoltChannelInitializer;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.tx.TransactionManager;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -60,19 +58,13 @@ import org.neo4j.server.config.AuthConfigProvider;
  * Note that protocol level authentication will be unavailable for domain socket based communication. All authorization
  * is provided through the socket file itself and will thus occur on OS level.
  */
-public class DomainSocketNettyConnector extends AbstractNettyConnector {
+public class DomainSocketNettyConnector extends AbstractNettyConnector<DomainSocketConfiguration> {
     private final Path path;
-    private final Config config;
-    private final ByteBufAllocator allocator;
     private final ConnectorTransport transport;
-    private final EventLoopGroup bossGroup;
-    private final EventLoopGroup workerGroup;
-    private final InternalLogProvider logging;
 
-    DomainSocketNettyConnector(
+    public DomainSocketNettyConnector(
             String id,
             Path path,
-            Config config,
             MemoryPool memoryPool,
             Clock clock,
             ByteBufAllocator allocator,
@@ -90,8 +82,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
             RoutingService routingService,
             ErrorAccountant errorAccountant,
             BoltDriverMetricsMonitor driverMetricsMonitor,
-            int streamingBufferSize,
-            int streamingFlushThreshold,
+            DomainSocketConfiguration configuration,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         super(
@@ -99,9 +90,11 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 new DomainSocketAddress(path.toFile()),
                 memoryPool,
                 clock,
+                allocator,
+                bossGroup,
+                workerGroup,
                 connectionFactory,
                 connectionTracker,
-                false,
                 protocolRegistry,
                 authentication,
                 authConfigProvider,
@@ -112,8 +105,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 errorAccountant,
                 NoopTrafficAccountant.getInstance(),
                 driverMetricsMonitor,
-                streamingBufferSize,
-                streamingFlushThreshold,
+                configuration,
                 userLogProvider,
                 logging);
         checkArgument(
@@ -121,73 +113,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 "Unsupported transport: " + transport.getName() + " does not support domain sockets");
 
         this.path = path;
-        this.config = config;
-        this.allocator = allocator;
         this.transport = transport;
-        this.bossGroup = bossGroup;
-        this.workerGroup = workerGroup;
-        this.logging = logging;
-    }
-
-    public DomainSocketNettyConnector(
-            String id,
-            Path path,
-            Config config,
-            MemoryPool memoryPool,
-            Clock clock,
-            ByteBufAllocator allocator,
-            EventLoopGroup eventLoopGroup,
-            ConnectorTransport transport,
-            Connection.Factory connectionFactory,
-            NetworkConnectionTracker connectionTracker,
-            BoltProtocolRegistry protocolRegistry,
-            Authentication authentication,
-            AuthConfigProvider authConfigProvider,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            ConnectionHintRegistry connectionHintRegistry,
-            TransactionManager transactionManager,
-            RoutingService routingService,
-            ErrorAccountant errorAccountant,
-            BoltDriverMetricsMonitor driverMetricsMonitor,
-            int streamingBufferSize,
-            int streamingFlushThreshold,
-            InternalLogProvider userLogProvider,
-            InternalLogProvider logging) {
-        this(
-                id,
-                path,
-                config,
-                memoryPool,
-                clock,
-                allocator,
-                eventLoopGroup,
-                eventLoopGroup,
-                transport,
-                connectionFactory,
-                connectionTracker,
-                protocolRegistry,
-                authentication,
-                authConfigProvider,
-                defaultDatabaseResolver,
-                connectionHintRegistry,
-                transactionManager,
-                routingService,
-                errorAccountant,
-                driverMetricsMonitor,
-                streamingBufferSize,
-                streamingFlushThreshold,
-                userLogProvider,
-                logging);
-    }
-
-    @Override
-    protected EventLoopGroup bossGroup() {
-        return bossGroup;
-    }
-
-    @Override
-    protected EventLoopGroup workerGroup() {
-        return workerGroup;
     }
 
     @Override
@@ -196,16 +122,11 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
     }
 
     @Override
-    protected ChannelInitializer<Channel> channelInitializer() {
-        return new BoltChannelInitializer(config, this, allocator, logging);
-    }
-
-    @Override
     protected void onStart() throws Exception {
         super.onStart();
 
         if (Files.exists(path)) {
-            if (!config.get(BoltConnectorInternalSettings.unsupported_loopback_delete)) {
+            if (!this.configuration().deleteSocketFile()) {
                 throw new PortBindException(
                         bindAddress, new BindException("Loopback listen file: " + path + " already exists."));
             }
@@ -221,5 +142,61 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
     @Override
     protected void logStartupMessage() {
         userLog.info("Bolt (loopback) enabled on file %s", path);
+    }
+
+    public static class DomainSocketConfiguration extends NettyConfiguration {
+        private final boolean deleteSocketFile;
+
+        public DomainSocketConfiguration(
+                boolean enableProtocolCapture,
+                Path protocolCapturePath,
+                boolean enableProtocolLogging,
+                ProtocolLoggingMode protocolLoggingMode,
+                long maxAuthenticationInboundBytes,
+                boolean enableOutboundBufferThrottle,
+                int outboundBufferThrottleLowWatermark,
+                int outboundBufferThrottleHighWatermark,
+                Duration outboundBufferThrottleDuration,
+                int inboundBufferThrottleLowWatermark,
+                int inboundBufferThrottleHighWatermark,
+                int streamingBufferSize,
+                int streamingFlushThreshold,
+                Duration connectionShutdownDuration,
+                boolean enableMergeCumulator,
+                boolean deleteSocketFile) {
+            super(
+                    enableProtocolCapture,
+                    protocolCapturePath,
+                    enableProtocolLogging,
+                    protocolLoggingMode,
+                    maxAuthenticationInboundBytes,
+                    enableOutboundBufferThrottle,
+                    outboundBufferThrottleLowWatermark,
+                    outboundBufferThrottleHighWatermark,
+                    outboundBufferThrottleDuration,
+                    inboundBufferThrottleLowWatermark,
+                    inboundBufferThrottleHighWatermark,
+                    streamingBufferSize,
+                    streamingFlushThreshold,
+                    connectionShutdownDuration,
+                    enableMergeCumulator,
+                    false, // Currently always disabled on UNIX socket
+                    null);
+
+            this.deleteSocketFile = deleteSocketFile;
+        }
+
+        /**
+         * Identifies whether the socket file shall be deleted when it already exists at the
+         * configured location.
+         * <p />
+         * When the specified socket file already exists and this option is enabled, the connector
+         * will attempt to delete it. If disabled, an exception will be raised instead.
+         *
+         * @return true if deletion shall be attempted, false otherwise.
+         */
+        public boolean deleteSocketFile() {
+            return this.deleteSocketFile;
+        }
     }
 }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.bolt.protocol.common.connector;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,7 +96,7 @@ class ConnectionRegistryTest {
     }
 
     @Test
-    void stopIdlingShouldIgnoreBusyConnections() throws ExecutionException, InterruptedException {
+    void stopIdlingShouldIgnoreBusyConnections() throws ExecutionException, InterruptedException, TimeoutException {
         @SuppressWarnings("unchecked")
         var future = (Future<Void>) Mockito.mock(Future.class);
 
@@ -116,13 +119,13 @@ class ConnectionRegistryTest {
         Mockito.verify(connectionTracker).add(connection2);
         Mockito.verifyNoMoreInteractions(connectionTracker);
 
-        connectionRegistry.stopIdling();
+        connectionRegistry.stopIdling(Duration.ofHours(5)); // timeout not used in test
 
         Mockito.verify(connection1, Mockito.times(3)).id();
         Mockito.verify(connection1).isIdling();
         Mockito.verify(connection1).close();
         Mockito.verify(connection1).closeFuture();
-        Mockito.verify(future).get();
+        Mockito.verify(future).get(Duration.ofHours(5).toMillis(), TimeUnit.MILLISECONDS);
         Mockito.verifyNoMoreInteractions(connection1);
 
         Mockito.verify(connection2).isIdling();
@@ -150,12 +153,12 @@ class ConnectionRegistryTest {
     }
 
     @Test
-    void stopIdlingShouldHandleInterrupts() throws ExecutionException, InterruptedException {
+    void stopIdlingShouldHandleInterrupts() throws ExecutionException, InterruptedException, TimeoutException {
         @SuppressWarnings("unchecked")
         var future = (Future<Void>) Mockito.mock(Future.class);
 
         var cause = new InterruptedException("Fake interrupt");
-        Mockito.doThrow(cause).when(future).get();
+        Mockito.doThrow(cause).when(future).get(Mockito.anyLong(), Mockito.any());
 
         var connection1 = ConnectionMockFactory.newFactory(CONNECTION_ID)
                 .withIdling(true)
@@ -165,12 +168,12 @@ class ConnectionRegistryTest {
 
         connectionRegistry.register(connection1);
         connectionRegistry.register(connection2);
-        connectionRegistry.stopIdling();
+        connectionRegistry.stopIdling(Duration.ofHours(5)); // timeout not used in test
 
         Mockito.verify(connection1).close();
         Mockito.verify(connection2).close();
 
-        Mockito.verify(future).get();
+        Mockito.verify(future).get(Duration.ofHours(5).toMillis(), TimeUnit.MILLISECONDS);
 
         Mockito.verify(connectionTracker).remove(connection1);
         Mockito.verify(connectionTracker).remove(connection2);
@@ -178,17 +181,16 @@ class ConnectionRegistryTest {
         LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.WARN)
                 .forClass(ConnectionRegistry.class)
-                .containsMessageWithException(
-                        "[" + CONNECTION_ID + "] Interrupted while awaiting clean shutdown of connection", cause);
+                .containsMessageWithException("Interrupted while awaiting clean shutdown of idle connections", cause);
     }
 
     @Test
-    void stopIdlingShouldHandleExecutionExceptions() throws ExecutionException, InterruptedException {
+    void stopIdlingShouldHandleExecutionExceptions() throws ExecutionException, InterruptedException, TimeoutException {
         @SuppressWarnings("unchecked")
         var future = (Future<Void>) Mockito.mock(Future.class);
 
         var cause = new ExecutionException("Fake cause", new IllegalStateException("Oh no"));
-        Mockito.doThrow(cause).when(future).get();
+        Mockito.doThrow(cause).when(future).get(Mockito.anyLong(), Mockito.any());
 
         var connection1 = ConnectionMockFactory.newFactory(CONNECTION_ID)
                 .withIdling(true)
@@ -198,12 +200,12 @@ class ConnectionRegistryTest {
 
         connectionRegistry.register(connection1);
         connectionRegistry.register(connection2);
-        connectionRegistry.stopIdling();
+        connectionRegistry.stopIdling(Duration.ofHours(5)); // timeout not used in test
 
         Mockito.verify(connection1).close();
         Mockito.verify(connection2).close();
 
-        Mockito.verify(future).get();
+        Mockito.verify(future).get(Duration.ofHours(5).toMillis(), TimeUnit.MILLISECONDS);
 
         Mockito.verify(connectionTracker).remove(connection1);
         Mockito.verify(connectionTracker).remove(connection2);
@@ -211,11 +213,11 @@ class ConnectionRegistryTest {
         LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.WARN)
                 .forClass(ConnectionRegistry.class)
-                .containsMessageWithException("[" + CONNECTION_ID + "] Clean shutdown of connection has failed", cause);
+                .containsMessageWithException("Clean shutdown of idle connections has failed", cause);
     }
 
     @Test
-    void stopAllShouldCloseBusyConnections() throws ExecutionException, InterruptedException {
+    void stopAllShouldCloseBusyConnections() throws ExecutionException, InterruptedException, TimeoutException {
         @SuppressWarnings("unchecked")
         var future1 = (Future<Void>) Mockito.mock(Future.class);
         @SuppressWarnings("unchecked")
@@ -237,18 +239,18 @@ class ConnectionRegistryTest {
         Mockito.verify(connectionTracker).add(connection2);
         Mockito.verifyNoMoreInteractions(connectionTracker);
 
-        connectionRegistry.stopAll();
+        connectionRegistry.stopAll(Duration.ofHours(5));
 
-        Mockito.verify(connection1, Mockito.times(3)).id();
+        Mockito.verify(connection1, Mockito.times(2)).id();
         Mockito.verify(connection1).close();
         Mockito.verify(connection1).closeFuture();
-        Mockito.verify(future1).get();
+        Mockito.verify(future1).get(Duration.ofHours(5).toMillis(), TimeUnit.MILLISECONDS);
         Mockito.verifyNoMoreInteractions(connection1);
 
-        Mockito.verify(connection2, Mockito.times(3)).id();
+        Mockito.verify(connection2, Mockito.times(2)).id();
         Mockito.verify(connection2).close();
         Mockito.verify(connection2).closeFuture();
-        Mockito.verify(future2).get();
+        Mockito.verify(future2).get(Duration.ofHours(5).toMillis(), TimeUnit.MILLISECONDS);
         Mockito.verifyNoMoreInteractions(connection2);
 
         Mockito.verify(connectionTracker).remove(connection1);
@@ -262,11 +264,7 @@ class ConnectionRegistryTest {
         LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
                 .forClass(ConnectionRegistry.class)
-                .containsMessageWithArguments("[%s] Stopping connection", CONNECTION_ID);
-        LogAssertions.assertThat(logProvider)
-                .forLevel(AssertableLogProvider.Level.DEBUG)
-                .forClass(ConnectionRegistry.class)
-                .containsMessageWithArguments("[%s] Stopped connection", CONNECTION_ID);
+                .containsMessageWithArguments("[%s] Requesting connection closure", CONNECTION_ID);
         LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.INFO)
                 .forClass(ConnectionRegistry.class)
@@ -274,12 +272,12 @@ class ConnectionRegistryTest {
     }
 
     @Test
-    void stopAllShouldHandleInterrupts() throws ExecutionException, InterruptedException {
+    void stopAllShouldHandleInterrupts() throws ExecutionException, InterruptedException, TimeoutException {
         @SuppressWarnings("unchecked")
         var future = (Future<Void>) Mockito.mock(Future.class);
 
         var cause = new InterruptedException("Fake interrupt");
-        Mockito.doThrow(cause).when(future).get();
+        Mockito.doThrow(cause).when(future).get(Mockito.anyLong(), Mockito.any());
 
         var connection1 = ConnectionMockFactory.newFactory(CONNECTION_ID)
                 .withCloseFuture(future)
@@ -288,12 +286,12 @@ class ConnectionRegistryTest {
 
         connectionRegistry.register(connection1);
         connectionRegistry.register(connection2);
-        connectionRegistry.stopAll();
+        connectionRegistry.stopAll(Duration.ofHours(2)); // timeout if ever used
 
         Mockito.verify(connection1).close();
         Mockito.verify(connection2).close();
 
-        Mockito.verify(future).get();
+        Mockito.verify(future).get(Duration.ofHours(2).toMillis(), TimeUnit.MILLISECONDS);
 
         Mockito.verify(connectionTracker).remove(connection1);
         Mockito.verify(connectionTracker).remove(connection2);
@@ -301,17 +299,16 @@ class ConnectionRegistryTest {
         LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.WARN)
                 .forClass(ConnectionRegistry.class)
-                .containsMessageWithException(
-                        "[" + CONNECTION_ID + "] Interrupted while awaiting clean shutdown of connection", cause);
+                .containsMessageWithException("Interrupted while awaiting clean shutdown of connections", cause);
     }
 
     @Test
-    void stopAllShouldHandleExecutionExceptions() throws ExecutionException, InterruptedException {
+    void stopAllShouldHandleExecutionExceptions() throws ExecutionException, InterruptedException, TimeoutException {
         @SuppressWarnings("unchecked")
         var future = (Future<Void>) Mockito.mock(Future.class);
 
         var cause = new ExecutionException("Fake cause", new IllegalStateException("Oh no"));
-        Mockito.doThrow(cause).when(future).get();
+        Mockito.doThrow(cause).when(future).get(Mockito.anyLong(), Mockito.any());
 
         var connection1 = ConnectionMockFactory.newFactory(CONNECTION_ID)
                 .withCloseFuture(future)
@@ -320,12 +317,12 @@ class ConnectionRegistryTest {
 
         connectionRegistry.register(connection1);
         connectionRegistry.register(connection2);
-        connectionRegistry.stopAll();
+        connectionRegistry.stopAll(Duration.ofHours(2)); // timeout if ever used
 
         Mockito.verify(connection1).close();
         Mockito.verify(connection2).close();
 
-        Mockito.verify(future).get();
+        Mockito.verify(future).get(Duration.ofHours(2).toMillis(), TimeUnit.MILLISECONDS);
 
         Mockito.verify(connectionTracker).remove(connection1);
         Mockito.verify(connectionTracker).remove(connection2);
@@ -333,6 +330,6 @@ class ConnectionRegistryTest {
         LogAssertions.assertThat(logProvider)
                 .forLevel(AssertableLogProvider.Level.WARN)
                 .forClass(ConnectionRegistry.class)
-                .containsMessageWithException("[" + CONNECTION_ID + "] Clean shutdown of connection has failed", cause);
+                .containsMessageWithException("Clean shutdown of connections has failed", cause);
     }
 }

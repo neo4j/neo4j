@@ -30,6 +30,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.time.Clock;
+import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
@@ -78,10 +79,29 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
     }
 
     protected SocketNettyConnector createConnector(SocketAddress bindAddress) {
+        var config = new SocketNettyConnector.SocketConfiguration(
+                false,
+                null,
+                false,
+                null,
+                0,
+                false,
+                0,
+                0,
+                null,
+                0,
+                0,
+                512,
+                0,
+                Duration.ofMinutes(5),
+                false,
+                false,
+                null,
+                false);
+
         return new SocketNettyConnector(
                 CONNECTOR_ID,
                 bindAddress,
-                config,
                 ConnectorType.BOLT,
                 connectorPortRegister,
                 memoryPool,
@@ -92,9 +112,6 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 transport,
                 connectionFactory,
                 connectionTracker,
-                null,
-                false,
-                true,
                 protocolRegistry,
                 authentication,
                 authConfigProvider,
@@ -105,8 +122,7 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 Mockito.mock(ErrorAccountant.class),
                 Mockito.mock(TrafficAccountant.class),
                 BoltDriverMetricsMonitor.noop(),
-                512,
-                0,
+                config,
                 logging,
                 logging);
     }

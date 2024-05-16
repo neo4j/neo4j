@@ -28,6 +28,8 @@ import org.neo4j.bolt.protocol.common.connection.hint.ConnectionHintRegistry;
 import org.neo4j.bolt.protocol.common.connector.ConnectionRegistry;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.connector.netty.AbstractNettyConnector;
+import org.neo4j.bolt.protocol.common.connector.netty.AbstractNettyConnector.NettyConfiguration;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -38,14 +40,15 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.config.AuthConfigProvider;
 
-public final class ConnectorMockFactory extends AbstractMockFactory<Connector, ConnectorMockFactory> {
+public final class ConnectorMockFactory extends AbstractMockFactory<AbstractNettyConnector, ConnectorMockFactory> {
     private final String id;
 
     private ConnectorMockFactory(String id) {
-        super(Connector.class);
+        super(AbstractNettyConnector.class);
 
         this.id = id;
         this.withStaticValue(Connector::id, id);
+        this.withStaticValue(Connector::configuration, ConnectorConfigurationMockFactory.newInstance());
     }
 
     public static ConnectorMockFactory newFactory(String id) {
@@ -94,10 +97,6 @@ public final class ConnectorMockFactory extends AbstractMockFactory<Connector, C
         return this.withConnectionRegistry(new ConnectionRegistry(this.id, tracker, NullLogProvider.getInstance()));
     }
 
-    public ConnectorMockFactory withEncryptionRequired(boolean encryptionRequired) {
-        return this.withStaticValue(Connector::isEncryptionRequired, encryptionRequired);
-    }
-
     public ConnectorMockFactory withProtocolRegistry(BoltProtocolRegistry protocolRegistry) {
         return this.withStaticValue(Connector::protocolRegistry, protocolRegistry);
     }
@@ -135,5 +134,14 @@ public final class ConnectorMockFactory extends AbstractMockFactory<Connector, C
 
     public ConnectorMockFactory withConnection(Connection connection) {
         return this.withStaticValue(connector -> connector.createConnection(ArgumentMatchers.any()), connection);
+    }
+
+    public ConnectorMockFactory withConfiguration(NettyConfiguration configuration) {
+        return this.withStaticValue(Connector::configuration, configuration);
+    }
+
+    public ConnectorMockFactory withConfiguration(Consumer<ConnectorConfigurationMockFactory> configurer) {
+        return this.withStaticValue(
+                Connector::configuration, ConnectorConfigurationMockFactory.newInstance(configurer));
     }
 }
