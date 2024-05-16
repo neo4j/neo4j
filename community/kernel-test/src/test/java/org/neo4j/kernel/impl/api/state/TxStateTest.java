@@ -856,7 +856,7 @@ abstract class TxStateTest {
 
             @Override
             void createEarlyState() {
-                state.relationshipDoCreate(
+                state.relationshipDoDelete(
                         /*id=*/ random.nextInt(1 << 20),
                         /*type=*/ random.nextInt(128),
                         /*startNode=*/ random.nextInt(1 << 20),
