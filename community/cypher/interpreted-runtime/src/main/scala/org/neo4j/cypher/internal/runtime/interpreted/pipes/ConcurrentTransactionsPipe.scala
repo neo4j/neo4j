@@ -41,7 +41,7 @@ abstract class AbstractConcurrentTransactionsPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
-  concurrency: Expression,
+  concurrency: Option[Expression],
   onErrorBehaviour: InTransactionsOnErrorBehaviour
 ) extends PipeWithSource(source) {
 

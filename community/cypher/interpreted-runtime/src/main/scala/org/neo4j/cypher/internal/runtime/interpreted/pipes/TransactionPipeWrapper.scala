@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrappe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.logError
 import org.neo4j.exceptions.CypherExecutionInterruptedException
 import org.neo4j.exceptions.InternalException
+import org.neo4j.internal.helpers.MathUtil
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 import org.neo4j.kernel.impl.util.collection.EagerBuffer.createEagerBuffer
 import org.neo4j.memory.MemoryTracker
@@ -267,8 +268,27 @@ object TransactionPipeWrapper {
     PipeHelper.evaluateStaticLongOrThrow(batchSize, _ > 0, state, "OF ... ROWS", " Must be a positive integer.")
   }
 
-  def evaluateConcurrency(concurrency: Expression, state: QueryState): Long = {
-    PipeHelper.evaluateStaticLongOrThrow(concurrency, _ > 0, state, "IN ... CONCURRENT", " Must be a positive integer.")
+  def evaluateConcurrency(concurrency: Option[Expression], state: QueryState): Long = {
+    val concurrencyLong = concurrency match {
+      case Some(c) =>
+        PipeHelper.evaluateStaticLongOrThrow(
+          c,
+          _ => true,
+          state,
+          "IN ... CONCURRENT TRANSACTIONS",
+          ""
+        )
+
+      case None =>
+        0L
+    }
+    val numberOfProcessors = Runtime.getRuntime.availableProcessors
+    val maxConcurrency = numberOfProcessors * 20
+    var effectiveConcurrency = MathUtil.clamp(concurrencyLong, Int.MinValue, maxConcurrency).toInt
+    if (effectiveConcurrency <= 0) {
+      effectiveConcurrency = Math.max(numberOfProcessors + effectiveConcurrency, 1)
+    }
+    effectiveConcurrency
   }
 
   def assertTransactionStateIsEmpty(state: QueryState): Unit = {

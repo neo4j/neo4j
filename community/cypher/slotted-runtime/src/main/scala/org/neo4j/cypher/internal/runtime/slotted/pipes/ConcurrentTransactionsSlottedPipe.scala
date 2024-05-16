@@ -46,7 +46,7 @@ abstract class AbstractConcurrentTransactionsSlottedPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
-  concurrency: Expression,
+  concurrency: Option[Expression],
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   statusSlot: Option[Slot]
 ) extends AbstractConcurrentTransactionsPipe(source, inner, batchSize, concurrency, onErrorBehaviour) {
@@ -70,7 +70,7 @@ case class ConcurrentTransactionApplySlottedPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
-  concurrency: Expression,
+  concurrency: Option[Expression],
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   nullableSlots: Set[Slot],
   statusSlot: Option[Slot]
@@ -112,7 +112,7 @@ case class ConcurrentTransactionForeachSlottedPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
-  concurrency: Expression,
+  concurrency: Option[Expression],
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
   statusSlot: Option[Slot]
 )(val id: Id = Id.INVALID_ID)

@@ -318,7 +318,6 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.UnwindSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ValueHashJoinSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.SlottedVariablePredicate
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -1877,15 +1876,11 @@ class SlottedPipeMapper(
           onErrorBehaviour,
           maybeReportAs
         ) =>
-        val concurrency: internal.expressions.Expression = maybeConcurrency match {
-          case Some(concurrency) => concurrency
-          case _                 => SignedDecimalIntegerLiteral("50")(InputPosition.NONE) // FIXME: use CPU count?
-        }
         ConcurrentTransactionForeachSlottedPipe(
           lhs,
           rhs,
           expressionConverters.toCommandExpression(id, batchSize),
-          expressionConverters.toCommandExpression(id, concurrency),
+          maybeConcurrency.map(expressionConverters.toCommandExpression(id, _)),
           onErrorBehaviour,
           maybeReportAs.map(slots.apply)
         )(id = id)
@@ -1898,16 +1893,12 @@ class SlottedPipeMapper(
           onErrorBehaviour,
           maybeReportAs
         ) =>
-        val concurrency: internal.expressions.Expression = maybeConcurrency match {
-          case Some(concurrency) => concurrency
-          case _                 => SignedDecimalIntegerLiteral("50")(InputPosition.NONE) // FIXME: use CPU count?
-        }
 
         ConcurrentTransactionApplySlottedPipe(
           lhs,
           rhs,
           expressionConverters.toCommandExpression(id, batchSize),
-          expressionConverters.toCommandExpression(id, concurrency),
+          maybeConcurrency.map(expressionConverters.toCommandExpression(id, _)),
           onErrorBehaviour,
           (rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name)).map(slots.apply),
           maybeReportAs.map(slots.apply)
