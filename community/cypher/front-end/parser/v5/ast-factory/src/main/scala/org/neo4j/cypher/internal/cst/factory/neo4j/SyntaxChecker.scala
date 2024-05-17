@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.parser.CypherParser.ConstraintIsNotNullContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintIsUniqueContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintKeyContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintTypedContext
+import org.neo4j.cypher.internal.parser.CypherParser.DropConstraintContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobRecursiveContext
 import org.neo4j.cypher.internal.parser.CypherParser.SymbolicAliasNameOrParameterContext
@@ -325,7 +326,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   }
 
   private def checkEnclosedPropertyList(ctx: CypherParser.EnclosedPropertyListContext): Unit = {
-    if (ctx.property().size() > 1) {
+    if (ctx.property().size() > 1 && ctx.getParent != null) {
       val secondProperty = ctx.property(1).start
       ctx.getParent.getParent match {
         case _: ConstraintExistsContext =>
@@ -341,6 +342,11 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
         case _: ConstraintIsNotNullContext =>
           errors :+= exceptionFactory.syntaxException(
             "Constraint type 'IS NOT NULL' does not allow multiple properties",
+            inputPosition(secondProperty)
+          )
+        case dropCtx: DropConstraintContext if dropCtx.EXISTS() != null =>
+          errors :+= exceptionFactory.syntaxException(
+            "Constraint type 'EXISTS' does not allow multiple properties",
             inputPosition(secondProperty)
           )
         case _ =>
