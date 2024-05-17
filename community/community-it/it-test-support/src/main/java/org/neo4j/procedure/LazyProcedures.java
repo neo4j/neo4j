@@ -232,6 +232,13 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
         }
 
         @Override
+        public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(
+                Class<T> cls, boolean safe) {
+            initView();
+            return view.lookupComponentProvider(cls, safe);
+        }
+
+        @Override
         public int[] getProcedureIds(String procedureGlobbing) {
             initView();
             return view.getProcedureIds(procedureGlobbing);

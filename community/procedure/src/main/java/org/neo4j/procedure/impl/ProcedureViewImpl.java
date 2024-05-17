@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
@@ -81,6 +82,26 @@ public class ProcedureViewImpl implements ProcedureView {
                 ProcedureRegistry.copyOf(registry),
                 ComponentRegistry.copyOf(safeComponents),
                 ComponentRegistry.copyOf(allComponents));
+    }
+
+    /**
+     * Lookup registered component providers functions that capable to provide user requested type in scope of procedure invocation context.
+     * <p>
+     * Typically, getters for the components are injected into the compiled procedure classes at procedure compilation time.
+     * However, if the procedure/function is implemented directly via either
+     * {@link org.neo4j.kernel.api.procedure.CallableProcedure}, {@link org.neo4j.kernel.api.procedure.CallableUserFunction}
+     * , or {@link org.neo4j.kernel.api.procedure.CallableUserAggregationFunction} they do not receive their component
+     * getters. This function provides support for accessing components in these cases.
+     * </p>
+     * <p>Note: GDS relies on this functionality.</p>
+     * @param cls the type of registered component
+     * @param safe set to false if desired component can bypass security, true if it respects security
+     * @return registered provider function if registered, null otherwise
+     */
+    @Override
+    public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe) {
+        var registryView = safe ? safeComponents : allComponents;
+        return registryView.providerFor(cls);
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.procedure;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -52,6 +53,8 @@ public interface ProcedureView {
     AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException;
 
     UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException;
+
+    <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe);
 
     int[] getProcedureIds(String procedureGlobbing);
 

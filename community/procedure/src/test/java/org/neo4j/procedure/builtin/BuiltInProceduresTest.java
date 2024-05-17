@@ -23,6 +23,8 @@ import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -82,6 +84,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -184,6 +187,19 @@ class BuiltInProceduresTest {
         when(schemaReadCore.indexGetState(any(IndexDescriptor.class))).thenReturn(InternalIndexState.ONLINE);
 
         when(graphDatabaseAPI.dbmsInfo()).thenReturn(DbmsInfo.ENTERPRISE);
+    }
+
+    @Test
+    void lookupComponentProviders() {
+        var view = procs.getCurrentView();
+        assertNotNull(view.lookupComponentProvider(Transaction.class, true));
+        assertNotNull(view.lookupComponentProvider(Transaction.class, false));
+
+        assertNull(view.lookupComponentProvider(Statement.class, true));
+        assertNull(view.lookupComponentProvider(Statement.class, false));
+
+        assertNull(view.lookupComponentProvider(DependencyResolver.class, true));
+        assertNotNull(view.lookupComponentProvider(DependencyResolver.class, false));
     }
 
     @Test
