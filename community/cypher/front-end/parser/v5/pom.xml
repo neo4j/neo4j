@@ -27,6 +27,8 @@
         <module>parser</module>
         <module>antlr-parser-listener</module>
         <module>ast-factory</module>
+        <module>literal-interpreter</module>
     </modules>
+
 
 </project>
