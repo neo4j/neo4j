@@ -50,12 +50,13 @@ class AvgFunction(val value: Expression)
   private var daysRunningAvg = 0d
   private var secondsRunningAvg = 0d
   private var nanosRunningAvg = 0d
+  protected var avgNumber: Double = 0.0
 
   override def result(state: QueryState): Value = aggregatingType match {
     case None =>
       Values.NO_VALUE
     case Some(AggregatingNumbers) =>
-      sumNumber
+      Values.doubleValue(avgNumber)
     case Some(AggregatingDurations) =>
       DurationValue.approximate(monthsRunningAvg, daysRunningAvg, secondsRunningAvg, nanosRunningAvg).normalize()
     case _ => throw new InternalException(s"invalid aggregation type $aggregatingType")
@@ -71,7 +72,7 @@ class AvgFunction(val value: Expression)
       vl,
       number => {
         count += 1
-        sumNumber = incrementalAverage(sumNumber, number, count)
+        avgNumber = incrementalAverage(avgNumber, number.doubleValue(), count)
       },
       duration => {
         count += 1

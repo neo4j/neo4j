@@ -184,35 +184,43 @@ public final class ValueMath {
     }
 
     /** Calculates an incremental average taking into account NaN and +/-Infinity */
-    public static NumberValue incrementalAverage(NumberValue runningAverage, NumberValue newNumber, double weight) {
-        double newDbl = newNumber.doubleValue();
-        double runningDbl = runningAverage.doubleValue();
+    public static double incrementalAverage(double runningDbl, double newDbl, double weight) {
+        double result = runningDbl + (newDbl - runningDbl) / weight;
+        if (Double.isNaN(result) || Double.isInfinite(result)) {
+            // If the result is NaN we need to take some care to figure out if it should
+            // be +-Infinity or NaN. We assume this is rare so we only do the extra checking
+            // in that case
+            return incrementalAverageSlowRoute(runningDbl, newDbl, weight);
+        } else {
+            return result;
+        }
+    }
+
+    private static double incrementalAverageSlowRoute(double runningDbl, double newDbl, double weight) {
 
         if (Double.isNaN(runningDbl) || Double.isNaN(newDbl)) {
-            return Values.NaN;
+            return Double.NaN;
         }
 
         boolean newInfinite = Double.isInfinite(newDbl);
         boolean runningInfinite = Double.isInfinite(runningDbl);
 
         if (!newInfinite && !runningInfinite) {
-            var diff = newNumber.minus(runningAverage);
-            var next = diff.dividedBy(weight);
-            return overflowSafeAdd(runningAverage, next);
+            return runningDbl + (newDbl - runningDbl) / weight;
         }
 
         if (newInfinite && !runningInfinite) {
-            return newNumber;
+            return newDbl;
         }
 
         if (!newInfinite) {
-            return runningAverage;
+            return runningDbl;
         }
 
         if (oppositeInfinites(newDbl, runningDbl)) {
-            return Values.NaN;
+            return Double.NaN;
         }
 
-        return runningAverage;
+        return runningDbl;
     }
 }

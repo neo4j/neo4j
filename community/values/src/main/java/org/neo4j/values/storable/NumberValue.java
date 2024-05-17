@@ -106,7 +106,7 @@ public abstract class NumberValue extends ScalarValue {
 
     public abstract NumberValue dividedBy(long b);
 
-    public abstract NumberValue dividedBy(double b);
+    public abstract FloatingPointValue dividedBy(double b);
 
     public NumberValue minus(NumberValue numberValue) {
         if (numberValue instanceof IntegralValue) {
