@@ -395,7 +395,7 @@ case class CypherPlanner(
       transactionalContextWrapper.cancellationChecker,
       options.materializedEntitiesMode,
       options.queryOptions.eagerAnalyzer,
-      options.queryOptions.labelInference,
+      options.queryOptions.inferSchemaParts,
       options.queryOptions.statefulShortestPlanningModeOption,
       databaseReferenceRepository,
       transactionalContextWrapper.databaseId,

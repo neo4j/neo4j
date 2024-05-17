@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersion
-import org.neo4j.cypher.internal.options.LabelInferenceOption
+import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CacheKeyTest extends CypherFunSuite {
@@ -69,13 +69,13 @@ class CacheKeyTest extends CypherFunSuite {
       debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring)),
       parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.disabled,
       eagerAnalyzer = CypherEagerAnalyzerOption.ir,
-      labelInference = LabelInferenceOption.enabled,
+      inferSchemaParts = CypherInferSchemaPartsOption.mostSelectiveLabel,
       statefulShortestPlanningModeOption = CypherStatefulShortestPlanningModeOption.allIfPossible
     )
 
     options.cacheKey
       .shouldEqual(
-        """5 PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=ir labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
+        """5 PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=ir inferSchemaParts=most_selective_label statefulShortestPlanningMode=all_if_possible"""
       )
   }
 
@@ -94,13 +94,13 @@ class CacheKeyTest extends CypherFunSuite {
       debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring)),
       parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.disabled,
       eagerAnalyzer = CypherEagerAnalyzerOption.ir,
-      labelInference = LabelInferenceOption.enabled,
+      inferSchemaParts = CypherInferSchemaPartsOption.mostSelectiveLabel,
       statefulShortestPlanningModeOption = CypherStatefulShortestPlanningModeOption.allIfPossible
     )
 
     options.logicalPlanCacheKey
       .shouldEqual(
-        """5 updateStrategy=eager connectComponentsPlanner=idp eagerAnalyzer=ir labelInference=enabled statefulShortestPlanningMode=all_if_possible"""
+        """5 updateStrategy=eager connectComponentsPlanner=idp eagerAnalyzer=ir inferSchemaParts=most_selective_label statefulShortestPlanningMode=all_if_possible"""
       )
   }
 }

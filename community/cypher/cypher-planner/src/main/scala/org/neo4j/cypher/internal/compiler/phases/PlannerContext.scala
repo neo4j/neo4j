@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
-import org.neo4j.cypher.internal.options.LabelInferenceOption
+import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -194,7 +194,7 @@ object PlannerContext {
     cancellationChecker: CancellationChecker,
     materializedEntitiesMode: Boolean,
     eagerAnalyzer: CypherEagerAnalyzerOption,
-    labelInference: LabelInferenceOption,
+    labelInference: CypherInferSchemaPartsOption,
     statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption,
     databaseReferenceRepository: DatabaseReferenceRepository,
     databaseId: NamedDatabaseId,

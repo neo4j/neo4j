@@ -17,6 +17,11 @@ org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner::COST org.neo4j.conf
 org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner::DEFAULT org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner public static final
 org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner public static
 org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner::values() org.neo4j.configuration.GraphDatabaseSettings.CypherPlanner[] public static
+org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts>
+org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts::MOST_SELECTIVE_LABEL org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts public static final
+org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts::OFF org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts public static final
+org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts public static
+org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts::values() org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts[] public static
 org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel>
 org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel::INFO org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel public static final
 org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel::OFF org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel public static final
@@ -93,6 +98,7 @@ org.neo4j.configuration.GraphDatabaseSettings::forbid_shortestpath_common_nodes 
 org.neo4j.configuration.GraphDatabaseSettings::index_background_sampling_enabled org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::index_sample_size_limit org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::index_sampling_update_percentage org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::infer_schema_parts org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.InferredSchemaParts> public static final
 org.neo4j.configuration.GraphDatabaseSettings::initial_default_database org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::keep_logical_logs org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::licenses_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.options.LabelInferenceOption
+import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.InputPosition
@@ -60,8 +60,8 @@ trait LabelInferenceStrategy {
 
 object LabelInferenceStrategy {
 
-  def fromConfig(planContext: PlanContext, labelInferenceOption: LabelInferenceOption): LabelInferenceStrategy = {
-    if (labelInferenceOption == LabelInferenceOption.enabled)
+  def fromConfig(planContext: PlanContext, labelInferenceOption: CypherInferSchemaPartsOption): LabelInferenceStrategy = {
+    if (labelInferenceOption == CypherInferSchemaPartsOption.mostSelectiveLabel)
       new InferOnlyIfNoOtherLabel(planContext)
     else
       NoInference

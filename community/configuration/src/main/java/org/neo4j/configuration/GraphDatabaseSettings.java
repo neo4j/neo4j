@@ -236,6 +236,19 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<Boolean> cypher_hints_error =
             newBuilder("dbms.cypher.hints_error", BOOL, false).build();
 
+    public enum InferredSchemaParts {
+        MOST_SELECTIVE_LABEL,
+        OFF
+    }
+
+    @Description(
+            "Allow label inference during cardinality estimation. During cardinality estimation, if the planner can"
+                    + "logically deduce that a node has a label that was not explicitly expressed in the query, the planner"
+                    + "will use this information during cardinality estimation.")
+    public static final Setting<InferredSchemaParts> infer_schema_parts = newBuilder(
+            "dbms.cypher.infer_schema_parts", ofEnum(InferredSchemaParts.class), InferredSchemaParts.OFF)
+            .build();
+
     @Description("This setting is associated with performance optimization. Set this to `true` in situations where "
             + "it is preferable to have any queries using the 'shortestPath' function terminate as soon as "
             + "possible with no answer, rather than potentially running for a long time attempting to find an "

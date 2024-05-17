@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
-import org.neo4j.cypher.internal.options.LabelInferenceOption
+import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
 import org.neo4j.graphdb.config.Setting
 
 import java.io.File
@@ -91,7 +91,7 @@ class CypherConfiguration private (val config: Config) {
 
   val cypherParserAntlrEnabled: Boolean = config.get(GraphDatabaseInternalSettings.cypher_parser_antlr_enabled)
 
-  val labelInference: LabelInferenceOption = LabelInferenceOption.fromConfig(config)
+  val labelInference: CypherInferSchemaPartsOption = CypherInferSchemaPartsOption.fromConfig(config)
 
   val statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption =
     CypherStatefulShortestPlanningModeOption.fromConfig(config)

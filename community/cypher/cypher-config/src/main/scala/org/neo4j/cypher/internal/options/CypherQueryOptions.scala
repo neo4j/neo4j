@@ -47,7 +47,7 @@ case class CypherQueryOptions(
   debugOptions: CypherDebugOptions,
   parallelRuntimeSupportOption: CypherParallelRuntimeSupportOption,
   eagerAnalyzer: CypherEagerAnalyzerOption,
-  labelInference: LabelInferenceOption,
+  inferSchemaParts: CypherInferSchemaPartsOption,
   statefulShortestPlanningModeOption: CypherStatefulShortestPlanningModeOption
 ) {
 
@@ -301,30 +301,30 @@ case object CypherUpdateStrategy extends CypherOptionCompanion[CypherUpdateStrat
   implicit val reader: OptionReader[CypherUpdateStrategy] = singleOptionReader()
 }
 
-sealed abstract class LabelInferenceOption(option: String) extends CypherKeyValueOption(option) {
-  override def companion: LabelInferenceOption.type = LabelInferenceOption
+sealed abstract class CypherInferSchemaPartsOption(option: String) extends CypherKeyValueOption(option) {
+  override def companion: CypherInferSchemaPartsOption.type = CypherInferSchemaPartsOption
   override def relevantForLogicalPlanCacheKey: Boolean = true
 }
 
-case object LabelInferenceOption extends CypherOptionCompanion[LabelInferenceOption](
-      name = "labelInference",
-      setting = Some(GraphDatabaseInternalSettings.label_inference),
+case object CypherInferSchemaPartsOption extends CypherOptionCompanion[CypherInferSchemaPartsOption](
+      name = "inferSchemaParts",
+      setting = Some(GraphDatabaseSettings.infer_schema_parts),
       cypherConfigField = Some(_.labelInference)
     ) {
 
-  case object enabled extends LabelInferenceOption("enabled")
-  case object disabled extends LabelInferenceOption("disabled")
-  override def default: LabelInferenceOption = disabled
+  case object mostSelectiveLabel extends CypherInferSchemaPartsOption("most_selective_label")
+  case object off extends CypherInferSchemaPartsOption("off")
+  override def default: CypherInferSchemaPartsOption = off
 
-  def values: Set[LabelInferenceOption] = Set(default, enabled, disabled)
+  def values: Set[CypherInferSchemaPartsOption] = Set(default, mostSelectiveLabel, off)
 
-  implicit val hasDefault: OptionDefault[LabelInferenceOption] = OptionDefault.create(default)
-  implicit val renderer: OptionRenderer[LabelInferenceOption] = OptionRenderer.create(_.render)
-  implicit val cacheKey: OptionCacheKey[LabelInferenceOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val hasDefault: OptionDefault[CypherInferSchemaPartsOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherInferSchemaPartsOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherInferSchemaPartsOption] = OptionCacheKey.create(_.cacheKey)
 
-  implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[LabelInferenceOption] =
+  implicit val logicalPlanCacheKey: OptionLogicalPlanCacheKey[CypherInferSchemaPartsOption] =
     OptionLogicalPlanCacheKey.create(_.logicalPlanCacheKey)
-  implicit val reader: OptionReader[LabelInferenceOption] = singleOptionReader()
+  implicit val reader: OptionReader[CypherInferSchemaPartsOption] = singleOptionReader()
 }
 
 sealed abstract class CypherExpressionEngineOption(engineName: String) extends CypherKeyValueOption(engineName) {

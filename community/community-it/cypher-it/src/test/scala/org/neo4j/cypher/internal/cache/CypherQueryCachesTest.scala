@@ -97,13 +97,13 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     stats.executableQueryCacheEntries().shouldEqual(3)
   }
 
-  test("labelInference is honoured by all caches") {
+  test("inferSchemaParts is honoured by all caches") {
     val stats = eengine.queryCaches.statistics()
 
     val q = "MATCH (a) RETURN a"
     execute(q)
-    execute("CYPHER labelInference=enabled " + q)
-    execute("CYPHER labelInference=disabled " + q)
+    execute("CYPHER inferSchemaParts=most_selective_label " + q)
+    execute("CYPHER inferSchemaParts=off " + q)
 
     stats.preParserCacheEntries().shouldEqual(3)
     stats.astCacheEntries().shouldEqual(2)

@@ -63,7 +63,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.options.LabelInferenceOption
+import org.neo4j.cypher.internal.options.CypherInferSchemaPartsOption
 import org.neo4j.cypher.internal.options.OptionReader
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -1389,7 +1389,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
 
     val cfg = Config.defaults(settings.asJava)
     val cc = CypherConfiguration.fromConfig(cfg)
-    val labelInference = LabelInferenceOption.reader.read(OptionReader.Input(
+    val labelInference = CypherInferSchemaPartsOption.reader.read(OptionReader.Input(
       cc,
       Set.empty
     )).result

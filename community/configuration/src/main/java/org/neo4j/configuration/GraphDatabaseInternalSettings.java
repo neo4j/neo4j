@@ -193,21 +193,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .addConstraint(range(0.0, 1.0))
             .build();
 
-    public enum LabelInference {
-        ENABLED,
-        DISABLED
-    }
-
-    @Internal
-    @Description(
-            "Allow label inference during cardinality estimation. During cardinality estimation, if the planner can"
-                    + "logically deduce that a node has a label that was not explicitly expressed in the query, the planner"
-                    + "will use this information during cardinality estimation. This is currently only applicable for intermediate"
-                    + "nodes in relationship patterns.")
-    public static final Setting<LabelInference> label_inference = newBuilder(
-                    "internal.cypher.enable_label_inference", ofEnum(LabelInference.class), LabelInference.DISABLED)
-            .build();
-
     public enum StatefulShortestPlanningMode {
         /**
          * Only plan StatefulShortestPath(Into).
