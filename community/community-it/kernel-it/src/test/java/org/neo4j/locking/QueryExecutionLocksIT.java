@@ -1005,6 +1005,11 @@ class QueryExecutionLocksIT {
         }
 
         @Override
+        public MemoryTracker createExecutionContextMemoryTracker() {
+            return internal.createExecutionContextMemoryTracker();
+        }
+
+        @Override
         public QueryContext queryContext() {
             return internal.queryContext();
         }
