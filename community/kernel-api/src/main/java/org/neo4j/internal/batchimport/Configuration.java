@@ -154,6 +154,17 @@ public interface Configuration {
     }
 
     /**
+     * For importers that can run multiple passes where each pass imports data from a range of node IDs,
+     * this method can be provided form the outside to force the number of ranges to let the importer
+     * go through.
+     * @return number of ranges to force the importer to run with, or {@code -1} if no specific number
+     * of ranges is forcefully set.
+     */
+    default int forcedNumberOfNodeIdRanges() {
+        return -1;
+    }
+
+    /**
      * @return a {@link PageCache} which, if non-null, should be used instead of creating a new one.
      */
     default ExternallyManagedPageCache providedPageCache() {
@@ -239,6 +250,11 @@ public interface Configuration {
         @Override
         public boolean defragmentInternalStores() {
             return defaults.defragmentInternalStores();
+        }
+
+        @Override
+        public int forcedNumberOfNodeIdRanges() {
+            return defaults.forcedNumberOfNodeIdRanges();
         }
 
         @Override
