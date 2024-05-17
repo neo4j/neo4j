@@ -52,8 +52,8 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.KernelTransactionDecorator;
 import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.SpdKernelTransactionDecorator;
 import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -161,7 +161,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final AbstractSecurityLog securityLog;
     private final boolean multiVersioned;
     private final DatabaseSerialGuard databaseSerialGuard;
-    private final KernelTransactionDecorator kernelTransactionDecorator;
+    private final SpdKernelTransactionDecorator spdKernelTransactionDecorator;
     private ScopedMemoryPool transactionMemoryPool;
 
     /**
@@ -210,7 +210,8 @@ public class KernelTransactions extends LifecycleAdapter
             DatabaseHealth databaseHealth,
             LogicalTransactionStore transactionStore,
             TransactionValidatorFactory transactionValidatorFactory,
-            LogProvider internalLogProvider) {
+            LogProvider internalLogProvider,
+            SpdKernelTransactionDecorator spdKernelTransactionDecorator) {
         this.config = config;
         this.lockManager = lockManager;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -258,12 +259,8 @@ public class KernelTransactions extends LifecycleAdapter
         this.enrichmentStrategy = this.databaseDependencies.resolveDependency(ApplyEnrichmentStrategy.class);
         this.securityLog = this.databaseDependencies.resolveDependency(AbstractSecurityLog.class);
         this.databaseSerialGuard = multiVersioned ? new MultiVersionDatabaseSerialGuard(allTransactions) : EMPTY_GUARD;
-        if (this.databaseDependencies.containsDependency(KernelTransactionDecorator.class)) {
-            this.kernelTransactionDecorator =
-                    this.databaseDependencies.resolveDependency(KernelTransactionDecorator.class);
-        } else {
-            this.kernelTransactionDecorator = null;
-        }
+        this.spdKernelTransactionDecorator = spdKernelTransactionDecorator;
+
         doBlockNewTransactions();
     }
 
@@ -305,7 +302,7 @@ public class KernelTransactions extends LifecycleAdapter
                         transactionIdSequence.next(),
                         clientInfo,
                         procedureView);
-                return kernelTransactionDecorator != null ? kernelTransactionDecorator.decorate(tx) : tx;
+                return spdKernelTransactionDecorator != null ? spdKernelTransactionDecorator.decorate(tx) : tx;
             } finally {
                 newTransactionsLock.readLock().unlock();
             }

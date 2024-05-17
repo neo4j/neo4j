@@ -119,7 +119,8 @@ public class DefaultDatabaseContextFactory
                     components.readOnlyDatabases(),
                     controllerService,
                     new DatabaseTracers(globalModule.getTracers(), namedDatabaseId),
-                    CommandCommitListeners.NO_LISTENERS);
+                    CommandCommitListeners.NO_LISTENERS,
+                    null);
             kernelDatabase = new Database(creationContext);
             context = new StandaloneDatabaseContext(kernelDatabase);
         }

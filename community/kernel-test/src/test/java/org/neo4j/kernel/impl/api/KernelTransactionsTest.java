@@ -817,7 +817,8 @@ class KernelTransactionsTest {
                 mock(DatabaseHealth.class),
                 mock(LogicalTransactionStore.class),
                 EMPTY_VALIDATOR_FACTORY,
-                NullLogProvider.getInstance());
+                NullLogProvider.getInstance(),
+                null);
     }
 
     private static TestKernelTransactions createTestTransactions(
@@ -933,7 +934,8 @@ class KernelTransactionsTest {
                     mock(DatabaseHealth.class),
                     mock(LogicalTransactionStore.class),
                     EMPTY_VALIDATOR_FACTORY,
-                    NullLogProvider.getInstance());
+                    NullLogProvider.getInstance(),
+                    null);
         }
 
         @Override

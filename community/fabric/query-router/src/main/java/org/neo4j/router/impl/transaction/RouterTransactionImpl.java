@@ -43,7 +43,6 @@ import org.neo4j.fabric.transaction.parent.CompoundTransaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -139,17 +138,12 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
 
     private DatabaseTransaction createTransactionFor(Location location, LocationService locationService) {
         if (location instanceof Location.Local local) {
-            var transaction = localDatabaseTransactionFactory.beginTransaction(
+            return localDatabaseTransactionFactory.beginTransaction(
                     local,
                     transactionInfo,
                     transactionBookmarkManager,
                     this::childTransactionTerminated,
                     constituentTransactionFactory);
-            if (location.databaseReference() instanceof DatabaseReferenceImpl.Internal.SPD) {
-                localDatabaseTransactionFactory.addSpdInformationToTransaction(
-                        ((LocalDatabaseTransaction) transaction).internalTransaction(), locationService, location);
-            }
-            return transaction;
         } else if (location instanceof Location.Remote remote) {
             return remoteDatabaseTransactionFactory.beginTransaction(
                     remote,

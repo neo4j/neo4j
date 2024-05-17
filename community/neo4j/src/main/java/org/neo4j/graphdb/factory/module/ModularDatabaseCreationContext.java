@@ -42,6 +42,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.api.SpdKernelTransactionDecorator;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseCreationContext;
@@ -126,6 +127,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final ReadOnlyDatabases readOnlyDatabases;
     private final CommandCommitListeners commandCommitListeners;
+    private final SpdKernelTransactionDecorator spdKernelTransactionDecorator;
 
     public ModularDatabaseCreationContext(
             HostedOnMode mode,
@@ -154,7 +156,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             ReadOnlyDatabases readOnlyDatabases,
             IOControllerService ioControllerService,
             DatabaseTracers tracers,
-            CommandCommitListeners commandCommitListeners) {
+            CommandCommitListeners commandCommitListeners,
+            SpdKernelTransactionDecorator spdKernelTransactionDecorator) {
         this.serverIdentity = serverIdentity;
         this.namedDatabaseId = namedDatabaseId;
         this.databaseConfig = databaseConfig;
@@ -205,6 +208,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.startupController = databaseStartupController;
         this.readOnlyDatabases = readOnlyDatabases;
         this.commandCommitListeners = commandCommitListeners;
+        this.spdKernelTransactionDecorator = spdKernelTransactionDecorator;
     }
 
     @Override
@@ -425,6 +429,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     @Override
     public CommandCommitListeners getCommandCommitListeners() {
         return commandCommitListeners;
+    }
+
+    @Override
+    public SpdKernelTransactionDecorator getSpdKernelTransactionDecorator() {
+        return spdKernelTransactionDecorator;
     }
 
     @Override

@@ -20,11 +20,10 @@
 package org.neo4j.kernel.api;
 
 /**
- * This interface allows wrapping newly created Kernel transactions.
- * If an implementation of this interface is provided in database's dependency
- * resolver, it will be invoked when a new Kernel transaction is created.
+ * This interface is a way how sharded property functionality is hooked into Kernel.
+ * The decorator should be invoked when a Kernel transaction is created in a SPD database.
  */
-public interface KernelTransactionDecorator {
+public interface SpdKernelTransactionDecorator {
 
     KernelTransaction decorate(KernelTransaction tx);
 }

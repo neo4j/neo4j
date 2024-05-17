@@ -37,6 +37,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.api.SpdKernelTransactionDecorator;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -159,6 +160,12 @@ public interface DatabaseCreationContext {
     VersionStorageFactory getVersionStorageFactory();
 
     DeviceMapper getDeviceMapper();
+
+    /**
+     * A decorator for wrapping Kernel transactions in order to plug in sharded property functionality.
+     * Can be {@code null}.
+     */
+    SpdKernelTransactionDecorator getSpdKernelTransactionDecorator();
 
     CommandCommitListeners getCommandCommitListeners();
 }

@@ -87,6 +87,7 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.DefaultElementIdMapperV1;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.SpdKernelTransactionDecorator;
 import org.neo4j.kernel.api.database.transaction.TransactionLogServiceImpl;
 import org.neo4j.kernel.api.impl.fulltext.DefaultFulltextAdapter;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
@@ -250,6 +251,7 @@ public class Database extends AbstractDatabase {
     private final CursorContextFactory cursorContextFactory;
     private final VersionStorageFactory versionStorageFactory;
     private final CommandCommitListeners commandCommitListeners;
+    private final SpdKernelTransactionDecorator spdKernelTransactionDecorator;
     private MemoryTracker otherDatabaseMemoryTracker;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private DatabaseAvailability databaseAvailability;
@@ -311,6 +313,7 @@ public class Database extends AbstractDatabase {
         this.readOnlyDatabaseChecker = context.getDbmsReadOnlyChecker().forDatabase(namedDatabaseId);
         this.externalIdReuseConditionProvider = context.externalIdReuseConditionProvider();
         this.commandCommitListeners = context.getCommandCommitListeners();
+        this.spdKernelTransactionDecorator = context.getSpdKernelTransactionDecorator();
     }
 
     /**
@@ -1026,7 +1029,8 @@ public class Database extends AbstractDatabase {
                 databaseHealth,
                 logsModule.getLogicalTransactionStore(),
                 transactionValidatorFactory,
-                internalLogProvider));
+                internalLogProvider,
+                spdKernelTransactionDecorator));
 
         var transactionMonitor = buildTransactionMonitor(kernelTransactions, databaseConfig);
 
