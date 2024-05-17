@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestA
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.UnaryPlansOnTopOfArgument
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.UnnestableUnaryPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestApply.UnnestingRewriter
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -234,7 +237,9 @@ object UnnestApply {
     // L Ax (UP R) => UP (L Ax R)
     protected def unnestRightUnary(apply: Apply, lhs: LogicalPlan, rhs: LogicalUnaryPlan): LogicalPlan = {
       val newApply = apply.copy(right = rhs.source)(attributes.copy(apply.id))
-      solveds.copy(apply.id, newApply.id)
+      val newSolved = calculateSolvedFor(newApply).getOrElse(solveds.get(apply.id))
+
+      solveds.set(newApply.id, newSolved)
       cardinalities.set(newApply.id, cardinalities(lhs.id) * cardinalities(rhs.source.id))
       providedOrders.copy(apply.id, newApply.id)
 
@@ -252,6 +257,15 @@ object UnnestApply {
         cardinalities(arg.id) == Cardinality.SINGLE,
         s"Argument plans should always have Cardinality 1. Had: ${cardinalities(arg.id)}"
       )
+    }
+
+    private def calculateSolvedFor(ap: Apply): Option[PlannerQuery] = {
+      (solveds.get(ap.left.id), solveds.get(ap.right.id)) match {
+        case (_: SinglePlannerQuery, _: SinglePlannerQuery) =>
+          Some(LogicalPlanProducer.solvedForTailApply(ap.left, ap.right, solveds))
+        case _ => // don't know how to recombine UnionQuery
+          None
+      }
     }
   }
 }

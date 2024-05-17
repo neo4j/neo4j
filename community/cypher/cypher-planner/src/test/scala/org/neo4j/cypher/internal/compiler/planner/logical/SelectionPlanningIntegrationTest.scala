@@ -313,4 +313,26 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         .build()
     )
   }
+
+  test("Should not group predicates with different estimated selectivities") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+
+    val query =
+      """WITH $param AS x SKIP 0
+        |MATCH (n)
+        |WHERE n.prop CONTAINS x AND n.otherProp IS NOT NULL
+        |RETURN x""".stripMargin
+
+    val res = planner.plan(query).stripProduceResults
+    res shouldEqual planner.subPlanBuilder()
+      .filter("n.prop CONTAINS x", "n.otherProp IS NOT NULL")
+      .apply()
+      .|.allNodeScan("n", "x")
+      .projection("$param AS x")
+      .skip(0)
+      .argument()
+      .build()
+  }
 }

@@ -28,15 +28,25 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestS
 import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadWriteAccess
+import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -44,9 +54,13 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Assertion
+import org.scalatest.OptionValues
+
+import scala.reflect.ClassTag
 
 class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport
-    with LogicalPlanConstructionTestSupport with AstConstructionTestSupport with ProcedureTestSupport {
+    with LogicalPlanConstructionTestSupport with AstConstructionTestSupport with ProcedureTestSupport
+    with OptionValues {
 
   private val po_n: ProvidedOrder = DefaultProvidedOrderFactory.asc(v"n")
 
@@ -782,11 +796,97 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     rewrite(input) shouldEqual input
   }
 
+  test("should recalculate solveds for new Apply") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+      .apply()
+      .|.filter("x.prop > 0")
+      .|.distinct("x AS x")
+      .|.argument("x")
+      .allNodeScan("x")
+
+    val original = builder.build()
+
+    val solveds = new TestSolveds {
+      setForPlan[AllNodesScan](original, "original lhs")
+      setForPlan[Distinct](original, "new rhs")
+      setForPlan[Apply](original, "original apply")
+    }
+
+    val rewritten = rewrite(original, solveds, builder.idGen)
+
+    rewritten shouldEqual new LogicalPlanBuilder(wholePlan = false)
+      .filter("x.prop > 0")
+      .apply()
+      .|.distinct("x AS x")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    solveds.getForPlan[Apply](rewritten) shouldEqual RegularSinglePlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set(varFor("original lhs"))),
+      tail = Some(RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(patternNodes = Set(varFor("new rhs")))
+      ))
+    )
+
+    solveds.getForPlan[Selection](rewritten) shouldEqual RegularSinglePlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set(varFor("original apply")))
+    )
+  }
+
+  test("should keep original solveds for new Apply when new RHS is a union query") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+      .apply()
+      .|.filter("x.prop > 0")
+      .|.distinct("x AS x")
+      .|.argument("x")
+      .allNodeScan("x")
+
+    val original = builder.build()
+
+    val unionPlannerQuery = UnionQuery(
+      lhs = SinglePlannerQuery.empty,
+      rhs = SinglePlannerQuery.empty,
+      distinct = false,
+      unionMappings = List.empty
+    )
+
+    val solveds = new TestSolveds {
+      setForPlan[AllNodesScan](original, "original lhs")
+      setForPlan[Distinct](original, unionPlannerQuery)
+      setForPlan[Apply](original, "original apply")
+    }
+
+    val rewritten = rewrite(original, solveds, builder.idGen)
+
+    rewritten shouldEqual new LogicalPlanBuilder(wholePlan = false)
+      .filter("x.prop > 0")
+      .apply()
+      .|.distinct("x AS x")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    solveds.getForPlan[Apply](rewritten) shouldEqual RegularSinglePlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set(varFor("original apply")))
+    )
+
+    solveds.getForPlan[Selection](rewritten) shouldEqual RegularSinglePlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set(varFor("original apply")))
+    )
+  }
+
   implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
 
     def shouldRewriteToPlanWithAttributes(expectedBuilder: LogicalPlanBuilder): Assertion = {
       val resultPlan =
-        rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.providedOrders, inputBuilder.idGen)
+        rewrite(
+          inputBuilder.build(),
+          new StubSolveds,
+          inputBuilder.cardinalities,
+          inputBuilder.providedOrders,
+          inputBuilder.idGen
+        )
       (resultPlan, inputBuilder.cardinalities) should haveSamePlanAndCardinalitiesAs((
         expectedBuilder.build(),
         expectedBuilder.cardinalities
@@ -800,11 +900,11 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
 
   private def rewrite(
     p: LogicalPlan,
+    solveds: Solveds,
     cardinalities: Cardinalities,
     providedOrders: ProvidedOrders,
     idGen: IdGen
   ): LogicalPlan = {
-    val solveds = new StubSolveds
     val unnest =
       UnnestApply(solveds, cardinalities, providedOrders, Attributes(idGen), CancellationChecker.neverCancelled())
 
@@ -815,5 +915,25 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     override def defaultValue: Cardinality = Cardinality.SINGLE
   }
 
-  private def rewrite(p: LogicalPlan): LogicalPlan = rewrite(p, stubCardinalities(), new StubProvidedOrders, idGen)
+  private def rewrite(p: LogicalPlan): LogicalPlan = rewrite(p, new StubSolveds, idGen)
+
+  private def rewrite(p: LogicalPlan, solveds: Solveds, idGen: IdGen): LogicalPlan =
+    rewrite(p, solveds, stubCardinalities(), new StubProvidedOrders, idGen)
+
+  private class TestSolveds extends Solveds {
+
+    def setForPlan[A <: LogicalPlan : ClassTag](planTree: LogicalPlan, tag: String): Unit = {
+      setForPlan[A](planTree, RegularSinglePlannerQuery(QueryGraph(patternNodes = Set(varFor(tag)))))
+    }
+
+    def setForPlan[A <: LogicalPlan : ClassTag](planTree: LogicalPlan, solved: PlannerQuery): Unit = {
+      val plan = planTree.folder.treeFindByClass[A].value
+      set(plan.id, solved)
+    }
+
+    def getForPlan[A <: LogicalPlan : ClassTag](planTree: LogicalPlan): PlannerQuery = {
+      val plan = planTree.folder.treeFindByClass[A].value
+      get(plan.id)
+    }
+  }
 }

@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.irExpressionRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer.solvedForTailApply
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.ContainsSearchMode
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EndsWithSearchMode
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.StringSearchMode
@@ -1037,8 +1038,7 @@ case class LogicalPlanProducer(
   }
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    val solved =
-      solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withTail(solveds.get(right.id).asSinglePlannerQuery))
+    val solved = solvedForTailApply(left, right, solveds)
     val plan = Apply(left, right)
     val providedOrder =
       providedOrderOfApply(left, right, plan, context.settings.executionModel, context.providedOrderFactory)
@@ -3702,5 +3702,13 @@ object LogicalPlanProducer {
         // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
         leftProvidedOrder.fromLeft(providedOrderFactory, Some(plan))
     }
+  }
+
+  def solvedForTailApply(
+    left: LogicalPlan,
+    right: LogicalPlan,
+    solveds: PlanningAttributes.Solveds
+  ): SinglePlannerQuery = {
+    solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withTail(solveds.get(right.id).asSinglePlannerQuery))
   }
 }
