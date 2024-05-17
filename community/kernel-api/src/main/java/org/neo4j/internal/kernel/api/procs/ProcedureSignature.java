@@ -24,18 +24,23 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.procedure.Mode;
 
 /**
  * This describes the signature of a procedure, made up of its namespace, name, and input/output description. Procedure uniqueness is currently *only* on the
  * namespace/name level - no procedure overloading allowed (yet).
+ * <p>
+ * Note: These constructors are used by APOC-extended, and a gradual deprecation strategy should therefore be used.
+ * </p>
  */
 public class ProcedureSignature {
     public static final List<FieldSignature> VOID = unmodifiableList(new ArrayList<>());
-
     private final QualifiedName name;
     private final List<FieldSignature> inputSignature;
     private final List<FieldSignature> outputSignature;
@@ -51,6 +56,7 @@ public class ProcedureSignature {
     private final boolean internal;
     private final boolean allowExpiredCredentials;
     private final boolean threadSafe;
+    private final Set<CypherScope> supportedCypherScopes;
 
     @Deprecated(forRemoval = true)
     @SuppressWarnings("unused")
@@ -84,7 +90,8 @@ public class ProcedureSignature {
                 systemProcedure,
                 internal,
                 allowExpiredCredentials,
-                true);
+                true,
+                CypherScope.ALL_SCOPES);
     }
 
     @Deprecated(forRemoval = true)
@@ -119,7 +126,44 @@ public class ProcedureSignature {
                 systemProcedure,
                 internal,
                 allowExpiredCredentials,
-                threadSafe);
+                threadSafe,
+                CypherScope.ALL_SCOPES);
+    }
+
+    @Deprecated(forRemoval = true)
+    public ProcedureSignature(
+            QualifiedName name,
+            List<FieldSignature> inputSignature,
+            List<FieldSignature> outputSignature,
+            Mode mode,
+            boolean admin,
+            boolean isDeprecated,
+            String deprecatedBy,
+            String description,
+            String warning,
+            boolean eager,
+            boolean caseInsensitive,
+            boolean systemProcedure,
+            boolean internal,
+            boolean allowExpiredCredentials,
+            boolean threadSafe) {
+        this(
+                name,
+                inputSignature,
+                outputSignature,
+                mode,
+                admin,
+                isDeprecated,
+                deprecatedBy,
+                description,
+                warning,
+                eager,
+                caseInsensitive,
+                systemProcedure,
+                internal,
+                allowExpiredCredentials,
+                threadSafe,
+                CypherScope.ALL_SCOPES);
     }
 
     public ProcedureSignature(
@@ -137,7 +181,8 @@ public class ProcedureSignature {
             boolean systemProcedure,
             boolean internal,
             boolean allowExpiredCredentials,
-            boolean threadSafe) {
+            boolean threadSafe,
+            Set<CypherScope> supportedCypherScopes) {
         this.name = name;
         this.inputSignature = unmodifiableList(inputSignature);
         this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList(outputSignature);
@@ -153,6 +198,7 @@ public class ProcedureSignature {
         this.internal = internal;
         this.allowExpiredCredentials = allowExpiredCredentials;
         this.threadSafe = threadSafe;
+        this.supportedCypherScopes = supportedCypherScopes;
     }
 
     public QualifiedName name() {
@@ -219,6 +265,10 @@ public class ProcedureSignature {
         return threadSafe;
     }
 
+    public Set<CypherScope> supportedCypherScopes() {
+        return this.supportedCypherScopes;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -266,6 +316,8 @@ public class ProcedureSignature {
         private boolean internal;
         private boolean allowExpiredCredentials;
         private boolean threadSafe;
+
+        private Set<CypherScope> supportedCypherScopes = CypherScope.ALL_SCOPES;
 
         public Builder(String[] namespace, String name) {
             this.name = new QualifiedName(namespace, name);
@@ -355,6 +407,11 @@ public class ProcedureSignature {
             return this;
         }
 
+        public Builder supportedCypherScopes(CypherScope... versions) {
+            this.supportedCypherScopes = EnumSet.copyOf(Arrays.asList(versions));
+            return this;
+        }
+
         public ProcedureSignature build() {
             return new ProcedureSignature(
                     name,
@@ -371,7 +428,8 @@ public class ProcedureSignature {
                     systemProcedure,
                     internal,
                     allowExpiredCredentials,
-                    threadSafe);
+                    threadSafe,
+                    supportedCypherScopes);
         }
     }
 

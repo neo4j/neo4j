@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.FieldSignature.inputField
 import org.neo4j.internal.kernel.api.procs.FieldSignature.outputField
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
+import org.neo4j.kernel.api.CypherScope
 import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.procedure
 import org.neo4j.kernel.api.procedure.Context
@@ -145,7 +146,8 @@ trait ProcedureSignatureResolverTestSupport {
       false,
       false,
       false,
-      false
+      false,
+      CypherScope.ALL_SCOPES
     )) {
       override def apply(
         ctx: Context,

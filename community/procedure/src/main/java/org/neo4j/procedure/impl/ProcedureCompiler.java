@@ -29,7 +29,9 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -37,11 +39,13 @@ import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
+import org.neo4j.kernel.api.procedure.CypherVersionScope;
 import org.neo4j.kernel.api.procedure.FailedLoadAggregatedFunction;
 import org.neo4j.kernel.api.procedure.FailedLoadFunction;
 import org.neo4j.kernel.api.procedure.FailedLoadProcedure;
@@ -281,7 +285,6 @@ class ProcedureCompiler {
                 procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName,
                 isDeprecated);
-
         List<FieldSetter> setters = allFieldInjections.setters(procDefinition);
         if (!fullAccess && !config.fullAccessFor(procName.toString())) {
             try {
@@ -303,7 +306,8 @@ class ProcedureCompiler {
                         systemProcedure,
                         internal,
                         allowExpiredCredentials,
-                        threadSafe);
+                        threadSafe,
+                        getSupportedCypherVersions(method));
                 return new FailedLoadProcedure(signature);
             }
         }
@@ -323,9 +327,25 @@ class ProcedureCompiler {
                 systemProcedure,
                 internal,
                 allowExpiredCredentials,
-                threadSafe);
+                threadSafe,
+                getSupportedCypherVersions(method));
 
         return ProcedureCompilation.compileProcedure(signature, setters, method, parentClassLoader);
+    }
+
+    private static Set<CypherScope> getSupportedCypherVersions(Method method) throws IllegalArgumentException {
+        var annotation = method.getAnnotation(CypherVersionScope.class);
+        if (annotation == null) {
+            // If there is no annotation, then we assume that the method supports all cypher language versions
+            return CypherScope.ALL_SCOPES;
+        }
+
+        var scope = annotation.scope();
+        if (scope == null || scope.length == 0) {
+            return CypherScope.ALL_SCOPES;
+        }
+
+        return EnumSet.copyOf(Arrays.asList(scope));
     }
 
     List<CallableProcedure> compileProcedure(Class<?> procDefinition, boolean fullAccess) throws ProcedureException {
@@ -389,7 +409,8 @@ class ProcedureCompiler {
                         false,
                         false,
                         internal,
-                        threadSafe);
+                        threadSafe,
+                        getSupportedCypherVersions(method));
                 return new FailedLoadFunction(signature);
             }
         }
@@ -405,7 +426,8 @@ class ProcedureCompiler {
                 false,
                 false,
                 internal,
-                threadSafe);
+                threadSafe,
+                getSupportedCypherVersions(method));
 
         return ProcedureCompilation.compileFunction(signature, setters, method, parentClassLoader);
     }
@@ -516,7 +538,8 @@ class ProcedureCompiler {
                         false,
                         false,
                         internal,
-                        threadSafe);
+                        threadSafe,
+                        getSupportedCypherVersions(create));
 
                 return new FailedLoadAggregatedFunction(signature);
             }
@@ -533,7 +556,8 @@ class ProcedureCompiler {
                 false,
                 false,
                 internal,
-                threadSafe);
+                threadSafe,
+                getSupportedCypherVersions(create));
 
         return ProcedureCompilation.compileAggregation(signature, setters, create, update, result, parentClassLoader);
     }

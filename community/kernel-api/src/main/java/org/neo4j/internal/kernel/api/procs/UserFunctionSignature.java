@@ -23,14 +23,20 @@ import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.kernel.api.CypherScope;
 
 /**
  * This describes the signature of a function, made up of its namespace, name, and input/output description.
  * Function uniqueness is currently *only* on the namespace/name level - no function overloading allowed (yet).
+ * <p>
+ * Note: These constructors are used by APOC-extended, and a gradual deprecation strategy should therefore be used.
+ * </p>
  */
 public final class UserFunctionSignature {
     private final QualifiedName name;
@@ -44,6 +50,7 @@ public final class UserFunctionSignature {
     private final boolean isBuiltIn;
     private final boolean internal;
     private final boolean threadSafe;
+    private final Set<CypherScope> supportedCypherScopes;
 
     @Deprecated(forRemoval = true)
     @SuppressWarnings("unused")
@@ -69,7 +76,36 @@ public final class UserFunctionSignature {
                 caseInsensitive,
                 isBuiltIn,
                 internal,
-                threadSafe);
+                threadSafe,
+                CypherScope.ALL_SCOPES);
+    }
+
+    @Deprecated(forRemoval = true)
+    public UserFunctionSignature(
+            QualifiedName name,
+            List<FieldSignature> inputSignature,
+            Neo4jTypes.AnyType type,
+            boolean isDeprecated,
+            String deprecatedBy,
+            String description,
+            String category,
+            boolean caseInsensitive,
+            boolean isBuiltIn,
+            boolean internal,
+            boolean threadSafe) {
+        this(
+                name,
+                inputSignature,
+                type,
+                isDeprecated,
+                deprecatedBy,
+                description,
+                category,
+                caseInsensitive,
+                isBuiltIn,
+                internal,
+                threadSafe,
+                CypherScope.ALL_SCOPES);
     }
 
     public UserFunctionSignature(
@@ -83,7 +119,8 @@ public final class UserFunctionSignature {
             boolean caseInsensitive,
             boolean isBuiltIn,
             boolean internal,
-            boolean threadSafe) {
+            boolean threadSafe,
+            Set<CypherScope> supportedCypherScopes) {
         this.name = name;
         this.inputSignature = unmodifiableList(inputSignature);
         this.type = type;
@@ -95,6 +132,7 @@ public final class UserFunctionSignature {
         this.isBuiltIn = isBuiltIn;
         this.internal = internal;
         this.threadSafe = threadSafe;
+        this.supportedCypherScopes = supportedCypherScopes;
     }
 
     public QualifiedName name() {
@@ -141,6 +179,10 @@ public final class UserFunctionSignature {
         return threadSafe;
     }
 
+    public Set<CypherScope> supportedCypherScopes() {
+        return supportedCypherScopes;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -175,6 +217,7 @@ public final class UserFunctionSignature {
         private String description;
         private String category;
         private boolean threadSafe;
+        private Set<CypherScope> supportedCypherScopes = CypherScope.ALL_SCOPES;
 
         public Builder(String[] namespace, String name) {
             this.name = new QualifiedName(namespace, name);
@@ -223,6 +266,11 @@ public final class UserFunctionSignature {
             return this;
         }
 
+        public Builder supportedCypherScopes(CypherScope... versions) {
+            this.supportedCypherScopes = EnumSet.copyOf(Arrays.asList(versions));
+            return this;
+        }
+
         public UserFunctionSignature build() {
             if (outputType == null) {
                 throw new IllegalStateException("output type must be set");
@@ -238,7 +286,8 @@ public final class UserFunctionSignature {
                     false,
                     false,
                     false,
-                    threadSafe);
+                    threadSafe,
+                    supportedCypherScopes);
         }
     }
 

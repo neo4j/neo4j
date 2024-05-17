@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject
 import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE
 import org.neo4j.internal.kernel.api.security.Segment
+import org.neo4j.kernel.api.CypherScope
 import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -74,7 +75,8 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     false,
     false,
     false,
-    false
+    false,
+    CypherScope.ALL_SCOPES
   )
 
   private val proc2 = new ProcedureSignature(
@@ -95,7 +97,8 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     false,
     false,
     false,
-    false
+    false,
+    CypherScope.ALL_SCOPES
   )
 
   private val proc3 = new ProcedureSignature(
@@ -113,7 +116,8 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     true,
     false,
     false,
-    false
+    false,
+    CypherScope.ALL_SCOPES
   )
 
   override def beforeEach(): Unit = {
@@ -441,7 +445,8 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       false,
       true,
       false,
-      false
+      false,
+      CypherScope.ALL_SCOPES
     )
     when(procedures.proceduresGetAll()).thenReturn(Set(proc1, internalProc).asJava)
 
@@ -471,7 +476,8 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       false,
       false,
       false,
-      false
+      false,
+      CypherScope.ALL_SCOPES
     )
     val deprecatedProcWithoutReplacement = new ProcedureSignature(
       new QualifiedName(List("proc").asJava, "deprecatedNoReplacement"),
@@ -488,7 +494,8 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       false,
       false,
       false,
-      false
+      false,
+      CypherScope.ALL_SCOPES
     )
     when(procedures.proceduresGetAll()).thenReturn(Set(deprecatedProc, deprecatedProcWithoutReplacement).asJava)
 

@@ -39,6 +39,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.eclipse.collections.impl.tuple.Tuples;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
@@ -49,7 +51,9 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
+import org.neo4j.kernel.api.procedure.CypherVersionScope;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -344,6 +348,24 @@ public class UserFunctionTest {
         assertThat(out).isEqualTo(NO_VALUE);
     }
 
+    @Test
+    void shouldOverloadNameWhenDifferentVersions() throws KernelException {
+        var pairs = compile(ClassWithVersionedFunctions.class).stream()
+                .map((p) -> Tuples.pair(
+                        p.signature().name().toString(), p.signature().supportedCypherScopes()));
+        assertThat(pairs)
+                .containsExactlyInAnyOrder(
+                        Tuples.pair("root.chamber", CypherScope.ALL_SCOPES),
+                        Tuples.pair("root.echo", Set.of(CypherScope.CYPHER_5)),
+                        Tuples.pair("root.echo", Set.of(CypherScope.CYPHER_FUTURE)));
+    }
+
+    @Test
+    void shouldIgnoreEmptyCypherScopeRequirement() throws KernelException {
+        assertThat(compile(EmptyScopeRequirement.class).get(0).signature().supportedCypherScopes())
+                .isEqualTo(CypherScope.ALL_SCOPES);
+    }
+
     private org.neo4j.kernel.api.procedure.Context prepareContext() {
         return buildContext(dependencyResolver, valueMapper).context();
     }
@@ -480,6 +502,33 @@ public class UserFunctionTest {
         @UserFunction
         public LongValue nullMethod(@Name(value = "text") StringValue text) {
             return null;
+        }
+    }
+
+    public static class ClassWithVersionedFunctions {
+        @UserFunction(name = "root.echo")
+        @CypherVersionScope(scope = {CypherScope.CYPHER_5})
+        public LongValue echo() {
+            return longValue(5);
+        }
+
+        @UserFunction(name = "root.echo")
+        @CypherVersionScope(scope = {CypherScope.CYPHER_FUTURE})
+        public LongValue echoV6() {
+            return longValue(6);
+        }
+
+        @UserFunction(name = "root.chamber")
+        public LongValue chamber() {
+            return longValue(0);
+        }
+    }
+
+    public static class EmptyScopeRequirement {
+        @UserFunction(name = "root.echo")
+        @CypherVersionScope(scope = {})
+        public LongValue echo() {
+            return longValue(5);
         }
     }
 

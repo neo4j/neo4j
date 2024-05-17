@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.eclipse.collections.impl.tuple.Tuples;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
@@ -48,7 +50,9 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
+import org.neo4j.kernel.api.procedure.CypherVersionScope;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.InternalLog;
@@ -419,6 +423,24 @@ public class UserAggregationFunctionTest {
         assertThat(aggregator.result()).isEqualTo(longValue(5));
     }
 
+    @Test
+    void shouldOverloadNameWhenDifferentVersions() throws KernelException {
+        var pairs = compile(ClassWithVersionedFunctions.class).stream()
+                .map((p) -> Tuples.pair(
+                        p.signature().name().toString(), p.signature().supportedCypherScopes()));
+        assertThat(pairs)
+                .containsExactlyInAnyOrder(
+                        Tuples.pair("root.chamber", CypherScope.ALL_SCOPES),
+                        Tuples.pair("root.echo", Set.of(CypherScope.CYPHER_5)),
+                        Tuples.pair("root.echo", Set.of(CypherScope.CYPHER_FUTURE)));
+    }
+
+    @Test
+    void shouldIgnoreEmptyCypherScopeRequirement() throws KernelException {
+        assertThat(compile(EmptyScopeRequirement.class).get(0).signature().supportedCypherScopes())
+                .isEqualTo(CypherScope.ALL_SCOPES);
+    }
+
     private org.neo4j.kernel.api.procedure.Context prepareContext() {
         return buildContext(dependencyResolver, valueMapper).context();
     }
@@ -764,6 +786,61 @@ public class UserAggregationFunctionTest {
     public static class InternalTypes {
         @UserAggregationFunction
         public InnerAggregator test() {
+            return new InnerAggregator();
+        }
+
+        public static class InnerAggregator {
+            private long sum;
+
+            @UserAggregationUpdate
+            public void update(@Name(value = "in") LongValue in) {
+                sum += in.longValue();
+            }
+
+            @UserAggregationResult
+            public LongValue result() {
+                return longValue(sum);
+            }
+        }
+    }
+
+    public static class ClassWithVersionedFunctions {
+        @UserAggregationFunction(name = "root.echo")
+        @CypherVersionScope(scope = {CypherScope.CYPHER_5})
+        public InnerAggregator echo() {
+            return new InnerAggregator();
+        }
+
+        @UserAggregationFunction(name = "root.echo")
+        @CypherVersionScope(scope = {CypherScope.CYPHER_FUTURE})
+        public InnerAggregator echoV6() {
+            return new InnerAggregator();
+        }
+
+        @UserAggregationFunction(name = "root.chamber")
+        public InnerAggregator chamber() {
+            return new InnerAggregator();
+        }
+
+        public static class InnerAggregator {
+            private long sum;
+
+            @UserAggregationUpdate
+            public void update(@Name(value = "in") LongValue in) {
+                sum += in.longValue();
+            }
+
+            @UserAggregationResult
+            public LongValue result() {
+                return longValue(sum);
+            }
+        }
+    }
+
+    public static class EmptyScopeRequirement {
+        @UserAggregationFunction(name = "root.echo")
+        @CypherVersionScope(scope = {})
+        public InnerAggregator echo() {
             return new InnerAggregator();
         }
 

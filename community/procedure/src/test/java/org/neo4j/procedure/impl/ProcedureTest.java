@@ -38,7 +38,9 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
+import org.eclipse.collections.impl.tuple.Tuples;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
@@ -49,7 +51,9 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.kernel.api.CypherScope;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
+import org.neo4j.kernel.api.procedure.CypherVersionScope;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.InternalLog;
@@ -398,6 +402,24 @@ public class ProcedureTest {
         assertFalse(out.hasNext());
     }
 
+    @Test
+    void shouldOverloadProcedureNameWhenDifferentVersions() throws KernelException {
+        var pairs = compile(ClassWithVersionedProcdures.class).stream()
+                .map((p) -> Tuples.pair(
+                        p.signature().name().toString(), p.signature().supportedCypherScopes()));
+        assertThat(pairs)
+                .containsExactlyInAnyOrder(
+                        Tuples.pair("chamber", CypherScope.ALL_SCOPES),
+                        Tuples.pair("echo", Set.of(CypherScope.CYPHER_5)),
+                        Tuples.pair("echo", Set.of(CypherScope.CYPHER_FUTURE)));
+    }
+
+    @Test
+    void shouldIgnoreEmptyCypherScopeRequirement() throws KernelException {
+        assertThat(compile(EmptyScopeRequirement.class).get(0).signature().supportedCypherScopes())
+                .isEqualTo(CypherScope.ALL_SCOPES);
+    }
+
     private org.neo4j.kernel.api.procedure.Context prepareContext() {
         return buildContext(dependencyResolver, valueMapper).context();
     }
@@ -557,6 +579,33 @@ public class ProcedureTest {
                 @Name(value = "text") TextValue textValue,
                 @Name(value = "bool") BooleanValue booleanValue) {
             return Stream.of(new InternalTypeRecord(longValue, textValue, booleanValue));
+        }
+    }
+
+    public static class ClassWithVersionedProcdures {
+        @Procedure(name = "echo")
+        @CypherVersionScope(scope = {CypherScope.CYPHER_5})
+        public Stream<MethodSignatureCompilerTest.MyOutputRecord> echo() {
+            return Stream.of(new MethodSignatureCompilerTest.MyOutputRecord("v5"));
+        }
+
+        @Procedure(name = "echo")
+        @CypherVersionScope(scope = {CypherScope.CYPHER_FUTURE})
+        public Stream<MethodSignatureCompilerTest.MyOutputRecord> echo6() {
+            return Stream.of(new MethodSignatureCompilerTest.MyOutputRecord("v6"));
+        }
+
+        @Procedure(name = "chamber")
+        public Stream<MethodSignatureCompilerTest.MyOutputRecord> chamber() {
+            return Stream.of(new MethodSignatureCompilerTest.MyOutputRecord("allThemVersions"));
+        }
+    }
+
+    public static class EmptyScopeRequirement {
+        @Procedure(name = "echo")
+        @CypherVersionScope(scope = {})
+        public Stream<MethodSignatureCompilerTest.MyOutputRecord> echo() {
+            return Stream.of(new MethodSignatureCompilerTest.MyOutputRecord("v5"));
         }
     }
 
