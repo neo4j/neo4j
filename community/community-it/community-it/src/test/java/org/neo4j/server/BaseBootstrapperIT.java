@@ -47,7 +47,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
-import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,6 +68,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -248,7 +248,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
                 .hasMessageContaining("is a command, but config is not explicitly told to expand it");
 
         // Also then
-        NeoBootstrapper.start(bootstrapper, Arrays.append(args, "--expand-commands"));
+        NeoBootstrapper.start(bootstrapper, ArrayUtil.concat(args, "--expand-commands"));
 
         GraphDatabaseAPI db =
                 (GraphDatabaseAPI) bootstrapper.getDatabaseManagementService().database(DEFAULT_DATABASE_NAME);

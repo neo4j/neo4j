@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
-import org.bouncycastle.util.Bytes;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
@@ -289,16 +288,16 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
                 assertEquals(0, reader.getOffset());
 
                 assertEquals(1, reader.getByte());
-                assertEquals(Bytes.BYTES, reader.getOffset());
+                assertEquals(Byte.BYTES, reader.getOffset());
 
                 assertEquals(2, reader.getShort());
-                assertEquals(Bytes.BYTES + Short.BYTES, reader.getOffset());
+                assertEquals(Byte.BYTES + Short.BYTES, reader.getOffset());
 
                 assertEquals(3, reader.getInt());
-                assertEquals(Bytes.BYTES + Short.BYTES + Integer.BYTES, reader.getOffset());
+                assertEquals(Byte.BYTES + Short.BYTES + Integer.BYTES, reader.getOffset());
 
                 assertEquals(4, reader.getLong());
-                assertEquals(Bytes.BYTES + Short.BYTES + Integer.BYTES + Long.BYTES, reader.getOffset());
+                assertEquals(Byte.BYTES + Short.BYTES + Integer.BYTES + Long.BYTES, reader.getOffset());
             }
         }
     }
