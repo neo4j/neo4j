@@ -77,7 +77,7 @@ public class LoggingMonitor implements IndexProvider.Monitor {
 
     @Override
     public void recoveryCleanupFailed(Path indexFile, IndexDescriptor index, Throwable throwable) {
-        log.info(String.format(
+        log.error(String.format(
                 "Schema index cleanup job failed: %s.%nCaused by: %s",
                 indexDescription(indexFile, index), ExceptionUtils.getStackTrace(throwable)));
     }
