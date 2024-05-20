@@ -47,7 +47,8 @@ import org.neo4j.server.config.AuthConfigProvider;
 public interface Connector<CFG extends Connector.Configuration> extends Lifecycle {
 
     /**
-     * Retrieves the unique identifier via which connections provided by this connector will be grouped together.
+     * Retrieves the unique identifier via which connections provided by this connector will be
+     * grouped together.
      *
      * @return an identifier.
      */
@@ -61,7 +62,8 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
     SocketAddress address();
 
     /**
-     * Retrieves the memory pool from which all memory for connections owned by this connector shall be allocated.
+     * Retrieves the memory pool from which all memory for connections owned by this connector shall
+     * be allocated.
      *
      * @return a memory pool.
      */
@@ -83,40 +85,40 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
     ConnectionRegistry connectionRegistry();
 
     /**
-     * Retrieves the protocol registry which keeps registrations for all supported protocol revisions supported by
-     * this connector.
+     * Retrieves the protocol registry which keeps registrations for all supported protocol revisions
+     * supported by this connector.
      *
      * @return a protocol registry.
      */
     BoltProtocolRegistry protocolRegistry();
 
     /**
-     * Retrieves the authentication implementation which is responsible for authorizing connections established via this
-     * connector.
+     * Retrieves the authentication implementation which is responsible for authorizing connections
+     * established via this connector.
      *
      * @return an authentication provider.
      */
     Authentication authentication();
 
     /**
-     * Retrieves the OIDC authentication configuration provider which provides discovery information for connecting
-     * clients.
+     * Retrieves the OIDC authentication configuration provider which provides discovery information
+     * for connecting clients.
      *
      * @return an authentication configuration provider.
      */
     AuthConfigProvider authConfigProvider();
 
     /**
-     * Retrieves the database resolver which resolves the home database for a given authenticated user for this
-     * connector.
+     * Retrieves the database resolver which resolves the home database for a given authenticated user
+     * for this connector.
      *
      * @return a default database resolver.
      */
     DefaultDatabaseResolver defaultDatabaseResolver();
 
     /**
-     * Retrieves the factory which generates connection hints which are to be given to the driver upon successful
-     * authentication.
+     * Retrieves the factory which generates connection hints which are to be given to the driver upon
+     * successful authentication.
      *
      * @return a hint provider
      * @see ConnectionHintRegistry
@@ -131,7 +133,8 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
     TransactionManager transactionManager();
 
     /**
-     * Retrieves the bolt driver metrics monitor that allows us to increment the metrics for the different driver types
+     * Retrieves the bolt driver metrics monitor that allows us to increment the metrics for the
+     * different driver types
      *
      * @return a BoltDriverMetricsMonitor
      */
@@ -206,9 +209,9 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
 
         /**
          * Identifies whether protocol capture has been enabled for this connector.
-         * <p />
-         * When true, PCAP encoded versions of the protocol traffic passing through this connector
-         * will be written to disk for debugging purposes.
+         * <p/>
+         * When true, PCAP encoded versions of the protocol traffic passing through this connector will
+         * be written to disk for debugging purposes.
          *
          * @return true if protocol capture is enabled, false otherwise.
          */
@@ -216,7 +219,7 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
 
         /**
          * Identifies the directory to which protocol captures should be written when enabled.
-         * <p />
+         * <p/>
          * This configuration property is ignored when {@link #enableProtocolCapture()} is set to
          * false.
          *
@@ -226,9 +229,9 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
 
         /**
          * Identifies whether protocol logging has been enabled for this connector.
-         * <p />
-         * When enabled, all protocol traffic within this connector will be logged to the
-         * application debug log.
+         * <p/>
+         * When enabled, all protocol traffic within this connector will be logged to the application
+         * debug log.
          *
          * @return true if protocol logging is enabled, false otherwise.
          */
@@ -236,24 +239,45 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
 
         /**
          * Identifies the detail to be logged via this connector.
-         * <p />
-         * This configuration property is ignored if {@link #enableProtocolLogging()} is set to
-         * false.
+         * <p/>
+         * This configuration property is ignored if {@link #enableProtocolLogging()} is set to false.
          *
          * @return a protocol logging mode.
          */
         ProtocolLoggingMode protocolLoggingMode();
 
         /**
-         * Identifies the total amount of bytes permitted to be sent to the server during
-         * authentication phase.
-         * <p />
-         * When a client exceeds this amount of data during the authentication phase, their
-         * connection will be terminated prematurely.
+         * Identifies the total amount of bytes permitted to be sent to the server during authentication
+         * phase.
+         * <p/>
+         * When a client exceeds this amount of data during the authentication phase, their connection
+         * will be terminated prematurely.
          *
          * @return a maximum amount of permitted bytes.
          */
         long maxAuthenticationInboundBytes();
+
+        /**
+         * Identifies the total amount of elements permitted to be present within a structure during
+         * authentication phase.
+         * <p/>
+         * When a client exceeds this amount of elements during the authentication phase, their
+         * connection will be terminated prematurely.
+         *
+         * @return a maximum amount of Packstream elements.
+         */
+        int maxAuthenticationStructureElements();
+
+        /**
+         * Identifies the total amount of nested levels permitted to be present within a structure
+         * during authentication phase.
+         * <p/>
+         * When a client exceeds this amount of elements during the authentication phase, their
+         * connection will be terminated prematurely.
+         *
+         * @return a maximum amount of Packstream nesting levels.
+         */
+        int maxAuthenticationStructureDepth();
 
         /**
          * Identifies whether outbound messages shall be throttled when the client fails to consume
@@ -264,30 +288,30 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
         boolean enableOutboundBufferThrottle();
 
         /**
-         * Identifies the minimum amount of bytes present within the outgoing buffer prior to
-         * releasing previously triggered outbound throttling measures.
+         * Identifies the minimum amount of bytes present within the outgoing buffer prior to releasing
+         * previously triggered outbound throttling measures.
          *
          * @return an outbound throttle low watermark.
          */
         int outboundBufferThrottleLowWatermark();
 
         /**
-         * Identifies the maximum amount of bytes present within the outgoing buffer prior to
-         * triggering outbound throttling measures.
-         * <p />
-         * When {@link #enableOutboundBufferThrottle()} is enabled and more than the specified
-         * amount of bytes accumulates within the outgoing buffer, writing of data will be suspended
-         * until the client has consumed enough data to return the buffer to
-         * below {@link #outboundBufferThrottleHighWatermark()} bytes.
+         * Identifies the maximum amount of bytes present within the outgoing buffer prior to triggering
+         * outbound throttling measures.
+         * <p/>
+         * When {@link #enableOutboundBufferThrottle()} is enabled and more than the specified amount of
+         * bytes accumulates within the outgoing buffer, writing of data will be suspended until the
+         * client has consumed enough data to return the buffer to below
+         * {@link #outboundBufferThrottleHighWatermark()} bytes.
          *
          * @return an outbound throttle high watermark.
          */
         int outboundBufferThrottleHighWatermark();
 
         /**
-         * Identifies the maximum amount of time a connection is permitted to remain within an
-         * outbound throttled state prior to being terminated.
-         * <p />
+         * Identifies the maximum amount of time a connection is permitted to remain within an outbound
+         * throttled state prior to being terminated.
+         * <p/>
          * This setting is provided in order to prevent slow or potentially locked up drivers from
          * indefinitely claiming server resources.
          *
@@ -304,12 +328,12 @@ public interface Connector<CFG extends Connector.Configuration> extends Lifecycl
         int inboundBufferThrottleLowWatermark();
 
         /**
-         * Identifies the maximum amount of bytes present within the inbound buffer prior to
-         * disabling the decoder pipeline.
-         * <p />
-         * Once reached, the server will disable the decoder pipeline for the offending connection
-         * until {@link #inboundBufferThrottleLowWatermark()} is reached as a result of slowly
-         * processing already buffered messages.
+         * Identifies the maximum amount of bytes present within the inbound buffer prior to disabling
+         * the decoder pipeline.
+         * <p/>
+         * Once reached, the server will disable the decoder pipeline for the offending connection until
+         * {@link #inboundBufferThrottleLowWatermark()} is reached as a result of slowly processing
+         * already buffered messages.
          *
          * @return an inbound throttle high watermark.
          */

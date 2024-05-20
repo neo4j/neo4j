@@ -52,6 +52,7 @@ import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.config.AuthConfigProvider;
 
 public class SocketNettyConnector extends AbstractNettyConnector<SocketConfiguration> {
+
     private final ConnectorTransport transport;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
@@ -165,6 +166,7 @@ public class SocketNettyConnector extends AbstractNettyConnector<SocketConfigura
     }
 
     public static final class SocketConfiguration extends NettyConfiguration {
+
         private final boolean enableTcpKeepAlive;
 
         public SocketConfiguration(
@@ -173,6 +175,8 @@ public class SocketNettyConnector extends AbstractNettyConnector<SocketConfigura
                 boolean enableProtocolLogging,
                 ProtocolLoggingMode protocolLoggingMode,
                 long maxAuthenticationInboundBytes,
+                int maxAuthenticationStructureElements,
+                int maxAuthenticationStructureDepth,
                 boolean enableOutboundBufferThrottle,
                 int outboundBufferThrottleLowWatermark,
                 int outboundBufferThrottleHighWatermark,
@@ -192,6 +196,8 @@ public class SocketNettyConnector extends AbstractNettyConnector<SocketConfigura
                     enableProtocolLogging,
                     protocolLoggingMode,
                     maxAuthenticationInboundBytes,
+                    maxAuthenticationStructureElements,
+                    maxAuthenticationStructureDepth,
                     enableOutboundBufferThrottle,
                     outboundBufferThrottleLowWatermark,
                     outboundBufferThrottleHighWatermark,

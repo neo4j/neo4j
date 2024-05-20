@@ -250,6 +250,8 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
         private final boolean enableProtocolLogging;
         private final ProtocolLoggingMode protocolLoggingMode;
         private final long maxAuthenticationInboundBytes;
+        private final int maxAuthenticationStructureElements;
+        private final int maxAuthenticationStructureDepth;
         private final boolean enableOutboundBufferThrottle;
         private final int outboundBufferThrottleLowWatermark;
         private final int outboundBufferThrottleHighWatermark;
@@ -266,6 +268,8 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
                 boolean enableProtocolLogging,
                 ProtocolLoggingMode protocolLoggingMode,
                 long maxAuthenticationInboundBytes,
+                int maxAuthenticationStructureElements,
+                int maxAuthenticationStructureDepth,
                 boolean enableOutboundBufferThrottle,
                 int outboundBufferThrottleLowWatermark,
                 int outboundBufferThrottleHighWatermark,
@@ -280,6 +284,8 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
             this.enableProtocolLogging = enableProtocolLogging;
             this.protocolLoggingMode = protocolLoggingMode;
             this.maxAuthenticationInboundBytes = maxAuthenticationInboundBytes;
+            this.maxAuthenticationStructureElements = maxAuthenticationStructureElements;
+            this.maxAuthenticationStructureDepth = maxAuthenticationStructureDepth;
             this.enableOutboundBufferThrottle = enableOutboundBufferThrottle;
             this.outboundBufferThrottleLowWatermark = outboundBufferThrottleLowWatermark;
             this.outboundBufferThrottleHighWatermark = outboundBufferThrottleHighWatermark;
@@ -314,6 +320,16 @@ public abstract class AbstractConnector<CFG extends AbstractConfiguration> imple
         @Override
         public long maxAuthenticationInboundBytes() {
             return this.maxAuthenticationInboundBytes;
+        }
+
+        @Override
+        public int maxAuthenticationStructureElements() {
+            return 0;
+        }
+
+        @Override
+        public int maxAuthenticationStructureDepth() {
+            return 0;
         }
 
         @Override

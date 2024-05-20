@@ -38,6 +38,7 @@ import org.neo4j.packstream.io.PackstreamBuf;
  * This implementation does not impose any lower bound on chunk sizes. As such, peers may choose to flush their buffers at any point they deem sufficient.
  */
 public class ChunkFrameDecoder extends ByteToMessageDecoder {
+    public static final String NAME = "chunkFrameDecoder";
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ChunkFrameDecoder.class);
 
     private final long limit;

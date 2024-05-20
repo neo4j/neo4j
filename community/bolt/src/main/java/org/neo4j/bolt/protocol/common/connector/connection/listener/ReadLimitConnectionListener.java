@@ -62,7 +62,7 @@ public class ReadLimitConnectionListener implements ConnectionListener {
             var oldDecoder = pipeline.get(ChunkFrameDecoder.class);
             var newDecoder = oldDecoder.unlimited();
 
-            pipeline.replace(oldDecoder, "chunkFrameDecoder", newDecoder);
+            pipeline.replace(oldDecoder, ChunkFrameDecoder.NAME, newDecoder);
         }
     }
 
@@ -80,7 +80,7 @@ public class ReadLimitConnectionListener implements ConnectionListener {
             var oldDecoder = pipeline.get(ChunkFrameDecoder.class);
             var newDecoder = oldDecoder.limit(limit);
 
-            pipeline.replace(oldDecoder, "chunkFrameDecoder", newDecoder);
+            pipeline.replace(oldDecoder, ChunkFrameDecoder.NAME, newDecoder);
         }
     }
 }

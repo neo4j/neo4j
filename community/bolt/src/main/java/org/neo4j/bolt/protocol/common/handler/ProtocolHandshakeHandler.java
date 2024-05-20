@@ -154,7 +154,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
             this.log.warn("Enabling merge cumulator for chunk decoding - Network performance may be degraded");
             frameDecoder.setCumulator(ByteToMessageDecoder.MERGE_CUMULATOR);
         }
-        ctx.pipeline().addLast("chunkFrameDecoder", frameDecoder);
+        ctx.pipeline().addLast(ChunkFrameDecoder.NAME, frameDecoder);
 
         // if raw protocol logging is enabled, we'll remove the previous handler and position it
         // after the chunk decoder handlers in order to split up the continuous byte stream into

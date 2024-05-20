@@ -85,6 +85,8 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 false,
                 null,
                 0,
+                0,
+                0,
                 false,
                 0,
                 0,

@@ -186,6 +186,38 @@ public final class PackstreamBuf implements ReferenceCounted {
     }
 
     /**
+     * Skips a value of a given type within this buffer.
+     * @param type a desired value type.
+     * @return a reference to this buffer.
+     * @throws PackstreamReaderException when an unexpected value type is encountered or a limit exceeded.
+     */
+    public PackstreamBuf skip(Type type) throws PackstreamReaderException {
+        switch (type) {
+            case NONE -> this.skipNull();
+            case BOOLEAN -> this.skipBoolean();
+            case BYTES -> this.skipBytes(-1);
+            case FLOAT -> this.skipFloat();
+            case INT -> this.skipInt();
+            case LIST -> this.skipList(-1);
+            case MAP -> this.skipMap(-1);
+            case STRING -> this.skipString(-1);
+            case STRUCT -> this.skipStruct();
+            default -> throw new IllegalArgumentException("Unsupported data type: " + type);
+        }
+
+        return this;
+    }
+
+    /**
+     * Skips a single value within this buffer.
+     * @return a reference to this buffer.
+     * @throws PackstreamReaderException when an unexpected value type is encountered or a limit exceeded.
+     */
+    public PackstreamBuf skip() throws PackstreamReaderException {
+        return this.skip(this.peekType());
+    }
+
+    /**
      * Retrieves the next type marker within this buffer.
      *
      * @return a marker byte.
@@ -442,6 +474,15 @@ public final class PackstreamBuf implements ReferenceCounted {
     }
 
     /**
+     * Skips a null value within this buffer.
+     * @return a reference to this buffer.
+     * @throws UnexpectedTypeException when a non-null marker is encountered.
+     */
+    public PackstreamBuf skipNull() throws UnexpectedTypeException {
+        return this.readNull();
+    }
+
+    /**
      * Writes a null value to this buffer.
      *
      * @return a reference to this buffer.
@@ -464,6 +505,21 @@ public final class PackstreamBuf implements ReferenceCounted {
         }
 
         return marker == TRUE;
+    }
+
+    /**
+     * Skips a boolean value within this buffer.
+     * @return a reference to this buffer.
+     * @throws UnexpectedTypeException when a non-boolean marker is encountered.
+     */
+    public PackstreamBuf skipBoolean() throws UnexpectedTypeException {
+        var marker = this.readMarker();
+
+        if (marker.getType() != BOOLEAN) {
+            throw new UnexpectedTypeException(BOOLEAN, marker);
+        }
+
+        return this;
     }
 
     /**
@@ -506,6 +562,30 @@ public final class PackstreamBuf implements ReferenceCounted {
             default:
                 return this.delegate.readLong();
         }
+    }
+
+    /**
+     * Skips an integer value of arbitrary size within this buffer.
+     * @return a reference to this buffer.
+     * @throws UnexpectedTypeException when non-integer marker is encountered.
+     */
+    public PackstreamBuf skipInt() throws UnexpectedTypeException {
+        var m = this.readMarkerByte();
+        var marker = TypeMarker.byEncoded(m);
+
+        if (marker.getType() != INT) {
+            throw new UnexpectedTypeException(INT, marker);
+        }
+
+        switch (marker) {
+            case TINY_INT -> {}
+            case INT8 -> this.delegate.skipBytes(1);
+            case INT16 -> this.delegate.skipBytes(2);
+            case INT32 -> this.delegate.skipBytes(4);
+            default -> this.delegate.skipBytes(8);
+        }
+
+        return this;
     }
 
     /**
@@ -664,6 +744,17 @@ public final class PackstreamBuf implements ReferenceCounted {
     }
 
     /**
+     * Skips a 64-bit float value within this buffer.
+     * @return a reference to this buffer.
+     * @throws UnexpectedTypeMarkerException when the value type does not meet the expectation.
+     */
+    public PackstreamBuf skipFloat() throws UnexpectedTypeMarkerException {
+        this.readExpectedMarker(FLOAT64);
+        this.delegate.skipBytes(8);
+        return this;
+    }
+
+    /**
      * Writes a 64-bit float value to this buffer.
      *
      * @param payload a float payload.
@@ -697,6 +788,34 @@ public final class PackstreamBuf implements ReferenceCounted {
         }
 
         return this.readBytesValue(length);
+    }
+
+    /**
+     * Skips a byte array of arbitrary length within this buffer.
+     *
+     * @param limit identifies the maximum array length.
+     * @return a reference to this buffer.
+     * @throws PackstreamReaderException when the limit is exceeded or the value does not meet the expectation.
+     */
+    public PackstreamBuf skipBytes(long limit) throws PackstreamReaderException {
+        var marker = this.readMarker();
+        if (marker.getType() != Type.BYTES) {
+            throw new UnexpectedTypeException(Type.BYTES, marker);
+        }
+
+        var length = marker.getLengthPrefix().readFrom(this.delegate);
+        if (limit > 0 && length > limit) {
+            throw new LimitExceededException(limit, length);
+        }
+
+        while (length > 0) {
+            var part = (int) length;
+
+            this.delegate.skipBytes(part);
+            length -= part;
+        }
+
+        return this;
     }
 
     /**
@@ -838,6 +957,24 @@ public final class PackstreamBuf implements ReferenceCounted {
     public String readString(long limit) throws UnexpectedTypeException, LimitExceededException {
         var length = this.readLengthPrefixMarker(STRING, limit);
         return this.readStringValue(length);
+    }
+
+    /**
+     * Skips a string value of arbitrary length within this buffer.
+     * @param limit an upper size limit for values (no limit if negative).
+     * @return a reference to this buffer.
+     * @throws UnexpectedTypeException when the string size exceeded the maximum permitted value.
+     * @throws LimitExceededException when the value type does not meet the expectation.
+     */
+    public PackstreamBuf skipString(long limit) throws UnexpectedTypeException, LimitExceededException {
+        var length = this.readLengthPrefixMarker(STRING, limit);
+        while (length > 0) {
+            var part = (int) length;
+
+            this.delegate.skipBytes(part);
+            length -= part;
+        }
+        return this;
     }
 
     /**
@@ -1080,6 +1217,22 @@ public final class PackstreamBuf implements ReferenceCounted {
     }
 
     /**
+     * Skips a list of arbitrary element types within this buffer.
+     * @param limit a maximum number of elements within the list (none if the value is negative).
+     * @return a list of arbitrary content.
+     * @throws LimitExceededException when the given limit of elements or another value limit is exceeded.
+     * @throws UnexpectedTypeMarkerException when the value type does not meet the expectations.
+     * @throws PackstreamReaderException when a reader fails to decode a list element.
+     */
+    public PackstreamBuf skipList(long limit) throws PackstreamReaderException {
+        var length = this.readLengthPrefixMarker(LIST, limit);
+        for (var i = 0L; i < length; ++i) {
+            this.skip();
+        }
+        return this;
+    }
+
+    /**
      * Retrieves a list of arbitrary element types from this buffer.
      *
      * @param reader a value reader.
@@ -1295,6 +1448,20 @@ public final class PackstreamBuf implements ReferenceCounted {
         return this.readMapValue(length, reader);
     }
 
+    public PackstreamBuf skipMap(long limit) throws PackstreamReaderException {
+        var length = this.readLengthPrefixMarker(MAP, limit);
+        if (limit > 0 && length > limit) {
+            throw new LimitExceededException(limit, length);
+        }
+
+        for (var i = 0; i < length; ++i) {
+            this.skipString(-1);
+            this.skip();
+        }
+
+        return this;
+    }
+
     /**
      * Retrieves a map consisting of arbitrary elements.
      *
@@ -1456,6 +1623,21 @@ public final class PackstreamBuf implements ReferenceCounted {
         return registry.getReader(header)
                 .orElseThrow(() -> new UnexpectedStructException(header))
                 .read(ctx, this, header);
+    }
+
+    /**
+     * Skips a single struct value within this buffer.
+     * @return a reference to this buffer.
+     * @throws PackstreamReaderException when a value limit is exceeded or the value type does not match expectations.
+     */
+    public PackstreamBuf skipStruct() throws PackstreamReaderException {
+        var header = this.readStructHeader();
+
+        for (var i = 0; i < header.length(); ++i) {
+            this.skip();
+        }
+
+        return this;
     }
 
     /**

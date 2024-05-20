@@ -104,6 +104,7 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
 public class BoltServer extends LifecycleAdapter {
+
     @VisibleForTesting
     public static final Suppliers.Lazy<PooledByteBufAllocator> NETTY_BUF_ALLOCATOR =
             lazySingleton(() -> new PooledByteBufAllocator(PlatformDependent.directBufferPreferred()));
@@ -503,6 +504,8 @@ public class BoltServer extends LifecycleAdapter {
                 this.config.get(BoltConnectorInternalSettings.protocol_logging),
                 this.config.get(BoltConnectorInternalSettings.protocol_logging_mode),
                 this.config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes),
+                this.config.get(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_elements),
+                this.config.get(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_depth),
                 this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle),
                 this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
                 this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark),
@@ -556,6 +559,8 @@ public class BoltServer extends LifecycleAdapter {
                 this.config.get(BoltConnectorInternalSettings.protocol_logging),
                 this.config.get(BoltConnectorInternalSettings.protocol_logging_mode),
                 this.config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes),
+                this.config.get(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_elements),
+                this.config.get(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_depth),
                 this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle),
                 this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
                 this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark),
@@ -612,6 +617,8 @@ public class BoltServer extends LifecycleAdapter {
                 this.config.get(BoltConnectorInternalSettings.protocol_logging),
                 this.config.get(BoltConnectorInternalSettings.protocol_logging_mode),
                 this.config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes),
+                this.config.get(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_elements),
+                this.config.get(BoltConnectorInternalSettings.bolt_unauth_connection_max_structure_depth),
                 this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle),
                 this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_low_water_mark),
                 this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_high_water_mark),
@@ -682,6 +689,7 @@ public class BoltServer extends LifecycleAdapter {
     }
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter {
+
         private final NettyMemoryPool pool;
 
         private BoltMemoryPoolLifeCycleAdapter(NettyMemoryPool pool) {

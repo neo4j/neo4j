@@ -109,6 +109,22 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
             .build();
 
     @Internal
+    @Description(
+            "The maximum amount of elements within incoming Packstream messages permitted before a connection is authenticated (0 for disabled, > 0 for limited).")
+    public static final Setting<Integer> bolt_unauth_connection_max_structure_elements = newBuilder(
+                    "internal.server.bolt.unauth_max_structure_elements", INT, 64)
+            .addConstraint(range(0, Integer.MAX_VALUE))
+            .build();
+
+    @Internal
+    @Description(
+            "The maximum amount of depth within incoming Packstream messages permitted before a connection is authenticated (0 for disabled, > 0 for limited).")
+    public static final Setting<Integer> bolt_unauth_connection_max_structure_depth = newBuilder(
+                    "internal.server.bolt.unauth_max_structure_depth", INT, 4)
+            .addConstraint(range(0, Integer.MAX_VALUE))
+            .build();
+
+    @Internal
     @Description("The absolute path of the file for use with the Unix Domain Socket based loopback interface. "
             + "This file must be specified and will be created at runtime and deleted on shutdown.")
     public static final Setting<Path> unsupported_loopback_listen_file =
@@ -126,7 +142,8 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
             + "A user successfully authenticated over this will execute all queries with no security restrictions. "
             + "This includes overriding the `"
             + "internal.dbms.block_create_drop_database" + "`, " + "`"
-            + "internal.dbms.block_start_stop_database" + "` and `" + "internal.dbms.upgrade_restriction_enabled"
+            + "internal.dbms.block_start_stop_database" + "` and `"
+            + "internal.dbms.upgrade_restriction_enabled"
             + "` settings.")
     public static final Setting<Boolean> enable_loopback_auth =
             newBuilder("internal.dbms.loopback_enabled", BOOL, false).build();

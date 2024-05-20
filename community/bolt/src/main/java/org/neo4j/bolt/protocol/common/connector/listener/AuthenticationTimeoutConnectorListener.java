@@ -21,7 +21,7 @@ package org.neo4j.bolt.protocol.common.connector.listener;
 
 import java.time.Duration;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.connector.connection.listener.AuthenticationTimeoutConnectionListener;
+import org.neo4j.bolt.protocol.common.connector.connection.listener.AuthenticationSecurityConnectionListener;
 import org.neo4j.logging.InternalLogProvider;
 
 /**
@@ -38,8 +38,8 @@ public class AuthenticationTimeoutConnectorListener implements ConnectorListener
 
     @Override
     public void onConnectionCreated(Connection connection) {
-        connection.memoryTracker().allocateHeap(AuthenticationTimeoutConnectionListener.SHALLOW_SIZE);
+        connection.memoryTracker().allocateHeap(AuthenticationSecurityConnectionListener.SHALLOW_SIZE);
 
-        connection.registerListener(new AuthenticationTimeoutConnectionListener(connection, timeout, this.logging));
+        connection.registerListener(new AuthenticationSecurityConnectionListener(connection, timeout, this.logging));
     }
 }

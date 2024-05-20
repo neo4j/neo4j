@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.connector.connection.listener.AuthenticationTimeoutConnectionListener;
+import org.neo4j.bolt.protocol.common.connector.connection.listener.AuthenticationSecurityConnectionListener;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
@@ -43,9 +43,9 @@ class AuthenticationTimeoutConnectorListenerTest {
         var inOrder = Mockito.inOrder(connection, memoryTracker);
 
         inOrder.verify(connection).memoryTracker();
-        inOrder.verify(memoryTracker).allocateHeap(AuthenticationTimeoutConnectionListener.SHALLOW_SIZE);
+        inOrder.verify(memoryTracker).allocateHeap(AuthenticationSecurityConnectionListener.SHALLOW_SIZE);
         inOrder.verify(connection)
-                .registerListener(ArgumentMatchers.any(AuthenticationTimeoutConnectionListener.class));
+                .registerListener(ArgumentMatchers.any(AuthenticationSecurityConnectionListener.class));
         inOrder.verifyNoMoreInteractions();
     }
 }

@@ -97,7 +97,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
     @Override
     protected DomainSocketNettyConnector createConnector(SocketAddress address) {
         var config = new DomainSocketNettyConnector.DomainSocketConfiguration(
-                false, null, false, null, 0, false, 0, 0, null, 0, 0, 512, 0, Duration.ofHours(5), false, false);
+                false, null, false, null, 0, 0, 0, false, 0, 0, null, 0, 0, 512, 0, Duration.ofHours(5), false, false);
 
         return new DomainSocketNettyConnector(
                 CONNECTOR_ID,
@@ -168,6 +168,8 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                             null,
                             false,
                             null,
+                            0,
+                            0,
                             0,
                             false,
                             0,

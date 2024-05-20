@@ -45,7 +45,8 @@ import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.config.AuthConfigProvider;
 
 /**
- * Connector that uses netty's {@link io.netty.channel.local.LocalServerChannel} for intra-JVM communication.
+ * Connector that uses netty's {@link io.netty.channel.local.LocalServerChannel} for intra-JVM
+ * communication.
  */
 public class LocalNettyConnector extends AbstractNettyConnector<LocalConfiguration> {
 
@@ -116,6 +117,8 @@ public class LocalNettyConnector extends AbstractNettyConnector<LocalConfigurati
                 boolean enableProtocolLogging,
                 ProtocolLoggingMode protocolLoggingMode,
                 long maxAuthenticationInboundBytes,
+                int maxAuthenticationStructureElements,
+                int maxAuthenticationStructureDepth,
                 boolean enableOutboundBufferThrottle,
                 int outboundBufferThrottleLowWatermark,
                 int outboundBufferThrottleHighWatermark,
@@ -132,6 +135,8 @@ public class LocalNettyConnector extends AbstractNettyConnector<LocalConfigurati
                     enableProtocolLogging,
                     protocolLoggingMode,
                     maxAuthenticationInboundBytes,
+                    maxAuthenticationStructureElements,
+                    maxAuthenticationStructureDepth,
                     enableOutboundBufferThrottle,
                     outboundBufferThrottleLowWatermark,
                     outboundBufferThrottleHighWatermark,
