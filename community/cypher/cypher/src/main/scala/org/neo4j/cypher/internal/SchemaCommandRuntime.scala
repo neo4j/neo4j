@@ -52,6 +52,15 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
 import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.optionsmap.CreateFulltextIndexOptionsConverter
+import org.neo4j.cypher.internal.optionsmap.CreateIndexWithFullOptions
+import org.neo4j.cypher.internal.optionsmap.CreateLookupIndexOptionsConverter
+import org.neo4j.cypher.internal.optionsmap.CreatePointIndexOptionsConverter
+import org.neo4j.cypher.internal.optionsmap.CreateRangeIndexOptionsConverter
+import org.neo4j.cypher.internal.optionsmap.CreateTextIndexOptionsConverter
+import org.neo4j.cypher.internal.optionsmap.CreateVectorIndexOptionsConverter
+import org.neo4j.cypher.internal.optionsmap.IndexBackedConstraintsOptionsConverter
+import org.neo4j.cypher.internal.optionsmap.PropertyExistenceOrTypeConstraintOptionsConverter
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.getPrettyStringName
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.prettyOptions
 import org.neo4j.cypher.internal.plandescription.PrettyString
