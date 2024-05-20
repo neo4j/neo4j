@@ -162,13 +162,11 @@ class NodeTest {
             if (node1.removeProperty(key1) != null) {
                 fail("Remove of non existing property should return null");
             }
-            assertThrows(IllegalArgumentException.class, () -> node1.removeProperty(null));
 
             node1.setProperty(key1, int1);
             node2.setProperty(key1, string1);
             node1.setProperty(key2, string2);
             node2.setProperty(key2, int2);
-            assertThrows(IllegalArgumentException.class, () -> node1.removeProperty(null));
 
             // test remove property
             assertEquals(int1, node1.removeProperty(key1));

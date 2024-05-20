@@ -144,14 +144,12 @@ class LabelsAcceptanceTest {
     void addingALabelUsingAnInvalidIdentifierShouldFail() {
         // When I set an empty label
         try (Transaction tx = db.beginTx()) {
-            assertThrows(
-                    ConstraintViolationException.class, () -> tx.createNode().addLabel(label("")));
+            assertThrows(IllegalArgumentException.class, () -> tx.createNode().addLabel(label("")));
         }
 
         // And When I set a null label
         try (Transaction tx = db.beginTx()) {
-            assertThrows(
-                    ConstraintViolationException.class, () -> tx.createNode().addLabel(() -> null));
+            assertThrows(IllegalArgumentException.class, () -> tx.createNode().addLabel(() -> null));
         }
     }
 

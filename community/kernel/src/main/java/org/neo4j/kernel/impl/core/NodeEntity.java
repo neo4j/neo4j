@@ -23,7 +23,9 @@ import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
+import static org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper.mapStatusException;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Map;
 import org.neo4j.common.EntityType;
@@ -155,7 +157,7 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
         } catch (TokenCapacityExceededKernelException e) {
             throw new ConstraintViolationException(e.getMessage(), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to create property key token", e, e.status());
+            throw mapStatusException("Unknown error trying to create property key token", e.status(), e);
         }
 
         try {
@@ -181,15 +183,10 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
     @Override
     public Object removeProperty(String key) throws NotFoundException {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int propertyKeyId;
-        try {
-            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName(key);
-        } catch (IllegalTokenNameException e) {
-            throw new IllegalArgumentException(format("Invalid property key '%s'.", key), e);
-        } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to get property key token", e, e.status());
+        int propertyKeyId = transaction.tokenRead().propertyKey(key);
+        if (propertyKeyId == TokenRead.NO_TOKEN) {
+            return NO_VALUE.asObjectCopy();
         }
-
         try {
             return transaction
                     .dataWrite()
@@ -276,12 +273,11 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
         try {
             relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName(type.name());
         } catch (IllegalTokenNameException e) {
-            throw new IllegalArgumentException(e);
+            throw new IllegalArgumentException(format("Invalid type name '%s'.", type.name()), e);
         } catch (TokenCapacityExceededKernelException e) {
             throw new ConstraintViolationException(e.getMessage(), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException(
-                    "Unknown error trying to create relationship type token", e, e.status());
+            throw mapStatusException("Unknown error trying to create relationship type token", e.status(), e);
         }
 
         try {
@@ -304,11 +300,11 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
         try {
             labelId = transaction.tokenWrite().labelGetOrCreateForName(label.name());
         } catch (IllegalTokenNameException e) {
-            throw new ConstraintViolationException(format("Invalid label name '%s'.", label.name()), e);
+            throw new IllegalArgumentException(format("Invalid label name '%s'.", label.name()), e);
         } catch (TokenCapacityExceededKernelException e) {
             throw new ConstraintViolationException(e.getMessage(), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to create label token", e, e.status());
+            throw mapStatusException("Unknown error trying to create label token", e.status(), e);
         }
 
         try {

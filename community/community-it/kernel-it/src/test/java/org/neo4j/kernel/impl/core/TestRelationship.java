@@ -406,13 +406,10 @@ class TestRelationship extends AbstractNeo4jTestCase {
                 fail("Remove of non existing property should return null");
             }
 
-            assertThrows(IllegalArgumentException.class, () -> rel1.removeProperty(null));
-
             rel1.setProperty(key1, int1);
             rel2.setProperty(key1, string1);
             rel1.setProperty(key2, string2);
             rel2.setProperty(key2, int2);
-            assertThrows(IllegalArgumentException.class, () -> rel1.removeProperty(null));
 
             // test remove property
             assertEquals(int1, rel1.removeProperty(key1));

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi;
 
 import static java.util.Collections.emptyMap;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
+import static org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper.mapStatusException;
 
 import java.util.Map;
 import java.util.Optional;
@@ -55,12 +56,11 @@ import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -195,23 +195,28 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
     @Override
     public Node createNode(Label... labels) {
         var ktx = kernelTransaction();
+        int[] labelIds;
         try {
-            TokenWrite tokenWrite = ktx.tokenWrite();
-            int[] labelIds = new int[labels.length];
+            labelIds = new int[labels.length];
             String[] labelNames = new String[labels.length];
             for (int i = 0; i < labelNames.length; i++) {
                 labelNames[i] = labels[i].name();
             }
-            tokenWrite.labelGetOrCreateForNames(labelNames, labelIds);
+            ktx.tokenWrite().labelGetOrCreateForNames(labelNames, labelIds);
+        } catch (IllegalTokenNameException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        } catch (TokenCapacityExceededKernelException e) {
+            throw new ConstraintViolationException(e.getMessage(), e);
+        } catch (KernelException e) {
+            throw mapStatusException("Unknown error trying to create label token", e.status(), e);
+        }
 
-            Write write = ktx.dataWrite();
-            long nodeId = write.nodeCreateWithLabels(labelIds);
+        try {
+            long nodeId = ktx.dataWrite().nodeCreateWithLabels(labelIds);
             return newNodeEntity(nodeId);
         } catch (ConstraintValidationException e) {
             throw new ConstraintViolationException("Unable to add label.", e);
-        } catch (SchemaKernelException e) {
-            throw new IllegalArgumentException(e);
-        } catch (KernelException e) {
+        } catch (InvalidTransactionTypeKernelException e) {
             throw new ConstraintViolationException(e.getMessage(), e);
         }
     }

@@ -26,6 +26,7 @@ import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.Status.Classification;
 
 public class DefaultTransactionExceptionMapper implements TransactionExceptionMapper {
     private static final String UNABLE_TO_COMPLETE_TRANSACTION = "Unable to complete transaction.";
@@ -45,14 +46,17 @@ public class DefaultTransactionExceptionMapper implements TransactionExceptionMa
             return new ConstraintViolationException(e.getMessage(), e);
         } else if (e instanceof Status.HasStatus) {
             Status status = ((Status.HasStatus) e).status();
-            Status.Code statusCode = status.code();
-            String statusExceptionMessage = UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description();
-            if (statusCode.classification() == Status.Classification.TransientError) {
-                return new TransientTransactionFailureException(status, statusExceptionMessage, e);
-            }
-            return new TransactionStatusFailureException(status, statusExceptionMessage, e);
+            return mapStatusException(
+                    UNABLE_TO_COMPLETE_TRANSACTION + ": " + status.code().description(), status, e);
         } else {
             return new TransactionFailureException(UNABLE_TO_COMPLETE_TRANSACTION, e, Status.Database.Unknown);
         }
+    }
+
+    public static RuntimeException mapStatusException(String message, Status status, Exception cause) {
+        if (status.code().classification() == Classification.TransientError) {
+            throw new TransientTransactionFailureException(status, message, cause);
+        }
+        throw new TransactionStatusFailureException(status, message, cause);
     }
 }

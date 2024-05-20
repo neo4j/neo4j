@@ -45,6 +45,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.RandomSupport;
@@ -240,6 +241,13 @@ public class RelationshipTest extends EntityTest {
 
         // when
         assertThrows(ConstraintViolationException.class, () -> relationshipEntity.setProperty("key", "value"));
+    }
+
+    @Test
+    void shouldThrowCorrectExceptionOnTokensTransientFailureSetProperty() throws KernelException {
+        RelationshipEntity relationshipEntity =
+                new RelationshipEntity(transactionWithTransientlyFailingTokenWrite(), 5);
+        assertThrows(TransientTransactionFailureException.class, () -> relationshipEntity.setProperty("key", "value"));
     }
 
     private static void verifyIds(

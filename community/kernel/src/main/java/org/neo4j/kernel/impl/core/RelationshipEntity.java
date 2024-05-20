@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.core;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.indexOf;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
+import static org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper.mapStatusException;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -387,7 +389,7 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
         } catch (TokenCapacityExceededKernelException e) {
             throw new ConstraintViolationException(e.getMessage(), e);
         } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to create property key token", e, e.status());
+            throw mapStatusException("Unknown error trying to create property key token", e.status(), e);
         }
 
         try {
@@ -413,15 +415,10 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     @Override
     public Object removeProperty(String key) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int propertyKeyId;
-        try {
-            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName(key);
-        } catch (IllegalTokenNameException e) {
-            throw new IllegalArgumentException(format("Invalid property key '%s'.", key), e);
-        } catch (KernelException e) {
-            throw new TransactionFailureException("Unknown error trying to get property key token", e, e.status());
+        int propertyKeyId = transaction.tokenRead().propertyKey(key);
+        if (propertyKeyId == TokenRead.NO_TOKEN) {
+            return NO_VALUE.asObjectCopy();
         }
-
         try {
             return transaction
                     .dataWrite()

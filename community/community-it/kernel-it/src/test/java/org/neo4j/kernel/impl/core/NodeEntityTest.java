@@ -46,8 +46,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -301,10 +303,14 @@ public class NodeEntityTest extends EntityTest {
     @Test
     void shouldThrowCorrectExceptionOnRelationshipTypeTokensExceeded() throws KernelException {
         // given
-        NodeEntity nodeEntity = new NodeEntity(mockedTransactionWithDepletedTokens(), 5);
+        InternalTransaction transaction = mockedTransactionWithDepletedTokens();
+        NodeEntity nodeEntity = new NodeEntity(transaction, 5);
 
         // when
-        assertThrows(ConstraintViolationException.class, () -> nodeEntity.setProperty("key", "value"));
+        assertThrows(
+                ConstraintViolationException.class,
+                () -> nodeEntity.createRelationshipTo(
+                        new NodeEntity(transaction, 6), RelationshipType.withName("type")));
     }
 
     @Test
@@ -377,5 +383,34 @@ public class NodeEntityTest extends EntityTest {
             assertThat(relationship2.getProperty("name")).isEqualTo("Relationship 2");
             tx.commit();
         }
+    }
+
+    @Test
+    void shouldThrowCorrectExceptionOnTokensTransientFailureCreateNode() throws KernelException {
+        var transaction = transactionWithTransientlyFailingTokenWrite();
+        assertThrows(TransientTransactionFailureException.class, () -> transaction.createNode(Label.label("label")));
+    }
+
+    @Test
+    void shouldThrowCorrectExceptionOnTokensTransientFailureAddLabel() throws KernelException {
+        var transaction = transactionWithTransientlyFailingTokenWrite();
+        NodeEntity nodeEntity = new NodeEntity(transaction, 5);
+        assertThrows(TransientTransactionFailureException.class, () -> nodeEntity.addLabel(Label.label("Label")));
+    }
+
+    @Test
+    void shouldThrowCorrectExceptionOnTokensTransientFailureSetProperty() throws KernelException {
+        NodeEntity nodeEntity = new NodeEntity(transactionWithTransientlyFailingTokenWrite(), 5);
+        assertThrows(TransientTransactionFailureException.class, () -> nodeEntity.setProperty("key", "value"));
+    }
+
+    @Test
+    void shouldThrowCorrectExceptionOnTokensTransientFailureCreateRelationship() throws KernelException {
+        InternalTransaction transaction = transactionWithTransientlyFailingTokenWrite();
+        NodeEntity nodeEntity = new NodeEntity(transaction, 5);
+        assertThrows(
+                TransientTransactionFailureException.class,
+                () -> nodeEntity.createRelationshipTo(
+                        new NodeEntity(transaction, 6), RelationshipType.withName("type")));
     }
 }
