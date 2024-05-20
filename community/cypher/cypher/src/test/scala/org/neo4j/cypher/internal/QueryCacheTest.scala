@@ -306,8 +306,9 @@ class QueryCacheTest extends CypherFunSuite {
     val o = Mockito.inOrder(tracer)
     o.verify(tracer).cacheMiss(key, "")
     o.verify(tracer).compute(key, "")
-    o.verify(tracer, times(3)).cacheHit(key, "")
+    o.verify(tracer, times(2)).cacheHit(key, "")
     o.verify(tracer).computeWithExpressionCodeGen(key, "")
+    o.verify(tracer).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
 
     queryTracer.dequeueAllCacheUsage() shouldEqual (QueryCacheUsage.MISS +: Seq.fill(3)(QueryCacheUsage.HIT))
@@ -355,8 +356,9 @@ class QueryCacheTest extends CypherFunSuite {
     // Then
     v2 should equal(compiled(key))
     v2.compiledWithExpressionCodeGen should equal(true)
-    o.verify(tracer, times(3)).cacheHit(key, "")
+    o.verify(tracer, times(2)).cacheHit(key, "")
     o.verify(tracer).computeWithExpressionCodeGen(key, "")
+    o.verify(tracer).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
 
     queryTracer.dequeueAllCacheUsage() shouldEqual Seq.fill(3)(QueryCacheUsage.HIT)
@@ -424,9 +426,9 @@ class QueryCacheTest extends CypherFunSuite {
     val o = Mockito.inOrder(tracer)
     o.verify(tracer).cacheMiss(key, "")
     o.verify(tracer).compute(key, "")
-    o.verify(tracer, times(3)).cacheHit(key, "")
+    o.verify(tracer, times(2)).cacheHit(key, "")
     o.verify(tracer).computeWithExpressionCodeGen(key, "")
-    o.verify(tracer, times(96)).cacheHit(key, "")
+    o.verify(tracer, times(97)).cacheHit(key, "")
     verifyNoMoreInteractions(tracer)
 
     queryTracer.dequeueAllCacheUsage() shouldEqual (QueryCacheUsage.MISS +: Seq.fill(99)(QueryCacheUsage.HIT))
@@ -544,9 +546,10 @@ object QueryCacheTest extends MockitoSugar {
 
       override def compileWithExpressionCodeGen(): MyValue = compiledWithExpressionCodeGen(key)
 
-      override def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[MyValue] =
-        if (hitCount > RECOMPILE_LIMIT) Some(compiledWithExpressionCodeGen(key))
-        else None
+      override def maybeCompileWithExpressionCodeGen(hitCount: Int, shouldRecompile: () => Boolean): Option[MyValue] =
+        if (hitCount > RECOMPILE_LIMIT && shouldRecompile()) {
+          Some(compiledWithExpressionCodeGen(key))
+        } else None
     }
 
   def newKey(string: String): Key = CacheKey(string, ParameterTypeMap.empty, txStateHasChanges = false)
@@ -583,8 +586,8 @@ object QueryCacheTest extends MockitoSugar {
       override protected def createInner(
         innerFactory: CaffeineCacheFactory,
         size: CacheSize,
-        listener: RemovalListener[CacheKey[String], CachedValue]
-      ): Cache[CacheKey[String], CachedValue] = {
+        listener: RemovalListener[CacheKey[String], CacheEntry]
+      ): Cache[CacheKey[String], CacheEntry] = {
         innerFactory.createWithSoftBackingCache(size, CacheSize.Static(softSize), listener)
       }
     }

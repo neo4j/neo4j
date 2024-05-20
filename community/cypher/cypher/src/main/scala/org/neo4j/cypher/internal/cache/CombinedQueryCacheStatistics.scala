@@ -71,6 +71,8 @@ class CombinedCacheMetrics(a: CacheMetrics, b: CacheMetrics) extends CacheMetric
   override def getStaleEntries: Long = a.getStaleEntries + b.getStaleEntries
 
   override def getCacheFlushes: Long = a.getCacheFlushes + b.getCacheFlushes
+
+  override def getAwaits: Long = a.getAwaits + b.getAwaits
 }
 
 class CombinedCacheTracer[T](a: CacheTracer[T], b: CacheTracer[T]) extends CacheTracer[T] {

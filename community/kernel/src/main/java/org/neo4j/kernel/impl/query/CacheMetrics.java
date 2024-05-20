@@ -35,4 +35,6 @@ public interface CacheMetrics {
     long getStaleEntries();
 
     long getCacheFlushes();
+
+    long getAwaits();
 }

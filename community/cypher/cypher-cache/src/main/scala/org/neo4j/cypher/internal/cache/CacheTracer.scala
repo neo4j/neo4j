@@ -62,4 +62,10 @@ trait CacheTracer[KEY] {
    * The query cache was flushed.
    */
   def cacheFlush(sizeOfCacheBeforeFlush: Long): Unit = ()
+
+  /**
+   * When testing for the presence of a key, some other Thread was currently computing the value.
+   * This Thread was therefore paused until that computation was done.
+   */
+  def awaitOngoingComputation(key: KEY, metaData: String): Unit = ()
 }

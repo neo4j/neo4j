@@ -57,7 +57,8 @@ object CacheCountsTestSupport {
     evicted: Long = 0,
     discards: Long = 0,
     compilations: Long = 0,
-    compilationsWithExpressionCodeGen: Long = 0
+    compilationsWithExpressionCodeGen: Long = 0,
+    awaits: Long = 0
   ) {
 
     def -(that: CacheCounts): CacheCounts = {
@@ -68,12 +69,13 @@ object CacheCountsTestSupport {
         evicted = evicted - that.evicted,
         discards = discards - that.discards,
         compilations = compilations - that.compilations,
-        compilationsWithExpressionCodeGen = compilationsWithExpressionCodeGen - that.compilationsWithExpressionCodeGen
+        compilationsWithExpressionCodeGen = compilationsWithExpressionCodeGen - that.compilationsWithExpressionCodeGen,
+        awaits = awaits - that.awaits
       )
     }
 
     override def toString =
-      s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, discards = $discards, compilations = $compilations, compilationsWithExpressionCodeGen = $compilationsWithExpressionCodeGen"
+      s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, discards = $discards, compilations = $compilations, compilationsWithExpressionCodeGen = $compilationsWithExpressionCodeGen, awaits = $awaits"
   }
 
   object CacheCounts {
@@ -87,7 +89,8 @@ object CacheCountsTestSupport {
         discards = metrics.getDiscards,
         compilations =
           metrics.getCompiled - metrics.getCompiledWithExpressionCodeGen, // avoid double-counting getCompiledWithExpressionCodeGen
-        compilationsWithExpressionCodeGen = metrics.getCompiledWithExpressionCodeGen
+        compilationsWithExpressionCodeGen = metrics.getCompiledWithExpressionCodeGen,
+        awaits = metrics.getAwaits
       )
     }
   }

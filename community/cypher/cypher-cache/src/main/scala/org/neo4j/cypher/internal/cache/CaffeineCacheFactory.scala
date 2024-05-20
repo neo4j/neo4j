@@ -28,6 +28,7 @@ import com.github.benmanes.caffeine.cache.Ticker
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.collection.concurrent.TrieMap
 
 object ExecutorBasedCaffeineCacheFactory {

@@ -301,8 +301,8 @@ object CypherQueryCaches {
       override protected def createInner(
         innerFactory: CaffeineCacheFactory,
         size: CacheSize,
-        listener: RemovalListener[CacheKey[LogicalPlanCache.KeyParams], CachedValue]
-      ): cache.Cache[Key, CachedValue] = innerFactory.createWithSoftBackingCache(size, softSize, listener)
+        listener: RemovalListener[CacheKey[LogicalPlanCache.KeyParams], CacheEntry]
+      ): cache.Cache[Key, CacheEntry] = innerFactory.createWithSoftBackingCache(size, softSize, listener)
     }
   }
 
@@ -365,8 +365,8 @@ object CypherQueryCaches {
       override protected def createInner(
         innerFactory: CaffeineCacheFactory,
         size: CacheSize,
-        listener: RemovalListener[CacheKey[InputQuery.CacheKey], CachedValue]
-      ): cache.Cache[CacheKey[InputQuery.CacheKey], CachedValue] =
+        listener: RemovalListener[CacheKey[InputQuery.CacheKey], CacheEntry]
+      ): cache.Cache[CacheKey[InputQuery.CacheKey], CacheEntry] =
         innerFactory.createWithSoftBackingCache(size, softSize, listener)
     }
   }

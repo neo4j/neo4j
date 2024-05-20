@@ -303,10 +303,13 @@ abstract class ExecutionEngine(
 
       override def compileWithExpressionCodeGen(): ExecutableQuery = compiledExpressionCompiler()
 
-      override def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[ExecutableQuery] = {
+      override def maybeCompileWithExpressionCodeGen(
+        hitCount: Int,
+        shouldRecompile: () => Boolean
+      ): Option[ExecutableQuery] = {
         // check if we need to do jit compiling of queries and if hot enough
         if (
-          inputQuery.options.compileWhenHot && config.recompilationLimit > 0 && hitCount >= config.recompilationLimit
+          inputQuery.options.compileWhenHot && config.recompilationLimit > 0 && hitCount >= config.recompilationLimit && shouldRecompile()
         ) {
           Some(compiledExpressionCompiler())
         } else {

@@ -446,7 +446,10 @@ case class CypherPlanner(
     val compilerWithExpressionCodeGenOption = new CompilerWithExpressionCodeGenOption[CacheableLogicalPlan] {
       override def compile(): CacheableLogicalPlan = createPlan(shouldBeCached = true)
       override def compileWithExpressionCodeGen(): CacheableLogicalPlan = compile()
-      override def maybeCompileWithExpressionCodeGen(hitCount: Int): Option[CacheableLogicalPlan] = None
+      override def maybeCompileWithExpressionCodeGen(
+        hitCount: Int,
+        shouldRecompile: () => Boolean
+      ): Option[CacheableLogicalPlan] = None
     }
 
     val cacheableLogicalPlan =

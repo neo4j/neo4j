@@ -136,8 +136,8 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
           // secondQuery
           s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
           // thirdQuery
-          s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
-          s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,$empty_parameters,false)" // String cache JIT compiles on the second hit
+          s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,$empty_parameters,false)", // String cache JIT compiles on the second hit
+          s"String: cacheHit: CacheKey($query,$empty_parameters,false)"
         ))
     }
   }
@@ -259,10 +259,10 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       // second
       s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       // third
-      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)", // String cache JIT compiles on the first hit
+      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)"
     ))
   }
 
@@ -328,10 +328,10 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       // params2
       s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       // params3
-      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss, // recompilation limit reached
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)", // String cache JIT compiles on the first hit
+      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)"
     ))
   }
 
@@ -573,10 +573,10 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       // 2nd run
       s"String: cacheHit: CacheKey($actualQuery,Map(m -> ParameterTypeInfo(Integer,UnknownSize), n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey($actualQuery,Map(m -> ParameterTypeInfo(Integer,UnknownSize), n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey($actualQuery,Map(m -> ParameterTypeInfo(Integer,UnknownSize), n -> ParameterTypeInfo(Integer,UnknownSize)),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($actualQuery,Map(m -> ParameterTypeInfo(Integer,UnknownSize), n -> ParameterTypeInfo(Integer,UnknownSize)),false)", // String cache JIT compiles on the first hit
+      s"String: cacheHit: CacheKey($actualQuery,Map(m -> ParameterTypeInfo(Integer,UnknownSize), n -> ParameterTypeInfo(Integer,UnknownSize)),false)"
     ))
   }
 
@@ -683,10 +683,10 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       // 2nd run
       s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss, // JIT compilation forces us to miss here
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)", // String cache JIT compiles on the first hit
+      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)"
     ))
   }
 
@@ -735,10 +735,10 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       // 2nd run
       s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
       s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       // 4th run
       s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(Integer,UnknownSize)),false)",
       // 5th run
@@ -887,10 +887,10 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       // 2nd run
       s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
       // 3rd run
-      s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
       s"AST:    cacheHit", // no logical planning
       executionPlanCacheKeyMiss,
       s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,$empty_parameters,false)", // physical planning
+      s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
       // 4th run now everything is cached
       s"String: cacheHit: CacheKey($query,$empty_parameters,false)",
       // CALL db.clearQueryCaches()

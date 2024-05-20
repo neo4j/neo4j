@@ -37,6 +37,7 @@ abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] with CacheMetri
   private val discards = new LongAdder
   private val staleEntries = new LongAdder
   private val cacheFlushes = new LongAdder
+  private val awaits = new LongAdder
 
   override def cacheHit(key: KEY, metaData: String): Unit = hits.increment()
 
@@ -45,6 +46,8 @@ abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] with CacheMetri
   override def compute(key: KEY, metaData: String): Unit = compiled.increment()
 
   override def discard(key: KEY, metaData: String): Unit = discards.increment()
+
+  override def awaitOngoingComputation(key: KEY, metaData: String): Unit = awaits.increment()
 
   override def computeWithExpressionCodeGen(key: KEY, metaData: String): Unit = {
     compiled.increment()
@@ -66,6 +69,7 @@ abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] with CacheMetri
   override def getDiscards: Long = discards.sum()
   override def getStaleEntries: Long = staleEntries.sum()
   override def getCacheFlushes: Long = cacheFlushes.sum()
+  override def getAwaits: Long = awaits.sum()
 }
 
 class PreParserCacheMetricsMonitor() extends CacheMetricsMonitor[CypherQueryCaches.PreParserCache.Key] {
