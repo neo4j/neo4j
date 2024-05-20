@@ -111,9 +111,6 @@ class TwoLayerCacheTest extends CypherFunSuite {
       map.putIfAbsent("key", "value")
     }
     assertThrows[UnsupportedOperationException] {
-      map.replace("key", "old value", "new value")
-    }
-    assertThrows[UnsupportedOperationException] {
       map.replace("key", "new value")
     }
   }
@@ -137,7 +134,6 @@ class TwoLayerCacheTest extends CypherFunSuite {
     primary.getIfPresent("first") should be(null)
     primary.getIfPresent("second") should be("second")
     secondary.getIfPresent("first") should be("first")
-
   }
 
   test("should evict from secondary on maximum size == 0") {
@@ -221,6 +217,22 @@ class TwoLayerCacheTest extends CypherFunSuite {
     secondary.put("first", "not first")
 
     cache.asMap() should be(util.Map.of("first", "first", "second", "second"))
+  }
+
+  test("asMap should support replace") {
+    val (cache, primary, secondary, _) = setup(primarySize = 1, secondarySize = 1)
+
+    cache.put("first", "first")
+    cache.put("second", "second")
+
+    // Replace value in primary cache
+    cache.asMap().replace("second", "second", "2nd") should be(true)
+    // Replace value in secondary cache
+    cache.asMap().replace("first", "first", "1st") should be(true)
+
+    // Check underlying caches are correct
+    primary.getIfPresent("second") should be("2nd")
+    secondary.getIfPresent("first") should be("1st")
   }
 
   private def setup(

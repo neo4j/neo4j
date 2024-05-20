@@ -85,8 +85,10 @@ class TwoLayerCache[K, V](val primary: Cache[K, V], val secondary: Cache[K, V]) 
     // TODO: this does not work for updating values in the map but is still useful for getting all keys
     new ConcurrentMap[K, V]() {
       private val inner = new ConcurrentHashMap[K, V]()
-      inner.putAll(secondary.asMap())
-      inner.putAll(primary.asMap())
+      private val secondaryMap: ConcurrentMap[K, V] = secondary.asMap()
+      private val primaryMap: ConcurrentMap[K, V] = primary.asMap()
+      inner.putAll(secondaryMap)
+      inner.putAll(primaryMap)
 
       override def size(): Int = inner.size()
 
@@ -135,7 +137,13 @@ class TwoLayerCache[K, V](val primary: Cache[K, V], val secondary: Cache[K, V]) 
 
       override def putIfAbsent(key: K, value: V): V = throw new UnsupportedOperationException()
 
-      override def replace(key: K, oldValue: V, newValue: V): Boolean = throw new UnsupportedOperationException()
+      override def replace(key: K, oldValue: V, newValue: V): Boolean = {
+        if (primaryMap.replace(key, oldValue, newValue)) {
+          true
+        } else {
+          secondaryMap.replace(key, oldValue, newValue)
+        }
+      }
 
       override def replace(key: K, value: V): V = throw new UnsupportedOperationException()
     }
