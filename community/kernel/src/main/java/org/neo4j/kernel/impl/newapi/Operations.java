@@ -861,7 +861,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     @Override
-    public Value nodeSetProperty(long node, int propertyKey, Value value)
+    public void nodeSetProperty(long node, int propertyKey, Value value)
             throws EntityNotFoundException, ConstraintValidationException {
         assert value != NO_VALUE;
         acquireExclusiveNodeLock(node);
@@ -907,7 +907,6 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                         nodeCursor, propertyCursor, labels, propertyKey, existingPropertyKeyIds, existingValue, value);
             }
         }
-        return existingValue;
     }
 
     @Override
@@ -1373,7 +1372,7 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     @Override
-    public Value relationshipSetProperty(long relationship, int propertyKey, Value value)
+    public void relationshipSetProperty(long relationship, int propertyKey, Value value)
             throws EntityNotFoundException, ConstraintValidationException {
         acquireExclusiveRelationshipLock(relationship);
         ktx.assertOpen();
@@ -1404,37 +1403,33 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                 updater.onPropertyAdd(
                         relationshipCursor, propertyCursor, type, propertyKey, existingPropertyKeyIds, value);
             }
-            return NO_VALUE;
-        } else {
-            if (propertyHasChanged(existingValue, value)) {
-                ktx.securityAuthorizationHandler()
-                        .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, propertyKey);
-                if (hasRelatedSchema) {
-                    checkRelationshipUniquenessConstraints(
-                            relationship, propertyKey, value, type, existingPropertyKeyIds);
-                }
-                ktx.txState()
-                        .relationshipDoReplaceProperty(
-                                relationship,
-                                relationshipCursor.type(),
-                                relationshipCursor.sourceNodeReference(),
-                                relationshipCursor.targetNodeReference(),
-                                propertyKey,
-                                existingValue,
-                                value);
-                if (hasRelatedSchema) {
-                    updater.onPropertyChange(
-                            relationshipCursor,
-                            propertyCursor,
-                            type,
+            return;
+        }
+        if (propertyHasChanged(existingValue, value)) {
+            ktx.securityAuthorizationHandler()
+                    .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, propertyKey);
+            if (hasRelatedSchema) {
+                checkRelationshipUniquenessConstraints(relationship, propertyKey, value, type, existingPropertyKeyIds);
+            }
+            ktx.txState()
+                    .relationshipDoReplaceProperty(
+                            relationship,
+                            relationshipCursor.type(),
+                            relationshipCursor.sourceNodeReference(),
+                            relationshipCursor.targetNodeReference(),
                             propertyKey,
-                            existingPropertyKeyIds,
                             existingValue,
                             value);
-                }
+            if (hasRelatedSchema) {
+                updater.onPropertyChange(
+                        relationshipCursor,
+                        propertyCursor,
+                        type,
+                        propertyKey,
+                        existingPropertyKeyIds,
+                        existingValue,
+                        value);
             }
-
-            return existingValue;
         }
     }
 

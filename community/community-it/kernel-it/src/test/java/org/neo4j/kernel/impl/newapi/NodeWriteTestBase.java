@@ -222,8 +222,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try (KernelTransaction tx = beginTransaction()) {
             int token = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-            assertThat(tx.dataWrite().nodeSetProperty(node, token, stringValue("hello")))
-                    .isEqualTo(NO_VALUE);
+            tx.dataWrite().nodeSetProperty(node, token, stringValue("hello"));
             tx.commit();
         }
 
@@ -239,8 +238,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try (KernelTransaction tx = beginTransaction()) {
             int token = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-            assertThat(tx.dataWrite().nodeSetProperty(node, token, stringValue("hello")))
-                    .isEqualTo(NO_VALUE);
+            tx.dataWrite().nodeSetProperty(node, token, stringValue("hello"));
             tx.rollback();
         }
 
@@ -270,8 +268,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try (KernelTransaction tx = beginTransaction()) {
             int token = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-            assertThat(tx.dataWrite().nodeSetProperty(node, token, stringValue("hello")))
-                    .isEqualTo(intValue(42));
+            tx.dataWrite().nodeSetProperty(node, token, stringValue("hello"));
             tx.commit();
         }
 
@@ -336,12 +333,9 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try (KernelTransaction tx = beginTransaction()) {
             int token = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-            assertThat(tx.dataWrite().nodeSetProperty(node, token, stringValue("hello")))
-                    .isEqualTo(NO_VALUE);
-            assertThat(tx.dataWrite().nodeSetProperty(node, token, stringValue("world")))
-                    .isEqualTo(stringValue("hello"));
-            assertThat(tx.dataWrite().nodeSetProperty(node, token, intValue(1337)))
-                    .isEqualTo(stringValue("world"));
+            tx.dataWrite().nodeSetProperty(node, token, stringValue("hello"));
+            tx.dataWrite().nodeSetProperty(node, token, stringValue("world"));
+            tx.dataWrite().nodeSetProperty(node, token, intValue(1337));
             tx.commit();
         }
 
@@ -378,7 +372,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         KernelTransaction tx = beginTransaction();
         int property = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-        assertThat(tx.dataWrite().nodeSetProperty(nodeId, property, theValue)).isEqualTo(theValue);
+        tx.dataWrite().nodeSetProperty(nodeId, property, theValue);
 
         assertThat(tx.commit()).isEqualTo(KernelTransaction.READ_ONLY_ID);
     }
@@ -393,8 +387,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try (KernelTransaction tx = beginTransaction()) {
             prop = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-            assertThat(tx.dataWrite().nodeSetProperty(node, prop, largeByteArray))
-                    .isEqualTo(NO_VALUE);
+            tx.dataWrite().nodeSetProperty(node, prop, largeByteArray);
             tx.commit();
         }
 

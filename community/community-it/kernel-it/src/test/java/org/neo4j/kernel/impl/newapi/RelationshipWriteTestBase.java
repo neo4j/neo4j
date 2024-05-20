@@ -203,8 +203,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         try (KernelTransaction tx = beginTransaction()) {
             int token = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-            assertThat(tx.dataWrite().relationshipSetProperty(relationshipId, token, stringValue("hello")))
-                    .isEqualTo(NO_VALUE);
+            tx.dataWrite().relationshipSetProperty(relationshipId, token, stringValue("hello"));
             tx.commit();
         }
 
@@ -234,8 +233,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         try (KernelTransaction tx = beginTransaction()) {
             int token = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-            assertThat(tx.dataWrite().relationshipSetProperty(relationshipId, token, stringValue("hello")))
-                    .isEqualTo(intValue(42));
+            tx.dataWrite().relationshipSetProperty(relationshipId, token, stringValue("hello"));
             tx.commit();
         }
 
@@ -350,12 +348,9 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         try (KernelTransaction tx = beginTransaction()) {
             int token = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-            assertThat(tx.dataWrite().relationshipSetProperty(relationshipId, token, stringValue("hello")))
-                    .isEqualTo(NO_VALUE);
-            assertThat(tx.dataWrite().relationshipSetProperty(relationshipId, token, stringValue("world")))
-                    .isEqualTo(stringValue("hello"));
-            assertThat(tx.dataWrite().relationshipSetProperty(relationshipId, token, intValue(1337)))
-                    .isEqualTo(stringValue("world"));
+            tx.dataWrite().relationshipSetProperty(relationshipId, token, stringValue("hello"));
+            tx.dataWrite().relationshipSetProperty(relationshipId, token, stringValue("world"));
+            tx.dataWrite().relationshipSetProperty(relationshipId, token, intValue(1337));
             tx.commit();
         }
 
@@ -387,8 +382,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         KernelTransaction tx = beginTransaction();
         int property = tx.token().propertyKeyGetOrCreateForName(propertyKey);
-        assertThat(tx.dataWrite().relationshipSetProperty(relationshipId, property, theValue))
-                .isEqualTo(theValue);
+        tx.dataWrite().relationshipSetProperty(relationshipId, property, theValue);
 
         assertThat(tx.commit()).isEqualTo(KernelTransaction.READ_ONLY_ID);
     }

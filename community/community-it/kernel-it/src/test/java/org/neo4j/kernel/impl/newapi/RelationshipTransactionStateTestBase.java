@@ -36,7 +36,6 @@ import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.sparse;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
-import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -312,8 +311,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             long r = tx.dataWrite().relationshipCreate(n1, label, n2);
             int prop1 = tx.token().propertyKeyGetOrCreateForName(propKey1);
             int prop2 = tx.token().propertyKeyGetOrCreateForName(propKey2);
-            assertEquals(tx.dataWrite().relationshipSetProperty(r, prop1, stringValue("hello")), NO_VALUE);
-            assertEquals(tx.dataWrite().relationshipSetProperty(r, prop2, stringValue("world")), NO_VALUE);
+            tx.dataWrite().relationshipSetProperty(r, prop1, stringValue("hello"));
+            tx.dataWrite().relationshipSetProperty(r, prop2, stringValue("world"));
 
             try (NodeCursor node = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                     RelationshipTraversalCursor relationship =
@@ -358,8 +357,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         // When/Then
         try (KernelTransaction tx = beginTransaction()) {
             int propToken = tx.token().propertyKeyGetOrCreateForName(propKey);
-            assertEquals(
-                    tx.dataWrite().relationshipSetProperty(relationshipId, propToken, stringValue("hello")), NO_VALUE);
+            tx.dataWrite().relationshipSetProperty(relationshipId, propToken, stringValue("hello"));
 
             try (RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT);
                     PropertyCursor property = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, INSTANCE)) {
@@ -397,15 +395,14 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             relationshipId = write.relationshipCreate(
                     write.nodeCreate(), tx.tokenWrite().relationshipTypeGetOrCreateForName("R"), write.nodeCreate());
             propToken1 = tx.token().propertyKeyGetOrCreateForName(propKey1);
-            assertEquals(write.relationshipSetProperty(relationshipId, propToken1, stringValue("hello")), NO_VALUE);
+            write.relationshipSetProperty(relationshipId, propToken1, stringValue("hello"));
             tx.commit();
         }
 
         // When/Then
         try (KernelTransaction tx = beginTransaction()) {
             propToken2 = tx.token().propertyKeyGetOrCreateForName(propKey2);
-            assertEquals(
-                    tx.dataWrite().relationshipSetProperty(relationshipId, propToken2, stringValue("world")), NO_VALUE);
+            tx.dataWrite().relationshipSetProperty(relationshipId, propToken2, stringValue("world"));
 
             try (RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT);
                     PropertyCursor property = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, INSTANCE)) {
@@ -450,15 +447,13 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             relationshipId = write.relationshipCreate(
                     write.nodeCreate(), tx.tokenWrite().relationshipTypeGetOrCreateForName("R"), write.nodeCreate());
             propToken = tx.token().propertyKeyGetOrCreateForName(propKey);
-            assertEquals(write.relationshipSetProperty(relationshipId, propToken, stringValue("hello")), NO_VALUE);
+            write.relationshipSetProperty(relationshipId, propToken, stringValue("hello"));
             tx.commit();
         }
 
         // When/Then
         try (KernelTransaction tx = beginTransaction()) {
-            assertEquals(
-                    tx.dataWrite().relationshipSetProperty(relationshipId, propToken, stringValue("world")),
-                    stringValue("hello"));
+            tx.dataWrite().relationshipSetProperty(relationshipId, propToken, stringValue("world"));
             try (RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT);
                     PropertyCursor property = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, INSTANCE)) {
                 tx.dataRead().singleRelationship(relationshipId, relationship);
@@ -494,7 +489,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             relationshipId = write.relationshipCreate(
                     write.nodeCreate(), tx.tokenWrite().relationshipTypeGetOrCreateForName("R"), write.nodeCreate());
             propToken = tx.token().propertyKeyGetOrCreateForName(propKey);
-            assertEquals(write.relationshipSetProperty(relationshipId, propToken, stringValue("hello")), NO_VALUE);
+            write.relationshipSetProperty(relationshipId, propToken, stringValue("hello"));
             tx.commit();
         }
 
@@ -530,15 +525,14 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             relationshipId = write.relationshipCreate(
                     write.nodeCreate(), tx.tokenWrite().relationshipTypeGetOrCreateForName("R"), write.nodeCreate());
             propToken = tx.token().propertyKeyGetOrCreateForName(propKey);
-            assertEquals(write.relationshipSetProperty(relationshipId, propToken, stringValue("hello")), NO_VALUE);
+            write.relationshipSetProperty(relationshipId, propToken, stringValue("hello"));
             tx.commit();
         }
 
         // When/Then
         try (KernelTransaction tx = beginTransaction()) {
             assertEquals(tx.dataWrite().relationshipRemoveProperty(relationshipId, propToken), stringValue("hello"));
-            assertEquals(
-                    tx.dataWrite().relationshipSetProperty(relationshipId, propToken, stringValue("world")), NO_VALUE);
+            tx.dataWrite().relationshipSetProperty(relationshipId, propToken, stringValue("world"));
             try (RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT);
                     PropertyCursor property = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, INSTANCE)) {
                 tx.dataRead().singleRelationship(relationshipId, relationship);

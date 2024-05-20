@@ -105,12 +105,11 @@ public interface Write {
     /**
      * Set a property on a node
      *
-     * @param node the internal node id
+     * @param node        the internal node id
      * @param propertyKey the property key id
-     * @param value the value to set
-     * @return The replaced value, or Values.NO_VALUE if the node did not have the property before
+     * @param value       the value to set
      */
-    Value nodeSetProperty(long node, int propertyKey, Value value) throws KernelException;
+    void nodeSetProperty(long node, int propertyKey, Value value) throws KernelException;
 
     /**
      * Applies multiple label and property changes to a node in one call, checking constraints on the resulting data, not the intermediary state,
@@ -148,11 +147,10 @@ public interface Write {
      * Set a property on a relationship
      *
      * @param relationship the internal relationship id
-     * @param propertyKey the property key id
-     * @param value the value to set
-     * @return The replaced value, or Values.NO_VALUE if the relationship did not have the property before
+     * @param propertyKey  the property key id
+     * @param value        the value to set
      */
-    Value relationshipSetProperty(long relationship, int propertyKey, Value value)
+    void relationshipSetProperty(long relationship, int propertyKey, Value value)
             throws EntityNotFoundException, ConstraintValidationException;
 
     /**
