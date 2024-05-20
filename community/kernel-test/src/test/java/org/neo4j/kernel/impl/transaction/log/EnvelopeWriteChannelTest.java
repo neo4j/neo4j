@@ -48,6 +48,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.EnvelopeType;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
@@ -1126,6 +1127,16 @@ class EnvelopeWriteChannelTest {
                     writeChannel.setChannel(logChannel);
                     event.rotationCompleted(ROTATION_PERIOD);
                 }
+            }
+
+            @Override
+            public void locklessRotateLogFile(
+                    LogRotateEvents logRotateEvents,
+                    KernelVersion kernelVersion,
+                    long lastTransactionId,
+                    long lastAppendIndex,
+                    int previousChecksum) {
+                throw new UnsupportedOperationException();
             }
 
             @Override

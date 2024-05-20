@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
@@ -59,7 +60,11 @@ public class TransactionLogChannelAllocator {
     }
 
     public PhysicalLogVersionedStoreChannel createLogChannel(
-            long version, long lastCommittedTransactionId, long lastAppendIndex, int previousLogFileChecksum)
+            long version,
+            long lastCommittedTransactionId,
+            long lastAppendIndex,
+            int previousLogFileChecksum,
+            KernelVersionProvider kernelVersionProvider)
             throws IOException {
         AllocatedFile allocatedFile = allocateFile(version);
         var storeChannel = allocatedFile.storeChannel();
@@ -69,8 +74,7 @@ public class TransactionLogChannelAllocator {
             try (LogFileCreateEvent ignored = databaseTracer.createLogFile()) {
                 // we always write file header from the beginning of the file
                 storeChannel.position(0);
-                KernelVersion kernelVersion =
-                        logFilesContext.getKernelVersionProvider().kernelVersion();
+                KernelVersion kernelVersion = kernelVersionProvider.kernelVersion();
                 header = LogFormat.fromKernelVersion(kernelVersion)
                         .newHeader(
                                 version,

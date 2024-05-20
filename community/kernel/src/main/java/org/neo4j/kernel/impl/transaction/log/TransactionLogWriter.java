@@ -28,6 +28,8 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.util.VisibleForTesting;
 
@@ -36,21 +38,28 @@ public class TransactionLogWriter {
     private final LogEntryWriter<FlushableLogPositionAwareChannel> writer;
     private final KernelVersionProvider versionProvider;
 
+    private KernelVersion previousKernelVersion;
+    private final LogRotation logRotation;
+
     public TransactionLogWriter(
             FlushableLogPositionAwareChannel channel,
             KernelVersionProvider versionProvider,
-            BinarySupportedKernelVersions binarySupportedKernelVersions) {
-        this(channel, new LogEntryWriter<>(channel, binarySupportedKernelVersions), versionProvider);
+            BinarySupportedKernelVersions binarySupportedKernelVersions,
+            LogRotation logRotation) {
+        this(channel, new LogEntryWriter<>(channel, binarySupportedKernelVersions), versionProvider, logRotation);
     }
 
     @VisibleForTesting
     public TransactionLogWriter(
             FlushableLogPositionAwareChannel channel,
             LogEntryWriter<FlushableLogPositionAwareChannel> writer,
-            KernelVersionProvider versionProvider) {
+            KernelVersionProvider versionProvider,
+            LogRotation logRotation) {
         this.channel = channel;
         this.writer = writer;
         this.versionProvider = versionProvider;
+        this.previousKernelVersion = versionProvider.kernelVersion();
+        this.logRotation = logRotation;
     }
 
     /*
@@ -72,12 +81,25 @@ public class TransactionLogWriter {
             long chunkId,
             long appendIndex,
             int previousChecksum,
-            LogPosition previousBatchPosition)
+            LogPosition previousBatchPosition,
+            LogAppendEvent logAppendEvent)
             throws IOException {
         KernelVersion kernelVersion = batch.kernelVersion();
         if (kernelVersion == null) {
             kernelVersion = versionProvider.kernelVersion();
         }
+
+        if (kernelVersion != previousKernelVersion) {
+            assert kernelVersion.isGreaterThan(previousKernelVersion);
+            // The transaction appenders handle locking of the logFile to guarantee only one thread is appending at a
+            // time.
+            // That means we know we are the only ones using the logfile here, and don't need to lock
+            // TODO misha this tx id can be wrong with mvcc - remove or use correct lastTxId here
+            logRotation.locklessRotateLogFile(
+                    logAppendEvent, kernelVersion, transactionId - 1, appendIndex - 1, previousChecksum);
+            previousKernelVersion = kernelVersion;
+        }
+
         if (batch.isRollback()) {
             return writer.writeRollbackEntry(kernelVersion, transactionId, appendIndex, batch.getTimeCommitted());
         }

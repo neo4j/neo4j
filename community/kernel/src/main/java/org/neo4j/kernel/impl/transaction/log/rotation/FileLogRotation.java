@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.function.LongSupplier;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.RotatableFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
@@ -146,6 +147,21 @@ public class FileLogRotation implements LogRotation {
                     currentFileVersionSupplier,
                     rotatableFile::rotate);
         }
+    }
+
+    @Override
+    public void locklessRotateLogFile(
+            LogRotateEvents logRotateEvents,
+            KernelVersion kernelVersion,
+            long lastTransactionId,
+            long lastAppendIndex,
+            int previousChecksum)
+            throws IOException {
+        doRotate(
+                logRotateEvents,
+                lastTransactionId,
+                currentFileVersionSupplier,
+                () -> rotatableFile.rotate(kernelVersion, lastTransactionId, lastAppendIndex, previousChecksum));
     }
 
     @Override

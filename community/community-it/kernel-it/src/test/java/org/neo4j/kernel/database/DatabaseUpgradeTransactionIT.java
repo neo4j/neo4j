@@ -89,7 +89,7 @@ public class DatabaseUpgradeTransactionIT {
             .orElseThrow();
 
     @Inject
-    private TestDirectory testDirectory;
+    protected TestDirectory testDirectory;
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     protected DatabaseManagementService dbms;
@@ -379,9 +379,13 @@ public class DatabaseUpgradeTransactionIT {
     }
 
     protected void startDbms() {
-        dbms = configure(new TestDatabaseManagementServiceBuilder()).build();
+        dbms = configure(getBuilder()).build();
         db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         systemDb = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
+    }
+
+    protected TestDatabaseManagementServiceBuilder getBuilder() {
+        return new TestDatabaseManagementServiceBuilder();
     }
 
     private long lastCommittedTransactionId() {

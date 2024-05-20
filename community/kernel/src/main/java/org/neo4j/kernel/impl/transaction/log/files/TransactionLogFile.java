@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
@@ -52,6 +53,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
@@ -101,6 +103,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private final ConcurrentMap<Long, List<StoreChannel>> externalFileReaders = new ConcurrentHashMap<>();
     private final LogFileVersionTracker versionTracker;
     private final InternalLog logger;
+    private final LogRotationMonitor rotationMonitor;
     private volatile PhysicalLogVersionedStoreChannel channel;
     private PhysicalFlushableLogPositionAwareChannel writer;
     private LogVersionRepository logVersionRepository;
@@ -120,8 +123,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         this.channelAllocator = new TransactionLogChannelAllocator(
                 context, fileHelper, logHeaderCache, new LogFileChannelNativeAccessor(fileSystem, context));
         this.readerLogVersionBridge = ReaderLogVersionBridge.forFile(this);
-        this.logRotation = transactionLogRotation(
-                this, context.getClock(), databaseHealth, context.getMonitors().newMonitor(LogRotationMonitor.class));
+        this.rotationMonitor = context.getMonitors().newMonitor(LogRotationMonitor.class);
+        this.logRotation = transactionLogRotation(this, context.getClock(), databaseHealth, rotationMonitor);
         this.memoryTracker = context.getMemoryTracker();
         this.logger = context.getLogProvider().getLog(TransactionLogFile.class);
     }
@@ -141,6 +144,20 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
                 context.getKernelVersionProvider(),
                 BASE_TX_CHECKSUM);
 
+        LogHeader logHeader = extractHeader(currentLogVersion);
+        KernelVersion currentKernelVersion = context.getKernelVersionProvider().kernelVersion();
+        KernelVersion logHeaderKernelVersion = logHeader.getKernelVersion();
+        // In the unlikely case that upgrade transaction was last tx (with or without recovery), we need to rotate
+        // to a new file with correct header.
+        // The header doesn't contain a kernel version before envelopes, but this corner case can safely be
+        // ignored before envelopes since the format doesn't change.
+        if (currentKernelVersion.isAtLeast(KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED)
+                && logHeaderKernelVersion != currentKernelVersion) {
+            assert logHeaderKernelVersion == null || currentKernelVersion.isGreaterThan(logHeaderKernelVersion);
+            rotateOnStart(logHeader);
+            currentLogVersion = logVersionRepository.getCurrentLogVersion();
+        }
+
         context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), currentLogVersion);
 
         // try to set position
@@ -156,8 +173,43 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
                 channel, channelAllocator.readLogHeaderForVersion(currentLogVersion), channelProvider);
         if (!context.isReadOnly()) {
             transactionLogWriter = new TransactionLogWriter(
-                    writer, context.getKernelVersionProvider(), context.getBinarySupportedKernelVersions());
+                    writer,
+                    context.getKernelVersionProvider(),
+                    context.getBinarySupportedKernelVersions(),
+                    logRotation);
         }
+    }
+
+    /**
+     * For the special case where we need to rotate to a new file directly on start-up.
+     * At that point not everything is set up and there is no reason to do any flushing of the old file.
+     * This alerts the monitor about rotation since we don't use the regular path through {@link LogRotation}.
+     */
+    private void rotateOnStart(LogHeader logHeader) throws IOException {
+        long lastCommittedTransactionId =
+                context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(logFiles);
+        long startTimeMillis = context.getClock().millis();
+        rotationMonitor.startRotation(logHeader.getLogVersion());
+        long newLogVersion = logVersionRepository.incrementAndGetVersion();
+
+        // Should truncate away any pre-allocated space, so let's find the end.
+        seekChannelPosition(logHeader.getLogVersion());
+        final var endSize = channel.position();
+        channel.truncate(endSize);
+
+        // TODO checksum wrong here, but not used until envelopes so this is okay.
+        PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(
+                newLogVersion,
+                () -> lastCommittedTransactionId,
+                context::appendIndex,
+                context.getKernelVersionProvider(),
+                BASE_TX_CHECKSUM);
+        channel.close();
+        channel = newLog;
+
+        long rotationElapsedTime = context.getClock().millis() - startTimeMillis;
+        rotationMonitor.finishLogRotation(
+                channel.getPath(), logHeader.getLogVersion(), lastCommittedTransactionId, rotationElapsedTime, 0);
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence
@@ -202,7 +254,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
                 version,
                 lastTransactionIdSupplier.getAsLong(),
                 lastAppendIndexSupplier.getAsLong(),
-                previousLogFileChecksum);
+                previousLogFileChecksum,
+                kernelVersionProvider);
     }
 
     /**
@@ -300,6 +353,15 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     @Override
     public synchronized Path rotate() throws IOException {
         return rotate(context::committingTransactionId, context::appendIndex);
+    }
+
+    @Override
+    public synchronized Path rotate(
+            KernelVersion kernelVersion, long lastTransactionId, long lastAppendIndex, int checksum)
+            throws IOException {
+        channel = rotate(channel, () -> lastTransactionId, () -> lastAppendIndex, () -> kernelVersion, () -> checksum);
+        writer.setChannel(channel, channelAllocator.readLogHeaderForVersion(channel.getLogVersion()));
+        return channel.getPath();
     }
 
     @Override
@@ -590,7 +652,12 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
     private synchronized Path rotate(LongSupplier committedTransactIdSupplier, LongSupplier appendIndexSupplier)
             throws IOException {
-        channel = rotate(channel, committedTransactIdSupplier, appendIndexSupplier);
+        channel = rotate(
+                channel,
+                committedTransactIdSupplier,
+                appendIndexSupplier,
+                context.getKernelVersionProvider(),
+                () -> writer.currentChecksum().orElse(BASE_TX_CHECKSUM));
         writer.setChannel(channel, channelAllocator.readLogHeaderForVersion(channel.getLogVersion()));
         return channel.getPath();
     }
@@ -635,14 +702,18 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
      *
      * @param currentLog current {@link LogVersionedStoreChannel channel} to flush and close.
      * @param lastTransactionIdSupplier transaction ID supplier
-     * @param lastTransactionIdSupplier append index supplier
+     * @param lastAppendIndexSupplier append index supplier
+     * @param kernelVersionProvider kernel version provider
+     * @param checksumProvider latest checksum provider
      * @return the channel of the newly opened/created log file.
      * @throws IOException if an error regarding closing or opening log files occur.
      */
     private PhysicalLogVersionedStoreChannel rotate(
             LogVersionedStoreChannel currentLog,
             LongSupplier lastTransactionIdSupplier,
-            LongSupplier lastAppendIndexSupplier)
+            LongSupplier lastAppendIndexSupplier,
+            KernelVersionProvider kernelVersionProvider,
+            IntSupplier checksumProvider)
             throws IOException {
         /*
          * The store is now flushed. If we fail now the recovery code will open the
@@ -671,13 +742,12 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
          * we can have transactions that are not yet published as committed but were already stored
          * into transaction log that was just rotated.
          */
-        int checksum = writer.currentChecksum().orElse(BASE_TX_CHECKSUM);
         PhysicalLogVersionedStoreChannel newLog = createLogChannelForVersion(
                 newLogVersion,
                 lastTransactionIdSupplier,
                 lastAppendIndexSupplier,
-                context.getKernelVersionProvider(),
-                checksum);
+                kernelVersionProvider,
+                checksumProvider.getAsInt());
         currentLog.close();
 
         try {

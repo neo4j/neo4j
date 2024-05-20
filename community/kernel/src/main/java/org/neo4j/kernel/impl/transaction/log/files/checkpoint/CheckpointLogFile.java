@@ -41,6 +41,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -366,6 +367,12 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     @Override
     public synchronized Path rotate() throws IOException {
         return checkpointAppender.rotate();
+    }
+
+    @Override
+    public Path rotate(KernelVersion kernelVersion, long lastTransactionId, long lastAppendIndex, int checksum)
+            throws IOException {
+        return checkpointAppender.rotate(kernelVersion, lastTransactionId, lastAppendIndex);
     }
 
     @Override

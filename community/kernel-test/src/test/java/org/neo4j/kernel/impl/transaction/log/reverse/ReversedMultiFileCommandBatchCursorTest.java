@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.AppendIndexProvider;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -246,7 +247,8 @@ class ReversedMultiFileCommandBatchCursorTest {
                     transactionId,
                     NOT_SPECIFIED_CHUNK_ID,
                     previousChecksum,
-                    LogPosition.UNSPECIFIED);
+                    LogPosition.UNSPECIFIED,
+                    LogAppendEvent.NULL);
         }
         channel.prepareForFlush().flush();
         return writer.getCurrentPosition();

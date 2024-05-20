@@ -181,7 +181,8 @@ public class TransactionLogInitializer {
                 NOT_SPECIFIED_CHUNK_ID,
                 appendIndex,
                 BASE_TX_CHECKSUM,
-                LogPosition.UNSPECIFIED);
+                LogPosition.UNSPECIFIED,
+                LogAppendEvent.NULL);
         logFile.forceAfterAppend(LogAppendEvent.NULL);
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint(

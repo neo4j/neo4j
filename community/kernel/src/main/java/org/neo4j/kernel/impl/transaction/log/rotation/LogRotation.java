@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.rotation;
 
 import java.io.IOException;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvents;
 
 /**
@@ -47,6 +48,14 @@ public interface LogRotation {
 
         @Override
         public void rotateLogFile(LogRotateEvents logRotateEvents) {}
+
+        @Override
+        public void locklessRotateLogFile(
+                LogRotateEvents logRotateEvents,
+                KernelVersion kernelVersion,
+                long lastTransactionId,
+                long lastAppendIndex,
+                int previousChecksum) {}
 
         @Override
         public long rotationSize() {
@@ -78,6 +87,19 @@ public interface LogRotation {
      * @throws IOException
      */
     void rotateLogFile(LogRotateEvents logRotateEvents) throws IOException;
+
+    /**
+     * Force a log rotation without taking any additional locks.
+     * Only use this if the logFile lock is already taken, or there can be no other concurrent operations.
+     * @throws IOException
+     */
+    void locklessRotateLogFile(
+            LogRotateEvents logRotateEvents,
+            KernelVersion kernelVersion,
+            long lastTransactionId,
+            long lastAppendIndex,
+            int previousChecksum)
+            throws IOException;
 
     long rotationSize();
 }

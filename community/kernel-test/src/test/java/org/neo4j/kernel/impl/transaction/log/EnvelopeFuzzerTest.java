@@ -51,6 +51,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
@@ -252,6 +253,16 @@ class EnvelopeFuzzerTest {
                     writeChannel.setChannel(logChannel);
                     event.rotationCompleted(ROTATION_PERIOD);
                 }
+            }
+
+            @Override
+            public void locklessRotateLogFile(
+                    LogRotateEvents logRotateEvents,
+                    KernelVersion kernelVersion,
+                    long lastTransactionId,
+                    long lastAppendIndex,
+                    int previousChecksum) {
+                throw new UnsupportedOperationException();
             }
 
             @Override

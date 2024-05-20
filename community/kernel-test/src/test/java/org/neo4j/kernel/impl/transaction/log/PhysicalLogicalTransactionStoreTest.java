@@ -158,7 +158,7 @@ class PhysicalLogicalTransactionStoreTest {
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore(
-                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
+                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config, fileSystem);
         verifyTransaction(
                 positionCache,
                 consensusIndex,
@@ -227,7 +227,7 @@ class PhysicalLogicalTransactionStoreTest {
                 new FakeRecoveryVisitor(consensusIndex, timeStarted, timeCommitted, latestCommittedTxWhenStarted);
 
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
-                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
+                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config, fileSystem);
 
         life.add(createTransactionAppender(
                 transactionIdStore, logFiles, Config.defaults(), jobScheduler, positionCache));
@@ -291,7 +291,7 @@ class PhysicalLogicalTransactionStoreTest {
         life = new LifeSupport();
         life.add(logFiles);
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore(
-                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
+                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config, fileSystem);
 
         // WHEN
         life.start();
@@ -317,7 +317,7 @@ class PhysicalLogicalTransactionStoreTest {
         LogFiles logFiles = mock(LogFiles.class);
         // a missing file
         when(logFiles.getLogFile()).thenReturn(logFile);
-        when(logFile.getReader(any(LogPosition.class))).thenThrow(new NoSuchFileException("mock"));
+        when(logFile.getReader(any(LogPosition.class), any())).thenThrow(new NoSuchFileException("mock"));
         // Which is nevertheless in the metadata cache
         TransactionMetadataCache cache = new TransactionMetadataCache();
         cache.cacheTransactionMetadata(10, new LogPosition(2, 130));
@@ -325,7 +325,7 @@ class PhysicalLogicalTransactionStoreTest {
         LifeSupport life = new LifeSupport();
 
         final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
-                logFiles, cache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
+                logFiles, cache, TestCommandReaderFactory.INSTANCE, monitors, true, config, fileSystem);
 
         try {
             life.start();

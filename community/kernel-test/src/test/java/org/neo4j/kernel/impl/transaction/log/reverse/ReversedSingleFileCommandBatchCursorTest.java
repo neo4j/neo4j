@@ -58,6 +58,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLogProvider;
@@ -248,7 +250,8 @@ class ReversedSingleFileCommandBatchCursorTest {
                     txId,
                     NOT_SPECIFIED_CHUNK_ID,
                     previousChecksum,
-                    UNSPECIFIED);
+                    UNSPECIFIED,
+                    LogAppendEvent.NULL);
         }
         channel.prepareForFlush().flush();
         // Don't close the channel, LogFile owns it
@@ -257,10 +260,19 @@ class ReversedSingleFileCommandBatchCursorTest {
     private void appendCorruptedTransaction() throws IOException {
         var channel = logFile.getTransactionLogWriter().getChannel();
         TransactionLogWriter writer = new TransactionLogWriter(
-                channel, new CorruptedLogEntryWriter<>(channel), LATEST_KERNEL_VERSION_PROVIDER);
+                channel,
+                new CorruptedLogEntryWriter<>(channel),
+                LATEST_KERNEL_VERSION_PROVIDER,
+                LogRotation.NO_ROTATION);
         long txId = ++this.txId;
         writer.append(
-                tx(random.intBetween(100, 1000)), txId, txId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM, UNSPECIFIED);
+                tx(random.intBetween(100, 1000)),
+                txId,
+                txId,
+                NOT_SPECIFIED_CHUNK_ID,
+                BASE_TX_CHECKSUM,
+                UNSPECIFIED,
+                LogAppendEvent.NULL);
     }
 
     private static CommandBatch tx(int size) {

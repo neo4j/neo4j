@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import org.neo4j.kernel.KernelVersion;
 
 public interface RotatableFile {
     /**
@@ -34,6 +35,18 @@ public interface RotatableFile {
      * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
      */
     Path rotate() throws IOException;
+
+    /**
+     * Rotate the active file but be explicit about what values to use for the new header.
+     * This can be necessary in scenarios where the kernel version repository is not
+     * updated (because apply to store hasn't happened yet), or the transaction id sequence has already been updated but
+     * this rotation takes place before writing the new transaction.
+     *
+     * @return A file object representing the file name and path of the log file rotated to.
+     * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
+     */
+    Path rotate(KernelVersion kernelVersion, long lastTransactionId, long lastAppendIndex, int checksum)
+            throws IOException;
 
     long rotationSize();
 }

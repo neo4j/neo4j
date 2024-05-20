@@ -90,6 +90,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -146,7 +147,8 @@ class BatchingTransactionAppenderTest {
         CountingVersionProvider versionProvider = new CountingVersionProvider();
         try (var writeChannel = getWriteChannel(fs, path, LATEST_KERNEL_VERSION)) {
             when(logFile.getTransactionLogWriter())
-                    .thenReturn(new TransactionLogWriter(writeChannel, versionProvider, BINARY_VERSIONS));
+                    .thenReturn(new TransactionLogWriter(
+                            writeChannel, versionProvider, BINARY_VERSIONS, LogRotation.NO_ROTATION));
 
             long txId = 15;
             when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
@@ -162,14 +164,15 @@ class BatchingTransactionAppenderTest {
             CommandBatch transaction =
                     new CompleteTransaction(singleTestCommand(), 5, 12345, 7896, 123456, -1, null, ANONYMOUS);
 
-            assertEquals(0, versionProvider.getVersionLookedUp());
+            // Looked up to figure out previous version on creation of writer
+            assertEquals(1, versionProvider.getVersionLookedUp());
 
             appender.append(
                     new TransactionToApply(
                             transaction, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, TransactionIdGenerator.EMPTY),
                     logAppendEvent);
 
-            assertEquals(1, versionProvider.getVersionLookedUp());
+            assertEquals(2, versionProvider.getVersionLookedUp());
         }
         final LogEntryReader logEntryReader = logEntryReader();
         try (var readChannel = getReadChannel(fs, path, LATEST_KERNEL_VERSION);
@@ -188,8 +191,8 @@ class BatchingTransactionAppenderTest {
 
         try (var writeChannel = getWriteChannel(fs, path, kernelVersion)) {
             when(logFile.getTransactionLogWriter())
-                    .thenReturn(
-                            new TransactionLogWriter(writeChannel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS));
+                    .thenReturn(new TransactionLogWriter(
+                            writeChannel, () -> kernelVersion, BINARY_VERSIONS, LogRotation.NO_ROTATION));
             long txId = 15;
             when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
             when(transactionIdStore.getLastCommittedTransaction())
@@ -224,8 +227,8 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendBatchOfTransactions() throws Exception {
         try (var writeChannel = getWriteChannel(fs, path, LATEST_KERNEL_VERSION)) {
-            TransactionLogWriter logWriter =
-                    new TransactionLogWriter(writeChannel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS);
+            TransactionLogWriter logWriter = new TransactionLogWriter(
+                    writeChannel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS, LogRotation.NO_ROTATION);
             TransactionLogWriter logWriterSpy = spy(logWriter);
             when(logFile.getTransactionLogWriter()).thenReturn(logWriterSpy);
 
@@ -237,9 +240,12 @@ class BatchingTransactionAppenderTest {
             TransactionToApply batch = batchOf(batch1, batch2, batch3);
             appender.append(batch, logAppendEvent);
 
-            verify(logWriterSpy).append(eq(batch1), eq(2L), anyLong(), anyLong(), anyInt(), any(LogPosition.class));
-            verify(logWriterSpy).append(eq(batch2), eq(3L), anyLong(), anyLong(), anyInt(), any(LogPosition.class));
-            verify(logWriterSpy).append(eq(batch3), eq(4L), anyLong(), anyLong(), anyInt(), any(LogPosition.class));
+            verify(logWriterSpy)
+                    .append(eq(batch1), eq(2L), anyLong(), anyLong(), anyInt(), any(LogPosition.class), any());
+            verify(logWriterSpy)
+                    .append(eq(batch2), eq(3L), anyLong(), anyLong(), anyInt(), any(LogPosition.class), any());
+            verify(logWriterSpy)
+                    .append(eq(batch3), eq(4L), anyLong(), anyLong(), anyInt(), any(LogPosition.class), any());
         }
     }
 
@@ -263,7 +269,8 @@ class BatchingTransactionAppenderTest {
                 new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
 
         try (var writeChannel = getWriteChannel(fs, path, LATEST_KERNEL_VERSION)) {
-            doReturn(new TransactionLogWriter(writeChannel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS))
+            doReturn(new TransactionLogWriter(
+                            writeChannel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS, LogRotation.NO_ROTATION))
                     .when(logFile)
                     .getTransactionLogWriter();
 
@@ -308,7 +315,8 @@ class BatchingTransactionAppenderTest {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS));
+                .thenReturn(new TransactionLogWriter(
+                        channel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS, LogRotation.NO_ROTATION));
 
         TransactionAppender appender = life.add(createTransactionAppender());
 
@@ -359,7 +367,8 @@ class BatchingTransactionAppenderTest {
         IOException failure = new IOException(failureMessage);
         doThrow(failure).when(channel).putVersion(anyByte());
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS));
+                .thenReturn(new TransactionLogWriter(
+                        channel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS, LogRotation.NO_ROTATION));
 
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -421,7 +430,8 @@ class BatchingTransactionAppenderTest {
                 .prepareForFlush();
         when(logFile.forceAfterAppend(any())).thenThrow(failure);
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS));
+                .thenReturn(new TransactionLogWriter(
+                        channel, LATEST_KERNEL_VERSION_PROVIDER, BINARY_VERSIONS, LogRotation.NO_ROTATION));
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);

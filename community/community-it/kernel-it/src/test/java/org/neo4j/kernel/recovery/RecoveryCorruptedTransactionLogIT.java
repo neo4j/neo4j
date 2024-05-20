@@ -104,6 +104,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -1383,14 +1385,24 @@ class RecoveryCorruptedTransactionLogIT {
             LogEntryWriter<FlushableLogPositionAwareChannel> wrappedLogEntryWriter =
                     logEntryWriterWrapper.wrap(realLogEntryWriter);
             TransactionLogWriter writer = new TransactionLogWriter(
-                    realLogEntryWriter.getChannel(), wrappedLogEntryWriter, LATEST_KERNEL_VERSION_PROVIDER);
+                    realLogEntryWriter.getChannel(),
+                    wrappedLogEntryWriter,
+                    LATEST_KERNEL_VERSION_PROVIDER,
+                    LogRotation.NO_ROTATION);
             List<StorageCommand> commands = new ArrayList<>();
             commands.add(new Command.PropertyCommand(
                     LATEST_LOG_SERIALIZATION, new PropertyRecord(1), new PropertyRecord(2)));
             commands.add(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(2), new NodeRecord(3)));
             CompleteTransaction transaction = new CompleteTransaction(
                     commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LATEST_KERNEL_VERSION, ANONYMOUS);
-            writer.append(transaction, 1000, 1001, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM, LogPosition.UNSPECIFIED);
+            writer.append(
+                    transaction,
+                    1000,
+                    1001,
+                    NOT_SPECIFIED_CHUNK_ID,
+                    BASE_TX_CHECKSUM,
+                    LogPosition.UNSPECIFIED,
+                    LogAppendEvent.NULL);
         }
     }
 

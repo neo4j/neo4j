@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 
-public class DefaultCommandBatchCursors implements CommandBatchCursors {
+public final class DefaultReverseCommandBatchCursors implements CommandBatchCursors {
 
     private final LogFile logFile;
     private final LogPosition beginning;
@@ -42,7 +42,7 @@ public class DefaultCommandBatchCursors implements CommandBatchCursors {
     private long currentVersion;
     private final boolean light;
 
-    public DefaultCommandBatchCursors(
+    public DefaultReverseCommandBatchCursors(
             LogFile logFile,
             LogPosition beginning,
             LogEntryReader reader,

@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 
-public class PrefetchedCommandBatchCursors implements CommandBatchCursors {
+public class PrefetchedReverseCommandBatchCursors implements CommandBatchCursors {
     private final BlockingQueue<CommandBatchCursor> cursors = new LinkedBlockingDeque<>(2);
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final LogFile logFile;
@@ -47,7 +47,7 @@ public class PrefetchedCommandBatchCursors implements CommandBatchCursors {
     private long currentVersion;
     private final boolean light;
 
-    public PrefetchedCommandBatchCursors(
+    public PrefetchedReverseCommandBatchCursors(
             LogFile logFile,
             LogPosition beginning,
             LogEntryReader reader,

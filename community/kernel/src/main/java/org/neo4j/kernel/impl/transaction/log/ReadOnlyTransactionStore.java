@@ -52,7 +52,7 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
                 .withConfig(config)
                 .build();
         physicalStore = new PhysicalLogicalTransactionStore(
-                logFiles, transactionMetadataCache, commandReaderFactory, monitors, true, config);
+                logFiles, transactionMetadataCache, commandReaderFactory, monitors, true, config, fs);
     }
 
     @Override

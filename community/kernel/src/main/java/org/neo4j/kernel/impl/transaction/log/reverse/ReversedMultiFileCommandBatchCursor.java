@@ -66,10 +66,10 @@ public class ReversedMultiFileCommandBatchCursor implements CommandBatchCursor {
             boolean presketch,
             boolean light) {
         if (presketch) {
-            return new ReversedMultiFileCommandBatchCursor(new PrefetchedCommandBatchCursors(
+            return new ReversedMultiFileCommandBatchCursor(new PrefetchedReverseCommandBatchCursors(
                     logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor, light));
         } else {
-            return new ReversedMultiFileCommandBatchCursor(new DefaultCommandBatchCursors(
+            return new ReversedMultiFileCommandBatchCursor(new DefaultReverseCommandBatchCursors(
                     logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor, light));
         }
     }
