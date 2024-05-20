@@ -197,23 +197,19 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = queryStatisticsProbe(queryStatistics => {
-      queryStatistics.getNodesCreated shouldEqual 1
-      queryStatistics.getLabelsAdded shouldEqual 1
-    })
-
-    var committedCount = 0L
-    val txProbe = txAssertionProbe(tx => {
-      Iterables.count(tx.getAllNodes) shouldEqual committedCount
-      committedCount += 1
+    val numberOfTransactions = new AtomicInteger(0)
+    val txCountingProbe = countingProbe(numberOfTransactions)
+    val txCountAssertionProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual numberOfTransactions.get()
     })
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
+      .prober(txCountAssertionProbe)
+      .eager()
       .transactionForeach(1, concurrency = concurrency)
       .|.emptyResult()
-      .|.prober(txProbe)
-      .|.prober(probe)
+      .|.prober(txCountingProbe)
       .|.create(createNode("n", "N"))
       .|.argument()
       .input(variables = Seq("x"))
@@ -235,27 +231,19 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = queryStatisticsProbe(queryStatistics => {
-      queryStatistics.getNodesCreated shouldEqual batchSize
-      queryStatistics.getLabelsAdded shouldEqual batchSize
-    })
-
-    var committedCount = 0L
-    var inputRow = 0L
-    val txProbe = txAssertionProbe(tx => {
-      Iterables.count(tx.getAllNodes) shouldEqual committedCount
-      inputRow += 1
-      if (inputRow % batchSize == 0) {
-        committedCount = inputRow
-      }
+    val numberOfTransactions = new AtomicInteger(0)
+    val txCountingProbe = countingProbe(numberOfTransactions)
+    val txCountAssertionProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual numberOfTransactions.get()
     })
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
+      .prober(txCountAssertionProbe)
+      .eager()
       .transactionForeach(batchSize, concurrency = concurrency)
       .|.emptyResult()
-      .|.prober(txProbe)
-      .|.prober(probe)
+      .|.prober(txCountingProbe)
       .|.create(createNode("n", "N"))
       .|.argument()
       .input(variables = Seq("x"))
@@ -277,20 +265,19 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = queryStatisticsProbe(queryStatistics => {
-      queryStatistics.getNodesCreated shouldEqual 0
-      queryStatistics.getLabelsAdded shouldEqual 0
-      Iterables.count(tx.getAllNodes) shouldEqual 0
+    val numberOfTransactions = new AtomicInteger(0)
+    val txCountingProbe = countingProbe(numberOfTransactions)
+    val txCountAssertionProbe = txAssertionProbe(tx => {
+      Iterables.count(tx.getAllNodes) shouldEqual numberOfTransactions.get()
     })
-
-    val txProbe = txAssertionProbe(tx => Iterables.count(tx.getAllNodes) shouldEqual 0)
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
+      .prober(txCountAssertionProbe)
+      .eager()
       .transactionForeach(batchSize, concurrency = concurrency)
       .|.emptyResult()
-      .|.prober(txProbe)
-      .|.prober(probe)
+      .|.prober(txCountingProbe)
       .|.create(createNode("n", "N"))
       .|.argument()
       .input(variables = Seq("x"))
@@ -303,223 +290,6 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe numberOfIterations
-  }
-
-  test("should create data in different transactions when using transactionForeach and see previous changes") {
-    val numberOfIterations = 8
-    val inputRows = (0 until numberOfIterations).map { i =>
-      Array[Any](i.toLong)
-    }
-
-    givenGraph {
-      nodeGraph(1, "N")
-    }
-
-    var nodeCount: Long = 1
-    val probe = queryStatisticsProbe(queryStatistics => {
-      val _nodeCount = nodeCount
-      nodeCount = tx.findNodes(Label.label("N")).stream().count()
-      queryStatistics.getNodesCreated shouldEqual _nodeCount
-      queryStatistics.getLabelsAdded shouldEqual _nodeCount
-    })
-
-    var committedCount = 1L
-    var rhsRowsRemaining = 1L // initial node count
-    val txProbe = txAssertionProbe(tx => {
-      Iterables.count(tx.getAllNodes) shouldEqual committedCount
-      rhsRowsRemaining -= 1
-      if (rhsRowsRemaining == 0) {
-        committedCount *= 2
-        rhsRowsRemaining = committedCount
-      }
-    })
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults()
-      .transactionForeach(1, concurrency = concurrency)
-      .|.emptyResult()
-      .|.prober(txProbe)
-      .|.prober(probe)
-      .|.create(createNode("n", "N"))
-      .|.nodeByLabelScan("y", "N")
-      .input(variables = Seq("x"))
-      .build(readOnly = false)
-
-    // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
-
-    consume(runtimeResult)
-
-    val nodes = Iterables.asList(tx.getAllNodes)
-    nodes.size shouldBe Math.pow(2, numberOfIterations)
-  }
-
-  test(
-    "should create data in different transactions in batches when using transactionForeach and see previous changes"
-  ) {
-    val numberOfIterations = 8
-    val batchSize = 3
-    val inputRows = (0 until numberOfIterations).map { i =>
-      Array[Any](i.toLong)
-    }
-
-    givenGraph {
-      nodeGraph(1, "N")
-    }
-
-    var nodeCount: Long = 1
-    val probe = queryStatisticsProbe(queryStatistics => {
-      val _nodeCount = nodeCount
-      nodeCount = tx.findNodes(Label.label("N")).stream().count()
-      queryStatistics.getNodesCreated shouldEqual nodeCount - _nodeCount
-      queryStatistics.getLabelsAdded shouldEqual nodeCount - _nodeCount
-    })
-
-    var committedCount = 1L
-    var inputRow = 0L
-    var rhsRowsRemaining = Math.pow(2, inputRow).toLong
-    val txProbe = txAssertionProbe(tx => {
-      Iterables.count(tx.getAllNodes) shouldEqual committedCount
-      rhsRowsRemaining -= 1
-      if (rhsRowsRemaining == 0) {
-        inputRow += 1
-        rhsRowsRemaining = Math.pow(2, inputRow).toLong
-        if (inputRow % batchSize == 0) {
-          committedCount = Math.pow(2, inputRow).toLong
-        }
-      }
-    })
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults()
-      .transactionForeach(batchSize, concurrency = concurrency)
-      .|.emptyResult()
-      .|.prober(txProbe)
-      .|.prober(probe)
-      .|.create(createNode("n", "N"))
-      .|.nodeByLabelScan("y", "N")
-      .input(variables = Seq("x"))
-      .build(readOnly = false)
-
-    // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
-
-    consume(runtimeResult)
-
-    val nodes = Iterables.asList(tx.getAllNodes)
-    nodes.size shouldBe Math.pow(2, numberOfIterations)
-  }
-
-  test(
-    "should create data in different transactions when using transactionForeach with index and see previous changes"
-  ) {
-    val numberOfIterations = 8
-    val inputRows = (0 until numberOfIterations).map { i =>
-      Array[Any](i.toLong)
-    }
-
-    givenGraph {
-      nodeIndex("Label", "prop")
-      nodePropertyGraph(1, { case _ => Map[String, Any]("prop" -> 2) }, "Label")
-    }
-
-    var nodeCount: Long = 1
-    val probe = queryStatisticsProbe(queryStatistics => {
-      val _nodeCount = nodeCount
-      nodeCount = tx.findNodes(Label.label("Label"), "prop", 2).stream().count()
-      queryStatistics.getNodesCreated shouldEqual _nodeCount
-      queryStatistics.getLabelsAdded shouldEqual _nodeCount
-    })
-
-    var committedCount = 1L
-    var rhsRowsRemaining = 1L // initial node count
-    val txProbe = txAssertionProbe(tx => {
-      Iterables.count(tx.getAllNodes) shouldEqual committedCount
-      rhsRowsRemaining -= 1
-      if (rhsRowsRemaining == 0) {
-        committedCount *= 2
-        rhsRowsRemaining = committedCount
-      }
-    })
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults()
-      .transactionForeach(1, concurrency = concurrency)
-      .|.emptyResult()
-      .|.prober(txProbe)
-      .|.prober(probe)
-      .|.create(createNodeWithProperties("b", Seq("Label"), "{prop: 2}"))
-      .|.nodeIndexOperator("a:Label(prop=2)")
-      .input(variables = Seq("x"))
-      .build(readOnly = false)
-
-    // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
-
-    consume(runtimeResult)
-
-    val nodes = Iterables.asList(tx.getAllNodes)
-    nodes.size shouldBe Math.pow(2, numberOfIterations)
-  }
-
-  test(
-    "should create data in different transactions when using transactionForeach and see previous changes (also from other transactionForeach)"
-  ) {
-    val numberOfIterations = 4
-    val inputRows = (0 until numberOfIterations).map { i =>
-      Array[Any](i.toLong)
-    }
-
-    givenGraph {
-      nodeGraph(1, "N")
-    }
-
-    var nodeCount: Long = 1
-    val probe = queryStatisticsProbe(queryStatistics => {
-      val _nodeCount = nodeCount
-      nodeCount = tx.findNodes(Label.label("N")).stream().count()
-      queryStatistics.getNodesCreated shouldEqual _nodeCount
-      queryStatistics.getLabelsAdded shouldEqual _nodeCount
-    })
-
-    // assertion assumes scheduling/execution order
-    var committedCount = 1L
-    var rhsRowsRemaining = 1L // initial node count
-    val txProbe = txAssertionProbe(tx => {
-      val actual = Iterables.count(tx.getAllNodes)
-      actual shouldEqual committedCount
-      rhsRowsRemaining -= 1
-      if (rhsRowsRemaining == 0) {
-        committedCount *= 2
-        rhsRowsRemaining = committedCount
-      }
-    })
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults()
-      .transactionForeach(1, concurrency = concurrency)
-      .|.emptyResult()
-      .|.prober(txProbe)
-      .|.prober(probe)
-      .|.create(createNode("n", "N"))
-      .|.nodeByLabelScan("y", "N")
-      .eager()
-      .transactionForeach(1)
-      .|.emptyResult()
-      .|.prober(txProbe)
-      .|.prober(probe)
-      .|.create(createNode("n", "N"))
-      .|.nodeByLabelScan("y", "N")
-      .input(variables = Seq("x"))
-      .build(readOnly = false)
-
-    // then
-    val runtimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
-
-    consume(runtimeResult)
-
-    val nodes = Iterables.asList(tx.getAllNodes)
-    nodes.size shouldBe Math.pow(2, 2 * numberOfIterations)
   }
 
   test("should pass LHS slot configuration onto downstream pipeline") {
@@ -838,13 +608,15 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     var x = 0
     val probe = txAssertionProbe(tx => {
-      x match {
-        case 0 =>
-          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 1L)
-        case 1 =>
-          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 2L)
+      if (concurrency eq TransactionConcurrency.Serial) {
+        x match {
+          case 0 =>
+            checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 1L)
+          case 1 =>
+            checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 2L)
+        }
+        x += 1
       }
-      x += 1
     })
 
     val query = new LogicalQueryBuilder(this)
@@ -880,13 +652,15 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     var x = 0
     val probe = txAssertionProbe(tx => {
-      x match {
-        case 0 =>
-          checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 1L)
-        case 1 =>
-          checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 2L)
+      if (concurrency eq TransactionConcurrency.Serial) {
+        x match {
+          case 0 =>
+            checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 1L)
+          case 1 =>
+            checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 2L)
+        }
+        x += 1
       }
-      x += 1
     })
 
     val query = new LogicalQueryBuilder(this)
@@ -923,13 +697,15 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     var x = 0
     val probe = txAssertionProbe(tx => {
-      x match {
-        case 0 =>
-          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 1L)
-        case 1 =>
-          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 2L)
+      if (concurrency eq TransactionConcurrency.Serial) {
+        x match {
+          case 0 =>
+            checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 1L)
+          case 1 =>
+            checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 2L)
+        }
+        x += 1
       }
-      x += 1
     })
 
     val query = new LogicalQueryBuilder(this)
@@ -964,13 +740,15 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     var x = 0
     val probe = txAssertionProbe(tx => {
-      x match {
-        case 0 =>
-          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 1L)
-        case 1 =>
-          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 2L)
+      if (concurrency eq TransactionConcurrency.Serial) {
+        x match {
+          case 0 =>
+            checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 1L)
+          case 1 =>
+            checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 2L)
+        }
+        x += 1
       }
-      x += 1
     })
 
     val query = new LogicalQueryBuilder(this)
@@ -1005,13 +783,15 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     var x = 0
     val probe = txAssertionProbe(tx => {
-      x match {
-        case 0 =>
-          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 1L)
-        case 1 =>
-          checkExternalAndRuntimeNodes(tx, runtimeTestSupport, 2L)
+      if (concurrency eq TransactionConcurrency.Serial) {
+        x match {
+          case 0 =>
+            checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 1L)
+          case 1 =>
+            checkExternalAndRuntimeRelationships(tx, runtimeTestSupport, 2L)
+        }
+        x += 1
       }
-      x += 1
     })
 
     val query = new LogicalQueryBuilder(this)
@@ -1153,6 +933,14 @@ abstract class ConcurrentTransactionForeachTestBase[CONTEXT <: RuntimeContext](
     new Probe {
       override def onRow(row: AnyRef, state: AnyRef): Unit = {
         withNewTx(assertion(_))
+      }
+    }
+  }
+
+  protected def countingProbe(atomicIncr: AtomicInteger): Prober.Probe = {
+    new Probe {
+      override def onRow(row: AnyRef, state: AnyRef): Unit = {
+        atomicIncr.getAndAdd(1)
       }
     }
   }

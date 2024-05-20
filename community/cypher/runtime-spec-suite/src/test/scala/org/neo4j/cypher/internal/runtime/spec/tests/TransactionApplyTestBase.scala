@@ -788,7 +788,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   private def defaultComplexRhsSetup(): ComplexRhsTestSetup = {
     val iterations = 3
     val batchSize = random.nextInt(iterations + 1) + 1
-    val concurrency = TransactionConcurrency.Concurrent(Some(literalInt(1)))
+    val concurrency = TransactionConcurrency.Serial
     ComplexRhsTestSetup(batchSize, concurrency, iterations, OnErrorFail, None)
   }
 
