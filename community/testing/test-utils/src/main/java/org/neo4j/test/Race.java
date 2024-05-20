@@ -296,7 +296,6 @@ public class Race {
                     }
                 }
             } catch (Throwable e) {
-                e.printStackTrace();
                 error = e;
                 failure = true; // <-- global flag
                 failureAction.accept(e);
