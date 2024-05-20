@@ -33,21 +33,26 @@ public final class FieldSignature {
     }
 
     public static FieldSignature inputField(String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue) {
-        return inputField(name, type, defaultValue, false);
+        return inputField(name, type, defaultValue, false, null);
     }
 
     public static FieldSignature inputField(String name, Neo4jTypes.AnyType type, boolean sensitive) {
-        return new FieldSignature(name, type, null, false, sensitive);
+        return new FieldSignature(name, type, null, false, sensitive, null);
     }
 
     public static FieldSignature inputField(
-            String name, Neo4jTypes.AnyType type, boolean isDeprecated, boolean sensitive) {
-        return new FieldSignature(name, type, null, isDeprecated, sensitive);
+            String name, Neo4jTypes.AnyType type, boolean isDeprecated, boolean sensitive, String description) {
+        return new FieldSignature(name, type, null, isDeprecated, sensitive, description);
     }
 
     public static FieldSignature inputField(
-            String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue, boolean sensitive) {
-        return new FieldSignature(name, type, requireNonNull(defaultValue, "defaultValue"), false, sensitive);
+            String name,
+            Neo4jTypes.AnyType type,
+            DefaultParameterValue defaultValue,
+            boolean sensitive,
+            String description) {
+        return new FieldSignature(
+                name, type, requireNonNull(defaultValue, "defaultValue"), false, sensitive, description);
     }
 
     public static FieldSignature inputField(
@@ -55,8 +60,10 @@ public final class FieldSignature {
             Neo4jTypes.AnyType type,
             DefaultParameterValue defaultValue,
             boolean isDeprecated,
-            boolean sensitive) {
-        return new FieldSignature(name, type, requireNonNull(defaultValue, "defaultValue"), isDeprecated, sensitive);
+            boolean sensitive,
+            String description) {
+        return new FieldSignature(
+                name, type, requireNonNull(defaultValue, "defaultValue"), isDeprecated, sensitive, description);
     }
 
     public static FieldSignature outputField(String name, Neo4jTypes.AnyType type) {
@@ -64,7 +71,12 @@ public final class FieldSignature {
     }
 
     public static FieldSignature outputField(String name, Neo4jTypes.AnyType type, boolean deprecated) {
-        return new FieldSignature(name, type, null, deprecated, false);
+        return new FieldSignature(name, type, null, deprecated, false, null);
+    }
+
+    public static FieldSignature outputField(
+            String name, Neo4jTypes.AnyType type, boolean deprecated, String description) {
+        return new FieldSignature(name, type, null, deprecated, false, description);
     }
 
     private final String name;
@@ -72,18 +84,21 @@ public final class FieldSignature {
     private final DefaultParameterValue defaultValue;
     private final boolean deprecated;
     private final boolean sensitive;
+    private final String description;
 
     private FieldSignature(
             String name,
             Neo4jTypes.AnyType type,
             DefaultParameterValue defaultValue,
             boolean deprecated,
-            boolean sensitive) {
+            boolean sensitive,
+            String description) {
         this.name = requireNonNull(name, "name");
         this.type = requireNonNull(type, "type");
         this.defaultValue = defaultValue;
         this.deprecated = deprecated;
         this.sensitive = sensitive;
+        this.description = description;
         if (defaultValue != null && !type.equals(defaultValue.neo4jType())) {
             throw new IllegalArgumentException(String.format(
                     "Default value does not have a valid type, field type was %s, but value type was %s.",
@@ -118,6 +133,10 @@ public final class FieldSignature {
 
     public boolean isSensitive() {
         return sensitive;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     @Override

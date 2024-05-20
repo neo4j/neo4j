@@ -45,7 +45,8 @@ case class FunctionTypeSignature(
   deprecatedBy: Option[String] = None,
   internal: Boolean = false,
   overrideDefaultAsString: Option[String] = None,
-  overriddenArgumentTypeName: Option[Map[String, String]] = None
+  overriddenArgumentTypeName: Option[Map[String, String]] = None,
+  argumentDescriptions: Map[String, String] = Map.empty
 ) extends TypeSignature {
 
   override def getSignatureAsString: String = {

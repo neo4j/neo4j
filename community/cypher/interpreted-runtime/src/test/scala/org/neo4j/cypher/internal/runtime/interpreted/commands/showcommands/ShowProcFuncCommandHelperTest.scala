@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue
 import org.neo4j.internal.kernel.api.procs.FieldSignature
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDate
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
@@ -220,6 +221,83 @@ class ShowProcFuncCommandHelperTest extends ShowCommandTestBase {
     descriptionResult should be(VirtualValues.fromList(List(
       argumentAndReturnDescriptionMaps("mapOutput", field1.toString, NTMap.toString),
       argumentAndReturnDescriptionMaps("anyOutput", field2.toString, NTAny.toString)
+    ).asJava))
+  }
+
+  test(
+    "`getSignatureValues` and `fieldDescriptions` should return correct result for input fields with or without descriptions"
+  ) {
+    // Given
+    val inputField1 =
+      FieldSignature.inputField("dateInput", NTDate, false, false, "This is a description about dateInput.")
+    val inputField2 = FieldSignature.inputField("integerInput", NTInteger)
+
+    // When
+    val signatureResult = ShowProcFuncCommandHelper.getSignatureValues(List(inputField1, inputField2).asJava)
+
+    // Then
+    signatureResult should be(List(
+      new InputInformation(
+        "dateInput",
+        NTDate.toString,
+        "This is a description about dateInput.",
+        false,
+        java.util.Optional.empty[String]()
+      ),
+      new InputInformation(
+        "integerInput",
+        NTInteger.toString,
+        inputField2.toString,
+        false,
+        java.util.Optional.empty[String]()
+      )
+    ))
+
+    // When
+    val descriptionResult = ShowProcFuncCommandHelper.fieldDescriptions(signatureResult)
+
+    // Then
+    descriptionResult should be(VirtualValues.fromList(List(
+      argumentAndReturnDescriptionMaps("dateInput", "This is a description about dateInput.", NTDate.toString),
+      argumentAndReturnDescriptionMaps("integerInput", inputField2.toString, NTInteger.toString)
+    ).asJava))
+  }
+
+  test(
+    "`getSignatureValues` and `fieldDescriptions` should return correct result for output fields with or without descriptions"
+  ) {
+    // Given
+    val outputField1 = FieldSignature.outputField("mapOutput", NTMap)
+    val outputField2 = FieldSignature.outputField("anyOutput", NTAny, false, "This is a description about anyOutput.")
+
+    // When
+    val signatureResult = ShowProcFuncCommandHelper.getSignatureValues(List(outputField1, outputField2).asJava)
+
+    // Then
+    signatureResult should be(List(
+      new InputInformation(
+        "mapOutput",
+        NTMap.toString,
+        outputField1.toString,
+        false,
+        java.util.Optional.empty[String]()
+      ),
+      new InputInformation(
+        "anyOutput",
+        NTAny.toString,
+        "This is a description about anyOutput.",
+        false,
+        java.util.Optional.empty[String]()
+      )
+    ))
+
+    // When
+    val descriptionResult = ShowProcFuncCommandHelper.fieldDescriptions(signatureResult)
+
+    // Then
+    descriptionResult should be(VirtualValues.fromList(List(
+      argumentAndReturnDescriptionMaps("mapOutput", outputField1.toString, NTMap.toString),
+      argumentAndReturnDescriptionMaps("anyOutput", "This is a description about anyOutput.", NTAny.toString)
     ).asJava))
   }
 

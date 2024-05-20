@@ -102,7 +102,31 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
   )
 
   private val proc3 = new ProcedureSignature(
-    new QualifiedName(List("zzz").asJava, "proc3"),
+    new QualifiedName(List.empty[String].asJava, "proc3"),
+    List(
+      FieldSignature.inputField("input1", NTString, false, false, "Argument description"),
+      FieldSignature.inputField("input2", NTBoolean)
+    ).asJava,
+    List(
+      FieldSignature.outputField("stringOutput", NTString, false, "OutputDescription"),
+      FieldSignature.outputField("intOutput", NTInteger)
+    ).asJava,
+    Mode.DBMS,
+    false,
+    false,
+    null,
+    "Non-admin, system, dbms procedure",
+    null,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false
+  )
+
+  private val proc4 = new ProcedureSignature(
+    new QualifiedName(List("zzz").asJava, "proc4"),
     List.empty[FieldSignature].asJava,
     List(FieldSignature.outputField("output", NTString)).asJava,
     Mode.DBMS,
@@ -195,14 +219,14 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
   test("show procedures should give back correct community default values") {
     // Set-up which procedures to return:
-    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3).asJava)
+    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3, proc4).asJava)
 
     // When
     val showProcedures = ShowProceduresCommand(None, defaultColumns, List.empty, isCommunity = true)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 3
+    result should have size 4
     checkResult(
       result.head,
       name = "proc1",
@@ -219,7 +243,14 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     )
     checkResult(
       result(2),
-      name = "zzz.proc3",
+      name = "proc3",
+      description = "Non-admin, system, dbms procedure",
+      mode = Mode.DBMS.name(),
+      worksOnSystem = true
+    )
+    checkResult(
+      result(3),
+      name = "zzz.proc4",
       description = "Non-admin, system, dbms procedure",
       mode = Mode.DBMS.name(),
       worksOnSystem = true
@@ -242,14 +273,14 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
   test("show procedures should give back correct enterprise default values") {
     // Set-up which procedures to return:
-    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3).asJava)
+    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3, proc4).asJava)
 
     // When
     val showProcedures = ShowProceduresCommand(None, defaultColumns, List.empty, isCommunity = false)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 3
+    result should have size 4
     checkResult(
       result.head,
       name = "proc1",
@@ -266,7 +297,14 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     )
     checkResult(
       result(2),
-      name = "zzz.proc3",
+      name = "proc3",
+      description = "Non-admin, system, dbms procedure",
+      mode = Mode.DBMS.name(),
+      worksOnSystem = true
+    )
+    checkResult(
+      result(3),
+      name = "zzz.proc4",
       description = "Non-admin, system, dbms procedure",
       mode = Mode.DBMS.name(),
       worksOnSystem = true
@@ -289,14 +327,14 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
   test("show procedures should give back correct community full values") {
     // Set-up which procedures to return:
-    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3).asJava)
+    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3, proc4).asJava)
 
     // When
     val showProcedures = ShowProceduresCommand(None, allColumns, List.empty, isCommunity = true)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 3
+    result should have size 4
     checkResult(
       result.head,
       name = "proc1",
@@ -334,11 +372,33 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     )
     checkResult(
       result(2),
-      name = "zzz.proc3",
+      name = "proc3",
       description = "Non-admin, system, dbms procedure",
       mode = Mode.DBMS.name(),
       worksOnSystem = true,
-      signature = "zzz.proc3() :: (output :: STRING)",
+      signature = "proc3(input1 :: STRING, input2 :: BOOLEAN) :: (stringOutput :: STRING, intOutput :: INTEGER)",
+      argumentDescription = List(
+        argumentAndReturnDescriptionMaps("input1", "Argument description", "STRING"),
+        argumentAndReturnDescriptionMaps("input2", "input2 :: BOOLEAN", "BOOLEAN")
+      ),
+      returnDescription = List(
+        argumentAndReturnDescriptionMaps("stringOutput", "OutputDescription", "STRING"),
+        argumentAndReturnDescriptionMaps("intOutput", "intOutput :: INTEGER", "INTEGER")
+      ),
+      admin = false,
+      roles = Some(null),
+      rolesBoosted = Some(null),
+      isDeprecated = false,
+      deprecatedBy = Some(null),
+      option = Map("deprecated" -> Values.FALSE)
+    )
+    checkResult(
+      result(3),
+      name = "zzz.proc4",
+      description = "Non-admin, system, dbms procedure",
+      mode = Mode.DBMS.name(),
+      worksOnSystem = true,
+      signature = "zzz.proc4() :: (output :: STRING)",
       argumentDescription = List.empty[AnyValue],
       returnDescription = List(argumentAndReturnDescriptionMaps("output", "output :: STRING", "STRING")),
       admin = false,
@@ -352,14 +412,14 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
   test("show procedures should give back correct enterprise full values") {
     // Set-up which procedures to return:
-    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3).asJava)
+    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3, proc4).asJava)
 
     // When
     val showProcedures = ShowProceduresCommand(None, allColumns, List.empty, isCommunity = false)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 3
+    result should have size 4
     checkResult(
       result.head,
       name = "proc1",
@@ -397,11 +457,33 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     )
     checkResult(
       result(2),
-      name = "zzz.proc3",
+      name = "proc3",
       description = "Non-admin, system, dbms procedure",
       mode = Mode.DBMS.name(),
       worksOnSystem = true,
-      signature = "zzz.proc3() :: (output :: STRING)",
+      signature = "proc3(input1 :: STRING, input2 :: BOOLEAN) :: (stringOutput :: STRING, intOutput :: INTEGER)",
+      argumentDescription = List(
+        argumentAndReturnDescriptionMaps("input1", "Argument description", "STRING"),
+        argumentAndReturnDescriptionMaps("input2", "input2 :: BOOLEAN", "BOOLEAN")
+      ),
+      returnDescription = List(
+        argumentAndReturnDescriptionMaps("stringOutput", "OutputDescription", "STRING"),
+        argumentAndReturnDescriptionMaps("intOutput", "intOutput :: INTEGER", "INTEGER")
+      ),
+      admin = false,
+      roles = List(publicRole, adminRole),
+      rolesBoosted = List(adminRole),
+      isDeprecated = false,
+      deprecatedBy = Some(null),
+      option = Map("deprecated" -> Values.FALSE)
+    )
+    checkResult(
+      result(3),
+      name = "zzz.proc4",
+      description = "Non-admin, system, dbms procedure",
+      mode = Mode.DBMS.name(),
+      worksOnSystem = true,
+      signature = "zzz.proc4() :: (output :: STRING)",
       argumentDescription = List.empty[AnyValue],
       returnDescription = List(argumentAndReturnDescriptionMaps("output", "output :: STRING", "STRING")),
       admin = false,
@@ -415,17 +497,18 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
   test("show procedures should return the procedures sorted on name") {
     // Set-up which procedures to return, not ordered by name:
-    when(procedures.proceduresGetAll()).thenReturn(Set(proc2, proc3, proc1).asJava)
+    when(procedures.proceduresGetAll()).thenReturn(Set(proc2, proc4, proc3, proc1).asJava)
 
     // When
     val showProcedures = ShowProceduresCommand(None, defaultColumns, List.empty, isCommunity = true)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 3
+    result should have size 4
     checkResult(result.head, name = "proc1")
     checkResult(result(1), name = "proc2")
-    checkResult(result(2), name = "zzz.proc3")
+    checkResult(result(2), name = "proc3")
+    checkResult(result(3), name = "zzz.proc4")
   }
 
   test("show procedures should not return internal procedures") {
@@ -577,6 +660,10 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
      *
      * proc3:
      *  roles: PUBLIC, admin
+     *  boostedRoles: admin
+     *
+     * proc4:
+     *  roles: PUBLIC, admin
      *  boostedRoles: admin, boosted_executor
      */
     def specialHandlingOfPrivileges(query: String): Result = {
@@ -588,7 +675,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
           ))
         case "SHOW ALL PRIVILEGES YIELD * WHERE action STARTS WITH 'execute_boosted' AND segment STARTS WITH $seg RETURN access, segment, collect(role) as roles" =>
           MockResult(List(
-            Map("access" -> "GRANTED", "segment" -> "procedure(*3)", "roles" -> List(boostingRole).asJava),
+            Map("access" -> "GRANTED", "segment" -> "procedure(*4)", "roles" -> List(boostingRole).asJava),
             Map("access" -> "DENIED", "segment" -> "procedure(*1)", "roles" -> List(adminRole).asJava)
           ))
         case "SHOW ALL PRIVILEGES YIELD * WHERE action='execute_admin' RETURN access, collect(role) as roles" =>
@@ -600,7 +687,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     }
 
     // Set-up which procedures to return:
-    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3).asJava)
+    when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3, proc4).asJava)
 
     // Set-up role and privileges
     when(systemTx.execute(any())).thenAnswer(invocation => specialHandlingOfPrivileges(invocation.getArgument(0)))
@@ -612,7 +699,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 3
+    result should have size 4
     checkResult(
       result.head,
       name = "proc1",
@@ -627,7 +714,13 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     )
     checkResult(
       result(2),
-      name = "zzz.proc3",
+      name = "proc3",
+      roles = List(publicRole, adminRole),
+      rolesBoosted = List(adminRole)
+    )
+    checkResult(
+      result(3),
+      name = "zzz.proc4",
       roles = List(publicRole, adminRole),
       rolesBoosted = List(adminRole, boostingRole)
     )

@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.procedure.Description;
 
 /**
  * Given a procedure that outputs <tt>Stream<MyOut></tt> we look for all public fields
@@ -104,8 +105,15 @@ class ProcedureOutputSignatureCompiler {
 
             try {
                 TypeCheckers.TypeChecker checker = typeCheckers.checkerFor(field.getGenericType());
-                signature[i] = FieldSignature.outputField(
-                        field.getName(), checker.type(), field.isAnnotationPresent(Deprecated.class));
+                if (field.isAnnotationPresent(Description.class)) {
+                    String description = field.getAnnotation(Description.class).value();
+                    signature[i] = FieldSignature.outputField(
+                            field.getName(), checker.type(), field.isAnnotationPresent(Deprecated.class), description);
+                } else {
+                    signature[i] = FieldSignature.outputField(
+                            field.getName(), checker.type(), field.isAnnotationPresent(Deprecated.class));
+                }
+
             } catch (ProcedureException e) {
                 throw new ProcedureException(
                         e.status(),

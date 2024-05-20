@@ -104,7 +104,7 @@ object ShowProcFuncCommandHelper {
     new InputInformation(
       f.name,
       f.neo4jType.toString,
-      f.toString,
+      if (f.getDescription == null || f.getDescription.isEmpty) f.toString else f.getDescription,
       f.isDeprecated,
       default
     )

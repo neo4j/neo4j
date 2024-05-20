@@ -150,7 +150,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     arguments = List(new InputInformation(
       "input",
       "FLOAT",
-      "input :: FLOAT",
+      "A descriptive description",
       false,
       java.util.Optional.empty[String]()
     ))
@@ -475,7 +475,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       description = "Language function",
       signature = "language.func(input :: FLOAT) :: STRING",
       isBuiltIn = true,
-      argumentDescription = List(argumentAndReturnDescriptionMaps("input", "input :: FLOAT", "FLOAT")),
+      argumentDescription = List(argumentAndReturnDescriptionMaps("input", "A descriptive description", "FLOAT")),
       returnDescription = "STRING",
       aggregating = false,
       roles = Some(null),
@@ -581,7 +581,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       description = "Language function",
       signature = "language.func(input :: FLOAT) :: STRING",
       isBuiltIn = true,
-      argumentDescription = List(argumentAndReturnDescriptionMaps("input", "input :: FLOAT", "FLOAT")),
+      argumentDescription = List(argumentAndReturnDescriptionMaps("input", "A descriptive description", "FLOAT")),
       returnDescription = "STRING",
       aggregating = false,
       roles = List(publicRole, readerRole, editorRole, publisherRole, architectRole, adminRole).sorted,

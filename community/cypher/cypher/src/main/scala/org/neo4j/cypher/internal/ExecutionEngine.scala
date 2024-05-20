@@ -444,10 +444,11 @@ case class FunctionWithInformation(f: FunctionTypeSignature) extends FunctionInf
         case Some(map) => map.getOrElse(name, cType.normalizedCypherTypeString())
         case None      => cType.normalizedCypherTypeString()
       }
+      val argumentDescription = f.argumentDescriptions.getOrElse(name, s"$name :: $typeString")
       new InputInformation(
         name,
         typeString,
-        s"$name :: $typeString",
+        argumentDescription,
         false,
         java.util.Optional.empty[String]()
       )

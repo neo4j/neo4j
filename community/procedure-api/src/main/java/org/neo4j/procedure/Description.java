@@ -26,10 +26,10 @@ import java.lang.annotation.Target;
 import org.neo4j.annotations.api.PublicApi;
 
 /**
- * A procedure can optionally be annotated with a <code>@Description("a description")</code>.
+ * A procedure or result fields can optionally be annotated with a <code>@Description("a description")</code>.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target({ElementType.METHOD, ElementType.TYPE, ElementType.FIELD})
 @PublicApi
 public @interface Description {
     String value();

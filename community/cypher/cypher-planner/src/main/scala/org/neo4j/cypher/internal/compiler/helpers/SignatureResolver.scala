@@ -106,7 +106,8 @@ object SignatureResolver {
           typ = asCypherType(s.neo4jType()),
           default = s.defaultValue().asScala.map(asCypherValue),
           deprecated = s.isDeprecated,
-          sensitive = s.isSensitive
+          sensitive = s.isSensitive,
+          description = s.getDescription
         )
       ),
       outputSignature =
@@ -117,7 +118,8 @@ object SignatureResolver {
             FieldSignature(
               name = s.name(),
               typ = asCypherType(s.neo4jType()),
-              deprecated = s.isDeprecated
+              deprecated = s.isDeprecated,
+              description = s.getDescription
             )
           )),
       deprecationInfo = Some(DeprecationInfo(signature.isDeprecated, deprecatedBy)),
@@ -143,7 +145,8 @@ object SignatureResolver {
           typ = asCypherType(s.neo4jType()),
           default = s.defaultValue().asScala.map(asCypherValue),
           deprecated = s.isDeprecated,
-          sensitive = s.isSensitive
+          sensitive = s.isSensitive,
+          description = s.getDescription
         )
       ),
       outputType = asCypherType(signature.outputType()),

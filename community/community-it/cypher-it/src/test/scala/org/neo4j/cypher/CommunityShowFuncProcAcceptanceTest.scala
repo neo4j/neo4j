@@ -105,14 +105,22 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       "name" -> "test.functionWithInput",
       "category" -> "",
       "description" -> "",
-      "signature" -> "test.functionWithInput(input :: STRING) :: LIST<ANY>",
+      "signature" -> "test.functionWithInput(input1 :: STRING, input2 :: FLOAT) :: LIST<ANY>",
       "isBuiltIn" -> false,
-      "argumentDescription" -> List(Map[String, Any](
-        "name" -> "input",
-        "description" -> "input :: STRING",
-        "type" -> "STRING",
-        "isDeprecated" -> false
-      )),
+      "argumentDescription" -> List(
+        Map[String, Any](
+          "name" -> "input1",
+          "description" -> "Input to this test function.",
+          "type" -> "STRING",
+          "isDeprecated" -> false
+        ),
+        Map[String, Any](
+          "name" -> "input2",
+          "description" -> "input2 :: FLOAT",
+          "type" -> "FLOAT",
+          "isDeprecated" -> false
+        )
+      ),
       "returnDescription" -> "LIST<ANY>",
       "aggregating" -> false,
       "rolesExecution" -> null,
@@ -128,7 +136,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       "isBuiltIn" -> false,
       "argumentDescription" -> List(Map[String, Any](
         "name" -> "value",
-        "description" -> "value :: INTEGER",
+        "description" -> "A somewhat useful description of this argument.",
         "type" -> "INTEGER",
         "isDeprecated" -> false
       )),
@@ -409,8 +417,11 @@ class TestShowFunction {
   def function(): String = "OK"
 
   @UserFunction("test.functionWithInput")
-  def functionWithInput(@Name("input") input: String): ListValue = {
-    val inputVal = Values.stringValue(input)
+  def functionWithInput(
+    @Name(value = "input1", description = "Input to this test function.") input1: String,
+    @Name(value = "input2") input2: Double
+  ): ListValue = {
+    val inputVal = Values.stringValue(input1)
     val values: List[AnyValue] = List(inputVal, inputVal, inputVal)
     VirtualValues.fromList(values.asJava)
   }
@@ -428,7 +439,9 @@ class ReturnLatest {
   var latest: Long = 0
 
   @UserAggregationUpdate
-  def update(@Name("value") value: Long): Unit = latest = value
+  def update(@Name(value = "value", description = "A somewhat useful description of this argument.") value: Long)
+    : Unit =
+    latest = value
 
   @UserAggregationResult
   def result: Long = latest

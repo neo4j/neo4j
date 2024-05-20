@@ -39,6 +39,11 @@ public @interface Name {
      */
     String value();
 
+    /**
+     * @return the description of this input argument.
+     */
+    String description() default "";
+
     String defaultValue() default DEFAULT_VALUE;
 
     /*

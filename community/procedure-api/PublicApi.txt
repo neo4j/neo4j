@@ -12,6 +12,7 @@ org.neo4j.procedure.Mode::values() org.neo4j.procedure.Mode[] public static
 org.neo4j.procedure.Name public abstract annotation implements java.lang.annotation.Annotation
 org.neo4j.procedure.Name::DEFAULT_VALUE java.lang.String public static final =  <[6795b15e-8693-4a21-b57a-4a7b87f09a5a]> 
 org.neo4j.procedure.Name::defaultValue() java.lang.String public abstract
+org.neo4j.procedure.Name::description() java.lang.String public abstract
 org.neo4j.procedure.Name::value() java.lang.String public abstract
 org.neo4j.procedure.Procedure public abstract annotation implements java.lang.annotation.Annotation
 org.neo4j.procedure.Procedure::deprecatedBy() java.lang.String public abstract

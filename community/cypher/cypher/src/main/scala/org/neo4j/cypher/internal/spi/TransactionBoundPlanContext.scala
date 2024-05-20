@@ -107,7 +107,8 @@ object TransactionBoundPlanContext {
             asCypherType(s.neo4jType()),
             asOption(s.defaultValue()).map(asCypherValue),
             deprecated = s.isDeprecated,
-            sensitive = s.isSensitive
+            sensitive = s.isSensitive,
+            description = s.getDescription
           )
         )
         .toIndexedSeq

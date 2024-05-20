@@ -115,7 +115,8 @@ object procsHelpers {
           asCypherType(s.neo4jType()),
           asOption(s.defaultValue()).map(asCypherValue),
           deprecated = s.isDeprecated,
-          sensitive = s.isSensitive
+          sensitive = s.isSensitive,
+          description = s.getDescription
         )
       )
       .toIndexedSeq
@@ -123,7 +124,13 @@ object procsHelpers {
       if (signature.isVoid) None
       else Some(
         signature.outputSignature().asScala.map(s =>
-          FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated, sensitive = s.isSensitive)
+          FieldSignature(
+            s.name(),
+            asCypherType(s.neo4jType()),
+            deprecated = s.isDeprecated,
+            sensitive = s.isSensitive,
+            description = s.getDescription
+          )
         ).toIndexedSeq
       )
     val deprecatedBy = asOption(signature.deprecated())

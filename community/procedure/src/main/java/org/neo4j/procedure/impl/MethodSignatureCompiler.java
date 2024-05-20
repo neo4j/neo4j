@@ -67,6 +67,7 @@ class MethodSignatureCompiler {
             }
             Name parameter = param.getAnnotation(Name.class);
             String name = parameter.value();
+            String description = parameter.description();
 
             if (name.isBlank()) {
                 throw new ProcedureException(
@@ -97,9 +98,10 @@ class MethodSignatureCompiler {
                 boolean isDeprecated = param.isAnnotationPresent(Deprecated.class);
 
                 signature.add(defaultValue
-                        .map(neo4jValue ->
-                                inputField(name, valueConverter.type(), neo4jValue, isDeprecated, isSensitive))
-                        .orElseGet(() -> inputField(name, valueConverter.type(), isDeprecated, isSensitive)));
+                        .map(neo4jValue -> inputField(
+                                name, valueConverter.type(), neo4jValue, isDeprecated, isSensitive, description))
+                        .orElseGet(
+                                () -> inputField(name, valueConverter.type(), isDeprecated, isSensitive, description)));
             } catch (ProcedureException e) {
                 throw new ProcedureException(
                         e.status(),

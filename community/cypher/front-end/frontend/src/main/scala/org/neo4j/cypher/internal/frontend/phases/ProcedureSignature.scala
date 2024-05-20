@@ -81,12 +81,15 @@ case class FieldSignature(
   typ: CypherType,
   default: Option[AnyValue] = None,
   deprecated: Boolean = false,
-  sensitive: Boolean = false
+  sensitive: Boolean = false,
+  description: String = null
 ) {
 
   override def toString: String = {
-    val nameValue = default.map(d => s"$name  =  ${stringOf(d)}").getOrElse(name)
-    s"$nameValue :: ${typ.normalizedCypherTypeString()}"
+    if (description == null || description.isEmpty) {
+      val nameValue = default.map(d => s"$name  =  ${stringOf(d)}").getOrElse(name)
+      s"$nameValue :: ${typ.normalizedCypherTypeString()}"
+    } else description
   }
 
   private def stringOf(any: AnyValue) = any match {
