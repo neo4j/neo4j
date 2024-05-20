@@ -45,6 +45,15 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   magnolia
   mercator
+  Neo4j Java Driver (Slim package)
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Netty/Transport/Native/Unix/Common
+  Non-Blocking Reactive Foundation for the JVM
   openCypher TCK API
   openCypher TCK Features and Graphs
   parboiled-core
@@ -73,6 +82,9 @@ MIT License
   DataTable
   fastparse_2.12
   sourcecode
+
+MIT No Attribution License
+  reactive-streams
 
 Dependencies with multiple licenses
 -----------------------------------

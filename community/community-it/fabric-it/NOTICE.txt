@@ -28,4 +28,16 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons BeanUtils
   Apache Commons Collections
+  Neo4j Java Driver (Slim package)
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Netty/Transport/Native/Unix/Common
+  Non-Blocking Reactive Foundation for the JVM
+
+MIT No Attribution License
+  reactive-streams
 

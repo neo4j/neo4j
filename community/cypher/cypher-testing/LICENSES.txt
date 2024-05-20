@@ -36,7 +36,15 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   magnolia
   mercator
-  Neo4j Java Driver
+  Neo4j Java Driver (Slim package)
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Netty/Transport/Native/Unix/Common
+  Non-Blocking Reactive Foundation for the JVM
   parboiled-core
   parboiled-scala
   picocli - a mighty tiny Command Line Interface

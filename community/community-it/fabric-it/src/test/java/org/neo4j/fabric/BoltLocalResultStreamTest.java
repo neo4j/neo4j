@@ -31,12 +31,12 @@ import java.util.stream.Collectors;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.internal.shaded.reactor.core.publisher.Flux;
-import org.neo4j.driver.internal.shaded.reactor.core.publisher.Mono;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

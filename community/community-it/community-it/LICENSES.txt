@@ -60,6 +60,7 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   magnolia
   mercator
+  Neo4j Java Driver (Slim package)
   Netty/Buffer
   Netty/Codec
   Netty/Codec/HTTP
