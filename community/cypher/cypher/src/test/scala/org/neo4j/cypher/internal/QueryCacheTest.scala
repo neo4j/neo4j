@@ -215,6 +215,16 @@ class QueryCacheTest extends CypherFunSuite {
 
     queryTracer.dequeueCacheUsage() shouldEqual QueryCacheUsage.HIT
     queryTracer.queueIsEmmpty shouldBe true
+
+    // When
+    // Accessing the cached value with CypherReplanOption.default should not trigger any more expression code generation.
+    cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    cache.computeIfAbsentOrStale(key, TC, compilerWithExpressionCodeGenOption(key), CypherReplanOption.default)
+    // THEN
+    o.verify(tracer, times(4)).cacheHit(key, "")
+    verifyNoMoreInteractions(tracer)
   }
 
   test("if item is stale we should recalculate") {

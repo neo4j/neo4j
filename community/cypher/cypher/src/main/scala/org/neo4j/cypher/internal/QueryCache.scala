@@ -527,6 +527,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
       () => compiler.compile(),
       metaData,
       hitCache,
+      recompiledWithExpressionCodeGen = false,
       beingComputed
     )
     tracer.compute(queryKey, metaData)
@@ -547,6 +548,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
       () => compiler.compileWithExpressionCodeGen(),
       metaData,
       hitCache,
+      recompiledWithExpressionCodeGen = true,
       beingComputed
     )
     tracer.computeWithExpressionCodeGen(queryKey, metaData)
@@ -567,12 +569,14 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
     compile: () => EXECUTABLE_QUERY,
     metaData: String,
     hitCache: Boolean,
+    recompiledWithExpressionCodeGen: Boolean,
     beingComputed: Option[BeingComputed]
   ): EXECUTABLE_QUERY = {
     try {
       val newExecutableQuery = compile()
       if (newExecutableQuery.shouldBeCached) {
-        val cachedValue = new CachedValue(newExecutableQuery, recompiledWithExpressionCodeGen = false)
+        val cachedValue =
+          new CachedValue(newExecutableQuery, recompiledWithExpressionCodeGen = recompiledWithExpressionCodeGen)
         inner.put(queryKey, cachedValue)
         beingComputed.foreach(_.done(cachedValue))
         if (hitCache)
