@@ -19,7 +19,10 @@
  */
 package org.neo4j.server.security.auth;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
@@ -113,5 +116,28 @@ class ShiroAuthenticationInfoTest {
         info.merge(pwChangeRequiredInfo);
 
         assertEquals(PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult());
+    }
+
+    @Test
+    void shouldMergeExpiryChecksIntoList() {
+        var expiryCheck1 = mock(ExpiryCheck.class);
+        var expiryCheck2 = mock(ExpiryCheck.class);
+
+        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo(principal, "realm", SUCCESS);
+        ShiroAuthenticationInfo info2 = new ShiroAuthenticationInfo(principal, "realm", SUCCESS) {
+            {
+                expiryChecks.add(expiryCheck1);
+            }
+        };
+        ShiroAuthenticationInfo info3 = new ShiroAuthenticationInfo(principal, "realm", SUCCESS) {
+            {
+                expiryChecks.add(expiryCheck2);
+            }
+        };
+
+        info.merge(info2);
+        info.merge(info3);
+
+        assertThat(info.expiryChecks, containsInAnyOrder(expiryCheck1, expiryCheck2));
     }
 }

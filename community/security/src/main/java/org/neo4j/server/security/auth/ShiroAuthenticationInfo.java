@@ -29,11 +29,14 @@ import java.util.List;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.lang.util.ByteSource;
+import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.list.MutableList;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 
 public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
     protected AuthenticationResult authenticationResult;
     private List<Throwable> throwables;
+    protected MutableList<ExpiryCheck> expiryChecks = Lists.mutable.empty();
 
     public ShiroAuthenticationInfo() {
         super();
@@ -73,6 +76,10 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
         return throwables;
     }
 
+    public List<ExpiryCheck> getExpiryChecks() {
+        return expiryChecks;
+    }
+
     @Override
     public void merge(AuthenticationInfo info) {
         if (info == null || info.getPrincipals() == null || info.getPrincipals().isEmpty()) {
@@ -81,9 +88,9 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo {
 
         super.merge(info);
 
-        if (info instanceof ShiroAuthenticationInfo) {
-            authenticationResult = mergeAuthenticationResult(
-                    authenticationResult, ((ShiroAuthenticationInfo) info).getAuthenticationResult());
+        if (info instanceof ShiroAuthenticationInfo shiroAi) {
+            authenticationResult = mergeAuthenticationResult(authenticationResult, shiroAi.getAuthenticationResult());
+            expiryChecks.addAll(shiroAi.expiryChecks);
         } else {
             // If we get here (which means no AuthenticationException or UnknownAccountException was thrown)
             // it means the realm that provided the info was able to authenticate the subject,
