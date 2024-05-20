@@ -24,12 +24,6 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
 import org.neo4j.cypher.internal.AdministrationShowCommandUtils
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.ExistingDataOption
-import org.neo4j.cypher.internal.ExistingSeedInstanceOption
-import org.neo4j.cypher.internal.LogEnrichmentOption
-import org.neo4j.cypher.internal.SeedConfigOption
-import org.neo4j.cypher.internal.SeedCredentialsOption
-import org.neo4j.cypher.internal.SeedURIOption
 import org.neo4j.cypher.internal.administration.ShowDatabaseExecutionPlanner.accessibleDbsKey
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.Return
@@ -65,16 +59,11 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DESIGNATED_SEEDER_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LOG_ENRICHMENT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_PRIMARIES_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SECONDARIES_PROPERTY
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CONFIG_PROPERTY
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_URI_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STOPPED_AT_PROPERTY
@@ -94,13 +83,6 @@ case class ShowDatabasesExecutionPlanner(
   securityAuthorizationHandler: SecurityAuthorizationHandler
 ) {
 
-  private val OPTIONS_TX_LOG_ENRICHMENT_KEY = LogEnrichmentOption.KEY
-  private val OPTIONS_EXISTING_DATA_KEY = ExistingDataOption.KEY
-  private val OPTIONS_SEED_URI_KEY = SeedURIOption.KEY
-  private val OPTIONS_SEED_CONFIG_KEY = SeedConfigOption.KEY
-  private val OPTIONS_SEED_CREDENTIALS_KEY = SeedCredentialsOption.KEY
-  private val OPTIONS_SEED_INSTANCE_KEY = ExistingSeedInstanceOption.KEY
-
   private val defaultDatabaseResolver = resolver.resolveDependency(classOf[DefaultDatabaseResolver])
   private val infoService = resolver.resolveDependency(classOf[TopologyInfoService])
   private val referenceResolver = resolver.resolveDependency(classOf[DatabaseReferenceRepository])
@@ -113,46 +95,7 @@ case class ShowDatabasesExecutionPlanner(
     returns: Option[Return]
   ): ExecutionPlan = {
     val usernameKey = internalKey("username")
-    val optionsKey = internalKey("options")
     val isCompositeKey = internalKey("isComposite")
-
-    def optionsOutputMap(keys: Set[String], mapName: String): String = {
-
-      /** For a set of keys [A, B] that might be found in the map [mapName] produce:
-       * CASE
-       *    WHEN mapName.A IS NULL AND mapName.B IS NULL THEN {} 
-       *    WHEN mapName.A IS NULL THEN {B: mapName.B}
-       *    WHEN mapName.B IS NULL THEN {A: mapName.A}
-       * ELSE mapName
-       */
-      val whens: Seq[String] = keys.subsets()
-        .filter(_.nonEmpty)
-        // Sort so that stricter predicates occur before less strict predicates
-        .toList.sortBy(_.size).reverse
-        .map(predicateKeys => {
-          val predicates = predicateKeys.map(key => s"$mapName.$key IS NULL").toList.sorted
-
-          val remainingKeys = keys -- predicateKeys
-          val entries = remainingKeys.map(key => s"$key: $mapName.$key").toList.sorted
-          val filteredMap = s"{${entries.mkString(", ")}}"
-
-          s"WHEN ${predicates.mkString(" AND ")} THEN $filteredMap"
-        })
-
-      s"CASE ${whens.mkString(java.lang.System.lineSeparator())} ELSE $mapName END"
-    }
-
-    val optionsMap = optionsOutputMap(
-      Set(
-        OPTIONS_EXISTING_DATA_KEY,
-        OPTIONS_SEED_URI_KEY,
-        OPTIONS_SEED_CONFIG_KEY,
-        OPTIONS_SEED_CREDENTIALS_KEY,
-        OPTIONS_SEED_INSTANCE_KEY,
-        OPTIONS_TX_LOG_ENRICHMENT_KEY
-      ),
-      optionsKey
-    )
 
     val verboseColumns =
       if (verbose) {
@@ -167,14 +110,9 @@ case class ShowDatabasesExecutionPlanner(
            |d.$DATABASE_STARTED_AT_PROPERTY as $LAST_START_TIME_COL,
            |d.$DATABASE_STOPPED_AT_PROPERTY as $LAST_STOP_TIME_COL,
            |props.$STORE_COL as $STORE_COL,
-           |d:$COMPOSITE_DATABASE as $isCompositeKey,
-           |{ $OPTIONS_EXISTING_DATA_KEY: CASE WHEN coalesce(d.$DATABASE_SEED_URI_PROPERTY, d.$DATABASE_DESIGNATED_SEEDER_PROPERTY) IS NOT NULL THEN 'use' ELSE NULL END,
-           |  $OPTIONS_SEED_URI_KEY: d.$DATABASE_SEED_URI_PROPERTY,
-           |  $OPTIONS_SEED_CONFIG_KEY: d.$DATABASE_SEED_CONFIG_PROPERTY,
-           |  $OPTIONS_SEED_CREDENTIALS_KEY: CASE WHEN d.$DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY IS NOT NULL THEN '********' ELSE NULL END,
-           |  $OPTIONS_SEED_INSTANCE_KEY: d.$DATABASE_DESIGNATED_SEEDER_PROPERTY,
-           |  $OPTIONS_TX_LOG_ENRICHMENT_KEY: d.$DATABASE_LOG_ENRICHMENT_PROPERTY } as $optionsKey
-           |with *, CASE WHEN $isCompositeKey THEN NULL ELSE $optionsMap END as $OPTIONS_COL
+           |props.$OPTIONS_COL as $OPTIONS_COL,
+           |d:$COMPOSITE_DATABASE as $isCompositeKey
+           |with *, CASE WHEN $isCompositeKey THEN NULL ELSE $OPTIONS_COL END as $OPTIONS_COL
            |""".stripMargin
       } else {
         ""

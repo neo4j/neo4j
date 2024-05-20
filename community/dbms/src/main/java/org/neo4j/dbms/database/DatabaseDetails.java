@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.Map;
 import java.util.Optional;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.identity.ServerId;
@@ -42,6 +43,7 @@ public record DatabaseDetails(
         // database level values - will be the same for all members
         NamedDatabaseId namedDatabaseId,
         String type,
+        Map<String, String> options,
         Optional<StoreId> storeId,
         Optional<ExternalStoreId> externalStoreId,
         int actualPrimariesCount,

@@ -25,6 +25,7 @@ import static org.neo4j.dbms.database.DatabaseDetails.TYPE_SYSTEM;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -110,6 +111,7 @@ public class DefaultTopologyInfoService implements TopologyInfoService {
                 Optional.of(0L),
                 id,
                 id.isSystemDatabase() ? TYPE_SYSTEM : TYPE_STANDARD,
+                Collections.emptyMap(),
                 extraDetails.storeId(),
                 extraDetails.externalStoreId(),
                 1,
