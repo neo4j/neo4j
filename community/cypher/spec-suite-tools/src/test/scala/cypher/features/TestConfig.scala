@@ -28,8 +28,8 @@ object TestConfig {
 
   def default(testClass: Class[_]): TestConfig = TestConfig(testClass, "default.txt", "")
 
-  def slotted(testClass: Class[_]): TestConfig =
-    TestConfig(testClass, "slotted.txt", "CYPHER planner=cost runtime=slotted")
+  def slotted(testClass: Class[_], denyList: String = "slotted.txt"): TestConfig =
+    TestConfig(testClass, denyList, "CYPHER planner=cost runtime=slotted")
 
   def slottedWithCompiledExpressions(testClass: Class[_]): TestConfig = TestConfig(
     testClass,

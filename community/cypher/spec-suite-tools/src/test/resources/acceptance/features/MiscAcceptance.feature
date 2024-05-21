@@ -168,3 +168,36 @@ Feature: MiscAcceptance
       | 2 |
       | 1 |
     And no side effects
+
+    Scenario: Github issue number 13432 query 1
+      Given an empty graph
+      When executing query:
+      """
+        RETURN (CASE toBoolean(all(n0 IN [1,2] WHERE n0 < 0)) WHEN false THEN 0 END) AS r
+      """
+      Then the result should be, in order:
+        | r |
+        | 0 |
+      And no side effects
+
+  Scenario: Github issue number 13432 query 2
+    Given an empty graph
+    When executing query:
+      """
+        RETURN toBoolean(all(n0 IN [1, 2] WHERE n0 > 0)) AS r
+      """
+    Then the result should be, in order:
+      | r     |
+      | true |
+    And no side effects
+
+  Scenario: Github issue number 13432 query 3
+    Given an empty graph
+    When executing query:
+      """
+        RETURN toBoolean(all(n0 IN [1, 2] WHERE n0 > 1)) AS r
+      """
+    Then the result should be, in order:
+      | r     |
+      | false |
+    And no side effects
