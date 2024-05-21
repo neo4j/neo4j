@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 class TwoLayerCacheTest extends CypherFunSuite {
 
-  test("should put a value ") {
+  test("should put a value") {
     val (cache, _, _, _) = setup()
 
     cache.put("first", "first")
