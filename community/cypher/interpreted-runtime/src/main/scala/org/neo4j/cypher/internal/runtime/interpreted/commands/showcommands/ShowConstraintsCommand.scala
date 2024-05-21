@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand.createConstraintStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand.getConstraintType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.createNodeConstraintCommand
@@ -135,8 +136,12 @@ case class ShowConstraintsCommand(
         val constraintType = getConstraintType(constraintDescriptor.`type`, entityType)
 
         requestedColumnsNames.map {
-          // The id of the constraint
-          case `idColumn` => idColumn -> Values.longValue(constraintDescriptor.getId)
+          // The id of the constraint, or null if created in transaction
+          case `idColumn` =>
+            val id =
+              if (constraintIsAddedInTransaction(ctx, constraintDescriptor)) Values.NO_VALUE
+              else Values.longValue(constraintDescriptor.getId)
+            idColumn -> id
           // Name of the constraint, for example "myConstraint"
           case `nameColumn` => nameColumn -> Values.stringValue(constraintDescriptor.getName)
           // The ConstraintType of this constraint, one of "UNIQUENESS", "RELATIONSHIP_UNIQUENESS", "NODE_KEY", "RELATIONSHIP_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
@@ -200,6 +205,11 @@ case class ShowConstraintsCommand(
       extractOptionsMap(providerName, indexConfig)
     } else Values.NO_VALUE
   }
+
+  private def constraintIsAddedInTransaction(ctx: QueryContext, constraintDescriptor: ConstraintDescriptor): Boolean =
+    Option(ctx.transactionalContext.kernelQueryContext.getTransactionStateOrNull)
+      .map(_.constraintsChanges)
+      .exists(_.isAdded(constraintDescriptor))
 }
 
 object ShowConstraintsCommand {
