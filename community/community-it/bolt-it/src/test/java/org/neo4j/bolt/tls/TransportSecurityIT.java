@@ -22,12 +22,9 @@ package org.neo4j.bolt.tls;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
-import java.io.IOException;
 import java.nio.file.Path;
-import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
-import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
@@ -77,7 +74,7 @@ public class TransportSecurityIT {
     }
 
     @BeforeAll
-    void prepare() throws IOException, GeneralSecurityException, OperatorCreationException {
+    void prepare() throws Exception {
         this.keyFile = this.testDirectory.file("key.pem");
         this.certFile = this.testDirectory.file("key.crt");
 
