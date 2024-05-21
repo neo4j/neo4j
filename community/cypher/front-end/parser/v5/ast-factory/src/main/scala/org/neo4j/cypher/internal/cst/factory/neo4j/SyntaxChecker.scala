@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.ctxChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.nodeChild
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.pos
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintExistsContext
@@ -500,16 +501,16 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   }
 
   private def checkFunctionInvocation(ctx: CypherParser.FunctionInvocationContext): Unit = {
-    val functionName = ctx.functionName().symbolicNameString().ast[String]()
-    functionName match {
-      case "normalize" =>
-        if (ctx.functionArgument().size == 2) {
-          errors :+= exceptionFactory.syntaxException(
-            "Invalid normal form, expected NFC, NFD, NFKC, NFKD",
-            ctx.functionArgument(1).expression().ast[Expression]().position
-          )
-        }
-      case _ =>
+    val functionName = ctx.functionName().ast[FunctionName]()
+    if (
+      functionName.name == "normalize" &&
+      functionName.namespace.parts.isEmpty &&
+      ctx.functionArgument().size == 2
+    ) {
+      errors :+= exceptionFactory.syntaxException(
+        "Invalid normal form, expected NFC, NFD, NFKC, NFKD",
+        ctx.functionArgument(1).expression().ast[Expression]().position
+      )
     }
   }
 

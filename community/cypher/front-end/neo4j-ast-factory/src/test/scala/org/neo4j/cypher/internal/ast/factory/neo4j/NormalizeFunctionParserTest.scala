@@ -35,6 +35,35 @@ class NormalizeFunctionParserTest extends AstParsingTestBase {
     test(s"normalize(foo, $normalForm)") {
       parsesTo[Expression](function("normalize", varFor("foo"), literalString(normalForm)))
     }
+    test(s"return my.own.normalize(foo, $normalForm)") {
+      parsesTo[Statements] {
+        Statements(Seq(singleQuery(return_(returnItem(
+          function(Seq("my", "own"), "normalize", varFor("foo"), varFor(normalForm)),
+          s"my.own.normalize(foo, $normalForm)"
+        )))))
+      }
+    }
+  }
+
+  test("normalize with namespace") {
+    "return my.own.normalize('1')" should parseTo[Statements] {
+      Statements(Seq(singleQuery(return_(returnItem(
+        function(Seq("my", "own"), "normalize", literal("1")),
+        "my.own.normalize('1')"
+      )))))
+    }
+    "return my.own.normalize('1',2)" should parseTo[Statements] {
+      Statements(Seq(singleQuery(return_(returnItem(
+        function(Seq("my", "own"), "normalize", literal("1"), literal(2)),
+        "my.own.normalize('1',2)"
+      )))))
+    }
+    "return my.own.normalize('1', notANormalForm)" should parseTo[Statements] {
+      Statements(Seq(singleQuery(return_(returnItem(
+        function(Seq("my", "own"), "normalize", literal("1"), varFor("notANormalForm")),
+        "my.own.normalize('1', notANormalForm)"
+      )))))
+    }
   }
 
   // Failing tests
