@@ -21,9 +21,9 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class CharLengthFunctionRewriterTest extends CypherFunSuite with RewriteTest with TestName {
+class GQLAliasFunctionNameRewriterTest extends CypherFunSuite with RewriteTest with TestName {
 
-  override val rewriterUnderTest: Rewriter = CharLengthFunctionRewriter.instance
+  override val rewriterUnderTest: Rewriter = GQLAliasFunctionNameRewriter.instance
 
   override protected def assertRewrite(originalQuery: String, expectedQuery: String): Unit =
     super.assertRewrite(originalQuery, expectedQuery)
@@ -39,7 +39,21 @@ class CharLengthFunctionRewriterTest extends CypherFunSuite with RewriteTest wit
     assertIsNotRewritten(testName)
   }
 
-  test("RETURN char_length('abc') AS result") {
-    assertRewrite(testName, "RETURN character_length('abc') AS result")
-  }
+  List("char_length", "CHAR_LENGTH", "char_LENGTH", "ChAr_LeNgTH").foreach(functionName =>
+    test(s"RETURN $functionName('abc') AS result") {
+      assertRewrite(testName, "RETURN character_length('abc') AS result")
+    }
+  )
+
+  List("UPPER", "uPpER", "upper", "upPER").foreach(functionName =>
+    test(s"RETURN $functionName('abc') AS result") {
+      assertRewrite(testName, "RETURN toUpper('abc') AS result")
+    }
+  )
+
+  List("LOWER", "loWEr", "LoWeR", "LOWer").foreach(functionName =>
+    test(s"RETURN $functionName('abc') AS result") {
+      assertRewrite(testName, "RETURN toLower('abc') AS result")
+    }
+  )
 }

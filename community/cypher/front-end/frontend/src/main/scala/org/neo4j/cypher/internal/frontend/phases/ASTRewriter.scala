@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.AddQuantifiedPathAnonymousVariableGroupings
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.CharLengthFunctionRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.FixedLengthShortestToAllRewriter
+import org.neo4j.cypher.internal.rewriting.rewriters.GQLAliasFunctionNameRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.ReplacePatternComprehensionWithCollectSubquery
@@ -90,7 +90,7 @@ object ASTRewriter {
         cypherTypeNormalizationRewriter,
         RewriteSizeOfCollectToCount,
         ReplacePatternComprehensionWithCollectSubquery,
-        CharLengthFunctionRewriter,
+        GQLAliasFunctionNameRewriter,
         AddQuantifiedPathAnonymousVariableGroupings
       ),
       initialConditions = SemanticInfoAvailable ++ Set(

@@ -2095,6 +2095,35 @@
     "isDeprecated": false,
     "deprecatedBy": null
   },
+
+  {
+    "name": "lower",
+    "category": "String",
+    "description": "Returns the given `STRING` in lowercase.",
+    "signature": "lower(input :: STRING) :: STRING",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "STRING",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false,
+    "deprecatedBy": null
+  },
   {
     "name": "ltrim",
     "category": "String",
@@ -4134,6 +4163,35 @@
         "name": "input",
         "description": "input :: RELATIONSHIP",
         "type": "RELATIONSHIP",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "STRING",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false,
+    "deprecatedBy": null
+  },
+
+  {
+    "name": "upper",
+    "category": "String",
+    "description": "Returns the given `STRING` in uppercase.",
+    "signature": "upper(input :: STRING) :: STRING",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
         "isDeprecated": false
       }
     ],

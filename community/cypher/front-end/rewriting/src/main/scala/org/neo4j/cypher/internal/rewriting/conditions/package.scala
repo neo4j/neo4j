@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.util.StepSequencer.Condition
 
 package object conditions {
   case object CallInvocationsResolved extends Condition
-  case object CharLengthFunctionRewrittenToCharacterLength extends Condition
+  case object GQLAliasFunctionNameRewritten extends Condition
   case object FunctionInvocationsResolved extends Condition
   case object PatternExpressionsHaveSemanticInfo extends Condition
   case object SizeOfCollectRewrittenToCount extends Condition

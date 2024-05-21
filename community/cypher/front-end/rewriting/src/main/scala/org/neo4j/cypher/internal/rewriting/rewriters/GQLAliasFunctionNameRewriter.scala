@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.rewriting.conditions.CharLengthFunctionRewrittenToCharacterLength
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
+import org.neo4j.cypher.internal.rewriting.conditions.GQLAliasFunctionNameRewritten
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -32,18 +32,25 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
- * Rewrites
- * char_length(STRING) :: INTEGER
- * to
- * character_length(STRING) :: INTEGER
+ * Rewrites GQL Alias functions to their Cypher equivalent
+ * e.g
+ * char_length(STRING) :: INTEGER -> character_length(STRING) :: INTEGER
+ * upper(STRING) :: STRING -> toUpper(STRING) :: STRING
+ * lower(STRING) :: STRING -> toLower(STRING) :: STRING
  */
-case object CharLengthFunctionRewriter extends StepSequencer.Step with ASTRewriterFactory {
+case object GQLAliasFunctionNameRewriter extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(!FunctionInvocationsResolved)
 
-  override def postConditions: Set[Condition] = Set(CharLengthFunctionRewrittenToCharacterLength)
+  override def postConditions: Set[Condition] = Set(GQLAliasFunctionNameRewritten)
 
   override def invalidatedConditions: Set[Condition] = Set.empty
+
+  private val GQLFunctionAliases: Map[String, String] = Map(
+    "char_length" -> "character_length",
+    "upper" -> "toUpper",
+    "lower" -> "toLower"
+  )
 
   override def getRewriter(
     semanticState: SemanticState,
@@ -55,7 +62,7 @@ case object CharLengthFunctionRewriter extends StepSequencer.Step with ASTRewrit
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
     case f @ FunctionInvocation(FunctionName(namespace, name), _, _, _, _)
-      if namespace.parts.isEmpty && (name.equalsIgnoreCase("char_length")) =>
-      f.copy(functionName = FunctionName("character_length")(f.position))(f.position)
+      if namespace.parts.isEmpty && GQLFunctionAliases.exists(gqlAlias => name.equalsIgnoreCase(gqlAlias._1)) =>
+      f.copy(functionName = FunctionName(GQLFunctionAliases(name.toLowerCase))(f.position))(f.position)
   })
 }
