@@ -1266,12 +1266,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.query_router.new_stack", BOOL, true).build();
 
     @Internal
-    @Description("A feature toggle behind which sharded property database is developed")
-    public static final Setting<Boolean> sharded_property_database_enabled = newBuilder(
-                    "internal.dbms.sharded_property_database.enabled", BOOL, false)
-            .build();
-
-    @Internal
     @Description("Number of shards for SPD; a feature toggle behind which sharded property database is developed")
     public static final Setting<Integer> sharded_property_database_shard_count = newBuilder(
                     "internal.dbms.sharded_property_database.shard_count", INT, 0)
