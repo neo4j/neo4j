@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerStorage
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
+import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfileInformation
+import org.neo4j.cypher.internal.runtime.interpreted.profiler.Profiler
 import org.neo4j.cypher.internal.runtime.memory.MemoryTrackerForOperatorProvider
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
 import org.neo4j.graphdb.TransactionFailureException
@@ -64,6 +66,7 @@ class QueryState(
   val lenientCreateRelationship: Boolean = false,
   val prePopulateResults: Boolean = false,
   val input: InputDataStream = NoInput,
+  val profileInformation: InterpretedProfileInformation = null,
   val transactionWorkerExecutor: Option[CallableExecutor] = None
 ) extends AutoCloseable {
 
@@ -109,6 +112,7 @@ class QueryState(
       lenientCreateRelationship,
       prePopulateResults,
       input,
+      profileInformation,
       transactionWorkerExecutor
     )
 
@@ -132,6 +136,7 @@ class QueryState(
       lenientCreateRelationship,
       prePopulateResults,
       input,
+      profileInformation,
       transactionWorkerExecutor
     )
 
@@ -155,6 +160,7 @@ class QueryState(
       lenientCreateRelationship,
       prePopulateResults,
       input,
+      profileInformation,
       transactionWorkerExecutor
     )
 
@@ -178,10 +184,11 @@ class QueryState(
       lenientCreateRelationship,
       prePopulateResults,
       input,
+      profileInformation,
       transactionWorkerExecutor
     )
 
-  def withNewTransaction(): QueryState = {
+  def withNewTransaction(concurrentAccess: Boolean): QueryState = {
     if (query.getTransactionType != KernelTransaction.Type.IMPLICIT) {
       throw new TransactionFailureException(
         "A query with 'CALL { ... } IN TRANSACTIONS' can only be executed in an implicit transaction, " + "but tried to execute in an explicit transaction.",
@@ -202,6 +209,7 @@ class QueryState(
     // Nevertheless we create new sessions here to protect against future modifications of IndexReadSession and TokenReadSession that
     // would actually break from two different transaction.
     // An optimization could be to only create new sessions for those indexes that are actually used in the new transaction.
+    // (Unless concurrentAccess is true)
     val newQueryIndexes = queryIndexes.map(i => newQuery.transactionalContext.dataRead.indexReadSession(i.reference()))
     val newNodeLabelTokenReadSession =
       nodeLabelTokenReadSession.map(t => newQuery.transactionalContext.dataRead.tokenReadSession(t.reference()))
@@ -209,12 +217,23 @@ class QueryState(
       relTypeTokenReadSession.map(t => newQuery.transactionalContext.dataRead.tokenReadSession(t.reference()))
 
     // Reusing the expressionVariables should work as long as we do not implement parallelism
-    val newExpressionVariables = expressionVariables
+    val newExpressionVariables =
+      if (concurrentAccess) {
+        new Array[AnyValue](expressionVariables.length)
+      } else {
+        expressionVariables
+      }
 
-    val newDecorator = decorator
+    // Reusing the decorator should work as long as we do not implement parallelism
+    val (newDecorator, newProfileInformation) = maybeCreateNewProfileDecorator(decorator, concurrentAccess)
 
     // Reusing the IN cache should work as long as we do not implement parallelism
-    val newCachedIn = cachedIn
+    val newCachedIn =
+      if (concurrentAccess) {
+        createDefaultInCache()
+      } else {
+        cachedIn
+      }
 
     QueryState(
       newQuery,
@@ -234,6 +253,7 @@ class QueryState(
       lenientCreateRelationship,
       prePopulateResults,
       input,
+      newProfileInformation,
       transactionWorkerExecutor
     )
   }
@@ -257,8 +277,43 @@ class QueryState(
       cachedIn,
       lenientCreateRelationship,
       prePopulateResults,
-      input
+      input,
+      profileInformation,
+      transactionWorkerExecutor
     )
+  }
+
+  private def maybeCreateNewProfileDecorator(decorator: PipeDecorator, concurrentAccess: Boolean): (PipeDecorator, InterpretedProfileInformation) = {
+    var linenumberDecorator: LinenumberPipeDecorator = null
+    var profiler: Profiler = null
+    if (concurrentAccess) {
+      decorator match {
+        case d: LinenumberPipeDecorator =>
+          linenumberDecorator = d
+          val inner = d.getInnerDecorator
+          inner match {
+            case p: Profiler =>
+              profiler = p
+            case _ =>
+              // Do nothing
+          }
+        case p: Profiler =>
+          profiler = p
+        case _ =>
+          // Do nothing
+      }
+    }
+    if (profiler != null) {
+      val newProfileInformation = new InterpretedProfileInformation
+      val newProfiler = profiler.withProfileInformation(profileInformation)
+      if (linenumberDecorator != null) {
+        (new LinenumberPipeDecorator(newProfiler), newProfileInformation)
+      } else {
+        (newProfiler, newProfileInformation)
+      }
+    } else {
+      (decorator, profileInformation)
+    }
   }
 
   def setExecutionContextFactory(rowFactory: CypherRowFactory): Unit = {
@@ -303,6 +358,7 @@ object QueryState {
     lenientCreateRelationship: Boolean,
     prePopulateResults: Boolean,
     input: InputDataStream,
+    profileInformation: InterpretedProfileInformation,
     transactionWorkerExecutor: Option[CallableExecutor]
   ): QueryState = {
     val memoryTrackerForOperatorProvider =
@@ -326,6 +382,7 @@ object QueryState {
       lenientCreateRelationship,
       prePopulateResults,
       input,
+      profileInformation,
       transactionWorkerExecutor
     )
   }

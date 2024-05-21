@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.CypherRowEntityTransformer
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.assertTransactionStateIsEmpty
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.commitTransactionWithStatistics
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.logError
+import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfileInformation
 import org.neo4j.exceptions.CypherExecutionInterruptedException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.internal.helpers.MathUtil
@@ -51,6 +51,8 @@ import scala.util.control.NonFatal
  */
 trait TransactionPipeWrapper {
   def inner: Pipe
+
+  def concurrentAccess: Boolean
 
   /**
    * Consumes the inner pipe in a new transaction and discard the resulting rows.
@@ -115,8 +117,7 @@ trait TransactionPipeWrapper {
     assertTransactionStateIsEmpty(state)
 
     // beginTx()
-    val stateWithNewTransaction = state.withNewTransaction()
-    state.query.addStatistics(QueryStatistics(transactionsStarted = 1))
+    val stateWithNewTransaction = state.withNewTransaction(concurrentAccess)
     val innerTxContext = stateWithNewTransaction.query.transactionalContext
     val transactionId = innerTxContext.userTransactionId
     val entityTransformer = new CypherRowEntityTransformer(stateWithNewTransaction.query.entityTransformer)
@@ -140,9 +141,11 @@ trait TransactionPipeWrapper {
         innerIterator.foreach(f.apply) // Consume result before commit
       }
 
-      state.query.addStatistics(stateWithNewTransaction.getStatistics)
-      commitTransactionWithStatistics(innerTxContext, state)
-      Commit(transactionId)
+      val statistics =
+        stateWithNewTransaction.getStatistics + QueryStatistics(transactionsStarted = 1, transactionsCommitted = 1)
+      val profileInformation = stateWithNewTransaction.profileInformation
+      innerTxContext.commitTransaction()
+      Commit(transactionId, statistics, profileInformation)
     } catch {
       case RecoverableCypherError(e) =>
         logError(state, transactionId, e)
@@ -152,14 +155,15 @@ trait TransactionPipeWrapper {
           .foreach(e.addSuppressed)
 
         try {
-          state.query.addStatistics(QueryStatistics(transactionsRolledBack = 1))
           innerTxContext.rollback()
         } catch {
           case NonFatal(rollbackException) =>
             e.addSuppressed(rollbackException)
             throw e
         }
-        Rollback(transactionId, e)
+        val statistics = QueryStatistics(transactionsStarted = 1, transactionsRolledBack = 1)
+        val profileInformation = stateWithNewTransaction.profileInformation
+        Rollback(transactionId, e, statistics, profileInformation)
     } finally {
       innerTxContext.close()
       stateWithNewTransaction.close()
@@ -167,7 +171,7 @@ trait TransactionPipeWrapper {
   }
 }
 
-class OnErrorContinueTxPipe(val inner: Pipe) extends TransactionPipeWrapper {
+class OnErrorContinueTxPipe(val inner: Pipe, val concurrentAccess: Boolean) extends TransactionPipeWrapper {
 
   override def processBatch(
     state: QueryState,
@@ -180,7 +184,7 @@ class OnErrorContinueTxPipe(val inner: Pipe) extends TransactionPipeWrapper {
 }
 
 // NOTE! Keeps state that is not safe to re-use between queries. Create a new instance for each query.
-class OnErrorBreakTxPipe(val inner: Pipe) extends TransactionPipeWrapper {
+class OnErrorBreakTxPipe(val inner: Pipe, val concurrentAccess: Boolean) extends TransactionPipeWrapper {
   @volatile private[this] var break: Boolean = false
 
   override def shouldBreak: Boolean = { break }
@@ -203,34 +207,50 @@ class OnErrorBreakTxPipe(val inner: Pipe) extends TransactionPipeWrapper {
   }
 }
 
-class OnErrorFailTxPipe(val inner: Pipe) extends TransactionPipeWrapper {
-  @volatile private[this] var break: Boolean = false
+class OnErrorFailTxPipe(val inner: Pipe, val concurrentAccess: Boolean) extends TransactionPipeWrapper {
+  require(!concurrentAccess) // NOTE: We instead use OnErrorBreakTxPipe in concurrent execution
 
-  override def shouldBreak: Boolean = { break }
+  override def shouldBreak: Boolean = false
 
   override def processBatch(
     state: QueryState,
     outerRows: EagerBuffer[CypherRow]
   )(f: CypherRow => Unit): TransactionStatus = {
-    if (break) {
-      NotRun
-    } else {
-      createInnerResultsInNewTransaction(state, outerRows)(f) match {
-        case commit: Commit => commit
-        case rollback: Rollback => {
-          break = true
-          throw rollback.failure
-        }
-        case other => throw new IllegalStateException(s"Unexpected transaction status $other")
-      }
+    createInnerResultsInNewTransaction(state, outerRows)(f) match {
+      case commit: Commit     => commit
+      case rollback: Rollback => throw rollback.failure
+      case other              => throw new IllegalStateException(s"Unexpected transaction status $other")
     }
   }
 }
 
-sealed trait TransactionStatus
-case class Commit(transactionId: String) extends TransactionStatus
-case class Rollback(transactionId: String, failure: Throwable) extends TransactionStatus
-case object NotRun extends TransactionStatus
+sealed trait TransactionStatus {
+  def queryStatistics: QueryStatistics
+  def profileInformation: InterpretedProfileInformation
+}
+
+case class Commit(
+  transactionId: String,
+  queryStatistics: QueryStatistics,
+  profileInformation: InterpretedProfileInformation
+) extends TransactionStatus
+
+case class Rollback(
+  transactionId: String,
+  failure: Throwable,
+  queryStatistics: QueryStatistics,
+  profileInformation: InterpretedProfileInformation
+) extends TransactionStatus
+
+case object NotRun extends TransactionStatus {
+  override def queryStatistics: QueryStatistics = null
+  override def profileInformation: InterpretedProfileInformation = null
+}
+
+case object NonRecoverableError extends TransactionStatus {
+  override def queryStatistics: QueryStatistics = null
+  override def profileInformation: InterpretedProfileInformation = null
+}
 
 case class TransactionResult(status: TransactionStatus, committedResults: Option[EagerBuffer[CypherRow]])
 
@@ -241,12 +261,16 @@ object TransactionPipeWrapper {
    * 
    * NOTE! Implementations might keep state that is not safe to re-use between queries. Create a new instance for each query.
    */
-  def apply(error: InTransactionsOnErrorBehaviour, inner: Pipe): TransactionPipeWrapper = {
+  def apply(error: InTransactionsOnErrorBehaviour, inner: Pipe, concurrentAccess: Boolean): TransactionPipeWrapper = {
     error match {
-      case OnErrorContinue => new OnErrorContinueTxPipe(inner)
-      case OnErrorBreak    => new OnErrorBreakTxPipe(inner)
-      case OnErrorFail     => new OnErrorFailTxPipe(inner)
-      case other           => throw new UnsupportedOperationException(s"Unsupported error behaviour $other")
+      case OnErrorContinue => new OnErrorContinueTxPipe(inner, concurrentAccess)
+      case OnErrorBreak    => new OnErrorBreakTxPipe(inner, concurrentAccess)
+      case OnErrorFail if concurrentAccess =>
+        // NOTE: We intentionally use OnErrorBreakTxPipe for OnErrorFail in concurrent execution,
+        //       since we need to send the error back to the main thread anyway.
+        new OnErrorBreakTxPipe(inner, concurrentAccess)
+      case OnErrorFail => new OnErrorFailTxPipe(inner, concurrentAccess)
+      case other       => throw new UnsupportedOperationException(s"Unsupported error behaviour $other")
     }
   }
 
@@ -294,16 +318,6 @@ object TransactionPipeWrapper {
   def assertTransactionStateIsEmpty(state: QueryState): Unit = {
     if (state.query.transactionalContext.dataRead.transactionStateHasChanges)
       throw new InternalException("Expected transaction state to be empty when calling transactional subquery.")
-  }
-
-  private def commitTransactionWithStatistics(
-    innerTxContext: QueryTransactionalContext,
-    outerQueryState: QueryState
-  ): Unit = {
-    innerTxContext.commitTransaction()
-
-    val executionStatistics = QueryStatistics(transactionsCommitted = 1)
-    outerQueryState.query.addStatistics(executionStatistics)
   }
 
   private def logError(state: QueryState, innerTxId: String, t: Throwable): Unit = {

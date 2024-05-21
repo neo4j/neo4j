@@ -94,6 +94,18 @@ class InterpretedProfileInformation extends QueryProfile {
 
   override def maxAllocatedMemory(): Long =
     MemoryTrackerForOperatorProvider.memoryAsProfileData(memoryTracker.heapHighWaterMark)
+
+  def merge(other: InterpretedProfileInformation): Unit = {
+    other.rowMap.foreach { case (id, otherIterator) =>
+      rowMap.getOrElse(id, ProfilingIterator.empty).increment(otherIterator.count)
+    }
+    other.dbHitsMap.foreach { case (id, otherCounter) =>
+      dbHitsMap.getOrElse(id, Counter()).increment(otherCounter.count)
+    }
+    other.pageCacheMap.foreach { case (id, otherPageCacheStats) =>
+      pageCacheMap.getOrElse(id, PageCacheStats(0, 0)) + otherPageCacheStats
+    }
+  }
 }
 
 case class InterpretedProfileInformationSnapshot(dbHitsMap: collection.Map[Id, Long], rowsMap: collection.Map[Id, Long])

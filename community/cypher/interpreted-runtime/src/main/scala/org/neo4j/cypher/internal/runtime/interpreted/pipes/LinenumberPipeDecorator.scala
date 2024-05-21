@@ -31,6 +31,8 @@ class LinenumberPipeDecorator(private var inner: PipeDecorator = NullPipeDecorat
 
   def setInnerDecorator(newDecorator: PipeDecorator): Unit = inner = newDecorator
 
+  def getInnerDecorator: PipeDecorator = inner
+
   override def decorate(planId: Id, state: QueryState): QueryState = inner.decorate(planId, state)
 
   override def decorate(planId: Id, state: QueryState, iter: ClosingIterator[CypherRow]): ClosingIterator[CypherRow] =

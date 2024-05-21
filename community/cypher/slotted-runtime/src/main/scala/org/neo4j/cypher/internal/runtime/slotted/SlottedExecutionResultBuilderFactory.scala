@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionResultBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
+import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfileInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
@@ -69,7 +70,8 @@ class SlottedExecutionResultBuilderFactory(
       prePopulateResults: Boolean,
       input: InputDataStream,
       subscriber: QuerySubscriber,
-      doProfile: Boolean
+      doProfile: Boolean,
+      profileInformation: InterpretedProfileInformation
     ): QueryState = {
       val queryMemoryTracker = createQueryMemoryTracker(memoryTrackingController, doProfile, queryContext)
       QueryState(
@@ -90,6 +92,7 @@ class SlottedExecutionResultBuilderFactory(
         lenientCreateRelationship = lenientCreateRelationship,
         prePopulateResults = prePopulateResults,
         input = input,
+        profileInformation,
         transactionWorkerExecutor = transactionWorkerExecutor
       )
     }

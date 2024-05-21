@@ -47,7 +47,7 @@ abstract class AbstractTransactionForeachPipe(
     input: ClosingIterator[CypherRow],
     state: QueryState
   ): ClosingIterator[CypherRow] = {
-    val innerInTx = TransactionPipeWrapper(onErrorBehaviour, inner)
+    val innerInTx = TransactionPipeWrapper(onErrorBehaviour, inner, concurrentAccess = true)
     val batchSizeLong = evaluateBatchSize(batchSize, state)
     val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
@@ -85,9 +85,9 @@ object TransactionForeachPipe {
 
   def toStatusMap(status: TransactionStatus): AnyValue = {
     status match {
-      case Commit(transactionId) =>
+      case Commit(transactionId, _, _) =>
         statusMap(Some(transactionId), started = true, committed = true, None)
-      case Rollback(transactionId, failure) =>
+      case Rollback(transactionId, failure, _, _) =>
         statusMap(Some(transactionId), started = true, committed = false, Some(failure.getMessage))
       case NotRun => notRunStatus
     }

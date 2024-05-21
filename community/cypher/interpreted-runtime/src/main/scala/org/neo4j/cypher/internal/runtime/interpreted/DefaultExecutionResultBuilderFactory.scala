@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
+import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfileInformation
 import org.neo4j.cypher.internal.runtime.memory.CustomTrackingQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.NoOpQueryMemoryTracker
 import org.neo4j.cypher.internal.runtime.memory.ParallelTrackingQueryMemoryTracker
@@ -102,7 +103,8 @@ abstract class BaseExecutionResultBuilderFactory(
       prePopulateResults: Boolean,
       input: InputDataStream,
       subscriber: QuerySubscriber,
-      doProfile: Boolean
+      doProfile: Boolean,
+      profileInformation: InterpretedProfileInformation
     ): QueryState
 
     def queryContext: QueryContext
@@ -114,13 +116,13 @@ abstract class BaseExecutionResultBuilderFactory(
 
     override def build(
       params: MapValue,
-      queryProfile: QueryProfile,
+      queryProfile: InterpretedProfileInformation,
       prePopulateResults: Boolean,
       input: InputDataStream,
       subscriber: QuerySubscriber,
       doProfile: Boolean
     ): RuntimeResult = {
-      val state = createQueryState(params, prePopulateResults, input, subscriber, doProfile)
+      val state = createQueryState(params, prePopulateResults, input, subscriber, doProfile, queryProfile)
       new PipeExecutionResult(pipe, columns.toArray, state, queryProfile, subscriber, startsTransactions.isDefined)
     }
   }
@@ -150,7 +152,8 @@ case class InterpretedExecutionResultBuilderFactory(
       prePopulateResults: Boolean,
       input: InputDataStream,
       subscriber: QuerySubscriber,
-      doProfile: Boolean
+      doProfile: Boolean,
+      profileInformation: InterpretedProfileInformation
     ): QueryState = {
       val cursors = queryContext.createExpressionCursors()
       val queryMemoryTracker = createQueryMemoryTracker(memoryTrackingController, doProfile, queryContext)
@@ -172,6 +175,7 @@ case class InterpretedExecutionResultBuilderFactory(
         lenientCreateRelationship = lenientCreateRelationship,
         prePopulateResults = prePopulateResults,
         input = input,
+        profileInformation,
         transactionWorkerExecutor
       )
     }

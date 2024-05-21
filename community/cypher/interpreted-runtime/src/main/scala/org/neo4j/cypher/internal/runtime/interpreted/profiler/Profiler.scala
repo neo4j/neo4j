@@ -61,8 +61,11 @@ import org.neo4j.values.storable.Value
 
 import scala.collection.mutable
 
-class Profiler(dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) extends PipeDecorator {
+class Profiler(val dbmsInfo: DbmsInfo, stats: InterpretedProfileInformation) extends PipeDecorator {
   outerProfiler =>
+
+  def withProfileInformation(profileInformation: InterpretedProfileInformation): Profiler =
+    new Profiler(dbmsInfo, profileInformation)
 
   private case class StackEntry(planId: Id, transactionBoundStatisticProvider: StatisticProvider)
 
@@ -448,4 +451,8 @@ class ProfilingIterator(
     stopAccounting()
     result
   }
+}
+
+object ProfilingIterator {
+  def empty: ProfilingIterator = new ProfilingIterator(ClosingIterator.empty, 0L, () => (), () => ())
 }
