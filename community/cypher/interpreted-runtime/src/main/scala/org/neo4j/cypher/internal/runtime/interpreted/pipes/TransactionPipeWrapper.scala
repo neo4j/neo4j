@@ -263,8 +263,8 @@ object TransactionPipeWrapper {
    */
   def apply(error: InTransactionsOnErrorBehaviour, inner: Pipe, concurrentAccess: Boolean): TransactionPipeWrapper = {
     error match {
-      case OnErrorContinue => new OnErrorContinueTxPipe(inner, concurrentAccess)
-      case OnErrorBreak    => new OnErrorBreakTxPipe(inner, concurrentAccess)
+      case OnErrorContinue                 => new OnErrorContinueTxPipe(inner, concurrentAccess)
+      case OnErrorBreak                    => new OnErrorBreakTxPipe(inner, concurrentAccess)
       case OnErrorFail if concurrentAccess =>
         // NOTE: We intentionally use OnErrorBreakTxPipe for OnErrorFail in concurrent execution,
         //       since we need to send the error back to the main thread anyway.

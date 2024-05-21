@@ -353,11 +353,11 @@ abstract class AbstractConcurrentTransactionsPipe(
           batch.close()
           withStatus(result.autoClosingIterator().asClosingIterator, innerResult.status)
         case _ if onErrorBehaviour eq OnErrorFail => null
-        case _ => withStatus(nullRows(batch, state), innerResult.status)
+        case _                                    => withStatus(nullRows(batch, state), innerResult.status)
       }
       val error = innerResult.status match {
         case Rollback(_, failure, _, _) if onErrorBehaviour eq OnErrorFail => failure
-        case _ => null
+        case _                                                             => null
       }
       TaskOutputResult(innerResult.status, resultsWithStatus, error)
     }
@@ -383,7 +383,7 @@ abstract class AbstractConcurrentTransactionsPipe(
 
       val error = status match {
         case Rollback(_, failure, _, _) if onErrorBehaviour eq OnErrorFail => failure
-        case _ => null
+        case _                                                             => null
       }
       val resultsWithStatus = if ((onErrorBehaviour eq OnErrorFail) && error != null) {
         null

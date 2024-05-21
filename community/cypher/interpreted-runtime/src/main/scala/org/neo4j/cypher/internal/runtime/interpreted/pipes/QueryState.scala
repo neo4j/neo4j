@@ -283,7 +283,10 @@ class QueryState(
     )
   }
 
-  private def maybeCreateNewProfileDecorator(decorator: PipeDecorator, concurrentAccess: Boolean): (PipeDecorator, InterpretedProfileInformation) = {
+  private def maybeCreateNewProfileDecorator(
+    decorator: PipeDecorator,
+    concurrentAccess: Boolean
+  ): (PipeDecorator, InterpretedProfileInformation) = {
     var linenumberDecorator: LinenumberPipeDecorator = null
     var profiler: Profiler = null
     if (concurrentAccess) {
@@ -295,12 +298,12 @@ class QueryState(
             case p: Profiler =>
               profiler = p
             case _ =>
-              // Do nothing
+            // Do nothing
           }
         case p: Profiler =>
           profiler = p
         case _ =>
-          // Do nothing
+        // Do nothing
       }
     }
     if (profiler != null) {
