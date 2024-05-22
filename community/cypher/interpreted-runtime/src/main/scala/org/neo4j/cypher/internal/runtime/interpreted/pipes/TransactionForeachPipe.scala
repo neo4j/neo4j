@@ -55,6 +55,10 @@ abstract class AbstractTransactionForeachPipe(
       .eagerGrouped(batchSizeLong, memoryTracker)
       .flatMap { batch =>
         val status = innerInTx.consume(state, batch)
+        val statistics = status.queryStatistics
+        if (statistics != null) {
+          state.query.addStatistics(statistics)
+        }
         val output = batch.autoClosingIterator().asClosingIterator
         withStatus(output, status)
       }

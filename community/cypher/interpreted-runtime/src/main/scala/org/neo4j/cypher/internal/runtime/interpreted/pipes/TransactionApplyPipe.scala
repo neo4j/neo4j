@@ -55,7 +55,7 @@ abstract class AbstractTransactionApplyPipe(
         val innerResult = innerPipeInTx.createResults(state, batch, memoryTracker)
         val statistics = innerResult.status.queryStatistics
         if (statistics != null) {
-          state.query.addStatistics(innerResult.status.queryStatistics)
+          state.query.addStatistics(statistics)
         }
         val output = innerResult.committedResults match {
           case Some(result) =>
