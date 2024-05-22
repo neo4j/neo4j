@@ -61,10 +61,6 @@ object SemanticFeature {
     override def name: String = "Match modes"
   }
 
-  case object PropertyValueAccessRules extends SemanticFeature with FeatureToString {
-    override def name: String = "Property value access rules"
-  }
-
   case object ComposableCommands extends SemanticFeature with FeatureToString {
     override def name: String = "composable commands"
   }
@@ -77,7 +73,6 @@ object SemanticFeature {
     ShowSetting,
     GpmShortestPath,
     MatchModes,
-    PropertyValueAccessRules,
     ComposableCommands
   )
 

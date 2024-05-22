@@ -603,9 +603,6 @@ sealed abstract class PrivilegeCommand(
       p.position
     )
 
-  private val featureCheck =
-    requireFeatureSupport(s"The `$name` clause", SemanticFeature.PropertyValueAccessRules, position)
-
   private def checkActionTypeForPropertyRules(privilegeType: PrivilegeType): SemanticCheck = {
     privilegeType match {
       case GraphPrivilege(action, _) => action match {
@@ -620,8 +617,7 @@ sealed abstract class PrivilegeCommand(
     qualifiers.foldLeft(SemanticCheck.success)((acc, qualifier) => {
       acc.chain(qualifier match {
         case PatternQualifier(_, v, e) =>
-          featureCheck chain
-            v.foldSemanticCheck(declareVariable(_, CTNode)) chain
+          v.foldSemanticCheck(declareVariable(_, CTNode)) chain
             SemanticExpressionCheck.check(SemanticContext.Results, e) chain
             checkActionTypeForPropertyRules(privilege) chain
             checkExpression(e)

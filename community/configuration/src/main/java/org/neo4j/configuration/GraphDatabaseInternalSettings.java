@@ -1188,11 +1188,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.change_data_capture", BOOL, true).build();
 
     @Internal
-    @Description("A feature toggle behind which property value access rule feature is developed")
-    public static final Setting<Boolean> property_value_access_rules =
-            newBuilder("internal.dbms.property_value_access_rules", BOOL, false).build();
-
-    @Internal
     @Description("A feature toggle behind which show setting feature is developed")
     public static final Setting<Boolean> show_setting =
             newBuilder("internal.dbms.show_setting", BOOL, true).build();

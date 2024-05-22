@@ -130,7 +130,6 @@ case class FabricFrontEnd(
         CompilationPhases.enabledSemanticFeatures(
           cypherConfig.enableExtraSemanticFeatures ++ cypherConfig.toggledFeatures(Map(
             GraphDatabaseInternalSettings.show_setting -> SemanticFeature.ShowSetting.productPrefix,
-            GraphDatabaseInternalSettings.property_value_access_rules -> SemanticFeature.PropertyValueAccessRules.productPrefix,
             GraphDatabaseInternalSettings.composable_commands -> SemanticFeature.ComposableCommands.productPrefix
           ))
         ) ++ semanticFeatures,
