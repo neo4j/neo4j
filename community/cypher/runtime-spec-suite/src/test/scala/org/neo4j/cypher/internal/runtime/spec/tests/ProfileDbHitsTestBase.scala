@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setN
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.ast.PropertiesUsingCachedProperties
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
@@ -1529,6 +1530,48 @@ trait TransactionForeachDbHitsTestBase[CONTEXT <: RuntimeContext] {
       case Pipelined | Parallel  => numberOfNodesFoundByAllNodeScans
     }
     queryProfile.operatorProfile(allNodeScanPlanId).dbHits() shouldBe expectedDbHits
+  }
+
+  Seq(
+    TransactionConcurrency.Serial,
+    TransactionConcurrency.Concurrent(2),
+    TransactionConcurrency.Concurrent(None)
+  ).foreach { concurrency =>
+    test(s"should profile dbHits of populating nodes inside transactionForeach concurrency=$concurrency") {
+
+      val nNodes = sizeHint / 10
+      val nRows = 100
+      val batchSize = 1
+
+      givenWithTransactionType(
+        nodeGraph(nNodes, "A"),
+        KernelTransaction.Type.IMPLICIT
+      )
+
+      val query = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .transactionForeach(concurrency = concurrency, batchSize = batchSize)
+        .|.emptyResult()
+        .|.create(createNode("n"))
+        .|.filter("m:A")
+        .|.nodeByLabelScan("m", "A")
+        .unwind(s"range(1,$nRows) AS x")
+        .argument()
+        .build(readOnly = false)
+
+      // then
+      val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
+      consume(runtimeResult)
+
+      val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+      // NOTE: With concurrency LazyLabel makes dbHits flaky on nodeByLabelScan
+      val createPlanId = 3
+      val filterPlanId = 4
+      val expectedDbHits = nNodes * nRows
+      queryProfile.operatorProfile(createPlanId).dbHits() shouldBe expectedDbHits
+      queryProfile.operatorProfile(filterPlanId).dbHits() shouldBe expectedDbHits
+    }
   }
 }
 

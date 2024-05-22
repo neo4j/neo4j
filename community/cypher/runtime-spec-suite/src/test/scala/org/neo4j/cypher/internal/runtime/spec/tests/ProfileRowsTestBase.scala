@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Trai
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
@@ -2455,6 +2456,51 @@ trait TransactionForeachProfileRowsTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(4).rows() shouldBe (1 + 2) * sizeHint // allNodeScan
     queryProfile.operatorProfile(5).rows() shouldBe 2 // unwind
     queryProfile.operatorProfile(6).rows() shouldBe 1 // argument
+  }
+
+  Seq(
+    TransactionConcurrency.Serial,
+    TransactionConcurrency.Concurrent(2),
+    TransactionConcurrency.Concurrent(None)
+  ).foreach { concurrency =>
+    test(s"should profile rows of operations in transactionForeach concurrency=$concurrency") {
+
+      val nNodes = sizeHint / 10
+      val nRows = 100
+      val batchSize = 1
+
+      givenWithTransactionType(
+        nodeGraph(nNodes, "A"),
+        KernelTransaction.Type.IMPLICIT
+      )
+
+      val query = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .transactionForeach(concurrency = concurrency, batchSize = batchSize)
+        .|.emptyResult()
+        .|.create(createNode("n"))
+        .|.filter("m:A")
+        .|.nodeByLabelScan("m", "A")
+        .unwind(s"range(1,$nRows) AS x")
+        .argument()
+        .build(readOnly = false)
+
+      // then
+      val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
+      consume(runtimeResult)
+
+      // then
+      val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+      queryProfile.operatorProfile(0).rows() shouldBe nRows // produce results
+      queryProfile.operatorProfile(1).rows() shouldBe nRows // transactionForeach
+      queryProfile.operatorProfile(2).rows() shouldBe 0 // emptyResult
+      queryProfile.operatorProfile(3).rows() shouldBe nRows * nNodes // create
+      queryProfile.operatorProfile(4).rows() shouldBe nRows * nNodes // filter
+      queryProfile.operatorProfile(5).rows() shouldBe nRows * nNodes // nodeByLabelScan
+      queryProfile.operatorProfile(6).rows() shouldBe nRows // unwind
+      queryProfile.operatorProfile(7).rows() shouldBe 1 // argument
+    }
   }
 }
 
