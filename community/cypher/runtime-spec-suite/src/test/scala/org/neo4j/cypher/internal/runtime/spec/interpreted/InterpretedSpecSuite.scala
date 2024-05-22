@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.interpreted
 
 import org.neo4j.cypher.internal.CommunityRuntimeContext
 import org.neo4j.cypher.internal.InterpretedRuntime
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.runtime.spec.COMMUNITY
 import org.neo4j.cypher.internal.runtime.spec.interpreted.InterpretedSpecSuite.SIZE_HINT
 import org.neo4j.cypher.internal.runtime.spec.tests.AggregationTestBase
@@ -38,6 +39,8 @@ import org.neo4j.cypher.internal.runtime.spec.tests.CachePropertiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CachePropertiesTxStateTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CartesianProductProvidedOrderTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CartesianProductTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ConcurrentTransactionApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ConcurrentTransactionForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ConditionalApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CreateTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DeleteDetachExpressionTestBase
@@ -474,6 +477,22 @@ class InterpretedTransactionForeachTest
 
 class InterpretedTransactionApplyTest
     extends TransactionApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedConcurrentTransactionForeachTest
+  extends ConcurrentTransactionForeachTestBase(
+    COMMUNITY.EDITION,
+    InterpretedRuntime,
+    SIZE_HINT,
+    concurrency = TransactionConcurrency.Concurrent(None)
+  )
+
+class InterpretedConcurrentTransactionApplyTest
+  extends ConcurrentTransactionApplyTestBase(
+    COMMUNITY.EDITION,
+    InterpretedRuntime,
+    SIZE_HINT,
+    concurrency = TransactionConcurrency.Concurrent(None)
+  )
 
 class InterpretedSetRelationshipPropertyTest
     extends SetRelationshipPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

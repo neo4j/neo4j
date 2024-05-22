@@ -179,6 +179,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionConcurrency
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
@@ -236,6 +237,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.BFSPruningVarLengthEx
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CachePropertiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CartesianProductPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommandPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConcurrentTransactionApplyLegacyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConcurrentTransactionForeachLegacyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConditionalApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreatePipe
@@ -1925,7 +1928,7 @@ case class InterpretedPipeMapper(
       case SubqueryForeach(_, _) =>
         SubqueryForeachPipe(lhs, rhs)(id = id)
 
-      case TransactionForeach(_, _, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
+      case TransactionForeach(_, _, batchSize, TransactionConcurrency.Serial, onErrorBehaviour, maybeReportAs) =>
         TransactionForeachPipe(
           lhs,
           rhs,
@@ -1934,11 +1937,39 @@ case class InterpretedPipeMapper(
           maybeReportAs.map(_.name)
         )(id = id)
 
-      case TransactionApply(lhsPlan, rhsPlan, batchSize, concurrency, onErrorBehaviour, maybeReportAs) =>
+      case TransactionApply(
+          lhsPlan,
+          rhsPlan,
+          batchSize,
+          TransactionConcurrency.Serial,
+          onErrorBehaviour,
+          maybeReportAs
+        ) =>
         TransactionApplyPipe(
           lhs,
           rhs,
           buildExpression(batchSize),
+          onErrorBehaviour,
+          rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name),
+          maybeReportAs.map(_.name)
+        )(id = id)
+
+      case TransactionForeach(_, _, batchSize, TransactionConcurrency.Concurrent(maybeConcurrency), onErrorBehaviour, maybeReportAs) =>
+        ConcurrentTransactionForeachLegacyPipe(
+          lhs,
+          rhs,
+          buildExpression(batchSize),
+          maybeConcurrency.map(expressionConverters.toCommandExpression(id, _)),
+          onErrorBehaviour,
+          maybeReportAs.map(_.name)
+        )(id = id)
+
+      case TransactionApply(lhsPlan, rhsPlan, batchSize, TransactionConcurrency.Concurrent(maybeConcurrency), onErrorBehaviour, maybeReportAs) =>
+        ConcurrentTransactionApplyLegacyPipe(
+          lhs,
+          rhs,
+          buildExpression(batchSize),
+          maybeConcurrency.map(expressionConverters.toCommandExpression(id, _)),
           onErrorBehaviour,
           rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name),
           maybeReportAs.map(_.name)
