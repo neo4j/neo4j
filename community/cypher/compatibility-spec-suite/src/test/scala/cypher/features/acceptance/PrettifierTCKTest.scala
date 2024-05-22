@@ -105,7 +105,7 @@ trait PrettifierTCKTestBase extends FeatureTest with FeatureQueryTest with Match
 
     // DIFFERENT NODES is not yet implemented
     """Feature "GpmSyntaxMixingAcceptance": Scenario "DIFFERENT NODES with var-length relationship - OK"""",
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode DIFFERENT NODES with shortestPath - syntax error"""",
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode DIFFERENT NODES with shortestPath - syntax error""""
   ).map(DenylistEntry(_))
 
   override def runQuery(scenario: Scenario, query: String): Option[Executable] = {
