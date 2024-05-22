@@ -82,6 +82,7 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.NoneOfRelationships
+import org.neo4j.cypher.internal.expressions.NormalForm
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Or
@@ -204,6 +205,18 @@ private class DefaultExpressionStringifier(
 
       case ListLiteral(expressions) =>
         expressions.map(apply).mkString("[", ", ", "]")
+
+      // This hack is needed because normal forms do not have their own AST
+      case FunctionInvocation(
+          FunctionName(Namespace(Nil), "normalize"),
+          false,
+          IndexedSeq(value, StringLiteral(NormalForm(form))),
+          ArgumentUnordered,
+          _
+        ) =>
+        val fn = "normalize" // Can't have backticks because that do not parse as a normalizeFunction
+        val as = Seq(inner(ast)(value), form.formName).mkString(", ")
+        s"$fn($as)"
 
       case FunctionInvocation(FunctionName(namespace, functionName), distinct, args, order, _) =>
         val ns = apply(namespace)

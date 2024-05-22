@@ -22,6 +22,17 @@ sealed trait NormalForm {
   override def toString: String = description
 }
 
+object NormalForm {
+
+  def unapply(name: String): Option[NormalForm] = name match {
+    case NFCNormalForm.formName  => Some(NFCNormalForm)
+    case NFDNormalForm.formName  => Some(NFDNormalForm)
+    case NFKCNormalForm.formName => Some(NFKCNormalForm)
+    case NFKDNormalForm.formName => Some(NFKDNormalForm)
+    case _                       => None
+  }
+}
+
 case object NFCNormalForm extends NormalForm {
   val formName: String = "NFC"
 }
