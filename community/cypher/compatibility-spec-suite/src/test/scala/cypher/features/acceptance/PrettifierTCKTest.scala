@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser
+import org.neo4j.cypher.internal.util.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -33,10 +35,33 @@ import org.neo4j.cypher.internal.util.test_helpers.DenylistEntry
 import org.neo4j.cypher.internal.util.test_helpers.FeatureQueryTest
 import org.neo4j.cypher.internal.util.test_helpers.FeatureTest
 import org.opencypher.tools.tck.api.Scenario
-import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 
-class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers {
+import scala.util.Success
+import scala.util.Try
+
+class PrettifierTCKTest extends PrettifierTCKTestBase {
+
+  override protected def parseStatements(query: String): Statement =
+    CypherAstParser.parseStatements(query, Neo4jCypherExceptionFactory(query, None), None)
+}
+
+class PrettifierJavaCcTCKTest extends PrettifierTCKTestBase {
+
+  override protected def parseStatements(query: String): Statement = JavaCCParser.parse(
+    query,
+    OpenCypherExceptionFactory(None)
+  )
+
+  override def denylist(): Seq[DenylistEntry] = super.denylist() ++ Seq(
+    // Bug in javacc parser
+    """Feature "MiscAcceptance": Scenario "Github issue number 13432 query 1"""",
+    """Feature "MiscAcceptance": Scenario "Github issue number 13432 query 2"""",
+    """Feature "MiscAcceptance": Scenario "Github issue number 13432 query 3""""
+  ).map(DenylistEntry.apply)
+}
+
+trait PrettifierTCKTestBase extends FeatureTest with FeatureQueryTest with Matchers {
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier(
     alwaysParens = true,
@@ -81,11 +106,6 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     // DIFFERENT NODES is not yet implemented
     """Feature "GpmSyntaxMixingAcceptance": Scenario "DIFFERENT NODES with var-length relationship - OK"""",
     """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode DIFFERENT NODES with shortestPath - syntax error"""",
-
-    // Bug in javacc parser
-    """Feature "MiscAcceptance": Scenario "Github issue number 13432 query 1"""",
-    """Feature "MiscAcceptance": Scenario "Github issue number 13432 query 2"""",
-    """Feature "MiscAcceptance": Scenario "Github issue number 13432 query 3""""
   ).map(DenylistEntry(_))
 
   override def runQuery(scenario: Scenario, query: String): Option[Executable] = {
@@ -93,20 +113,24 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     Some(executable)
   }
 
-  private def roundTripCheck(query: String): Assertion = {
+  private def roundTripCheck(query: String): Unit = {
     val parsed = parse(query)
     val prettified = prettifier.asString(parsed)
-    val reParsed = parse(prettified)
-    reParsed should equal(parsed)
+    withClue(
+      s"""
+         |Query:
+         |$query
+         |Prettified Query:
+         |$prettified
+         |""".stripMargin
+    ) {
+      Try(parse(prettified)) shouldBe Success(parsed)
+    }
   }
 
-  private def parse(query: String): Statement = {
-    // TODO Parse with antlr
-    canonicalizeUnaliasedReturnItem(JavaCCParser.parse(
-      query,
-      OpenCypherExceptionFactory(None)
-    ))
-  }
+  protected def parseStatements(query: String): Statement
+
+  private def parse(query: String): Statement = canonicalizeUnaliasedReturnItem(parseStatements(query))
 
   override def releaseResources(): Unit = {}
 
