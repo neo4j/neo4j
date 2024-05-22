@@ -108,6 +108,10 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter {
         }
     }
 
+    public List<?> getJobs() {
+        return jobs;
+    }
+
     public void runJob() {
         for (OnDemandJobHandle job : jobs) {
             job.run();
