@@ -78,8 +78,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
     @CalledFromGeneratedCode
     public void addNodeFromList(AnyValue value, int offset) {
         if (notNoValue(value)) {
-            if (value instanceof ListValue) {
-                addNode(((ListValue) value).value(offset));
+            if (value instanceof ListValue listValue) {
+                addNode(listValue.value(offset));
             } else {
                 throw new CypherTypeException("Expected list but found: " + value);
             }
@@ -107,8 +107,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
     @CalledFromGeneratedCode
     public void addRelationshipFromList(AnyValue value, int offset) {
         if (notNoValue(value)) {
-            if (value instanceof ListValue) {
-                addRelationship(((ListValue) value).value(offset));
+            if (value instanceof ListValue listValue) {
+                addRelationship(listValue.value(offset));
             } else {
                 throw new CypherTypeException("Expected list but found: " + value);
             }
@@ -243,7 +243,18 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             return;
         }
 
-        relationships.forEach(this::addIncoming);
+        AnyValue last = relationships.last();
+
+        relationships.forEach(r -> {
+            if (r == last) {
+                if (notNoValue(last)) {
+                    nodes.add(target);
+                    rels.add(((VirtualRelationshipValue) last));
+                }
+            } else {
+                addIncoming(r);
+            }
+        });
     }
 
     /**
@@ -299,7 +310,18 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             return;
         }
 
-        relationships.forEach(this::addOutgoing);
+        AnyValue last = relationships.last();
+
+        relationships.forEach(r -> {
+            if (r == last) {
+                if (notNoValue(last)) {
+                    rels.add(((VirtualRelationshipValue) last));
+                    nodes.add(target);
+                }
+            } else {
+                addOutgoing(r);
+            }
+        });
     }
 
     /**
@@ -355,7 +377,18 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             return;
         }
 
-        relationships.forEach(this::addUndirected);
+        AnyValue last = relationships.value(relationships.size() - 1);
+
+        relationships.forEach(r -> {
+            if (r == last) {
+                if (notNoValue(last)) {
+                    rels.add(((VirtualRelationshipValue) last));
+                    nodes.add(target);
+                }
+            } else {
+                addUndirected(r);
+            }
+        });
     }
 
     /**
