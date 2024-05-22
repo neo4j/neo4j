@@ -47,7 +47,7 @@ abstract class AbstractTransactionForeachPipe(
     input: ClosingIterator[CypherRow],
     state: QueryState
   ): ClosingIterator[CypherRow] = {
-    val innerInTx = TransactionPipeWrapper(onErrorBehaviour, inner, concurrentAccess = true)
+    val innerInTx = TransactionPipeWrapper(onErrorBehaviour, inner, concurrentAccess = false)
     val batchSizeLong = evaluateBatchSize(batchSize, state)
     val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
