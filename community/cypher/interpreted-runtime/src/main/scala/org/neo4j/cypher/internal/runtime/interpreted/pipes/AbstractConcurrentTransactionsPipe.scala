@@ -92,7 +92,7 @@ abstract class AbstractConcurrentTransactionsPipe(
     private var currentOutputIterator: ClosingIterator[CypherRow] = _
     private val executorService: CallableExecutor = queryState.transactionWorkerExecutor.get
 
-    private[this] var pendingTaskCount: Int = 0
+    private[this] var pendingTaskCount: Int = 0 // NOTE: Only read and written by the main thread
     private[this] val activeTaskCount: AtomicInteger = new AtomicInteger(0)
 
     override def closeMore(): Unit = {
@@ -186,12 +186,12 @@ abstract class AbstractConcurrentTransactionsPipe(
     private def ensureActiveTasks(): Unit = {
       if (hasAvailableInput) {
         if (activeTaskCount.get() < maxConcurrency.toInt) {
-          if (activeTaskCount.getAndAdd(1) < maxConcurrency.toInt) {
+          if (activeTaskCount.getAndIncrement() < maxConcurrency.toInt) {
             executeTask(nextAvailableInput())
             pendingTaskCount += 1
             logMessage("Created new task")
           } else {
-            activeTaskCount.getAndAdd(-1)
+            activeTaskCount.getAndDecrement()
           }
         }
       }

@@ -208,15 +208,15 @@ class QueryState(
     // But apart from that they seem to be safe to be used from different transactions from the same thread.
     // Nevertheless we create new sessions here to protect against future modifications of IndexReadSession and TokenReadSession that
     // would actually break from two different transaction.
-    // An optimization could be to only create new sessions for those indexes that are actually used in the new transaction.
-    // (Unless concurrentAccess is true)
+    // When concurrentAccess is false, an optimization could be to only create new sessions for those indexes that
+    // are actually used in the new transaction.
     val newQueryIndexes = queryIndexes.map(i => newQuery.transactionalContext.dataRead.indexReadSession(i.reference()))
     val newNodeLabelTokenReadSession =
       nodeLabelTokenReadSession.map(t => newQuery.transactionalContext.dataRead.tokenReadSession(t.reference()))
     val newRelTypeTokenReadSession =
       relTypeTokenReadSession.map(t => newQuery.transactionalContext.dataRead.tokenReadSession(t.reference()))
 
-    // Reusing the expressionVariables should work as long as we do not implement parallelism
+    // Reusing the expressionVariables should work when concurrentAccess is false
     val newExpressionVariables =
       if (concurrentAccess) {
         new Array[AnyValue](expressionVariables.length)
@@ -224,10 +224,10 @@ class QueryState(
         expressionVariables
       }
 
-    // Reusing the decorator should work as long as we do not implement parallelism
+    // Reusing the decorator should work when concurrentAccess is false
     val (newDecorator, newProfileInformation) = maybeCreateNewProfileDecorator(decorator, concurrentAccess)
 
-    // Reusing the IN cache should work as long as we do not implement parallelism
+    // Reusing the IN cache should work when concurrentAccess is false
     val newCachedIn =
       if (concurrentAccess) {
         createDefaultInCache()
