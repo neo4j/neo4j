@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.factory.ParserTrimSpecification
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astBinaryFold
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChild
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astChildListSet
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astCtxReduce
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astOpt
 import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.astPairs
@@ -96,7 +95,6 @@ import org.neo4j.cypher.internal.expressions.NormalForm
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Or
-import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathFactor
@@ -308,11 +306,7 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitExpression(ctx: CypherParser.ExpressionContext): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(ctx.getChildCount % 2 == 1)
-    ctx.ast = ctx.children.size match {
-      case 1 => ctxChild(ctx, 0).ast
-      case 3 => Or(astChild(ctx, 0), astChild(ctx, 2))(pos(nodeChild(ctx, 1)))
-      case _ => Ors(astChildListSet(ctx))(pos(ctx))
-    }
+    ctx.ast = astBinaryFold[Expression](ctx, (lhs, token, rhs) => Or(lhs, rhs)(pos(token)))
   }
 
   final override def exitExpression11(ctx: CypherParser.Expression11Context): Unit = {
