@@ -97,13 +97,13 @@ class InterpretedProfileInformation extends QueryProfile {
 
   def merge(other: InterpretedProfileInformation): Unit = {
     other.rowMap.foreach { case (id, otherIterator) =>
-      rowMap.getOrElse(id, ProfilingIterator.empty).increment(otherIterator.count)
+      rowMap.getOrElseUpdate(id, ProfilingIterator.empty).increment(otherIterator.count)
     }
     other.dbHitsMap.foreach { case (id, otherCounter) =>
-      dbHitsMap.getOrElse(id, Counter()).increment(otherCounter.count)
+      dbHitsMap.getOrElseUpdate(id, Counter()).increment(otherCounter.count)
     }
     other.pageCacheMap.foreach { case (id, otherPageCacheStats) =>
-      pageCacheMap.getOrElse(id, PageCacheStats(0, 0)) + otherPageCacheStats
+      pageCacheMap.getOrElseUpdate(id, PageCacheStats(0, 0)) + otherPageCacheStats
     }
   }
 }
