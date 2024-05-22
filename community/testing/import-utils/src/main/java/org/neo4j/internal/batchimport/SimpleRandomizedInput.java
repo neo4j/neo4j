@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneIncrementalNodeHeader;
+import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
@@ -57,14 +59,17 @@ import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
+import org.neo4j.internal.batchimport.input.csv.Header;
 import org.neo4j.internal.batchimport.input.csv.Header.Entry;
 import org.neo4j.internal.batchimport.input.csv.Type;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -76,14 +81,15 @@ public class SimpleRandomizedInput implements Input {
     private final long relationshipCount;
 
     public SimpleRandomizedInput(long seed, long nodeCount, long relationshipCount) {
-        this(seed, DataGeneratorInput.data(nodeCount, relationshipCount), 0, 0);
+        this(seed, DataGeneratorInput.data(nodeCount, relationshipCount), 0, 0, null);
     }
 
     public SimpleRandomizedInput(
             long seed,
             DataGeneratorInput.DataDistribution dataDistribution,
             int maxAdditionalNodeProperties,
-            int maxAdditionalRelationshipProperties) {
+            int maxAdditionalRelationshipProperties,
+            String labelNameForIncrementalImport) {
         this.nodeCount = dataDistribution.nodeCount();
         this.relationshipCount = dataDistribution.relationshipCount();
         var idType = IdType.INTEGER;
@@ -97,16 +103,17 @@ public class SimpleRandomizedInput implements Input {
         additionalRelationshipEntries.addAll(
                 Arrays.asList(additionalPropertyEntries(maxAdditionalRelationshipProperties, group, extractors, seed)));
 
+        Entry[] additionalNodeHeaderEntries =
+                additionalPropertyEntries(maxAdditionalNodeProperties, group, extractors, seed);
+        Header nodeHeader = labelNameForIncrementalImport != null
+                ? bareboneIncrementalNodeHeader(
+                        ID_KEY, labelNameForIncrementalImport, idType, group, extractors, additionalNodeHeaderEntries)
+                : bareboneNodeHeader(ID_KEY, idType, group, extractors, additionalNodeHeaderEntries);
         actual = new DataGeneratorInput(
                 dataDistribution,
                 idType,
                 seed,
-                DataGeneratorInput.bareboneNodeHeader(
-                        ID_KEY,
-                        idType,
-                        group,
-                        extractors,
-                        additionalPropertyEntries(maxAdditionalNodeProperties, group, extractors, seed)),
+                nodeHeader,
                 DataGeneratorInput.bareboneRelationshipHeader(
                         idType, group, extractors, additionalRelationshipEntries.toArray(new Entry[0])),
                 groups);
@@ -159,6 +166,11 @@ public class SimpleRandomizedInput implements Input {
         return actual.groups();
     }
 
+    @Override
+    public Map<String, SchemaDescriptor> referencedNodeSchema(TokenHolders tokenHolders) {
+        return actual.referencedNodeSchema(tokenHolders);
+    }
+
     public void verify(GraphDatabaseService db) throws IOException {
         verify(db, false);
     }
@@ -168,50 +180,56 @@ public class SimpleRandomizedInput implements Input {
     }
 
     public void verify(GraphDatabaseService db, boolean verifyIndex) throws IOException {
+        verify(db, verifyIndex, this);
+    }
+
+    public static void verify(GraphDatabaseService db, boolean verifyIndex, SimpleRandomizedInput... inputs)
+            throws IOException {
         Map<Number, InputEntity> expectedNodeData = new HashMap<>();
-        Map<Integer, List<Long>> expectedLabelIndexData = new HashMap<>();
         long numBadNodes = 0;
-        try (InputIterator nodes = nodes(Collector.EMPTY).iterator();
-                InputChunk chunk = nodes.newChunk();
-                Transaction tx = db.beginTx()) {
-            InputEntity node;
-            TokenRead tokenRead = ((InternalTransaction) tx).kernelTransaction().tokenRead();
-            while (nodes.next(chunk)) {
-                while (chunk.next(node = new InputEntity())) {
-                    Number id = (Number) node.id();
-                    if (!expectedNodeData.containsKey(id)) {
-                        expectedNodeData.put(id, node);
-                        for (String label : node.labels()) {
-                            int labelId = tokenRead.nodeLabel(label);
-                            expectedLabelIndexData
-                                    .computeIfAbsent(labelId, labelToken -> new ArrayList<>())
-                                    .add((Long) id);
+        long nodeCount = 0;
+        for (var input : inputs) {
+            nodeCount += input.nodeCount;
+            try (InputIterator nodes = input.nodes(Collector.EMPTY).iterator();
+                    InputChunk chunk = nodes.newChunk();
+                    Transaction tx = db.beginTx()) {
+                InputEntity node;
+                while (nodes.next(chunk)) {
+                    while (chunk.next(node = new InputEntity())) {
+                        Number id = (Number) node.id();
+                        if (!expectedNodeData.containsKey(id)) {
+                            expectedNodeData.put(id, node);
+                        } else {
+                            numBadNodes++;
                         }
-                    } else {
-                        numBadNodes++;
                     }
                 }
             }
         }
         Map<RelationshipKey, Set<InputEntity>> expectedRelationshipData = new HashMap<>();
         long numBadRelationships = 0;
-        try (InputIterator relationships = relationships(Collector.EMPTY).iterator();
-                InputChunk chunk = relationships.newChunk()) {
-            while (relationships.next(chunk)) {
-                InputEntity relationship;
-                while (chunk.next(relationship = new InputEntity())) {
-                    RelationshipKey key =
-                            new RelationshipKey(relationship.startId(), relationship.stringType, relationship.endId());
-                    if (key.startId != null
-                            && key.type != null
-                            && key.endId != null
-                            && expectedNodeData.containsKey((Number) relationship.startId())
-                            && expectedNodeData.containsKey((Number) relationship.endId())) {
-                        expectedRelationshipData
-                                .computeIfAbsent(key, k -> new HashSet<>())
-                                .add(relationship);
-                    } else {
-                        numBadRelationships++;
+        long relationshipCount = 0;
+        for (var input : inputs) {
+            relationshipCount += input.relationshipCount;
+            try (InputIterator relationships =
+                            input.relationships(Collector.EMPTY).iterator();
+                    InputChunk chunk = relationships.newChunk()) {
+                while (relationships.next(chunk)) {
+                    InputEntity relationship;
+                    while (chunk.next(relationship = new InputEntity())) {
+                        RelationshipKey key = new RelationshipKey(
+                                relationship.startId(), relationship.stringType, relationship.endId());
+                        if (key.startId != null
+                                && key.type != null
+                                && key.endId != null
+                                && expectedNodeData.containsKey((Number) relationship.startId())
+                                && expectedNodeData.containsKey((Number) relationship.endId())) {
+                            expectedRelationshipData
+                                    .computeIfAbsent(key, k -> new HashSet<>())
+                                    .add(relationship);
+                        } else {
+                            numBadRelationships++;
+                        }
                     }
                 }
             }
@@ -256,11 +274,23 @@ public class SimpleRandomizedInput implements Input {
         }
 
         if (verifyIndex) {
+            Map<Integer, List<Long>> expectedLabelIndexData = new HashMap<>();
             Map<Integer, List<Long>> expectedRelationshipIndexData = new HashMap<>();
             try (Transaction tx = db.beginTx();
+                    ResourceIterable<Node> allNodes = tx.getAllNodes();
                     ResourceIterable<Relationship> allRelationships = tx.getAllRelationships()) {
                 TokenRead tokenRead =
                         ((InternalTransaction) tx).kernelTransaction().tokenRead();
+
+                allNodes.forEach(node -> {
+                    for (var label : node.getLabels()) {
+                        int labelId = tokenRead.nodeLabel(label.name());
+                        expectedLabelIndexData
+                                .computeIfAbsent(labelId, labelToken -> new ArrayList<>())
+                                .add(node.getId());
+                    }
+                });
+
                 allRelationships.forEach(relationship -> {
                     int relTypeId =
                             tokenRead.relationshipType(relationship.getType().name());

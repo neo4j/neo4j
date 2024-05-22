@@ -243,6 +243,16 @@ public class DataGeneratorInput implements Input {
         return new Header(entries.toArray(new Entry[0]));
     }
 
+    public static Header bareboneIncrementalNodeHeader(
+            String idKey, String label, IdType idType, Group group, Extractors extractors, Entry... additionalEntries) {
+        List<Entry> entries = new ArrayList<>();
+        entries.add(
+                new Entry(null, idKey, Type.ID, group, idExtractor(idType, extractors), Map.of("label", label), null));
+        entries.add(new Entry(null, Type.LABEL, null, extractors.stringArray()));
+        entries.addAll(asList(additionalEntries));
+        return new Header(entries.toArray(new Entry[0]));
+    }
+
     private static String[] tokens(String prefix, int count) {
         String[] result = new String[count];
         for (int i = 0; i < count; i++) {
