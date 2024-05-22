@@ -80,7 +80,12 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
 
     // DIFFERENT NODES is not yet implemented
     """Feature "GpmSyntaxMixingAcceptance": Scenario "DIFFERENT NODES with var-length relationship - OK"""",
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode DIFFERENT NODES with shortestPath - syntax error""""
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode DIFFERENT NODES with shortestPath - syntax error"""",
+
+    // Bug in javacc parser
+    """Feature "MiscAcceptance": Scenario "Github issue number 13432 query 1"""",
+    """Feature "MiscAcceptance": Scenario "Github issue number 13432 query 2"""",
+    """Feature "MiscAcceptance": Scenario "Github issue number 13432 query 3""""
   ).map(DenylistEntry(_))
 
   override def runQuery(scenario: Scenario, query: String): Option[Executable] = {
@@ -96,6 +101,7 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
   }
 
   private def parse(query: String): Statement = {
+    // TODO Parse with antlr
     canonicalizeUnaliasedReturnItem(JavaCCParser.parse(
       query,
       OpenCypherExceptionFactory(None)
