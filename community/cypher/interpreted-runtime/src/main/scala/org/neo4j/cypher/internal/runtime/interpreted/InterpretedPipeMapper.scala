@@ -1954,7 +1954,14 @@ case class InterpretedPipeMapper(
           maybeReportAs.map(_.name)
         )(id = id)
 
-      case TransactionForeach(_, _, batchSize, TransactionConcurrency.Concurrent(maybeConcurrency), onErrorBehaviour, maybeReportAs) =>
+      case TransactionForeach(
+          _,
+          _,
+          batchSize,
+          TransactionConcurrency.Concurrent(maybeConcurrency),
+          onErrorBehaviour,
+          maybeReportAs
+        ) =>
         ConcurrentTransactionForeachLegacyPipe(
           lhs,
           rhs,
@@ -1964,7 +1971,14 @@ case class InterpretedPipeMapper(
           maybeReportAs.map(_.name)
         )(id = id)
 
-      case TransactionApply(lhsPlan, rhsPlan, batchSize, TransactionConcurrency.Concurrent(maybeConcurrency), onErrorBehaviour, maybeReportAs) =>
+      case TransactionApply(
+          lhsPlan,
+          rhsPlan,
+          batchSize,
+          TransactionConcurrency.Concurrent(maybeConcurrency),
+          onErrorBehaviour,
+          maybeReportAs
+        ) =>
         ConcurrentTransactionApplyLegacyPipe(
           lhs,
           rhs,

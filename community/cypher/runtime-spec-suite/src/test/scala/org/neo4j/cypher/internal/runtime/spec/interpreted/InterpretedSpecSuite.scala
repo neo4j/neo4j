@@ -479,20 +479,20 @@ class InterpretedTransactionApplyTest
     extends TransactionApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedConcurrentTransactionForeachTest
-  extends ConcurrentTransactionForeachTestBase(
-    COMMUNITY.EDITION,
-    InterpretedRuntime,
-    SIZE_HINT,
-    concurrency = TransactionConcurrency.Concurrent(None)
-  )
+    extends ConcurrentTransactionForeachTestBase(
+      COMMUNITY.EDITION,
+      InterpretedRuntime,
+      SIZE_HINT,
+      concurrency = TransactionConcurrency.Concurrent(None)
+    )
 
 class InterpretedConcurrentTransactionApplyTest
-  extends ConcurrentTransactionApplyTestBase(
-    COMMUNITY.EDITION,
-    InterpretedRuntime,
-    SIZE_HINT,
-    concurrency = TransactionConcurrency.Concurrent(None)
-  )
+    extends ConcurrentTransactionApplyTestBase(
+      COMMUNITY.EDITION,
+      InterpretedRuntime,
+      SIZE_HINT,
+      concurrency = TransactionConcurrency.Concurrent(None)
+    )
 
 class InterpretedSetRelationshipPropertyTest
     extends SetRelationshipPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
