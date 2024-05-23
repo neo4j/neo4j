@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipType
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.resolveImplicitlySolvedPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectCovered
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectHasLabelWithJoin
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.subtractionLabelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.triadicSelectionFinder
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.unionLabelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.unionRelationshipTypeScanLeafPlanner
@@ -83,6 +84,9 @@ object QueryPlannerConfiguration {
 
     // MATCH (n:Person&Artist) RETURN n
     intersectionLabelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
+
+    // MATCH (n:Person&!Artist) RETURN n
+    subtractionLabelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
     // MATCH (n:Person|Bird) RETURN n
     unionLabelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),

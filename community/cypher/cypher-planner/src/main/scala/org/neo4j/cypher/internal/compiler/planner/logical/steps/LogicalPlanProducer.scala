@@ -241,6 +241,7 @@ import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.LengthBounds
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
+import org.neo4j.cypher.internal.logical.plans.SubtractionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
@@ -1360,6 +1361,31 @@ case class LogicalPlanProducer(
     )
     annotate(
       IntersectionNodeByLabelsScan(variable, labels, argumentIds, toIndexOrder(providedOrder)),
+      solved,
+      providedOrder,
+      context
+    )
+  }
+
+  def planSubtractionNodeByLabelsScan(
+    variable: Variable,
+    positiveLabels: Seq[LabelName],
+    negativeLabels: Seq[LabelName],
+    solvedPredicates: Seq[Expression],
+    solvedHints: Seq[UsingScanHint] = Seq.empty,
+    argumentIds: Set[LogicalVariable],
+    providedOrder: ProvidedOrder,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val solved = RegularSinglePlannerQuery(queryGraph =
+      QueryGraph.empty
+        .addPatternNodes(variable)
+        .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHints)
+        .addArgumentIds(argumentIds.toIndexedSeq)
+    )
+    annotate(
+      SubtractionNodeByLabelsScan(variable, positiveLabels, negativeLabels, argumentIds, toIndexOrder(providedOrder)),
       solved,
       providedOrder,
       context
