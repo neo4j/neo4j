@@ -276,26 +276,28 @@ class CountsState implements AutoCloseable
                         reporter.forCounts( new CountsEntry( nodeKey( labelId ), 0 ) ).inconsistentNodeCount( count );
                     }
                 }
-                for ( int start = ANY_LABEL; start < highLabelId; start++ )
+                for ( int label = ANY_LABEL; label < highLabelId; label++ )
                 {
-                    for ( int end = ANY_LABEL; end < highLabelId; end++ )
+                    for ( int type = ANY_RELATIONSHIP_TYPE; type < highRelationshipTypeId; type++ )
                     {
-                        for ( int type = ANY_RELATIONSHIP_TYPE; type < highRelationshipTypeId; type++ )
-                        {
-                            if ( start == ANY_LABEL || end == ANY_LABEL ) // we only keep counts for where at least one of start/end is ANY
-                            {
-                                long count = relationshipCounter.get( start, type, end );
-                                if ( !hasVisitedCountMark( count ) && count > 0 )
-                                {
-                                    reporter.forCounts( new CountsEntry( relationshipKey( start, type, end ), 0 ) ).inconsistentRelationshipCount( count );
-                                }
-                            }
-                        }
+                        // we only keep counts for where at least one of start/end is ANY
+                        reportRelationshipIfNeeded(ANY_LABEL, type, label);
+                        reportRelationshipIfNeeded(label, type, ANY_LABEL);
                     }
                 }
 
                 nodeCountsStray.forEach( ( countsKey, count ) -> reporter.forCounts( new CountsEntry( countsKey, count.get() ) ) );
                 relationshipCountsStray.forEach( ( countsKey, count ) -> reporter.forCounts( new CountsEntry( countsKey, count.get() ) ) );
+            }
+
+            private void reportRelationshipIfNeeded( int labelStart, int relType, int labelEnd )
+            {
+                long count = relationshipCounter.get(labelStart, relType, labelEnd);
+                if ( !hasVisitedCountMark(count) && count > 0 )
+                {
+                    reporter.forCounts( new CountsEntry( relationshipKey( labelStart, relType, labelEnd ), 0 ) )
+                            .inconsistentRelationshipCount( count );
+                }
             }
         };
     }
