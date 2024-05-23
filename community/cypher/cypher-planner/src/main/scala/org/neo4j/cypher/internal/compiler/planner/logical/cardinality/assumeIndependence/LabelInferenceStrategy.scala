@@ -60,7 +60,10 @@ trait LabelInferenceStrategy {
 
 object LabelInferenceStrategy {
 
-  def fromConfig(planContext: PlanContext, labelInferenceOption: CypherInferSchemaPartsOption): LabelInferenceStrategy = {
+  def fromConfig(
+    planContext: PlanContext,
+    labelInferenceOption: CypherInferSchemaPartsOption
+  ): LabelInferenceStrategy = {
     if (labelInferenceOption == CypherInferSchemaPartsOption.mostSelectiveLabel)
       new InferOnlyIfNoOtherLabel(planContext)
     else

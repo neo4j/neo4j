@@ -308,7 +308,7 @@ sealed abstract class CypherInferSchemaPartsOption(option: String) extends Cyphe
 
 case object CypherInferSchemaPartsOption extends CypherOptionCompanion[CypherInferSchemaPartsOption](
       name = "inferSchemaParts",
-      setting = Some(GraphDatabaseSettings.infer_schema_parts),
+      setting = Some(GraphDatabaseSettings.cypher_infer_schema_parts_strategy),
       cypherConfigField = Some(_.labelInference)
     ) {
 

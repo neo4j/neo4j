@@ -211,11 +211,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .dynamic()
             .build();
 
-    public enum CypherPlanner {
-        DEFAULT,
-        COST
-    }
-
     @Description(
             "Number of threads to allocate to Cypher worker threads for the parallel runtime. If set to a positive number, "
                     + "that number of workers will be started. If set to 0, one worker will be started for every logical processor "
@@ -225,6 +220,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "the parallel runtime will have 15 threads available.")
     public static final Setting<Integer> cypher_worker_limit =
             newBuilder("server.cypher.parallel.worker_limit", INT, 0).build();
+
+    public enum CypherPlanner {
+        DEFAULT,
+        COST
+    }
 
     @Description("Set this to specify the default planner for the default language version.")
     public static final Setting<CypherPlanner> cypher_planner = newBuilder(
@@ -236,7 +236,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<Boolean> cypher_hints_error =
             newBuilder("dbms.cypher.hints_error", BOOL, false).build();
 
-    public enum InferredSchemaParts {
+    public enum InferSchemaPartsStrategy {
         MOST_SELECTIVE_LABEL,
         OFF
     }
@@ -245,8 +245,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             "Allow label inference during cardinality estimation. During cardinality estimation, if the planner can"
                     + "logically deduce that a node has a label that was not explicitly expressed in the query, the planner"
                     + "will use this information during cardinality estimation.")
-    public static final Setting<InferredSchemaParts> infer_schema_parts = newBuilder(
-            "dbms.cypher.infer_schema_parts", ofEnum(InferredSchemaParts.class), InferredSchemaParts.OFF)
+    public static final Setting<InferSchemaPartsStrategy> cypher_infer_schema_parts_strategy = newBuilder(
+                    "dbms.cypher.infer_schema_parts",
+                    ofEnum(InferSchemaPartsStrategy.class),
+                    InferSchemaPartsStrategy.OFF)
             .build();
 
     @Description("This setting is associated with performance optimization. Set this to `true` in situations where "
