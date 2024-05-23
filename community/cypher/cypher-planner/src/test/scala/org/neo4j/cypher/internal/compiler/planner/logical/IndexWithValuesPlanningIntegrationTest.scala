@@ -215,6 +215,18 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .build())
   }
 
+  test("should plan seek with GetValue when the relationship property is projected") {
+    val planner = relIndexConfig()
+    val plan = planner
+      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 = 123 RETURN r.prop1")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("cacheR[r.prop1] AS `r.prop1`")
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 123)]-(b)", getValue = _ => GetValue)
+      .build())
+  }
+
   test("for exact seeks, should even plan index seek with GetValue when the index does not provide values") {
     val planner = nodeIndexConfig(indexType = TEXT)
 
@@ -257,33 +269,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .build())
   }
 
-  test("should plan projection and index seek with GetValue when another predicate uses the property") {
-    val planner = nodeIndexConfig()
-    val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 <= 42 AND n.prop1 % 2 = 0 RETURN n.prop2")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("n.prop2 AS `n.prop2`")
-      .filter("cache[n.prop1] % 2 = 0")
-      .nodeIndexOperator("n:Awesome(prop1 <= 42)", _ => GetValue)
-      .build())
-  }
-
-  test("should plan projection and index seek with GetValue when another predicate uses the property 2") {
-    val planner = nodeIndexConfig()
-    val plan = planner
-      .plan("MATCH (n:Awesome)-[r]->(m) WHERE n.prop1 <= 42 AND n.prop1 % m.prop2 = 0 RETURN n.prop2")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("n.prop2 AS `n.prop2`")
-      .filter("cache[n.prop1] % m.prop2 = 0")
-      .expandAll("(n)-[r]->(m)")
-      .nodeIndexOperator("n:Awesome(prop1 <= 42)", _ => GetValue)
-      .build())
-  }
-
   test("should plan index seek with GetValue when the property is projected after a renaming projection") {
     val planner = nodeIndexConfig()
     val plan = planner
@@ -295,20 +280,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .expandAll("(m)-[r]-(o)")
       .projection("n AS m")
       .nodeIndexOperator("n:Awesome(prop1 = 42)", _ => GetValue)
-      .build())
-  }
-
-  test("should plan index seek with GetValue when the property is used in a predicate after a renaming projection") {
-    val planner = nodeIndexConfig()
-    val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 > 42 WITH n AS m MATCH (m)-[r]-(o) WHERE m.prop1 < 50 RETURN o")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .expandAll("(m)-[r]-(o)")
-      .filterExpression(lessThan(cachedNodeProp("n", "prop1", "m"), literalInt(50)))
-      .projection("n AS m")
-      .nodeIndexOperator("n:Awesome(prop1 > 42)", _ => GetValue)
       .build())
   }
 
@@ -348,6 +319,34 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .expandAll("(m)-[r]-(n)")
       .projection("n AS m")
       .nodeIndexOperator("n:Awesome(prop1 = 42)", _ => DoNotGetValue)
+      .build())
+  }
+
+  test(
+    "should plan seek with DoNotGetValue when the a relationship property is projected, but from a different variable"
+  ) {
+    val query =
+      """MATCH (a)-[r:REL]-(b)
+        |WHERE r.prop1 = 123
+        |WITH count(*) AS count
+        |MATCH (a)-[r]-(b)
+        |RETURN r.prop1""".stripMargin
+
+    val planner = relIndexConfig()
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("r.prop1 AS `r.prop1`")
+      .apply()
+      .|.allRelationshipsScan("(a)-[r]-(b)", "count")
+      .aggregation(Seq(), Seq("count(*) AS count"))
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop1 = 123)]-(b)",
+        getValue = _ => DoNotGetValue,
+        indexType = RANGE
+      )
       .build())
   }
 
@@ -399,6 +398,31 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan should equal(planner.subPlanBuilder()
       .aggregation(Seq("n.foo AS nums"), Seq("sum(cache[n.prop1]) AS `sum(n.prop1)`"))
       .nodeIndexOperator("n:Awesome(prop1 = 42)", _ => GetValue)
+      .build())
+  }
+
+  test("should plan seek (relationship) with GetValue when the property is used in avg function") {
+    val planner = relIndexConfig()
+    val plan = planner
+      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 = 123 RETURN avg(r.prop1)")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("avg(cacheR[r.prop1]) AS `avg(r.prop1)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 123)]-(b)", getValue = _ => GetValue)
+      .build())
+  }
+
+  test("should plan seek (relationship) with GetValue when the property is used in sum function") {
+    val planner = relIndexConfig()
+
+    val plan = planner
+      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 = 123 RETURN sum(r.prop1)")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("sum(cacheR[r.prop1]) AS `sum(r.prop1)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 123)]-(b)", getValue = _ => GetValue)
       .build())
   }
 
@@ -467,50 +491,48 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .build())
   }
 
-  // STARTS WITH seek
+  // RANGE seek
 
-  test("should plan starts with seek with GetValue when the property is projected") {
+  test("should plan projection and index seek with GetValue when another predicate uses the property") {
     val planner = nodeIndexConfig()
     val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 STARTS WITH 'foo' RETURN n.prop1")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("cache[n.prop1] AS `n.prop1`")
-      .nodeIndexOperator("n:Awesome(prop1 STARTS WITH 'foo')", _ => GetValue)
-      .build())
-  }
-
-  test("should plan projection and starts with seek with DoNotGetValue when the index does not provide values") {
-    val planner = nodeIndexConfig(indexType = TEXT)
-    val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 STARTS WITH 'foo' RETURN n.prop1")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("n.prop1 AS `n.prop1`")
-      .nodeIndexOperator(
-        "n:Awesome(prop1 STARTS WITH 'foo')",
-        _ => DoNotGetValue,
-        indexType = TEXT,
-        supportPartitionedScan = false
-      )
-      .build())
-  }
-
-  test("should plan projection and starts with seek with DoNotGetValue when another property is projected") {
-    val planner = twoNodeIndexesConfig()
-    val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 STARTS WITH 'foo' RETURN n.prop2")
+      .plan("MATCH (n:Awesome) WHERE n.prop1 <= 42 AND n.prop1 % 2 = 0 RETURN n.prop2")
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
       .projection("n.prop2 AS `n.prop2`")
-      .nodeIndexOperator("n:Awesome(prop1 STARTS WITH 'foo')", _ => DoNotGetValue)
+      .filter("cache[n.prop1] % 2 = 0")
+      .nodeIndexOperator("n:Awesome(prop1 <= 42)", _ => GetValue)
       .build())
   }
 
-  // RANGE seek
+  test("should plan projection and index seek with GetValue when another predicate uses the property 2") {
+    val planner = nodeIndexConfig()
+    val plan = planner
+      .plan("MATCH (n:Awesome)-[r]->(m) WHERE n.prop1 <= 42 AND n.prop1 % m.prop2 = 0 RETURN n.prop2")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("n.prop2 AS `n.prop2`")
+      .filter("cache[n.prop1] % m.prop2 = 0")
+      .expandAll("(n)-[r]->(m)")
+      .nodeIndexOperator("n:Awesome(prop1 <= 42)", _ => GetValue)
+      .build())
+  }
+
+  test("should plan index seek with GetValue when the property is used in a predicate after a renaming projection") {
+    val planner = nodeIndexConfig()
+    val plan = planner
+      .plan("MATCH (n:Awesome) WHERE n.prop1 > 42 WITH n AS m MATCH (m)-[r]-(o) WHERE m.prop1 < 50 RETURN o")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .expandAll("(m)-[r]-(o)")
+      .filterExpression(lessThan(cachedNodeProp("n", "prop1", "m"), literalInt(50)))
+      .projection("n AS m")
+      .nodeIndexOperator("n:Awesome(prop1 > 42)", _ => GetValue)
+      .build())
+  }
 
   test("should plan range seek with GetValue when the property is projected") {
     val planner = nodeIndexConfig()
@@ -533,6 +555,20 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan should equal(planner.subPlanBuilder()
       .projection("n.prop2 AS `n.prop2`")
       .nodeIndexOperator("n:Awesome(prop1 > 'foo')", _ => DoNotGetValue)
+      .build())
+  }
+
+  test("should use cached access after projection of non returned property") {
+    val planner = twoNodeIndexesConfig()
+    val plan = planner
+      .plan("MATCH (n:Awesome) WHERE n.prop1 < 2 RETURN n.prop1 ORDER BY n.prop2")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("cache[n.prop1] AS `n.prop1`")
+      .sort("`n.prop2` ASC")
+      .projection("n.prop2 AS `n.prop2`")
+      .nodeIndexOperator("n:Awesome(prop1 < 2)", _ => GetValue)
       .build())
   }
 
@@ -626,47 +662,63 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .build())
   }
 
-  // composite index
+  // STARTS WITH seek
 
-  test("should plan index seek with GetValue when the property is projected (composite index)") {
-    val planner = nodeIndexConfig(isComposite = true)
+  test("should plan starts with seek with GetValue when the property is projected") {
+    val planner = nodeIndexConfig()
     val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 21 RETURN n.prop1, n.prop2")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("cache[n.prop1] AS `n.prop1`", "cache[n.prop2] AS `n.prop2`")
-      .nodeIndexOperator("n:Awesome(prop1 = 42, prop2 = 21)", _ => GetValue, supportPartitionedScan = false)
-      .build())
-  }
-
-  test(
-    "should plan projection and index seek with DoNotGetValue when another property is projected (composite index)"
-  ) {
-    val planner = nodeIndexConfig(isComposite = true)
-    val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 21 RETURN n.bar")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("n.bar AS `n.bar`")
-      .nodeIndexOperator("n:Awesome(prop1 = 42, prop2 = 21)", _ => DoNotGetValue, supportPartitionedScan = false)
-      .build())
-  }
-
-  test("should plan index seek with GetValue and DoNotGetValue when only one property is projected (composite index)") {
-    val planner = nodeIndexConfig(isComposite = true)
-    val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 21 RETURN n.prop1")
+      .plan("MATCH (n:Awesome) WHERE n.prop1 STARTS WITH 'foo' RETURN n.prop1")
       .stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
       .projection("cache[n.prop1] AS `n.prop1`")
+      .nodeIndexOperator("n:Awesome(prop1 STARTS WITH 'foo')", _ => GetValue)
+      .build())
+  }
+
+  test("should plan projection and starts with seek with DoNotGetValue when the index does not provide values") {
+    val planner = nodeIndexConfig(indexType = TEXT)
+    val plan = planner
+      .plan("MATCH (n:Awesome) WHERE n.prop1 STARTS WITH 'foo' RETURN n.prop1")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("n.prop1 AS `n.prop1`")
       .nodeIndexOperator(
-        "n:Awesome(prop1 = 42, prop2 = 21)",
-        Map("prop1" -> GetValue, "prop2" -> DoNotGetValue),
+        "n:Awesome(prop1 STARTS WITH 'foo')",
+        _ => DoNotGetValue,
+        indexType = TEXT,
         supportPartitionedScan = false
       )
+      .build())
+  }
+
+  test("should plan starts with seek with DoNotGetValue when the relationship index does not provide values") {
+    val planner = relIndexConfig(indexType = TEXT)
+    val plan = planner
+      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 STARTS WITH '123' RETURN r.prop1")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("r.prop1 AS `r.prop1`")
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop1 STARTS WITH '123')]-(b)",
+        getValue = _ => DoNotGetValue,
+        indexType = TEXT,
+        supportPartitionedScan = false
+      )
+      .build())
+  }
+
+  test("should plan projection and starts with seek with DoNotGetValue when another property is projected") {
+    val planner = twoNodeIndexesConfig()
+    val plan = planner
+      .plan("MATCH (n:Awesome) WHERE n.prop1 STARTS WITH 'foo' RETURN n.prop2")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("n.prop2 AS `n.prop2`")
+      .nodeIndexOperator("n:Awesome(prop1 STARTS WITH 'foo')", _ => DoNotGetValue)
       .build())
   }
 
@@ -752,6 +804,76 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
+  // ENDS WITH scan
+
+  test("should plan index ends with scan when the property is projected") {
+    val planner = nodeIndexConfig(indexType = TEXT)
+    val plan = planner
+      .plan("MATCH (n:Awesome) WHERE n.prop1 ENDS WITH 'foo' RETURN n.prop1")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("n.prop1 AS `n.prop1`")
+      .nodeIndexOperator("n:Awesome(prop1 ENDS WITH 'foo')", _ => DoNotGetValue, indexType = IndexType.TEXT)
+      .build())
+  }
+
+  test("should plan projection and index ends with scan with DoNotGetValue when another property is projected") {
+    val planner = nodeIndexConfig(indexType = TEXT)
+    val plan = planner
+      .plan("MATCH (n:Awesome) WHERE n.prop1 ENDS WITH 'foo' RETURN n.foo")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("n.foo AS `n.foo`")
+      .nodeIndexOperator("n:Awesome(prop1 ENDS WITH 'foo')", _ => DoNotGetValue, indexType = IndexType.TEXT)
+      .build())
+  }
+
+  test(
+    "should plan relationship projection and index ends with scan with DoNotGetValue when the index does not provide values"
+  ) {
+    val planner = relIndexConfig(indexType = TEXT)
+    val plan = planner
+      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 ENDS WITH 'foo' RETURN r.prop1")
+      .stripProduceResults
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .projection("r.prop1 AS `r.prop1`")
+        .relationshipIndexOperator(
+          "(a)-[r:REL(prop1 ENDS WITH 'foo')]-(b)",
+          indexOrder = IndexOrderNone,
+          argumentIds = Set(),
+          getValue = _ => DoNotGetValue,
+          indexType = IndexType.TEXT
+        )
+        .build()
+    )
+  }
+
+  test(
+    "should plan relationship projection and index ends with scan with DoNotGetValue when another property is projected"
+  ) {
+    val planner = relIndexConfig(indexType = TEXT)
+    val plan = planner
+      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 ENDS WITH 'foo' RETURN r.foo")
+      .stripProduceResults
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .projection("r.foo AS `r.foo`")
+        .relationshipIndexOperator(
+          "(a)-[r:REL(prop1 ENDS WITH 'foo')]-(b)",
+          indexOrder = IndexOrderNone,
+          argumentIds = Set(),
+          getValue = _ => DoNotGetValue,
+          indexType = IndexType.TEXT
+        )
+        .build()
+    )
+  }
+
   // IS NOT NULL
 
   test("should plan scan scan with GetValue when the property is projected") {
@@ -793,6 +915,101 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .aggregation(Seq(), Seq("count(*) AS count"))
       .relationshipIndexOperator("(a)-[r:REL(prop1)]-(b)", getValue = _ => DoNotGetValue)
       .build())
+  }
+
+  // composite index
+
+  test("should plan index seek with GetValue when the property is projected (composite index)") {
+    val planner = nodeIndexConfig(isComposite = true)
+    val plan = planner
+      .plan("MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 21 RETURN n.prop1, n.prop2")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("cache[n.prop1] AS `n.prop1`", "cache[n.prop2] AS `n.prop2`")
+      .nodeIndexOperator("n:Awesome(prop1 = 42, prop2 = 21)", _ => GetValue, supportPartitionedScan = false)
+      .build())
+  }
+
+  test(
+    "should plan projection and index seek with DoNotGetValue when another property is projected (composite index)"
+  ) {
+    val planner = nodeIndexConfig(isComposite = true)
+    val plan = planner
+      .plan("MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 21 RETURN n.bar")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("n.bar AS `n.bar`")
+      .nodeIndexOperator("n:Awesome(prop1 = 42, prop2 = 21)", _ => DoNotGetValue, supportPartitionedScan = false)
+      .build())
+  }
+
+  test("should plan index seek with GetValue and DoNotGetValue when only one property is projected (composite index)") {
+    val planner = nodeIndexConfig(isComposite = true)
+    val plan = planner
+      .plan("MATCH (n:Awesome) WHERE n.prop1 = 42 AND n.prop2 = 21 RETURN n.prop1")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("cache[n.prop1] AS `n.prop1`")
+      .nodeIndexOperator(
+        "n:Awesome(prop1 = 42, prop2 = 21)",
+        Map("prop1" -> GetValue, "prop2" -> DoNotGetValue),
+        supportPartitionedScan = false
+      )
+      .build())
+  }
+
+  test("should plan relationship index seek with GetValue when the property is projected (composite index)") {
+    val planner = relIndexConfig(isComposite = true)
+    val plan = planner
+      .plan("MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop1, r.prop2")
+      .stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
+        getValue = _ => GetValue,
+        indexType = RANGE,
+        supportPartitionedScan = false
+      )
+      .build()
+  }
+
+  test(
+    "should plan projection and index seek with DoNotGetValue when another property is projected (composite relationship index)"
+  ) {
+    val planner = relIndexConfig(isComposite = true)
+    val plan = planner
+      .plan("MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.otherProp")
+      .stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .projection("r.otherProp AS `r.otherProp`")
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
+        getValue = _ => DoNotGetValue,
+        indexType = RANGE,
+        supportPartitionedScan = false
+      )
+      .build()
+  }
+
+  test(
+    "should plan relationship index seek with GetValue and DoNotGetValue when only one property is projected (composite index)"
+  ) {
+    val planner = relIndexConfig(isComposite = true)
+    val plan = planner
+      .plan("MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop2")
+      .stripProduceResults
+
+    plan.leftmostLeaf should matchPattern {
+      case d: DirectedRelationshipIndexSeek
+        if d.properties.map(p => p.propertyKeyToken.name -> p.getValueFromIndex) ==
+          Seq("prop1" -> DoNotGetValue, "prop2" -> GetValue) => ()
+    }
   }
 
   // EXISTENCE / NODE KEY CONSTRAINT
@@ -868,89 +1085,40 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     }
   }
 
-  // ENDS WITH scan
-
-  test("should plan index ends with scan when the property is projected") {
-    val planner = nodeIndexConfig(indexType = TEXT)
+  test("should plan seek (relationship) with GetValue when composite existence constraint on projected property") {
+    val planner = relIndexConfig(existenceConstraints = true, isComposite = true)
     val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 ENDS WITH 'foo' RETURN n.prop1")
+      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 > 123 RETURN r.prop2")
       .stripProduceResults
 
-    plan should equal(planner.subPlanBuilder()
-      .projection("n.prop1 AS `n.prop1`")
-      .nodeIndexOperator("n:Awesome(prop1 ENDS WITH 'foo')", _ => DoNotGetValue, indexType = IndexType.TEXT)
-      .build())
-  }
-
-  test("should plan projection and index ends with scan with DoNotGetValue when another property is projected") {
-    val planner = nodeIndexConfig(indexType = TEXT)
-    val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 ENDS WITH 'foo' RETURN n.foo")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("n.foo AS `n.foo`")
-      .nodeIndexOperator("n:Awesome(prop1 ENDS WITH 'foo')", _ => DoNotGetValue, indexType = IndexType.TEXT)
-      .build())
-  }
-
-  // TODO move
-  test("should use cached access after projection of non returned property") {
-    val planner = twoNodeIndexesConfig()
-    val plan = planner
-      .plan("MATCH (n:Awesome) WHERE n.prop1 < 2 RETURN n.prop1 ORDER BY n.prop2")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("cache[n.prop1] AS `n.prop1`")
-      .sort("`n.prop2` ASC")
-      .projection("n.prop2 AS `n.prop2`")
-      .nodeIndexOperator("n:Awesome(prop1 < 2)", _ => GetValue)
-      .build())
+    withClue("Index seek on two properties should be planned if they are only available through constraint") {
+      plan shouldBe planner.subPlanBuilder()
+        .projection("cacheR[r.prop2] AS `r.prop2`")
+        .relationshipIndexOperator(
+          "(a)-[r:REL(prop1 > 123, prop2)]-(b)",
+          getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
+          supportPartitionedScan = false
+        )
+        .build()
+    }
   }
 
   test(
-    "should plan relationship projection and index ends with scan with DoNotGetValue when the index does not provide values"
+    "should plan seek (relationship) with GetValue and DoNotGetValue when composite existence constraint"
   ) {
-    val planner = relIndexConfig(indexType = TEXT)
+    val planner = relIndexConfig(existenceConstraints = true, isComposite = true)
     val plan = planner
-      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 ENDS WITH 'foo' RETURN r.prop1")
+      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 = 123 RETURN r.prop2")
       .stripProduceResults
 
-    plan should equal(
-      planner.subPlanBuilder()
-        .projection("r.prop1 AS `r.prop1`")
-        .relationshipIndexOperator(
-          "(a)-[r:REL(prop1 ENDS WITH 'foo')]-(b)",
-          indexOrder = IndexOrderNone,
-          argumentIds = Set(),
-          getValue = _ => DoNotGetValue,
-          indexType = IndexType.TEXT
-        )
-        .build()
-    )
-  }
-
-  test(
-    "should plan relationship projection and index ends with scan with DoNotGetValue when another property is projected"
-  ) {
-    val planner = relIndexConfig(indexType = TEXT)
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 ENDS WITH 'foo' RETURN r.foo")
-      .stripProduceResults
-
-    plan should equal(
-      planner.subPlanBuilder()
-        .projection("r.foo AS `r.foo`")
-        .relationshipIndexOperator(
-          "(a)-[r:REL(prop1 ENDS WITH 'foo')]-(b)",
-          indexOrder = IndexOrderNone,
-          argumentIds = Set(),
-          getValue = _ => DoNotGetValue,
-          indexType = IndexType.TEXT
-        )
-        .build()
-    )
+    plan should equal(planner.subPlanBuilder()
+      .projection("cacheR[r.prop2] AS `r.prop2`")
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop1 = 123, prop2)]-(b)",
+        getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
+        supportPartitionedScan = false
+      )
+      .build())
   }
 
   // AGGREGATIONS (=> implicit exists)
@@ -1001,179 +1169,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .aggregation(Seq(), Seq("sum(cacheR[r.prop1]) AS `sum(r.prop1)`"))
       .relationshipIndexOperator("(a)-[r:REL(prop1)]-(b)", getValue = _ => GetValue)
       .build())
-  }
-
-  // TODO duplicate?
-  test("should plan seek with GetValue when the relationship property is projected") {
-    val planner = relIndexConfig()
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 = 123 RETURN r.prop1")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("cacheR[r.prop1] AS `r.prop1`")
-      .relationshipIndexOperator("(a)-[r:REL(prop1 = 123)]-(b)", getValue = _ => GetValue)
-      .build())
-  }
-
-  // TODO move
-  test(
-    "should plan seek with DoNotGetValue when the a relationship property is projected, but from a different variable"
-  ) {
-    val query =
-      """MATCH (a)-[r:REL]-(b)
-        |WHERE r.prop1 = 123
-        |WITH count(*) AS count
-        |MATCH (a)-[r]-(b)
-        |RETURN r.prop1""".stripMargin
-
-    val planner = relIndexConfig()
-    val plan = planner
-      .plan(query)
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("r.prop1 AS `r.prop1`")
-      .apply()
-      .|.allRelationshipsScan("(a)-[r]-(b)", "count")
-      .aggregation(Seq(), Seq("count(*) AS count"))
-      .relationshipIndexOperator(
-        "(a)-[r:REL(prop1 = 123)]-(b)",
-        getValue = _ => DoNotGetValue,
-        indexType = RANGE
-      )
-      .build())
-  }
-
-  // TODO move
-  test("should plan seek with DoNotGetValue when the relationship index does not provide values") {
-    val planner = relIndexConfig(indexType = TEXT)
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 STARTS WITH '123' RETURN r.prop1")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("r.prop1 AS `r.prop1`")
-      .relationshipIndexOperator(
-        "(a)-[r:REL(prop1 STARTS WITH '123')]-(b)",
-        getValue = _ => DoNotGetValue,
-        indexType = TEXT,
-        supportPartitionedScan = false
-      )
-      .build())
-  }
-
-  test("should plan seek (relationship) with GetValue when the property is used in avg function") {
-    val planner = relIndexConfig()
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 > 123 RETURN avg(r.prop1)")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .aggregation(Seq(), Seq("avg(cacheR[r.prop1]) AS `avg(r.prop1)`"))
-      .relationshipIndexOperator("(a)-[r:REL(prop1 > 123)]-(b)", getValue = _ => GetValue)
-      .build())
-  }
-
-  test("should plan seek (relationship) with GetValue when the property is used in sum function") {
-    val planner = relIndexConfig()
-
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 > 123 RETURN sum(r.prop1)")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .aggregation(Seq(), Seq("sum(cacheR[r.prop1]) AS `sum(r.prop1)`"))
-      .relationshipIndexOperator("(a)-[r:REL(prop1 > 123)]-(b)", getValue = _ => GetValue)
-      .build())
-  }
-
-  // TODO move
-  test("should plan seek (relationship) with GetValue when composite existence constraint on projected property") {
-    val planner = relIndexConfig(existenceConstraints = true, isComposite = true)
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 > 123 RETURN r.prop2")
-      .stripProduceResults
-
-    withClue("Index seek on two properties should be planned if they are only available through constraint") {
-      plan shouldBe planner.subPlanBuilder()
-        .projection("cacheR[r.prop2] AS `r.prop2`")
-        .relationshipIndexOperator(
-          "(a)-[r:REL(prop1 > 123, prop2)]-(b)",
-          getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
-          supportPartitionedScan = false
-        )
-        .build()
-    }
-  }
-
-  test(
-    "should plan seek (relationship) with GetValue and DoNotGetValue when composite existence constraint"
-  ) {
-    val planner = relIndexConfig(existenceConstraints = true, isComposite = true)
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]-(b) WHERE r.prop1 = 123 RETURN r.prop2")
-      .stripProduceResults
-
-    plan should equal(planner.subPlanBuilder()
-      .projection("cacheR[r.prop2] AS `r.prop2`")
-      .relationshipIndexOperator(
-        "(a)-[r:REL(prop1 = 123, prop2)]-(b)",
-        getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
-        supportPartitionedScan = false
-      )
-      .build())
-  }
-
-  test("should plan relationship index seek with GetValue when the property is projected (composite index)") {
-    val planner = relIndexConfig(isComposite = true)
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop1, r.prop2")
-      .stripProduceResults
-
-    plan shouldBe planner.subPlanBuilder()
-      .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
-      .relationshipIndexOperator(
-        "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
-        getValue = _ => GetValue,
-        indexType = RANGE,
-        supportPartitionedScan = false
-      )
-      .build()
-  }
-
-  test(
-    "should plan projection and index seek with DoNotGetValue when another property is projected (composite relationship index)"
-  ) {
-    val planner = relIndexConfig(isComposite = true)
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.otherProp")
-      .stripProduceResults
-
-    plan shouldBe planner.subPlanBuilder()
-      .projection("r.otherProp AS `r.otherProp`")
-      .relationshipIndexOperator(
-        "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
-        getValue = _ => DoNotGetValue,
-        indexType = RANGE,
-        supportPartitionedScan = false
-      )
-      .build()
-  }
-
-  test(
-    "should plan relationship index seek with GetValue and DoNotGetValue when only one property is projected (composite index)"
-  ) {
-    val planner = relIndexConfig(isComposite = true)
-    val plan = planner
-      .plan("MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop2")
-      .stripProduceResults
-
-    plan.leftmostLeaf should matchPattern {
-      case d: DirectedRelationshipIndexSeek
-        if d.properties.map(p => p.propertyKeyToken.name -> p.getValueFromIndex) ==
-          Seq("prop1" -> DoNotGetValue, "prop2" -> GetValue) => ()
-    }
   }
 
   // other tests
