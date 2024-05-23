@@ -21,13 +21,13 @@ package org.neo4j.procedure.impl;
 
 import static java.lang.String.format;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -261,19 +261,7 @@ public class ProcedureRegistry {
     }
 
     int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
-        int[] ids = new int[10];
-        int count = 0;
-        for (CallableProcedure p : procedures.all()) {
-            if (predicate.test(p)) {
-                int i = procedures.idOf(p.signature().name());
-                if (ids.length == count) {
-                    ids = Arrays.copyOf(ids, count * 2);
-                }
-                ids[count++] = i;
-            }
-        }
-        ids = Arrays.copyOfRange(ids, 0, count);
-        return ids;
+        return getIdsOf(procedures, predicate);
     }
 
     public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
@@ -281,19 +269,7 @@ public class ProcedureRegistry {
     }
 
     int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
-        int[] ids = new int[10];
-        int count = 0;
-        for (CallableUserFunction f : functions.all()) {
-            if (predicate.test(f)) {
-                int i = functions.idOf(f.signature().name());
-                if (ids.length == count) {
-                    ids = Arrays.copyOf(ids, count * 2);
-                }
-                ids[count++] = i;
-            }
-        }
-        ids = Arrays.copyOfRange(ids, 0, count);
-        return ids;
+        return getIdsOf(functions, predicate);
     }
 
     public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
@@ -301,19 +277,7 @@ public class ProcedureRegistry {
     }
 
     int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
-        int[] ids = new int[10];
-        int count = 0;
-        for (CallableUserAggregationFunction f : aggregationFunctions.all()) {
-            if (predicate.test(f)) {
-                int i = aggregationFunctions.idOf(f.signature().name());
-                if (ids.length == count) {
-                    ids = Arrays.copyOf(ids, count * 2);
-                }
-                ids[count++] = i;
-            }
-        }
-        ids = Arrays.copyOfRange(ids, 0, count);
-        return ids;
+        return getIdsOf(aggregationFunctions, predicate);
     }
 
     @VisibleForTesting
@@ -350,5 +314,11 @@ public class ProcedureRegistry {
                 ProcedureHolder.tombstone(ref.procedures, which),
                 ProcedureHolder.tombstone(ref.functions, which),
                 ProcedureHolder.tombstone(ref.aggregationFunctions, which));
+    }
+
+    private static <T> int[] getIdsOf(ProcedureHolder<T> holder, Predicate<T> predicate) {
+        var lst = new IntArrayList();
+        holder.forEach((i, v) -> lst.add(i), predicate);
+        return lst.toArray();
     }
 }

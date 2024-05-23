@@ -152,15 +152,7 @@ public class ProcedureViewImpl implements ProcedureView {
 
     @Override
     public int[] getProcedureIds(String procedureGlobbing) {
-        int[] cachedResult = proceduresLookupCache.get(procedureGlobbing);
-        if (cachedResult != null) {
-            return cachedResult;
-        }
-        Predicate<String> matcherPredicate = Globbing.globPredicate(procedureGlobbing);
-        int[] data = registry.getIdsOfProceduresMatching(
-                p -> matcherPredicate.test(p.signature().name().toString()));
-        proceduresLookupCache.put(procedureGlobbing, data);
-        return data;
+        return proceduresLookupCache.computeIfAbsent(procedureGlobbing, this::matchProcedure);
     }
 
     @Override
@@ -170,32 +162,34 @@ public class ProcedureViewImpl implements ProcedureView {
 
     @Override
     public int[] getFunctionIds(String functionGlobbing) {
-        int[] cachedResult = functionsLookupCache.get(functionGlobbing);
-        if (cachedResult != null) {
-            return cachedResult;
-        }
-        Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
-        int[] data = registry.getIdsOfFunctionsMatching(
-                f -> matcherPredicate.test(f.signature().name().toString()));
-        functionsLookupCache.put(functionGlobbing, data);
-        return data;
+        return functionsLookupCache.computeIfAbsent(functionGlobbing, this::matchFunction);
     }
 
     @Override
     public int[] getAggregatingFunctionIds(String functionGlobbing) {
-        int[] cachedResult = aggregationFunctionsLookupCache.get(functionGlobbing);
-        if (cachedResult != null) {
-            return cachedResult;
-        }
-        Predicate<String> matcherPredicate = Globbing.globPredicate(functionGlobbing);
-        int[] data = registry.getIdsOfAggregatingFunctionsMatching(
-                f -> matcherPredicate.test(f.signature().name().toString()));
-        aggregationFunctionsLookupCache.put(functionGlobbing, data);
-        return data;
+        return aggregationFunctionsLookupCache.computeIfAbsent(functionGlobbing, this::matchAggregation);
     }
 
     @Override
     public long signatureVersion() {
         return signatureVersion;
+    }
+
+    private int[] matchProcedure(String glob) {
+        Predicate<String> matcherPredicate = Globbing.globPredicate(glob);
+        return registry.getIdsOfProceduresMatching(
+                p -> matcherPredicate.test(p.signature().name().toString()));
+    }
+
+    private int[] matchFunction(String glob) {
+        Predicate<String> matcherPredicate = Globbing.globPredicate(glob);
+        return registry.getIdsOfFunctionsMatching(
+                p -> matcherPredicate.test(p.signature().name().toString()));
+    }
+
+    private int[] matchAggregation(String glob) {
+        Predicate<String> matcherPredicate = Globbing.globPredicate(glob);
+        return registry.getIdsOfAggregatingFunctionsMatching(
+                p -> matcherPredicate.test(p.signature().name().toString()));
     }
 }

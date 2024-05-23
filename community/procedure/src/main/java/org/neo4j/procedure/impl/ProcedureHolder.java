@@ -29,8 +29,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
 /**
@@ -155,7 +157,21 @@ class ProcedureHolder<T> {
     }
 
     List<T> all() {
-        return (List<T>) store.stream().filter(e -> e != TOMBSTONE).collect(Collectors.toList());
+        // In the general case, the procedure list is upper bounded by the store size,
+        // but since tombstone:d elements are rare, the size will in all likelihood be
+        // equal to the store size.
+        var lst = new ArrayList<T>(store.size());
+        forEach((id, item) -> lst.add(item), Predicates.alwaysTrue());
+        return lst;
+    }
+
+    void forEach(BiConsumer<Integer, T> consumer, Predicate<T> filter) {
+        for (int i = 0; i < store.size(); i++) {
+            var item = store.get(i);
+            if (item != TOMBSTONE && filter.test((T) item)) {
+                consumer.accept(i, (T) item);
+            }
+        }
     }
 
     boolean contains(QualifiedName name) {
