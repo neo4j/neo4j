@@ -16,26 +16,22 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
-import org.antlr.v4.runtime.ANTLRErrorStrategy
 import org.antlr.v4.runtime.BailErrorStrategy
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
-import org.antlr.v4.runtime.RecognitionException
-import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.TokenStream
 import org.antlr.v4.runtime.atn.PredictionMode
-import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
-import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.CypherAstLexer
-import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
+import org.neo4j.cypher.internal.cst.factory.neo4j.Cypher5SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
-import org.neo4j.cypher.internal.cst.factory.neo4j.ast.CypherAstParser.DEBUG
 import org.neo4j.cypher.internal.parser.AstRuleCtx
 import org.neo4j.cypher.internal.parser.CypherErrorStrategy
 import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.parser.ast.BaseAstParser
+import org.neo4j.cypher.internal.parser.ast.SyntaxChecker
 import org.neo4j.cypher.internal.parser.lexer.UnicodeEscapeReplacementReader
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
@@ -49,116 +45,51 @@ import scala.util.control.NonFatal
 /**
  * Parses Neo4j AST using antlr. Fails fast. Optimised for memory by removing the parse as we go.
  */
-class CypherAstParser private (
+final class CypherAstParser private (
   input: TokenStream,
-  createAst: Boolean,
-  exceptionFactory: CypherExceptionFactory,
-  notificationLogger: Option[InternalNotificationLogger]
-) extends CypherParser(input) {
-  // These could be added using `addParseListener` too, but this is faster
-  private[this] var astBuilder: ParseTreeListener = _
-  private[this] var checker: SyntaxChecker = _
-  private[this] var hasFailed: Boolean = false
-  private[this] var bailErrors: Boolean = false
+  override val exceptionFactory: CypherExceptionFactory,
+  override val notificationLogger: Option[InternalNotificationLogger]
+) extends CypherParser(input) with BaseAstParser {
 
   removeErrorListeners() // Avoid printing errors to stdout
 
-  override def exitRule(): Unit = {
-    val localCtx = _ctx
-    super.exitRule()
+  override def createSyntaxChecker(): SyntaxChecker = new Cypher5SyntaxChecker(exceptionFactory)
+  override def createAstBuilder(): ParseTreeListener = new AstBuilder(notificationLogger, exceptionFactory)
 
-    if (bailErrors) {
-      // In this mode we care more about speed than correct error handling
-      checker.exitEveryRule(localCtx)
-      astBuilder.exitEveryRule(localCtx)
-    } else if (!hasFailed) {
-      // Here we care about correct error handling.
-      // Stop on failures to not hide the cause of an error with sequent exceptions
-
-      if (checker.check(localCtx)) buildAstWithErrorHandling(localCtx)
-      else hasFailed = true
-    }
-
-    // Save memory by removing the parse tree as we go.
-    // Some listeners access children of children so we only do this at certain safe points
-    // where we know the children are not needed anymore for ast building or syntax checker.
-    localCtx.getRuleIndex match {
-      case CypherParser.RULE_allPrivilegeTarget               =>
-      case CypherParser.RULE_allPrivilegeType                 =>
-      case CypherParser.RULE_alterAliasDriver                 =>
-      case CypherParser.RULE_alterAliasPassword               =>
-      case CypherParser.RULE_alterAliasProperties             =>
-      case CypherParser.RULE_alterAliasTarget                 =>
-      case CypherParser.RULE_alterAliasUser                   =>
-      case CypherParser.RULE_alterDatabaseAccess              =>
-      case CypherParser.RULE_alterDatabaseTopology            =>
-      case CypherParser.RULE_comparisonExpression6            =>
-      case CypherParser.RULE_constraintType                   =>
-      case CypherParser.RULE_createIndex                      =>
-      case CypherParser.RULE_extendedCaseAlternative          =>
-      case CypherParser.RULE_extendedWhen                     =>
-      case CypherParser.RULE_functionName                     =>
-      case CypherParser.RULE_functionArgument                 =>
-      case CypherParser.RULE_procedureName                    =>
-      case CypherParser.RULE_procedureArgument                =>
-      case CypherParser.RULE_roleNames                        =>
-      case CypherParser.RULE_userNames                        =>
-      case CypherParser.RULE_globPart                         =>
-      case CypherParser.RULE_lookupIndexRelPattern            =>
-      case CypherParser.RULE_nonEmptyNameList                 =>
-      case CypherParser.RULE_password                         =>
-      case CypherParser.RULE_postFix                          =>
-      case CypherParser.RULE_propertyList                     =>
-      case CypherParser.RULE_symbolicAliasName                =>
-      case CypherParser.RULE_symbolicAliasNameOrParameter     =>
-      case CypherParser.RULE_symbolicNameString               =>
-      case CypherParser.RULE_unescapedLabelSymbolicNameString =>
-      case CypherParser.RULE_unescapedSymbolicNameString      =>
-      case _                                                  => localCtx.children = null
-    }
-
+  override def isSafeToFreeChildren(ctx: ParserRuleContext): Boolean = ctx.getRuleIndex match {
+    case CypherParser.RULE_allPrivilegeTarget               => false
+    case CypherParser.RULE_allPrivilegeType                 => false
+    case CypherParser.RULE_alterAliasDriver                 => false
+    case CypherParser.RULE_alterAliasPassword               => false
+    case CypherParser.RULE_alterAliasProperties             => false
+    case CypherParser.RULE_alterAliasTarget                 => false
+    case CypherParser.RULE_alterAliasUser                   => false
+    case CypherParser.RULE_alterDatabaseAccess              => false
+    case CypherParser.RULE_alterDatabaseTopology            => false
+    case CypherParser.RULE_comparisonExpression6            => false
+    case CypherParser.RULE_constraintType                   => false
+    case CypherParser.RULE_createIndex                      => false
+    case CypherParser.RULE_extendedCaseAlternative          => false
+    case CypherParser.RULE_extendedWhen                     => false
+    case CypherParser.RULE_functionName                     => false
+    case CypherParser.RULE_functionArgument                 => false
+    case CypherParser.RULE_procedureName                    => false
+    case CypherParser.RULE_procedureArgument                => false
+    case CypherParser.RULE_roleNames                        => false
+    case CypherParser.RULE_userNames                        => false
+    case CypherParser.RULE_globPart                         => false
+    case CypherParser.RULE_lookupIndexRelPattern            => false
+    case CypherParser.RULE_nonEmptyNameList                 => false
+    case CypherParser.RULE_password                         => false
+    case CypherParser.RULE_postFix                          => false
+    case CypherParser.RULE_propertyList                     => false
+    case CypherParser.RULE_symbolicAliasName                => false
+    case CypherParser.RULE_symbolicAliasNameOrParameter     => false
+    case CypherParser.RULE_symbolicNameString               => false
+    case CypherParser.RULE_unescapedLabelSymbolicNameString => false
+    case CypherParser.RULE_unescapedSymbolicNameString      => false
+    case _                                                  => true
   }
-
-  private def buildAstWithErrorHandling(ctx: ParserRuleContext): Unit = {
-    try {
-      astBuilder.exitEveryRule(ctx)
-      if (DEBUG) println(s"Exit ${ctx.getClass.getSimpleName} AST=${ctx.asInstanceOf[AstRuleCtx].ast}")
-    } catch {
-      case NonFatal(e) =>
-        if (DEBUG) println(s"Exit ${ctx.getClass.getSimpleName} FAILED! $e")
-        hasFailed = true
-        throw e
-    }
-  }
-
-  override def createTerminalNode(parent: ParserRuleContext, t: Token): TerminalNode = {
-    t match {
-      case ct: TerminalNode => ct
-      case _                => super.createTerminalNode(parent, t)
-    }
-  }
-
-  override def reset(): Unit = {
-    super.reset()
-    astBuilder = if (createAst) new AstBuilder(notificationLogger, exceptionFactory) else NoOpParseTreeListener
-    checker = new SyntaxChecker(exceptionFactory)
-    hasFailed = false
-  }
-
-  override def addParseListener(listener: ParseTreeListener): Unit = throw new UnsupportedOperationException()
-
-  override def setErrorHandler(handler: ANTLRErrorStrategy): Unit = {
-    super.setErrorHandler(handler)
-    bailErrors = handler.isInstanceOf[BailErrorStrategy]
-  }
-
-  override def notifyErrorListeners(offendingToken: Token, msg: String, e: RecognitionException): Unit = {
-    hasFailed = true
-    super.notifyErrorListeners(offendingToken, msg, e)
-  }
-
-  def syntaxChecker(): SyntaxChecker = checker
-
 }
 
 object CypherAstParser {
@@ -196,7 +127,7 @@ object CypherAstParser {
   ): T = {
     val listener = new SyntaxErrorListener(exceptionFactory)
     val tokens = preparsedTokens(query, listener, exceptionFactory, fullTokens = false)
-    val parser = new CypherAstParser(tokens, true, exceptionFactory, notificationLogger)
+    val parser = new CypherAstParser(tokens, exceptionFactory, notificationLogger)
 
     // Try parsing with PredictionMode.SLL first (faster but might fail on some syntax)
     // See https://github.com/antlr/antlr4/blob/dev/doc/faq/general.md#why-is-my-expression-parser-slow
@@ -234,8 +165,8 @@ object CypherAstParser {
     val result = f(parser)
 
     // Throw syntax checker errors
-    if (parser.syntaxChecker().hasErrors) {
-      throw parser.syntaxChecker().getErrors.reduce(Exceptions.chain)
+    if (parser.syntaxChecker().errors.nonEmpty) {
+      throw parser.syntaxChecker().errors.reduce(Exceptions.chain)
     }
 
     // Throw any syntax errors
@@ -261,11 +192,4 @@ object CypherAstParser {
       case e: UnicodeEscapeReplacementReader.InvalidUnicodeLiteral =>
         throw exceptionFactory.syntaxException(e.getMessage, InputPosition(e.offset, e.line, e.col))
     }
-}
-
-object NoOpParseTreeListener extends ParseTreeListener {
-  override def visitTerminal(node: TerminalNode): Unit = {}
-  override def visitErrorNode(node: ErrorNode): Unit = {}
-  override def enterEveryRule(ctx: ParserRuleContext): Unit = {}
-  override def exitEveryRule(ctx: ParserRuleContext): Unit = {}
 }

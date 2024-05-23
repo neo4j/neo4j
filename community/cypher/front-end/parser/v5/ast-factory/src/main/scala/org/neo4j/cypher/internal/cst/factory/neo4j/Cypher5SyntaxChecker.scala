@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.cst.factory.neo4j
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.tree.ErrorNode
-import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
@@ -42,14 +41,17 @@ import org.neo4j.cypher.internal.parser.CypherParser.DropConstraintContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobRecursiveContext
 import org.neo4j.cypher.internal.parser.CypherParser.SymbolicAliasNameOrParameterContext
+import org.neo4j.cypher.internal.parser.ast.SyntaxChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
 import scala.collection.mutable
 
-final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends ParseTreeListener {
-  private var errors: Seq[Exception] = Seq.empty
+final class Cypher5SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends SyntaxChecker {
+  private[this] var _errors: Seq[Exception] = Seq.empty
+
+  override def errors: Seq[Throwable] = _errors
 
   override def visitTerminal(node: TerminalNode): Unit = {}
   override def visitErrorNode(node: ErrorNode): Unit = {}
@@ -84,14 +86,10 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
     }
   }
 
-  def check(ctx: ParserRuleContext): Boolean = {
+  override def check(ctx: ParserRuleContext): Boolean = {
     exitEveryRule(ctx)
-    errors.isEmpty
+    _errors.isEmpty
   }
-
-  def getErrors: Seq[Exception] = errors
-
-  def hasErrors: Boolean = errors.nonEmpty
 
   private def inputPosition(symbol: Token): InputPosition = {
     InputPosition(symbol.getStartIndex, symbol.getLine, symbol.getCharPositionInLine + 1)
@@ -103,12 +101,12 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
     isParam: Boolean = false
   ): Unit = {
     if (isParam) {
-      errors :+= exceptionFactory.syntaxException(
+      _errors :+= exceptionFactory.syntaxException(
         s"Duplicated $description parameters",
         inputPosition(token)
       )
     } else {
-      errors :+= exceptionFactory.syntaxException(
+      _errors :+= exceptionFactory.syntaxException(
         s"Duplicate $description clause",
         inputPosition(token)
       )
@@ -152,7 +150,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       val aliasName = aliasesNames.get(0)
       if (aliasName.symbolicAliasName() != null && aliasName.symbolicAliasName().symbolicNameString().size() > 2) {
         val start = aliasName.symbolicAliasName().symbolicNameString().get(0).getStart
-        errors :+= exceptionFactory.syntaxException(
+        _errors :+= exceptionFactory.syntaxException(
           s"'.' is not a valid character in the remote alias name '${aliasName.getText}'. Remote alias names using '.' must be quoted with backticks e.g. `remote.alias`.",
           inputPosition(start)
         )
@@ -257,7 +255,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
         case (Some(privilege), (target, symbol)) =>
           // This makes GRANT ALL DATABASE PRIVILEGES ON DATABASES * work
           if (!target.startsWith(privilege)) {
-            errors :+= exceptionFactory.syntaxException(
+            _errors :+= exceptionFactory.syntaxException(
               s"Invalid input '$target': expected \"$privilege\"",
               inputPosition(symbol)
             )
@@ -280,7 +278,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       }
 
       def addError(): Unit = {
-        errors :+= exceptionFactory.syntaxException(
+        _errors :+= exceptionFactory.syntaxException(
           "Each part of the glob (a block of text up until a dot) must either be fully escaped or not escaped at all.",
           inputPosition(ctx.start)
         )
@@ -293,33 +291,33 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
     ctx.constraintType() match {
       case c: ConstraintIsUniqueContext =>
         if (ctx.commandNodePattern() != null && (c.RELATIONSHIP() != null || c.REL() != null)) {
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             s"'${ConstraintType.REL_UNIQUE.description()}' does not allow node patterns",
             inputPosition(ctx.commandNodePattern().getStart)
           )
         }
         if (ctx.commandRelPattern() != null && c.NODE() != null) {
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             s"'${ConstraintType.NODE_UNIQUE.description()}' does not allow relationship patterns",
             inputPosition(ctx.commandRelPattern().getStart)
           )
         }
       case c: ConstraintKeyContext =>
         if (ctx.commandNodePattern() != null && (c.RELATIONSHIP() != null || c.REL() != null)) {
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             s"'${ConstraintType.REL_KEY.description()}' does not allow node patterns",
             inputPosition(ctx.commandNodePattern().getStart)
           )
         }
         if (ctx.commandRelPattern() != null && c.NODE() != null) {
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             s"'${ConstraintType.NODE_KEY.description()}' does not allow relationship patterns",
             inputPosition(ctx.commandRelPattern().getStart)
           )
         }
       case _: ConstraintExistsContext | _: ConstraintTypedContext | _: ConstraintIsNotNullContext =>
       case _ =>
-        errors :+= exceptionFactory.syntaxException(
+        _errors :+= exceptionFactory.syntaxException(
           "Constraint type is not recognized",
           inputPosition(ctx.constraintType().getStart)
         )
@@ -331,22 +329,22 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       val secondProperty = ctx.property(1).start
       ctx.getParent.getParent match {
         case _: ConstraintExistsContext =>
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             "Constraint type 'EXISTS' does not allow multiple properties",
             inputPosition(secondProperty)
           )
         case _: ConstraintTypedContext =>
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             "Constraint type 'IS TYPED' does not allow multiple properties",
             inputPosition(secondProperty)
           )
         case _: ConstraintIsNotNullContext =>
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             "Constraint type 'IS NOT NULL' does not allow multiple properties",
             inputPosition(secondProperty)
           )
         case dropCtx: DropConstraintContext if dropCtx.EXISTS() != null =>
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             "Constraint type 'EXISTS' does not allow multiple properties",
             inputPosition(secondProperty)
           )
@@ -360,12 +358,12 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
     if (relPattern != null) {
       val errorMessageEnd = "does not allow relationship patterns"
       if (ctx.KEY() != null) {
-        errors :+= exceptionFactory.syntaxException(
+        _errors :+= exceptionFactory.syntaxException(
           s"'${ConstraintType.NODE_KEY.description()}' $errorMessageEnd",
           inputPosition(relPattern.getStart)
         )
       } else if (ctx.UNIQUE() != null) {
-        errors :+= exceptionFactory.syntaxException(
+        _errors :+= exceptionFactory.syntaxException(
           s"'${ConstraintType.NODE_UNIQUE.description()}' $errorMessageEnd",
           inputPosition(relPattern.getStart)
         )
@@ -373,7 +371,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
     }
 
     if (ctx.NULL() != null) {
-      errors :+= exceptionFactory.syntaxException(
+      _errors :+= exceptionFactory.syntaxException(
         "Unsupported drop constraint command: Please delete the constraint by name instead",
         inputPosition(ctx.start)
       )
@@ -392,7 +390,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       var i = 0
       keyNames.foreach(k =>
         if (keySet.contains(k)) {
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             s"Duplicate 'REMOVE OPTION $k' clause",
             pos(ctx.symbolicNameString(i))
           )
@@ -411,7 +409,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       var i = 0
       keyNames.foreach(k =>
         if (keySet.contains(k)) {
-          errors :+= exceptionFactory.syntaxException(
+          _errors :+= exceptionFactory.syntaxException(
             s"Duplicate 'SET OPTION $k' clause",
             pos(ctx.alterDatabaseOption(i))
           )
@@ -436,7 +434,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   private def checkPeriodicCommitQueryHintFailure(ctx: CypherParser.PeriodicCommitQueryHintFailureContext): Unit = {
     val periodic = ctx.PERIODIC().getSymbol
 
-    errors :+= exceptionFactory.syntaxException(
+    _errors :+= exceptionFactory.syntaxException(
       "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead.",
       inputPosition(periodic)
     )
@@ -448,7 +446,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
 
     if (createIndex != null && replace != null) {
       if (createIndex.oldCreateIndex() != null) {
-        errors :+= exceptionFactory.syntaxException(
+        _errors :+= exceptionFactory.syntaxException(
           "'REPLACE' is not allowed for this index syntax",
           inputPosition(replace.getSymbol)
         )
@@ -467,7 +465,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
     val relPattern = ctx.lookupIndexRelPattern()
     if (functionName.getText.toUpperCase() == "EACH" && relPattern != null && relPattern.EACH() == null) {
 
-      errors :+= exceptionFactory.syntaxException(
+      _errors :+= exceptionFactory.syntaxException(
         "Missing function name for the LOOKUP INDEX",
         inputPosition(ctx.LPAREN().getSymbol)
       )
@@ -476,7 +474,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
 
   private def checkInsertPattern(ctx: CypherParser.InsertPatternContext): Unit = {
     if (ctx.EQ() != null) {
-      errors :+= exceptionFactory.syntaxException(
+      _errors :+= exceptionFactory.syntaxException(
         "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name.",
         pos(ctxChild(ctx, 0))
       )
@@ -488,12 +486,12 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
     val firstIsColon = nodeChild(ctx, 0).getSymbol.getType == CypherParser.COLON
 
     if (firstIsColon && colons.size > 1) {
-      errors :+= exceptionFactory.syntaxException(
+      _errors :+= exceptionFactory.syntaxException(
         "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead.",
         inputPosition(colons.get(1).getSymbol)
       )
     } else if (!firstIsColon && colons.size() > 0) {
-      errors :+= exceptionFactory.syntaxException(
+      _errors :+= exceptionFactory.syntaxException(
         "Colon `:` conjunction is not allowed in INSERT. Use `CREATE` or conjunction with ampersand `&` instead.",
         inputPosition(colons.get(0).getSymbol)
       )
@@ -507,7 +505,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
       functionName.namespace.parts.isEmpty &&
       ctx.functionArgument().size == 2
     ) {
-      errors :+= exceptionFactory.syntaxException(
+      _errors :+= exceptionFactory.syntaxException(
         "Invalid normal form, expected NFC, NFD, NFKC, NFKD",
         ctx.functionArgument(1).expression().ast[Expression]().position
       )
@@ -517,7 +515,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
   private def checkTypePart(ctx: CypherParser.TypePartContext): Unit = {
     val cypherType = ctx.typeName().ast
     if (cypherType.isInstanceOf[ClosedDynamicUnionType] && ctx.typeNullability() != null) {
-      errors :+= exceptionFactory.syntaxException(
+      _errors :+= exceptionFactory.syntaxException(
         "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead.",
         pos(ctx.typeNullability())
       )
@@ -526,7 +524,7 @@ final class SyntaxChecker(exceptionFactory: CypherExceptionFactory) extends Pars
 
   private def checkHint(ctx: CypherParser.HintContext): Unit = {
     nodeChild(ctx, 1).getSymbol.getType match {
-      case CypherParser.BTREE => errors :+= exceptionFactory.syntaxException(
+      case CypherParser.BTREE => _errors :+= exceptionFactory.syntaxException(
           ASTExceptionFactory.invalidHintIndexType(HintIndexType.BTREE),
           pos(nodeChild(ctx, 1))
         )
