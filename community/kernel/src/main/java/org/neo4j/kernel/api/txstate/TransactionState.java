@@ -87,15 +87,11 @@ public interface TransactionState extends ReadableTransactionState {
 
     void indexDoDrop(IndexDescriptor index);
 
-    boolean indexDoUnRemove(IndexDescriptor index);
-
     void constraintDoAdd(ConstraintDescriptor constraint);
 
     void constraintDoAdd(IndexBackedConstraintDescriptor constraint, IndexDescriptor index);
 
     void constraintDoDrop(ConstraintDescriptor constraint);
-
-    boolean constraintDoUnRemove(ConstraintDescriptor constraint);
 
     void indexDoUpdateEntry(SchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after);
 

@@ -623,11 +623,6 @@ public class TxState implements TransactionState {
     }
 
     @Override
-    public boolean indexDoUnRemove(IndexDescriptor index) {
-        return indexChangesDiffSets().unRemove(index);
-    }
-
-    @Override
     public DiffSets<IndexDescriptor> indexDiffSetsByLabel(int labelId) {
         return indexChangesDiffSets().filterAdded(SchemaDescriptorPredicates.hasLabel(labelId));
     }
@@ -758,11 +753,6 @@ public class TxState implements TransactionState {
     public void constraintDoDrop(ConstraintDescriptor constraint) {
         constraintsChangesDiffSets().remove(constraint);
         changed();
-    }
-
-    @Override
-    public boolean constraintDoUnRemove(ConstraintDescriptor constraint) {
-        return constraintsChangesDiffSets().unRemove(constraint);
     }
 
     @Override

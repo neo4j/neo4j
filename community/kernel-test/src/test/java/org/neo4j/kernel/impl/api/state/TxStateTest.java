@@ -955,20 +955,12 @@ abstract class TxStateTest {
         assertThat(state.getDataRevision()).isEqualTo(0L);
         assertFalse(state.hasDataChanges());
 
-        state.indexDoUnRemove(indexOn_1_1);
-        assertThat(state.getDataRevision()).isEqualTo(0L);
-        assertFalse(state.hasDataChanges());
-
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel(1, 17);
         state.constraintDoAdd(constraint1);
         assertThat(state.getDataRevision()).isEqualTo(0L);
         assertFalse(state.hasDataChanges());
 
         state.constraintDoDrop(constraint1);
-        assertThat(state.getDataRevision()).isEqualTo(0L);
-        assertFalse(state.hasDataChanges());
-
-        state.constraintDoUnRemove(constraint1);
         assertThat(state.getDataRevision()).isEqualTo(0L);
         assertFalse(state.hasDataChanges());
 
